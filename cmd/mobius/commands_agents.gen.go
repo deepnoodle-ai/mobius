@@ -86,7 +86,8 @@ func registerAgentsCommands(app *cli.App) {
 			cli.String("color", "").Help("Display color for this agent (Mantine palette key, e.g. `indigo`). Optional; empty falls back to a …"),
 			cli.String("description", "").Help("Optional human-readable description."),
 			cli.String("kind", "").Help("Freeform classification (e.g. \"llm\", \"rpa\", \"integration\")."),
-			cli.String("model", "").Help("Anthropic model identifier for platform agents (e.g. `claude-sonnet-4-6`). Empty falls back to the …"),
+			cli.String("model", "").Help("Model identifier for platform agents. Any id from `GET /v1/projects/{project}/models`, optionally `…"),
+			cli.String("model-route", "").Help("Default model route used by built-in messaging and by automation agent steps that do not override t… Accepts JSON, @file, or @-."),
 			cli.String("name", "").Help("[required] Project-scoped unique name for this agent. Free-form human-readable label, 1-63 characters."),
 			cli.Strings("role-ids", "").Help("Roles to assign to the auto-created service account. Mutually exclusive with `service_account_id` (…"),
 			cli.String("service-account-id", "").Help("Service account that backs this agent. Must be active, belong to the same project, and currently ba…"),
@@ -127,6 +128,11 @@ func registerAgentsCommands(app *cli.App) {
 			if ctx.IsSet("model") {
 				v := ctx.String("model")
 				body.Model = &v
+			}
+			if ctx.IsSet("model-route") {
+				if err := decodeFlagJSON(ctx, "model-route", ctx.String("model-route"), &body.ModelRoute); err != nil {
+					return err
+				}
 			}
 			if ctx.IsSet("name") {
 				body.Name = ctx.String("name")
@@ -179,6 +185,26 @@ func registerAgentsCommands(app *cli.App) {
 				return err
 			}
 			return printResponse(ctx, "deleteAgent", resp.StatusCode(), resp.Body)
+		})
+
+	agentsGrp.Command("delete-messaging-binding").
+		Description("Delete an agent messaging binding").
+		Args("id", "binding-id").
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			p1 := ctx.Arg(0)
+			p2 := ctx.Arg(1)
+			resp, err := client.DeleteAgentMessagingBindingWithResponse(ctx.Context(), p0, p1, p2)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "deleteAgentMessagingBinding", resp.StatusCode(), resp.Body)
 		})
 
 	agentsGrp.Command("get").
@@ -255,6 +281,23 @@ func registerAgentsCommands(app *cli.App) {
 			return printResponse(ctx, "listAgents", resp.StatusCode(), resp.Body)
 		})
 
+	agentsGrp.Command("list-2").
+		Description("List available models").
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			resp, err := client.ListModelsWithResponse(ctx.Context(), p0)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "listModels", resp.StatusCode(), resp.Body)
+		})
+
 	agentsGrp.Command("list-messages").
 		Description("List conversation session messages").
 		Args("id", "session-id").
@@ -288,12 +331,32 @@ func registerAgentsCommands(app *cli.App) {
 			return printResponse(ctx, "listSessionMessages", resp.StatusCode(), resp.Body)
 		})
 
+	agentsGrp.Command("list-messaging-bindings").
+		Description("List agent messaging bindings").
+		Args("id").
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			p1 := ctx.Arg(0)
+			resp, err := client.ListAgentMessagingBindingsWithResponse(ctx.Context(), p0, p1)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "listAgentMessagingBindings", resp.StatusCode(), resp.Body)
+		})
+
 	agentsGrp.Command("list-sessions").
 		Description("List conversation sessions for an agent").
 		Args("id").
 		Flags(
 			cli.String("status", "").Help("Filter by session status."),
 			cli.String("scope", "").Help("Filter by session scope."),
+			cli.String("provider", "").Help("Filter messaging sessions by provider metadata, e.g. `slack` or `telegram`."),
 			cli.Int("limit", "").Help("limit"),
 		).
 		Use(requireAuth()).
@@ -313,6 +376,10 @@ func registerAgentsCommands(app *cli.App) {
 			if ctx.IsSet("scope") {
 				v := api.SessionScope(ctx.String("scope"))
 				params.Scope = &v
+			}
+			if ctx.IsSet("provider") {
+				v := ctx.String("provider")
+				params.Provider = &v
 			}
 			if ctx.IsSet("limit") {
 				v := api.LimitParam(ctx.Int("limit"))
@@ -514,6 +581,96 @@ func registerAgentsCommands(app *cli.App) {
 			return printResponse(ctx, "replaceToolkits", resp.StatusCode(), resp.Body)
 		})
 
+	agentsGrp.Command("save-agent-messaging-binding").
+		Description("Save an agent messaging binding").
+		Args("id").
+		Flags(
+			cli.Bool("all-messages", "").Help("all-messages"),
+			cli.Strings("channels", "").Help("channels"),
+			cli.String("dm-policy", "").Help("Direct-message access policy for the binding."),
+			cli.Bool("dms", "").Help("dms"),
+			cli.Bool("enabled", "").Help("enabled"),
+			cli.String("integration-id", "").Help("[required] integration-id"),
+			cli.Bool("mentions", "").Help("mentions"),
+			cli.String("model-route", "").Help("Default model route used by built-in messaging and by automation agent steps that do not override t… Accepts JSON, @file, or @-."),
+			cli.String("provider", "").Help("[required] Provider supported by built-in agent messaging."),
+			cli.String("reply-mode", "").Help("Reply mode for built-in messaging."),
+			cli.Strings("sender-allow", "").Help("sender-allow"),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			p1 := ctx.Arg(0)
+			var body api.SaveAgentMessagingBindingJSONRequestBody
+			if err := readJSONBody(ctx, &body); err != nil {
+				return err
+			}
+			if ctx.IsSet("all-messages") {
+				v := ctx.Bool("all-messages")
+				body.AllMessages = &v
+			}
+			if ctx.IsSet("channels") {
+				v := ctx.Strings("channels")
+				body.Channels = &v
+			}
+			if ctx.IsSet("dm-policy") {
+				v := api.AgentMessagingDMPolicy(ctx.String("dm-policy"))
+				body.DmPolicy = &v
+			}
+			if ctx.IsSet("dms") {
+				v := ctx.Bool("dms")
+				body.Dms = &v
+			}
+			if ctx.IsSet("enabled") {
+				v := ctx.Bool("enabled")
+				body.Enabled = &v
+			}
+			if ctx.IsSet("integration-id") {
+				body.IntegrationId = ctx.String("integration-id")
+			}
+			if ctx.IsSet("mentions") {
+				v := ctx.Bool("mentions")
+				body.Mentions = &v
+			}
+			if ctx.IsSet("model-route") {
+				if err := decodeFlagJSON(ctx, "model-route", ctx.String("model-route"), &body.ModelRoute); err != nil {
+					return err
+				}
+			}
+			if ctx.IsSet("provider") {
+				body.Provider = api.AgentMessagingProvider(ctx.String("provider"))
+			}
+			if ctx.IsSet("reply-mode") {
+				v := api.AgentMessagingReplyMode(ctx.String("reply-mode"))
+				body.ReplyMode = &v
+			}
+			if ctx.IsSet("sender-allow") {
+				v := ctx.Strings("sender-allow")
+				body.SenderAllow = &v
+			}
+			if body.IntegrationId == "" {
+				return fmt.Errorf("--integration-id is required (or supply it via --file)")
+			}
+			if body.Provider == "" {
+				return fmt.Errorf("--provider is required (or supply it via --file)")
+			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
+			}
+			resp, err := client.SaveAgentMessagingBindingWithResponse(ctx.Context(), p0, p1, body)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "saveAgentMessagingBinding", resp.StatusCode(), resp.Body)
+		})
+
 	agentsGrp.Command("stream-session-events").
 		Description("Stream live conversation session events").
 		Args("id", "session-id").
@@ -542,7 +699,8 @@ func registerAgentsCommands(app *cli.App) {
 			cli.String("color", "").Help("Replacement display color (Mantine palette key, e.g. `indigo`). Pass empty string to clear and fall…"),
 			cli.String("description", "").Help("Replacement description."),
 			cli.String("kind", "").Help("Replacement freeform agent classification (e.g. `llm`, `rpa`)."),
-			cli.String("model", "").Help("Replacement Anthropic model identifier for platform agents."),
+			cli.String("model", "").Help("Replacement model identifier for platform agents (any id from `GET /v1/projects/{project}/models`, …"),
+			cli.String("model-route", "").Help("Default model route used by built-in messaging and by automation agent steps that do not override t… Accepts JSON, @file, or @-."),
 			cli.String("name", "").Help("Free-form human-readable label, 1-63 characters; must be unique within the project."),
 			cli.String("status", "").Help("Replacement agent status: `active` or `inactive`. Use DELETE to soft-delete."),
 			cli.String("system-prompt", "").Help("Replacement system prompt for platform agents."),
@@ -584,6 +742,11 @@ func registerAgentsCommands(app *cli.App) {
 				v := ctx.String("model")
 				body.Model = &v
 			}
+			if ctx.IsSet("model-route") {
+				if err := decodeFlagJSON(ctx, "model-route", ctx.String("model-route"), &body.ModelRoute); err != nil {
+					return err
+				}
+			}
 			if ctx.IsSet("name") {
 				v := ctx.String("name")
 				body.Name = &v
@@ -602,7 +765,7 @@ func registerAgentsCommands(app *cli.App) {
 				v := api.TagMap(tags)
 				body.Tags = &v
 			}
-			if ctx.String("file") == "" && !ctx.IsSet("capabilities") && !ctx.IsSet("color") && !ctx.IsSet("description") && !ctx.IsSet("kind") && !ctx.IsSet("model") && !ctx.IsSet("name") && !ctx.IsSet("status") && !ctx.IsSet("system-prompt") && !ctx.IsSet("tag") {
+			if ctx.String("file") == "" && !ctx.IsSet("capabilities") && !ctx.IsSet("color") && !ctx.IsSet("description") && !ctx.IsSet("kind") && !ctx.IsSet("model") && !ctx.IsSet("model-route") && !ctx.IsSet("name") && !ctx.IsSet("status") && !ctx.IsSet("system-prompt") && !ctx.IsSet("tag") {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
 			if ctx.Bool("dry-run") {

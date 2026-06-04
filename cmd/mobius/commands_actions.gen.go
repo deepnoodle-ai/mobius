@@ -114,25 +114,6 @@ func registerActionsCommands(app *cli.App) {
 			return printResponse(ctx, "deleteAction", resp.StatusCode(), resp.Body)
 		})
 
-	actionsGrp.Command("get-catalog").
-		Description("Get one catalog action by name").
-		Args("action-name").
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			resp, err := client.GetCatalogActionWithResponse(ctx.Context(), p0, p1)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "getCatalogAction", resp.StatusCode(), resp.Body)
-		})
-
 	actionsGrp.Command("invoke").
 		Description("Invoke an action").
 		Args("action-name").
@@ -175,23 +156,6 @@ func registerActionsCommands(app *cli.App) {
 				return err
 			}
 			return printResponse(ctx, "invokeAction", resp.StatusCode(), resp.Body)
-		})
-
-	actionsGrp.Command("list-catalog").
-		Description("List the action catalog").
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			resp, err := client.ListCatalogActionsWithResponse(ctx.Context(), p0)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "listCatalogActions", resp.StatusCode(), resp.Body)
 		})
 
 	actionsGrp.Command("list-invocations").

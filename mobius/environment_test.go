@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -48,38 +49,20 @@ func TestCreateArtifactRefFromFileWithLeaseSendsHeaderAndJSONTags(t *testing.T) 
 	}
 }
 
-func TestCreateArtifactFromFileSendsSharedVisibilityAndJSONTags(t *testing.T) {
+func TestCreateArtifactRefFromFileWithLeaseRequiresLeaseToken(t *testing.T) {
 	tmp := t.TempDir()
 	path := filepath.Join(tmp, "manual.txt")
 	if err := os.WriteFile(path, []byte("manual bytes"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
-	var got artifactUploadCapture
 	c, _ := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		got = captureArtifactUpload(t, r)
-		if got.leaseToken != "" {
-			t.Fatalf("ordinary upload should not send lease header")
-		}
-		_, _ = w.Write([]byte(`{"id":"art_2","name":"manual.txt","mime_type":"text/plain","size_bytes":12,"sha256":"def456","state":"available","visibility":"shared","created_at":"2026-05-29T00:00:00Z"}`))
+		t.Fatalf("unexpected request without lease: %s %s", r.Method, r.URL.Path)
 	}))
 
-	artifact, err := c.CreateArtifactFromFile(context.Background(), path, "", "text/plain", "run_1", "step_1", map[string]string{"source": "manual"})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if artifact.ID != "art_2" || artifact.MimeType != "text/plain" || artifact.SHA256 != "def456" {
-		t.Fatalf("artifact = %#v", artifact)
-	}
-	if got.fields["run_id"] != "run_1" || got.fields["step_id"] != "step_1" || got.fields["visibility"] != "shared" {
-		t.Fatalf("ordinary upload lineage fields = %#v", got.fields)
-	}
-	var tags map[string]string
-	if err := json.Unmarshal([]byte(got.fields["tags"]), &tags); err != nil {
-		t.Fatalf("tags were not JSON: %q", got.fields["tags"])
-	}
-	if tags["source"] != "manual" {
-		t.Fatalf("tags = %#v", tags)
+	_, err := c.CreateArtifactRefFromFileWithLease(context.Background(), path, "", "text/plain", " ", nil)
+	if err == nil || !strings.Contains(err.Error(), "lease token is required") {
+		t.Fatalf("err = %v, want lease token required", err)
 	}
 }
 

@@ -56,6 +56,28 @@ class ResourceScope(StrEnum):
     owner = 'owner'
 
 
+class CapabilityReadiness(StrEnum):
+    """
+    Whether a catalog capability — an action, an event source, or an integration provider — is usable right now. `ready` means it can be used as-is; `needs_setup` means it is known and supported but blocked by configuration, credentials, permissions, provider runtime availability, or implementation status. This is catalog *readiness*, and is deliberately separate from a resource's lifecycle state (such as integration `status` or artifact lifecycle).
+    """
+
+    ready = 'ready'
+    needs_setup = 'needs_setup'
+
+
+class CapabilityReadinessReason(StrEnum):
+    """
+    Why a capability is `needs_setup`. Present only when readiness is `needs_setup`. `not_configured` — no integration or credential is connected yet. `inactive` — the backing integration is manually disabled. `expired` — the backing credential has expired. `provider_unavailable` — the provider runtime is not currently available. `permission_missing` — the caller lacks permission to use it. `not_implemented` — a placeholder for a capability that is not yet available.
+    """
+
+    not_configured = 'not_configured'
+    inactive = 'inactive'
+    expired = 'expired'
+    provider_unavailable = 'provider_unavailable'
+    permission_missing = 'permission_missing'
+    not_implemented = 'not_implemented'
+
+
 class TagMap(RootModel[dict[str, str]]):
     """
     Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints.
@@ -153,9 +175,20 @@ class FeatureOverrideScope(StrEnum):
     project = 'project'
 
 
+class Kind(StrEnum):
+    """
+    The principal type represented by this user record.
+    """
+
+    human = 'human'
+    agent = 'agent'
+    service_account = 'service_account'
+    system = 'system'
+
+
 class User(BaseModel):
     """
-    Human identity known to the organization. User records are useful for membership lists, role assignment UIs, attribution, and displaying profile information next to actions.
+    User or principal identity known to the organization. User records are useful for membership lists, role assignment UIs, attribution, and displaying profile information next to actions.
     """
 
     model_config = ConfigDict(
@@ -165,6 +198,9 @@ class User(BaseModel):
         ..., description='Clerk user ID. Stable and globally unique across all orgs.'
     )
     email: str = Field(..., description='Primary email address from Clerk.')
+    kind: Kind = Field(
+        ..., description='The principal type represented by this user record.'
+    )
     display_name: str | None = Field(
         None,
         description='Authoritative single-line label for this user, regardless of kind. Humans get "First Last"; agents get the agent name; service accounts get the SA name. Renderers should prefer this over first_name/last_name.',
@@ -189,6 +225,18 @@ class User(BaseModel):
     updated_at: AwareDatetime = Field(
         ..., description='Timestamp when this user record was last synced from Clerk.'
     )
+    deleted_at: AwareDatetime | None = Field(
+        None, description='When this user principal was soft-deleted, if applicable.'
+    )
+
+
+class AgentStatus(StrEnum):
+    """
+    Administrative status. Inactive agents cannot claim new jobs. Soft-deleted agents are represented by `deleted_at` and excluded from normal reads.
+    """
+
+    active = 'active'
+    inactive = 'inactive'
 
 
 class ProjectAccessMode(StrEnum):
@@ -249,13 +297,38 @@ class ProjectListResponse(BaseModel):
     items: list[Project] = Field(..., description='The list of results for this page.')
 
 
-class AgentStatus(StrEnum):
+class AgentModelRouteMode(StrEnum):
     """
-    Administrative status. Inactive agents cannot claim new jobs. Soft-deleted agents are represented by `deleted_at` and excluded from normal reads.
+    Where the agent's default model call should run.
     """
 
-    active = 'active'
-    inactive = 'inactive'
+    managed = 'managed'
+    worker = 'worker'
+    byo_provider = 'byo_provider'
+
+
+class AgentModelRoute(BaseModel):
+    """
+    Default model route used by built-in messaging and by automation agent steps that do not override the route.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    mode: AgentModelRouteMode
+    environment_id: str | None = Field(
+        None, description='Environment to use for worker-backed model calls.'
+    )
+    provider: str | None = Field(None, description='Provider or worker route name.')
+    model: str | None = Field(
+        None, description='Model identifier to use for this route.'
+    )
+    queue: str | None = Field(
+        None, description='Worker queue for customer-worker model calls.'
+    )
+    required_capabilities: list[str] | None = Field(
+        None, description='Worker capabilities required for this route.'
+    )
 
 
 class Agent(BaseModel):
@@ -299,8 +372,9 @@ class Agent(BaseModel):
     )
     model: str | None = Field(
         None,
-        description='Anthropic model identifier for platform agents (e.g. `claude-sonnet-4-6`). Empty string falls back to the platform default.',
+        description='Model identifier for platform agents. Accepts any id returned by `GET /v1/projects/{project}/models`, optionally `provider/`-prefixed (e.g. `xai/grok-4`); bare known ids (e.g. `claude-sonnet-4-6`) are auto-detected to their provider. Empty string falls back to the platform default.',
     )
+    model_route: AgentModelRoute | None = None
     system_prompt: str | None = Field(
         None,
         description='Custom system prompt for platform agents. Empty string uses the generated default based on the agent name.',
@@ -716,7 +790,7 @@ class RotateSecretResult(BaseModel):
     )
     secret_ref: str = Field(
         ...,
-        description='Project secret reference that now stores the rotated signing key.',
+        description='Project secret reference that now stores the action signing key.',
     )
     secret_version: int = Field(..., description='New project-secret version number.')
     signing_secret: str = Field(
@@ -914,7 +988,50 @@ class ActionInvocationListResponse(BaseModel):
     has_more: bool = Field(..., description='Whether additional pages are available.')
 
 
+class Kind1(StrEnum):
+    """
+    `integration` for provider event sources; `capability` for built-in Mobius platform event sources.
+    """
+
+    integration = 'integration'
+    capability = 'capability'
+
+
+class EventCatalogEventType(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    name: str = Field(
+        ...,
+        description='Dotted event-type identifier (`table.row.inserted`, `github.pull_request.opened`).',
+    )
+    description: str | None = None
+
+
+class Kind2(StrEnum):
+    capability = 'capability'
+    utility = 'utility'
+
+
+class EventCatalogReservedPrefix(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    prefix: str
+    kind: Kind2
+
+
 class EnvironmentProvider(StrEnum):
+    sprites = 'sprites'
+    cloudflare_containers = 'cloudflare_containers'
+    worker = 'worker'
+
+
+class ProvisionEnvironmentProvider(StrEnum):
+    """
+    Providers the control plane can provision on demand. Excludes `worker`: worker-provided environments are registered out-of-band via the attach endpoint and are never provisioned through create/acquire.
+    """
+
     sprites = 'sprites'
     cloudflare_containers = 'cloudflare_containers'
 
@@ -1093,7 +1210,7 @@ class CreateEnvironmentRequest(BaseModel):
     )
     name: str | None = None
     scope: ResourceScope | None = None
-    provider: EnvironmentProvider | None = None
+    provider: ProvisionEnvironmentProvider | None = None
     environment_mode: EnvironmentMode | None = None
     purpose: EnvironmentPurpose | None = None
     owned_by: str | None = Field(
@@ -1108,6 +1225,22 @@ class CreateEnvironmentRequest(BaseModel):
     spec: dict[str, Any] | None = None
     tags: TagMap | None = None
     retention_policy: EnvironmentRetentionPolicy | None = None
+
+
+class AttachWorkerEnvironmentRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    name: str = Field(
+        ..., description='Stable per-workspace environment name; the idempotency key.'
+    )
+    environment_mode: EnvironmentMode | None = None
+    bound_to_type: EnvironmentBoundToType | None = None
+    bound_to_id: str | None = None
+    workspace_path: str | None = Field(
+        None, description='Worker-host path backing the environment (informational).'
+    )
+    tags: TagMap | None = None
 
 
 class UpdateEnvironmentRequest(BaseModel):
@@ -1133,7 +1266,7 @@ class AcquireEnvironmentRequest(BaseModel):
     )
     name: str | None = None
     scope: ResourceScope | None = None
-    provider: EnvironmentProvider | None = None
+    provider: ProvisionEnvironmentProvider | None = None
     environment_mode: EnvironmentMode | None = None
     purpose: EnvironmentPurpose | None = None
     holder_type: EnvironmentBoundToType | None = None
@@ -1585,7 +1718,7 @@ class WorkerSocketJobsClaimFrame(BaseModel):
     models: list[WorkerSocketModelCapability] | None = None
 
 
-class Kind(StrEnum):
+class Kind3(StrEnum):
     action_execution = 'action_execution'
     llm_generation = 'llm_generation'
 
@@ -1609,7 +1742,7 @@ class WorkerSocketClaimedJob(BaseModel):
         extra='forbid',
     )
     id: str = Field(..., description='Job ID.')
-    kind: Kind
+    kind: Kind3
     origin: Origin
     executor_kind: ExecutorKind
     queue: str
@@ -2296,7 +2429,7 @@ class PermissionCatalogResponse(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    permissions: list[PermissionDefinition] = Field(..., max_length=64)
+    items: list[PermissionDefinition] = Field(..., max_length=64)
     presets: list[PermissionPreset] = Field(..., max_length=32)
     action_groups: list[ActionPermissionGroup] = Field(..., max_length=64)
 
@@ -2477,7 +2610,7 @@ class InteractionResponder(BaseModel):
     user_id: str = Field(..., description='Responder user ID.')
 
 
-class Kind1(StrEnum):
+class Kind4(StrEnum):
     external_url = 'external_url'
     mobius_entity = 'mobius_entity'
 
@@ -2490,7 +2623,7 @@ class InteractionReference(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    kind: Kind1
+    kind: Kind4
     url: AnyUrl | None = Field(
         None, description='Required when kind is `external_url`.'
     )
@@ -2509,7 +2642,7 @@ class InteractionReference(BaseModel):
     label: str | None = Field(None, description='User-facing label for display.')
 
 
-class Kind2(StrEnum):
+class Kind5(StrEnum):
     inbox_only = 'inbox_only'
     email = 'email'
 
@@ -2521,7 +2654,7 @@ class EmailDelivery(BaseModel):
     to: list[EmailStr] = Field(..., min_length=1)
 
 
-class Kind3(StrEnum):
+class Kind6(StrEnum):
     run = 'run'
     agent_tool = 'agent_tool'
     http_subscriber = 'http_subscriber'
@@ -2685,6 +2818,120 @@ class CancelInteractionRequest(BaseModel):
     )
 
 
+class Source2(StrEnum):
+    """
+    Where credentials come from — a project integration (`byok`) or a platform-managed key (`platform`).
+    """
+
+    byok = 'byok'
+    platform = 'platform'
+
+
+class ModelOption(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str = Field(
+        ..., description="Bare model id assigned to an agent's `model` field."
+    )
+    provider: str = Field(
+        ..., description='Canonical provider id this model belongs to.'
+    )
+    label: str = Field(..., description='Human-readable model label for UI.')
+    description: str | None = Field(
+        None, description='Short guidance about when to use this model.'
+    )
+    recommended: bool | None = Field(
+        None, description='Whether this is the suggested default for its provider.'
+    )
+
+
+class AgentMessagingDMPolicy(StrEnum):
+    """
+    Direct-message access policy for the binding.
+    """
+
+    open = 'open'
+    allowlist = 'allowlist'
+    disabled = 'disabled'
+
+
+class AgentMessagingReplyMode(StrEnum):
+    """
+    Reply mode for built-in messaging.
+    """
+
+    auto = 'auto'
+
+
+class AgentMessagingProvider(StrEnum):
+    """
+    Provider supported by built-in agent messaging.
+    """
+
+    slack = 'slack'
+    telegram = 'telegram'
+
+
+class AgentMessagingBinding(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str = Field(..., description='Messaging binding identifier.')
+    agent_id: str = Field(..., description='Agent this binding belongs to.')
+    provider: AgentMessagingProvider
+    integration_id: str = Field(
+        ..., description='Connected integration account this binding applies to.'
+    )
+    enabled: bool = Field(
+        ..., description='Whether the agent can currently answer on this account.'
+    )
+    dms: bool = Field(..., description='Whether direct messages are accepted.')
+    mentions: bool = Field(
+        ..., description='Whether channel/group mentions activate the agent.'
+    )
+    all_messages: bool = Field(
+        ...,
+        description='Whether every message in the allowed conversations activates the agent.',
+    )
+    channels: list[str] = Field(
+        ...,
+        description='Optional provider conversation allowlist. Empty means any conversation on the integration.',
+    )
+    dm_policy: AgentMessagingDMPolicy
+    sender_allow: list[str] = Field(
+        ..., description='Optional provider sender allowlist. Empty means any sender.'
+    )
+    reply_mode: AgentMessagingReplyMode
+    model_route: AgentModelRoute | None = None
+    created_at: AwareDatetime
+    updated_at: AwareDatetime
+
+
+class AgentMessagingBindingRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    provider: AgentMessagingProvider
+    integration_id: str
+    enabled: bool = False
+    dms: bool = True
+    mentions: bool = True
+    all_messages: bool = False
+    channels: list[str] | None = None
+    dm_policy: AgentMessagingDMPolicy | None = None
+    sender_allow: list[str] | None = None
+    reply_mode: AgentMessagingReplyMode | None = None
+    model_route: AgentModelRoute | None = None
+
+
+class AgentMessagingBindingListResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    items: list[AgentMessagingBinding]
+
+
 class SessionStatus(StrEnum):
     """
     Durable conversation session status.
@@ -2703,6 +2950,7 @@ class SessionOrigin(StrEnum):
     interaction = 'interaction'
     manual = 'manual'
     api = 'api'
+    automation = 'automation'
 
 
 class SessionScope(StrEnum):
@@ -2711,6 +2959,7 @@ class SessionScope(StrEnum):
     """
 
     agent = 'agent'
+    automation = 'automation'
 
 
 class SessionVisibility(StrEnum):
@@ -2734,6 +2983,15 @@ class SessionMessageRole(StrEnum):
     compaction = 'compaction'
 
 
+class SessionMessageEntryType(StrEnum):
+    """
+    Row type for a persisted transcript entry.
+    """
+
+    message = 'message'
+    compaction = 'compaction'
+
+
 class Session(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
@@ -2749,7 +3007,14 @@ class Session(BaseModel):
         ...,
         description='Identifier of the resource the session is scoped to (e.g. the agent for agent-scoped sessions).',
     )
-    scope_name: str = Field(..., description='Resolved name of the scope reference.')
+    scope_name: str = Field(
+        ...,
+        description='Caller-assigned name identifying this conversation within its scope (`scope` + `scope_ref_id`); reused as the session routing key.',
+    )
+    session_key: str = Field(
+        ...,
+        description='Stable session routing key used to look up a scoped conversation (mirrors `scope_name`).',
+    )
     visibility: SessionVisibility
     model: str | None = Field(
         None, description='Model the session most recently exchanged tokens with.'
@@ -2816,6 +3081,7 @@ class SessionMessage(BaseModel):
         None,
         description='Structured content blocks (text, tool calls, tool results, etc.) for multimodal messages.',
     )
+    entry_type: SessionMessageEntryType
     covers_through_sequence: int | None = Field(
         None,
         description='For `compaction` messages, the highest sequence number this summary covers.',
@@ -2884,7 +3150,7 @@ class ToolkitActionGrant(BaseModel):
     )
 
 
-class Source2(StrEnum):
+class Source3(StrEnum):
     """
     Provenance of this toolkit. `system` toolkits are built-in; `project` toolkits are user-authored.
     """
@@ -2916,7 +3182,7 @@ class Toolkit(BaseModel):
     description: str | None = Field(
         None, description="Markdown description of the toolkit's purpose."
     )
-    source: Source2 = Field(
+    source: Source3 = Field(
         ...,
         description='Provenance of this toolkit. `system` toolkits are built-in; `project` toolkits are user-authored.',
     )
@@ -3053,7 +3319,7 @@ class AgentTableGrantListResponse(BaseModel):
     )
 
 
-class Source3(StrEnum):
+class Source4(StrEnum):
     """
     Provenance of this skill. `system` is built-in; `project` is user-authored; `imported` came from an external bundle.
     """
@@ -3086,7 +3352,7 @@ class Skill(BaseModel):
     description: str | None = Field(
         None, description="Markdown description of the skill's purpose."
     )
-    source: Source3 = Field(
+    source: Source4 = Field(
         ...,
         description='Provenance of this skill. `system` is built-in; `project` is user-authored; `imported` came from an external bundle.',
     )
@@ -3329,8 +3595,9 @@ class CreateAgentRequest(BaseModel):
     )
     model: str | None = Field(
         None,
-        description='Anthropic model identifier for platform agents (e.g. `claude-sonnet-4-6`). Empty falls back to the platform default.',
+        description='Model identifier for platform agents. Any id from `GET /v1/projects/{project}/models`, optionally `provider/`-prefixed (e.g. `xai/grok-4`); bare known ids (e.g. `claude-sonnet-4-6`) are auto-detected. Empty falls back to the platform default.',
     )
+    model_route: AgentModelRoute | None = None
     system_prompt: str | None = Field(
         None,
         description='Custom system prompt for platform agents. Empty uses the generated default.',
@@ -3377,8 +3644,10 @@ class UpdateAgentRequest(BaseModel):
         None, description='Replacement capability map.'
     )
     model: str | None = Field(
-        None, description='Replacement Anthropic model identifier for platform agents.'
+        None,
+        description='Replacement model identifier for platform agents (any id from `GET /v1/projects/{project}/models`, optionally `provider/`-prefixed).',
     )
+    model_route: AgentModelRoute | None = None
     system_prompt: str | None = Field(
         None, description='Replacement system prompt for platform agents.'
     )
@@ -3491,6 +3760,35 @@ class Concurrency(StrEnum):
     replace = 'replace'
 
 
+class Provider(StrEnum):
+    """
+    Repository provider. GitHub is the only supported provider today.
+    """
+
+    github = 'github'
+
+
+class AutomationSpecRepository(BaseModel):
+    """
+    Source repository target attached to an automation spec.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    provider: Provider = Field(
+        'github',
+        description='Repository provider. GitHub is the only supported provider today.',
+    )
+    id: int | str | None = Field(None, description='Provider-specific repository id.')
+    full_name: str = Field(
+        ..., description='Provider repository full name, e.g. `owner/repo`.'
+    )
+    private: bool | None = Field(
+        None, description='Whether the provider reports this repository as private.'
+    )
+
+
 class AutomationSpecInput(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
@@ -3501,10 +3799,11 @@ class AutomationSpecInput(BaseModel):
     default: Any | None = None
 
 
-class Kind4(StrEnum):
-    webhook = 'webhook'
+class Kind7(StrEnum):
+    http = 'http'
     schedule = 'schedule'
     event = 'event'
+    manual = 'manual'
 
 
 class ConcurrencyPolicy(StrEnum):
@@ -3522,7 +3821,7 @@ class AutomationSpecTrigger(BaseModel):
         None, description='Stable user-authored trigger key within the spec.'
     )
     name: str | None = Field(None, description='Human-readable trigger name.')
-    kind: Kind4
+    kind: Kind7
     enabled: bool | None = None
     config: dict[str, Any] | None = Field(
         None, description='Kind-specific trigger configuration.'
@@ -3531,12 +3830,13 @@ class AutomationSpecTrigger(BaseModel):
     max_concurrent_runs: int | None = Field(None, ge=1)
 
 
-class Kind5(StrEnum):
+class Kind8(StrEnum):
     agent = 'agent'
     action = 'action'
     sleep = 'sleep'
     wait_for_event = 'wait_for_event'
     interaction = 'interaction'
+    automation = 'automation'
 
 
 class AutomationEnvironmentPolicy(BaseModel):
@@ -3567,6 +3867,84 @@ class AutomationEnvironmentPolicy(BaseModel):
         description='Whether Mobius should start the managed worker automatically.',
     )
     retention_policy: EnvironmentRetentionPolicy | None = None
+
+
+class Scope2(StrEnum):
+    """
+    Named-session boundary. `auto` and omitted use `automation`. `agent` intentionally shares the named session across automations using the same agent.
+    """
+
+    auto = 'auto'
+    automation = 'automation'
+    agent = 'agent'
+
+
+class Strategy(StrEnum):
+    """
+    Compaction strategy. `auto` compacts when the token threshold is exceeded.
+    """
+
+    auto = 'auto'
+    manual = 'manual'
+    disabled = 'disabled'
+    none = 'none'
+
+
+class CompactionPolicy(BaseModel):
+    """
+    Optional per-session compaction policy merged with server defaults when the session is first created. Existing sessions keep their current compaction policy unless edited through a session-specific operation.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    strategy: Strategy | None = Field(
+        None,
+        description='Compaction strategy. `auto` compacts when the token threshold is exceeded.',
+    )
+    threshold_tokens: int | None = Field(
+        None, description='Token threshold that triggers automatic compaction.', ge=1
+    )
+    summary_model: str | None = Field(
+        None, description='Model used to produce compaction summaries.'
+    )
+
+
+class AutomationAgentSessionPolicy(BaseModel):
+    """
+    Durable conversation-session policy for automation agent steps. Omit to enable the product default: automation-scoped sessions keyed from the triggering conversation when Mobius can identify one, such as a Telegram chat ID.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    disabled: bool | None = Field(
+        None,
+        description='Disable durable session context and transcript writes for the affected agent step(s).',
+    )
+    scope: Scope2 | None = Field(
+        None,
+        description='Named-session boundary. `auto` and omitted use `automation`. `agent` intentionally shares the named session across automations using the same agent.',
+    )
+    name: str | None = Field(
+        None,
+        description='Optional Go-template string rendered against `inputs`, `context`, `agent`, `automation`, `run`, `source`, and `step`. When omitted, Mobius derives a stable name from the event payload, falling back to the trigger or `default`.',
+    )
+    title: str | None = Field(
+        None, description='Optional Go-template string for the session display title.'
+    )
+    visibility: SessionVisibility | None = None
+    compaction_policy: CompactionPolicy | None = Field(
+        None,
+        description='Optional per-session compaction policy merged with server defaults when the session is first created. Existing sessions keep their current compaction policy unless edited through a session-specific operation.',
+        examples=[
+            {
+                'strategy': 'auto',
+                'threshold_tokens': 8000,
+                'summary_model': 'claude-haiku-4-5-20251001',
+            }
+        ],
+    )
 
 
 class Mode(StrEnum):
@@ -3652,6 +4030,34 @@ class AutomationWaitForEventStep(BaseModel):
     event_type: str
     source_id: str | None = None
     match: dict[str, Any] | None = None
+    condition: str | None = Field(
+        None, description='Optional expr predicate evaluated against `{ event, meta }`.'
+    )
+    payload_mapping: dict[str, str] | None = Field(
+        None, description='Optional output mapping evaluated against `{ event, meta }`.'
+    )
+
+
+class AutomationSubAutomationStep(BaseModel):
+    """
+    Automation-trigger step configuration recognised inside `AutomationSpec.steps[].config`. Triggers another automation in the same project as an independent child run (fire-and-forget). The child run records `parent_run_id`, `parent_automation_id`, and `parent_step_key` so the lineage is visible from the child.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    automation_handle: str = Field(
+        ...,
+        description='Stable handle of the automation to trigger, scoped to the same project as the parent automation.',
+    )
+    inputs: dict[str, Any] | None = Field(
+        None,
+        description="Input map handed to the child run. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions resolved against the parent run. When omitted the parent step's resolved input map is forwarded.",
+    )
+    condition: str | None = Field(
+        None,
+        description='Optional expr predicate evaluated against the `{ inputs, context }` envelope of the parent run before the child is triggered. It must evaluate to a bool; a false result skips the step and starts no child run. Same predicate language as `wait_for_event` and event trigger conditions.',
+    )
 
 
 class Protocol(StrEnum):
@@ -3719,13 +4125,13 @@ class AutomationTrigger(BaseModel):
     project_id: str = Field(..., description='Project that owns this trigger.')
     automation_id: str = Field(..., description='Automation this trigger belongs to.')
     name: str = Field(..., description='Human-readable trigger name.')
-    kind: str = Field(..., description='One of: webhook, schedule, event.')
+    kind: str = Field(..., description='One of: http, schedule, event.')
     enabled: bool = Field(
         ..., description='Whether the trigger is currently allowed to start runs.'
     )
     config: dict[str, Any] | None = Field(
         None,
-        description='Kind-specific configuration (schedule cron, event matcher, webhook options).',
+        description='Kind-specific configuration (schedule cron, event matcher, HTTP-trigger options).',
     )
     concurrency_policy: ConcurrencyPolicy1 = Field(
         ...,
@@ -3734,13 +4140,13 @@ class AutomationTrigger(BaseModel):
     max_concurrent_runs: int = Field(
         ..., description='Cap on concurrent runs allowed from this trigger.', ge=1
     )
-    webhook_handle: str | None = Field(
+    http_handle: str | None = Field(
         None,
-        description='Public, project-scoped handle exposed in the webhook delivery URL. Set only for webhook-kind triggers.',
+        description='Public, project-scoped handle exposed in the HTTP-trigger delivery URL. Set only for http-kind triggers.',
     )
-    signing_secret: str | None = Field(
+    signing_secret_set: bool | None = Field(
         None,
-        description='HMAC secret used to verify inbound webhook signatures. Set only for webhook-kind triggers.',
+        description='Whether an HMAC signing secret is configured on this HTTP trigger. The secret value itself is never returned — rotate it via the signing-secret endpoint to reveal a new value once. Set only for http-kind triggers.',
     )
     event_type: str | None = Field(
         None,
@@ -3748,6 +4154,10 @@ class AutomationTrigger(BaseModel):
     )
     source_id: str | None = Field(
         None, description='Optional source identifier used to scope event matching.'
+    )
+    condition: str | None = Field(
+        None,
+        description='Optional expr predicate evaluated against the public `{ event, meta }` envelope; the trigger fires only when it passes. Set only for event-kind triggers.',
     )
     last_fire_at: AwareDatetime | None = Field(
         None, description='Timestamp of the most recent fire.'
@@ -3773,9 +4183,9 @@ class Status8(StrEnum):
     failed = 'failed'
 
 
-class WebhookDeliveryResponse(BaseModel):
+class HTTPTriggerDeliveryResponse(BaseModel):
     """
-    Synchronous receipt for an inbound webhook delivery. The trigger dispatch and run start happen asynchronously after this response — the `fire_id` is the durable `source_event_id` that clients can poll via `GET /v1/projects/{project}/runs?source_event_id=<fire_id>` to discover the run once the source-event processor reserves it.
+    Synchronous receipt for an inbound HTTP-trigger delivery. The trigger dispatch and run start happen asynchronously after this response — the `fire_id` is the durable `source_event_id` that clients can poll via `GET /v1/projects/{project}/runs?source_event_id=<fire_id>` to discover the run once the source-event processor reserves it.
     """
 
     model_config = ConfigDict(
@@ -3966,7 +4376,7 @@ class AutomationRunEvent(BaseModel):
     )
     event_type: str = Field(
         ...,
-        description='Event type from the run-stream taxonomy (e.g. `run.started`, `step.completed`, `wait.opened`, `interaction.requested`, `action.completed`, `artifact.created`, `limit.reached`, `usage.recorded`).',
+        description='Event type from the run-stream taxonomy (e.g. `run.started`, `step.completed`, `wait.opened`, `interaction.requested`, `interaction.responded`, `action.called`, `action.completed`, `action.failed`, `artifact.created`, `limit.reached`, `usage.recorded`).',
     )
     step_id: str | None = Field(
         None, description='ID of the step this event belongs to, when applicable.'
@@ -4044,8 +4454,8 @@ class ServiceAccount(BaseModel):
     owner_id: str | None = Field(
         None, description='Optional org member responsible for this service account.'
     )
-    user_id: str | None = Field(
-        None,
+    user_id: str = Field(
+        ...,
         description="Linked User record. For agent-backed service accounts this is the agent's User (kind: agent); for standalone service accounts this is a dedicated User (kind: service_account). Immutable once set.",
     )
     role_ids: list[str] | None = Field(
@@ -4329,7 +4739,7 @@ class QueryRowsResponse(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    rows: list[TableRow]
+    items: list[TableRow]
     has_more: bool
     limit: int | None = None
     next_cursor: str | None = None
@@ -4354,7 +4764,7 @@ class SearchRowsResponse(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    rows: list[TableRow]
+    items: list[TableRow]
     has_more: bool
     limit: int | None = None
     next_cursor: str | None = None
@@ -4372,7 +4782,7 @@ class BulkInsertRowsResponse(BaseModel):
         extra='forbid',
     )
     inserted: int
-    rows: list[TableRow]
+    items: list[TableRow]
 
 
 class UpsertRowRequest(BaseModel):
@@ -4435,10 +4845,14 @@ class Artifact(BaseModel):
         description='User-keyed private artifact-space owner. Empty for project-shared artifacts.',
     )
     visibility: ArtifactVisibility
-    run_id: str | None = None
-    step_id: str | None = None
-    job_id: str | None = None
-    attempt: int | None = None
+    run_id: str | None = Field(
+        None,
+        description='Automation run that produced this artifact, derived from the active worker lease.',
+    )
+    step_id: str | None = Field(
+        None,
+        description='Automation step that produced this artifact, derived from the active worker lease.',
+    )
     name: str = Field(
         ...,
         description='Display name or relative virtual path. Forward slash may be used to organize artifacts inside private or shared project space.',
@@ -4447,9 +4861,6 @@ class Artifact(BaseModel):
     size_bytes: int
     sha256: str | None = None
     storage: ArtifactStorageBackend
-    storage_uri: str | None = None
-    integration_id: str | None = None
-    metadata: dict[str, Any] | None = None
     tags: dict[str, str] | None = None
     state: ArtifactState
     created_at: AwareDatetime
@@ -4464,7 +4875,6 @@ class Artifact(BaseModel):
     )
     committed_at: AwareDatetime | None = None
     expires_at: AwareDatetime | None = None
-    pinned: bool | None = None
     deleted_at: AwareDatetime | None = None
 
 
@@ -4499,37 +4909,13 @@ class CreateArtifactRequest(BaseModel):
         description='Optional declared file size. When supplied, Mobius verifies the streamed byte count exactly matches this value.',
         ge=0,
     )
-    run_id: str | None = None
-    step_id: str | None = None
     tags: dict[str, str] | None = None
     retain_for_seconds: int | None = Field(
         None,
-        description='Override the project default TTL for this artifact only.',
+        description='Set an artifact-specific expiry relative to upload time. Omit to keep the artifact indefinitely unless project settings configure a default TTL.',
         ge=0,
     )
     retain_until: AwareDatetime | None = None
-    pinned: bool = False
-    visibility: ArtifactVisibility | None = None
-
-
-class Encoding(StrEnum):
-    text = 'text'
-    base64 = 'base64'
-
-
-class UpdateArtifactContentRequest(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    content: str = Field(
-        ...,
-        description='Replacement artifact content. Interpreted as UTF-8 text unless `encoding` is `base64`.',
-    )
-    encoding: Encoding = 'text'
-    mime_type: str | None = Field(
-        None,
-        description="Optional MIME type override. Defaults to the artifact's current MIME type.",
-    )
 
 
 class Method(StrEnum):
@@ -4543,26 +4929,6 @@ class ArtifactSignedUrl(BaseModel):
     url: str
     method: Method
     expires_at: AwareDatetime
-
-
-class ArtifactStorageSettings(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    backend: ArtifactStorageBackend | None = None
-    integration_id: str | None = None
-    default_ttl: str | None = Field(
-        None,
-        description='Default artifact retention duration as a Go duration string.',
-        examples=['720h'],
-    )
-    max_artifact_size: int | None = Field(None, ge=0)
-    inline_threshold: int | None = Field(None, ge=0)
-    pending_upload_cap: int | None = Field(None, ge=0)
-
-
-class ArtifactStorageSettingsUpdate(RootModel[ArtifactStorageSettings]):
-    root: ArtifactStorageSettings
 
 
 class ArtifactQuotaUsage(BaseModel):
@@ -4607,9 +4973,13 @@ class ActionCatalogEntry(BaseModel):
         ...,
         description='Origin of this action: "platform" for built-in or integration-backed actions provided by Mobius, "custom" for project-owned HTTP endpoints registered as actions. The `integration` field carries the provider slug for integration-backed platform actions.',
     )
-    available: bool = Field(
+    readiness: CapabilityReadiness = Field(
         ...,
-        description='Whether this action can currently be invoked. False if the required integration is not connected, the action is a placeholder for a not-yet-implemented capability, or the caller lacks permission.',
+        description='Whether this action can be called right now. `needs_setup` when the required integration is not connected, the caller lacks permission, or the action is a placeholder for a not-yet-implemented capability.',
+    )
+    readiness_reason: CapabilityReadinessReason | None = Field(
+        None,
+        description='Why the action is `needs_setup`. Omitted when `readiness` is `ready`.',
     )
     risk: Risk = Field(
         ...,
@@ -4646,6 +5016,35 @@ class ActionCatalogListResponse(BaseModel):
     items: list[ActionCatalogEntry] = Field(
         ..., description='The full list of catalog entries.'
     )
+
+
+class EventCatalogSource(BaseModel):
+    """
+    One event source rooted at a top-level dotted prefix. Integration sources are open-set (any `<prefix>.<resource>.<event>` matches); `event_types` lists the currently-active, documented members.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    prefix: str = Field(
+        ...,
+        description='Top-level dotted segment that names the source (`table`, `github`).',
+    )
+    kind: Kind1 = Field(
+        ...,
+        description='`integration` for provider event sources; `capability` for built-in Mobius platform event sources.',
+    )
+    display_name: str
+    description: str | None = None
+    readiness: CapabilityReadiness = Field(
+        ...,
+        description='Whether this source can start an automation now. `capability` sources are always `ready`. `integration` sources are `ready` only when the project has an active, usable connection for the provider.',
+    )
+    readiness_reason: CapabilityReadinessReason | None = Field(
+        None,
+        description='Why an `integration` source is `needs_setup`. Omitted when `readiness` is `ready` and for `capability` sources.',
+    )
+    event_types: list[EventCatalogEventType]
 
 
 class WorkerSession(BaseModel):
@@ -4812,7 +5211,7 @@ class DeliveryChannel(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    kind: Kind2
+    kind: Kind5
     email: EmailDelivery | None = None
 
 
@@ -4824,10 +5223,26 @@ class Consumer(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    kind: Kind3
+    kind: Kind6
     run: RunConsumer | None = None
     agent_tool: AgentToolConsumer | None = None
     http_subscriber: HttpSubscriberConsumer | None = None
+
+
+class ModelProviderGroup(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    provider: str = Field(
+        ...,
+        description='Canonical provider id (`anthropic`, `openai`, `gemini`, `xai`).',
+    )
+    display_name: str = Field(..., description='Human-readable provider label.')
+    source: Source2 = Field(
+        ...,
+        description='Where credentials come from — a project integration (`byok`) or a platform-managed key (`platform`).',
+    )
+    models: list[ModelOption]
 
 
 class AppendSessionMessagesRequest(BaseModel):
@@ -4974,6 +5389,7 @@ class AutomationSpecDefaults(BaseModel):
         description='Run wall-clock budget as a Go duration string (e.g. `30m`, `2h`, `90s`). When set, the engine stamps `wall_clock_deadline_at = run.started_at + wall_clock_timeout` and the reaper fails the run after that instant even if a step executor is still grinding. Omit or set to `0` to disable the guard.',
     )
     environment: AutomationEnvironmentPolicy | None = None
+    agent_session: AutomationAgentSessionPolicy | None = None
 
 
 class AutomationAgentStep(BaseModel):
@@ -4991,6 +5407,7 @@ class AutomationAgentStep(BaseModel):
     max_turns: int | None = Field(None, ge=1)
     model_route: AutomationModelRoute | None = None
     memory_tables: list[AutomationAgentMemoryTableRef] | None = None
+    session: AutomationAgentSessionPolicy | None = None
 
 
 class StartAutomationRunRequest(BaseModel):
@@ -5003,7 +5420,7 @@ class StartAutomationRunRequest(BaseModel):
     )
     inputs: dict[str, Any] | None = Field(
         None,
-        description='Free-form input map passed to the run. Available to steps via `{{ inputs.<key> }}` templates.',
+        description='Free-form input map passed to the run. Available to steps via `{{ .inputs.<key> }}` Go text/template actions.',
     )
     source: AutomationRunSource | None = None
     external_id: str | None = Field(
@@ -5024,6 +5441,9 @@ class AutomationRun(BaseModel):
     org_id: str = Field(..., description='Organization that owns this run.')
     project_id: str = Field(..., description='Project that owns this run.')
     automation_id: str = Field(..., description='Automation this run belongs to.')
+    automation_name: str | None = Field(
+        None, description='Human-readable name of the automation this run belongs to.'
+    )
     automation_version_id: str = Field(
         ..., description='AutomationVersion record this run is executing.'
     )
@@ -5041,6 +5461,18 @@ class AutomationRun(BaseModel):
         description='Final result payload returned by the automation. Absent until the run terminates successfully.',
     )
     source: AutomationRunSource | None = None
+    parent_run_id: str | None = Field(
+        None,
+        description='Run that triggered this run via an `automation` step. Present only on child runs; absent for top-level runs.',
+    )
+    parent_automation_id: str | None = Field(
+        None,
+        description='Automation that triggered this run via an `automation` step. Present only on child runs.',
+    )
+    parent_step_key: str | None = Field(
+        None,
+        description="Step key within the parent run's automation that triggered this run. Present only on child runs.",
+    )
     error_message: str | None = Field(
         None, description='Human-readable failure summary; populated on `failed` runs.'
     )
@@ -5049,6 +5481,9 @@ class AutomationRun(BaseModel):
     )
     wake_at: AwareDatetime | None = Field(
         None, description='Scheduled wake time for a suspended run.'
+    )
+    wall_clock_deadline_at: AwareDatetime | None = Field(
+        None, description='Deadline after which the automation reaper fails the run.'
     )
     started_at: AwareDatetime | None = Field(
         None, description='Time the engine moved the run to `running`.'
@@ -5073,6 +5508,21 @@ class AutomationRunListResponse(BaseModel):
     )
     has_more: bool | None = Field(
         None, description='True when more items exist after this page.'
+    )
+
+
+class EventCatalogResponse(BaseModel):
+    """
+    The triggerable event catalog available to a project.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    items: list[EventCatalogSource]
+    reserved_prefixes: list[EventCatalogReservedPrefix] = Field(
+        ...,
+        description='Platform namespaces that are recognized but are not triggerable event sources. Authoring UIs use these to distinguish a recognized-but-unsupported matcher prefix from a wholly unknown one.',
     )
 
 
@@ -5345,23 +5795,41 @@ class CreateRunBackedInteractionRequest(BaseModel):
     )
 
 
+class ProjectModelsResponse(BaseModel):
+    """
+    Models a platform agent can be assigned in this project, grouped by available provider.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    default_model: str = Field(
+        ..., description='Model id assigned when an agent specifies no model.'
+    )
+    items: list[ModelProviderGroup] = Field(
+        ...,
+        description='Available providers in display order. Providers with no configured credentials are omitted.',
+    )
+
+
 class AutomationStep(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
     key: str = Field(..., description='Stable step key within the spec.')
     name: str | None = Field(None, description='Human-readable step name.')
-    kind: Kind5
+    kind: Kind8
     config: (
         AutomationAgentStep
         | AutomationActionStep
         | AutomationSleepStep
         | AutomationWaitForEventStep
         | AutomationInteractionStep
+        | AutomationSubAutomationStep
     ) = Field(..., description='Kind-specific step configuration.')
     input: dict[str, Any] | None = Field(
         None,
-        description='Step-local input object resolved when the step starts. String leaves may contain `{{ inputs.* }}` or `{{ context.* }}` templates.',
+        description='Step-local input object resolved when the step starts. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions.',
     )
     retry: AutomationRetryPolicy | None = None
     timeout: AutomationTimeoutPolicy | None = None
@@ -5404,6 +5872,10 @@ class AutomationSpec(BaseModel):
     )
     triggers: list[AutomationSpecTrigger] | None = Field(
         None, description='Desired triggers materialized when a version is published.'
+    )
+    repositories: list[AutomationSpecRepository] | None = Field(
+        None,
+        description='Source repositories the automation targets. When a shared managed environment is selected, the runtime prepares these repositories before user-authored steps run.',
     )
     steps: list[AutomationStep]
     cleanup: list[dict[str, Any]] | None = None

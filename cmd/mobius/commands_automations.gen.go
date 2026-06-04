@@ -191,11 +191,12 @@ func registerAutomationsCommands(app *cli.App) {
 			return printResponse(ctx, "deleteAutomation", resp.StatusCode(), resp.Body)
 		})
 
-	automationsGrp.Command("deliver-webhook-trigger").
-		Description("Deliver a webhook payload to a trigger").
-		Args("webhook-handle").
+	automationsGrp.Command("deliver-http-trigger").
+		Description("Deliver an HTTP request payload to a trigger").
+		Args("http-handle").
 		Flags(
-			cli.String("idempotency-key", "").Help("Optional idempotency key (also accepted via X-Idempotency-Key header)."),
+			cli.String("idempotency-key", "").Help("Optional idempotency key (also accepted via the X-Idempotency-Key header)."),
+			cli.String("x-idempotency-key", "").Help("x-idempotency-key"),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -207,12 +208,16 @@ func registerAutomationsCommands(app *cli.App) {
 			}
 			client := mc.RawClient()
 			p0 := ctx.Arg(0)
-			params := &api.DeliverWebhookTriggerParams{}
+			params := &api.DeliverHTTPTriggerParams{}
 			if ctx.IsSet("idempotency-key") {
 				v := ctx.String("idempotency-key")
 				params.IdempotencyKey = &v
 			}
-			var body api.DeliverWebhookTriggerJSONRequestBody
+			if ctx.IsSet("x-idempotency-key") {
+				v := ctx.String("x-idempotency-key")
+				params.XIdempotencyKey = &v
+			}
+			var body api.DeliverHTTPTriggerJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
 			}
@@ -222,11 +227,11 @@ func registerAutomationsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.DeliverWebhookTriggerWithResponse(ctx.Context(), p0, params, body)
+			resp, err := client.DeliverHTTPTriggerWithResponse(ctx.Context(), p0, params, body)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, "deliverWebhookTrigger", resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "deliverHTTPTrigger", resp.StatusCode(), resp.Body)
 		})
 
 	automationsGrp.Command("get").
@@ -270,7 +275,7 @@ func registerAutomationsCommands(app *cli.App) {
 	automationsGrp.Command("list").
 		Description("List automations in a project").
 		Flags(
-			cli.String("status", "").Help("Filter by lifecycle status."),
+			cli.String("status", "").Help("Filter by lifecycle status. Omit to return all non-archived automations (the default). Pass a singl…"),
 			cli.String("cursor", "").Help("Opaque pagination cursor from a prior response."),
 			cli.Int("limit", "").Help("Maximum number of items to return."),
 		).
@@ -284,7 +289,7 @@ func registerAutomationsCommands(app *cli.App) {
 			p0 := authFor(ctx).Project
 			params := &api.ListAutomationsParams{}
 			if ctx.IsSet("status") {
-				v := api.AutomationStatus(ctx.String("status"))
+				v := api.ListAutomationsParamsStatus(ctx.String("status"))
 				params.Status = &v
 			}
 			if ctx.IsSet("cursor") {
@@ -358,6 +363,7 @@ func registerAutomationsCommands(app *cli.App) {
 		Flags(
 			cli.String("status", "").Help("Filter to one status."),
 			cli.String("automation-id", "").Help("Filter to one automation's runs."),
+			cli.String("source-event-id", "").Help("Filter to runs originating from a single source event. Pass the `fire_id` returned by the HTTP-trig…"),
 			cli.String("cursor", "").Help("Opaque pagination cursor from a prior response."),
 			cli.Int("limit", "").Help("Maximum number of items to return."),
 		).
@@ -377,6 +383,10 @@ func registerAutomationsCommands(app *cli.App) {
 			if ctx.IsSet("automation-id") {
 				v := ctx.String("automation-id")
 				params.AutomationId = &v
+			}
+			if ctx.IsSet("source-event-id") {
+				v := ctx.String("source-event-id")
+				params.SourceEventId = &v
 			}
 			if ctx.IsSet("cursor") {
 				v := ctx.String("cursor")
@@ -483,7 +493,7 @@ func registerAutomationsCommands(app *cli.App) {
 		Args("handle").
 		Flags(
 			cli.String("external-id", "").Help("Caller-supplied idempotency key, scoped to (org, project). Repeat calls with the same `external_id`…"),
-			cli.String("inputs", "").Help("Free-form input map passed to the run. Available to steps via `{{ inputs.<key> }}` templates. Accepts JSON, @file, or @-."),
+			cli.String("inputs", "").Help("Free-form input map passed to the run. Available to steps via `{{ .inputs.<key> }}` Go text/templat… Accepts JSON, @file, or @-."),
 			cli.String("source", "").Help("Optional attribution for the call that started this run. Triggers and webhooks populate `trigger_id… Accepts JSON, @file, or @-."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),

@@ -29,11 +29,18 @@ type Override struct {
 // `mobius --help`.
 var overrides = map[string]Override{
 	// --- actions ----------------------------------------------------------
-	// Catalog-action ops collide with the project-scoped action ops on the
-	// auto-derived `get` / `list` leaves, so spell them out.
-	"invokeAction":       {Command: "invoke"},
-	"getCatalogAction":   {Command: "get-catalog"},
-	"listCatalogActions": {Command: "list-catalog"},
+	// `invoke` isn't in the verb list, so the auto-derive keeps the redundant
+	// `-action` suffix; strip it. The catalog reads moved to the `catalog`
+	// group (see below) and auto-derive cleanly there.
+	"invokeAction": {Command: "invoke"},
+
+	// --- catalog ----------------------------------------------------------
+	// The `catalog` group holds the read-only authoring catalogs (events and
+	// actions). Auto-derivation keeps the resource token after the verb
+	// (listCatalogEvents -> list-events, listCatalogActions -> list-actions,
+	// getCatalogAction -> get-action), which both reads well and avoids the
+	// `list` collision two resources in one group would otherwise hit — so no
+	// command overrides are needed here.
 
 	// --- agents -----------------------------------------------------------
 	// Drop the redundant `agent` token that the auto-derivation can't strip
@@ -248,6 +255,7 @@ var groupDescriptions = map[string]string{
 	"api-keys":              "Project and organization API keys",
 	"artifacts":             "Run output artifacts and storage settings",
 	"audit-logs":            "Organization and project audit log entries",
+	"catalog":               "Read-only authoring catalogs for events and actions",
 	"channels":              "Chat channels, members, and messages",
 	"events":                "Inbound integration events and live SSE streams",
 	"environments":          "Managed execution environments",

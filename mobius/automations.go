@@ -304,7 +304,8 @@ func listAutomationsParams(opts *ListAutomationsOptions) *api.ListAutomationsPar
 	}
 	params := &api.ListAutomationsParams{}
 	if opts.Status != "" {
-		params.Status = &opts.Status
+		status := api.ListAutomationsParamsStatus(opts.Status)
+		params.Status = &status
 	}
 	if opts.Cursor != "" {
 		params.Cursor = &opts.Cursor

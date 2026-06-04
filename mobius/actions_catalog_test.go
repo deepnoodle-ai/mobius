@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/deepnoodle-ai/mobius/mobius/api"
 	"github.com/deepnoodle-ai/wonton/assert"
 )
 
@@ -15,14 +16,21 @@ const catalogListJSON = `{
       "name": "render-template",
       "title": "Render template",
       "source": "platform",
-      "available": true
+      "endpoint_kind": "builtin",
+      "readiness": "ready",
+      "risk": "low",
+      "annotations": {}
     },
     {
       "name": "slack.send_message",
       "title": "Send Slack message",
       "source": "slack",
       "integration": "slack",
-      "available": false
+      "endpoint_kind": "http",
+      "readiness": "needs_setup",
+      "readiness_reason": "not_configured",
+      "risk": "medium",
+      "annotations": {}
     }
   ]
 }`
@@ -31,13 +39,16 @@ const catalogEntryJSON = `{
   "name": "render-template",
   "title": "Render template",
   "source": "platform",
-  "available": true
+  "endpoint_kind": "builtin",
+  "readiness": "ready",
+  "risk": "low",
+  "annotations": {}
 }`
 
 func TestListActionCatalog(t *testing.T) {
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, r.Method, http.MethodGet)
-		assert.Equal(t, r.URL.Path, "/v1/projects/test-project/actions")
+		assert.Equal(t, r.URL.Path, "/v1/projects/test-project/catalog/actions")
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		_, _ = io.WriteString(w, catalogListJSON)
@@ -48,12 +59,12 @@ func TestListActionCatalog(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, entries, 2)
 	assert.Equal(t, entries[0].Name, "render-template")
-	assert.True(t, entries[0].Available)
+	assert.Equal(t, entries[0].Readiness, api.CapabilityReadinessReady)
 	assert.Equal(t, entries[1].Name, "slack.send_message")
 	// Surface the disambiguation feedback #5 calls out: "exists but
 	// integration not configured" must be visible to callers without
 	// having to call RunServerAction blind.
-	assert.False(t, entries[1].Available)
+	assert.Equal(t, entries[1].Readiness, api.CapabilityReadinessNeedsSetup)
 	assert.NotNil(t, entries[1].Integration)
 	assert.Equal(t, *entries[1].Integration, "slack")
 }
@@ -61,7 +72,7 @@ func TestListActionCatalog(t *testing.T) {
 func TestGetActionCatalogEntry(t *testing.T) {
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, r.Method, http.MethodGet)
-		assert.Equal(t, r.URL.Path, "/v1/projects/test-project/actions/render-template")
+		assert.Equal(t, r.URL.Path, "/v1/projects/test-project/catalog/actions/render-template")
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		_, _ = io.WriteString(w, catalogEntryJSON)
@@ -71,7 +82,7 @@ func TestGetActionCatalogEntry(t *testing.T) {
 	entry, err := c.GetActionCatalogEntry(context.Background(), "render-template")
 	assert.NoError(t, err)
 	assert.Equal(t, entry.Name, "render-template")
-	assert.True(t, entry.Available)
+	assert.Equal(t, entry.Readiness, api.CapabilityReadinessReady)
 }
 
 func TestGetActionCatalogEntry_RequiresName(t *testing.T) {

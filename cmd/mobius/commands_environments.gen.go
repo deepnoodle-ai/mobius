@@ -32,7 +32,7 @@ func registerEnvironmentsCommands(app *cli.App) {
 			cli.String("lifetime", "").Help("Lifecycle owner for automatic cleanup. `run` environments are destroyed during their owning run's F…"),
 			cli.String("name", "").Help("name"),
 			cli.String("owned-by", "").Help("Canonical user owner ID. Defaults to the authenticated user."),
-			cli.String("provider", "").Help("provider"),
+			cli.String("provider", "").Help("Providers the control plane can provision on demand. Excludes `worker`: worker-provided environment…"),
 			cli.String("purpose", "").Help("purpose"),
 			cli.String("scope", "").Help("Optional namespace for named runtime resources. Omitted/null means the project/default scope; `owne…"),
 			cli.String("spec", "").Help("spec Accepts JSON, @file, or @-."),
@@ -94,7 +94,7 @@ func registerEnvironmentsCommands(app *cli.App) {
 				body.OwnedBy = &v
 			}
 			if ctx.IsSet("provider") {
-				v := api.EnvironmentProvider(ctx.String("provider"))
+				v := api.ProvisionEnvironmentProvider(ctx.String("provider"))
 				body.Provider = &v
 			}
 			if ctx.IsSet("purpose") {
@@ -133,6 +133,68 @@ func registerEnvironmentsCommands(app *cli.App) {
 			return printResponse(ctx, "acquireEnvironment", resp.StatusCode(), resp.Body)
 		})
 
+	environmentsGrp.Command("attach-worker-environment").
+		Description("Create or attach a worker-provided environment").
+		Flags(
+			cli.String("bound-to-id", "").Help("bound-to-id"),
+			cli.String("bound-to-type", "").Help("Execution or lifecycle object this environment is bound to. Ownership remains in `owned_by`."),
+			cli.String("environment-mode", "").Help("High-level ownership policy for how Mobius plans to use the environment. `run` is one-shot and auto…"),
+			cli.String("name", "").Help("[required] Stable per-workspace environment name; the idempotency key."),
+			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
+			cli.String("workspace-path", "").Help("Worker-host path backing the environment (informational)."),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			var body api.AttachWorkerEnvironmentJSONRequestBody
+			if err := readJSONBody(ctx, &body); err != nil {
+				return err
+			}
+			if ctx.IsSet("bound-to-id") {
+				v := ctx.String("bound-to-id")
+				body.BoundToId = &v
+			}
+			if ctx.IsSet("bound-to-type") {
+				v := api.EnvironmentBoundToType(ctx.String("bound-to-type"))
+				body.BoundToType = &v
+			}
+			if ctx.IsSet("environment-mode") {
+				v := api.EnvironmentMode(ctx.String("environment-mode"))
+				body.EnvironmentMode = &v
+			}
+			if ctx.IsSet("name") {
+				body.Name = ctx.String("name")
+			}
+			if tags, err := parseTagFlags(ctx); err != nil {
+				return err
+			} else if tags != nil {
+				v := api.TagMap(tags)
+				body.Tags = &v
+			}
+			if ctx.IsSet("workspace-path") {
+				v := ctx.String("workspace-path")
+				body.WorkspacePath = &v
+			}
+			if body.Name == "" {
+				return fmt.Errorf("--name is required (or supply it via --file)")
+			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
+			}
+			resp, err := client.AttachWorkerEnvironmentWithResponse(ctx.Context(), p0, body)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "attachWorkerEnvironment", resp.StatusCode(), resp.Body)
+		})
+
 	environmentsGrp.Command("create").
 		Description("Create an environment").
 		Flags(
@@ -142,7 +204,7 @@ func registerEnvironmentsCommands(app *cli.App) {
 			cli.String("lifetime", "").Help("Lifecycle owner for automatic cleanup. `run` environments are destroyed during their owning run's F…"),
 			cli.String("name", "").Help("name"),
 			cli.String("owned-by", "").Help("Canonical user owner ID. Defaults to the authenticated user."),
-			cli.String("provider", "").Help("provider"),
+			cli.String("provider", "").Help("Providers the control plane can provision on demand. Excludes `worker`: worker-provided environment…"),
 			cli.String("purpose", "").Help("purpose"),
 			cli.String("retention-policy", "").Help("retention-policy"),
 			cli.String("scope", "").Help("Optional namespace for named runtime resources. Omitted/null means the project/default scope; `owne…"),
@@ -189,7 +251,7 @@ func registerEnvironmentsCommands(app *cli.App) {
 				body.OwnedBy = &v
 			}
 			if ctx.IsSet("provider") {
-				v := api.EnvironmentProvider(ctx.String("provider"))
+				v := api.ProvisionEnvironmentProvider(ctx.String("provider"))
 				body.Provider = &v
 			}
 			if ctx.IsSet("purpose") {

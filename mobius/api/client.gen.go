@@ -199,6 +199,81 @@ func (e ActionPermissionGroupSource) Valid() bool {
 	}
 }
 
+// Defines values for AgentMessagingDMPolicy.
+const (
+	AgentMessagingDMPolicyAllowlist AgentMessagingDMPolicy = "allowlist"
+	AgentMessagingDMPolicyDisabled  AgentMessagingDMPolicy = "disabled"
+	AgentMessagingDMPolicyOpen      AgentMessagingDMPolicy = "open"
+)
+
+// Valid indicates whether the value is a known member of the AgentMessagingDMPolicy enum.
+func (e AgentMessagingDMPolicy) Valid() bool {
+	switch e {
+	case AgentMessagingDMPolicyAllowlist:
+		return true
+	case AgentMessagingDMPolicyDisabled:
+		return true
+	case AgentMessagingDMPolicyOpen:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AgentMessagingProvider.
+const (
+	AgentMessagingProviderSlack    AgentMessagingProvider = "slack"
+	AgentMessagingProviderTelegram AgentMessagingProvider = "telegram"
+)
+
+// Valid indicates whether the value is a known member of the AgentMessagingProvider enum.
+func (e AgentMessagingProvider) Valid() bool {
+	switch e {
+	case AgentMessagingProviderSlack:
+		return true
+	case AgentMessagingProviderTelegram:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AgentMessagingReplyMode.
+const (
+	AgentMessagingReplyModeAuto AgentMessagingReplyMode = "auto"
+)
+
+// Valid indicates whether the value is a known member of the AgentMessagingReplyMode enum.
+func (e AgentMessagingReplyMode) Valid() bool {
+	switch e {
+	case AgentMessagingReplyModeAuto:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AgentModelRouteMode.
+const (
+	AgentModelRouteModeByoProvider AgentModelRouteMode = "byo_provider"
+	AgentModelRouteModeManaged     AgentModelRouteMode = "managed"
+	AgentModelRouteModeWorker      AgentModelRouteMode = "worker"
+)
+
+// Valid indicates whether the value is a known member of the AgentModelRouteMode enum.
+func (e AgentModelRouteMode) Valid() bool {
+	switch e {
+	case AgentModelRouteModeByoProvider:
+		return true
+	case AgentModelRouteModeManaged:
+		return true
+	case AgentModelRouteModeWorker:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for AgentStatus.
 const (
 	AgentStatusActive   AgentStatus = "active"
@@ -385,6 +460,51 @@ func (e AutomationAgentMemoryTableRefAccessMode) Valid() bool {
 	}
 }
 
+// Defines values for AutomationAgentSessionPolicyCompactionPolicyStrategy.
+const (
+	AutomationAgentSessionPolicyCompactionPolicyStrategyAuto     AutomationAgentSessionPolicyCompactionPolicyStrategy = "auto"
+	AutomationAgentSessionPolicyCompactionPolicyStrategyDisabled AutomationAgentSessionPolicyCompactionPolicyStrategy = "disabled"
+	AutomationAgentSessionPolicyCompactionPolicyStrategyManual   AutomationAgentSessionPolicyCompactionPolicyStrategy = "manual"
+	AutomationAgentSessionPolicyCompactionPolicyStrategyNone     AutomationAgentSessionPolicyCompactionPolicyStrategy = "none"
+)
+
+// Valid indicates whether the value is a known member of the AutomationAgentSessionPolicyCompactionPolicyStrategy enum.
+func (e AutomationAgentSessionPolicyCompactionPolicyStrategy) Valid() bool {
+	switch e {
+	case AutomationAgentSessionPolicyCompactionPolicyStrategyAuto:
+		return true
+	case AutomationAgentSessionPolicyCompactionPolicyStrategyDisabled:
+		return true
+	case AutomationAgentSessionPolicyCompactionPolicyStrategyManual:
+		return true
+	case AutomationAgentSessionPolicyCompactionPolicyStrategyNone:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AutomationAgentSessionPolicyScope.
+const (
+	AutomationAgentSessionPolicyScopeAgent      AutomationAgentSessionPolicyScope = "agent"
+	AutomationAgentSessionPolicyScopeAuto       AutomationAgentSessionPolicyScope = "auto"
+	AutomationAgentSessionPolicyScopeAutomation AutomationAgentSessionPolicyScope = "automation"
+)
+
+// Valid indicates whether the value is a known member of the AutomationAgentSessionPolicyScope enum.
+func (e AutomationAgentSessionPolicyScope) Valid() bool {
+	switch e {
+	case AutomationAgentSessionPolicyScopeAgent:
+		return true
+	case AutomationAgentSessionPolicyScopeAuto:
+		return true
+	case AutomationAgentSessionPolicyScopeAutomation:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for AutomationInteractionStepProtocol.
 const (
 	AutomationInteractionStepProtocolRequestApproval    AutomationInteractionStepProtocol = "request_approval"
@@ -559,6 +679,21 @@ func (e AutomationSpecSchemaVersion) Valid() bool {
 	}
 }
 
+// Defines values for AutomationSpecRepositoryProvider.
+const (
+	AutomationSpecRepositoryProviderGithub AutomationSpecRepositoryProvider = "github"
+)
+
+// Valid indicates whether the value is a known member of the AutomationSpecRepositoryProvider enum.
+func (e AutomationSpecRepositoryProvider) Valid() bool {
+	switch e {
+	case AutomationSpecRepositoryProviderGithub:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for AutomationSpecTriggerConcurrencyPolicy.
 const (
 	AutomationSpecTriggerConcurrencyPolicyAllow   AutomationSpecTriggerConcurrencyPolicy = "allow"
@@ -586,8 +721,9 @@ func (e AutomationSpecTriggerConcurrencyPolicy) Valid() bool {
 // Defines values for AutomationSpecTriggerKind.
 const (
 	AutomationSpecTriggerKindEvent    AutomationSpecTriggerKind = "event"
+	AutomationSpecTriggerKindHttp     AutomationSpecTriggerKind = "http"
+	AutomationSpecTriggerKindManual   AutomationSpecTriggerKind = "manual"
 	AutomationSpecTriggerKindSchedule AutomationSpecTriggerKind = "schedule"
-	AutomationSpecTriggerKindWebhook  AutomationSpecTriggerKind = "webhook"
 )
 
 // Valid indicates whether the value is a known member of the AutomationSpecTriggerKind enum.
@@ -595,9 +731,11 @@ func (e AutomationSpecTriggerKind) Valid() bool {
 	switch e {
 	case AutomationSpecTriggerKindEvent:
 		return true
-	case AutomationSpecTriggerKindSchedule:
+	case AutomationSpecTriggerKindHttp:
 		return true
-	case AutomationSpecTriggerKindWebhook:
+	case AutomationSpecTriggerKindManual:
+		return true
+	case AutomationSpecTriggerKindSchedule:
 		return true
 	default:
 		return false
@@ -632,6 +770,7 @@ func (e AutomationStatus) Valid() bool {
 const (
 	AutomationStepKindAction       AutomationStepKind = "action"
 	AutomationStepKindAgent        AutomationStepKind = "agent"
+	AutomationStepKindAutomation   AutomationStepKind = "automation"
 	AutomationStepKindInteraction  AutomationStepKind = "interaction"
 	AutomationStepKindSleep        AutomationStepKind = "sleep"
 	AutomationStepKindWaitForEvent AutomationStepKind = "wait_for_event"
@@ -643,6 +782,8 @@ func (e AutomationStepKind) Valid() bool {
 	case AutomationStepKindAction:
 		return true
 	case AutomationStepKindAgent:
+		return true
+	case AutomationStepKindAutomation:
 		return true
 	case AutomationStepKindInteraction:
 		return true
@@ -709,6 +850,54 @@ func (e AutomationVersionStatus) Valid() bool {
 	case AutomationVersionStatusPublished:
 		return true
 	case AutomationVersionStatusSuperseded:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CapabilityReadiness.
+const (
+	CapabilityReadinessNeedsSetup CapabilityReadiness = "needs_setup"
+	CapabilityReadinessReady      CapabilityReadiness = "ready"
+)
+
+// Valid indicates whether the value is a known member of the CapabilityReadiness enum.
+func (e CapabilityReadiness) Valid() bool {
+	switch e {
+	case CapabilityReadinessNeedsSetup:
+		return true
+	case CapabilityReadinessReady:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CapabilityReadinessReason.
+const (
+	CapabilityReadinessReasonExpired             CapabilityReadinessReason = "expired"
+	CapabilityReadinessReasonInactive            CapabilityReadinessReason = "inactive"
+	CapabilityReadinessReasonNotConfigured       CapabilityReadinessReason = "not_configured"
+	CapabilityReadinessReasonNotImplemented      CapabilityReadinessReason = "not_implemented"
+	CapabilityReadinessReasonPermissionMissing   CapabilityReadinessReason = "permission_missing"
+	CapabilityReadinessReasonProviderUnavailable CapabilityReadinessReason = "provider_unavailable"
+)
+
+// Valid indicates whether the value is a known member of the CapabilityReadinessReason enum.
+func (e CapabilityReadinessReason) Valid() bool {
+	switch e {
+	case CapabilityReadinessReasonExpired:
+		return true
+	case CapabilityReadinessReasonInactive:
+		return true
+	case CapabilityReadinessReasonNotConfigured:
+		return true
+	case CapabilityReadinessReasonNotImplemented:
+		return true
+	case CapabilityReadinessReasonPermissionMissing:
+		return true
+	case CapabilityReadinessReasonProviderUnavailable:
 		return true
 	default:
 		return false
@@ -974,6 +1163,7 @@ func (e EnvironmentMode) Valid() bool {
 const (
 	EnvironmentProviderCloudflareContainers EnvironmentProvider = "cloudflare_containers"
 	EnvironmentProviderSprites              EnvironmentProvider = "sprites"
+	EnvironmentProviderWorker               EnvironmentProvider = "worker"
 )
 
 // Valid indicates whether the value is a known member of the EnvironmentProvider enum.
@@ -982,6 +1172,8 @@ func (e EnvironmentProvider) Valid() bool {
 	case EnvironmentProviderCloudflareContainers:
 		return true
 	case EnvironmentProviderSprites:
+		return true
+	case EnvironmentProviderWorker:
 		return true
 	default:
 		return false
@@ -1081,6 +1273,42 @@ func (e EnvironmentStatus) Valid() bool {
 	}
 }
 
+// Defines values for EventCatalogReservedPrefixKind.
+const (
+	EventCatalogReservedPrefixKindCapability EventCatalogReservedPrefixKind = "capability"
+	EventCatalogReservedPrefixKindUtility    EventCatalogReservedPrefixKind = "utility"
+)
+
+// Valid indicates whether the value is a known member of the EventCatalogReservedPrefixKind enum.
+func (e EventCatalogReservedPrefixKind) Valid() bool {
+	switch e {
+	case EventCatalogReservedPrefixKindCapability:
+		return true
+	case EventCatalogReservedPrefixKindUtility:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for EventCatalogSourceKind.
+const (
+	EventCatalogSourceKindCapability  EventCatalogSourceKind = "capability"
+	EventCatalogSourceKindIntegration EventCatalogSourceKind = "integration"
+)
+
+// Valid indicates whether the value is a known member of the EventCatalogSourceKind enum.
+func (e EventCatalogSourceKind) Valid() bool {
+	switch e {
+	case EventCatalogSourceKindCapability:
+		return true
+	case EventCatalogSourceKindIntegration:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for FeatureGateSource.
 const (
 	FeatureGateSourceDefault         FeatureGateSource = "default"
@@ -1114,6 +1342,27 @@ func (e FeatureOverrideScope) Valid() bool {
 	case FeatureOverrideScopeOrg:
 		return true
 	case FeatureOverrideScopeProject:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for HTTPTriggerDeliveryResponseStatus.
+const (
+	HTTPTriggerDeliveryResponseStatusAccepted HTTPTriggerDeliveryResponseStatus = "accepted"
+	HTTPTriggerDeliveryResponseStatusFailed   HTTPTriggerDeliveryResponseStatus = "failed"
+	HTTPTriggerDeliveryResponseStatusSkipped  HTTPTriggerDeliveryResponseStatus = "skipped"
+)
+
+// Valid indicates whether the value is a known member of the HTTPTriggerDeliveryResponseStatus enum.
+func (e HTTPTriggerDeliveryResponseStatus) Valid() bool {
+	switch e {
+	case HTTPTriggerDeliveryResponseStatusAccepted:
+		return true
+	case HTTPTriggerDeliveryResponseStatusFailed:
+		return true
+	case HTTPTriggerDeliveryResponseStatusSkipped:
 		return true
 	default:
 		return false
@@ -1231,6 +1480,24 @@ const (
 func (e InteractionResponseState) Valid() bool {
 	switch e {
 	case InteractionResponseStateSubmitted:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ModelProviderGroupSource.
+const (
+	ModelProviderGroupSourceByok     ModelProviderGroupSource = "byok"
+	ModelProviderGroupSourcePlatform ModelProviderGroupSource = "platform"
+)
+
+// Valid indicates whether the value is a known member of the ModelProviderGroupSource enum.
+func (e ModelProviderGroupSource) Valid() bool {
+	switch e {
+	case ModelProviderGroupSourceByok:
+		return true
+	case ModelProviderGroupSourcePlatform:
 		return true
 	default:
 		return false
@@ -1393,6 +1660,24 @@ func (e ProjectAccessMode) Valid() bool {
 	}
 }
 
+// Defines values for ProvisionEnvironmentProvider.
+const (
+	ProvisionEnvironmentProviderCloudflareContainers ProvisionEnvironmentProvider = "cloudflare_containers"
+	ProvisionEnvironmentProviderSprites              ProvisionEnvironmentProvider = "sprites"
+)
+
+// Valid indicates whether the value is a known member of the ProvisionEnvironmentProvider enum.
+func (e ProvisionEnvironmentProvider) Valid() bool {
+	switch e {
+	case ProvisionEnvironmentProviderCloudflareContainers:
+		return true
+	case ProvisionEnvironmentProviderSprites:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for QueryRowsRequestSortOrder.
 const (
 	QueryRowsRequestSortOrderAsc  QueryRowsRequestSortOrder = "asc"
@@ -1525,6 +1810,24 @@ func (e ServiceAccountStatus) Valid() bool {
 	}
 }
 
+// Defines values for SessionMessageEntryType.
+const (
+	SessionMessageEntryTypeCompaction SessionMessageEntryType = "compaction"
+	SessionMessageEntryTypeMessage    SessionMessageEntryType = "message"
+)
+
+// Valid indicates whether the value is a known member of the SessionMessageEntryType enum.
+func (e SessionMessageEntryType) Valid() bool {
+	switch e {
+	case SessionMessageEntryTypeCompaction:
+		return true
+	case SessionMessageEntryTypeMessage:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for SessionMessageRole.
 const (
 	SessionMessageRoleAssistant  SessionMessageRole = "assistant"
@@ -1555,6 +1858,7 @@ func (e SessionMessageRole) Valid() bool {
 // Defines values for SessionOrigin.
 const (
 	SessionOriginApi         SessionOrigin = "api"
+	SessionOriginAutomation  SessionOrigin = "automation"
 	SessionOriginInteraction SessionOrigin = "interaction"
 	SessionOriginManual      SessionOrigin = "manual"
 )
@@ -1563,6 +1867,8 @@ const (
 func (e SessionOrigin) Valid() bool {
 	switch e {
 	case SessionOriginApi:
+		return true
+	case SessionOriginAutomation:
 		return true
 	case SessionOriginInteraction:
 		return true
@@ -1575,13 +1881,16 @@ func (e SessionOrigin) Valid() bool {
 
 // Defines values for SessionScope.
 const (
-	SessionScopeAgent SessionScope = "agent"
+	SessionScopeAgent      SessionScope = "agent"
+	SessionScopeAutomation SessionScope = "automation"
 )
 
 // Valid indicates whether the value is a known member of the SessionScope enum.
 func (e SessionScope) Valid() bool {
 	switch e {
 	case SessionScopeAgent:
+		return true
+	case SessionScopeAutomation:
 		return true
 	default:
 		return false
@@ -1765,39 +2074,24 @@ func (e UpdateAgentRequestStatus) Valid() bool {
 	}
 }
 
-// Defines values for UpdateArtifactContentRequestEncoding.
+// Defines values for UserKind.
 const (
-	UpdateArtifactContentRequestEncodingBase64 UpdateArtifactContentRequestEncoding = "base64"
-	UpdateArtifactContentRequestEncodingText   UpdateArtifactContentRequestEncoding = "text"
+	UserKindAgent          UserKind = "agent"
+	UserKindHuman          UserKind = "human"
+	UserKindServiceAccount UserKind = "service_account"
+	UserKindSystem         UserKind = "system"
 )
 
-// Valid indicates whether the value is a known member of the UpdateArtifactContentRequestEncoding enum.
-func (e UpdateArtifactContentRequestEncoding) Valid() bool {
+// Valid indicates whether the value is a known member of the UserKind enum.
+func (e UserKind) Valid() bool {
 	switch e {
-	case UpdateArtifactContentRequestEncodingBase64:
+	case UserKindAgent:
 		return true
-	case UpdateArtifactContentRequestEncodingText:
+	case UserKindHuman:
 		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for WebhookDeliveryResponseStatus.
-const (
-	WebhookDeliveryResponseStatusAccepted WebhookDeliveryResponseStatus = "accepted"
-	WebhookDeliveryResponseStatusFailed   WebhookDeliveryResponseStatus = "failed"
-	WebhookDeliveryResponseStatusSkipped  WebhookDeliveryResponseStatus = "skipped"
-)
-
-// Valid indicates whether the value is a known member of the WebhookDeliveryResponseStatus enum.
-func (e WebhookDeliveryResponseStatus) Valid() bool {
-	switch e {
-	case WebhookDeliveryResponseStatusAccepted:
+	case UserKindServiceAccount:
 		return true
-	case WebhookDeliveryResponseStatusFailed:
-		return true
-	case WebhookDeliveryResponseStatusSkipped:
+	case UserKindSystem:
 		return true
 	default:
 		return false
@@ -2251,6 +2545,33 @@ func (e ListProjectsParamsStatus) Valid() bool {
 	}
 }
 
+// Defines values for ListAutomationsParamsStatus.
+const (
+	ListAutomationsParamsStatusActive   ListAutomationsParamsStatus = "active"
+	ListAutomationsParamsStatusAll      ListAutomationsParamsStatus = "all"
+	ListAutomationsParamsStatusArchived ListAutomationsParamsStatus = "archived"
+	ListAutomationsParamsStatusDraft    ListAutomationsParamsStatus = "draft"
+	ListAutomationsParamsStatusPaused   ListAutomationsParamsStatus = "paused"
+)
+
+// Valid indicates whether the value is a known member of the ListAutomationsParamsStatus enum.
+func (e ListAutomationsParamsStatus) Valid() bool {
+	switch e {
+	case ListAutomationsParamsStatusActive:
+		return true
+	case ListAutomationsParamsStatusAll:
+		return true
+	case ListAutomationsParamsStatusArchived:
+		return true
+	case ListAutomationsParamsStatusDraft:
+		return true
+	case ListAutomationsParamsStatusPaused:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for GetEnvironmentWorkerLogsParamsLogName.
 const (
 	GetEnvironmentWorkerLogsParamsLogNameAll       GetEnvironmentWorkerLogsParamsLogName = "all"
@@ -2406,9 +2727,11 @@ type AcquireEnvironmentRequest struct {
 	Name     *string              `json:"name,omitempty"`
 
 	// OwnedBy Canonical user owner ID. Defaults to the authenticated user.
-	OwnedBy  *string              `json:"owned_by,omitempty"`
-	Provider *EnvironmentProvider `json:"provider,omitempty"`
-	Purpose  *EnvironmentPurpose  `json:"purpose,omitempty"`
+	OwnedBy *string `json:"owned_by,omitempty"`
+
+	// Provider Providers the control plane can provision on demand. Excludes `worker`: worker-provided environments are registered out-of-band via the attach endpoint and are never provisioned through create/acquire.
+	Provider *ProvisionEnvironmentProvider `json:"provider,omitempty"`
+	Purpose  *EnvironmentPurpose           `json:"purpose,omitempty"`
 
 	// Scope Optional namespace for named runtime resources. Omitted/null means the project/default scope; `owner` means names are unique within `(project, owned_by)`.
 	Scope *ResourceScope          `json:"scope,omitempty"`
@@ -2505,9 +2828,6 @@ type ActionCatalogEntry struct {
 	// Annotations Response hints that describe the safe-use properties of the action. Response annotations are forward-compatible so the server can add response-only hints without breaking strict clients.
 	Annotations ActionAnnotationsResponse `json:"annotations"`
 
-	// Available Whether this action can currently be invoked. False if the required integration is not connected, the action is a placeholder for a not-yet-implemented capability, or the caller lacks permission.
-	Available bool `json:"available"`
-
 	// Description Markdown description of what the action does.
 	Description *string `json:"description,omitempty"`
 
@@ -2529,6 +2849,12 @@ type ActionCatalogEntry struct {
 
 	// OutputSchema JSON Schema describing the expected output shape.
 	OutputSchema *map[string]interface{} `json:"output_schema,omitempty"`
+
+	// Readiness Whether a catalog capability — an action, an event source, or an integration provider — is usable right now. `ready` means it can be used as-is; `needs_setup` means it is known and supported but blocked by configuration, credentials, permissions, provider runtime availability, or implementation status. This is catalog *readiness*, and is deliberately separate from a resource's lifecycle state (such as integration `status` or artifact lifecycle).
+	Readiness CapabilityReadiness `json:"readiness"`
+
+	// ReadinessReason Why a capability is `needs_setup`. Present only when readiness is `needs_setup`. `not_configured` — no integration or credential is connected yet. `inactive` — the backing integration is manually disabled. `expired` — the backing credential has expired. `provider_unavailable` — the provider runtime is not currently available. `permission_missing` — the caller lacks permission to use it. `not_implemented` — a placeholder for a capability that is not yet available.
+	ReadinessReason *CapabilityReadinessReason `json:"readiness_reason,omitempty"`
 
 	// Risk Author-declared risk classification. Used by toolkit-author UIs to surface warnings and by audit views to prioritize attention.
 	Risk ActionCatalogEntryRisk `json:"risk"`
@@ -2700,8 +3026,11 @@ type Agent struct {
 	// Kind Freeform agent classification for tooling and filtering (e.g. "llm", "rpa").
 	Kind *string `json:"kind,omitempty"`
 
-	// Model Anthropic model identifier for platform agents (e.g. `claude-sonnet-4-6`). Empty string falls back to the platform default.
+	// Model Model identifier for platform agents. Accepts any id returned by `GET /v1/projects/{project}/models`, optionally `provider/`-prefixed (e.g. `xai/grok-4`); bare known ids (e.g. `claude-sonnet-4-6`) are auto-detected to their provider. Empty string falls back to the platform default.
 	Model *string `json:"model,omitempty"`
+
+	// ModelRoute Default model route used by built-in messaging and by automation agent steps that do not override the route.
+	ModelRoute *AgentModelRoute `json:"model_route,omitempty"`
 
 	// Name Mutable unique name within the project. Free-form human-readable label; use `id` for stable references and job targeting.
 	Name string `json:"name"`
@@ -2772,6 +3101,111 @@ type AgentManifestWarning struct {
 	// ToolkitId Toolkit the warning relates to, when applicable.
 	ToolkitId *string `json:"toolkit_id,omitempty"`
 }
+
+// AgentMessagingBinding defines model for AgentMessagingBinding.
+type AgentMessagingBinding struct {
+	// AgentId Agent this binding belongs to.
+	AgentId string `json:"agent_id"`
+
+	// AllMessages Whether every message in the allowed conversations activates the agent.
+	AllMessages bool `json:"all_messages"`
+
+	// Channels Optional provider conversation allowlist. Empty means any conversation on the integration.
+	Channels  []string  `json:"channels"`
+	CreatedAt time.Time `json:"created_at"`
+
+	// DmPolicy Direct-message access policy for the binding.
+	DmPolicy AgentMessagingDMPolicy `json:"dm_policy"`
+
+	// Dms Whether direct messages are accepted.
+	Dms bool `json:"dms"`
+
+	// Enabled Whether the agent can currently answer on this account.
+	Enabled bool `json:"enabled"`
+
+	// Id Messaging binding identifier.
+	Id string `json:"id"`
+
+	// IntegrationId Connected integration account this binding applies to.
+	IntegrationId string `json:"integration_id"`
+
+	// Mentions Whether channel/group mentions activate the agent.
+	Mentions bool `json:"mentions"`
+
+	// ModelRoute Default model route used by built-in messaging and by automation agent steps that do not override the route.
+	ModelRoute *AgentModelRoute `json:"model_route,omitempty"`
+
+	// Provider Provider supported by built-in agent messaging.
+	Provider AgentMessagingProvider `json:"provider"`
+
+	// ReplyMode Reply mode for built-in messaging.
+	ReplyMode AgentMessagingReplyMode `json:"reply_mode"`
+
+	// SenderAllow Optional provider sender allowlist. Empty means any sender.
+	SenderAllow []string  `json:"sender_allow"`
+	UpdatedAt   time.Time `json:"updated_at"`
+}
+
+// AgentMessagingBindingListResponse defines model for AgentMessagingBindingListResponse.
+type AgentMessagingBindingListResponse struct {
+	Items []AgentMessagingBinding `json:"items"`
+}
+
+// AgentMessagingBindingRequest defines model for AgentMessagingBindingRequest.
+type AgentMessagingBindingRequest struct {
+	AllMessages *bool     `json:"all_messages,omitempty"`
+	Channels    *[]string `json:"channels,omitempty"`
+
+	// DmPolicy Direct-message access policy for the binding.
+	DmPolicy      *AgentMessagingDMPolicy `json:"dm_policy,omitempty"`
+	Dms           *bool                   `json:"dms,omitempty"`
+	Enabled       *bool                   `json:"enabled,omitempty"`
+	IntegrationId string                  `json:"integration_id"`
+	Mentions      *bool                   `json:"mentions,omitempty"`
+
+	// ModelRoute Default model route used by built-in messaging and by automation agent steps that do not override the route.
+	ModelRoute *AgentModelRoute `json:"model_route,omitempty"`
+
+	// Provider Provider supported by built-in agent messaging.
+	Provider AgentMessagingProvider `json:"provider"`
+
+	// ReplyMode Reply mode for built-in messaging.
+	ReplyMode   *AgentMessagingReplyMode `json:"reply_mode,omitempty"`
+	SenderAllow *[]string                `json:"sender_allow,omitempty"`
+}
+
+// AgentMessagingDMPolicy Direct-message access policy for the binding.
+type AgentMessagingDMPolicy string
+
+// AgentMessagingProvider Provider supported by built-in agent messaging.
+type AgentMessagingProvider string
+
+// AgentMessagingReplyMode Reply mode for built-in messaging.
+type AgentMessagingReplyMode string
+
+// AgentModelRoute Default model route used by built-in messaging and by automation agent steps that do not override the route.
+type AgentModelRoute struct {
+	// EnvironmentId Environment to use for worker-backed model calls.
+	EnvironmentId *string `json:"environment_id,omitempty"`
+
+	// Mode Where the agent's default model call should run.
+	Mode AgentModelRouteMode `json:"mode"`
+
+	// Model Model identifier to use for this route.
+	Model *string `json:"model,omitempty"`
+
+	// Provider Provider or worker route name.
+	Provider *string `json:"provider,omitempty"`
+
+	// Queue Worker queue for customer-worker model calls.
+	Queue *string `json:"queue,omitempty"`
+
+	// RequiredCapabilities Worker capabilities required for this route.
+	RequiredCapabilities *[]string `json:"required_capabilities,omitempty"`
+}
+
+// AgentModelRouteMode Where the agent's default model call should run.
+type AgentModelRouteMode string
 
 // AgentStatus Administrative status. Inactive agents cannot claim new jobs. Soft-deleted agents are represented by `deleted_at` and excluded from normal reads.
 type AgentStatus string
@@ -2898,37 +3332,35 @@ type AppendSessionMessagesRequest struct {
 
 // Artifact defines model for Artifact.
 type Artifact struct {
-	Attempt     *int       `json:"attempt,omitempty"`
 	CommittedAt *time.Time `json:"committed_at,omitempty"`
 	CreatedAt   time.Time  `json:"created_at"`
 
 	// CreatedBy users.id of the principal who created this artifact. Empty for system-initiated writes.
-	CreatedBy     *string                 `json:"created_by,omitempty"`
-	DeletedAt     *time.Time              `json:"deleted_at,omitempty"`
-	ExpiresAt     *time.Time              `json:"expires_at,omitempty"`
-	Id            string                  `json:"id"`
-	IntegrationId *string                 `json:"integration_id,omitempty"`
-	JobId         *string                 `json:"job_id,omitempty"`
-	Metadata      *map[string]interface{} `json:"metadata,omitempty"`
-	MimeType      string                  `json:"mime_type"`
+	CreatedBy *string    `json:"created_by,omitempty"`
+	DeletedAt *time.Time `json:"deleted_at,omitempty"`
+	ExpiresAt *time.Time `json:"expires_at,omitempty"`
+	Id        string     `json:"id"`
+	MimeType  string     `json:"mime_type"`
 
 	// Name Display name or relative virtual path. Forward slash may be used to organize artifacts inside private or shared project space.
 	Name  string `json:"name"`
 	OrgId string `json:"org_id"`
 
 	// OwnerId User-keyed private artifact-space owner. Empty for project-shared artifacts.
-	OwnerId    string                 `json:"owner_id"`
-	Pinned     *bool                  `json:"pinned,omitempty"`
-	ProjectId  string                 `json:"project_id"`
-	RunId      *string                `json:"run_id,omitempty"`
-	Sha256     *string                `json:"sha256,omitempty"`
-	SizeBytes  int64                  `json:"size_bytes"`
-	State      ArtifactState          `json:"state"`
-	StepId     *string                `json:"step_id,omitempty"`
-	Storage    ArtifactStorageBackend `json:"storage"`
-	StorageUri *string                `json:"storage_uri,omitempty"`
-	Tags       *map[string]string     `json:"tags,omitempty"`
-	UpdatedAt  *time.Time             `json:"updated_at,omitempty"`
+	OwnerId   string `json:"owner_id"`
+	ProjectId string `json:"project_id"`
+
+	// RunId Automation run that produced this artifact, derived from the active worker lease.
+	RunId     *string       `json:"run_id,omitempty"`
+	Sha256    *string       `json:"sha256,omitempty"`
+	SizeBytes int64         `json:"size_bytes"`
+	State     ArtifactState `json:"state"`
+
+	// StepId Automation step that produced this artifact, derived from the active worker lease.
+	StepId    *string                `json:"step_id,omitempty"`
+	Storage   ArtifactStorageBackend `json:"storage"`
+	Tags      *map[string]string     `json:"tags,omitempty"`
+	UpdatedAt *time.Time             `json:"updated_at,omitempty"`
 
 	// UpdatedBy users.id of the principal who last updated this artifact. Empty for system-initiated writes.
 	UpdatedBy *string `json:"updated_by,omitempty"`
@@ -2970,23 +3402,28 @@ type ArtifactState string
 // ArtifactStorageBackend defines model for ArtifactStorageBackend.
 type ArtifactStorageBackend string
 
-// ArtifactStorageSettings defines model for ArtifactStorageSettings.
-type ArtifactStorageSettings struct {
-	Backend *ArtifactStorageBackend `json:"backend,omitempty"`
-
-	// DefaultTtl Default artifact retention duration as a Go duration string.
-	DefaultTtl       *string `json:"default_ttl,omitempty"`
-	InlineThreshold  *int64  `json:"inline_threshold,omitempty"`
-	IntegrationId    *string `json:"integration_id,omitempty"`
-	MaxArtifactSize  *int64  `json:"max_artifact_size,omitempty"`
-	PendingUploadCap *int    `json:"pending_upload_cap,omitempty"`
-}
-
-// ArtifactStorageSettingsUpdate defines model for ArtifactStorageSettingsUpdate.
-type ArtifactStorageSettingsUpdate = ArtifactStorageSettings
-
 // ArtifactVisibility Private artifacts are visible only to their owner user. Shared artifacts are visible to the project.
 type ArtifactVisibility string
+
+// AttachWorkerEnvironmentRequest defines model for AttachWorkerEnvironmentRequest.
+type AttachWorkerEnvironmentRequest struct {
+	BoundToId *string `json:"bound_to_id,omitempty"`
+
+	// BoundToType Execution or lifecycle object this environment is bound to. Ownership remains in `owned_by`.
+	BoundToType *EnvironmentBoundToType `json:"bound_to_type,omitempty"`
+
+	// EnvironmentMode High-level ownership policy for how Mobius plans to use the environment. `run` is one-shot and auto-cleaned with a run; `agent` and `automation` are persistent environment policies; `manual` is operator controlled.
+	EnvironmentMode *EnvironmentMode `json:"environment_mode,omitempty"`
+
+	// Name Stable per-workspace environment name; the idempotency key.
+	Name string `json:"name"`
+
+	// Tags Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints.
+	Tags *TagMap `json:"tags,omitempty"`
+
+	// WorkspacePath Worker-host path backing the environment (informational).
+	WorkspacePath *string `json:"workspace_path,omitempty"`
+}
 
 // AuditLogEntry Immutable record of a security- or configuration-relevant change. Use audit log entries to answer who changed a resource, when it happened, and which project or credential was involved.
 type AuditLogEntry struct {
@@ -3131,6 +3568,42 @@ type AutomationAgentMemoryTableRef struct {
 // AutomationAgentMemoryTableRefAccessMode defines model for AutomationAgentMemoryTableRef.AccessMode.
 type AutomationAgentMemoryTableRefAccessMode string
 
+// AutomationAgentSessionPolicy Durable conversation-session policy for automation agent steps. Omit to enable the product default: automation-scoped sessions keyed from the triggering conversation when Mobius can identify one, such as a Telegram chat ID.
+type AutomationAgentSessionPolicy struct {
+	// CompactionPolicy Optional per-session compaction policy merged with server defaults when the session is first created. Existing sessions keep their current compaction policy unless edited through a session-specific operation.
+	CompactionPolicy *struct {
+		// Strategy Compaction strategy. `auto` compacts when the token threshold is exceeded.
+		Strategy *AutomationAgentSessionPolicyCompactionPolicyStrategy `json:"strategy,omitempty"`
+
+		// SummaryModel Model used to produce compaction summaries.
+		SummaryModel *string `json:"summary_model,omitempty"`
+
+		// ThresholdTokens Token threshold that triggers automatic compaction.
+		ThresholdTokens *int `json:"threshold_tokens,omitempty"`
+	} `json:"compaction_policy,omitempty"`
+
+	// Disabled Disable durable session context and transcript writes for the affected agent step(s).
+	Disabled *bool `json:"disabled,omitempty"`
+
+	// Name Optional Go-template string rendered against `inputs`, `context`, `agent`, `automation`, `run`, `source`, and `step`. When omitted, Mobius derives a stable name from the event payload, falling back to the trigger or `default`.
+	Name *string `json:"name,omitempty"`
+
+	// Scope Named-session boundary. `auto` and omitted use `automation`. `agent` intentionally shares the named session across automations using the same agent.
+	Scope *AutomationAgentSessionPolicyScope `json:"scope,omitempty"`
+
+	// Title Optional Go-template string for the session display title.
+	Title *string `json:"title,omitempty"`
+
+	// Visibility Visibility of the session in project surfaces.
+	Visibility *SessionVisibility `json:"visibility,omitempty"`
+}
+
+// AutomationAgentSessionPolicyCompactionPolicyStrategy Compaction strategy. `auto` compacts when the token threshold is exceeded.
+type AutomationAgentSessionPolicyCompactionPolicyStrategy string
+
+// AutomationAgentSessionPolicyScope Named-session boundary. `auto` and omitted use `automation`. `agent` intentionally shares the named session across automations using the same agent.
+type AutomationAgentSessionPolicyScope string
+
 // AutomationAgentStep Agent step configuration recognised inside `AutomationSpec.steps[].config`.
 type AutomationAgentStep struct {
 	AgentId      string                           `json:"agent_id"`
@@ -3139,7 +3612,10 @@ type AutomationAgentStep struct {
 	MemoryTables *[]AutomationAgentMemoryTableRef `json:"memory_tables,omitempty"`
 	ModelRoute   *AutomationModelRoute            `json:"model_route,omitempty"`
 	OutputSchema *map[string]interface{}          `json:"output_schema,omitempty"`
-	ToolNames    *[]string                        `json:"tool_names,omitempty"`
+
+	// Session Durable conversation-session policy for automation agent steps. Omit to enable the product default: automation-scoped sessions keyed from the triggering conversation when Mobius can identify one, such as a Telegram chat ID.
+	Session   *AutomationAgentSessionPolicy `json:"session,omitempty"`
+	ToolNames *[]string                     `json:"tool_names,omitempty"`
 }
 
 // AutomationEnvironmentPolicy Automatic managed-environment policy for automation execution. Omit to use the product default: each agent gets a persistent agent-bound environment, while direct environment actions get a run-bound environment. Set `disabled: true` to opt out.
@@ -3215,6 +3691,9 @@ type AutomationRun struct {
 	// AutomationId Automation this run belongs to.
 	AutomationId string `json:"automation_id"`
 
+	// AutomationName Human-readable name of the automation this run belongs to.
+	AutomationName *string `json:"automation_name,omitempty"`
+
 	// AutomationVersion Version number of the AutomationVersion this run is executing.
 	AutomationVersion int `json:"automation_version"`
 
@@ -3242,6 +3721,15 @@ type AutomationRun struct {
 	// OrgId Organization that owns this run.
 	OrgId string `json:"org_id"`
 
+	// ParentAutomationId Automation that triggered this run via an `automation` step. Present only on child runs.
+	ParentAutomationId *string `json:"parent_automation_id,omitempty"`
+
+	// ParentRunId Run that triggered this run via an `automation` step. Present only on child runs; absent for top-level runs.
+	ParentRunId *string `json:"parent_run_id,omitempty"`
+
+	// ParentStepKey Step key within the parent run's automation that triggered this run. Present only on child runs.
+	ParentStepKey *string `json:"parent_step_key,omitempty"`
+
 	// ProjectId Project that owns this run.
 	ProjectId string `json:"project_id"`
 
@@ -3262,6 +3750,9 @@ type AutomationRun struct {
 
 	// WakeAt Scheduled wake time for a suspended run.
 	WakeAt *time.Time `json:"wake_at,omitempty"`
+
+	// WallClockDeadlineAt Deadline after which the automation reaper fails the run.
+	WallClockDeadlineAt *time.Time `json:"wall_clock_deadline_at,omitempty"`
 }
 
 // AutomationRunEvent defines model for AutomationRunEvent.
@@ -3269,7 +3760,7 @@ type AutomationRunEvent struct {
 	// CreatedAt Server timestamp when the event was recorded.
 	CreatedAt time.Time `json:"created_at"`
 
-	// EventType Event type from the run-stream taxonomy (e.g. `run.started`, `step.completed`, `wait.opened`, `interaction.requested`, `action.completed`, `artifact.created`, `limit.reached`, `usage.recorded`).
+	// EventType Event type from the run-stream taxonomy (e.g. `run.started`, `step.completed`, `wait.opened`, `interaction.requested`, `interaction.responded`, `action.called`, `action.completed`, `action.failed`, `artifact.created`, `limit.reached`, `usage.recorded`).
 	EventType string `json:"event_type"`
 
 	// Id Stable event identifier.
@@ -3444,6 +3935,9 @@ type AutomationSpec struct {
 	// Name Optional spec-local display name.
 	Name *string `json:"name,omitempty"`
 
+	// Repositories Source repositories the automation targets. When a shared managed environment is selected, the runtime prepares these repositories before user-authored steps run.
+	Repositories *[]AutomationSpecRepository `json:"repositories,omitempty"`
+
 	// SchemaVersion Automation spec schema version. Current value is `1`.
 	SchemaVersion *AutomationSpecSchemaVersion `json:"schema_version,omitempty"`
 	Steps         []AutomationStep             `json:"steps"`
@@ -3460,6 +3954,9 @@ type AutomationSpecSchemaVersion string
 
 // AutomationSpecDefaults Run-level defaults inside the automation spec. Lives at `spec.defaults` in the JSON the engine compiles.
 type AutomationSpecDefaults struct {
+	// AgentSession Durable conversation-session policy for automation agent steps. Omit to enable the product default: automation-scoped sessions keyed from the triggering conversation when Mobius can identify one, such as a Telegram chat ID.
+	AgentSession *AutomationAgentSessionPolicy `json:"agent_session,omitempty"`
+
 	// Environment Automatic managed-environment policy for automation execution. Omit to use the product default: each agent gets a persistent agent-bound environment, while direct environment actions get a run-bound environment. Set `disabled: true` to opt out.
 	Environment *AutomationEnvironmentPolicy `json:"environment,omitempty"`
 
@@ -3474,6 +3971,35 @@ type AutomationSpecInput struct {
 	Required    *bool       `json:"required,omitempty"`
 	Type        *string     `json:"type,omitempty"`
 }
+
+// AutomationSpecRepository Source repository target attached to an automation spec.
+type AutomationSpecRepository struct {
+	// FullName Provider repository full name, e.g. `owner/repo`.
+	FullName string `json:"full_name"`
+
+	// Id Provider-specific repository id.
+	Id *AutomationSpecRepository_Id `json:"id,omitempty"`
+
+	// Private Whether the provider reports this repository as private.
+	Private *bool `json:"private,omitempty"`
+
+	// Provider Repository provider. GitHub is the only supported provider today.
+	Provider *AutomationSpecRepositoryProvider `json:"provider,omitempty"`
+}
+
+// AutomationSpecRepositoryId0 defines model for .
+type AutomationSpecRepositoryId0 = int64
+
+// AutomationSpecRepositoryId1 defines model for .
+type AutomationSpecRepositoryId1 = string
+
+// AutomationSpecRepository_Id Provider-specific repository id.
+type AutomationSpecRepository_Id struct {
+	union json.RawMessage
+}
+
+// AutomationSpecRepositoryProvider Repository provider. GitHub is the only supported provider today.
+type AutomationSpecRepositoryProvider string
 
 // AutomationSpecTrigger defines model for AutomationSpecTrigger.
 type AutomationSpecTrigger struct {
@@ -3506,7 +4032,7 @@ type AutomationStep struct {
 	// Config Kind-specific step configuration.
 	Config AutomationStep_Config `json:"config"`
 
-	// Input Step-local input object resolved when the step starts. String leaves may contain `{{ inputs.* }}` or `{{ context.* }}` templates.
+	// Input Step-local input object resolved when the step starts. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions.
 	Input *map[string]interface{} `json:"input,omitempty"`
 
 	// Key Stable step key within the spec.
@@ -3530,6 +4056,18 @@ type AutomationStep_Config struct {
 // AutomationStepKind defines model for AutomationStep.Kind.
 type AutomationStepKind string
 
+// AutomationSubAutomationStep Automation-trigger step configuration recognised inside `AutomationSpec.steps[].config`. Triggers another automation in the same project as an independent child run (fire-and-forget). The child run records `parent_run_id`, `parent_automation_id`, and `parent_step_key` so the lineage is visible from the child.
+type AutomationSubAutomationStep struct {
+	// AutomationHandle Stable handle of the automation to trigger, scoped to the same project as the parent automation.
+	AutomationHandle string `json:"automation_handle"`
+
+	// Condition Optional expr predicate evaluated against the `{ inputs, context }` envelope of the parent run before the child is triggered. It must evaluate to a bool; a false result skips the step and starts no child run. Same predicate language as `wait_for_event` and event trigger conditions.
+	Condition *string `json:"condition,omitempty"`
+
+	// Inputs Input map handed to the child run. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions resolved against the parent run. When omitted the parent step's resolved input map is forwarded.
+	Inputs *map[string]interface{} `json:"inputs,omitempty"`
+}
+
 // AutomationTimeoutPolicy defines model for AutomationTimeoutPolicy.
 type AutomationTimeoutPolicy struct {
 	// Duration Go duration string such as `30s`, `5m`, or `2h`.
@@ -3548,7 +4086,10 @@ type AutomationTrigger struct {
 	// ConcurrencyPolicy Behavior when a fire arrives while prior runs of this automation are still active.
 	ConcurrencyPolicy AutomationTriggerConcurrencyPolicy `json:"concurrency_policy"`
 
-	// Config Kind-specific configuration (schedule cron, event matcher, webhook options).
+	// Condition Optional expr predicate evaluated against the public `{ event, meta }` envelope; the trigger fires only when it passes. Set only for event-kind triggers.
+	Condition *string `json:"condition,omitempty"`
+
+	// Config Kind-specific configuration (schedule cron, event matcher, HTTP-trigger options).
 	Config *map[string]interface{} `json:"config,omitempty"`
 
 	// CreatedAt Record creation timestamp.
@@ -3560,10 +4101,13 @@ type AutomationTrigger struct {
 	// EventType Source-event type this trigger subscribes to. Set only for event-kind triggers.
 	EventType *string `json:"event_type,omitempty"`
 
+	// HttpHandle Public, project-scoped handle exposed in the HTTP-trigger delivery URL. Set only for http-kind triggers.
+	HttpHandle *string `json:"http_handle,omitempty"`
+
 	// Id Stable trigger identifier.
 	Id string `json:"id"`
 
-	// Kind One of: webhook, schedule, event.
+	// Kind One of: http, schedule, event.
 	Kind string `json:"kind"`
 
 	// LastFireAt Timestamp of the most recent fire.
@@ -3584,17 +4128,14 @@ type AutomationTrigger struct {
 	// ProjectId Project that owns this trigger.
 	ProjectId string `json:"project_id"`
 
-	// SigningSecret HMAC secret used to verify inbound webhook signatures. Set only for webhook-kind triggers.
-	SigningSecret *string `json:"signing_secret,omitempty"`
+	// SigningSecretSet Whether an HMAC signing secret is configured on this HTTP trigger. The secret value itself is never returned — rotate it via the signing-secret endpoint to reveal a new value once. Set only for http-kind triggers.
+	SigningSecretSet *bool `json:"signing_secret_set,omitempty"`
 
 	// SourceId Optional source identifier used to scope event matching.
 	SourceId *string `json:"source_id,omitempty"`
 
 	// UpdatedAt Last update timestamp.
 	UpdatedAt time.Time `json:"updated_at"`
-
-	// WebhookHandle Public, project-scoped handle exposed in the webhook delivery URL. Set only for webhook-kind triggers.
-	WebhookHandle *string `json:"webhook_handle,omitempty"`
 }
 
 // AutomationTriggerConcurrencyPolicy Behavior when a fire arrives while prior runs of this automation are still active.
@@ -3647,9 +4188,14 @@ type AutomationVersionListResponse struct {
 
 // AutomationWaitForEventStep Wait-for-event step configuration recognised inside `AutomationSpec.steps[].config`.
 type AutomationWaitForEventStep struct {
+	// Condition Optional expr predicate evaluated against `{ event, meta }`.
+	Condition *string                 `json:"condition,omitempty"`
 	EventType string                  `json:"event_type"`
 	Match     *map[string]interface{} `json:"match,omitempty"`
-	SourceId  *string                 `json:"source_id,omitempty"`
+
+	// PayloadMapping Optional output mapping evaluated against `{ event, meta }`.
+	PayloadMapping *map[string]string `json:"payload_mapping,omitempty"`
+	SourceId       *string            `json:"source_id,omitempty"`
 }
 
 // BulkInsertRowsRequest defines model for BulkInsertRowsRequest.
@@ -3660,7 +4206,7 @@ type BulkInsertRowsRequest struct {
 // BulkInsertRowsResponse defines model for BulkInsertRowsResponse.
 type BulkInsertRowsResponse struct {
 	Inserted int        `json:"inserted"`
-	Rows     []TableRow `json:"rows"`
+	Items    []TableRow `json:"items"`
 }
 
 // CancelAutomationRunRequest Body for the cancellation endpoint. All fields optional.
@@ -3674,6 +4220,12 @@ type CancelInteractionRequest struct {
 	// Reason Free-text reason recorded on the interaction.
 	Reason *string `json:"reason,omitempty"`
 }
+
+// CapabilityReadiness Whether a catalog capability — an action, an event source, or an integration provider — is usable right now. `ready` means it can be used as-is; `needs_setup` means it is known and supported but blocked by configuration, credentials, permissions, provider runtime availability, or implementation status. This is catalog *readiness*, and is deliberately separate from a resource's lifecycle state (such as integration `status` or artifact lifecycle).
+type CapabilityReadiness string
+
+// CapabilityReadinessReason Why a capability is `needs_setup`. Present only when readiness is `needs_setup`. `not_configured` — no integration or credential is connected yet. `inactive` — the backing integration is manually disabled. `expired` — the backing credential has expired. `provider_unavailable` — the provider runtime is not currently available. `permission_missing` — the caller lacks permission to use it. `not_implemented` — a placeholder for a capability that is not yet available.
+type CapabilityReadinessReason string
 
 // ColumnDef defines model for ColumnDef.
 type ColumnDef struct {
@@ -3769,8 +4321,11 @@ type CreateAgentRequest struct {
 	// Kind Freeform classification (e.g. "llm", "rpa", "integration").
 	Kind *string `json:"kind,omitempty"`
 
-	// Model Anthropic model identifier for platform agents (e.g. `claude-sonnet-4-6`). Empty falls back to the platform default.
+	// Model Model identifier for platform agents. Any id from `GET /v1/projects/{project}/models`, optionally `provider/`-prefixed (e.g. `xai/grok-4`); bare known ids (e.g. `claude-sonnet-4-6`) are auto-detected. Empty falls back to the platform default.
 	Model *string `json:"model,omitempty"`
+
+	// ModelRoute Default model route used by built-in messaging and by automation agent steps that do not override the route.
+	ModelRoute *AgentModelRoute `json:"model_route,omitempty"`
 
 	// Name Project-scoped unique name for this agent. Free-form human-readable label, 1-63 characters.
 	Name string `json:"name"`
@@ -3797,21 +4352,15 @@ type CreateArtifactRequest struct {
 	Mime *string `json:"mime,omitempty"`
 
 	// Name Display name or relative virtual path. Forward slash may be used to organize artifacts inside private or shared project space.
-	Name   string `json:"name"`
-	Pinned *bool  `json:"pinned,omitempty"`
+	Name string `json:"name"`
 
-	// RetainForSeconds Override the project default TTL for this artifact only.
+	// RetainForSeconds Set an artifact-specific expiry relative to upload time. Omit to keep the artifact indefinitely unless project settings configure a default TTL.
 	RetainForSeconds *int64     `json:"retain_for_seconds,omitempty"`
 	RetainUntil      *time.Time `json:"retain_until,omitempty"`
-	RunId            *string    `json:"run_id,omitempty"`
 
 	// SizeBytes Optional declared file size. When supplied, Mobius verifies the streamed byte count exactly matches this value.
 	SizeBytes *int64             `json:"size_bytes,omitempty"`
-	StepId    *string            `json:"step_id,omitempty"`
 	Tags      *map[string]string `json:"tags,omitempty"`
-
-	// Visibility Private artifacts are visible only to their owner user. Shared artifacts are visible to the project.
-	Visibility *ArtifactVisibility `json:"visibility,omitempty"`
 }
 
 // CreateAutomationRequest defines model for CreateAutomationRequest.
@@ -3873,10 +4422,12 @@ type CreateEnvironmentRequest struct {
 	Name     *string              `json:"name,omitempty"`
 
 	// OwnedBy Canonical user owner ID. Defaults to the authenticated user.
-	OwnedBy         *string                     `json:"owned_by,omitempty"`
-	Provider        *EnvironmentProvider        `json:"provider,omitempty"`
-	Purpose         *EnvironmentPurpose         `json:"purpose,omitempty"`
-	RetentionPolicy *EnvironmentRetentionPolicy `json:"retention_policy,omitempty"`
+	OwnedBy *string `json:"owned_by,omitempty"`
+
+	// Provider Providers the control plane can provision on demand. Excludes `worker`: worker-provided environments are registered out-of-band via the attach endpoint and are never provisioned through create/acquire.
+	Provider        *ProvisionEnvironmentProvider `json:"provider,omitempty"`
+	Purpose         *EnvironmentPurpose           `json:"purpose,omitempty"`
+	RetentionPolicy *EnvironmentRetentionPolicy   `json:"retention_policy,omitempty"`
 
 	// Scope Optional namespace for named runtime resources. Omitted/null means the project/default scope; `owner` means names are unique within `(project, owned_by)`.
 	Scope *ResourceScope          `json:"scope,omitempty"`
@@ -4339,6 +4890,53 @@ type ErrorResponse struct {
 	} `json:"error"`
 }
 
+// EventCatalogEventType defines model for EventCatalogEventType.
+type EventCatalogEventType struct {
+	Description *string `json:"description,omitempty"`
+
+	// Name Dotted event-type identifier (`table.row.inserted`, `github.pull_request.opened`).
+	Name string `json:"name"`
+}
+
+// EventCatalogReservedPrefix defines model for EventCatalogReservedPrefix.
+type EventCatalogReservedPrefix struct {
+	Kind   EventCatalogReservedPrefixKind `json:"kind"`
+	Prefix string                         `json:"prefix"`
+}
+
+// EventCatalogReservedPrefixKind defines model for EventCatalogReservedPrefix.Kind.
+type EventCatalogReservedPrefixKind string
+
+// EventCatalogResponse The triggerable event catalog available to a project.
+type EventCatalogResponse struct {
+	Items []EventCatalogSource `json:"items"`
+
+	// ReservedPrefixes Platform namespaces that are recognized but are not triggerable event sources. Authoring UIs use these to distinguish a recognized-but-unsupported matcher prefix from a wholly unknown one.
+	ReservedPrefixes []EventCatalogReservedPrefix `json:"reserved_prefixes"`
+}
+
+// EventCatalogSource One event source rooted at a top-level dotted prefix. Integration sources are open-set (any `<prefix>.<resource>.<event>` matches); `event_types` lists the currently-active, documented members.
+type EventCatalogSource struct {
+	Description *string                 `json:"description,omitempty"`
+	DisplayName string                  `json:"display_name"`
+	EventTypes  []EventCatalogEventType `json:"event_types"`
+
+	// Kind `integration` for provider event sources; `capability` for built-in Mobius platform event sources.
+	Kind EventCatalogSourceKind `json:"kind"`
+
+	// Prefix Top-level dotted segment that names the source (`table`, `github`).
+	Prefix string `json:"prefix"`
+
+	// Readiness Whether a catalog capability — an action, an event source, or an integration provider — is usable right now. `ready` means it can be used as-is; `needs_setup` means it is known and supported but blocked by configuration, credentials, permissions, provider runtime availability, or implementation status. This is catalog *readiness*, and is deliberately separate from a resource's lifecycle state (such as integration `status` or artifact lifecycle).
+	Readiness CapabilityReadiness `json:"readiness"`
+
+	// ReadinessReason Why a capability is `needs_setup`. Present only when readiness is `needs_setup`. `not_configured` — no integration or credential is connected yet. `inactive` — the backing integration is manually disabled. `expired` — the backing credential has expired. `provider_unavailable` — the provider runtime is not currently available. `permission_missing` — the caller lacks permission to use it. `not_implemented` — a placeholder for a capability that is not yet available.
+	ReadinessReason *CapabilityReadinessReason `json:"readiness_reason,omitempty"`
+}
+
+// EventCatalogSourceKind `integration` for provider event sources; `capability` for built-in Mobius platform event sources.
+type EventCatalogSourceKind string
+
 // ExecEnvironmentRequest defines model for ExecEnvironmentRequest.
 type ExecEnvironmentRequest struct {
 	Command []string  `json:"command"`
@@ -4398,6 +4996,27 @@ type FeatureKey = string
 
 // FeatureOverrideScope Scope for a feature override. Org overrides apply across the organization; project overrides apply only to the specified project and take precedence over org overrides.
 type FeatureOverrideScope string
+
+// HTTPTriggerDeliveryResponse Synchronous receipt for an inbound HTTP-trigger delivery. The trigger dispatch and run start happen asynchronously after this response — the `fire_id` is the durable `source_event_id` that clients can poll via `GET /v1/projects/{project}/runs?source_event_id=<fire_id>` to discover the run once the source-event processor reserves it.
+type HTTPTriggerDeliveryResponse struct {
+	// Deduped True when an existing source-event row was returned for the same idempotency key.
+	Deduped *bool `json:"deduped,omitempty"`
+
+	// FireId Durable source-event id (also the `dedup_key` seed). Stable across retries with the same `Idempotency-Key`.
+	FireId string `json:"fire_id"`
+
+	// Status Acceptance status of the source-event row:
+	// * `accepted` — the row is durable; processing happens asynchronously.
+	// * `skipped` — the trigger is disabled or has no live subscribers.
+	// * `failed` — the row could not be enqueued (synchronous validation error).
+	Status HTTPTriggerDeliveryResponseStatus `json:"status"`
+}
+
+// HTTPTriggerDeliveryResponseStatus Acceptance status of the source-event row:
+// * `accepted` — the row is durable; processing happens asynchronously.
+// * `skipped` — the trigger is disabled or has no live subscribers.
+// * `failed` — the row could not be enqueued (synchronous validation error).
+type HTTPTriggerDeliveryResponseStatus string
 
 // HttpSubscriberConsumer defines model for HttpSubscriberConsumer.
 type HttpSubscriberConsumer struct {
@@ -4704,10 +5323,44 @@ type InvokeActionRequest struct {
 	TimeoutSeconds *int `json:"timeout_seconds,omitempty"`
 }
 
+// ModelOption defines model for ModelOption.
+type ModelOption struct {
+	// Description Short guidance about when to use this model.
+	Description *string `json:"description,omitempty"`
+
+	// Id Bare model id assigned to an agent's `model` field.
+	Id string `json:"id"`
+
+	// Label Human-readable model label for UI.
+	Label string `json:"label"`
+
+	// Provider Canonical provider id this model belongs to.
+	Provider string `json:"provider"`
+
+	// Recommended Whether this is the suggested default for its provider.
+	Recommended *bool `json:"recommended,omitempty"`
+}
+
+// ModelProviderGroup defines model for ModelProviderGroup.
+type ModelProviderGroup struct {
+	// DisplayName Human-readable provider label.
+	DisplayName string        `json:"display_name"`
+	Models      []ModelOption `json:"models"`
+
+	// Provider Canonical provider id (`anthropic`, `openai`, `gemini`, `xai`).
+	Provider string `json:"provider"`
+
+	// Source Where credentials come from — a project integration (`byok`) or a platform-managed key (`platform`).
+	Source ModelProviderGroupSource `json:"source"`
+}
+
+// ModelProviderGroupSource Where credentials come from — a project integration (`byok`) or a platform-managed key (`platform`).
+type ModelProviderGroupSource string
+
 // PermissionCatalogResponse defines model for PermissionCatalogResponse.
 type PermissionCatalogResponse struct {
 	ActionGroups []ActionPermissionGroup `json:"action_groups"`
-	Permissions  []PermissionDefinition  `json:"permissions"`
+	Items        []PermissionDefinition  `json:"items"`
 	Presets      []PermissionPreset      `json:"presets"`
 }
 
@@ -4839,7 +5492,7 @@ type ProjectMember struct {
 	// ProjectId ID of the project this membership belongs to.
 	ProjectId string `json:"project_id"`
 
-	// User Human identity known to the organization. User records are useful for membership lists, role assignment UIs, attribution, and displaying profile information next to actions.
+	// User User or principal identity known to the organization. User records are useful for membership lists, role assignment UIs, attribution, and displaying profile information next to actions.
 	User *User `json:"user,omitempty"`
 
 	// UserId ID of the user who is a member.
@@ -4857,6 +5510,18 @@ type ProjectMemberListResponse struct {
 	// NextCursor Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.
 	NextCursor *string `json:"next_cursor,omitempty"`
 }
+
+// ProjectModelsResponse Models a platform agent can be assigned in this project, grouped by available provider.
+type ProjectModelsResponse struct {
+	// DefaultModel Model id assigned when an agent specifies no model.
+	DefaultModel string `json:"default_model"`
+
+	// Items Available providers in display order. Providers with no configured credentials are omitted.
+	Items []ModelProviderGroup `json:"items"`
+}
+
+// ProvisionEnvironmentProvider Providers the control plane can provision on demand. Excludes `worker`: worker-provided environments are registered out-of-band via the attach endpoint and are never provisioned through create/acquire.
+type ProvisionEnvironmentProvider string
 
 // QueryRowsRequest defines model for QueryRowsRequest.
 type QueryRowsRequest struct {
@@ -4878,9 +5543,9 @@ type QueryRowsRequestSortOrder string
 // QueryRowsResponse defines model for QueryRowsResponse.
 type QueryRowsResponse struct {
 	HasMore    bool       `json:"has_more"`
+	Items      []TableRow `json:"items"`
 	Limit      *int       `json:"limit,omitempty"`
 	NextCursor *string    `json:"next_cursor,omitempty"`
-	Rows       []TableRow `json:"rows"`
 }
 
 // ReplaceAgentTableGrantsRequest defines model for ReplaceAgentTableGrantsRequest.
@@ -5014,7 +5679,7 @@ type RoleListResponse struct {
 
 // RotateSecretResult New signing key material returned after rotating a signing secret.
 type RotateSecretResult struct {
-	// SecretRef Project secret reference that now stores the rotated signing key.
+	// SecretRef Project secret reference that now stores the action signing key.
 	SecretRef string `json:"secret_ref"`
 
 	// SecretVersion New project-secret version number.
@@ -5046,9 +5711,9 @@ type SearchRowsRequest struct {
 // SearchRowsResponse defines model for SearchRowsResponse.
 type SearchRowsResponse struct {
 	HasMore    bool       `json:"has_more"`
+	Items      []TableRow `json:"items"`
 	Limit      *int       `json:"limit,omitempty"`
 	NextCursor *string    `json:"next_cursor,omitempty"`
-	Rows       []TableRow `json:"rows"`
 }
 
 // Secret Project-scoped secret metadata. Values are never returned.
@@ -5160,7 +5825,7 @@ type ServiceAccount struct {
 	UpdatedAt time.Time `json:"updated_at"`
 
 	// UserId Linked User record. For agent-backed service accounts this is the agent's User (kind: agent); for standalone service accounts this is a dedicated User (kind: service_account). Immutable once set.
-	UserId *string `json:"user_id,omitempty"`
+	UserId string `json:"user_id"`
 }
 
 // ServiceAccountListResponse defines model for ServiceAccountListResponse.
@@ -5222,11 +5887,14 @@ type Session struct {
 	// Scope Boundary used to resolve named sessions.
 	Scope SessionScope `json:"scope"`
 
-	// ScopeName Resolved name of the scope reference.
+	// ScopeName Caller-assigned name identifying this conversation within its scope (`scope` + `scope_ref_id`); reused as the session routing key.
 	ScopeName string `json:"scope_name"`
 
 	// ScopeRefId Identifier of the resource the session is scoped to (e.g. the agent for agent-scoped sessions).
 	ScopeRefId string `json:"scope_ref_id"`
+
+	// SessionKey Stable session routing key used to look up a scoped conversation (mirrors `scope_name`).
+	SessionKey string `json:"session_key"`
 
 	// Status Durable conversation session status.
 	Status SessionStatus `json:"status"`
@@ -5273,6 +5941,9 @@ type SessionMessage struct {
 	// CreatedAt Server timestamp when the message was appended.
 	CreatedAt time.Time `json:"created_at"`
 
+	// EntryType Row type for a persisted transcript entry.
+	EntryType SessionMessageEntryType `json:"entry_type"`
+
 	// Id Stable message identifier.
 	Id string `json:"id"`
 
@@ -5288,6 +5959,9 @@ type SessionMessage struct {
 	// SessionId Session this message belongs to.
 	SessionId string `json:"session_id"`
 }
+
+// SessionMessageEntryType Row type for a persisted transcript entry.
+type SessionMessageEntryType string
 
 // SessionMessageListResponse defines model for SessionMessageListResponse.
 type SessionMessageListResponse struct {
@@ -5469,7 +6143,7 @@ type StartAutomationRunRequest struct {
 	// ExternalId Caller-supplied idempotency key, scoped to (org, project). Repeat calls with the same `external_id` while the prior run is still non-terminal return the existing run (same `id`). A repeat after the prior run terminated returns `409 Conflict` with code `external_id_conflict` and details containing the existing run id and its terminal status.
 	ExternalId *string `json:"external_id,omitempty"`
 
-	// Inputs Free-form input map passed to the run. Available to steps via `{{ inputs.<key> }}` templates.
+	// Inputs Free-form input map passed to the run. Available to steps via `{{ .inputs.<key> }}` Go text/template actions.
 	Inputs *map[string]interface{} `json:"inputs,omitempty"`
 
 	// Source Optional attribution for the call that started this run. Triggers and webhooks populate `trigger_id` and `trigger_fire_id`; API callers usually only set `type` and `id`.
@@ -5706,8 +6380,11 @@ type UpdateAgentRequest struct {
 	// Kind Replacement freeform agent classification (e.g. `llm`, `rpa`).
 	Kind *string `json:"kind,omitempty"`
 
-	// Model Replacement Anthropic model identifier for platform agents.
+	// Model Replacement model identifier for platform agents (any id from `GET /v1/projects/{project}/models`, optionally `provider/`-prefixed).
 	Model *string `json:"model,omitempty"`
+
+	// ModelRoute Default model route used by built-in messaging and by automation agent steps that do not override the route.
+	ModelRoute *AgentModelRoute `json:"model_route,omitempty"`
 
 	// Name Free-form human-readable label, 1-63 characters; must be unique within the project.
 	Name *string `json:"name,omitempty"`
@@ -5724,19 +6401,6 @@ type UpdateAgentRequest struct {
 
 // UpdateAgentRequestStatus Replacement agent status: `active` or `inactive`. Use DELETE to soft-delete.
 type UpdateAgentRequestStatus string
-
-// UpdateArtifactContentRequest defines model for UpdateArtifactContentRequest.
-type UpdateArtifactContentRequest struct {
-	// Content Replacement artifact content. Interpreted as UTF-8 text unless `encoding` is `base64`.
-	Content  string                                `json:"content"`
-	Encoding *UpdateArtifactContentRequestEncoding `json:"encoding,omitempty"`
-
-	// MimeType Optional MIME type override. Defaults to the artifact's current MIME type.
-	MimeType *string `json:"mime_type,omitempty"`
-}
-
-// UpdateArtifactContentRequestEncoding defines model for UpdateArtifactContentRequest.Encoding.
-type UpdateArtifactContentRequestEncoding string
 
 // UpdateAutomationRequest Partial update of automation metadata. Desired triggers live in `AutomationSpec.triggers` and are materialized when a version is published.
 type UpdateAutomationRequest struct {
@@ -5896,7 +6560,7 @@ type UpsertRowResponse struct {
 	Row     TableRow `json:"row"`
 }
 
-// User Human identity known to the organization. User records are useful for membership lists, role assignment UIs, attribution, and displaying profile information next to actions.
+// User User or principal identity known to the organization. User records are useful for membership lists, role assignment UIs, attribution, and displaying profile information next to actions.
 type User struct {
 	// AvatarUrl Profile avatar URL from Clerk (may be a Gravatar or uploaded image).
 	AvatarUrl *string `json:"avatar_url,omitempty"`
@@ -5906,6 +6570,9 @@ type User struct {
 
 	// CreatedAt When the user record was first mirrored into Mobius.
 	CreatedAt time.Time `json:"created_at"`
+
+	// DeletedAt When this user principal was soft-deleted, if applicable.
+	DeletedAt *time.Time `json:"deleted_at,omitempty"`
 
 	// DisplayName Authoritative single-line label for this user, regardless of kind. Humans get "First Last"; agents get the agent name; service accounts get the SA name. Renderers should prefer this over first_name/last_name.
 	DisplayName *string `json:"display_name,omitempty"`
@@ -5919,12 +6586,18 @@ type User struct {
 	// Id Clerk user ID. Stable and globally unique across all orgs.
 	Id string `json:"id"`
 
+	// Kind The principal type represented by this user record.
+	Kind UserKind `json:"kind"`
+
 	// LastName User's last name from their Clerk profile.
 	LastName *string `json:"last_name,omitempty"`
 
 	// UpdatedAt Timestamp when this user record was last synced from Clerk.
 	UpdatedAt time.Time `json:"updated_at"`
 }
+
+// UserKind The principal type represented by this user record.
+type UserKind string
 
 // Webhook A project-level outgoing webhook subscription. When a subscribed event fires, Mobius POSTs the event payload to `url`.
 type Webhook struct {
@@ -6010,27 +6683,6 @@ type WebhookDeliveryRecord struct {
 	WebhookId string `json:"webhook_id"`
 }
 
-// WebhookDeliveryResponse Synchronous receipt for an inbound webhook delivery. The trigger dispatch and run start happen asynchronously after this response — the `fire_id` is the durable `source_event_id` that clients can poll via `GET /v1/projects/{project}/runs?source_event_id=<fire_id>` to discover the run once the source-event processor reserves it.
-type WebhookDeliveryResponse struct {
-	// Deduped True when an existing source-event row was returned for the same idempotency key.
-	Deduped *bool `json:"deduped,omitempty"`
-
-	// FireId Durable source-event id (also the `dedup_key` seed). Stable across retries with the same `Idempotency-Key`.
-	FireId string `json:"fire_id"`
-
-	// Status Acceptance status of the source-event row:
-	// * `accepted` — the row is durable; processing happens asynchronously.
-	// * `skipped` — the trigger is disabled or has no live subscribers.
-	// * `failed` — the row could not be enqueued (synchronous validation error).
-	Status WebhookDeliveryResponseStatus `json:"status"`
-}
-
-// WebhookDeliveryResponseStatus Acceptance status of the source-event row:
-// * `accepted` — the row is durable; processing happens asynchronously.
-// * `skipped` — the trigger is disabled or has no live subscribers.
-// * `failed` — the row could not be enqueued (synchronous validation error).
-type WebhookDeliveryResponseStatus string
-
 // WebhookDeliveryStatus `pending` — queued, not yet attempted. `processing` — currently being delivered. `delivered` — recipient returned 2xx. `failed` — all retry attempts exhausted.
 type WebhookDeliveryStatus string
 
@@ -6107,7 +6759,7 @@ type WorkerSession struct {
 	// Stale True when `last_seen_at` is older than 2 minutes or absent. Computed at read time, not stored. Equivalent to `instance_status == "stale"`; both are returned for backward compatibility while clients update.
 	Stale bool `json:"stale"`
 
-	// User Human identity known to the organization. User records are useful for membership lists, role assignment UIs, attribution, and displaying profile information next to actions.
+	// User User or principal identity known to the organization. User records are useful for membership lists, role assignment UIs, attribution, and displaying profile information next to actions.
 	User *User `json:"user,omitempty"`
 
 	// UserId User this session authenticated as on register/heartbeat. Set when a human is polling via the CLI; mutually exclusive with `service_account_id`.
@@ -6713,6 +7365,9 @@ type ListAgentSessionsParams struct {
 	// Scope Filter by session scope.
 	Scope *SessionScope `form:"scope,omitempty" json:"scope,omitempty"`
 
+	// Provider Filter messaging sessions by provider metadata, e.g. `slack` or `telegram`.
+	Provider *string `form:"provider,omitempty" json:"provider,omitempty"`
+
 	// Since Only include sessions with activity after this timestamp.
 	Since *time.Time `form:"since,omitempty" json:"since,omitempty"`
 
@@ -6773,9 +7428,10 @@ type ListArtifactsParams struct {
 	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
-// DeleteArtifactParams defines parameters for DeleteArtifact.
-type DeleteArtifactParams struct {
-	Force *bool `form:"force,omitempty" json:"force,omitempty"`
+// CreateArtifactParams defines parameters for CreateArtifact.
+type CreateArtifactParams struct {
+	// XMobiusLeaseToken Active job lease token for worker-produced artifacts.
+	XMobiusLeaseToken string `json:"X-Mobius-Lease-Token"`
 }
 
 // CreateArtifactSignedUrlParams defines parameters for CreateArtifactSignedUrl.
@@ -6813,8 +7469,8 @@ type ListAuditLogsParams struct {
 
 // ListAutomationsParams defines parameters for ListAutomations.
 type ListAutomationsParams struct {
-	// Status Filter by lifecycle status.
-	Status *AutomationStatus `form:"status,omitempty" json:"status,omitempty"`
+	// Status Filter by lifecycle status. Omit to return all non-archived automations (the default). Pass a single status to filter to it exactly, or `all` to include archived automations too.
+	Status *ListAutomationsParamsStatus `form:"status,omitempty" json:"status,omitempty"`
 
 	// Cursor Opaque pagination cursor from a prior response.
 	Cursor *string `form:"cursor,omitempty" json:"cursor,omitempty"`
@@ -6822,6 +7478,9 @@ type ListAutomationsParams struct {
 	// Limit Maximum number of items to return.
 	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
 }
+
+// ListAutomationsParamsStatus defines parameters for ListAutomations.
+type ListAutomationsParamsStatus string
 
 // ListEnvironmentsParams defines parameters for ListEnvironments.
 type ListEnvironmentsParams struct {
@@ -6929,6 +7588,9 @@ type ListAutomationRunsParams struct {
 
 	// AutomationId Filter to one automation's runs.
 	AutomationId *string `form:"automation_id,omitempty" json:"automation_id,omitempty"`
+
+	// SourceEventId Filter to runs originating from a single source event. Pass the `fire_id` returned by the HTTP-trigger delivery endpoint (the durable `source_event_id`) to discover the run it started.
+	SourceEventId *string `form:"source_event_id,omitempty" json:"source_event_id,omitempty"`
 
 	// Cursor Opaque pagination cursor from a prior response.
 	Cursor *string `form:"cursor,omitempty" json:"cursor,omitempty"`
@@ -7179,13 +7841,16 @@ type ListWebhookDeliveriesParams struct {
 	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
-// DeliverWebhookTriggerJSONBody defines parameters for DeliverWebhookTrigger.
-type DeliverWebhookTriggerJSONBody map[string]interface{}
+// DeliverHTTPTriggerJSONBody defines parameters for DeliverHTTPTrigger.
+type DeliverHTTPTriggerJSONBody map[string]interface{}
 
-// DeliverWebhookTriggerParams defines parameters for DeliverWebhookTrigger.
-type DeliverWebhookTriggerParams struct {
-	// IdempotencyKey Optional idempotency key (also accepted via X-Idempotency-Key header).
+// DeliverHTTPTriggerParams defines parameters for DeliverHTTPTrigger.
+type DeliverHTTPTriggerParams struct {
+	// IdempotencyKey Optional idempotency key (also accepted via the X-Idempotency-Key header).
 	IdempotencyKey *string `form:"idempotency_key,omitempty" json:"idempotency_key,omitempty"`
+
+	// XIdempotencyKey Alternative to the `idempotency_key` query parameter. When both are present the query parameter wins. Repeats with the same key return the same `fire_id` (resolve the run via `source_event_id`) without enqueuing a duplicate.
+	XIdempotencyKey *string `json:"X-Idempotency-Key,omitempty"`
 }
 
 // CreateProjectJSONRequestBody defines body for CreateProject for application/json ContentType.
@@ -7215,6 +7880,9 @@ type CreateAgentJSONRequestBody = CreateAgentRequest
 // UpdateAgentJSONRequestBody defines body for UpdateAgent for application/json ContentType.
 type UpdateAgentJSONRequestBody = UpdateAgentRequest
 
+// SaveAgentMessagingBindingJSONRequestBody defines body for SaveAgentMessagingBinding for application/json ContentType.
+type SaveAgentMessagingBindingJSONRequestBody = AgentMessagingBindingRequest
+
 // AppendSessionMessagesJSONRequestBody defines body for AppendSessionMessages for application/json ContentType.
 type AppendSessionMessagesJSONRequestBody = AppendSessionMessagesRequest
 
@@ -7233,9 +7901,6 @@ type CreateAPIKeyJSONRequestBody = CreateAPIKeyRequest
 // CreateArtifactMultipartRequestBody defines body for CreateArtifact for multipart/form-data ContentType.
 type CreateArtifactMultipartRequestBody = CreateArtifactRequest
 
-// UpdateArtifactContentJSONRequestBody defines body for UpdateArtifactContent for application/json ContentType.
-type UpdateArtifactContentJSONRequestBody = UpdateArtifactContentRequest
-
 // CreateAutomationJSONRequestBody defines body for CreateAutomation for application/json ContentType.
 type CreateAutomationJSONRequestBody = CreateAutomationRequest
 
@@ -7253,6 +7918,9 @@ type CreateEnvironmentJSONRequestBody = CreateEnvironmentRequest
 
 // AcquireEnvironmentJSONRequestBody defines body for AcquireEnvironment for application/json ContentType.
 type AcquireEnvironmentJSONRequestBody = AcquireEnvironmentRequest
+
+// AttachWorkerEnvironmentJSONRequestBody defines body for AttachWorkerEnvironment for application/json ContentType.
+type AttachWorkerEnvironmentJSONRequestBody = AttachWorkerEnvironmentRequest
 
 // UpdateEnvironmentJSONRequestBody defines body for UpdateEnvironment for application/json ContentType.
 type UpdateEnvironmentJSONRequestBody = UpdateEnvironmentRequest
@@ -7305,9 +7973,6 @@ type CreateServiceAccountJSONRequestBody = CreateServiceAccountRequest
 // UpdateServiceAccountJSONRequestBody defines body for UpdateServiceAccount for application/json ContentType.
 type UpdateServiceAccountJSONRequestBody = UpdateServiceAccountRequest
 
-// UpdateArtifactStorageSettingsJSONRequestBody defines body for UpdateArtifactStorageSettings for application/json ContentType.
-type UpdateArtifactStorageSettingsJSONRequestBody = ArtifactStorageSettingsUpdate
-
 // CreateSkillJSONRequestBody defines body for CreateSkill for application/json ContentType.
 type CreateSkillJSONRequestBody = SkillRequest
 
@@ -7356,8 +8021,8 @@ type UpdateWebhookJSONRequestBody = UpdateWebhookRequest
 // PingWebhookJSONRequestBody defines body for PingWebhook for application/json ContentType.
 type PingWebhookJSONRequestBody = PingWebhookRequest
 
-// DeliverWebhookTriggerJSONRequestBody defines body for DeliverWebhookTrigger for application/json ContentType.
-type DeliverWebhookTriggerJSONRequestBody DeliverWebhookTriggerJSONBody
+// DeliverHTTPTriggerJSONRequestBody defines body for DeliverHTTPTrigger for application/json ContentType.
+type DeliverHTTPTriggerJSONRequestBody DeliverHTTPTriggerJSONBody
 
 // Getter for additional properties for ActionAnnotationsResponse. Returns the specified
 // element and whether it was found
@@ -7455,6 +8120,68 @@ func (a ActionAnnotationsResponse) MarshalJSON() ([]byte, error) {
 		}
 	}
 	return json.Marshal(object)
+}
+
+// AsAutomationSpecRepositoryId0 returns the union data inside the AutomationSpecRepository_Id as a AutomationSpecRepositoryId0
+func (t AutomationSpecRepository_Id) AsAutomationSpecRepositoryId0() (AutomationSpecRepositoryId0, error) {
+	var body AutomationSpecRepositoryId0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromAutomationSpecRepositoryId0 overwrites any union data inside the AutomationSpecRepository_Id as the provided AutomationSpecRepositoryId0
+func (t *AutomationSpecRepository_Id) FromAutomationSpecRepositoryId0(v AutomationSpecRepositoryId0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeAutomationSpecRepositoryId0 performs a merge with any union data inside the AutomationSpecRepository_Id, using the provided AutomationSpecRepositoryId0
+func (t *AutomationSpecRepository_Id) MergeAutomationSpecRepositoryId0(v AutomationSpecRepositoryId0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsAutomationSpecRepositoryId1 returns the union data inside the AutomationSpecRepository_Id as a AutomationSpecRepositoryId1
+func (t AutomationSpecRepository_Id) AsAutomationSpecRepositoryId1() (AutomationSpecRepositoryId1, error) {
+	var body AutomationSpecRepositoryId1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromAutomationSpecRepositoryId1 overwrites any union data inside the AutomationSpecRepository_Id as the provided AutomationSpecRepositoryId1
+func (t *AutomationSpecRepository_Id) FromAutomationSpecRepositoryId1(v AutomationSpecRepositoryId1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeAutomationSpecRepositoryId1 performs a merge with any union data inside the AutomationSpecRepository_Id, using the provided AutomationSpecRepositoryId1
+func (t *AutomationSpecRepository_Id) MergeAutomationSpecRepositoryId1(v AutomationSpecRepositoryId1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t AutomationSpecRepository_Id) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *AutomationSpecRepository_Id) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
 }
 
 // AsAutomationAgentStep returns the union data inside the AutomationStep_Config as a AutomationAgentStep
@@ -7577,6 +8304,32 @@ func (t *AutomationStep_Config) FromAutomationInteractionStep(v AutomationIntera
 
 // MergeAutomationInteractionStep performs a merge with any union data inside the AutomationStep_Config, using the provided AutomationInteractionStep
 func (t *AutomationStep_Config) MergeAutomationInteractionStep(v AutomationInteractionStep) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsAutomationSubAutomationStep returns the union data inside the AutomationStep_Config as a AutomationSubAutomationStep
+func (t AutomationStep_Config) AsAutomationSubAutomationStep() (AutomationSubAutomationStep, error) {
+	var body AutomationSubAutomationStep
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromAutomationSubAutomationStep overwrites any union data inside the AutomationStep_Config as the provided AutomationSubAutomationStep
+func (t *AutomationStep_Config) FromAutomationSubAutomationStep(v AutomationSubAutomationStep) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeAutomationSubAutomationStep performs a merge with any union data inside the AutomationStep_Config, using the provided AutomationSubAutomationStep
+func (t *AutomationStep_Config) MergeAutomationSubAutomationStep(v AutomationSubAutomationStep) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -8526,9 +9279,6 @@ type ClientInterface interface {
 	// ListActionInvocations request
 	ListActionInvocations(ctx context.Context, project ProjectHandleParam, params *ListActionInvocationsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListCatalogActions request
-	ListCatalogActions(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*http.Response, error)
-
 	// CreateActionWithBody request with any body
 	CreateActionWithBody(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -8536,9 +9286,6 @@ type ClientInterface interface {
 
 	// DeleteAction request
 	DeleteAction(ctx context.Context, project ProjectHandleParam, actionName ActionNameParam, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// GetCatalogAction request
-	GetCatalogAction(ctx context.Context, project ProjectHandleParam, actionName ActionNameParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// UpdateActionWithBody request with any body
 	UpdateActionWithBody(ctx context.Context, project ProjectHandleParam, actionName ActionNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -8574,6 +9321,17 @@ type ClientInterface interface {
 
 	// ProvisionAgentInbox request
 	ProvisionAgentInbox(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListAgentMessagingBindings request
+	ListAgentMessagingBindings(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// SaveAgentMessagingBindingWithBody request with any body
+	SaveAgentMessagingBindingWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	SaveAgentMessagingBinding(ctx context.Context, project ProjectHandleParam, id IDParam, body SaveAgentMessagingBindingJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DeleteAgentMessagingBinding request
+	DeleteAgentMessagingBinding(ctx context.Context, project ProjectHandleParam, id IDParam, bindingId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListAgentSessions request
 	ListAgentSessions(ctx context.Context, project ProjectHandleParam, id IDParam, params *ListAgentSessionsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -8637,27 +9395,16 @@ type ClientInterface interface {
 	ListArtifacts(ctx context.Context, project ProjectHandleParam, params *ListArtifactsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// CreateArtifactWithBody request with any body
-	CreateArtifactWithBody(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateArtifactWithBody(ctx context.Context, project ProjectHandleParam, params *CreateArtifactParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// DeleteArtifact request
-	DeleteArtifact(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, params *DeleteArtifactParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	DeleteArtifact(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetArtifact request
 	GetArtifact(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetArtifactContent request
 	GetArtifactContent(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// UpdateArtifactContentWithBody request with any body
-	UpdateArtifactContentWithBody(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	UpdateArtifactContent(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, body UpdateArtifactContentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// UnpinArtifact request
-	UnpinArtifact(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// PinArtifact request
-	PinArtifact(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// CreateArtifactSignedUrl request
 	CreateArtifactSignedUrl(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, params *CreateArtifactSignedUrlParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -8700,6 +9447,15 @@ type ClientInterface interface {
 	// PublishAutomationVersion request
 	PublishAutomationVersion(ctx context.Context, project ProjectHandleParam, handle string, version int, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ListCatalogActions request
+	ListCatalogActions(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetCatalogAction request
+	GetCatalogAction(ctx context.Context, project ProjectHandleParam, actionName ActionNameParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListCatalogEvents request
+	ListCatalogEvents(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListEnvironments request
 	ListEnvironments(ctx context.Context, project ProjectHandleParam, params *ListEnvironmentsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -8712,6 +9468,11 @@ type ClientInterface interface {
 	AcquireEnvironmentWithBody(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	AcquireEnvironment(ctx context.Context, project ProjectHandleParam, body AcquireEnvironmentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// AttachWorkerEnvironmentWithBody request with any body
+	AttachWorkerEnvironmentWithBody(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	AttachWorkerEnvironment(ctx context.Context, project ProjectHandleParam, body AttachWorkerEnvironmentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ReleaseEnvironmentLease request
 	ReleaseEnvironmentLease(ctx context.Context, project ProjectHandleParam, leaseId string, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -8779,6 +9540,9 @@ type ClientInterface interface {
 	RespondToInteractionWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	RespondToInteraction(ctx context.Context, project ProjectHandleParam, id IDParam, body RespondToInteractionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListModels request
+	ListModels(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListProjectPermissions request
 	ListProjectPermissions(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -8881,14 +9645,6 @@ type ClientInterface interface {
 	UpdateServiceAccountWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	UpdateServiceAccount(ctx context.Context, project ProjectHandleParam, id IDParam, body UpdateServiceAccountJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// GetArtifactStorageSettings request
-	GetArtifactStorageSettings(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// UpdateArtifactStorageSettingsWithBody request with any body
-	UpdateArtifactStorageSettingsWithBody(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	UpdateArtifactStorageSettings(ctx context.Context, project ProjectHandleParam, body UpdateArtifactStorageSettingsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetArtifactStorageQuota request
 	GetArtifactStorageQuota(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -9030,10 +9786,10 @@ type ClientInterface interface {
 	// OpenWorkerSocket request
 	OpenWorkerSocket(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// DeliverWebhookTriggerWithBody request with any body
-	DeliverWebhookTriggerWithBody(ctx context.Context, webhookHandle string, params *DeliverWebhookTriggerParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// DeliverHTTPTriggerWithBody request with any body
+	DeliverHTTPTriggerWithBody(ctx context.Context, httpHandle string, params *DeliverHTTPTriggerParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	DeliverWebhookTrigger(ctx context.Context, webhookHandle string, params *DeliverWebhookTriggerParams, body DeliverWebhookTriggerJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	DeliverHTTPTrigger(ctx context.Context, httpHandle string, params *DeliverHTTPTriggerParams, body DeliverHTTPTriggerJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
 func (c *Client) ListOrgAuditLogs(ctx context.Context, params *ListOrgAuditLogsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -9264,18 +10020,6 @@ func (c *Client) ListActionInvocations(ctx context.Context, project ProjectHandl
 	return c.Client.Do(req)
 }
 
-func (c *Client) ListCatalogActions(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListCatalogActionsRequest(c.Server, project)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
 func (c *Client) CreateActionWithBody(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewCreateActionRequestWithBody(c.Server, project, contentType, body)
 	if err != nil {
@@ -9302,18 +10046,6 @@ func (c *Client) CreateAction(ctx context.Context, project ProjectHandleParam, b
 
 func (c *Client) DeleteAction(ctx context.Context, project ProjectHandleParam, actionName ActionNameParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewDeleteActionRequest(c.Server, project, actionName)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) GetCatalogAction(ctx context.Context, project ProjectHandleParam, actionName ActionNameParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetCatalogActionRequest(c.Server, project, actionName)
 	if err != nil {
 		return nil, err
 	}
@@ -9470,6 +10202,54 @@ func (c *Client) UpdateAgent(ctx context.Context, project ProjectHandleParam, id
 
 func (c *Client) ProvisionAgentInbox(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewProvisionAgentInboxRequest(c.Server, project, id)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListAgentMessagingBindings(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListAgentMessagingBindingsRequest(c.Server, project, id)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) SaveAgentMessagingBindingWithBody(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSaveAgentMessagingBindingRequestWithBody(c.Server, project, id, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) SaveAgentMessagingBinding(ctx context.Context, project ProjectHandleParam, id IDParam, body SaveAgentMessagingBindingJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSaveAgentMessagingBindingRequest(c.Server, project, id, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) DeleteAgentMessagingBinding(ctx context.Context, project ProjectHandleParam, id IDParam, bindingId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteAgentMessagingBindingRequest(c.Server, project, id, bindingId)
 	if err != nil {
 		return nil, err
 	}
@@ -9744,8 +10524,8 @@ func (c *Client) ListArtifacts(ctx context.Context, project ProjectHandleParam, 
 	return c.Client.Do(req)
 }
 
-func (c *Client) CreateArtifactWithBody(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateArtifactRequestWithBody(c.Server, project, contentType, body)
+func (c *Client) CreateArtifactWithBody(ctx context.Context, project ProjectHandleParam, params *CreateArtifactParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateArtifactRequestWithBody(c.Server, project, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -9756,8 +10536,8 @@ func (c *Client) CreateArtifactWithBody(ctx context.Context, project ProjectHand
 	return c.Client.Do(req)
 }
 
-func (c *Client) DeleteArtifact(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, params *DeleteArtifactParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDeleteArtifactRequest(c.Server, project, id, params)
+func (c *Client) DeleteArtifact(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteArtifactRequest(c.Server, project, id)
 	if err != nil {
 		return nil, err
 	}
@@ -9782,54 +10562,6 @@ func (c *Client) GetArtifact(ctx context.Context, project ProjectHandleParam, id
 
 func (c *Client) GetArtifactContent(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetArtifactContentRequest(c.Server, project, id)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) UpdateArtifactContentWithBody(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateArtifactContentRequestWithBody(c.Server, project, id, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) UpdateArtifactContent(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, body UpdateArtifactContentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateArtifactContentRequest(c.Server, project, id, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) UnpinArtifact(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUnpinArtifactRequest(c.Server, project, id)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) PinArtifact(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewPinArtifactRequest(c.Server, project, id)
 	if err != nil {
 		return nil, err
 	}
@@ -10020,6 +10752,42 @@ func (c *Client) PublishAutomationVersion(ctx context.Context, project ProjectHa
 	return c.Client.Do(req)
 }
 
+func (c *Client) ListCatalogActions(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListCatalogActionsRequest(c.Server, project)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetCatalogAction(ctx context.Context, project ProjectHandleParam, actionName ActionNameParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetCatalogActionRequest(c.Server, project, actionName)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListCatalogEvents(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListCatalogEventsRequest(c.Server, project)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) ListEnvironments(ctx context.Context, project ProjectHandleParam, params *ListEnvironmentsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListEnvironmentsRequest(c.Server, project, params)
 	if err != nil {
@@ -10070,6 +10838,30 @@ func (c *Client) AcquireEnvironmentWithBody(ctx context.Context, project Project
 
 func (c *Client) AcquireEnvironment(ctx context.Context, project ProjectHandleParam, body AcquireEnvironmentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewAcquireEnvironmentRequest(c.Server, project, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) AttachWorkerEnvironmentWithBody(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAttachWorkerEnvironmentRequestWithBody(c.Server, project, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) AttachWorkerEnvironment(ctx context.Context, project ProjectHandleParam, body AttachWorkerEnvironmentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAttachWorkerEnvironmentRequest(c.Server, project, body)
 	if err != nil {
 		return nil, err
 	}
@@ -10370,6 +11162,18 @@ func (c *Client) RespondToInteractionWithBody(ctx context.Context, project Proje
 
 func (c *Client) RespondToInteraction(ctx context.Context, project ProjectHandleParam, id IDParam, body RespondToInteractionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewRespondToInteractionRequest(c.Server, project, id, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListModels(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListModelsRequest(c.Server, project)
 	if err != nil {
 		return nil, err
 	}
@@ -10814,42 +11618,6 @@ func (c *Client) UpdateServiceAccountWithBody(ctx context.Context, project Proje
 
 func (c *Client) UpdateServiceAccount(ctx context.Context, project ProjectHandleParam, id IDParam, body UpdateServiceAccountJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewUpdateServiceAccountRequest(c.Server, project, id, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) GetArtifactStorageSettings(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetArtifactStorageSettingsRequest(c.Server, project)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) UpdateArtifactStorageSettingsWithBody(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateArtifactStorageSettingsRequestWithBody(c.Server, project, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) UpdateArtifactStorageSettings(ctx context.Context, project ProjectHandleParam, body UpdateArtifactStorageSettingsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateArtifactStorageSettingsRequest(c.Server, project, body)
 	if err != nil {
 		return nil, err
 	}
@@ -11484,8 +12252,8 @@ func (c *Client) OpenWorkerSocket(ctx context.Context, project ProjectHandlePara
 	return c.Client.Do(req)
 }
 
-func (c *Client) DeliverWebhookTriggerWithBody(ctx context.Context, webhookHandle string, params *DeliverWebhookTriggerParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDeliverWebhookTriggerRequestWithBody(c.Server, webhookHandle, params, contentType, body)
+func (c *Client) DeliverHTTPTriggerWithBody(ctx context.Context, httpHandle string, params *DeliverHTTPTriggerParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeliverHTTPTriggerRequestWithBody(c.Server, httpHandle, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -11496,8 +12264,8 @@ func (c *Client) DeliverWebhookTriggerWithBody(ctx context.Context, webhookHandl
 	return c.Client.Do(req)
 }
 
-func (c *Client) DeliverWebhookTrigger(ctx context.Context, webhookHandle string, params *DeliverWebhookTriggerParams, body DeliverWebhookTriggerJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDeliverWebhookTriggerRequest(c.Server, webhookHandle, params, body)
+func (c *Client) DeliverHTTPTrigger(ctx context.Context, httpHandle string, params *DeliverHTTPTriggerParams, body DeliverHTTPTriggerJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeliverHTTPTriggerRequest(c.Server, httpHandle, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -12356,40 +13124,6 @@ func NewListActionInvocationsRequest(server string, project ProjectHandleParam, 
 	return req, nil
 }
 
-// NewListCatalogActionsRequest generates requests for ListCatalogActions
-func NewListCatalogActionsRequest(server string, project ProjectHandleParam) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/projects/%s/actions", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
 // NewCreateActionRequest calls the generic CreateAction builder with application/json body
 func NewCreateActionRequest(server string, project ProjectHandleParam, body CreateActionJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
@@ -12471,47 +13205,6 @@ func NewDeleteActionRequest(server string, project ProjectHandleParam, actionNam
 	}
 
 	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewGetCatalogActionRequest generates requests for GetCatalogAction
-func NewGetCatalogActionRequest(server string, project ProjectHandleParam, actionName ActionNameParam) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "action_name", actionName, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/projects/%s/actions/%s", pathParam0, pathParam1)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -12989,6 +13682,149 @@ func NewProvisionAgentInboxRequest(server string, project ProjectHandleParam, id
 	return req, nil
 }
 
+// NewListAgentMessagingBindingsRequest generates requests for ListAgentMessagingBindings
+func NewListAgentMessagingBindingsRequest(server string, project ProjectHandleParam, id IDParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/agents/%s/messaging-bindings", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewSaveAgentMessagingBindingRequest calls the generic SaveAgentMessagingBinding builder with application/json body
+func NewSaveAgentMessagingBindingRequest(server string, project ProjectHandleParam, id IDParam, body SaveAgentMessagingBindingJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewSaveAgentMessagingBindingRequestWithBody(server, project, id, "application/json", bodyReader)
+}
+
+// NewSaveAgentMessagingBindingRequestWithBody generates requests for SaveAgentMessagingBinding with any type of body
+func NewSaveAgentMessagingBindingRequestWithBody(server string, project ProjectHandleParam, id IDParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/agents/%s/messaging-bindings", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewDeleteAgentMessagingBindingRequest generates requests for DeleteAgentMessagingBinding
+func NewDeleteAgentMessagingBindingRequest(server string, project ProjectHandleParam, id IDParam, bindingId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam2 string
+
+	pathParam2, err = runtime.StyleParamWithOptions("simple", false, "binding_id", bindingId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/agents/%s/messaging-bindings/%s", pathParam0, pathParam1, pathParam2)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewListAgentSessionsRequest generates requests for ListAgentSessions
 func NewListAgentSessionsRequest(server string, project ProjectHandleParam, id IDParam, params *ListAgentSessionsParams) (*http.Request, error) {
 	var err error
@@ -13046,6 +13882,18 @@ func NewListAgentSessionsRequest(server string, project ProjectHandleParam, id I
 		if params.Scope != nil {
 
 			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "scope", *params.Scope, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Provider != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "provider", *params.Provider, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -14050,7 +14898,7 @@ func NewListArtifactsRequest(server string, project ProjectHandleParam, params *
 }
 
 // NewCreateArtifactRequestWithBody generates requests for CreateArtifact with any type of body
-func NewCreateArtifactRequestWithBody(server string, project ProjectHandleParam, contentType string, body io.Reader) (*http.Request, error) {
+func NewCreateArtifactRequestWithBody(server string, project ProjectHandleParam, params *CreateArtifactParams, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -14082,11 +14930,24 @@ func NewCreateArtifactRequestWithBody(server string, project ProjectHandleParam,
 
 	req.Header.Add("Content-Type", contentType)
 
+	if params != nil {
+
+		var headerParam0 string
+
+		headerParam0, err = runtime.StyleParamWithOptions("simple", false, "X-Mobius-Lease-Token", params.XMobiusLeaseToken, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("X-Mobius-Lease-Token", headerParam0)
+
+	}
+
 	return req, nil
 }
 
 // NewDeleteArtifactRequest generates requests for DeleteArtifact
-func NewDeleteArtifactRequest(server string, project ProjectHandleParam, id ArtifactIdParam, params *DeleteArtifactParams) (*http.Request, error) {
+func NewDeleteArtifactRequest(server string, project ProjectHandleParam, id ArtifactIdParam) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -14116,33 +14977,6 @@ func NewDeleteArtifactRequest(server string, project ProjectHandleParam, id Arti
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
-	}
-
-	if params != nil {
-		// queryValues collects non-styled parameters (passthrough, JSON)
-		// that are safe to round-trip through url.Values.Encode().
-		queryValues := queryURL.Query()
-		// rawQueryFragments collects pre-encoded query fragments from
-		// styled parameters, preserving literal commas as delimiters
-		// per the OpenAPI spec (e.g. "color=blue,black,brown").
-		var rawQueryFragments []string
-
-		if params.Force != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "force", *params.Force, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "boolean", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if encoded := queryValues.Encode(); encoded != "" {
-			rawQueryFragments = append(rawQueryFragments, encoded)
-		}
-		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
 	}
 
 	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
@@ -14228,142 +15062,6 @@ func NewGetArtifactContentRequest(server string, project ProjectHandleParam, id 
 	}
 
 	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewUpdateArtifactContentRequest calls the generic UpdateArtifactContent builder with application/json body
-func NewUpdateArtifactContentRequest(server string, project ProjectHandleParam, id ArtifactIdParam, body UpdateArtifactContentJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewUpdateArtifactContentRequestWithBody(server, project, id, "application/json", bodyReader)
-}
-
-// NewUpdateArtifactContentRequestWithBody generates requests for UpdateArtifactContent with any type of body
-func NewUpdateArtifactContentRequestWithBody(server string, project ProjectHandleParam, id ArtifactIdParam, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/projects/%s/artifacts/%s/content", pathParam0, pathParam1)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewUnpinArtifactRequest generates requests for UnpinArtifact
-func NewUnpinArtifactRequest(server string, project ProjectHandleParam, id ArtifactIdParam) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/projects/%s/artifacts/%s/pin", pathParam0, pathParam1)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewPinArtifactRequest generates requests for PinArtifact
-func NewPinArtifactRequest(server string, project ProjectHandleParam, id ArtifactIdParam) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/projects/%s/artifacts/%s/pin", pathParam0, pathParam1)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -15049,6 +15747,115 @@ func NewPublishAutomationVersionRequest(server string, project ProjectHandlePara
 	return req, nil
 }
 
+// NewListCatalogActionsRequest generates requests for ListCatalogActions
+func NewListCatalogActionsRequest(server string, project ProjectHandleParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/catalog/actions", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetCatalogActionRequest generates requests for GetCatalogAction
+func NewGetCatalogActionRequest(server string, project ProjectHandleParam, actionName ActionNameParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "action_name", actionName, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/catalog/actions/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewListCatalogEventsRequest generates requests for ListCatalogEvents
+func NewListCatalogEventsRequest(server string, project ProjectHandleParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/catalog/events", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewListEnvironmentsRequest generates requests for ListEnvironments
 func NewListEnvironmentsRequest(server string, project ProjectHandleParam, params *ListEnvironmentsParams) (*http.Request, error) {
 	var err error
@@ -15329,6 +16136,53 @@ func NewAcquireEnvironmentRequestWithBody(server string, project ProjectHandlePa
 	}
 
 	operationPath := fmt.Sprintf("/v1/projects/%s/environments/acquire", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewAttachWorkerEnvironmentRequest calls the generic AttachWorkerEnvironment builder with application/json body
+func NewAttachWorkerEnvironmentRequest(server string, project ProjectHandleParam, body AttachWorkerEnvironmentJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewAttachWorkerEnvironmentRequestWithBody(server, project, "application/json", bodyReader)
+}
+
+// NewAttachWorkerEnvironmentRequestWithBody generates requests for AttachWorkerEnvironment with any type of body
+func NewAttachWorkerEnvironmentRequestWithBody(server string, project ProjectHandleParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/environments/attach", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -16278,6 +17132,40 @@ func NewRespondToInteractionRequestWithBody(server string, project ProjectHandle
 	return req, nil
 }
 
+// NewListModelsRequest generates requests for ListModels
+func NewListModelsRequest(server string, project ProjectHandleParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/models", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewListProjectPermissionsRequest generates requests for ListProjectPermissions
 func NewListProjectPermissionsRequest(server string, project ProjectHandleParam) (*http.Request, error) {
 	var err error
@@ -16791,6 +17679,18 @@ func NewListAutomationRunsRequest(server string, project ProjectHandleParam, par
 		if params.AutomationId != nil {
 
 			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "automation_id", *params.AutomationId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.SourceEventId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "source_event_id", *params.SourceEventId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -17780,87 +18680,6 @@ func NewUpdateServiceAccountRequestWithBody(server string, project ProjectHandle
 	}
 
 	req, err := http.NewRequest(http.MethodPatch, queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewGetArtifactStorageSettingsRequest generates requests for GetArtifactStorageSettings
-func NewGetArtifactStorageSettingsRequest(server string, project ProjectHandleParam) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/projects/%s/settings/artifact-storage", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewUpdateArtifactStorageSettingsRequest calls the generic UpdateArtifactStorageSettings builder with application/json body
-func NewUpdateArtifactStorageSettingsRequest(server string, project ProjectHandleParam, body UpdateArtifactStorageSettingsJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewUpdateArtifactStorageSettingsRequestWithBody(server, project, "application/json", bodyReader)
-}
-
-// NewUpdateArtifactStorageSettingsRequestWithBody generates requests for UpdateArtifactStorageSettings with any type of body
-func NewUpdateArtifactStorageSettingsRequestWithBody(server string, project ProjectHandleParam, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project", project, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/projects/%s/settings/artifact-storage", pathParam0)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
 	if err != nil {
 		return nil, err
 	}
@@ -20334,24 +21153,24 @@ func NewOpenWorkerSocketRequest(server string, project ProjectHandleParam) (*htt
 	return req, nil
 }
 
-// NewDeliverWebhookTriggerRequest calls the generic DeliverWebhookTrigger builder with application/json body
-func NewDeliverWebhookTriggerRequest(server string, webhookHandle string, params *DeliverWebhookTriggerParams, body DeliverWebhookTriggerJSONRequestBody) (*http.Request, error) {
+// NewDeliverHTTPTriggerRequest calls the generic DeliverHTTPTrigger builder with application/json body
+func NewDeliverHTTPTriggerRequest(server string, httpHandle string, params *DeliverHTTPTriggerParams, body DeliverHTTPTriggerJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewDeliverWebhookTriggerRequestWithBody(server, webhookHandle, params, "application/json", bodyReader)
+	return NewDeliverHTTPTriggerRequestWithBody(server, httpHandle, params, "application/json", bodyReader)
 }
 
-// NewDeliverWebhookTriggerRequestWithBody generates requests for DeliverWebhookTrigger with any type of body
-func NewDeliverWebhookTriggerRequestWithBody(server string, webhookHandle string, params *DeliverWebhookTriggerParams, contentType string, body io.Reader) (*http.Request, error) {
+// NewDeliverHTTPTriggerRequestWithBody generates requests for DeliverHTTPTrigger with any type of body
+func NewDeliverHTTPTriggerRequestWithBody(server string, httpHandle string, params *DeliverHTTPTriggerParams, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
 
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "webhook_handle", webhookHandle, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "http_handle", httpHandle, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
 	if err != nil {
 		return nil, err
 	}
@@ -20361,7 +21180,7 @@ func NewDeliverWebhookTriggerRequestWithBody(server string, webhookHandle string
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/triggers/webhook/%s", pathParam0)
+	operationPath := fmt.Sprintf("/v1/triggers/http/%s", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -20404,6 +21223,21 @@ func NewDeliverWebhookTriggerRequestWithBody(server string, webhookHandle string
 	}
 
 	req.Header.Add("Content-Type", contentType)
+
+	if params != nil {
+
+		if params.XIdempotencyKey != nil {
+			var headerParam0 string
+
+			headerParam0, err = runtime.StyleParamWithOptions("simple", false, "X-Idempotency-Key", *params.XIdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("X-Idempotency-Key", headerParam0)
+		}
+
+	}
 
 	return req, nil
 }
@@ -20504,9 +21338,6 @@ type ClientWithResponsesInterface interface {
 	// ListActionInvocationsWithResponse request
 	ListActionInvocationsWithResponse(ctx context.Context, project ProjectHandleParam, params *ListActionInvocationsParams, reqEditors ...RequestEditorFn) (*ListActionInvocationsResponse, error)
 
-	// ListCatalogActionsWithResponse request
-	ListCatalogActionsWithResponse(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*ListCatalogActionsResponse, error)
-
 	// CreateActionWithBodyWithResponse request with any body
 	CreateActionWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateActionResponse, error)
 
@@ -20514,9 +21345,6 @@ type ClientWithResponsesInterface interface {
 
 	// DeleteActionWithResponse request
 	DeleteActionWithResponse(ctx context.Context, project ProjectHandleParam, actionName ActionNameParam, reqEditors ...RequestEditorFn) (*DeleteActionResponse, error)
-
-	// GetCatalogActionWithResponse request
-	GetCatalogActionWithResponse(ctx context.Context, project ProjectHandleParam, actionName ActionNameParam, reqEditors ...RequestEditorFn) (*GetCatalogActionResponse, error)
 
 	// UpdateActionWithBodyWithResponse request with any body
 	UpdateActionWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, actionName ActionNameParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateActionResponse, error)
@@ -20552,6 +21380,17 @@ type ClientWithResponsesInterface interface {
 
 	// ProvisionAgentInboxWithResponse request
 	ProvisionAgentInboxWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*ProvisionAgentInboxResponse, error)
+
+	// ListAgentMessagingBindingsWithResponse request
+	ListAgentMessagingBindingsWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*ListAgentMessagingBindingsResponse, error)
+
+	// SaveAgentMessagingBindingWithBodyWithResponse request with any body
+	SaveAgentMessagingBindingWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SaveAgentMessagingBindingResponse, error)
+
+	SaveAgentMessagingBindingWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body SaveAgentMessagingBindingJSONRequestBody, reqEditors ...RequestEditorFn) (*SaveAgentMessagingBindingResponse, error)
+
+	// DeleteAgentMessagingBindingWithResponse request
+	DeleteAgentMessagingBindingWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, bindingId string, reqEditors ...RequestEditorFn) (*DeleteAgentMessagingBindingResponse, error)
 
 	// ListAgentSessionsWithResponse request
 	ListAgentSessionsWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, params *ListAgentSessionsParams, reqEditors ...RequestEditorFn) (*ListAgentSessionsResponse, error)
@@ -20615,27 +21454,16 @@ type ClientWithResponsesInterface interface {
 	ListArtifactsWithResponse(ctx context.Context, project ProjectHandleParam, params *ListArtifactsParams, reqEditors ...RequestEditorFn) (*ListArtifactsResponse, error)
 
 	// CreateArtifactWithBodyWithResponse request with any body
-	CreateArtifactWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateArtifactResponse, error)
+	CreateArtifactWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, params *CreateArtifactParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateArtifactResponse, error)
 
 	// DeleteArtifactWithResponse request
-	DeleteArtifactWithResponse(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, params *DeleteArtifactParams, reqEditors ...RequestEditorFn) (*DeleteArtifactResponse, error)
+	DeleteArtifactWithResponse(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, reqEditors ...RequestEditorFn) (*DeleteArtifactResponse, error)
 
 	// GetArtifactWithResponse request
 	GetArtifactWithResponse(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, reqEditors ...RequestEditorFn) (*GetArtifactResponse, error)
 
 	// GetArtifactContentWithResponse request
 	GetArtifactContentWithResponse(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, reqEditors ...RequestEditorFn) (*GetArtifactContentResponse, error)
-
-	// UpdateArtifactContentWithBodyWithResponse request with any body
-	UpdateArtifactContentWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateArtifactContentResponse, error)
-
-	UpdateArtifactContentWithResponse(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, body UpdateArtifactContentJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateArtifactContentResponse, error)
-
-	// UnpinArtifactWithResponse request
-	UnpinArtifactWithResponse(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, reqEditors ...RequestEditorFn) (*UnpinArtifactResponse, error)
-
-	// PinArtifactWithResponse request
-	PinArtifactWithResponse(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, reqEditors ...RequestEditorFn) (*PinArtifactResponse, error)
 
 	// CreateArtifactSignedUrlWithResponse request
 	CreateArtifactSignedUrlWithResponse(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, params *CreateArtifactSignedUrlParams, reqEditors ...RequestEditorFn) (*CreateArtifactSignedUrlResponse, error)
@@ -20678,6 +21506,15 @@ type ClientWithResponsesInterface interface {
 	// PublishAutomationVersionWithResponse request
 	PublishAutomationVersionWithResponse(ctx context.Context, project ProjectHandleParam, handle string, version int, reqEditors ...RequestEditorFn) (*PublishAutomationVersionResponse, error)
 
+	// ListCatalogActionsWithResponse request
+	ListCatalogActionsWithResponse(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*ListCatalogActionsResponse, error)
+
+	// GetCatalogActionWithResponse request
+	GetCatalogActionWithResponse(ctx context.Context, project ProjectHandleParam, actionName ActionNameParam, reqEditors ...RequestEditorFn) (*GetCatalogActionResponse, error)
+
+	// ListCatalogEventsWithResponse request
+	ListCatalogEventsWithResponse(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*ListCatalogEventsResponse, error)
+
 	// ListEnvironmentsWithResponse request
 	ListEnvironmentsWithResponse(ctx context.Context, project ProjectHandleParam, params *ListEnvironmentsParams, reqEditors ...RequestEditorFn) (*ListEnvironmentsResponse, error)
 
@@ -20690,6 +21527,11 @@ type ClientWithResponsesInterface interface {
 	AcquireEnvironmentWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AcquireEnvironmentResponse, error)
 
 	AcquireEnvironmentWithResponse(ctx context.Context, project ProjectHandleParam, body AcquireEnvironmentJSONRequestBody, reqEditors ...RequestEditorFn) (*AcquireEnvironmentResponse, error)
+
+	// AttachWorkerEnvironmentWithBodyWithResponse request with any body
+	AttachWorkerEnvironmentWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AttachWorkerEnvironmentResponse, error)
+
+	AttachWorkerEnvironmentWithResponse(ctx context.Context, project ProjectHandleParam, body AttachWorkerEnvironmentJSONRequestBody, reqEditors ...RequestEditorFn) (*AttachWorkerEnvironmentResponse, error)
 
 	// ReleaseEnvironmentLeaseWithResponse request
 	ReleaseEnvironmentLeaseWithResponse(ctx context.Context, project ProjectHandleParam, leaseId string, reqEditors ...RequestEditorFn) (*ReleaseEnvironmentLeaseResponse, error)
@@ -20757,6 +21599,9 @@ type ClientWithResponsesInterface interface {
 	RespondToInteractionWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RespondToInteractionResponse, error)
 
 	RespondToInteractionWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body RespondToInteractionJSONRequestBody, reqEditors ...RequestEditorFn) (*RespondToInteractionResponse, error)
+
+	// ListModelsWithResponse request
+	ListModelsWithResponse(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*ListModelsResponse, error)
 
 	// ListProjectPermissionsWithResponse request
 	ListProjectPermissionsWithResponse(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*ListProjectPermissionsResponse, error)
@@ -20859,14 +21704,6 @@ type ClientWithResponsesInterface interface {
 	UpdateServiceAccountWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateServiceAccountResponse, error)
 
 	UpdateServiceAccountWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body UpdateServiceAccountJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateServiceAccountResponse, error)
-
-	// GetArtifactStorageSettingsWithResponse request
-	GetArtifactStorageSettingsWithResponse(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*GetArtifactStorageSettingsResponse, error)
-
-	// UpdateArtifactStorageSettingsWithBodyWithResponse request with any body
-	UpdateArtifactStorageSettingsWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateArtifactStorageSettingsResponse, error)
-
-	UpdateArtifactStorageSettingsWithResponse(ctx context.Context, project ProjectHandleParam, body UpdateArtifactStorageSettingsJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateArtifactStorageSettingsResponse, error)
 
 	// GetArtifactStorageQuotaWithResponse request
 	GetArtifactStorageQuotaWithResponse(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*GetArtifactStorageQuotaResponse, error)
@@ -21008,10 +21845,10 @@ type ClientWithResponsesInterface interface {
 	// OpenWorkerSocketWithResponse request
 	OpenWorkerSocketWithResponse(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*OpenWorkerSocketResponse, error)
 
-	// DeliverWebhookTriggerWithBodyWithResponse request with any body
-	DeliverWebhookTriggerWithBodyWithResponse(ctx context.Context, webhookHandle string, params *DeliverWebhookTriggerParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*DeliverWebhookTriggerResponse, error)
+	// DeliverHTTPTriggerWithBodyWithResponse request with any body
+	DeliverHTTPTriggerWithBodyWithResponse(ctx context.Context, httpHandle string, params *DeliverHTTPTriggerParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*DeliverHTTPTriggerResponse, error)
 
-	DeliverWebhookTriggerWithResponse(ctx context.Context, webhookHandle string, params *DeliverWebhookTriggerParams, body DeliverWebhookTriggerJSONRequestBody, reqEditors ...RequestEditorFn) (*DeliverWebhookTriggerResponse, error)
+	DeliverHTTPTriggerWithResponse(ctx context.Context, httpHandle string, params *DeliverHTTPTriggerParams, body DeliverHTTPTriggerJSONRequestBody, reqEditors ...RequestEditorFn) (*DeliverHTTPTriggerResponse, error)
 }
 
 type ListOrgAuditLogsResponse struct {
@@ -21511,38 +22348,6 @@ func (r ListActionInvocationsResponse) ContentType() string {
 	return ""
 }
 
-type ListCatalogActionsResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *ActionCatalogListResponse
-	JSON401      *Unauthorized
-	JSON403      *Forbidden
-}
-
-// Status returns HTTPResponse.Status
-func (r ListCatalogActionsResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ListCatalogActionsResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ListCatalogActionsResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
 type CreateActionResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -21604,39 +22409,6 @@ func (r DeleteActionResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r DeleteActionResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type GetCatalogActionResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *ActionCatalogEntry
-	JSON401      *Unauthorized
-	JSON403      *Forbidden
-	JSON404      *NotFound
-}
-
-// Status returns HTTPResponse.Status
-func (r GetCatalogActionResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetCatalogActionResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r GetCatalogActionResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -21939,6 +22711,106 @@ func (r ProvisionAgentInboxResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r ProvisionAgentInboxResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ListAgentMessagingBindingsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *AgentMessagingBindingListResponse
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r ListAgentMessagingBindingsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListAgentMessagingBindingsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListAgentMessagingBindingsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type SaveAgentMessagingBindingResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *AgentMessagingBinding
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+	JSON409      *Conflict
+}
+
+// Status returns HTTPResponse.Status
+func (r SaveAgentMessagingBindingResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r SaveAgentMessagingBindingResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r SaveAgentMessagingBindingResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type DeleteAgentMessagingBindingResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteAgentMessagingBindingResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteAgentMessagingBindingResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r DeleteAgentMessagingBindingResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -22637,107 +23509,6 @@ func (r GetArtifactContentResponse) ContentType() string {
 	return ""
 }
 
-type UpdateArtifactContentResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *Artifact
-	JSON400      *BadRequest
-	JSON401      *Unauthorized
-	JSON403      *Forbidden
-	JSON404      *NotFound
-	JSON409      *Conflict
-}
-
-// Status returns HTTPResponse.Status
-func (r UpdateArtifactContentResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r UpdateArtifactContentResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r UpdateArtifactContentResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type UnpinArtifactResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *Artifact
-	JSON401      *Unauthorized
-	JSON403      *Forbidden
-	JSON404      *NotFound
-}
-
-// Status returns HTTPResponse.Status
-func (r UnpinArtifactResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r UnpinArtifactResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r UnpinArtifactResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type PinArtifactResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *Artifact
-	JSON401      *Unauthorized
-	JSON403      *Forbidden
-	JSON404      *NotFound
-}
-
-// Status returns HTTPResponse.Status
-func (r PinArtifactResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r PinArtifactResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r PinArtifactResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
 type CreateArtifactSignedUrlResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -23105,6 +23876,103 @@ func (r PublishAutomationVersionResponse) ContentType() string {
 	return ""
 }
 
+type ListCatalogActionsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ActionCatalogListResponse
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+}
+
+// Status returns HTTPResponse.Status
+func (r ListCatalogActionsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListCatalogActionsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListCatalogActionsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetCatalogActionResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ActionCatalogEntry
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r GetCatalogActionResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetCatalogActionResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetCatalogActionResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ListCatalogEventsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *EventCatalogResponse
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+}
+
+// Status returns HTTPResponse.Status
+func (r ListCatalogEventsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListCatalogEventsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListCatalogEventsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type ListEnvironmentsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -23199,6 +24067,40 @@ func (r AcquireEnvironmentResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r AcquireEnvironmentResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type AttachWorkerEnvironmentResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Environment
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON409      *Conflict
+}
+
+// Status returns HTTPResponse.Status
+func (r AttachWorkerEnvironmentResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r AttachWorkerEnvironmentResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r AttachWorkerEnvironmentResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -23773,6 +24675,39 @@ func (r RespondToInteractionResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r RespondToInteractionResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ListModelsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ProjectModelsResponse
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r ListModelsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListModelsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListModelsResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -24704,71 +25639,6 @@ func (r UpdateServiceAccountResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r UpdateServiceAccountResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type GetArtifactStorageSettingsResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *ArtifactStorageSettings
-	JSON401      *Unauthorized
-	JSON403      *Forbidden
-}
-
-// Status returns HTTPResponse.Status
-func (r GetArtifactStorageSettingsResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetArtifactStorageSettingsResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r GetArtifactStorageSettingsResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type UpdateArtifactStorageSettingsResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *ArtifactStorageSettings
-	JSON400      *BadRequest
-	JSON401      *Unauthorized
-	JSON403      *Forbidden
-}
-
-// Status returns HTTPResponse.Status
-func (r UpdateArtifactStorageSettingsResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r UpdateArtifactStorageSettingsResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r UpdateArtifactStorageSettingsResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -25983,17 +26853,17 @@ func (r OpenWorkerSocketResponse) ContentType() string {
 	return ""
 }
 
-type DeliverWebhookTriggerResponse struct {
+type DeliverHTTPTriggerResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON202      *WebhookDeliveryResponse
+	JSON202      *HTTPTriggerDeliveryResponse
 	JSON400      *BadRequest
 	JSON404      *NotFound
 	JSON409      *Conflict
 }
 
 // Status returns HTTPResponse.Status
-func (r DeliverWebhookTriggerResponse) Status() string {
+func (r DeliverHTTPTriggerResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -26001,7 +26871,7 @@ func (r DeliverWebhookTriggerResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r DeliverWebhookTriggerResponse) StatusCode() int {
+func (r DeliverHTTPTriggerResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -26009,7 +26879,7 @@ func (r DeliverWebhookTriggerResponse) StatusCode() int {
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r DeliverWebhookTriggerResponse) ContentType() string {
+func (r DeliverHTTPTriggerResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -26183,15 +27053,6 @@ func (c *ClientWithResponses) ListActionInvocationsWithResponse(ctx context.Cont
 	return ParseListActionInvocationsResponse(rsp)
 }
 
-// ListCatalogActionsWithResponse request returning *ListCatalogActionsResponse
-func (c *ClientWithResponses) ListCatalogActionsWithResponse(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*ListCatalogActionsResponse, error) {
-	rsp, err := c.ListCatalogActions(ctx, project, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseListCatalogActionsResponse(rsp)
-}
-
 // CreateActionWithBodyWithResponse request with arbitrary body returning *CreateActionResponse
 func (c *ClientWithResponses) CreateActionWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateActionResponse, error) {
 	rsp, err := c.CreateActionWithBody(ctx, project, contentType, body, reqEditors...)
@@ -26216,15 +27077,6 @@ func (c *ClientWithResponses) DeleteActionWithResponse(ctx context.Context, proj
 		return nil, err
 	}
 	return ParseDeleteActionResponse(rsp)
-}
-
-// GetCatalogActionWithResponse request returning *GetCatalogActionResponse
-func (c *ClientWithResponses) GetCatalogActionWithResponse(ctx context.Context, project ProjectHandleParam, actionName ActionNameParam, reqEditors ...RequestEditorFn) (*GetCatalogActionResponse, error) {
-	rsp, err := c.GetCatalogAction(ctx, project, actionName, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetCatalogActionResponse(rsp)
 }
 
 // UpdateActionWithBodyWithResponse request with arbitrary body returning *UpdateActionResponse
@@ -26338,6 +27190,41 @@ func (c *ClientWithResponses) ProvisionAgentInboxWithResponse(ctx context.Contex
 		return nil, err
 	}
 	return ParseProvisionAgentInboxResponse(rsp)
+}
+
+// ListAgentMessagingBindingsWithResponse request returning *ListAgentMessagingBindingsResponse
+func (c *ClientWithResponses) ListAgentMessagingBindingsWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, reqEditors ...RequestEditorFn) (*ListAgentMessagingBindingsResponse, error) {
+	rsp, err := c.ListAgentMessagingBindings(ctx, project, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListAgentMessagingBindingsResponse(rsp)
+}
+
+// SaveAgentMessagingBindingWithBodyWithResponse request with arbitrary body returning *SaveAgentMessagingBindingResponse
+func (c *ClientWithResponses) SaveAgentMessagingBindingWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SaveAgentMessagingBindingResponse, error) {
+	rsp, err := c.SaveAgentMessagingBindingWithBody(ctx, project, id, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSaveAgentMessagingBindingResponse(rsp)
+}
+
+func (c *ClientWithResponses) SaveAgentMessagingBindingWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, body SaveAgentMessagingBindingJSONRequestBody, reqEditors ...RequestEditorFn) (*SaveAgentMessagingBindingResponse, error) {
+	rsp, err := c.SaveAgentMessagingBinding(ctx, project, id, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSaveAgentMessagingBindingResponse(rsp)
+}
+
+// DeleteAgentMessagingBindingWithResponse request returning *DeleteAgentMessagingBindingResponse
+func (c *ClientWithResponses) DeleteAgentMessagingBindingWithResponse(ctx context.Context, project ProjectHandleParam, id IDParam, bindingId string, reqEditors ...RequestEditorFn) (*DeleteAgentMessagingBindingResponse, error) {
+	rsp, err := c.DeleteAgentMessagingBinding(ctx, project, id, bindingId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteAgentMessagingBindingResponse(rsp)
 }
 
 // ListAgentSessionsWithResponse request returning *ListAgentSessionsResponse
@@ -26534,8 +27421,8 @@ func (c *ClientWithResponses) ListArtifactsWithResponse(ctx context.Context, pro
 }
 
 // CreateArtifactWithBodyWithResponse request with arbitrary body returning *CreateArtifactResponse
-func (c *ClientWithResponses) CreateArtifactWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateArtifactResponse, error) {
-	rsp, err := c.CreateArtifactWithBody(ctx, project, contentType, body, reqEditors...)
+func (c *ClientWithResponses) CreateArtifactWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, params *CreateArtifactParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateArtifactResponse, error) {
+	rsp, err := c.CreateArtifactWithBody(ctx, project, params, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -26543,8 +27430,8 @@ func (c *ClientWithResponses) CreateArtifactWithBodyWithResponse(ctx context.Con
 }
 
 // DeleteArtifactWithResponse request returning *DeleteArtifactResponse
-func (c *ClientWithResponses) DeleteArtifactWithResponse(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, params *DeleteArtifactParams, reqEditors ...RequestEditorFn) (*DeleteArtifactResponse, error) {
-	rsp, err := c.DeleteArtifact(ctx, project, id, params, reqEditors...)
+func (c *ClientWithResponses) DeleteArtifactWithResponse(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, reqEditors ...RequestEditorFn) (*DeleteArtifactResponse, error) {
+	rsp, err := c.DeleteArtifact(ctx, project, id, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -26567,41 +27454,6 @@ func (c *ClientWithResponses) GetArtifactContentWithResponse(ctx context.Context
 		return nil, err
 	}
 	return ParseGetArtifactContentResponse(rsp)
-}
-
-// UpdateArtifactContentWithBodyWithResponse request with arbitrary body returning *UpdateArtifactContentResponse
-func (c *ClientWithResponses) UpdateArtifactContentWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateArtifactContentResponse, error) {
-	rsp, err := c.UpdateArtifactContentWithBody(ctx, project, id, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUpdateArtifactContentResponse(rsp)
-}
-
-func (c *ClientWithResponses) UpdateArtifactContentWithResponse(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, body UpdateArtifactContentJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateArtifactContentResponse, error) {
-	rsp, err := c.UpdateArtifactContent(ctx, project, id, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUpdateArtifactContentResponse(rsp)
-}
-
-// UnpinArtifactWithResponse request returning *UnpinArtifactResponse
-func (c *ClientWithResponses) UnpinArtifactWithResponse(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, reqEditors ...RequestEditorFn) (*UnpinArtifactResponse, error) {
-	rsp, err := c.UnpinArtifact(ctx, project, id, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUnpinArtifactResponse(rsp)
-}
-
-// PinArtifactWithResponse request returning *PinArtifactResponse
-func (c *ClientWithResponses) PinArtifactWithResponse(ctx context.Context, project ProjectHandleParam, id ArtifactIdParam, reqEditors ...RequestEditorFn) (*PinArtifactResponse, error) {
-	rsp, err := c.PinArtifact(ctx, project, id, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParsePinArtifactResponse(rsp)
 }
 
 // CreateArtifactSignedUrlWithResponse request returning *CreateArtifactSignedUrlResponse
@@ -26735,6 +27587,33 @@ func (c *ClientWithResponses) PublishAutomationVersionWithResponse(ctx context.C
 	return ParsePublishAutomationVersionResponse(rsp)
 }
 
+// ListCatalogActionsWithResponse request returning *ListCatalogActionsResponse
+func (c *ClientWithResponses) ListCatalogActionsWithResponse(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*ListCatalogActionsResponse, error) {
+	rsp, err := c.ListCatalogActions(ctx, project, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListCatalogActionsResponse(rsp)
+}
+
+// GetCatalogActionWithResponse request returning *GetCatalogActionResponse
+func (c *ClientWithResponses) GetCatalogActionWithResponse(ctx context.Context, project ProjectHandleParam, actionName ActionNameParam, reqEditors ...RequestEditorFn) (*GetCatalogActionResponse, error) {
+	rsp, err := c.GetCatalogAction(ctx, project, actionName, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetCatalogActionResponse(rsp)
+}
+
+// ListCatalogEventsWithResponse request returning *ListCatalogEventsResponse
+func (c *ClientWithResponses) ListCatalogEventsWithResponse(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*ListCatalogEventsResponse, error) {
+	rsp, err := c.ListCatalogEvents(ctx, project, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListCatalogEventsResponse(rsp)
+}
+
 // ListEnvironmentsWithResponse request returning *ListEnvironmentsResponse
 func (c *ClientWithResponses) ListEnvironmentsWithResponse(ctx context.Context, project ProjectHandleParam, params *ListEnvironmentsParams, reqEditors ...RequestEditorFn) (*ListEnvironmentsResponse, error) {
 	rsp, err := c.ListEnvironments(ctx, project, params, reqEditors...)
@@ -26776,6 +27655,23 @@ func (c *ClientWithResponses) AcquireEnvironmentWithResponse(ctx context.Context
 		return nil, err
 	}
 	return ParseAcquireEnvironmentResponse(rsp)
+}
+
+// AttachWorkerEnvironmentWithBodyWithResponse request with arbitrary body returning *AttachWorkerEnvironmentResponse
+func (c *ClientWithResponses) AttachWorkerEnvironmentWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AttachWorkerEnvironmentResponse, error) {
+	rsp, err := c.AttachWorkerEnvironmentWithBody(ctx, project, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAttachWorkerEnvironmentResponse(rsp)
+}
+
+func (c *ClientWithResponses) AttachWorkerEnvironmentWithResponse(ctx context.Context, project ProjectHandleParam, body AttachWorkerEnvironmentJSONRequestBody, reqEditors ...RequestEditorFn) (*AttachWorkerEnvironmentResponse, error) {
+	rsp, err := c.AttachWorkerEnvironment(ctx, project, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAttachWorkerEnvironmentResponse(rsp)
 }
 
 // ReleaseEnvironmentLeaseWithResponse request returning *ReleaseEnvironmentLeaseResponse
@@ -26993,6 +27889,15 @@ func (c *ClientWithResponses) RespondToInteractionWithResponse(ctx context.Conte
 		return nil, err
 	}
 	return ParseRespondToInteractionResponse(rsp)
+}
+
+// ListModelsWithResponse request returning *ListModelsResponse
+func (c *ClientWithResponses) ListModelsWithResponse(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*ListModelsResponse, error) {
+	rsp, err := c.ListModels(ctx, project, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListModelsResponse(rsp)
 }
 
 // ListProjectPermissionsWithResponse request returning *ListProjectPermissionsResponse
@@ -27317,32 +28222,6 @@ func (c *ClientWithResponses) UpdateServiceAccountWithResponse(ctx context.Conte
 		return nil, err
 	}
 	return ParseUpdateServiceAccountResponse(rsp)
-}
-
-// GetArtifactStorageSettingsWithResponse request returning *GetArtifactStorageSettingsResponse
-func (c *ClientWithResponses) GetArtifactStorageSettingsWithResponse(ctx context.Context, project ProjectHandleParam, reqEditors ...RequestEditorFn) (*GetArtifactStorageSettingsResponse, error) {
-	rsp, err := c.GetArtifactStorageSettings(ctx, project, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetArtifactStorageSettingsResponse(rsp)
-}
-
-// UpdateArtifactStorageSettingsWithBodyWithResponse request with arbitrary body returning *UpdateArtifactStorageSettingsResponse
-func (c *ClientWithResponses) UpdateArtifactStorageSettingsWithBodyWithResponse(ctx context.Context, project ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateArtifactStorageSettingsResponse, error) {
-	rsp, err := c.UpdateArtifactStorageSettingsWithBody(ctx, project, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUpdateArtifactStorageSettingsResponse(rsp)
-}
-
-func (c *ClientWithResponses) UpdateArtifactStorageSettingsWithResponse(ctx context.Context, project ProjectHandleParam, body UpdateArtifactStorageSettingsJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateArtifactStorageSettingsResponse, error) {
-	rsp, err := c.UpdateArtifactStorageSettings(ctx, project, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUpdateArtifactStorageSettingsResponse(rsp)
 }
 
 // GetArtifactStorageQuotaWithResponse request returning *GetArtifactStorageQuotaResponse
@@ -27797,21 +28676,21 @@ func (c *ClientWithResponses) OpenWorkerSocketWithResponse(ctx context.Context, 
 	return ParseOpenWorkerSocketResponse(rsp)
 }
 
-// DeliverWebhookTriggerWithBodyWithResponse request with arbitrary body returning *DeliverWebhookTriggerResponse
-func (c *ClientWithResponses) DeliverWebhookTriggerWithBodyWithResponse(ctx context.Context, webhookHandle string, params *DeliverWebhookTriggerParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*DeliverWebhookTriggerResponse, error) {
-	rsp, err := c.DeliverWebhookTriggerWithBody(ctx, webhookHandle, params, contentType, body, reqEditors...)
+// DeliverHTTPTriggerWithBodyWithResponse request with arbitrary body returning *DeliverHTTPTriggerResponse
+func (c *ClientWithResponses) DeliverHTTPTriggerWithBodyWithResponse(ctx context.Context, httpHandle string, params *DeliverHTTPTriggerParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*DeliverHTTPTriggerResponse, error) {
+	rsp, err := c.DeliverHTTPTriggerWithBody(ctx, httpHandle, params, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseDeliverWebhookTriggerResponse(rsp)
+	return ParseDeliverHTTPTriggerResponse(rsp)
 }
 
-func (c *ClientWithResponses) DeliverWebhookTriggerWithResponse(ctx context.Context, webhookHandle string, params *DeliverWebhookTriggerParams, body DeliverWebhookTriggerJSONRequestBody, reqEditors ...RequestEditorFn) (*DeliverWebhookTriggerResponse, error) {
-	rsp, err := c.DeliverWebhookTrigger(ctx, webhookHandle, params, body, reqEditors...)
+func (c *ClientWithResponses) DeliverHTTPTriggerWithResponse(ctx context.Context, httpHandle string, params *DeliverHTTPTriggerParams, body DeliverHTTPTriggerJSONRequestBody, reqEditors ...RequestEditorFn) (*DeliverHTTPTriggerResponse, error) {
+	rsp, err := c.DeliverHTTPTrigger(ctx, httpHandle, params, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseDeliverWebhookTriggerResponse(rsp)
+	return ParseDeliverHTTPTriggerResponse(rsp)
 }
 
 // ParseListOrgAuditLogsResponse parses an HTTP response from a ListOrgAuditLogsWithResponse call
@@ -28533,46 +29412,6 @@ func ParseListActionInvocationsResponse(rsp *http.Response) (*ListActionInvocati
 	return response, nil
 }
 
-// ParseListCatalogActionsResponse parses an HTTP response from a ListCatalogActionsWithResponse call
-func ParseListCatalogActionsResponse(rsp *http.Response) (*ListCatalogActionsResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ListCatalogActionsResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest ActionCatalogListResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	}
-
-	return response, nil
-}
-
 // ParseCreateActionResponse parses an HTTP response from a CreateActionWithResponse call
 func ParseCreateActionResponse(rsp *http.Response) (*CreateActionResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -28668,53 +29507,6 @@ func ParseDeleteActionResponse(rsp *http.Response) (*DeleteActionResponse, error
 			return nil, err
 		}
 		response.JSON409 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseGetCatalogActionResponse parses an HTTP response from a GetCatalogActionWithResponse call
-func ParseGetCatalogActionResponse(rsp *http.Response) (*GetCatalogActionResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetCatalogActionResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest ActionCatalogEntry
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
 
 	}
 
@@ -29153,6 +29945,154 @@ func ParseProvisionAgentInboxResponse(rsp *http.Response) (*ProvisionAgentInboxR
 		}
 		response.JSON200 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListAgentMessagingBindingsResponse parses an HTTP response from a ListAgentMessagingBindingsWithResponse call
+func ParseListAgentMessagingBindingsResponse(rsp *http.Response) (*ListAgentMessagingBindingsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListAgentMessagingBindingsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest AgentMessagingBindingListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseSaveAgentMessagingBindingResponse parses an HTTP response from a SaveAgentMessagingBindingWithResponse call
+func ParseSaveAgentMessagingBindingResponse(rsp *http.Response) (*SaveAgentMessagingBindingResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &SaveAgentMessagingBindingResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest AgentMessagingBinding
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDeleteAgentMessagingBindingResponse parses an HTTP response from a DeleteAgentMessagingBindingWithResponse call
+func ParseDeleteAgentMessagingBindingResponse(rsp *http.Response) (*DeleteAgentMessagingBindingResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteAgentMessagingBindingResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
 		var dest Unauthorized
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -30159,161 +31099,6 @@ func ParseGetArtifactContentResponse(rsp *http.Response) (*GetArtifactContentRes
 	return response, nil
 }
 
-// ParseUpdateArtifactContentResponse parses an HTTP response from a UpdateArtifactContentWithResponse call
-func ParseUpdateArtifactContentResponse(rsp *http.Response) (*UpdateArtifactContentResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &UpdateArtifactContentResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Artifact
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest BadRequest
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
-		var dest Conflict
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON409 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseUnpinArtifactResponse parses an HTTP response from a UnpinArtifactWithResponse call
-func ParseUnpinArtifactResponse(rsp *http.Response) (*UnpinArtifactResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &UnpinArtifactResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Artifact
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParsePinArtifactResponse parses an HTTP response from a PinArtifactWithResponse call
-func ParsePinArtifactResponse(rsp *http.Response) (*PinArtifactResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &PinArtifactResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Artifact
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
 // ParseCreateArtifactSignedUrlResponse parses an HTTP response from a CreateArtifactSignedUrlWithResponse call
 func ParseCreateArtifactSignedUrlResponse(rsp *http.Response) (*CreateArtifactSignedUrlResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -30859,6 +31644,133 @@ func ParsePublishAutomationVersionResponse(rsp *http.Response) (*PublishAutomati
 	return response, nil
 }
 
+// ParseListCatalogActionsResponse parses an HTTP response from a ListCatalogActionsWithResponse call
+func ParseListCatalogActionsResponse(rsp *http.Response) (*ListCatalogActionsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListCatalogActionsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ActionCatalogListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetCatalogActionResponse parses an HTTP response from a GetCatalogActionWithResponse call
+func ParseGetCatalogActionResponse(rsp *http.Response) (*GetCatalogActionResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetCatalogActionResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ActionCatalogEntry
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListCatalogEventsResponse parses an HTTP response from a ListCatalogEventsWithResponse call
+func ParseListCatalogEventsResponse(rsp *http.Response) (*ListCatalogEventsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListCatalogEventsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest EventCatalogResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseListEnvironmentsResponse parses an HTTP response from a ListEnvironmentsWithResponse call
 func ParseListEnvironmentsResponse(rsp *http.Response) (*ListEnvironmentsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -30969,6 +31881,60 @@ func ParseAcquireEnvironmentResponse(rsp *http.Response) (*AcquireEnvironmentRes
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest EnvironmentAcquireResult
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseAttachWorkerEnvironmentResponse parses an HTTP response from a AttachWorkerEnvironmentWithResponse call
+func ParseAttachWorkerEnvironmentResponse(rsp *http.Response) (*AttachWorkerEnvironmentResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &AttachWorkerEnvironmentResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Environment
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -31891,6 +32857,53 @@ func ParseRespondToInteractionResponse(rsp *http.Response) (*RespondToInteractio
 			return nil, err
 		}
 		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListModelsResponse parses an HTTP response from a ListModelsWithResponse call
+func ParseListModelsResponse(rsp *http.Response) (*ListModelsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListModelsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ProjectModelsResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
 
 	}
 
@@ -33256,93 +34269,6 @@ func ParseUpdateServiceAccountResponse(rsp *http.Response) (*UpdateServiceAccoun
 			return nil, err
 		}
 		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseGetArtifactStorageSettingsResponse parses an HTTP response from a GetArtifactStorageSettingsWithResponse call
-func ParseGetArtifactStorageSettingsResponse(rsp *http.Response) (*GetArtifactStorageSettingsResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetArtifactStorageSettingsResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest ArtifactStorageSettings
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseUpdateArtifactStorageSettingsResponse parses an HTTP response from a UpdateArtifactStorageSettingsWithResponse call
-func ParseUpdateArtifactStorageSettingsResponse(rsp *http.Response) (*UpdateArtifactStorageSettingsResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &UpdateArtifactStorageSettingsResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest ArtifactStorageSettings
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest BadRequest
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
 
 	}
 
@@ -35181,22 +36107,22 @@ func ParseOpenWorkerSocketResponse(rsp *http.Response) (*OpenWorkerSocketRespons
 	return response, nil
 }
 
-// ParseDeliverWebhookTriggerResponse parses an HTTP response from a DeliverWebhookTriggerWithResponse call
-func ParseDeliverWebhookTriggerResponse(rsp *http.Response) (*DeliverWebhookTriggerResponse, error) {
+// ParseDeliverHTTPTriggerResponse parses an HTTP response from a DeliverHTTPTriggerWithResponse call
+func ParseDeliverHTTPTriggerResponse(rsp *http.Response) (*DeliverHTTPTriggerResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &DeliverWebhookTriggerResponse{
+	response := &DeliverHTTPTriggerResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
-		var dest WebhookDeliveryResponse
+		var dest HTTPTriggerDeliveryResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

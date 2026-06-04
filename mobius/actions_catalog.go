@@ -9,10 +9,10 @@ import (
 
 // ListActionCatalog returns every action available to the bound
 // project — both project-owned actions and platform-provided
-// integration actions. The returned `Available` flag distinguishes
+// integration actions. The returned `Readiness` field distinguishes
 // "action exists" from "action exists but the required integration is
-// not configured": an entry with `Available == false` is registered in
-// the catalog but cannot currently be invoked. Callers that want to
+// not configured": an entry with `Readiness == needs_setup` is registered
+// in the catalog but cannot currently be invoked. Callers that want to
 // disambiguate "404 because the action does not exist" from "fails
 // because the integration is missing credentials" should consult this
 // list before calling [Context.RunServerAction].
@@ -29,7 +29,7 @@ func (c *Client) ListActionCatalog(ctx context.Context) ([]api.ActionCatalogEntr
 
 // GetActionCatalogEntry returns the catalog entry for a single action
 // by name. Returns an error wrapping the underlying status when the
-// action is not found (404). Use the entry's `Available` and
+// action is not found (404). Use the entry's `Readiness` and
 // `Integration` fields to distinguish "missing action" from "missing
 // integration credentials" before calling [Context.RunServerAction].
 func (c *Client) GetActionCatalogEntry(ctx context.Context, actionName string) (*api.ActionCatalogEntry, error) {

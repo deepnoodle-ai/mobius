@@ -22,8 +22,6 @@ const defaultCommandTimeout = 5 * time.Minute
 type environmentContext interface {
 	EnvironmentID() string
 	MobiusClient() *mobius.Client
-	RunID() string
-	StepName() string
 }
 
 type environmentLeaseContext interface {
@@ -350,20 +348,15 @@ func NewEnvironmentArtifactPublishAction() mobius.Action {
 		if !ok || ec.MobiusClient() == nil {
 			return nil, fmt.Errorf("mobius client is not available in worker context")
 		}
-		if lc, ok := ctx.(environmentLeaseContext); ok {
-			if leaseToken := strings.TrimSpace(lc.LeaseToken()); leaseToken != "" {
-				ref, err := ec.MobiusClient().CreateArtifactRefFromFileWithLease(ctx, path, in.Name, in.Mime, leaseToken, in.Tags)
-				if err != nil {
-					return nil, err
-				}
-				return ref, nil
-			}
+		lc, ok := ctx.(environmentLeaseContext)
+		if !ok || strings.TrimSpace(lc.LeaseToken()) == "" {
+			return nil, fmt.Errorf("active worker lease is required to publish artifacts")
 		}
-		artifact, err := ec.MobiusClient().CreateArtifactFromFile(ctx, path, in.Name, in.Mime, ec.RunID(), ec.StepName(), in.Tags)
+		ref, err := ec.MobiusClient().CreateArtifactRefFromFileWithLease(ctx, path, in.Name, in.Mime, strings.TrimSpace(lc.LeaseToken()), in.Tags)
 		if err != nil {
 			return nil, err
 		}
-		return artifact, nil
+		return ref, nil
 	})
 }
 

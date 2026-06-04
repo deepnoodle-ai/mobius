@@ -101,11 +101,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /**
-         * List the action catalog
-         * @description Returns the full catalog of actions available to this project: project-owned HTTP actions and platform-provided integration actions (Slack, GitHub, etc.). The `available` flag indicates whether the action can currently be invoked.
-         */
-        get: operations["listCatalogActions"];
+        get?: never;
         put?: never;
         /**
          * Create an action
@@ -125,11 +121,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /**
-         * Get one catalog action by name
-         * @description Returns availability status, schemas, and metadata for a single catalog entry.
-         */
-        get: operations["getCatalogAction"];
+        get?: never;
         put?: never;
         post?: never;
         /**
@@ -210,6 +202,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/projects/{project}/catalog/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the triggerable event catalog
+         * @description Returns every event source an automation trigger (or `wait_for_event` step) can subscribe to within this project: built-in platform sources (tables, email, runs, HTTP triggers, sessions, artifacts) and integration provider sources (with project connection state). `items` contains those sources; each source lists its concrete, currently-active event types.
+         *
+         *     `reserved_prefixes` enumerates platform namespaces that are recognized but not themselves triggerable event sources (for example `signal`, `schedule`, `interaction`), so authoring UIs can distinguish a recognized-but-unsupported matcher prefix from a wholly unknown one.
+         *
+         *     Matcher grammar: an `event_type` is a dotted name of segments matching `[A-Za-z_][A-Za-z0-9_]*`, optionally ending in `.*` for prefix matching (e.g. `github.*`, `github.pull_request.opened`, `table.row.inserted`).
+         */
+        get: operations["listCatalogEvents"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project}/catalog/actions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the action catalog
+         * @description Returns the full catalog of actions available to this project: project-owned HTTP actions and platform-provided integration actions (Slack, GitHub, etc.). The `available` flag indicates whether the action can currently be invoked. Custom HTTP actions are created and managed on the `/actions` resource.
+         */
+        get: operations["listCatalogActions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project}/catalog/actions/{action_name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get one catalog action by name
+         * @description Returns availability status, schemas, and metadata for a single catalog entry.
+         */
+        get: operations["getCatalogAction"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/projects/{project}/environments": {
         parameters: {
             query?: never;
@@ -228,6 +284,26 @@ export interface paths {
          * @description Creates a durable execution environment record and provisions it with the selected provider. The server resolves scope and ownership before enforcing uniqueness for the environment name.
          */
         post: operations["createEnvironment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project}/environments/attach": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create or attach a worker-provided environment
+         * @description Idempotently registers a worker-provided environment (a workspace hosted by a connected Mobius worker, e.g. a laptop). The control plane creates the record but never provisions or tears it down. Re-attaching the same name returns the existing environment. The `mobius worker` CLI calls this on startup, then registers its socket against the returned environment id.
+         */
+        post: operations["attachWorkerEnvironment"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1202,6 +1278,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/projects/{project}/agents/{id}/messaging-bindings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List agent messaging bindings
+         * @description Returns the provider accounts this agent can answer on.
+         */
+        get: operations["listAgentMessagingBindings"];
+        /**
+         * Save an agent messaging binding
+         * @description Upserts one provider-account binding for this agent.
+         */
+        put: operations["saveAgentMessagingBinding"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project}/agents/{id}/messaging-bindings/{binding_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete an agent messaging binding
+         * @description Removes one messaging binding from the agent.
+         */
+        delete: operations["deleteAgentMessagingBinding"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/projects/{project}/agents/{id}/sessions/{session_id}/events.stream": {
         parameters: {
             query?: never;
@@ -1314,6 +1434,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/projects/{project}/models": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List available models
+         * @description Returns the LLM models a platform agent in this project can be assigned, grouped by provider. Only providers the project can actually run are returned: a provider appears when the project has an active BYOK integration for it, or when a platform-managed key is configured.
+         *
+         *     An agent's `model` field accepts any returned model id, optionally prefixed with `provider/` (e.g. `xai/grok-4`); bare known ids such as `claude-sonnet-4-6` are auto-detected to their provider.
+         */
+        get: operations["listModels"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/projects/{project}/automations": {
         parameters: {
             query?: never;
@@ -1323,7 +1465,7 @@ export interface paths {
         };
         /**
          * List automations in a project
-         * @description Returns automations in the project, newest-first. Supports filtering by lifecycle status and cursor-based pagination.
+         * @description Returns automations in the project, newest-first. Supports filtering by lifecycle status and cursor-based pagination. Archived automations are excluded by default; pass `status=archived` to list only archived, or `status=all` to include every status.
          */
         get: operations["listAutomations"];
         put?: never;
@@ -1410,7 +1552,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/triggers/webhook/{webhook_handle}": {
+    "/v1/triggers/http/{http_handle}": {
         parameters: {
             query?: never;
             header?: never;
@@ -1420,10 +1562,10 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Deliver a webhook payload to a trigger
-         * @description Public, unauthenticated endpoint that resolves the `webhook_handle` to a configured webhook-kind trigger and dispatches the payload via the trigger dispatcher. Idempotent on the `idempotency_key` query parameter or the standard `X-Idempotency-Key` header — repeats with the same key return the original fire's run id without starting a new run.
+         * Deliver an HTTP request payload to a trigger
+         * @description Public, unauthenticated endpoint that resolves the `http_handle` to a configured http-kind trigger and commits a durable source-event row; the run starts asynchronously. Idempotent on the `idempotency_key` query parameter or the standard `X-Idempotency-Key` header — repeats with the same key return the same `fire_id` without enqueuing a duplicate. Resolve the resulting run via `GET /v1/projects/{project}/runs?source_event_id=<fire_id>`.
          */
-        post: operations["deliverWebhookTrigger"];
+        post: operations["deliverHTTPTrigger"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1461,7 +1603,7 @@ export interface paths {
         };
         /**
          * List automation runs
-         * @description Returns automation runs for the project, newest-first. Supports filters by status and automation_id and cursor-based pagination.
+         * @description Returns automation runs for the project, newest-first. Supports filters by status, automation_id, and source_event_id, plus cursor-based pagination.
          */
         get: operations["listAutomationRuns"];
         put?: never;
@@ -1583,7 +1725,7 @@ export interface paths {
         put?: never;
         /**
          * Deliver a signal to a suspended run
-         * @description Resumes a run that is suspended on a `wait_event` step matching the provided `step_key`. The `result` payload becomes the step's output and is available to downstream steps via `{{ context.<save_as>.* }}`.
+         * @description Resumes a run that is suspended on a `wait_event` step matching the provided `step_key`. The `result` payload becomes the step's output and is available to downstream steps via `{{ .context.<save_as> }}`.
          *
          *     For interaction-suspended steps, prefer responding to the interaction directly through `POST /v1/interactions/{id}/responses`; this endpoint is the lower-level escape hatch.
          */
@@ -1990,8 +2132,8 @@ export interface paths {
         get: operations["listArtifacts"];
         put?: never;
         /**
-         * Upload an artifact
-         * @description Accepts a multipart file upload, streams the bytes through Mobius to the configured artifact storage backend, computes the authoritative SHA-256 checksum, and returns the committed artifact metadata. New artifacts are private to the authenticated user's artifact space unless `visibility=shared` is supplied.
+         * Publish a worker-produced artifact
+         * @description Accepts a multipart file upload from a worker that is currently executing a claimed job. The request must include `X-Mobius-Lease-Token`; Mobius resolves the active claim and derives run, step, job, worker session, attempt, and shared visibility from the lease. Caller-supplied lineage or visibility fields are rejected.
          */
         post: operations["createArtifact"];
         delete?: never;
@@ -2016,7 +2158,7 @@ export interface paths {
         post?: never;
         /**
          * Delete an artifact
-         * @description Soft-delete the row and (for Mobius-managed) delete the underlying object best-effort. Pinned artifacts are refused unless `force=true`.
+         * @description Soft-delete the artifact row and delete the underlying Mobius-managed object before reporting success. The tombstone remains for audit and run-history views, while content and quota charging are removed.
          */
         delete: operations["deleteArtifact"];
         options?: never;
@@ -2036,11 +2178,7 @@ export interface paths {
          * @description Streams artifact bytes through the Mobius API after enforcing the caller's artifact access scope. Safe preview mime types are returned inline; all other content is served as an attachment with `X-Content-Type-Options: nosniff`.
          */
         get: operations["getArtifactContent"];
-        /**
-         * Replace artifact bytes
-         * @description Replaces the bytes behind an existing available artifact while preserving the artifact ID and stable content URL. This powers lightweight collaborative inline chat artifacts; updates are last-writer-wins and intended for small text, JSON, chart, form, and code artifacts.
-         */
-        put: operations["updateArtifactContent"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -2062,54 +2200,6 @@ export interface paths {
          * @description Generates a fresh, time-boxed storage URL for the artifact after enforcing the caller's artifact access scope. Use `getArtifactContent` when bytes should flow through the Mobius API instead of directly from object storage.
          */
         post: operations["createArtifactSignedUrl"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/projects/{project}/artifacts/{id}/pin": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Pin an artifact (skip TTL)
-         * @description Pins an artifact so the expiry sweeper does not delete it while it remains pinned.
-         */
-        post: operations["pinArtifact"];
-        /**
-         * Remove the pinned flag
-         * @description Removes the pinned flag so the artifact is again eligible for its configured retention policy.
-         */
-        delete: operations["unpinArtifact"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/projects/{project}/settings/artifact-storage": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get project artifact-storage settings
-         * @description Returns the effective artifact storage settings for the project.
-         */
-        get: operations["getArtifactStorageSettings"];
-        /**
-         * Update project artifact-storage settings
-         * @description Updates project artifact storage settings. v1 accepts the contract shape while Mobius-managed storage remains the wired default.
-         */
-        put: operations["updateArtifactStorageSettings"];
-        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -2161,6 +2251,16 @@ export interface components {
          * @enum {string}
          */
         ResourceScope: "owner";
+        /**
+         * @description Whether a catalog capability — an action, an event source, or an integration provider — is usable right now. `ready` means it can be used as-is; `needs_setup` means it is known and supported but blocked by configuration, credentials, permissions, provider runtime availability, or implementation status. This is catalog *readiness*, and is deliberately separate from a resource's lifecycle state (such as integration `status` or artifact lifecycle).
+         * @enum {string}
+         */
+        CapabilityReadiness: "ready" | "needs_setup";
+        /**
+         * @description Why a capability is `needs_setup`. Present only when readiness is `needs_setup`. `not_configured` — no integration or credential is connected yet. `inactive` — the backing integration is manually disabled. `expired` — the backing credential has expired. `provider_unavailable` — the provider runtime is not currently available. `permission_missing` — the caller lacks permission to use it. `not_implemented` — a placeholder for a capability that is not yet available.
+         * @enum {string}
+         */
+        CapabilityReadinessReason: "not_configured" | "inactive" | "expired" | "provider_unavailable" | "permission_missing" | "not_implemented";
         /**
          * @description Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints.
          * @example {
@@ -2219,12 +2319,17 @@ export interface components {
          * @enum {string}
          */
         FeatureOverrideScope: "org" | "project";
-        /** @description Human identity known to the organization. User records are useful for membership lists, role assignment UIs, attribution, and displaying profile information next to actions. */
+        /** @description User or principal identity known to the organization. User records are useful for membership lists, role assignment UIs, attribution, and displaying profile information next to actions. */
         User: {
             /** @description Clerk user ID. Stable and globally unique across all orgs. */
             id: string;
             /** @description Primary email address from Clerk. */
             email: string;
+            /**
+             * @description The principal type represented by this user record.
+             * @enum {string}
+             */
+            kind: "human" | "agent" | "service_account" | "system";
             /** @description Authoritative single-line label for this user, regardless of kind. Humans get "First Last"; agents get the agent name; service accounts get the SA name. Renderers should prefer this over first_name/last_name. */
             display_name?: string;
             /** @description Optional Mantine palette key (e.g. "indigo") used by avatar surfaces when no avatar_url is set. Populated for agent-kind users; empty otherwise. */
@@ -2245,7 +2350,17 @@ export interface components {
              * @description Timestamp when this user record was last synced from Clerk.
              */
             updated_at: string;
+            /**
+             * Format: date-time
+             * @description When this user principal was soft-deleted, if applicable.
+             */
+            deleted_at?: string;
         };
+        /**
+         * @description Administrative status. Inactive agents cannot claim new jobs. Soft-deleted agents are represented by `deleted_at` and excluded from normal reads.
+         * @enum {string}
+         */
+        AgentStatus: "active" | "inactive";
         /**
          * @description `org_open`: every org member can see and use the project, subject to role assignments. `restricted`: only listed project members (and org owners/admins) can see or use the project.
          * @enum {string}
@@ -2290,10 +2405,24 @@ export interface components {
             items: components["schemas"]["Project"][];
         };
         /**
-         * @description Administrative status. Inactive agents cannot claim new jobs. Soft-deleted agents are represented by `deleted_at` and excluded from normal reads.
+         * @description Where the agent's default model call should run.
          * @enum {string}
          */
-        AgentStatus: "active" | "inactive";
+        AgentModelRouteMode: "managed" | "worker" | "byo_provider";
+        /** @description Default model route used by built-in messaging and by automation agent steps that do not override the route. */
+        AgentModelRoute: {
+            mode: components["schemas"]["AgentModelRouteMode"];
+            /** @description Environment to use for worker-backed model calls. */
+            environment_id?: string;
+            /** @description Provider or worker route name. */
+            provider?: string;
+            /** @description Model identifier to use for this route. */
+            model?: string;
+            /** @description Worker queue for customer-worker model calls. */
+            queue?: string;
+            /** @description Worker capabilities required for this route. */
+            required_capabilities?: string[];
+        };
         /** @description Project-scoped AI actor identity backed by a service account. Agents are useful when automations need a named actor with instructions, capabilities, configuration, and session presence. */
         Agent: {
             /** @description Unique identifier for this agent. */
@@ -2314,8 +2443,9 @@ export interface components {
             capabilities?: {
                 [key: string]: unknown;
             };
-            /** @description Anthropic model identifier for platform agents (e.g. `claude-sonnet-4-6`). Empty string falls back to the platform default. */
+            /** @description Model identifier for platform agents. Accepts any id returned by `GET /v1/projects/{project}/models`, optionally `provider/`-prefixed (e.g. `xai/grok-4`); bare known ids (e.g. `claude-sonnet-4-6`) are auto-detected to their provider. Empty string falls back to the platform default. */
             model?: string;
+            model_route?: components["schemas"]["AgentModelRoute"];
             /** @description Custom system prompt for platform agents. Empty string uses the generated default based on the agent name. */
             system_prompt?: string;
             /** @description Current agent status: `active` or `inactive`. */
@@ -2619,7 +2749,7 @@ export interface components {
         };
         /** @description New signing key material returned after rotating a signing secret. */
         RotateSecretResult: {
-            /** @description Project secret reference that now stores the rotated signing key. */
+            /** @description Project secret reference that now stores the action signing key. */
             secret_ref: string;
             /**
              * Format: int64
@@ -2649,8 +2779,10 @@ export interface components {
              * @enum {string}
              */
             source: "platform" | "custom";
-            /** @description Whether this action can currently be invoked. False if the required integration is not connected, the action is a placeholder for a not-yet-implemented capability, or the caller lacks permission. */
-            available: boolean;
+            /** @description Whether this action can be called right now. `needs_setup` when the required integration is not connected, the caller lacks permission, or the action is a placeholder for a not-yet-implemented capability. */
+            readiness: components["schemas"]["CapabilityReadiness"];
+            /** @description Why the action is `needs_setup`. Omitted when `readiness` is `ready`. */
+            readiness_reason?: components["schemas"]["CapabilityReadinessReason"];
             /**
              * @description Author-declared risk classification. Used by toolkit-author UIs to surface warnings and by audit views to prioritize attention.
              * @enum {string}
@@ -2769,8 +2901,46 @@ export interface components {
             /** @description Whether additional pages are available. */
             has_more: boolean;
         };
+        /** @description The triggerable event catalog available to a project. */
+        EventCatalogResponse: {
+            items: components["schemas"]["EventCatalogSource"][];
+            /** @description Platform namespaces that are recognized but are not triggerable event sources. Authoring UIs use these to distinguish a recognized-but-unsupported matcher prefix from a wholly unknown one. */
+            reserved_prefixes: components["schemas"]["EventCatalogReservedPrefix"][];
+        };
+        /** @description One event source rooted at a top-level dotted prefix. Integration sources are open-set (any `<prefix>.<resource>.<event>` matches); `event_types` lists the currently-active, documented members. */
+        EventCatalogSource: {
+            /** @description Top-level dotted segment that names the source (`table`, `github`). */
+            prefix: string;
+            /**
+             * @description `integration` for provider event sources; `capability` for built-in Mobius platform event sources.
+             * @enum {string}
+             */
+            kind: "integration" | "capability";
+            display_name: string;
+            description?: string;
+            /** @description Whether this source can start an automation now. `capability` sources are always `ready`. `integration` sources are `ready` only when the project has an active, usable connection for the provider. */
+            readiness: components["schemas"]["CapabilityReadiness"];
+            /** @description Why an `integration` source is `needs_setup`. Omitted when `readiness` is `ready` and for `capability` sources. */
+            readiness_reason?: components["schemas"]["CapabilityReadinessReason"];
+            event_types: components["schemas"]["EventCatalogEventType"][];
+        };
+        EventCatalogEventType: {
+            /** @description Dotted event-type identifier (`table.row.inserted`, `github.pull_request.opened`). */
+            name: string;
+            description?: string;
+        };
+        EventCatalogReservedPrefix: {
+            prefix: string;
+            /** @enum {string} */
+            kind: "capability" | "utility";
+        };
         /** @enum {string} */
-        EnvironmentProvider: "sprites" | "cloudflare_containers";
+        EnvironmentProvider: "sprites" | "cloudflare_containers" | "worker";
+        /**
+         * @description Providers the control plane can provision on demand. Excludes `worker`: worker-provided environments are registered out-of-band via the attach endpoint and are never provisioned through create/acquire.
+         * @enum {string}
+         */
+        ProvisionEnvironmentProvider: "sprites" | "cloudflare_containers";
         /** @enum {string} */
         EnvironmentStatus: "provisioning" | "ready" | "running" | "retained" | "destroying" | "destroyed" | "failed" | "orphaned";
         /**
@@ -2871,7 +3041,7 @@ export interface components {
         CreateEnvironmentRequest: {
             name?: string;
             scope?: components["schemas"]["ResourceScope"];
-            provider?: components["schemas"]["EnvironmentProvider"];
+            provider?: components["schemas"]["ProvisionEnvironmentProvider"];
             environment_mode?: components["schemas"]["EnvironmentMode"];
             purpose?: components["schemas"]["EnvironmentPurpose"];
             /** @description Canonical user owner ID. Defaults to the authenticated user. */
@@ -2889,6 +3059,16 @@ export interface components {
             };
             tags?: components["schemas"]["TagMap"];
             retention_policy?: components["schemas"]["EnvironmentRetentionPolicy"];
+        };
+        AttachWorkerEnvironmentRequest: {
+            /** @description Stable per-workspace environment name; the idempotency key. */
+            name: string;
+            environment_mode?: components["schemas"]["EnvironmentMode"];
+            bound_to_type?: components["schemas"]["EnvironmentBoundToType"];
+            bound_to_id?: string;
+            /** @description Worker-host path backing the environment (informational). */
+            workspace_path?: string;
+            tags?: components["schemas"]["TagMap"];
         };
         UpdateEnvironmentRequest: {
             purpose?: components["schemas"]["EnvironmentPurpose"];
@@ -2908,7 +3088,7 @@ export interface components {
             template_id?: "coding-default";
             name?: string;
             scope?: components["schemas"]["ResourceScope"];
-            provider?: components["schemas"]["EnvironmentProvider"];
+            provider?: components["schemas"]["ProvisionEnvironmentProvider"];
             environment_mode?: components["schemas"]["EnvironmentMode"];
             purpose?: components["schemas"]["EnvironmentPurpose"];
             holder_type?: components["schemas"]["EnvironmentBoundToType"];
@@ -3662,7 +3842,7 @@ export interface components {
             children: string[];
         };
         PermissionCatalogResponse: {
-            permissions: components["schemas"]["PermissionDefinition"][];
+            items: components["schemas"]["PermissionDefinition"][];
             presets: components["schemas"]["PermissionPreset"][];
             action_groups: components["schemas"]["ActionPermissionGroup"][];
         };
@@ -4064,6 +4244,100 @@ export interface components {
             /** @description Free-text reason recorded on the interaction. */
             reason?: string;
         };
+        /** @description Models a platform agent can be assigned in this project, grouped by available provider. */
+        ProjectModelsResponse: {
+            /** @description Model id assigned when an agent specifies no model. */
+            default_model: string;
+            /** @description Available providers in display order. Providers with no configured credentials are omitted. */
+            items: components["schemas"]["ModelProviderGroup"][];
+        };
+        ModelProviderGroup: {
+            /** @description Canonical provider id (`anthropic`, `openai`, `gemini`, `xai`). */
+            provider: string;
+            /** @description Human-readable provider label. */
+            display_name: string;
+            /**
+             * @description Where credentials come from — a project integration (`byok`) or a platform-managed key (`platform`).
+             * @enum {string}
+             */
+            source: "byok" | "platform";
+            models: components["schemas"]["ModelOption"][];
+        };
+        ModelOption: {
+            /** @description Bare model id assigned to an agent's `model` field. */
+            id: string;
+            /** @description Canonical provider id this model belongs to. */
+            provider: string;
+            /** @description Human-readable model label for UI. */
+            label: string;
+            /** @description Short guidance about when to use this model. */
+            description?: string;
+            /** @description Whether this is the suggested default for its provider. */
+            recommended?: boolean;
+        };
+        /**
+         * @description Direct-message access policy for the binding.
+         * @enum {string}
+         */
+        AgentMessagingDMPolicy: "open" | "allowlist" | "disabled";
+        /**
+         * @description Reply mode for built-in messaging.
+         * @enum {string}
+         */
+        AgentMessagingReplyMode: "auto";
+        /**
+         * @description Provider supported by built-in agent messaging.
+         * @enum {string}
+         */
+        AgentMessagingProvider: "slack" | "telegram";
+        AgentMessagingBinding: {
+            /** @description Messaging binding identifier. */
+            id: string;
+            /** @description Agent this binding belongs to. */
+            agent_id: string;
+            provider: components["schemas"]["AgentMessagingProvider"];
+            /** @description Connected integration account this binding applies to. */
+            integration_id: string;
+            /** @description Whether the agent can currently answer on this account. */
+            enabled: boolean;
+            /** @description Whether direct messages are accepted. */
+            dms: boolean;
+            /** @description Whether channel/group mentions activate the agent. */
+            mentions: boolean;
+            /** @description Whether every message in the allowed conversations activates the agent. */
+            all_messages: boolean;
+            /** @description Optional provider conversation allowlist. Empty means any conversation on the integration. */
+            channels: string[];
+            dm_policy: components["schemas"]["AgentMessagingDMPolicy"];
+            /** @description Optional provider sender allowlist. Empty means any sender. */
+            sender_allow: string[];
+            reply_mode: components["schemas"]["AgentMessagingReplyMode"];
+            model_route?: components["schemas"]["AgentModelRoute"];
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        AgentMessagingBindingRequest: {
+            provider: components["schemas"]["AgentMessagingProvider"];
+            integration_id: string;
+            /** @default false */
+            enabled: boolean;
+            /** @default true */
+            dms: boolean;
+            /** @default true */
+            mentions: boolean;
+            /** @default false */
+            all_messages: boolean;
+            channels?: string[];
+            dm_policy?: components["schemas"]["AgentMessagingDMPolicy"];
+            sender_allow?: string[];
+            reply_mode?: components["schemas"]["AgentMessagingReplyMode"];
+            model_route?: components["schemas"]["AgentModelRoute"];
+        };
+        AgentMessagingBindingListResponse: {
+            items: components["schemas"]["AgentMessagingBinding"][];
+        };
         /**
          * @description Durable conversation session status.
          * @enum {string}
@@ -4073,12 +4347,12 @@ export interface components {
          * @description Surface that created the session.
          * @enum {string}
          */
-        SessionOrigin: "interaction" | "manual" | "api";
+        SessionOrigin: "interaction" | "manual" | "api" | "automation";
         /**
          * @description Boundary used to resolve named sessions.
          * @enum {string}
          */
-        SessionScope: "agent";
+        SessionScope: "agent" | "automation";
         /**
          * @description Visibility of the session in project surfaces.
          * @enum {string}
@@ -4089,6 +4363,11 @@ export interface components {
          * @enum {string}
          */
         SessionMessageRole: "system" | "user" | "assistant" | "tool" | "compaction";
+        /**
+         * @description Row type for a persisted transcript entry.
+         * @enum {string}
+         */
+        SessionMessageEntryType: "message" | "compaction";
         Session: {
             /** @description Stable session identifier. */
             id: string;
@@ -4103,8 +4382,10 @@ export interface components {
             scope: components["schemas"]["SessionScope"];
             /** @description Identifier of the resource the session is scoped to (e.g. the agent for agent-scoped sessions). */
             scope_ref_id: string;
-            /** @description Resolved name of the scope reference. */
+            /** @description Caller-assigned name identifying this conversation within its scope (`scope` + `scope_ref_id`); reused as the session routing key. */
             scope_name: string;
+            /** @description Stable session routing key used to look up a scoped conversation (mirrors `scope_name`). */
+            session_key: string;
             visibility: components["schemas"]["SessionVisibility"];
             /** @description Model the session most recently exchanged tokens with. */
             model?: string;
@@ -4166,6 +4447,7 @@ export interface components {
             content_blocks?: {
                 [key: string]: unknown;
             }[];
+            entry_type: components["schemas"]["SessionMessageEntryType"];
             /** @description For `compaction` messages, the highest sequence number this summary covers. */
             covers_through_sequence?: number;
             /** @description Monotonic per-session sequence number assigned at append time. */
@@ -4534,8 +4816,9 @@ export interface components {
             capabilities?: {
                 [key: string]: unknown;
             };
-            /** @description Anthropic model identifier for platform agents (e.g. `claude-sonnet-4-6`). Empty falls back to the platform default. */
+            /** @description Model identifier for platform agents. Any id from `GET /v1/projects/{project}/models`, optionally `provider/`-prefixed (e.g. `xai/grok-4`); bare known ids (e.g. `claude-sonnet-4-6`) are auto-detected. Empty falls back to the platform default. */
             model?: string;
+            model_route?: components["schemas"]["AgentModelRoute"];
             /** @description Custom system prompt for platform agents. Empty uses the generated default. */
             system_prompt?: string;
             /** @description Initial tag set. */
@@ -4555,8 +4838,9 @@ export interface components {
             capabilities?: {
                 [key: string]: unknown;
             };
-            /** @description Replacement Anthropic model identifier for platform agents. */
+            /** @description Replacement model identifier for platform agents (any id from `GET /v1/projects/{project}/models`, optionally `provider/`-prefixed). */
             model?: string;
+            model_route?: components["schemas"]["AgentModelRoute"];
             /** @description Replacement system prompt for platform agents. */
             system_prompt?: string;
             /**
@@ -4737,11 +5021,28 @@ export interface components {
             concurrency?: "allow" | "queue" | "skip" | "replace";
             /** @description Desired triggers materialized when a version is published. */
             triggers?: components["schemas"]["AutomationSpecTrigger"][];
+            /** @description Source repositories the automation targets. When a shared managed environment is selected, the runtime prepares these repositories before user-authored steps run. */
+            repositories?: components["schemas"]["AutomationSpecRepository"][];
             steps: components["schemas"]["AutomationStep"][];
             cleanup?: {
                 [key: string]: unknown;
             }[];
             defaults?: components["schemas"]["AutomationSpecDefaults"];
+        };
+        /** @description Source repository target attached to an automation spec. */
+        AutomationSpecRepository: {
+            /**
+             * @description Repository provider. GitHub is the only supported provider today.
+             * @default github
+             * @enum {string}
+             */
+            provider: "github";
+            /** @description Provider-specific repository id. */
+            id?: number | string;
+            /** @description Provider repository full name, e.g. `owner/repo`. */
+            full_name: string;
+            /** @description Whether the provider reports this repository as private. */
+            private?: boolean;
         };
         AutomationSpecInput: {
             type?: string;
@@ -4755,7 +5056,7 @@ export interface components {
             /** @description Human-readable trigger name. */
             name?: string;
             /** @enum {string} */
-            kind: "webhook" | "schedule" | "event";
+            kind: "http" | "schedule" | "event" | "manual";
             enabled?: boolean;
             /** @description Kind-specific trigger configuration. */
             config?: {
@@ -4771,10 +5072,10 @@ export interface components {
             /** @description Human-readable step name. */
             name?: string;
             /** @enum {string} */
-            kind: "agent" | "action" | "sleep" | "wait_for_event" | "interaction";
+            kind: "agent" | "action" | "sleep" | "wait_for_event" | "interaction" | "automation";
             /** @description Kind-specific step configuration. */
-            config: components["schemas"]["AutomationAgentStep"] | components["schemas"]["AutomationActionStep"] | components["schemas"]["AutomationSleepStep"] | components["schemas"]["AutomationWaitForEventStep"] | components["schemas"]["AutomationInteractionStep"];
-            /** @description Step-local input object resolved when the step starts. String leaves may contain `{{ inputs.* }}` or `{{ context.* }}` templates. */
+            config: components["schemas"]["AutomationAgentStep"] | components["schemas"]["AutomationActionStep"] | components["schemas"]["AutomationSleepStep"] | components["schemas"]["AutomationWaitForEventStep"] | components["schemas"]["AutomationInteractionStep"] | components["schemas"]["AutomationSubAutomationStep"];
+            /** @description Step-local input object resolved when the step starts. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions. */
             input?: {
                 [key: string]: unknown;
             };
@@ -4788,6 +5089,7 @@ export interface components {
             /** @description Run wall-clock budget as a Go duration string (e.g. `30m`, `2h`, `90s`). When set, the engine stamps `wall_clock_deadline_at = run.started_at + wall_clock_timeout` and the reaper fails the run after that instant even if a step executor is still grinding. Omit or set to `0` to disable the guard. */
             wall_clock_timeout?: string;
             environment?: components["schemas"]["AutomationEnvironmentPolicy"];
+            agent_session?: components["schemas"]["AutomationAgentSessionPolicy"];
         };
         /** @description Automatic managed-environment policy for automation execution. Omit to use the product default: each agent gets a persistent agent-bound environment, while direct environment actions get a run-bound environment. Set `disabled: true` to opt out. */
         AutomationEnvironmentPolicy: {
@@ -4816,6 +5118,41 @@ export interface components {
             max_turns?: number;
             model_route?: components["schemas"]["AutomationModelRoute"];
             memory_tables?: components["schemas"]["AutomationAgentMemoryTableRef"][];
+            session?: components["schemas"]["AutomationAgentSessionPolicy"];
+        };
+        /** @description Durable conversation-session policy for automation agent steps. Omit to enable the product default: automation-scoped sessions keyed from the triggering conversation when Mobius can identify one, such as a Telegram chat ID. */
+        AutomationAgentSessionPolicy: {
+            /** @description Disable durable session context and transcript writes for the affected agent step(s). */
+            disabled?: boolean;
+            /**
+             * @description Named-session boundary. `auto` and omitted use `automation`. `agent` intentionally shares the named session across automations using the same agent.
+             * @enum {string}
+             */
+            scope?: "auto" | "automation" | "agent";
+            /** @description Optional Go-template string rendered against `inputs`, `context`, `agent`, `automation`, `run`, `source`, and `step`. When omitted, Mobius derives a stable name from the event payload, falling back to the trigger or `default`. */
+            name?: string;
+            /** @description Optional Go-template string for the session display title. */
+            title?: string;
+            visibility?: components["schemas"]["SessionVisibility"];
+            /**
+             * @description Optional per-session compaction policy merged with server defaults when the session is first created. Existing sessions keep their current compaction policy unless edited through a session-specific operation.
+             * @example {
+             *       "strategy": "auto",
+             *       "threshold_tokens": 8000,
+             *       "summary_model": "claude-haiku-4-5-20251001"
+             *     }
+             */
+            compaction_policy?: {
+                /**
+                 * @description Compaction strategy. `auto` compacts when the token threshold is exceeded.
+                 * @enum {string}
+                 */
+                strategy?: "auto" | "manual" | "disabled" | "none";
+                /** @description Token threshold that triggers automatic compaction. */
+                threshold_tokens?: number;
+                /** @description Model used to produce compaction summaries. */
+                summary_model?: string;
+            };
         };
         AutomationModelRoute: {
             /** @enum {string} */
@@ -4858,6 +5195,23 @@ export interface components {
             match?: {
                 [key: string]: unknown;
             };
+            /** @description Optional expr predicate evaluated against `{ event, meta }`. */
+            condition?: string;
+            /** @description Optional output mapping evaluated against `{ event, meta }`. */
+            payload_mapping?: {
+                [key: string]: string;
+            };
+        };
+        /** @description Automation-trigger step configuration recognised inside `AutomationSpec.steps[].config`. Triggers another automation in the same project as an independent child run (fire-and-forget). The child run records `parent_run_id`, `parent_automation_id`, and `parent_step_key` so the lineage is visible from the child. */
+        AutomationSubAutomationStep: {
+            /** @description Stable handle of the automation to trigger, scoped to the same project as the parent automation. */
+            automation_handle: string;
+            /** @description Input map handed to the child run. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions resolved against the parent run. When omitted the parent step's resolved input map is forwarded. */
+            inputs?: {
+                [key: string]: unknown;
+            };
+            /** @description Optional expr predicate evaluated against the `{ inputs, context }` envelope of the parent run before the child is triggered. It must evaluate to a bool; a false result skips the step and starts no child run. Same predicate language as `wait_for_event` and event trigger conditions. */
+            condition?: string;
         };
         /** @description Human interaction step configuration recognised inside `AutomationSpec.steps[].config`. */
         AutomationInteractionStep: {
@@ -4903,11 +5257,11 @@ export interface components {
             automation_id: string;
             /** @description Human-readable trigger name. */
             name: string;
-            /** @description One of: webhook, schedule, event. */
+            /** @description One of: http, schedule, event. */
             kind: string;
             /** @description Whether the trigger is currently allowed to start runs. */
             enabled: boolean;
-            /** @description Kind-specific configuration (schedule cron, event matcher, webhook options). */
+            /** @description Kind-specific configuration (schedule cron, event matcher, HTTP-trigger options). */
             config?: {
                 [key: string]: unknown;
             };
@@ -4918,14 +5272,16 @@ export interface components {
             concurrency_policy: "allow" | "queue" | "skip" | "replace";
             /** @description Cap on concurrent runs allowed from this trigger. */
             max_concurrent_runs: number;
-            /** @description Public, project-scoped handle exposed in the webhook delivery URL. Set only for webhook-kind triggers. */
-            webhook_handle?: string;
-            /** @description HMAC secret used to verify inbound webhook signatures. Set only for webhook-kind triggers. */
-            signing_secret?: string;
+            /** @description Public, project-scoped handle exposed in the HTTP-trigger delivery URL. Set only for http-kind triggers. */
+            http_handle?: string;
+            /** @description Whether an HMAC signing secret is configured on this HTTP trigger. The secret value itself is never returned — rotate it via the signing-secret endpoint to reveal a new value once. Set only for http-kind triggers. */
+            signing_secret_set?: boolean;
             /** @description Source-event type this trigger subscribes to. Set only for event-kind triggers. */
             event_type?: string;
             /** @description Optional source identifier used to scope event matching. */
             source_id?: string;
+            /** @description Optional expr predicate evaluated against the public `{ event, meta }` envelope; the trigger fires only when it passes. Set only for event-kind triggers. */
+            condition?: string;
             /**
              * Format: date-time
              * @description Timestamp of the most recent fire.
@@ -4947,8 +5303,8 @@ export interface components {
              */
             updated_at: string;
         };
-        /** @description Synchronous receipt for an inbound webhook delivery. The trigger dispatch and run start happen asynchronously after this response — the `fire_id` is the durable `source_event_id` that clients can poll via `GET /v1/projects/{project}/runs?source_event_id=<fire_id>` to discover the run once the source-event processor reserves it. */
-        WebhookDeliveryResponse: {
+        /** @description Synchronous receipt for an inbound HTTP-trigger delivery. The trigger dispatch and run start happen asynchronously after this response — the `fire_id` is the durable `source_event_id` that clients can poll via `GET /v1/projects/{project}/runs?source_event_id=<fire_id>` to discover the run once the source-event processor reserves it. */
+        HTTPTriggerDeliveryResponse: {
             /** @description Durable source-event id (also the `dedup_key` seed). Stable across retries with the same `Idempotency-Key`. */
             fire_id: string;
             /**
@@ -4977,7 +5333,7 @@ export interface components {
          *     }
          */
         StartAutomationRunRequest: {
-            /** @description Free-form input map passed to the run. Available to steps via `{{ inputs.<key> }}` templates. */
+            /** @description Free-form input map passed to the run. Available to steps via `{{ .inputs.<key> }}` Go text/template actions. */
             inputs?: {
                 [key: string]: unknown;
             };
@@ -5036,6 +5392,8 @@ export interface components {
             project_id: string;
             /** @description Automation this run belongs to. */
             automation_id: string;
+            /** @description Human-readable name of the automation this run belongs to. */
+            automation_name?: string;
             /** @description AutomationVersion record this run is executing. */
             automation_version_id: string;
             /** @description Version number of the AutomationVersion this run is executing. */
@@ -5050,6 +5408,12 @@ export interface components {
                 [key: string]: unknown;
             };
             source?: components["schemas"]["AutomationRunSource"];
+            /** @description Run that triggered this run via an `automation` step. Present only on child runs; absent for top-level runs. */
+            parent_run_id?: string;
+            /** @description Automation that triggered this run via an `automation` step. Present only on child runs. */
+            parent_automation_id?: string;
+            /** @description Step key within the parent run's automation that triggered this run. Present only on child runs. */
+            parent_step_key?: string;
             /** @description Human-readable failure summary; populated on `failed` runs. */
             error_message?: string;
             /** @description Machine-readable failure classification when available. */
@@ -5059,6 +5423,11 @@ export interface components {
              * @description Scheduled wake time for a suspended run.
              */
             wake_at?: string;
+            /**
+             * Format: date-time
+             * @description Deadline after which the automation reaper fails the run.
+             */
+            wall_clock_deadline_at?: string;
             /**
              * Format: date-time
              * @description Time the engine moved the run to `running`.
@@ -5182,7 +5551,7 @@ export interface components {
              * @description Monotonic per-run sequence number used for ordering and resume.
              */
             sequence: number;
-            /** @description Event type from the run-stream taxonomy (e.g. `run.started`, `step.completed`, `wait.opened`, `interaction.requested`, `action.completed`, `artifact.created`, `limit.reached`, `usage.recorded`). */
+            /** @description Event type from the run-stream taxonomy (e.g. `run.started`, `step.completed`, `wait.opened`, `interaction.requested`, `interaction.responded`, `action.called`, `action.completed`, `action.failed`, `artifact.created`, `limit.reached`, `usage.recorded`). */
             event_type: string;
             /** @description ID of the step this event belongs to, when applicable. */
             step_id?: string | null;
@@ -5234,7 +5603,7 @@ export interface components {
             /** @description Optional org member responsible for this service account. */
             owner_id?: string;
             /** @description Linked User record. For agent-backed service accounts this is the agent's User (kind: agent); for standalone service accounts this is a dedicated User (kind: service_account). Immutable once set. */
-            user_id?: string;
+            user_id: string;
             /** @description Role IDs currently assigned to this service account in the project. */
             role_ids?: string[];
             /** @description Arbitrary key-value metadata. Subject to size and nesting depth limits. */
@@ -5435,7 +5804,7 @@ export interface components {
             cursor?: string;
         };
         QueryRowsResponse: {
-            rows: components["schemas"]["TableRow"][];
+            items: components["schemas"]["TableRow"][];
             has_more: boolean;
             limit?: number;
             next_cursor?: string;
@@ -5453,7 +5822,7 @@ export interface components {
             cursor?: string;
         };
         SearchRowsResponse: {
-            rows: components["schemas"]["TableRow"][];
+            items: components["schemas"]["TableRow"][];
             has_more: boolean;
             limit?: number;
             next_cursor?: string;
@@ -5465,7 +5834,7 @@ export interface components {
         };
         BulkInsertRowsResponse: {
             inserted: number;
-            rows: components["schemas"]["TableRow"][];
+            items: components["schemas"]["TableRow"][];
         };
         UpsertRowRequest: {
             /** @description Column names used to match an existing row. */
@@ -5496,10 +5865,10 @@ export interface components {
             /** @description User-keyed private artifact-space owner. Empty for project-shared artifacts. */
             owner_id: string;
             visibility: components["schemas"]["ArtifactVisibility"];
+            /** @description Automation run that produced this artifact, derived from the active worker lease. */
             run_id?: string;
+            /** @description Automation step that produced this artifact, derived from the active worker lease. */
             step_id?: string;
-            job_id?: string;
-            attempt?: number;
             /** @description Display name or relative virtual path. Forward slash may be used to organize artifacts inside private or shared project space. */
             name: string;
             mime_type: string;
@@ -5507,11 +5876,6 @@ export interface components {
             size_bytes: number;
             sha256?: string;
             storage: components["schemas"]["ArtifactStorageBackend"];
-            storage_uri?: string;
-            integration_id?: string;
-            metadata?: {
-                [key: string]: unknown;
-            };
             tags?: {
                 [key: string]: string;
             };
@@ -5528,7 +5892,6 @@ export interface components {
             committed_at?: string;
             /** Format: date-time */
             expires_at?: string;
-            pinned?: boolean;
             /** Format: date-time */
             deleted_at?: string;
         };
@@ -5552,32 +5915,16 @@ export interface components {
              * @description Optional declared file size. When supplied, Mobius verifies the streamed byte count exactly matches this value.
              */
             size_bytes?: number;
-            run_id?: string;
-            step_id?: string;
             tags?: {
                 [key: string]: string;
             };
             /**
              * Format: int64
-             * @description Override the project default TTL for this artifact only.
+             * @description Set an artifact-specific expiry relative to upload time. Omit to keep the artifact indefinitely unless project settings configure a default TTL.
              */
             retain_for_seconds?: number;
             /** Format: date-time */
             retain_until?: string;
-            /** @default false */
-            pinned: boolean;
-            visibility?: components["schemas"]["ArtifactVisibility"];
-        };
-        UpdateArtifactContentRequest: {
-            /** @description Replacement artifact content. Interpreted as UTF-8 text unless `encoding` is `base64`. */
-            content: string;
-            /**
-             * @default text
-             * @enum {string}
-             */
-            encoding: "text" | "base64";
-            /** @description Optional MIME type override. Defaults to the artifact's current MIME type. */
-            mime_type?: string;
         };
         ArtifactSignedUrl: {
             url: string;
@@ -5586,21 +5933,6 @@ export interface components {
             /** Format: date-time */
             expires_at: string;
         };
-        ArtifactStorageSettings: {
-            backend?: components["schemas"]["ArtifactStorageBackend"];
-            integration_id?: string;
-            /**
-             * @description Default artifact retention duration as a Go duration string.
-             * @example 720h
-             */
-            default_ttl?: string;
-            /** Format: int64 */
-            max_artifact_size?: number;
-            /** Format: int64 */
-            inline_threshold?: number;
-            pending_upload_cap?: number;
-        };
-        ArtifactStorageSettingsUpdate: components["schemas"]["ArtifactStorageSettings"];
         ArtifactQuotaUsage: {
             org_id: string;
             /** Format: int64 */
@@ -5966,31 +6298,6 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
-    listCatalogActions: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ActionCatalogListResponse"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-        };
-    };
     createAction: {
         parameters: {
             query?: never;
@@ -6020,34 +6327,6 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             409: components["responses"]["Conflict"];
-        };
-    };
-    getCatalogAction: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
-                /** @description Project-scoped action name used in automation step definitions. */
-                action_name: components["parameters"]["ActionNameParam"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ActionCatalogEntry"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
         };
     };
     deleteAction: {
@@ -6212,6 +6491,84 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
+    listCatalogEvents: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventCatalogResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    listCatalogActions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActionCatalogListResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    getCatalogAction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project-scoped action name used in automation step definitions. */
+                action_name: components["parameters"]["ActionNameParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActionCatalogEntry"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
     listEnvironments: {
         parameters: {
             query?: {
@@ -6275,6 +6632,37 @@ export interface operations {
         responses: {
             /** @description Created */
             201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Environment"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    attachWorkerEnvironment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AttachWorkerEnvironmentRequest"];
+            };
+        };
+        responses: {
+            /** @description Attached */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -8366,6 +8754,8 @@ export interface operations {
                 status?: components["schemas"]["SessionStatus"];
                 /** @description Filter by session scope. */
                 scope?: components["schemas"]["SessionScope"];
+                /** @description Filter messaging sessions by provider metadata, e.g. `slack` or `telegram`. */
+                provider?: string;
                 /** @description Only include sessions with activity after this timestamp. */
                 since?: string;
                 /** @description Maximum number of items to return */
@@ -8489,6 +8879,96 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listAgentMessagingBindings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
+                id: components["parameters"]["IDParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentMessagingBindingListResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    saveAgentMessagingBinding: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
+                id: components["parameters"]["IDParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgentMessagingBindingRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentMessagingBinding"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    deleteAgentMessagingBinding: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
+                id: components["parameters"]["IDParam"];
+                /** @description Messaging binding identifier. */
+                binding_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
         };
     };
@@ -8740,11 +9220,37 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
+    listModels: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectModelsResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
     listAutomations: {
         parameters: {
             query?: {
-                /** @description Filter by lifecycle status. */
-                status?: components["schemas"]["AutomationStatus"];
+                /** @description Filter by lifecycle status. Omit to return all non-archived automations (the default). Pass a single status to filter to it exactly, or `all` to include archived automations too. */
+                status?: "draft" | "active" | "paused" | "archived" | "all";
                 /** @description Opaque pagination cursor from a prior response. */
                 cursor?: string;
                 /** @description Maximum number of items to return. */
@@ -8982,16 +9488,19 @@ export interface operations {
             409: components["responses"]["Conflict"];
         };
     };
-    deliverWebhookTrigger: {
+    deliverHTTPTrigger: {
         parameters: {
             query?: {
-                /** @description Optional idempotency key (also accepted via X-Idempotency-Key header). */
+                /** @description Optional idempotency key (also accepted via the X-Idempotency-Key header). */
                 idempotency_key?: string;
             };
-            header?: never;
+            header?: {
+                /** @description Alternative to the `idempotency_key` query parameter. When both are present the query parameter wins. Repeats with the same key return the same `fire_id` (resolve the run via `source_event_id`) without enqueuing a duplicate. */
+                "X-Idempotency-Key"?: string;
+            };
             path: {
-                /** @description Public, project-scoped webhook handle configured on the trigger. */
-                webhook_handle: string;
+                /** @description Globally unique identifier for the trigger. The endpoint carries no project context, so the handle is resolved on its own; it defaults to the trigger's globally unique id and is treated as an unguessable delivery token. */
+                http_handle: string;
             };
             cookie?: never;
         };
@@ -9009,7 +9518,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["WebhookDeliveryResponse"];
+                    "application/json": components["schemas"]["HTTPTriggerDeliveryResponse"];
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -9058,6 +9567,8 @@ export interface operations {
                 status?: components["schemas"]["AutomationRunStatus"];
                 /** @description Filter to one automation's runs. */
                 automation_id?: string;
+                /** @description Filter to runs originating from a single source event. Pass the `fire_id` returned by the HTTP-trigger delivery endpoint (the durable `source_event_id`) to discover the run it started. */
+                source_event_id?: string;
                 /** @description Opaque pagination cursor from a prior response. */
                 cursor?: string;
                 /** @description Maximum number of items to return. */
@@ -10326,7 +10837,10 @@ export interface operations {
     createArtifact: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                /** @description Active job lease token for worker-produced artifacts. */
+                "X-Mobius-Lease-Token": string;
+            };
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
@@ -10384,9 +10898,7 @@ export interface operations {
     };
     deleteArtifact: {
         parameters: {
-            query?: {
-                force?: boolean;
-            };
+            query?: never;
             header?: never;
             path: {
                 /** @description Project handle (unique per organization) */
@@ -10440,40 +10952,6 @@ export interface operations {
             409: components["responses"]["Conflict"];
         };
     };
-    updateArtifactContent: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
-                /** @description TypeID of the artifact (`art_...`) */
-                id: components["parameters"]["ArtifactIdParam"];
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateArtifactContentRequest"];
-            };
-        };
-        responses: {
-            /** @description Artifact content replaced */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Artifact"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            409: components["responses"]["Conflict"];
-        };
-    };
     createArtifactSignedUrl: {
         parameters: {
             query?: {
@@ -10504,117 +10982,6 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
-        };
-    };
-    pinArtifact: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
-                /** @description TypeID of the artifact (`art_...`) */
-                id: components["parameters"]["ArtifactIdParam"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Artifact"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    unpinArtifact: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
-                /** @description TypeID of the artifact (`art_...`) */
-                id: components["parameters"]["ArtifactIdParam"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Artifact"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    getArtifactStorageSettings: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ArtifactStorageSettings"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-        };
-    };
-    updateArtifactStorageSettings: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ArtifactStorageSettingsUpdate"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ArtifactStorageSettings"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
         };
     };
     getArtifactStorageQuota: {

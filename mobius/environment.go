@@ -94,17 +94,6 @@ func (c *Client) CreateEnvironmentGitCredential(ctx context.Context, environment
 	return &out, nil
 }
 
-func (c *Client) CreateArtifactFromFile(ctx context.Context, path, name, mime, runID, stepID string, tags map[string]string) (*Artifact, error) {
-	return c.createArtifactFromFile(ctx, artifactUploadRequest{
-		Path:   path,
-		Name:   name,
-		Mime:   mime,
-		RunID:  runID,
-		StepID: stepID,
-		Tags:   tags,
-	})
-}
-
 func (c *Client) CreateArtifactRefFromFileWithLease(ctx context.Context, path, name, mime, leaseToken string, tags map[string]string) (ArtifactRef, error) {
 	artifact, err := c.createArtifactFromFile(ctx, artifactUploadRequest{
 		Path:       path,
@@ -123,8 +112,6 @@ type artifactUploadRequest struct {
 	Path       string
 	Name       string
 	Mime       string
-	RunID      string
-	StepID     string
 	LeaseToken string
 	Tags       map[string]string
 }
@@ -135,6 +122,10 @@ func (c *Client) createArtifactFromFile(ctx context.Context, upload artifactUplo
 	}
 	if strings.TrimSpace(upload.Path) == "" {
 		return nil, fmt.Errorf("mobius: path is required")
+	}
+	leaseToken := strings.TrimSpace(upload.LeaseToken)
+	if leaseToken == "" {
+		return nil, fmt.Errorf("mobius: lease token is required to publish artifacts")
 	}
 	file, err := os.Open(upload.Path)
 	if err != nil {
@@ -164,10 +155,7 @@ func (c *Client) createArtifactFromFile(ctx context.Context, upload artifactUplo
 		writeErr <- err
 	}()
 
-	headers := map[string]string{}
-	if leaseToken := strings.TrimSpace(upload.LeaseToken); leaseToken != "" {
-		headers["X-Mobius-Lease-Token"] = leaseToken
-	}
+	headers := map[string]string{"X-Mobius-Lease-Token": leaseToken}
 	var out Artifact
 	err = c.doMultipartWithHeaders(ctx, http.MethodPost, "/v1/projects/"+url.PathEscape(c.projectHandle)+"/artifacts", contentType, reader, headers, &out)
 	if err != nil {
@@ -193,15 +181,6 @@ func writeArtifactMultipart(writer *multipart.Writer, file *os.File, info os.Fil
 	_ = writer.WriteField("name", name)
 	if upload.Mime != "" {
 		_ = writer.WriteField("mime", upload.Mime)
-	}
-	if strings.TrimSpace(upload.LeaseToken) == "" {
-		if upload.RunID != "" {
-			_ = writer.WriteField("run_id", upload.RunID)
-		}
-		if upload.StepID != "" {
-			_ = writer.WriteField("step_id", upload.StepID)
-		}
-		_ = writer.WriteField("visibility", "shared")
 	}
 	_ = writer.WriteField("size_bytes", strconv.FormatInt(info.Size(), 10))
 	if len(upload.Tags) > 0 {

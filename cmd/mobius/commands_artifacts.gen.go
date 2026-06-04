@@ -8,8 +8,6 @@
 package main
 
 import (
-	"fmt"
-
 	"github.com/deepnoodle-ai/wonton/cli"
 
 	"github.com/deepnoodle-ai/mobius/mobius/api"
@@ -49,9 +47,6 @@ func registerArtifactsCommands(app *cli.App) {
 	artifactsGrp.Command("delete").
 		Description("Delete an artifact").
 		Args("id").
-		Flags(
-			cli.Bool("force", "").Help("force"),
-		).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -61,12 +56,7 @@ func registerArtifactsCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			params := &api.DeleteArtifactParams{}
-			if ctx.IsSet("force") {
-				v := ctx.Bool("force")
-				params.Force = &v
-			}
-			resp, err := client.DeleteArtifactWithResponse(ctx.Context(), p0, p1, params)
+			resp, err := client.DeleteArtifactWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}
@@ -128,23 +118,6 @@ func registerArtifactsCommands(app *cli.App) {
 			return printResponse(ctx, "getArtifactStorageQuota", resp.StatusCode(), resp.Body)
 		})
 
-	artifactsGrp.Command("get-storage-settings").
-		Description("Get project artifact-storage settings").
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			resp, err := client.GetArtifactStorageSettingsWithResponse(ctx.Context(), p0)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "getArtifactStorageSettings", resp.StatusCode(), resp.Body)
-		})
-
 	artifactsGrp.Command("list").
 		Description("List artifacts in a project").
 		Flags(
@@ -193,122 +166,6 @@ func registerArtifactsCommands(app *cli.App) {
 				return err
 			}
 			return printResponse(ctx, "listArtifacts", resp.StatusCode(), resp.Body)
-		})
-
-	artifactsGrp.Command("pin").
-		Description("Pin an artifact (skip TTL)").
-		Args("id").
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			resp, err := client.PinArtifactWithResponse(ctx.Context(), p0, p1)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "pinArtifact", resp.StatusCode(), resp.Body)
-		})
-
-	artifactsGrp.Command("unpin").
-		Description("Remove the pinned flag").
-		Args("id").
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			resp, err := client.UnpinArtifactWithResponse(ctx.Context(), p0, p1)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "unpinArtifact", resp.StatusCode(), resp.Body)
-		})
-
-	artifactsGrp.Command("update-content").
-		Description("Replace artifact bytes").
-		Args("id").
-		Flags(
-			cli.String("content", "").Help("[required] Replacement artifact content. Interpreted as UTF-8 text unless `encoding` is `base64`."),
-			cli.String("encoding", "").Help("encoding"),
-			cli.String("mime-type", "").Help("Optional MIME type override. Defaults to the artifact's current MIME type."),
-			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
-			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
-		).
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			var body api.UpdateArtifactContentJSONRequestBody
-			if err := readJSONBody(ctx, &body); err != nil {
-				return err
-			}
-			if ctx.IsSet("content") {
-				body.Content = ctx.String("content")
-			}
-			if ctx.IsSet("encoding") {
-				v := api.UpdateArtifactContentRequestEncoding(ctx.String("encoding"))
-				body.Encoding = &v
-			}
-			if ctx.IsSet("mime-type") {
-				v := ctx.String("mime-type")
-				body.MimeType = &v
-			}
-			if body.Content == "" {
-				return fmt.Errorf("--content is required (or supply it via --file)")
-			}
-			if ctx.Bool("dry-run") {
-				return printDryRun(ctx, body)
-			}
-			resp, err := client.UpdateArtifactContentWithResponse(ctx.Context(), p0, p1, body)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "updateArtifactContent", resp.StatusCode(), resp.Body)
-		})
-
-	artifactsGrp.Command("update-storage-settings").
-		Description("Update project artifact-storage settings").
-		Flags(
-			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
-			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
-		).
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			var body api.UpdateArtifactStorageSettingsJSONRequestBody
-			if err := readJSONBody(ctx, &body); err != nil {
-				return err
-			}
-			if ctx.String("file") == "" {
-				return fmt.Errorf("--file is required")
-			}
-			if ctx.Bool("dry-run") {
-				return printDryRun(ctx, body)
-			}
-			resp, err := client.UpdateArtifactStorageSettingsWithResponse(ctx.Context(), p0, body)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "updateArtifactStorageSettings", resp.StatusCode(), resp.Body)
 		})
 
 }
