@@ -172,7 +172,7 @@ func registerRunsCommands(app *cli.App) {
 			return printResponse(ctx, "listRunSteps", resp.StatusCode(), resp.Body)
 		})
 
-	runsGrp.Command("signal-run").
+	runsGrp.Command("signal").
 		Description("Resume a suspended run step").
 		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
 		Flags(
@@ -215,7 +215,7 @@ func registerRunsCommands(app *cli.App) {
 			return printResponse(ctx, "signalRun", resp.StatusCode(), resp.Body)
 		})
 
-	runsGrp.Command("start-run").
+	runsGrp.Command("start").
 		Description("Start a new automation run").
 		AddArg(&cli.Arg{Name: "handle", Description: "Automation handle (unique per project).", Required: true}).
 		Flags(
@@ -265,7 +265,7 @@ func registerRunsCommands(app *cli.App) {
 			return printResponse(ctx, "startRun", resp.StatusCode(), resp.Body)
 		})
 
-	runsGrp.Command("stream-run").
+	runsGrp.Command("stream").
 		Description("Stream run events over Server-Sent Events").
 		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
 		Flags(
