@@ -9,7 +9,11 @@ import type {
   WorkerSocketModelCapability,
   WorkerSocketRegisterFrame,
 } from "./api/index.js";
-import { Client } from "./client.js";
+import {
+  AuthRevokedError,
+  Client,
+  WorkerInstanceConflictError,
+} from "./client.js";
 
 export type InstanceIDSource =
   | "configured"
@@ -189,6 +193,18 @@ export class Worker {
         await this.runSocket(runSignal);
       } catch (err) {
         if (runSignal.aborted || this.stopping) return;
+        if (
+          err instanceof AuthRevokedError ||
+          err instanceof WorkerInstanceConflictError
+        ) {
+          // Terminal protocol failures must not reconnect: a revoked
+          // credential needs a fresh process, and a duplicate
+          // worker_instance_id means another live process owns this
+          // identity. Rethrow so a supervisor restarts (rotated credential)
+          // or an operator fixes the duplicate ID, instead of spinning in a
+          // reconnect loop.
+          throw err;
+        }
         this.logger.warn("[mobius] worker socket disconnected; reconnecting", err);
         await sleep(this.config.reconnectDelayMs ?? 2000, runSignal);
       }
@@ -247,14 +263,41 @@ export class Worker {
         case "keepalive":
           ws.send(JSON.stringify({ type: "keepalive", message_id: msgID() }));
           break;
-        case "error":
+        case "error": {
+          const terminal = this.terminalProtocolError(
+            frame.error as { code?: string; message?: string } | undefined,
+          );
+          if (terminal) throw terminal;
           this.logger.error("[mobius] worker socket protocol error", frame.error);
           break;
+        }
       }
       if (this.stopping && running.size === 0) {
         ws.close();
         return;
       }
+    }
+  }
+
+  // terminalProtocolError maps a worker-socket protocol error frame to a
+  // terminal error the worker must not reconnect through, or undefined for
+  // protocol errors it can keep running past (logged by the caller).
+  // invalid_actor means the credential was revoked; worker_instance_conflict
+  // means another live process already owns this worker_instance_id.
+  private terminalProtocolError(
+    error: { code?: string; message?: string } | undefined,
+  ): Error | undefined {
+    switch (error?.code) {
+      case "invalid_actor":
+        return new AuthRevokedError();
+      case "worker_instance_conflict":
+        return new WorkerInstanceConflictError(
+          this.config.workerInstanceId,
+          this.client.project,
+          error.message,
+        );
+      default:
+        return undefined;
     }
   }
 

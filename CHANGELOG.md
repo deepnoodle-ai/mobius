@@ -44,6 +44,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
   export were removed with the upstream interactions API. The generic
   `parse_interaction_callback` delivery helper is retained. (#95)
 
+### Fixed
+
+- Python / TypeScript workers: a `worker_instance_conflict` protocol
+  error received over the worker WebSocket is now terminal, matching
+  the Go worker (#96). Both SDKs already defined
+  `WorkerInstanceConflictError` but never raised it from the socket
+  loop, so a duplicate `worker_instance_id` reconnected forever instead
+  of exiting. They now raise it (and `AuthRevokedError` on
+  `invalid_actor`) and stop without reconnecting. (MB-402, #97)
+
 ## [0.0.22] - 2026-06-04
 
 ### Added
