@@ -9,8 +9,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 ### Added
 
 - CLI / SDKs: automation runs are now a top-level `runs` group
-  (`get` / `list` / `cancel` / `signal-run` / `start-run` /
-  `stream-run` / `list-events` / `list-steps`), synced from the
+  (`get` / `list` / `cancel` / `signal` / `start` /
+  `stream` / `list-events` / `list-steps`), synced from the
   mobius-cloud spec. (#95)
 
 ### Changed

@@ -81,9 +81,10 @@ var overrides = map[string]Override{
 	"restoreProject": {Command: "restore"},
 
 	// --- runs -------------------------------------------------------------
-	// `stream` isn't in the verb list, so the auto-derive keeps the full
-	// `stream-run-events` leaf; shorten it.
-	"streamRunEvents": {Command: "stream-run"},
+	// The group name already says "runs"; keep the leaf names verb-first.
+	"signalRun":       {Command: "signal"},
+	"startRun":        {Command: "start"},
+	"streamRunEvents": {Command: "stream"},
 
 	// --- tables -----------------------------------------------------------
 	// Row operations use verbs the auto-derivation doesn't recognise

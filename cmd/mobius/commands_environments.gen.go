@@ -579,9 +579,10 @@ func registerEnvironmentsCommands(app *cli.App) {
 	environmentsGrp.Command("start-worker").
 		Description("Start a Mobius worker in an environment").
 		AddArg(&cli.Arg{Name: "environment-id", Description: "Environment ID.", Required: true}).
+		AddArg(&cli.Arg{Name: "command", Description: "Command argv after --. Use this for values beginning with '-' (for example: -- sh -lc 'echo hi').", Required: false, Variadic: true}).
 		Flags(
 			cli.Strings("action-names", "").Help("Restrict the worker to these action names."),
-			cli.Strings("command", "").Help("Override the worker command and arguments, as an argv array."),
+			cli.Strings("command", "").Help("Override the worker command and arguments, as an argv array. For values beginning with '-', use --command=<value> or argv after --."),
 			cli.Int("concurrency", "").Help("Maximum number of jobs to run concurrently."),
 			cli.String("dir", "").Help("Working directory for the worker process."),
 			cli.Bool("managed-runtime", "").Help("Install/refresh the managed Mobius runtime bundle before starting the worker. Defaults to true unle…"),
@@ -636,8 +637,16 @@ func registerEnvironmentsCommands(app *cli.App) {
 				v := ctx.String("worker-name")
 				body.WorkerName = &v
 			}
-			if ctx.String("file") == "" && !ctx.IsSet("action-names") && !ctx.IsSet("command") && !ctx.IsSet("concurrency") && !ctx.IsSet("dir") && !ctx.IsSet("managed-runtime") && !ctx.IsSet("queues") && !ctx.IsSet("runtime-version") && !ctx.IsSet("worker-name") {
-				return fmt.Errorf("at least one flag or --file is required")
+			if ctx.NArg() > 1 {
+				v := make([]string, 0, ctx.NArg()-1)
+				if body.Command != nil {
+					v = append(v, (*body.Command)...)
+				}
+				v = append(v, ctx.Args()[1:]...)
+				body.Command = &v
+			}
+			if ctx.String("file") == "" && !ctx.IsSet("action-names") && !ctx.IsSet("command") && !ctx.IsSet("concurrency") && !ctx.IsSet("dir") && !ctx.IsSet("managed-runtime") && !ctx.IsSet("queues") && !ctx.IsSet("runtime-version") && !ctx.IsSet("worker-name") && ctx.NArg() <= 1 {
+				return fmt.Errorf("at least one flag, --file, or command argv after -- is required")
 			}
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)

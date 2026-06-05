@@ -351,6 +351,24 @@ func isTagMapField(f BodyField) bool {
 	return t == "TagMap"
 }
 
+func commandTailField(c PlannedCommand) *BodyField {
+	if c.OperationID != "startEnvironmentWorker" || c.Body == nil {
+		return nil
+	}
+	for i := range c.Body.Fields {
+		f := &c.Body.Fields[i]
+		if f.FlagName == "command" && f.Kind == "strings" {
+			return f
+		}
+	}
+	return nil
+}
+
+func isCommandTailField(c PlannedCommand, f BodyField) bool {
+	tail := commandTailField(c)
+	return tail != nil && tail.GoField == f.GoField && tail.FlagName == f.FlagName
+}
+
 func isSimplePathParam(t string, client *ClientInfo) bool {
 	switch underlyingKind(t, client) {
 	case "string", "int":
@@ -650,6 +668,7 @@ func renderCommand(b *bytes.Buffer, group string, c PlannedCommand) error {
 			hasDesc = true
 		}
 	}
+	commandTail := commandTailField(c)
 	switch {
 	case len(positional) == 0:
 		// No positional arguments.
@@ -667,6 +686,11 @@ func renderCommand(b *bytes.Buffer, group string, c PlannedCommand) error {
 				fmt.Fprintf(b, "\t\tAddArg(&cli.Arg{Name: %q, Required: true}).\n", p.FlagName)
 			}
 		}
+	}
+	if commandTail != nil {
+		fmt.Fprintf(b, "\t\tAddArg(&cli.Arg{Name: %q, Description: %q, Required: false, Variadic: true}).\n",
+			commandTail.FlagName,
+			"Command argv after --. Use this for values beginning with '-' (for example: -- sh -lc 'echo hi').")
 	}
 
 	// Flags (query + body file). Flag-backed path params like --project are
@@ -694,6 +718,9 @@ func renderCommand(b *bytes.Buffer, group string, c PlannedCommand) error {
 				continue
 			}
 			help := summarizeHelp(firstNonEmpty(f.Description, f.FlagName))
+			if isCommandTailField(c, f) {
+				help += " For values beginning with '-', use --command=<value> or argv after --."
+			}
 			if f.Required {
 				help = "[required] " + help
 			}
@@ -852,6 +879,15 @@ func renderCommand(b *bytes.Buffer, group string, c PlannedCommand) error {
 					f.FlagName, f.FlagName, f.FlagName, f.GoField)
 			}
 		}
+		if commandTail != nil {
+			fixedArgs := len(positional)
+			fmt.Fprintf(b, "\t\t\tif ctx.NArg() > %d {\n", fixedArgs)
+			fmt.Fprintf(b, "\t\t\t\tv := make([]string, 0, ctx.NArg()-%d)\n", fixedArgs)
+			fmt.Fprintf(b, "\t\t\t\tif body.%s != nil { v = append(v, (*body.%s)...)}\n", commandTail.GoField, commandTail.GoField)
+			fmt.Fprintf(b, "\t\t\t\tv = append(v, ctx.Args()[%d:]...)\n", fixedArgs)
+			fmt.Fprintf(b, "\t\t\t\tbody.%s = &v\n", commandTail.GoField)
+			fmt.Fprintf(b, "\t\t\t}\n")
+		}
 		// Client-side required-field check. If neither --file nor the flag set
 		// the value, surface a friendly error rather than letting the server
 		// reject the request.
@@ -900,6 +936,10 @@ func renderCommand(b *bytes.Buffer, group string, c PlannedCommand) error {
 				conds = append(conds, fmt.Sprintf("!ctx.IsSet(%q)", flagName))
 			}
 			msg := "at least one flag or --file is required"
+			if commandTail != nil {
+				conds = append(conds, fmt.Sprintf("ctx.NArg() <= %d", len(positional)))
+				msg = "at least one flag, --file, or command argv after -- is required"
+			}
 			if len(conds) == 1 {
 				msg = "--file is required"
 			}
