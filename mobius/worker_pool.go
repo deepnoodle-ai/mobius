@@ -99,6 +99,15 @@ func (p *WorkerPool) Run(ctx context.Context) error {
 		case errors.Is(err, ErrAuthRevoked):
 			result = ErrAuthRevoked
 			cancel()
+		case errors.Is(err, ErrWorkerInstanceConflict):
+			// A duplicate worker_instance_id is a terminal startup failure
+			// for the whole pool. Let it win over the downstream
+			// context-cancellations the other children report once we
+			// cancel, but yield to a revoked credential.
+			if !errors.Is(result, ErrAuthRevoked) {
+				result = err
+			}
+			cancel()
 		case errors.Is(err, context.Canceled), errors.Is(err, context.DeadlineExceeded):
 			if result == nil {
 				result = err

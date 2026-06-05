@@ -1432,7 +1432,10 @@ class WorkerSocketProtocolError(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    code: str
+    code: str = Field(
+        ...,
+        description='Stable protocol error code. `worker_instance_conflict` is emitted when a duplicate live `worker_instance_id` registers and should be treated as a terminal worker startup failure.',
+    )
     message: str
 
 
@@ -3404,7 +3407,7 @@ class CancelAutomationRunRequest(BaseModel):
 
 class SignalAutomationRunRequest(BaseModel):
     """
-    Body for delivering a signal to a suspended run.
+    Body for resuming a suspended automation step.
     """
 
     model_config = ConfigDict(

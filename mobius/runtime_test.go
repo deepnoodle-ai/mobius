@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -270,6 +271,50 @@ func TestWorkerRun_HeartbeatCancelDirectiveCancelsJob(t *testing.T) {
 		t.Fatal("worker did not report cancellation")
 	}
 	<-done
+}
+
+func TestWorkerRun_InstanceConflictIsTerminal(t *testing.T) {
+	var connections atomic.Int32
+	c, _ := newWorkerSocketTestClient(t, func(t *testing.T, conn *websocket.Conn) {
+		connections.Add(1)
+		env := readTestFrame(t, conn)
+		assert.Equal(t, env.Type, "worker.register")
+		var register api.WorkerSocketRegisterFrame
+		assert.NoError(t, json.Unmarshal(env.Raw, &register))
+		_ = conn.WriteJSON(api.WorkerSocketErrorFrame{
+			Type:      api.WorkerSocketErrorFrameTypeError,
+			MessageId: register.MessageId,
+			Error: api.WorkerSocketProtocolError{
+				Code:    "worker_instance_conflict",
+				Message: `worker_instance_id "dup" already registered in project "test-project"`,
+			},
+		})
+		// Hold the connection open until the worker tears it down so the
+		// error frame is delivered before close. A buggy reconnect would
+		// dial again and land here a second time, bumping the counter.
+		_, _, _ = conn.ReadMessage()
+	})
+
+	worker := c.NewWorker(WorkerConfig{
+		WorkerInstanceID:  "dup",
+		ReconnectDelay:    10 * time.Millisecond,
+		HeartbeatInterval: time.Hour,
+	})
+
+	done := make(chan error, 1)
+	go func() { done <- worker.Run(context.Background()) }()
+
+	select {
+	case err := <-done:
+		assert.True(t, errors.Is(err, ErrWorkerInstanceConflict))
+		var ic *InstanceConflictError
+		assert.True(t, errors.As(err, &ic))
+		assert.Equal(t, ic.WorkerInstanceID, "dup")
+		assert.Equal(t, ic.ProjectHandle, "test-project")
+	case <-time.After(2 * time.Second):
+		t.Fatal("worker did not exit on instance conflict (reconnect loop?)")
+	}
+	assert.Equal(t, connections.Load(), int32(1))
 }
 
 func newWorkerSocketTestClient(t *testing.T, fn func(t *testing.T, conn *websocket.Conn)) (*Client, *httptest.Server) {

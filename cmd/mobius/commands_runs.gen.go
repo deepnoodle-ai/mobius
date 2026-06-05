@@ -173,7 +173,7 @@ func registerRunsCommands(app *cli.App) {
 		})
 
 	runsGrp.Command("signal-run").
-		Description("Deliver a signal to a suspended run").
+		Description("Resume a suspended run step").
 		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
 		Flags(
 			cli.String("result", "").Help("Free-form payload saved as the resumed step's output. Accepts JSON, @file, or @-."),
