@@ -21,7 +21,7 @@ func registerInteractionsCommands(app *cli.App) {
 	interactionsGrp.Alias("interaction")
 	interactionsGrp.Command("cancel").
 		Description("Cancel an open interaction").
-		Args("id").
+		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
 		Flags(
 			cli.String("reason", "").Help("Free-text reason recorded on the interaction."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
@@ -90,7 +90,7 @@ func registerInteractionsCommands(app *cli.App) {
 
 	interactionsGrp.Command("delete").
 		Description("Delete an interaction").
-		Args("id").
+		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -109,7 +109,7 @@ func registerInteractionsCommands(app *cli.App) {
 
 	interactionsGrp.Command("get").
 		Description("Get an interaction").
-		Args("id").
+		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -134,8 +134,8 @@ func registerInteractionsCommands(app *cli.App) {
 			cli.String("run-id", "").Help("Filter by originating run ID"),
 			cli.String("target-user-id", "").Help("Filter by resolved target user ID."),
 			cli.Bool("inbox", "").Help("When true, returns only interactions visible to the authenticated user."),
-			cli.String("cursor", "").Help("cursor"),
-			cli.Int("limit", "").Help("limit"),
+			cli.String("cursor", "").Help("Cursor for pagination (opaque string from previous response)"),
+			cli.Int("limit", "").Help("Maximum number of items to return"),
 		).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -183,7 +183,7 @@ func registerInteractionsCommands(app *cli.App) {
 
 	interactionsGrp.Command("respond").
 		Description("Submit a response to an interaction").
-		Args("id").
+		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
 		Flags(
 			cli.String("action", "").Help("Operation to perform through the canonical response endpoint. `submit` answers the interaction."),
 			cli.String("comment", "").Help("Optional free-text comment accompanying the action. Available on every interaction kind and never g…"),

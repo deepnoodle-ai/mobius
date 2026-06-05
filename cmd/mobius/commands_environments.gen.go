@@ -22,18 +22,18 @@ func registerEnvironmentsCommands(app *cli.App) {
 	environmentsGrp.Command("acquire").
 		Description("Acquire an environment lease").
 		Flags(
-			cli.String("bound-to-id", "").Help("bound-to-id"),
+			cli.String("bound-to-id", "").Help("ID of the object the environment is bound to (paired with `bound_to_type`)."),
 			cli.String("bound-to-type", "").Help("Execution or lifecycle object this environment is bound to. Ownership remains in `owned_by`."),
-			cli.String("environment-id", "").Help("environment-id"),
+			cli.String("environment-id", "").Help("Existing environment ID to claim; omit to create a new environment."),
 			cli.String("environment-mode", "").Help("High-level ownership policy for how Mobius plans to use the environment. `run` is one-shot and auto…"),
-			cli.String("holder-id", "").Help("holder-id"),
+			cli.String("holder-id", "").Help("ID of the lease holder (paired with `holder_type`)."),
 			cli.String("holder-type", "").Help("Execution or lifecycle object this environment is bound to. Ownership remains in `owned_by`."),
 			cli.String("lease-ttl", "").Help("Go duration string, for example 30m or 2h."),
 			cli.String("lifetime", "").Help("Lifecycle owner for automatic cleanup. `run` environments are destroyed during their owning run's F…"),
-			cli.String("name", "").Help("name"),
+			cli.String("name", "").Help("Human-readable environment name (used when creating)."),
 			cli.String("owned-by", "").Help("Canonical user owner ID. Defaults to the authenticated user."),
-			cli.String("provider", "").Help("provider"),
-			cli.String("purpose", "").Help("purpose"),
+			cli.String("provider", "").Help("Providers the control plane can provision on demand. Excludes `worker`: worker-provided environment…"),
+			cli.String("purpose", "").Help("Declared purpose for an environment; used for routing and cleanup defaults."),
 			cli.String("scope", "").Help("Optional namespace for named runtime resources. Omitted/null means the project/default scope; `owne…"),
 			cli.String("spec", "").Help("spec Accepts JSON, @file, or @-."),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
@@ -94,7 +94,7 @@ func registerEnvironmentsCommands(app *cli.App) {
 				body.OwnedBy = &v
 			}
 			if ctx.IsSet("provider") {
-				v := api.EnvironmentProvider(ctx.String("provider"))
+				v := api.ProvisionEnvironmentProvider(ctx.String("provider"))
 				body.Provider = &v
 			}
 			if ctx.IsSet("purpose") {
@@ -133,18 +133,80 @@ func registerEnvironmentsCommands(app *cli.App) {
 			return printResponse(ctx, "acquireEnvironment", resp.StatusCode(), resp.Body)
 		})
 
+	environmentsGrp.Command("attach-worker").
+		Description("Create or attach a worker-provided environment").
+		Flags(
+			cli.String("bound-to-id", "").Help("ID of the object the environment is bound to (paired with `bound_to_type`)."),
+			cli.String("bound-to-type", "").Help("Execution or lifecycle object this environment is bound to. Ownership remains in `owned_by`."),
+			cli.String("environment-mode", "").Help("High-level ownership policy for how Mobius plans to use the environment. `run` is one-shot and auto…"),
+			cli.String("name", "").Help("[required] Stable per-workspace environment name; the idempotency key."),
+			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
+			cli.String("workspace-path", "").Help("Worker-host path backing the environment (informational)."),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			var body api.AttachWorkerEnvironmentJSONRequestBody
+			if err := readJSONBody(ctx, &body); err != nil {
+				return err
+			}
+			if ctx.IsSet("bound-to-id") {
+				v := ctx.String("bound-to-id")
+				body.BoundToId = &v
+			}
+			if ctx.IsSet("bound-to-type") {
+				v := api.EnvironmentBoundToType(ctx.String("bound-to-type"))
+				body.BoundToType = &v
+			}
+			if ctx.IsSet("environment-mode") {
+				v := api.EnvironmentMode(ctx.String("environment-mode"))
+				body.EnvironmentMode = &v
+			}
+			if ctx.IsSet("name") {
+				body.Name = ctx.String("name")
+			}
+			if tags, err := parseTagFlags(ctx); err != nil {
+				return err
+			} else if tags != nil {
+				v := api.TagMap(tags)
+				body.Tags = &v
+			}
+			if ctx.IsSet("workspace-path") {
+				v := ctx.String("workspace-path")
+				body.WorkspacePath = &v
+			}
+			if body.Name == "" {
+				return fmt.Errorf("--name is required (or supply it via --file)")
+			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
+			}
+			resp, err := client.AttachWorkerEnvironmentWithResponse(ctx.Context(), p0, body)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "attachWorkerEnvironment", resp.StatusCode(), resp.Body)
+		})
+
 	environmentsGrp.Command("create").
 		Description("Create an environment").
 		Flags(
-			cli.String("bound-to-id", "").Help("bound-to-id"),
+			cli.String("bound-to-id", "").Help("ID of the object the environment is bound to (paired with `bound_to_type`)."),
 			cli.String("bound-to-type", "").Help("Execution or lifecycle object this environment is bound to. Ownership remains in `owned_by`."),
 			cli.String("environment-mode", "").Help("High-level ownership policy for how Mobius plans to use the environment. `run` is one-shot and auto…"),
 			cli.String("lifetime", "").Help("Lifecycle owner for automatic cleanup. `run` environments are destroyed during their owning run's F…"),
-			cli.String("name", "").Help("name"),
+			cli.String("name", "").Help("Human-readable environment name."),
 			cli.String("owned-by", "").Help("Canonical user owner ID. Defaults to the authenticated user."),
-			cli.String("provider", "").Help("provider"),
-			cli.String("purpose", "").Help("purpose"),
-			cli.String("retention-policy", "").Help("retention-policy"),
+			cli.String("provider", "").Help("Providers the control plane can provision on demand. Excludes `worker`: worker-provided environment…"),
+			cli.String("purpose", "").Help("Declared purpose for an environment; used for routing and cleanup defaults."),
+			cli.String("retention-policy", "").Help("Whether a finished environment is retained or destroyed, and under what outcome."),
 			cli.String("scope", "").Help("Optional namespace for named runtime resources. Omitted/null means the project/default scope; `owne…"),
 			cli.String("spec", "").Help("spec Accepts JSON, @file, or @-."),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
@@ -189,7 +251,7 @@ func registerEnvironmentsCommands(app *cli.App) {
 				body.OwnedBy = &v
 			}
 			if ctx.IsSet("provider") {
-				v := api.EnvironmentProvider(ctx.String("provider"))
+				v := api.ProvisionEnvironmentProvider(ctx.String("provider"))
 				body.Provider = &v
 			}
 			if ctx.IsSet("purpose") {
@@ -234,9 +296,9 @@ func registerEnvironmentsCommands(app *cli.App) {
 
 	environmentsGrp.Command("create-git-credential").
 		Description("Mint short-lived Git credentials for an environment").
-		Args("environment-id").
+		AddArg(&cli.Arg{Name: "environment-id", Description: "Environment ID.", Required: true}).
 		Flags(
-			cli.String("operation", "").Help("operation"),
+			cli.String("operation", "").Help("Git operation the minted credential will authorize."),
 			cli.String("repo-full-name", "").Help("[required] GitHub `owner/name` repository full name."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
@@ -276,7 +338,7 @@ func registerEnvironmentsCommands(app *cli.App) {
 
 	environmentsGrp.Command("destroy").
 		Description("Destroy an environment").
-		Args("environment-id").
+		AddArg(&cli.Arg{Name: "environment-id", Description: "Environment ID.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -295,12 +357,12 @@ func registerEnvironmentsCommands(app *cli.App) {
 
 	environmentsGrp.Command("exec").
 		Description("Execute a command inside an environment").
-		Args("environment-id").
+		AddArg(&cli.Arg{Name: "environment-id", Description: "Environment ID.", Required: true}).
 		Flags(
-			cli.Strings("command", "").Help("[required] command"),
-			cli.String("dir", "").Help("dir"),
-			cli.Strings("env", "").Help("env"),
-			cli.String("stdin", "").Help("stdin"),
+			cli.Strings("command", "").Help("[required] Command and arguments to run, as an argv array."),
+			cli.String("dir", "").Help("Working directory for the command (defaults to the workspace root)."),
+			cli.Strings("env", "").Help("Extra environment variables as `KEY=VALUE` strings."),
+			cli.String("stdin", "").Help("Standard input to pipe to the command."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -347,7 +409,7 @@ func registerEnvironmentsCommands(app *cli.App) {
 
 	environmentsGrp.Command("get").
 		Description("Get an environment").
-		Args("environment-id").
+		AddArg(&cli.Arg{Name: "environment-id", Description: "Environment ID.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -366,7 +428,7 @@ func registerEnvironmentsCommands(app *cli.App) {
 
 	environmentsGrp.Command("get-worker-logs").
 		Description("Get worker logs for an environment").
-		Args("environment-id").
+		AddArg(&cli.Arg{Name: "environment-id", Description: "Environment ID.", Required: true}).
 		Flags(
 			cli.String("log-name", "").Help("Named log stream to read. Defaults to stdout."),
 			cli.Int("tail", "").Help("Maximum number of lines to return from each selected log."),
@@ -399,17 +461,17 @@ func registerEnvironmentsCommands(app *cli.App) {
 	environmentsGrp.Command("list").
 		Description("List environments").
 		Flags(
-			cli.String("cursor", "").Help("cursor"),
-			cli.Int("limit", "").Help("limit"),
-			cli.String("provider", "").Help("provider"),
-			cli.String("status", "").Help("status"),
-			cli.String("lifetime", "").Help("lifetime"),
-			cli.String("environment-mode", "").Help("environment-mode"),
-			cli.String("purpose", "").Help("purpose"),
+			cli.String("cursor", "").Help("Cursor for pagination (opaque string from previous response)"),
+			cli.Int("limit", "").Help("Maximum number of items to return"),
+			cli.String("provider", "").Help("Filter by backing environment provider."),
+			cli.String("status", "").Help("Filter by environment lifecycle status."),
+			cli.String("lifetime", "").Help("Filter by cleanup-lifetime owner (`run`, `lease`, or `explicit`)."),
+			cli.String("environment-mode", "").Help("Filter by environment ownership mode."),
+			cli.String("purpose", "").Help("Filter by declared environment purpose."),
 			cli.String("scope", "").Help("Omit for all/default-scoped environments; use `owner` with `owned_by` to list owner-scoped environm…"),
 			cli.String("owned-by", "").Help("Canonical user owner ID for the environment."),
-			cli.String("bound-to-type", "").Help("bound-to-type"),
-			cli.String("bound-to-id", "").Help("bound-to-id"),
+			cli.String("bound-to-type", "").Help("Filter by the kind of object the environment is bound to."),
+			cli.String("bound-to-id", "").Help("Filter to environments bound to this object ID."),
 			cli.Bool("include-destroyed", "").Help("Include destroyed environments in the result. By default destroyed rows are excluded; set this to t…"),
 		).
 		Use(requireAuth()).
@@ -478,7 +540,7 @@ func registerEnvironmentsCommands(app *cli.App) {
 
 	environmentsGrp.Command("reconcile").
 		Description("Reconcile environment provider state").
-		Args("environment-id").
+		AddArg(&cli.Arg{Name: "environment-id", Description: "Environment ID.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -497,7 +559,7 @@ func registerEnvironmentsCommands(app *cli.App) {
 
 	environmentsGrp.Command("release-lease").
 		Description("Release an environment lease").
-		Args("lease-id").
+		AddArg(&cli.Arg{Name: "lease-id", Description: "Environment lease ID.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -516,14 +578,14 @@ func registerEnvironmentsCommands(app *cli.App) {
 
 	environmentsGrp.Command("start-worker").
 		Description("Start a Mobius worker in an environment").
-		Args("environment-id").
+		AddArg(&cli.Arg{Name: "environment-id", Description: "Environment ID.", Required: true}).
 		Flags(
-			cli.Strings("action-names", "").Help("action-names"),
-			cli.Strings("command", "").Help("command"),
-			cli.Int("concurrency", "").Help("concurrency"),
-			cli.String("dir", "").Help("dir"),
+			cli.Strings("action-names", "").Help("Restrict the worker to these action names."),
+			cli.Strings("command", "").Help("Override the worker command and arguments, as an argv array."),
+			cli.Int("concurrency", "").Help("Maximum number of jobs to run concurrently."),
+			cli.String("dir", "").Help("Working directory for the worker process."),
 			cli.Bool("managed-runtime", "").Help("Install/refresh the managed Mobius runtime bundle before starting the worker. Defaults to true unle…"),
-			cli.Strings("queues", "").Help("queues"),
+			cli.Strings("queues", "").Help("Job queues the worker should claim from (defaults to all)."),
 			cli.String("runtime-version", "").Help("Runtime bundle version to install. Defaults to the server-configured runtime version."),
 			cli.String("worker-name", "").Help("Friendly worker session name. Defaults to the environment name."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
@@ -589,14 +651,14 @@ func registerEnvironmentsCommands(app *cli.App) {
 
 	environmentsGrp.Command("update").
 		Description("Update environment metadata").
-		Args("environment-id").
+		AddArg(&cli.Arg{Name: "environment-id", Description: "Environment ID.", Required: true}).
 		Flags(
-			cli.String("bound-to-id", "").Help("bound-to-id"),
+			cli.String("bound-to-id", "").Help("ID of the object the environment is bound to; send null to clear."),
 			cli.String("bound-to-type", "").Help("Execution or lifecycle object this environment is bound to. Ownership remains in `owned_by`."),
-			cli.String("owned-by", "").Help("owned-by"),
-			cli.String("purpose", "").Help("purpose"),
-			cli.String("retention-policy", "").Help("retention-policy"),
-			cli.String("scope", "").Help("scope"),
+			cli.String("owned-by", "").Help("Canonical user owner ID. Send null to clear ownership."),
+			cli.String("purpose", "").Help("Declared purpose for an environment; used for routing and cleanup defaults."),
+			cli.String("retention-policy", "").Help("Whether a finished environment is retained or destroyed, and under what outcome."),
+			cli.String("scope", "").Help("Resource scope; send null to return to the project/default scope."),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
@@ -659,10 +721,10 @@ func registerEnvironmentsCommands(app *cli.App) {
 
 	environmentsGrp.Command("write-file").
 		Description("Write a file into an environment").
-		Args("environment-id").
+		AddArg(&cli.Arg{Name: "environment-id", Description: "Environment ID.", Required: true}).
 		Flags(
-			cli.String("content", "").Help("[required] content"),
-			cli.String("path", "").Help("[required] path"),
+			cli.String("content", "").Help("[required] File content to write."),
+			cli.String("path", "").Help("[required] Destination file path inside the environment."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).

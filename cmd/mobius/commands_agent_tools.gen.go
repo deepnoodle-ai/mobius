@@ -19,7 +19,7 @@ func registerAgentToolsCommands(app *cli.App) {
 	agentToolsGrp.Alias("agent-tool")
 	agentToolsGrp.Command("get-manifest").
 		Description("Resolve an agent tool manifest").
-		Args("id").
+		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
 		Flags(
 			cli.String("toolkit-ids", "").Help("Optional comma-separated toolkit subset to apply."),
 			cli.String("skill-name", "").Help("Optional assigned skill name to preselect as active."),

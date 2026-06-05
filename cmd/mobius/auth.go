@@ -85,17 +85,17 @@ func registerAuthCommands(app *cli.App) {
 
 	grp.Command("use").
 		Description("Print an export command that selects a profile").
-		Args("name").
+		AddArg(&cli.Arg{Name: "name", Description: "Local credential profile to select.", Required: true}).
 		Run(runAuthUse)
 
 	grp.Command("remove").
 		Description("Remove a local credential profile").
-		Args("name?").
+		AddArg(&cli.Arg{Name: "name", Description: "Local credential profile to remove (defaults to the selected profile)."}).
 		Run(runAuthRemove)
 
 	grp.Command("revoke").
 		Description("Revoke one browser-issued CLI credential").
-		Args("id?").
+		AddArg(&cli.Arg{Name: "id", Description: "Browser-issued CLI credential ID to revoke (omit to list available credentials)."}).
 		Run(runAuthRevoke)
 }
 

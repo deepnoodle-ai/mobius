@@ -44,7 +44,7 @@ type AutomationVersionOptions struct {
 
 // ListAutomationsOptions filters and paginates saved automations.
 type ListAutomationsOptions struct {
-	Status api.AutomationStatus
+	Status api.ListAutomationsParamsStatus
 	Cursor string
 	Limit  int
 }

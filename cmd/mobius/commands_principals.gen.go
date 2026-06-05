@@ -15,19 +15,18 @@ import (
 	"github.com/deepnoodle-ai/mobius/mobius/api"
 )
 
-// registerServiceAccountsCommands registers every generated subcommand in the "service-accounts" group.
-func registerServiceAccountsCommands(app *cli.App) {
-	serviceAccountsGrp := app.Group("service-accounts").Description("Project service accounts for agents and automation")
-	serviceAccountsGrp.Alias("service-account")
-	serviceAccountsGrp.Command("create").
-		Description("Create a service account").
+// registerPrincipalsCommands registers every generated subcommand in the "principals" group.
+func registerPrincipalsCommands(app *cli.App) {
+	principalsGrp := app.Group("principals").Description("Machine principals for agents and automation")
+	principalsGrp.Alias("principal")
+	principalsGrp.Command("create").
+		Description("Create a service principal").
 		Flags(
 			cli.String("description", "").Help("Optional human-readable description."),
-			cli.String("metadata", "").Help("Arbitrary metadata to attach to the service account. Accepts JSON, @file, or @-."),
-			cli.String("name", "").Help("[required] Human-readable name for this service account. Immutable after creation."),
-			cli.String("owner-id", "").Help("Org member responsible for this service account."),
-			cli.String("purpose", "").Help("Why this service account exists. `api_client` is the normal user-facing machine identity. `agent` a…"),
-			cli.Strings("role-ids", "").Help("One or more role IDs to assign at creation time. All assignments are created atomically with the se…"),
+			cli.String("metadata", "").Help("Arbitrary metadata to attach to the principal. Accepts JSON, @file, or @-."),
+			cli.String("name", "").Help("[required] Human-readable name for this principal. Immutable after creation."),
+			cli.String("owner-id", "").Help("Human principal accountable for this service principal."),
+			cli.Strings("role-ids", "").Help("One or more role IDs to assign at creation time. All assignments are created atomically with the pr…"),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
@@ -40,7 +39,7 @@ func registerServiceAccountsCommands(app *cli.App) {
 			}
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
-			var body api.CreateServiceAccountJSONRequestBody
+			var body api.CreatePrincipalJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
 			}
@@ -60,10 +59,6 @@ func registerServiceAccountsCommands(app *cli.App) {
 				v := ctx.String("owner-id")
 				body.OwnerId = &v
 			}
-			if ctx.IsSet("purpose") {
-				v := api.ServiceAccountPurpose(ctx.String("purpose"))
-				body.Purpose = &v
-			}
 			if ctx.IsSet("role-ids") {
 				v := ctx.Strings("role-ids")
 				body.RoleIds = &v
@@ -80,16 +75,16 @@ func registerServiceAccountsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.CreateServiceAccountWithResponse(ctx.Context(), p0, body)
+			resp, err := client.CreatePrincipalWithResponse(ctx.Context(), p0, body)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, "createServiceAccount", resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "createPrincipal", resp.StatusCode(), resp.Body)
 		})
 
-	serviceAccountsGrp.Command("delete").
-		Description("Delete a service account").
-		Args("id").
+	principalsGrp.Command("delete").
+		Description("Delete a principal").
+		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -99,16 +94,16 @@ func registerServiceAccountsCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			resp, err := client.DeleteServiceAccountWithResponse(ctx.Context(), p0, p1)
+			resp, err := client.DeletePrincipalWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, "deleteServiceAccount", resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "deletePrincipal", resp.StatusCode(), resp.Body)
 		})
 
-	serviceAccountsGrp.Command("get").
-		Description("Get a service account").
-		Args("id").
+	principalsGrp.Command("get").
+		Description("Get a principal").
+		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -118,18 +113,19 @@ func registerServiceAccountsCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			resp, err := client.GetServiceAccountWithResponse(ctx.Context(), p0, p1)
+			resp, err := client.GetPrincipalWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, "getServiceAccount", resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "getPrincipal", resp.StatusCode(), resp.Body)
 		})
 
-	serviceAccountsGrp.Command("list").
-		Description("List service accounts").
+	principalsGrp.Command("list").
+		Description("List machine principals").
 		Flags(
-			cli.String("purpose", "").Help("Filter service accounts by purpose."),
-			cli.Int("limit", "").Help("limit"),
+			cli.String("kind", "").Help("Filter principals by kind."),
+			cli.Bool("include-disabled", "").Help("Include disabled principals. By default only active ones are returned."),
+			cli.Int("limit", "").Help("Maximum number of items to return"),
 		).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -139,31 +135,35 @@ func registerServiceAccountsCommands(app *cli.App) {
 			}
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
-			params := &api.ListServiceAccountsParams{}
-			if ctx.IsSet("purpose") {
-				v := api.ServiceAccountPurpose(ctx.String("purpose"))
-				params.Purpose = &v
+			params := &api.ListPrincipalsParams{}
+			if ctx.IsSet("kind") {
+				v := api.PrincipalKind(ctx.String("kind"))
+				params.Kind = &v
+			}
+			if ctx.IsSet("include-disabled") {
+				v := ctx.Bool("include-disabled")
+				params.IncludeDisabled = &v
 			}
 			if ctx.IsSet("limit") {
 				v := api.LimitParam(ctx.Int("limit"))
 				params.Limit = &v
 			}
-			resp, err := client.ListServiceAccountsWithResponse(ctx.Context(), p0, params)
+			resp, err := client.ListPrincipalsWithResponse(ctx.Context(), p0, params)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, "listServiceAccounts", resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "listPrincipals", resp.StatusCode(), resp.Body)
 		})
 
-	serviceAccountsGrp.Command("update").
-		Description("Update a service account").
-		Args("id").
+	principalsGrp.Command("update").
+		Description("Update a principal").
+		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
 		Flags(
 			cli.String("description", "").Help("Replacement description."),
 			cli.String("metadata", "").Help("Replacement metadata. Accepts JSON, @file, or @-."),
-			cli.String("owner-id", "").Help("ID of the org member responsible for this service account."),
-			cli.Strings("role-ids", "").Help("Replacement role IDs for this service account in the project. Send an empty array to remove all pro…"),
-			cli.String("status", "").Help("`active` allows authentication and job claims; `disabled` blocks them but preserves the record and …"),
+			cli.String("owner-id", "").Help("Human principal accountable for this principal."),
+			cli.Strings("role-ids", "").Help("Replacement role IDs for this principal in the project. Send an empty array to remove all project r…"),
+			cli.String("state", "").Help("Canonical business-lifecycle state. `active` allows authentication and job claims; `disabled` is a …"),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
@@ -177,7 +177,7 @@ func registerServiceAccountsCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			var body api.UpdateServiceAccountJSONRequestBody
+			var body api.UpdatePrincipalJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
 			}
@@ -198,9 +198,9 @@ func registerServiceAccountsCommands(app *cli.App) {
 				v := ctx.Strings("role-ids")
 				body.RoleIds = &v
 			}
-			if ctx.IsSet("status") {
-				v := api.ServiceAccountStatus(ctx.String("status"))
-				body.Status = &v
+			if ctx.IsSet("state") {
+				v := api.PrincipalState(ctx.String("state"))
+				body.State = &v
 			}
 			if tags, err := parseTagFlags(ctx); err != nil {
 				return err
@@ -208,17 +208,17 @@ func registerServiceAccountsCommands(app *cli.App) {
 				v := api.TagMap(tags)
 				body.Tags = &v
 			}
-			if ctx.String("file") == "" && !ctx.IsSet("description") && !ctx.IsSet("metadata") && !ctx.IsSet("owner-id") && !ctx.IsSet("role-ids") && !ctx.IsSet("status") && !ctx.IsSet("tag") {
+			if ctx.String("file") == "" && !ctx.IsSet("description") && !ctx.IsSet("metadata") && !ctx.IsSet("owner-id") && !ctx.IsSet("role-ids") && !ctx.IsSet("state") && !ctx.IsSet("tag") {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.UpdateServiceAccountWithResponse(ctx.Context(), p0, p1, body)
+			resp, err := client.UpdatePrincipalWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, "updateServiceAccount", resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "updatePrincipal", resp.StatusCode(), resp.Body)
 		})
 
 }

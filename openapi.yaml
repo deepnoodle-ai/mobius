@@ -21,6 +21,9 @@ tags:
 - name: actions
   x-displayName: Actions
   description: Project and catalog actions invoked by agents and automation steps.
+- name: catalog
+  x-displayName: Catalog
+  description: Catalog API operations.
 - name: environments
   x-displayName: Environments
   description: Provider-backed isolated workspaces allocated to agents and automation runs.
@@ -70,9 +73,9 @@ tags:
   x-displayName: Skills
   description: Project-local and system skill templates used to shape agent behavior and requested
     tools.
-- name: service-accounts
-  x-displayName: Service Accounts
-  description: Project service accounts used by agents, workers, and automation.
+- name: principals
+  x-displayName: Principals
+  description: Principals API operations.
 - name: tables
   x-displayName: Tables
   description: Agent-readable and -writable project tables.
@@ -87,9 +90,9 @@ paths:
       - audit-logs
       summary: List organization audit log entries
       description: |-
-        Returns an immutable, append-only log of create/update/delete/archive/restore actions performed against org resources. Each entry attributes the action to a `user_id` (the universal principal) along with the credential used, enabling attribution even when keys are later revoked.
+        Returns an immutable, append-only log of create/update/delete/archive/restore actions performed against org resources. Each entry attributes the action to a `principal_id` (the universal principal) along with the credential used, enabling attribution even when keys are later revoked.
 
-        Combine `user_id` + `resource_type` to audit a specific user's writes to a resource class. Use `created_after` / `created_before` for time-bounded compliance exports.
+        Combine `principal_id` + `resource_type` to audit a specific user's writes to a resource class. Use `created_after` / `created_before` for time-bounded compliance exports.
       parameters:
       - name: resource_type
         in: query
@@ -106,11 +109,11 @@ paths:
         schema:
           type: string
         description: Filter by resource ID
-      - name: user_id
+      - name: principal_id
         in: query
         schema:
           type: string
-        description: Filter by user ID
+        description: Filter by principal ID
       - name: action
         in: query
         schema:
@@ -148,7 +151,7 @@ paths:
       - audit-logs
       summary: List project audit log entries
       description: Returns immutable audit log entries for the selected project. Project-pinned
-        CLI tokens and service-account API keys can use this route because the project is
+        CLI tokens and machine-principal API keys can use this route because the project is
         resolved from the path before permission checks run.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
@@ -162,11 +165,11 @@ paths:
         schema:
           type: string
         description: Filter by resource ID
-      - name: user_id
+      - name: principal_id
         in: query
         schema:
           type: string
-        description: Filter by user ID
+        description: Filter by principal ID
       - name: action
         in: query
         schema:
@@ -203,10 +206,10 @@ paths:
       tags:
       - api-keys
       summary: Create an API key
-      description: Creates an API key for a service account in this project. The key authenticates
-        as the service account; associated permissions come from that service account's role
-        assignments. The raw key value is returned in `key` and is never retrievable again
-        after this response.
+      description: Creates an API key bound to a machine principal in this project. The key
+        authenticates as that principal; associated permissions come from that principal's
+        role assignments. The raw key value is returned in `key` and is never retrievable
+        again after this response.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       requestBody:
@@ -297,27 +300,6 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
   /v1/projects/{project}/actions:
-    get:
-      operationId: listCatalogActions
-      tags:
-      - actions
-      summary: List the action catalog
-      description: 'Returns the full catalog of actions available to this project: project-owned
-        HTTP actions and platform-provided integration actions (Slack, GitHub, etc.). The
-        `available` flag indicates whether the action can currently be invoked.'
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ActionCatalogListResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
     post:
       operationId: createAction
       tags:
@@ -352,29 +334,6 @@ paths:
         '409':
           $ref: '#/components/responses/Conflict'
   /v1/projects/{project}/actions/{action_name}:
-    get:
-      operationId: getCatalogAction
-      tags:
-      - actions
-      summary: Get one catalog action by name
-      description: Returns availability status, schemas, and metadata for a single catalog
-        entry.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      - $ref: '#/components/parameters/ActionNameParam'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ActionCatalogEntry'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
     patch:
       operationId: updateAction
       tags:
@@ -543,6 +502,78 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /v1/projects/{project}/catalog/events:
+    get:
+      operationId: listCatalogEvents
+      tags:
+      - catalog
+      summary: List the triggerable event catalog
+      description: |-
+        Returns every event source an automation trigger (or `wait_for_event` step) can subscribe to within this project: built-in platform sources (tables, email, runs, HTTP triggers, sessions, artifacts) and integration provider sources (with project connection state). `items` contains those sources; each source lists its concrete, currently-active event types.
+
+        `reserved_prefixes` enumerates platform namespaces that are recognized but not themselves triggerable event sources (for example `signal`, `schedule`, `interaction`), so authoring UIs can distinguish a recognized-but-unsupported matcher prefix from a wholly unknown one.
+
+        Matcher grammar: an `event_type` is a dotted name of segments matching `[A-Za-z_][A-Za-z0-9_]*`, optionally ending in `.*` for prefix matching (e.g. `github.*`, `github.pull_request.opened`, `table.row.inserted`).
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventCatalogResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /v1/projects/{project}/catalog/actions:
+    get:
+      operationId: listCatalogActions
+      tags:
+      - catalog
+      summary: List the action catalog
+      description: 'Returns the full catalog of actions available to this project: project-owned
+        HTTP actions and platform-provided integration actions (Slack, GitHub, etc.). The
+        `available` flag indicates whether the action can currently be invoked. Custom HTTP
+        actions are created and managed on the `/actions` resource.'
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionCatalogListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /v1/projects/{project}/catalog/actions/{action_name}:
+    get:
+      operationId: getCatalogAction
+      tags:
+      - catalog
+      summary: Get one catalog action by name
+      description: Returns availability status, schemas, and metadata for a single catalog
+        entry.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/ActionNameParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionCatalogEntry'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /v1/projects/{project}/environments:
     get:
       operationId: listEnvironments
@@ -558,22 +589,27 @@ paths:
       - $ref: '#/components/parameters/LimitParam'
       - name: provider
         in: query
+        description: Filter by backing environment provider.
         schema:
           $ref: '#/components/schemas/EnvironmentProvider'
       - name: status
         in: query
+        description: Filter by environment lifecycle status.
         schema:
           $ref: '#/components/schemas/EnvironmentStatus'
       - name: lifetime
         in: query
+        description: Filter by cleanup-lifetime owner (`run`, `lease`, or `explicit`).
         schema:
           $ref: '#/components/schemas/EnvironmentLifetime'
       - name: environment_mode
         in: query
+        description: Filter by environment ownership mode.
         schema:
           $ref: '#/components/schemas/EnvironmentMode'
       - name: purpose
         in: query
+        description: Filter by declared environment purpose.
         schema:
           $ref: '#/components/schemas/EnvironmentPurpose'
       - name: scope
@@ -589,10 +625,12 @@ paths:
           type: string
       - name: bound_to_type
         in: query
+        description: Filter by the kind of object the environment is bound to.
         schema:
           $ref: '#/components/schemas/EnvironmentBoundToType'
       - name: bound_to_id
         in: query
+        description: Filter to environments bound to this object ID.
         schema:
           type: string
       - name: include_destroyed
@@ -653,6 +691,40 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '409':
           $ref: '#/components/responses/Conflict'
+  /v1/projects/{project}/environments/attach:
+    post:
+      operationId: attachWorkerEnvironment
+      tags:
+      - environments
+      summary: Create or attach a worker-provided environment
+      description: Idempotently registers a worker-provided environment (a workspace hosted
+        by a connected Mobius worker, e.g. a laptop). The control plane creates the record
+        but never provisions or tears it down. Re-attaching the same name returns the existing
+        environment. The `mobius worker` CLI calls this on startup, then registers its socket
+        against the returned environment id.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AttachWorkerEnvironmentRequest'
+      responses:
+        '200':
+          description: Attached
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Environment'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
   /v1/projects/{project}/environments/acquire:
     post:
       operationId: acquireEnvironment
@@ -698,6 +770,7 @@ paths:
       - name: lease_id
         in: path
         required: true
+        description: Environment lease ID.
         schema:
           type: string
       responses:
@@ -1367,7 +1440,7 @@ paths:
       - projects
       summary: Delete a project
       description: |-
-        Permanently deletes the project and all child resources (automations, runs, jobs, triggers, webhooks, interactions, actions, agents, service accounts). This operation is irreversible.
+        Permanently deletes the project and all child resources (automations, runs, jobs, triggers, webhooks, interactions, actions, agents, machine principals). This operation is irreversible.
 
         The project must be archived first; calling delete on an active project returns `409 project_not_archived`. Archive via `POST /v1/projects/{id}/archive`.
       parameters:
@@ -1594,7 +1667,7 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-  /v1/projects/{id}/members/{user_id}:
+  /v1/projects/{id}/members/{principal_id}:
     delete:
       operationId: removeProjectMember
       tags:
@@ -1605,7 +1678,7 @@ paths:
         add another member first.
       parameters:
       - $ref: '#/components/parameters/IDParam'
-      - $ref: '#/components/parameters/user_id'
+      - $ref: '#/components/parameters/principal_id'
       responses:
         '204':
           description: No Content
@@ -2061,12 +2134,13 @@ paths:
       tags:
       - roles
       summary: List role assignments
-      description: Returns project-scoped assignments optionally filtered by user or role.
+      description: Returns project-scoped assignments optionally filtered by principal or
+        role.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
-      - name: user_id
+      - name: principal_id
         in: query
-        description: Filter to assignments for a specific user.
+        description: Filter to assignments for a specific principal.
         schema:
           type: string
       - name: role_id
@@ -2089,11 +2163,10 @@ paths:
       operationId: createRoleAssignment
       tags:
       - roles
-      summary: Assign a role to a principal user
-      description: Binds a role to a principal User in this project. The assignment records
-        the creating user in `granted_by_user_id`. To manage service-account roles without
-        using the linked principal user ID directly, use `role_ids` on the service-account
-        create and update endpoints.
+      summary: Assign a role to a principal
+      description: Binds a role to a principal in this project (human or machine). The assignment
+        records the creating user in `granted_by`. To manage a machine principal's roles without
+        referencing its ID directly, use `role_ids` on the principal create and update endpoints.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       requestBody:
@@ -2185,7 +2258,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Interaction'
               example:
-                id: int_01hw1r2s3t4u5v6w7x8y9z0a1b
+                id: iact_01hw1r2s3t4u5v6w7x8y9z0a1b
                 run_id: run_01hw1n1a2b3c4d5e6f7g8h9j0k
                 signal_name: manager_approval
                 kind: request_approval
@@ -2346,7 +2419,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Interaction'
               example:
-                id: int_01hw1r2s3t4u5v6w7x8y9z0a1b
+                id: iact_01hw1r2s3t4u5v6w7x8y9z0a1b
                 run_id: run_01hw1n1a2b3c4d5e6f7g8h9j0k
                 signal_name: manager_approval
                 kind: request_approval
@@ -2365,7 +2438,7 @@ paths:
                 resolving_response_id: iresp_01hw1r3s3t4u5v6w7x8y9z0c1d
                 responses:
                 - id: iresp_01hw1r3s3t4u5v6w7x8y9z0c1d
-                  interaction_id: int_01hw1r2s3t4u5v6w7x8y9z0a1b
+                  interaction_id: iact_01hw1r2s3t4u5v6w7x8y9z0a1b
                   response_kind: response
                   state: submitted
                   responder_user_id: user_2f9s3k4m5n6p7q8r9s0t1u2v3w
@@ -2434,13 +2507,9 @@ paths:
       - agents
       summary: Create an agent
       description: |-
-        Creates an agent bound to a service account. Each service account backs at most one agent — the relationship is 1:1 from the agent's side, and `service_account_id` is immutable after creation (reassigning identity is delete-and-recreate).
+        Creates an agent. An agent IS a principal (principals.kind = agent): its backing identity row is created atomically with the agent and its permissions live as role grants on that principal — there is no separate machine-identity side record.
 
-        If `service_account_id` is omitted, a new service account is auto-created with the same name as the agent and assigned to back it. Auto-creation requires the caller to hold `mobius.access.manage`. Auto-creation fails if a service account with that name already exists in the project; to bind an existing service account to a new agent, pass `service_account_id` explicitly.
-
-        If `service_account_id` references a service account that already backs another agent, the request is rejected with `409 service_account_already_bound`.
-
-        Optional `role_ids` overrides the role assignments on the auto-created service account. Mutually exclusive with `service_account_id` (an existing SA already carries its own roles). When omitted, the auto-created SA inherits the project's `default_agent_role_id`, falling through to the system `Agent` role floor when unset.
+        Optional `role_ids` sets the role assignments on the agent's principal. Assigning roles requires the caller to hold `mobius.access.manage`. When omitted, the agent inherits the project's `default_agent_role_id`, falling through to the system `Agent` role floor when unset.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       requestBody:
@@ -2472,13 +2541,13 @@ paths:
       - agents
       summary: List agents
       description: Returns active and inactive agents with computed presence. Soft-deleted
-        agents are excluded. Filter by service_account_id to find all agents owned by a specific
+        agents are excluded. Filter by principal_id to find the agent backed by a specific
         identity.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
-      - name: service_account_id
+      - name: principal_id
         in: query
-        description: Filter to agents backed by this service account.
+        description: Filter to the agent backed by this principal.
         schema:
           type: string
       - name: status
@@ -2564,7 +2633,7 @@ paths:
       summary: Delete an agent
       description: Soft-deletes the agent by setting `deleted_at`. The agent record is retained
         for audit and attribution history, but the agent is excluded from all listings and
-        lookups. The backing service account is disabled. In-flight jobs claiming this agent
+        lookups. The agent's machine principal is disabled. In-flight jobs claiming this agent
         are not automatically cancelled.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
@@ -2624,6 +2693,11 @@ paths:
         description: Filter by session scope.
         schema:
           $ref: '#/components/schemas/SessionScope'
+      - name: provider
+        in: query
+        description: Filter messaging sessions by provider metadata, e.g. `slack` or `telegram`.
+        schema:
+          type: string
       - name: since
         in: query
         description: Only include sessions with activity after this timestamp.
@@ -2739,6 +2813,86 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
+  /v1/projects/{project}/agents/{id}/messaging-bindings:
+    get:
+      operationId: listAgentMessagingBindings
+      tags:
+      - agents
+      summary: List agent messaging bindings
+      description: Returns the provider accounts this agent can answer on.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/IDParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentMessagingBindingListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      operationId: saveAgentMessagingBinding
+      tags:
+      - agents
+      summary: Save an agent messaging binding
+      description: Upserts one provider-account binding for this agent.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/IDParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgentMessagingBindingRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentMessagingBinding'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /v1/projects/{project}/agents/{id}/messaging-bindings/{binding_id}:
+    delete:
+      operationId: deleteAgentMessagingBinding
+      tags:
+      - agents
+      summary: Delete an agent messaging binding
+      description: Removes one messaging binding from the agent.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/IDParam'
+      - name: binding_id
+        in: path
+        required: true
+        description: Messaging binding identifier.
+        schema:
+          type: string
+      responses:
+        '204':
+          description: No Content
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /v1/projects/{project}/agents/{id}/sessions/{session_id}/events.stream:
     get:
       operationId: streamSessionEvents
@@ -2797,8 +2951,8 @@ paths:
       - agents
       summary: Replace assigned toolkits
       description: Replaces the agent's toolkit assignment set as a whole. The effective tool
-        surface is the union of assigned toolkit grants intersected with service-account permissions
-        and any per-invocation narrowing.
+        surface is the union of assigned toolkit grants intersected with the agent principal's
+        permissions and any per-invocation narrowing.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/IDParam'
@@ -2905,8 +3059,8 @@ paths:
       - agents
       summary: Replace assigned skills
       description: Replaces the agent's skill assignment set as a whole. Skills request tools
-        and actions; the manifest enforces only the intersection with toolkit grants and service-account
-        permissions.
+        and actions; the manifest enforces only the intersection with toolkit grants and the
+        agent principal's permissions.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/IDParam'
@@ -2939,7 +3093,7 @@ paths:
       - agent-capabilities
       summary: Resolve an agent tool manifest
       description: 'Resolves the effective tool manifest for an agent: the flat set of actions
-        the agent can invoke, computed from toolkit grants, service- account permissions,
+        the agent can invoke, computed from toolkit grants, the agent principal''s permissions,
         optional toolkit filters, optional per-invocation tool filters, and optional active
         skill narrowing.'
       parameters:
@@ -2977,6 +3131,31 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /v1/projects/{project}/models:
+    get:
+      operationId: listModels
+      tags:
+      - agents
+      summary: List available models
+      description: |-
+        Returns the LLM models a platform agent in this project can be assigned, grouped by provider. Only providers the project can actually run are returned: a provider appears when the project has an active BYOK integration for it, or when a platform-managed key is configured.
+
+        An agent's `model` field accepts any returned model id, optionally prefixed with `provider/` (e.g. `xai/grok-4`); bare known ids such as `claude-sonnet-4-6` are auto-detected to their provider.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectModelsResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /v1/projects/{project}/automations:
     get:
       operationId: listAutomations
@@ -2984,14 +3163,24 @@ paths:
       - automations
       summary: List automations in a project
       description: Returns automations in the project, newest-first. Supports filtering by
-        lifecycle status and cursor-based pagination.
+        lifecycle status and cursor-based pagination. Archived automations are excluded by
+        default; pass `status=archived` to list only archived, or `status=all` to include
+        every status.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - name: status
         in: query
-        description: Filter by lifecycle status.
+        description: Filter by lifecycle status. Omit to return all non-archived automations
+          (the default). Pass a single status to filter to it exactly, or `all` to include
+          archived automations too.
         schema:
-          $ref: '#/components/schemas/AutomationStatus'
+          type: string
+          enum:
+          - draft
+          - active
+          - paused
+          - archived
+          - all
       - name: cursor
         in: query
         description: Opaque pagination cursor from a prior response.
@@ -3236,23 +3425,25 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
-  /v1/triggers/webhook/{webhook_handle}:
+  /v1/triggers/http/{http_handle}:
     post:
-      operationId: deliverWebhookTrigger
+      operationId: deliverHTTPTrigger
       tags:
       - automations
-      summary: Deliver a webhook payload to a trigger
-      description: Public, unauthenticated endpoint that resolves the `webhook_handle` to
-        a configured webhook-kind trigger and dispatches the payload via the trigger dispatcher.
+      summary: Deliver an HTTP request payload to a trigger
+      description: Public, unauthenticated endpoint that resolves the `http_handle` to a configured
+        http-kind trigger and commits a durable source-event row; the run starts asynchronously.
         Idempotent on the `idempotency_key` query parameter or the standard `X-Idempotency-Key`
-        header — repeats with the same key return the original fire's run id without starting
-        a new run.
+        header — repeats with the same key return the same `source_event_id` without enqueuing
+        a duplicate. Resolve the resulting run via `GET /v1/projects/{project}/runs?source_event_id=<source_event_id>`.
       security: []
       parameters:
-      - name: webhook_handle
+      - name: http_handle
         in: path
         required: true
-        description: Public, project-scoped webhook handle configured on the trigger.
+        description: Globally unique identifier for the trigger. The endpoint carries no project
+          context, so the handle is resolved on its own; it defaults to the trigger's globally
+          unique id and is treated as an unguessable delivery token.
         schema:
           type: string
       - name: idempotency_key
@@ -3260,7 +3451,15 @@ paths:
         required: false
         schema:
           type: string
-        description: Optional idempotency key (also accepted via X-Idempotency-Key header).
+        description: Optional idempotency key (also accepted via the X-Idempotency-Key header).
+      - name: X-Idempotency-Key
+        in: header
+        required: false
+        schema:
+          type: string
+        description: Alternative to the `idempotency_key` query parameter. When both are present
+          the query parameter wins. Repeats with the same key return the same `source_event_id`
+          (resolve the run via `source_event_id`) without enqueuing a duplicate.
       requestBody:
         required: false
         content:
@@ -3275,7 +3474,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/WebhookDeliveryResponse'
+                $ref: '#/components/schemas/HTTPTriggerDeliveryResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
         '404':
@@ -3330,7 +3529,7 @@ paths:
       - automations
       summary: List automation runs
       description: Returns automation runs for the project, newest-first. Supports filters
-        by status and automation_id and cursor-based pagination.
+        by status, automation_id, and source_event_id, plus cursor-based pagination.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - name: status
@@ -3343,6 +3542,12 @@ paths:
         schema:
           type: string
         description: Filter to one automation's runs.
+      - name: source_event_id
+        in: query
+        schema:
+          type: string
+        description: Filter to runs originating from a single source event. Pass the `source_event_id`
+          returned by the HTTP-trigger delivery endpoint to discover the run it started.
       - name: cursor
         in: query
         schema:
@@ -3523,7 +3728,7 @@ paths:
       - automations
       summary: Deliver a signal to a suspended run
       description: |-
-        Resumes a run that is suspended on a `wait_event` step matching the provided `step_key`. The `result` payload becomes the step's output and is available to downstream steps via `{{ context.<save_as>.* }}`.
+        Resumes a run that is suspended on a `wait_event` step matching the provided `step_key`. The `result` payload becomes the step's output and is available to downstream steps via `{{ .context.<save_as> }}`.
 
         For interaction-suspended steps, prefer responding to the interaction directly through `POST /v1/interactions/{id}/responses`; this endpoint is the lower-level escape hatch.
       parameters:
@@ -3556,7 +3761,9 @@ paths:
       tags:
       - toolkits
       summary: List toolkits
-      description: Returns project-local and system toolkit templates visible to the project.
+      description: Returns active project-local and system toolkit templates visible to the
+        project by default. Pass `status=archived` to list archived toolkits or `status=all`
+        to include every lifecycle status.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - name: include_system
@@ -3565,6 +3772,15 @@ paths:
         schema:
           type: boolean
           default: true
+      - name: status
+        in: query
+        description: Filter by lifecycle status. Omit for active toolkits.
+        schema:
+          type: string
+          enum:
+          - active
+          - archived
+          - all
       responses:
         '200':
           description: OK
@@ -3648,6 +3864,7 @@ paths:
       - name: toolkit_id
         in: path
         required: true
+        description: Toolkit ID (TypeID `kit_...`).
         schema:
           type: string
       requestBody:
@@ -3678,12 +3895,13 @@ paths:
       tags:
       - toolkits
       summary: Delete a toolkit
-      description: Deletes a project-local toolkit that is not assigned to any agent.
+      description: Archives a project-local toolkit that is not assigned to any agent.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - name: toolkit_id
         in: path
         required: true
+        description: Toolkit ID (TypeID `kit_...`).
         schema:
           type: string
       responses:
@@ -3703,7 +3921,9 @@ paths:
       tags:
       - skills
       summary: List skills
-      description: Returns project-local and system skill templates visible to the project.
+      description: Returns active project-local and system skill templates visible to the
+        project by default. Pass `status=archived` to list archived skills or `status=all`
+        to include every lifecycle status.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - name: include_system
@@ -3712,6 +3932,15 @@ paths:
         schema:
           type: boolean
           default: true
+      - name: status
+        in: query
+        description: Filter by lifecycle status. Omit for active skills.
+        schema:
+          type: string
+          enum:
+          - active
+          - archived
+          - all
       responses:
         '200':
           description: OK
@@ -3829,6 +4058,7 @@ paths:
       - name: skill_id
         in: path
         required: true
+        description: Skill ID (TypeID `skill_...`).
         schema:
           type: string
       requestBody:
@@ -3859,12 +4089,13 @@ paths:
       tags:
       - skills
       summary: Delete a skill
-      description: Deletes a project-local skill that is not assigned to any agent.
+      description: Archives a project-local skill that is not assigned to any agent.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - name: skill_id
         in: path
         required: true
+        description: Skill ID (TypeID `skill_...`).
         schema:
           type: string
       responses:
@@ -3878,15 +4109,16 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
-  /v1/projects/{project}/service-accounts:
+  /v1/projects/{project}/principals:
     post:
-      operationId: createServiceAccount
+      operationId: createPrincipal
       tags:
-      - service-accounts
-      summary: Create a service account
-      description: Creates a service account within the project. Supply `role_ids` to atomically
-        assign one or more roles at creation time; requires the caller to hold `mobius.access.manage`.
-        Each role must belong to the same project or be a system-defined role.
+      - principals
+      summary: Create a service principal
+      description: |-
+        Creates a standalone `service` principal within the project. Supply `role_ids` to atomically assign one or more roles at creation time; requires the caller to hold `mobius.access.manage`. Each role must belong to the same project or be a system-defined role.
+
+        Agent and system principals are created by their own flows (the agents API and Mobius internals), not here.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       requestBody:
@@ -3894,14 +4126,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateServiceAccountRequest'
+              $ref: '#/components/schemas/CreatePrincipalRequest'
       responses:
         '201':
           description: Created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ServiceAccount'
+                $ref: '#/components/schemas/Principal'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -3913,20 +4145,29 @@ paths:
         '409':
           $ref: '#/components/responses/Conflict'
     get:
-      operationId: listServiceAccounts
+      operationId: listPrincipals
       tags:
-      - service-accounts
-      summary: List service accounts
-      description: Returns project service accounts used by workers, agents, and automation.
-        Disabled accounts are included so administrators can audit or re-enable them.
+      - principals
+      summary: List machine principals
+      description: Returns project machine principals (`service`, `agent`, `system`) used
+        by workers, agents, and automation. Only active principals are returned by default;
+        pass `include_disabled=true` to also include disabled ones (e.g. for an admin audit).
+        Filter by `kind` to narrow to a single kind.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
-      - name: purpose
+      - name: kind
         in: query
         required: false
-        description: Filter service accounts by purpose.
+        description: Filter principals by kind.
         schema:
-          $ref: '#/components/schemas/ServiceAccountPurpose'
+          $ref: '#/components/schemas/PrincipalKind'
+      - name: include_disabled
+        in: query
+        required: false
+        description: Include disabled principals. By default only active ones are returned.
+        schema:
+          type: boolean
+          default: false
       - $ref: '#/components/parameters/TagFilterParam'
       - $ref: '#/components/parameters/LimitParam'
       responses:
@@ -3935,21 +4176,21 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ServiceAccountListResponse'
+                $ref: '#/components/schemas/PrincipalListResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-  /v1/projects/{project}/service-accounts/{id}:
+  /v1/projects/{project}/principals/{id}:
     get:
-      operationId: getServiceAccount
+      operationId: getPrincipal
       tags:
-      - service-accounts
-      summary: Get a service account
-      description: Returns one service account, including disabled state, owner, metadata,
-        and timestamps. API keys belonging to the account are managed through the API key
+      - principals
+      summary: Get a principal
+      description: Returns one machine principal, including disabled state, owner, metadata,
+        and timestamps. API keys belonging to the principal are managed through the API key
         endpoints.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
@@ -3960,7 +4201,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ServiceAccount'
+                $ref: '#/components/schemas/Principal'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -3968,11 +4209,11 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
     patch:
-      operationId: updateServiceAccount
+      operationId: updatePrincipal
       tags:
-      - service-accounts
-      summary: Update a service account
-      description: Updates mutable fields. To disable without deleting, set `status` to `disabled`.
+      - principals
+      summary: Update a principal
+      description: Updates mutable fields. To disable without deleting, set `state` to `disabled`.
         The `name` field is immutable after creation.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
@@ -3982,14 +4223,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateServiceAccountRequest'
+              $ref: '#/components/schemas/UpdatePrincipalRequest'
       responses:
         '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ServiceAccount'
+                $ref: '#/components/schemas/Principal'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -3999,14 +4240,14 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
     delete:
-      operationId: deleteServiceAccount
+      operationId: deletePrincipal
       tags:
-      - service-accounts
-      summary: Delete a service account
+      - principals
+      summary: Delete a principal
       description: |-
-        Hard-deletes the service account and its role assignments.
+        Hard-deletes the principal and its role assignments.
 
-        Returns `409 Conflict` when the service account is still bound to an agent (the SA↔agent binding is immutable per the 1:1 invariant — delete the agent first) or when active API keys still reference it. Disable instead when you need an immediate kill switch.
+        Returns `409 Conflict` when the principal still backs an agent (the agent↔principal binding is immutable per the 1:1 invariant — delete the agent first) or when active API keys still reference it. Disable instead when you need an immediate kill switch.
 
         Consider disabling instead of deleting for audit continuity.
       parameters:
@@ -4385,6 +4626,7 @@ paths:
       - name: row_id
         in: path
         required: true
+        description: Table row ID.
         schema:
           type: string
       responses:
@@ -4416,6 +4658,7 @@ paths:
       - name: row_id
         in: path
         required: true
+        description: Table row ID.
         schema:
           type: string
       requestBody:
@@ -4456,6 +4699,7 @@ paths:
       - name: row_id
         in: path
         required: true
+        description: Table row ID.
         schema:
           type: string
       responses:
@@ -4474,18 +4718,21 @@ paths:
       - artifacts
       summary: List artifacts in a project
       description: Returns artifacts in the project, ordered (created_at desc, id desc). Optional
-        filters narrow by run, step, state, or mime prefix. Results are scoped to the authenticated
-        principal's User-owned artifact space.
+        filters narrow by run, step, state, or mime prefix. Deleted artifacts are excluded
+        by default; pass `state=deleted` to inspect tombstones. Results are scoped to the
+        authenticated principal's User-owned artifact space.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - name: run_id
         in: query
         required: false
+        description: Filter to artifacts produced by this automation run.
         schema:
           type: string
       - name: step_id
         in: query
         required: false
+        description: Filter to artifacts produced by this run step.
         schema:
           type: string
       - name: mime
@@ -4497,6 +4744,7 @@ paths:
       - name: state
         in: query
         required: false
+        description: Filter by artifact lifecycle state.
         schema:
           $ref: '#/components/schemas/ArtifactState'
       - $ref: '#/components/parameters/CursorParam'
@@ -4516,13 +4764,19 @@ paths:
       operationId: createArtifact
       tags:
       - artifacts
-      summary: Upload an artifact
-      description: Accepts a multipart file upload, streams the bytes through Mobius to the
-        configured artifact storage backend, computes the authoritative SHA-256 checksum,
-        and returns the committed artifact metadata. New artifacts are private to the authenticated
-        user's artifact space unless `visibility=shared` is supplied.
+      summary: Publish a worker-produced artifact
+      description: Accepts a multipart file upload from a worker that is currently executing
+        a claimed job. The request must include `X-Mobius-Lease-Token`; Mobius resolves the
+        active claim and derives run, step, job, worker session, attempt, and shared visibility
+        from the lease. Caller-supplied lineage or visibility fields are rejected.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
+      - name: X-Mobius-Lease-Token
+        in: header
+        required: true
+        schema:
+          type: string
+        description: Active job lease token for worker-produced artifacts.
       requestBody:
         required: true
         content:
@@ -4576,17 +4830,12 @@ paths:
       tags:
       - artifacts
       summary: Delete an artifact
-      description: Soft-delete the row and (for Mobius-managed) delete the underlying object
-        best-effort. Pinned artifacts are refused unless `force=true`.
+      description: Soft-delete the artifact row and delete the underlying Mobius-managed object
+        before reporting success. The tombstone remains for audit and run-history views, while
+        content and quota charging are removed.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/ArtifactIdParam'
-      - name: force
-        in: query
-        required: false
-        schema:
-          type: boolean
-          default: false
       responses:
         '204':
           description: Deleted
@@ -4618,41 +4867,6 @@ paths:
               schema:
                 type: string
                 format: binary
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
-    put:
-      operationId: updateArtifactContent
-      tags:
-      - artifacts
-      summary: Replace artifact bytes
-      description: Replaces the bytes behind an existing available artifact while preserving
-        the artifact ID and stable content URL. This powers lightweight collaborative inline
-        chat artifacts; updates are last-writer-wins and intended for small text, JSON, chart,
-        form, and code artifacts.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      - $ref: '#/components/parameters/ArtifactIdParam'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpdateArtifactContentRequest'
-      responses:
-        '200':
-          description: Artifact content replaced
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Artifact'
-        '400':
-          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -4697,101 +4911,6 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
-  /v1/projects/{project}/artifacts/{id}/pin:
-    post:
-      operationId: pinArtifact
-      tags:
-      - artifacts
-      summary: Pin an artifact (skip TTL)
-      description: Pins an artifact so the expiry sweeper does not delete it while it remains
-        pinned.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      - $ref: '#/components/parameters/ArtifactIdParam'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Artifact'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-    delete:
-      operationId: unpinArtifact
-      tags:
-      - artifacts
-      summary: Remove the pinned flag
-      description: Removes the pinned flag so the artifact is again eligible for its configured
-        retention policy.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      - $ref: '#/components/parameters/ArtifactIdParam'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Artifact'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-  /v1/projects/{project}/settings/artifact-storage:
-    get:
-      operationId: getArtifactStorageSettings
-      tags:
-      - artifacts
-      summary: Get project artifact-storage settings
-      description: Returns the effective artifact storage settings for the project.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ArtifactStorageSettings'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-    put:
-      operationId: updateArtifactStorageSettings
-      tags:
-      - artifacts
-      summary: Update project artifact-storage settings
-      description: Updates project artifact storage settings. v1 accepts the contract shape
-        while Mobius-managed storage remains the wired default.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ArtifactStorageSettingsUpdate'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ArtifactStorageSettings'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
   /v1/projects/{project}/settings/artifact-storage/quota:
     get:
       operationId: getArtifactStorageQuota
@@ -4821,7 +4940,7 @@ components:
         Bearer credential supplied via the `Authorization: Bearer <credential>` header. Two credential types are accepted:
 
         - **API keys** — prefix `mbx_`. Issued from the Mobius app or via the
-        API key endpoints. API keys authenticate as a service account in one
+        API key endpoints. API keys authenticate as a machine principal in one
         project. Send the raw `mbx_...` secret for normal requests. A
         trailing `.<project_handle>` suffix is accepted for compatibility and
         is validated when present.
@@ -4835,8 +4954,8 @@ components:
       in: header
       name: x-api-key
       description: API key supplied through the `x-api-key` header. This is primarily used
-        by Anthropic-compatible clients targeting `/v1/messages`; project service-account
-        keys are required for that endpoint.
+        by Anthropic-compatible clients targeting `/v1/messages`; project API keys bound to
+        machine principals are required for that endpoint.
   parameters:
     ProjectHandleParam:
       name: project
@@ -4859,11 +4978,11 @@ components:
       description: Project-scoped action name used in automation step definitions.
       schema:
         type: string
-    user_id:
-      name: user_id
+    principal_id:
+      name: principal_id
       in: path
       required: true
-      description: User ID.
+      description: Principal ID.
       schema:
         type: string
     presence_id:
@@ -4913,6 +5032,7 @@ components:
       name: environment_id
       in: path
       required: true
+      description: Environment ID.
       schema:
         type: string
     SecretParam:
@@ -5104,6 +5224,32 @@ components:
       - owner
       description: Optional namespace for named runtime resources. Omitted/null means the
         project/default scope; `owner` means names are unique within `(project, owned_by)`.
+    CapabilityReadiness:
+      type: string
+      enum:
+      - ready
+      - needs_setup
+      description: Whether a catalog capability — an action, an event source, or an integration
+        provider — is usable right now. `ready` means it can be used as-is; `needs_setup`
+        means it is known and supported but blocked by configuration, credentials, permissions,
+        provider runtime availability, or implementation status. This is catalog *readiness*,
+        and is deliberately separate from a resource's lifecycle state (such as integration
+        `status` or artifact lifecycle).
+    CapabilityReadinessReason:
+      type: string
+      enum:
+      - not_configured
+      - inactive
+      - expired
+      - provider_unavailable
+      - permission_missing
+      - not_implemented
+      description: Why a capability is `needs_setup`. Present only when readiness is `needs_setup`.
+        `not_configured` — no integration or credential is connected yet. `inactive` — the
+        backing integration is manually disabled. `expired` — the backing credential has expired.
+        `provider_unavailable` — the provider runtime is not currently available. `permission_missing`
+        — the caller lacks permission to use it. `not_implemented` — a placeholder for a capability
+        that is not yet available.
     TagMap:
       type: object
       description: Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the
@@ -5205,12 +5351,13 @@ components:
     User:
       type: object
       additionalProperties: false
-      description: Human identity known to the organization. User records are useful for membership
-        lists, role assignment UIs, attribution, and displaying profile information next to
-        actions.
+      description: User or principal identity known to the organization. User records are
+        useful for membership lists, role assignment UIs, attribution, and displaying profile
+        information next to actions.
       required:
       - id
       - email
+      - kind
       - created_at
       - updated_at
       properties:
@@ -5220,11 +5367,19 @@ components:
         email:
           type: string
           description: Primary email address from Clerk.
+        kind:
+          type: string
+          enum:
+          - human
+          - agent
+          - service
+          - system
+          description: The principal type represented by this user record.
         display_name:
           type: string
           description: Authoritative single-line label for this user, regardless of kind.
-            Humans get "First Last"; agents get the agent name; service accounts get the SA
-            name. Renderers should prefer this over first_name/last_name.
+            Humans get "First Last"; agents and other machine principals get their configured
+            display name. Renderers should prefer this over first_name/last_name.
         color:
           type: string
           description: Optional Mantine palette key (e.g. "indigo") used by avatar surfaces
@@ -5246,6 +5401,17 @@ components:
           type: string
           format: date-time
           description: Timestamp when this user record was last synced from Clerk.
+        deleted_at:
+          type: string
+          format: date-time
+          description: When this user principal was soft-deleted, if applicable.
+    AgentStatus:
+      type: string
+      enum:
+      - active
+      - inactive
+      description: Administrative status. Inactive agents cannot claim new jobs. Soft-deleted
+        agents are represented by `deleted_at` and excluded from normal reads.
     ProjectAccessMode:
       type: string
       enum:
@@ -5296,7 +5462,7 @@ components:
         default_agent_role_id:
           type: string
           nullable: true
-          description: Role assigned to the auto-created service account of any new agent
+          description: Role assigned to the auto-created agent principal of any new agent
             in this project, when no per-call `role_ids` are supplied on `createAgent`. `null`
             falls through to the system `Agent` role floor.
         tags:
@@ -5321,22 +5487,57 @@ components:
           description: The list of results for this page.
           items:
             $ref: '#/components/schemas/Project'
-    AgentStatus:
+    AgentModelRouteMode:
       type: string
       enum:
-      - active
-      - inactive
-      description: Administrative status. Inactive agents cannot claim new jobs. Soft-deleted
-        agents are represented by `deleted_at` and excluded from normal reads.
+      - managed
+      - worker
+      - byo_provider
+      description: Where the agent's default model call should run.
+    AgentModelRoute:
+      type: object
+      additionalProperties: false
+      description: Default model route used by built-in messaging and by automation agent
+        steps that do not override the route.
+      required:
+      - mode
+      properties:
+        mode:
+          $ref: '#/components/schemas/AgentModelRouteMode'
+        environment_id:
+          type: string
+          description: Environment to use for worker-backed model calls.
+        provider:
+          type: string
+          description: Provider or worker route name.
+        model:
+          type: string
+          description: Model identifier to use for this route.
+        queue:
+          type: string
+          description: Worker queue for customer-worker model calls.
+        required_capabilities:
+          type: array
+          items:
+            type: string
+          description: Worker capabilities required for this route.
+    AgentToolPresentation:
+      type: string
+      enum:
+      - flat
+      - meta
+      description: Controls how granted actions are surfaced to the model in Mobius-hosted
+        agent turns. `flat` exposes one tool per action, while `meta` groups related actions
+        behind compact command routers.
     Agent:
       type: object
       additionalProperties: false
-      description: Project-scoped AI actor identity backed by a service account. Agents are
-        useful when automations need a named actor with instructions, capabilities, configuration,
-        and session presence.
+      description: Project-scoped AI actor identity. An agent IS a principal (its permissions
+        are role grants on that principal); agents are useful when automations need a named
+        actor with instructions, capabilities, configuration, and session presence.
       required:
       - id
-      - service_account_id
+      - principal_id
       - name
       - status
       - created_at
@@ -5345,15 +5546,11 @@ components:
         id:
           type: string
           description: Unique identifier for this agent.
-        service_account_id:
+        principal_id:
           type: string
-          description: The service account whose credentials this agent uses to authenticate.
-            Each service account backs at most one agent; this binding is immutable after
-            creation.
-        user_id:
-          type: string
-          description: Canonical user (users.id) backing this agent. Used as the `owned_by`
-            value when filtering or claiming resources owned by this agent's backing user.
+          description: The machine principal (principals.id, kind `agent`) this agent IS.
+            Created atomically with the agent and immutable. Used as the `owned_by` value
+            when filtering or claiming resources owned by this agent.
         name:
           type: string
           description: Mutable unique name within the project. Free-form human-readable label;
@@ -5375,13 +5572,22 @@ components:
             color.
           maxLength: 24
         capabilities:
-          type: object
-          additionalProperties: true
-          description: Arbitrary capability map used by orchestrators to select suitable agents.
+          type: array
+          items:
+            type: string
+          description: Capability names used by orchestrators to select suitable agents.
         model:
           type: string
-          description: Anthropic model identifier for platform agents (e.g. `claude-sonnet-4-6`).
+          description: Model identifier for platform agents. Accepts any id returned by `GET
+            /v1/projects/{project}/models`, optionally `provider/`-prefixed (e.g. `xai/grok-4`);
+            bare known ids (e.g. `claude-sonnet-4-6`) are auto-detected to their provider.
             Empty string falls back to the platform default.
+        model_route:
+          $ref: '#/components/schemas/AgentModelRoute'
+        tool_presentation:
+          $ref: '#/components/schemas/AgentToolPresentation'
+          description: Default tool presentation used by automation agent steps and built-in
+            channel-message replies for this agent.
         system_prompt:
           type: string
           description: Custom system prompt for platform agents. Empty string uses the generated
@@ -5431,6 +5637,19 @@ components:
           description: The list of results for this page.
           items:
             $ref: '#/components/schemas/Agent'
+    AuditChanges:
+      type: object
+      additionalProperties: false
+      description: Before/after field snapshots captured for an audited mutation.
+      properties:
+        before:
+          type: object
+          additionalProperties: true
+          description: Field values before the mutation.
+        after:
+          type: object
+          additionalProperties: true
+          description: Field values after the mutation.
     AuditLogEntry:
       type: object
       additionalProperties: false
@@ -5447,7 +5666,7 @@ components:
         id:
           type: string
           description: Unique audit log entry ID
-        user_id:
+        principal_id:
           type: string
           description: ID of the user who performed the action
         project_id:
@@ -5483,8 +5702,7 @@ components:
           type: string
           description: Human-readable name of the affected resource
         changes:
-          type: object
-          additionalProperties: true
+          $ref: '#/components/schemas/AuditChanges'
           description: Object containing before/after changes for update actions
         ip_address:
           type: string
@@ -5525,7 +5743,7 @@ components:
       - name
       - key_prefix
       - project_id
-      - service_account_id
+      - principal_id
       - created_at
       - updated_at
       properties:
@@ -5541,10 +5759,10 @@ components:
             the secret.
         project_id:
           $ref: '#/components/schemas/ProjectID'
-          description: Project that owns the service account this key authenticates as.
-        service_account_id:
+          description: Project that owns the principal this key authenticates as.
+        principal_id:
           type: string
-          description: Service account this key authenticates as.
+          description: Principal this key authenticates as.
         expires_at:
           type: string
           format: date-time
@@ -5572,7 +5790,7 @@ components:
       - name
       - key_prefix
       - project_id
-      - service_account_id
+      - principal_id
       - created_at
       - updated_at
       - key
@@ -5590,10 +5808,10 @@ components:
           description: First 8 characters of the key for identification.
         project_id:
           $ref: '#/components/schemas/ProjectID'
-          description: Project that owns the service account this key authenticates as.
-        service_account_id:
+          description: Project that owns the principal this key authenticates as.
+        principal_id:
           type: string
-          description: Service account this key authenticates as.
+          description: Principal this key authenticates as.
         expires_at:
           type: string
           format: date-time
@@ -5640,18 +5858,18 @@ components:
       type: object
       required:
       - name
-      - service_account_id
+      - principal_id
       additionalProperties: false
-      description: Request shape for creating a project API key for a service account. The
-        key authenticates as that service account; permissions are managed by assigning roles
-        to the service account, not by granting permissions to the key.
+      description: Request shape for creating a project API key bound to a machine principal.
+        The key authenticates as that principal; permissions are managed by assigning roles
+        to the principal, not by granting permissions to the key.
       properties:
         name:
           type: string
           description: Human-readable label, unique within the project.
-        service_account_id:
+        principal_id:
           type: string
-          description: Service account this key authenticates as.
+          description: Principal this key authenticates as.
         expires_at:
           type: string
           format: date-time
@@ -5854,7 +6072,7 @@ components:
       properties:
         secret_ref:
           type: string
-          description: Project secret reference that now stores the rotated signing key.
+          description: Project secret reference that now stores the action signing key.
         secret_version:
           type: integer
           format: int64
@@ -5871,7 +6089,7 @@ components:
       required:
       - name
       - source
-      - available
+      - readiness
       - endpoint_kind
       - risk
       - annotations
@@ -5905,11 +6123,14 @@ components:
             actions provided by Mobius, "custom" for project-owned HTTP endpoints registered
             as actions. The `integration` field carries the provider slug for integration-backed
             platform actions.'
-        available:
-          type: boolean
-          description: Whether this action can currently be invoked. False if the required
-            integration is not connected, the action is a placeholder for a not-yet-implemented
-            capability, or the caller lacks permission.
+        readiness:
+          $ref: '#/components/schemas/CapabilityReadiness'
+          description: Whether this action can be called right now. `needs_setup` when the
+            required integration is not connected, the caller lacks permission, or the action
+            is a placeholder for a not-yet-implemented capability.
+        readiness_reason:
+          $ref: '#/components/schemas/CapabilityReadinessReason'
+          description: Why the action is `needs_setup`. Omitted when `readiness` is `ready`.
         risk:
           type: string
           enum:
@@ -6108,13 +6329,107 @@ components:
         has_more:
           type: boolean
           description: Whether additional pages are available.
+    EventCatalogResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - reserved_prefixes
+      description: The triggerable event catalog available to a project.
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/EventCatalogSource'
+        reserved_prefixes:
+          type: array
+          description: Platform namespaces that are recognized but are not triggerable event
+            sources. Authoring UIs use these to distinguish a recognized-but-unsupported matcher
+            prefix from a wholly unknown one.
+          items:
+            $ref: '#/components/schemas/EventCatalogReservedPrefix'
+    EventCatalogSource:
+      type: object
+      additionalProperties: false
+      required:
+      - prefix
+      - kind
+      - readiness
+      - display_name
+      - event_types
+      description: One event source rooted at a top-level dotted prefix. Integration sources
+        are open-set (any `<prefix>.<resource>.<event>` matches); `event_types` lists the
+        currently-active, documented members.
+      properties:
+        prefix:
+          type: string
+          description: Top-level dotted segment that names the source (`table`, `github`).
+        kind:
+          type: string
+          enum:
+          - integration
+          - capability
+          description: '`integration` for provider event sources; `capability` for built-in
+            Mobius platform event sources.'
+        display_name:
+          type: string
+        description:
+          type: string
+        readiness:
+          $ref: '#/components/schemas/CapabilityReadiness'
+          description: Whether this source can start an automation now. `capability` sources
+            are always `ready`. `integration` sources are `ready` only when the project has
+            an active, usable connection for the provider.
+        readiness_reason:
+          $ref: '#/components/schemas/CapabilityReadinessReason'
+          description: Why an `integration` source is `needs_setup`. Omitted when `readiness`
+            is `ready` and for `capability` sources.
+        event_types:
+          type: array
+          items:
+            $ref: '#/components/schemas/EventCatalogEventType'
+    EventCatalogEventType:
+      type: object
+      additionalProperties: false
+      required:
+      - name
+      properties:
+        name:
+          type: string
+          description: Dotted event-type identifier (`table.row.inserted`, `github.pull_request.opened`).
+        description:
+          type: string
+    EventCatalogReservedPrefix:
+      type: object
+      additionalProperties: false
+      required:
+      - prefix
+      - kind
+      properties:
+        prefix:
+          type: string
+        kind:
+          type: string
+          enum:
+          - capability
+          - utility
     EnvironmentProvider:
       type: string
       enum:
       - sprites
       - cloudflare_containers
+      - worker
+    ProvisionEnvironmentProvider:
+      type: string
+      description: 'Providers the control plane can provision on demand. Excludes `worker`:
+        worker-provided environments are registered out-of-band via the attach endpoint and
+        are never provisioned through create/acquire.'
+      enum:
+      - sprites
+      - cloudflare_containers
     EnvironmentStatus:
       type: string
+      description: Lifecycle status of an environment.
       enum:
       - provisioning
       - ready
@@ -6135,6 +6450,7 @@ components:
         expiry; `explicit` environments require an explicit destroy call.
     EnvironmentPurpose:
       type: string
+      description: Declared purpose for an environment; used for routing and cleanup defaults.
       enum:
       - implementation
       - review
@@ -6167,6 +6483,8 @@ components:
         in `owned_by`.
     EnvironmentRetentionPolicy:
       type: string
+      description: Whether a finished environment is retained or destroyed, and under what
+        outcome.
       enum:
       - manual
       - destroy_on_success
@@ -6228,8 +6546,8 @@ components:
           $ref: '#/components/schemas/EnvironmentPurpose'
         owned_by:
           type: string
-          description: Canonical user owner ID. For agent-started work, this is the agent's
-            backing user ID.
+          description: Principal owner ID. For agent-started work, this is the agent's principal
+            ID.
         bound_to_type:
           $ref: '#/components/schemas/EnvironmentBoundToType'
         bound_to_id:
@@ -6349,10 +6667,11 @@ components:
       properties:
         name:
           type: string
+          description: Human-readable environment name.
         scope:
           $ref: '#/components/schemas/ResourceScope'
         provider:
-          $ref: '#/components/schemas/EnvironmentProvider'
+          $ref: '#/components/schemas/ProvisionEnvironmentProvider'
         environment_mode:
           $ref: '#/components/schemas/EnvironmentMode'
         purpose:
@@ -6364,6 +6683,7 @@ components:
           $ref: '#/components/schemas/EnvironmentBoundToType'
         bound_to_id:
           type: string
+          description: ID of the object the environment is bound to (paired with `bound_to_type`).
         lifetime:
           $ref: '#/components/schemas/EnvironmentLifetime'
         template_id:
@@ -6378,6 +6698,27 @@ components:
           $ref: '#/components/schemas/TagMap'
         retention_policy:
           $ref: '#/components/schemas/EnvironmentRetentionPolicy'
+    AttachWorkerEnvironmentRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - name
+      properties:
+        name:
+          type: string
+          description: Stable per-workspace environment name; the idempotency key.
+        environment_mode:
+          $ref: '#/components/schemas/EnvironmentMode'
+        bound_to_type:
+          $ref: '#/components/schemas/EnvironmentBoundToType'
+        bound_to_id:
+          type: string
+          description: ID of the object the environment is bound to (paired with `bound_to_type`).
+        workspace_path:
+          type: string
+          description: Worker-host path backing the environment (informational).
+        tags:
+          $ref: '#/components/schemas/TagMap'
     UpdateEnvironmentRequest:
       type: object
       additionalProperties: false
@@ -6391,14 +6732,17 @@ components:
           allOf:
           - $ref: '#/components/schemas/ResourceScope'
           nullable: true
+          description: Resource scope; send null to return to the project/default scope.
         owned_by:
           type: string
           nullable: true
+          description: Canonical user owner ID. Send null to clear ownership.
         bound_to_type:
           $ref: '#/components/schemas/EnvironmentBoundToType'
         bound_to_id:
           type: string
           nullable: true
+          description: ID of the object the environment is bound to; send null to clear.
         tags:
           $ref: '#/components/schemas/TagMap'
     AcquireEnvironmentRequest:
@@ -6407,6 +6751,7 @@ components:
       properties:
         environment_id:
           type: string
+          description: Existing environment ID to claim; omit to create a new environment.
         template_id:
           type: string
           enum:
@@ -6414,10 +6759,11 @@ components:
           description: V1 supports only coding-default.
         name:
           type: string
+          description: Human-readable environment name (used when creating).
         scope:
           $ref: '#/components/schemas/ResourceScope'
         provider:
-          $ref: '#/components/schemas/EnvironmentProvider'
+          $ref: '#/components/schemas/ProvisionEnvironmentProvider'
         environment_mode:
           $ref: '#/components/schemas/EnvironmentMode'
         purpose:
@@ -6426,6 +6772,7 @@ components:
           $ref: '#/components/schemas/EnvironmentBoundToType'
         holder_id:
           type: string
+          description: ID of the lease holder (paired with `holder_type`).
         owned_by:
           type: string
           description: Canonical user owner ID. Defaults to the authenticated user.
@@ -6433,6 +6780,7 @@ components:
           $ref: '#/components/schemas/EnvironmentBoundToType'
         bound_to_id:
           type: string
+          description: ID of the object the environment is bound to (paired with `bound_to_type`).
         lifetime:
           $ref: '#/components/schemas/EnvironmentLifetime'
         spec:
@@ -6465,14 +6813,18 @@ components:
           minItems: 1
           items:
             type: string
+          description: Command and arguments to run, as an argv array.
         dir:
           type: string
+          description: Working directory for the command (defaults to the workspace root).
         env:
           type: array
           items:
             type: string
+          description: Extra environment variables as `KEY=VALUE` strings.
         stdin:
           type: string
+          description: Standard input to pipe to the command.
     EnvironmentExecResult:
       type: object
       additionalProperties: false
@@ -6496,8 +6848,10 @@ components:
       properties:
         path:
           type: string
+          description: Destination file path inside the environment.
         content:
           type: string
+          description: File content to write.
     StartEnvironmentWorkerRequest:
       type: object
       additionalProperties: false
@@ -6519,19 +6873,24 @@ components:
           type: array
           items:
             type: string
+          description: Job queues the worker should claim from (defaults to all).
         action_names:
           type: array
           items:
             type: string
+          description: Restrict the worker to these action names.
         concurrency:
           type: integer
           minimum: 1
+          description: Maximum number of jobs to run concurrently.
         command:
           type: array
           items:
             type: string
+          description: Override the worker command and arguments, as an argv array.
         dir:
           type: string
+          description: Working directory for the worker process.
     EnvironmentStartWorkerResult:
       type: object
       additionalProperties: false
@@ -6611,6 +6970,7 @@ components:
           - fetch
           - push
           default: clone
+          description: Git operation the minted credential will authorize.
     EnvironmentGitCredentialResult:
       type: object
       additionalProperties: false
@@ -6778,7 +7138,7 @@ components:
       type: object
       additionalProperties: false
       description: Recently observed worker process for a project. Use sessions to see which
-        machines, users, service accounts, or agents are polling for work, what their configured
+        machines, users, API clients, or agents are polling for work, what their configured
         concurrency is, and whether they appear stale.
       required:
       - id
@@ -6845,31 +7205,26 @@ components:
           items:
             $ref: '#/components/schemas/WorkerSocketModelCapability'
           description: Provider/model pairs this worker can generate with.
-        service_account_id:
+        principal_id:
           type: string
-          description: Service account this session authenticated as on register/heartbeat.
-            Set when a machine identity is polling; mutually exclusive with `user_id`. Stable
-            across credential rotation — use this to group sessions by identity in the admin
-            UI.
-        user_id:
-          type: string
-          description: User this session authenticated as on register/heartbeat. Set when
-            a human is polling via the CLI; mutually exclusive with `service_account_id`.
-        user:
+          description: Principal this session authenticated as on register/heartbeat. A machine
+            principal (kind `system`/`service`/`agent`) for deployed workers, or a human's
+            principal when polling via the CLI. Inspect the embedded `principal.kind` to distinguish.
+        principal:
           $ref: '#/components/schemas/User'
-          description: Embedded profile for `user_id` when this is a CLI-backed human worker
-            session. Absent when the user record is unavailable or the session is service-account-backed.
+          description: Embedded profile for `principal_id` — the authenticating principal,
+            human or machine. Absent only when the principal record is unavailable.
         api_key_id:
           type: string
           description: ID of the specific API key this session presented on its most recent
-            register/heartbeat. Only set for service-account-backed sessions; changes across
-            credential rotations. Use together with `service_account_id` to see rotation progress
-            across a fleet.
+            register/heartbeat. Only set for API-key (machine principal) sessions; changes
+            across credential rotations. Use together with `principal_id` to see rotation
+            progress across a fleet.
         agent_id:
           type: string
           description: Agent this session represents, when the polling process declared itself
             as a registered agent (via `agent_id` on the claim request or via inference from
-            the service account). Absent for ad-hoc worker processes that are not tied to
+            its machine principal). Absent for ad-hoc worker processes that are not tied to
             a declared agent.
         environment_id:
           type: string
@@ -6937,6 +7292,7 @@ components:
           - claimed
           - completed
           - failed
+          - cancelled
           description: Current job lifecycle state.
         claimed_at:
           type: string
@@ -7537,7 +7893,8 @@ components:
         key:
           type: string
           minLength: 1
-        value: {}
+        value:
+          type: string
     ConfigEntries:
       type: array
       items:
@@ -7585,7 +7942,7 @@ components:
         default_agent_role_id:
           type: string
           nullable: true
-          description: Replacement role assigned to the auto-created service account of any
+          description: Replacement role assigned to the auto-created agent principal of any
             new agent in this project. `null` clears the override and falls through to the
             system `Agent` role floor. Must resolve to a system-defined role or a role scoped
             to this project.
@@ -7601,7 +7958,7 @@ components:
       required:
       - id
       - project_id
-      - user_id
+      - principal_id
       - added_at
       properties:
         id:
@@ -7610,15 +7967,15 @@ components:
         project_id:
           type: string
           description: ID of the project this membership belongs to.
-        user_id:
+        principal_id:
           type: string
-          description: ID of the user who is a member.
-        user:
+          description: ID of the principal that is a member.
+        principal:
           $ref: '#/components/schemas/User'
           description: Profile of the member. Embedded by `listProjectMembers` so UIs can
             render names, emails, and avatars without a separate user lookup. Absent on the
             `addProjectMember` response.
-        added_by_user_id:
+        added_by:
           type: string
           description: User ID of whoever added this member, if recorded.
         added_at:
@@ -7648,11 +8005,11 @@ components:
       type: object
       additionalProperties: false
       required:
-      - user_id
+      - principal_id
       properties:
-        user_id:
+        principal_id:
           type: string
-          description: User ID of the org member to add to this project.
+          description: ID of the org member principal to add to this project.
     FeatureGateSource:
       type: string
       enum:
@@ -8010,7 +8367,7 @@ components:
             enum:
             - human
             - agent
-            - service_account
+            - service
             - system
           description: User kinds this permission is intended for.
     PermissionPreset:
@@ -8071,11 +8428,11 @@ components:
       type: object
       additionalProperties: false
       required:
-      - permissions
+      - items
       - presets
       - action_groups
       properties:
-        permissions:
+        items:
           type: array
           maxItems: 64
           items:
@@ -8093,9 +8450,9 @@ components:
     Role:
       type: object
       additionalProperties: false
-      description: Named bundle of permissions assignable to users or service accounts. Roles
-        let admins grant automation, project, and integration capabilities consistently without
-        editing every user individually.
+      description: Named bundle of permissions assignable to human or machine principals.
+        Roles let admins grant automation, project, and integration capabilities consistently
+        without editing every user individually.
       required:
       - id
       - name
@@ -8140,11 +8497,12 @@ components:
     RoleAssignment:
       type: object
       additionalProperties: false
-      description: Binding between a User and a role in one project. Use assignments to explain
-        why a user or service account has access and to audit who granted it.
+      description: Binding between a principal and a role in one project. Use assignments
+        to explain why a principal (human or machine) has access and to audit who granted
+        it.
       required:
       - id
-      - user_id
+      - principal_id
       - role_id
       - role_name
       - project_id
@@ -8153,9 +8511,9 @@ components:
         id:
           type: string
           description: Unique identifier for this role assignment.
-        user_id:
+        principal_id:
           type: string
-          description: User ID receiving the role.
+          description: Principal ID receiving the role.
         role_id:
           type: string
           description: ID of the assigned role.
@@ -8165,7 +8523,7 @@ components:
         project_id:
           type: string
           description: Project this assignment belongs to.
-        granted_by_user_id:
+        granted_by:
           type: string
           description: User ID of the caller who created this assignment.
         created_at:
@@ -8246,16 +8604,16 @@ components:
       type: object
       additionalProperties: false
       required:
-      - user_id
+      - principal_id
       oneOf:
       - required:
         - role_id
       - required:
         - role_name
       properties:
-        user_id:
+        principal_id:
           type: string
-          description: Principal User ID to assign the role to.
+          description: Principal ID to assign the role to (human or machine).
         role_id:
           type: string
           description: Mutually exclusive with `role_name`.
@@ -8295,8 +8653,8 @@ components:
       required:
       - user_id
       additionalProperties: false
-      description: Identifies the user who answered an interaction. Agents answer through
-        their backing users.id.
+      description: Identifies the principal who answered an interaction. Agents answer through
+        their agent principal ID.
       properties:
         user_id:
           type: string
@@ -8572,7 +8930,7 @@ components:
         created_by:
           type: string
           nullable: true
-          description: Canonical users.id of the human or agent user that created the interaction.
+          description: Canonical principal ID of the human or agent that created the interaction.
         kind:
           $ref: '#/components/schemas/InteractionKind'
           description: Protocol kind of the interaction.
@@ -8742,7 +9100,7 @@ components:
           type: array
           items:
             type: string
-          description: Resolved user IDs to target directly. Agents use their backing user
+          description: Resolved user IDs to target directly. Agents use their agent principal
             IDs.
         kind:
           $ref: '#/components/schemas/InteractionKind'
@@ -8826,7 +9184,7 @@ components:
           type: array
           items:
             type: string
-          description: Resolved user IDs to target directly. Agents use their backing user
+          description: Resolved user IDs to target directly. Agents use their agent principal
             IDs.
         kind:
           $ref: '#/components/schemas/InteractionKind'
@@ -8910,6 +9268,210 @@ components:
         reason:
           type: string
           description: Free-text reason recorded on the interaction.
+    ProjectModelsResponse:
+      type: object
+      additionalProperties: false
+      description: Models a platform agent can be assigned in this project, grouped by available
+        provider.
+      required:
+      - default_model
+      - items
+      properties:
+        default_model:
+          type: string
+          description: Model id assigned when an agent specifies no model.
+        items:
+          type: array
+          description: Available providers in display order. Providers with no configured
+            credentials are omitted.
+          items:
+            $ref: '#/components/schemas/ModelProviderGroup'
+    ModelProviderGroup:
+      type: object
+      additionalProperties: false
+      required:
+      - provider
+      - display_name
+      - source
+      - models
+      properties:
+        provider:
+          type: string
+          description: Canonical provider id (`anthropic`, `openai`, `gemini`, `xai`).
+        display_name:
+          type: string
+          description: Human-readable provider label.
+        source:
+          type: string
+          enum:
+          - byok
+          - platform
+          description: Where credentials come from — a project integration (`byok`) or a platform-managed
+            key (`platform`).
+        models:
+          type: array
+          items:
+            $ref: '#/components/schemas/ModelOption'
+    ModelOption:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - provider
+      - label
+      properties:
+        id:
+          type: string
+          description: Bare model id assigned to an agent's `model` field.
+        provider:
+          type: string
+          description: Canonical provider id this model belongs to.
+        label:
+          type: string
+          description: Human-readable model label for UI.
+        description:
+          type: string
+          description: Short guidance about when to use this model.
+        recommended:
+          type: boolean
+          description: Whether this is the suggested default for its provider.
+    AgentMessagingDMPolicy:
+      type: string
+      enum:
+      - open
+      - allowlist
+      - disabled
+      description: Direct-message access policy for the binding.
+    AgentMessagingReplyMode:
+      type: string
+      enum:
+      - auto
+      description: Reply mode for built-in messaging.
+    AgentMessagingProvider:
+      type: string
+      enum:
+      - slack
+      - telegram
+      description: Provider supported by built-in agent messaging.
+    AgentMessagingBinding:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - agent_id
+      - provider
+      - integration_id
+      - enabled
+      - dms
+      - mentions
+      - all_messages
+      - channels
+      - dm_policy
+      - sender_allow
+      - reply_mode
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+          description: Messaging binding identifier.
+        agent_id:
+          type: string
+          description: Agent this binding belongs to.
+        provider:
+          $ref: '#/components/schemas/AgentMessagingProvider'
+        integration_id:
+          type: string
+          description: Connected integration account this binding applies to.
+        enabled:
+          type: boolean
+          description: Whether the agent can currently answer on this account.
+        dms:
+          type: boolean
+          description: Whether direct messages are accepted.
+        mentions:
+          type: boolean
+          description: Whether channel/group mentions activate the agent.
+        all_messages:
+          type: boolean
+          description: Whether every message in the allowed conversations activates the agent.
+        channels:
+          type: array
+          description: Optional provider conversation allowlist. Empty means any conversation
+            on the integration.
+          items:
+            type: string
+        dm_policy:
+          $ref: '#/components/schemas/AgentMessagingDMPolicy'
+        sender_allow:
+          type: array
+          description: Optional provider sender allowlist. Empty means any sender.
+          items:
+            type: string
+        reply_mode:
+          $ref: '#/components/schemas/AgentMessagingReplyMode'
+        model_route:
+          $ref: '#/components/schemas/AgentModelRoute'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    AgentMessagingBindingRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - provider
+      - integration_id
+      properties:
+        provider:
+          $ref: '#/components/schemas/AgentMessagingProvider'
+        integration_id:
+          type: string
+          description: ID of the connected integration that backs this binding.
+        enabled:
+          type: boolean
+          default: false
+          description: Whether the binding is active and the agent responds on this provider.
+        dms:
+          type: boolean
+          default: true
+          description: Respond to direct messages.
+        mentions:
+          type: boolean
+          default: true
+          description: Respond when the agent is @-mentioned.
+        all_messages:
+          type: boolean
+          default: false
+          description: Respond to every message in bound channels, not just mentions.
+        channels:
+          type: array
+          items:
+            type: string
+          description: Channel IDs the binding is scoped to (empty means all channels).
+        dm_policy:
+          $ref: '#/components/schemas/AgentMessagingDMPolicy'
+        sender_allow:
+          type: array
+          items:
+            type: string
+          description: Sender IDs allowed to trigger the agent (empty means no allowlist).
+        reply_mode:
+          $ref: '#/components/schemas/AgentMessagingReplyMode'
+        model_route:
+          $ref: '#/components/schemas/AgentModelRoute'
+    AgentMessagingBindingListResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AgentMessagingBinding'
     SessionStatus:
       type: string
       enum:
@@ -8923,11 +9485,13 @@ components:
       - interaction
       - manual
       - api
+      - automation
       description: Surface that created the session.
     SessionScope:
       type: string
       enum:
       - agent
+      - automation
       description: Boundary used to resolve named sessions.
     SessionVisibility:
       type: string
@@ -8944,6 +9508,12 @@ components:
       - tool
       - compaction
       description: Role of one message in a session transcript.
+    SessionMessageEntryType:
+      type: string
+      enum:
+      - message
+      - compaction
+      description: Row type for a persisted transcript entry.
     Session:
       type: object
       additionalProperties: false
@@ -8957,6 +9527,7 @@ components:
       - scope
       - scope_ref_id
       - scope_name
+      - session_key
       - visibility
       - message_count
       - token_input_total
@@ -8989,7 +9560,12 @@ components:
             for agent-scoped sessions).
         scope_name:
           type: string
-          description: Resolved name of the scope reference.
+          description: Caller-assigned name identifying this conversation within its scope
+            (`scope` + `scope_ref_id`); reused as the session routing key.
+        session_key:
+          type: string
+          description: Stable session routing key used to look up a scoped conversation (mirrors
+            `scope_name`).
         visibility:
           $ref: '#/components/schemas/SessionVisibility'
         model:
@@ -9025,7 +9601,7 @@ components:
         forked_from_sequence:
           type: integer
           description: Sequence number in the source session at which the fork was taken.
-        created_by_user_id:
+        created_by:
           type: string
           description: User who created this session, if attribution was captured.
         metadata:
@@ -9060,6 +9636,7 @@ components:
       - agent_id
       - role
       - content
+      - entry_type
       - sequence
       - created_at
       properties:
@@ -9084,6 +9661,8 @@ components:
           items:
             type: object
             additionalProperties: true
+        entry_type:
+          $ref: '#/components/schemas/SessionMessageEntryType'
         covers_through_sequence:
           type: integer
           description: For `compaction` messages, the highest sequence number this summary
@@ -9683,7 +10262,7 @@ components:
         action_name:
           type: string
           description: Canonical action name the selector resolved to, when the grant matched
-            a real catalog entry that the service account is not permitted to invoke.
+            a real catalog entry that the agent principal is not permitted to invoke.
         reason:
           type: string
           description: Why the grant is currently blocked (e.g. missing permission, archived
@@ -9773,20 +10352,13 @@ components:
       required:
       - name
       properties:
-        service_account_id:
-          type: string
-          description: Service account that backs this agent. Must be active, belong to the
-            same project, and currently back zero other agents. If omitted, a new service
-            account is auto-created with the same name as the agent.
         role_ids:
           type: array
           items:
             type: string
           minItems: 1
           uniqueItems: true
-          description: Roles to assign to the auto-created service account. Mutually exclusive
-            with `service_account_id` (the existing SA already carries its own role assignments
-            — change them via the service-accounts endpoints). When omitted, the SA inherits
+          description: Roles to assign to the agent's principal. When omitted, the agent inherits
             the project's `default_agent_role_id`, falling through to the system `Agent` role
             floor when unset.
         name:
@@ -9808,13 +10380,20 @@ components:
             Optional; empty falls back to a hash-derived color.
           maxLength: 24
         capabilities:
-          type: object
-          additionalProperties: true
-          description: Arbitrary capability map used by orchestrators to select suitable agents.
+          type: array
+          items:
+            type: string
+          description: Capability names used by orchestrators to select suitable agents.
         model:
           type: string
-          description: Anthropic model identifier for platform agents (e.g. `claude-sonnet-4-6`).
-            Empty falls back to the platform default.
+          description: Model identifier for platform agents. Any id from `GET /v1/projects/{project}/models`,
+            optionally `provider/`-prefixed (e.g. `xai/grok-4`); bare known ids (e.g. `claude-sonnet-4-6`)
+            are auto-detected. Empty falls back to the platform default.
+        model_route:
+          $ref: '#/components/schemas/AgentModelRoute'
+        tool_presentation:
+          $ref: '#/components/schemas/AgentToolPresentation'
+          description: Omit to use the create-time default, `flat`.
         system_prompt:
           type: string
           description: Custom system prompt for platform agents. Empty uses the generated
@@ -9825,8 +10404,9 @@ components:
     UpdateAgentRequest:
       type: object
       additionalProperties: false
-      description: 'Mutable agent fields. `service_account_id` is intentionally absent: the
-        SA↔Agent binding is immutable per the 1:1 invariant. Reassigning identity is delete-and-recreate.'
+      description: 'Mutable agent fields. The agent''s backing identity (`principal_id`, the
+        machine principal created atomically with the agent) is intentionally absent: it is
+        immutable. Reassigning identity is delete-and-recreate.'
       properties:
         name:
           type: string
@@ -9847,12 +10427,18 @@ components:
             empty string to clear and fall back to a hash-derived color.
           maxLength: 24
         capabilities:
-          type: object
-          additionalProperties: true
-          description: Replacement capability map.
+          type: array
+          items:
+            type: string
+          description: Replacement capability names.
         model:
           type: string
-          description: Replacement Anthropic model identifier for platform agents.
+          description: Replacement model identifier for platform agents (any id from `GET
+            /v1/projects/{project}/models`, optionally `provider/`-prefixed).
+        model_route:
+          $ref: '#/components/schemas/AgentModelRoute'
+        tool_presentation:
+          $ref: '#/components/schemas/AgentToolPresentation'
         system_prompt:
           type: string
           description: Replacement system prompt for platform agents.
@@ -9904,7 +10490,7 @@ components:
           description: Markdown description of the automation's purpose.
         status:
           $ref: '#/components/schemas/AutomationStatus'
-        owner_user_id:
+        owner:
           type: string
           description: User who created or currently owns this automation.
         default_agent_id:
@@ -10128,6 +10714,13 @@ components:
           description: Desired triggers materialized when a version is published.
           items:
             $ref: '#/components/schemas/AutomationSpecTrigger'
+        repositories:
+          type: array
+          description: Source repositories the automation targets. When a shared managed environment
+            is selected, the runtime prepares these repositories before user-authored steps
+            run.
+          items:
+            $ref: '#/components/schemas/AutomationSpecRepository'
         steps:
           type: array
           items:
@@ -10139,6 +10732,31 @@ components:
             additionalProperties: true
         defaults:
           $ref: '#/components/schemas/AutomationSpecDefaults'
+    AutomationSpecRepository:
+      type: object
+      additionalProperties: false
+      description: Source repository target attached to an automation spec.
+      required:
+      - full_name
+      properties:
+        provider:
+          type: string
+          enum:
+          - github
+          default: github
+          description: Repository provider. GitHub is the only supported provider today.
+        id:
+          description: Provider-specific repository id.
+          oneOf:
+          - type: integer
+            format: int64
+          - type: string
+        full_name:
+          type: string
+          description: Provider repository full name, e.g. `owner/repo`.
+        private:
+          type: boolean
+          description: Whether the provider reports this repository as private.
     AutomationSpecInput:
       type: object
       additionalProperties: false
@@ -10150,7 +10768,7 @@ components:
         required:
           type: boolean
         default:
-          nullable: true
+          description: Optional default value for this input. May be any JSON value.
     AutomationSpecTrigger:
       type: object
       additionalProperties: false
@@ -10166,9 +10784,10 @@ components:
         kind:
           type: string
           enum:
-          - webhook
+          - http
           - schedule
           - event
+          - manual
         enabled:
           type: boolean
         config:
@@ -10207,6 +10826,7 @@ components:
           - sleep
           - wait_for_event
           - interaction
+          - automation
         config:
           oneOf:
           - $ref: '#/components/schemas/AutomationAgentStep'
@@ -10214,12 +10834,13 @@ components:
           - $ref: '#/components/schemas/AutomationSleepStep'
           - $ref: '#/components/schemas/AutomationWaitForEventStep'
           - $ref: '#/components/schemas/AutomationInteractionStep'
+          - $ref: '#/components/schemas/AutomationSubAutomationStep'
           description: Kind-specific step configuration.
         input:
           type: object
           additionalProperties: true
           description: Step-local input object resolved when the step starts. String leaves
-            may contain `{{ inputs.* }}` or `{{ context.* }}` templates.
+            may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions.
         retry:
           $ref: '#/components/schemas/AutomationRetryPolicy'
         timeout:
@@ -10241,6 +10862,8 @@ components:
             grinding. Omit or set to `0` to disable the guard.
         environment:
           $ref: '#/components/schemas/AutomationEnvironmentPolicy'
+        agent_session:
+          $ref: '#/components/schemas/AutomationAgentSessionPolicy'
     AutomationEnvironmentPolicy:
       type: object
       additionalProperties: false
@@ -10298,6 +10921,64 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/AutomationAgentMemoryTableRef'
+        session:
+          $ref: '#/components/schemas/AutomationAgentSessionPolicy'
+    AutomationAgentSessionPolicy:
+      type: object
+      additionalProperties: false
+      description: 'Durable conversation-session policy for automation agent steps. Omit to
+        enable the product default: automation-scoped sessions keyed from the triggering conversation
+        when Mobius can identify one, such as a Telegram chat ID.'
+      properties:
+        disabled:
+          type: boolean
+          description: Disable durable session context and transcript writes for the affected
+            agent step(s).
+        scope:
+          type: string
+          enum:
+          - auto
+          - automation
+          - agent
+          description: Named-session boundary. `auto` and omitted use `automation`. `agent`
+            intentionally shares the named session across automations using the same agent.
+        name:
+          type: string
+          description: Optional Go-template string rendered against `inputs`, `context`, `agent`,
+            `automation`, `run`, `source`, and `step`. When omitted, Mobius derives a stable
+            name from the event payload, falling back to the trigger or `default`.
+        title:
+          type: string
+          description: Optional Go-template string for the session display title.
+        visibility:
+          $ref: '#/components/schemas/SessionVisibility'
+        compaction_policy:
+          type: object
+          additionalProperties: false
+          description: Optional per-session compaction policy merged with server defaults
+            when the session is first created. Existing sessions keep their current compaction
+            policy unless edited through a session-specific operation.
+          properties:
+            strategy:
+              type: string
+              enum:
+              - auto
+              - manual
+              - disabled
+              - none
+              description: Compaction strategy. `auto` compacts when the token threshold is
+                exceeded.
+            threshold_tokens:
+              type: integer
+              minimum: 1
+              description: Token threshold that triggers automatic compaction.
+            summary_model:
+              type: string
+              description: Model used to produce compaction summaries.
+          example:
+            strategy: auto
+            threshold_tokens: 8000
+            summary_model: claude-haiku-4-5-20251001
     AutomationModelRoute:
       type: object
       additionalProperties: false
@@ -10387,6 +11068,40 @@ components:
         match:
           type: object
           additionalProperties: true
+        condition:
+          type: string
+          description: Optional expr predicate evaluated against `{ event, meta }`.
+        payload_mapping:
+          type: object
+          additionalProperties:
+            type: string
+          description: Optional output mapping evaluated against `{ event, meta }`.
+    AutomationSubAutomationStep:
+      type: object
+      additionalProperties: false
+      description: Automation-trigger step configuration recognised inside `AutomationSpec.steps[].config`.
+        Triggers another automation in the same project as an independent child run (fire-and-forget).
+        The child run records `parent_run_id`, `parent_automation_id`, and `parent_step_key`
+        so the lineage is visible from the child.
+      required:
+      - automation_handle
+      properties:
+        automation_handle:
+          type: string
+          description: Stable handle of the automation to trigger, scoped to the same project
+            as the parent automation.
+        inputs:
+          type: object
+          additionalProperties: true
+          description: Input map handed to the child run. String leaves may contain `{{ .inputs.*
+            }}` or `{{ .context.* }}` Go text/template actions resolved against the parent
+            run. When omitted the parent step's resolved input map is forwarded.
+        condition:
+          type: string
+          description: Optional expr predicate evaluated against the `{ inputs, context }`
+            envelope of the parent run before the child is triggered. It must evaluate to
+            a bool; a false result skips the step and starts no child run. Same predicate
+            language as `wait_for_event` and event trigger conditions.
     AutomationInteractionStep:
       type: object
       additionalProperties: false
@@ -10490,14 +11205,14 @@ components:
           description: Human-readable trigger name.
         kind:
           type: string
-          description: 'One of: webhook, schedule, event.'
+          description: 'One of: http, schedule, event.'
         enabled:
           type: boolean
           description: Whether the trigger is currently allowed to start runs.
         config:
           type: object
           additionalProperties: true
-          description: Kind-specific configuration (schedule cron, event matcher, webhook
+          description: Kind-specific configuration (schedule cron, event matcher, HTTP-trigger
             options).
         concurrency_policy:
           type: string
@@ -10512,14 +11227,15 @@ components:
           type: integer
           minimum: 1
           description: Cap on concurrent runs allowed from this trigger.
-        webhook_handle:
+        http_handle:
           type: string
-          description: Public, project-scoped handle exposed in the webhook delivery URL.
-            Set only for webhook-kind triggers.
-        signing_secret:
-          type: string
-          description: HMAC secret used to verify inbound webhook signatures. Set only for
-            webhook-kind triggers.
+          description: Public, project-scoped handle exposed in the HTTP-trigger delivery
+            URL. Set only for http-kind triggers.
+        signing_secret_set:
+          type: boolean
+          description: Whether an HMAC signing secret is configured on this HTTP trigger.
+            The secret value itself is never returned — rotate it via the signing-secret endpoint
+            to reveal a new value once. Set only for http-kind triggers.
         event_type:
           type: string
           description: Source-event type this trigger subscribes to. Set only for event-kind
@@ -10527,6 +11243,10 @@ components:
         source_id:
           type: string
           description: Optional source identifier used to scope event matching.
+        condition:
+          type: string
+          description: Optional expr predicate evaluated against the public `{ event, meta
+            }` envelope; the trigger fires only when it passes. Set only for event-kind triggers.
         last_fire_at:
           type: string
           format: date-time
@@ -10543,18 +11263,18 @@ components:
           type: string
           format: date-time
           description: Last update timestamp.
-    WebhookDeliveryResponse:
+    HTTPTriggerDeliveryResponse:
       type: object
       additionalProperties: false
       required:
-      - fire_id
+      - source_event_id
       - status
-      description: Synchronous receipt for an inbound webhook delivery. The trigger dispatch
-        and run start happen asynchronously after this response — the `fire_id` is the durable
-        `source_event_id` that clients can poll via `GET /v1/projects/{project}/runs?source_event_id=<fire_id>`
-        to discover the run once the source-event processor reserves it.
+      description: Synchronous receipt for an inbound HTTP-trigger delivery. The trigger dispatch
+        and run start happen asynchronously after this response. Clients can poll via `GET
+        /v1/projects/{project}/runs?source_event_id=<source_event_id>` to discover the run
+        once the source-event processor reserves it.
       properties:
-        fire_id:
+        source_event_id:
           type: string
           description: Durable source-event id (also the `dedup_key` seed). Stable across
             retries with the same `Idempotency-Key`.
@@ -10582,8 +11302,8 @@ components:
         inputs:
           type: object
           additionalProperties: true
-          description: Free-form input map passed to the run. Available to steps via `{{ inputs.<key>
-            }}` templates.
+          description: Free-form input map passed to the run. Available to steps via `{{ .inputs.<key>
+            }}` Go text/template actions.
         source:
           $ref: '#/components/schemas/AutomationRunSource'
         external_id:
@@ -10630,7 +11350,7 @@ components:
         step_key: wait_for_approval
         result:
           approved: true
-          approver_id: usr_2f9s3k4m5n6p7q8r9s0t1u2v3w
+          approver_id: user_2f9s3k4m5n6p7q8r9s0t1u2v3w
     AutomationRunSource:
       type: object
       additionalProperties: false
@@ -10681,6 +11401,9 @@ components:
         automation_id:
           type: string
           description: Automation this run belongs to.
+        automation_name:
+          type: string
+          description: Human-readable name of the automation this run belongs to.
         automation_version_id:
           type: string
           description: AutomationVersion record this run is executing.
@@ -10701,6 +11424,18 @@ components:
             terminates successfully.
         source:
           $ref: '#/components/schemas/AutomationRunSource'
+        parent_run_id:
+          type: string
+          description: Run that triggered this run via an `automation` step. Present only
+            on child runs; absent for top-level runs.
+        parent_automation_id:
+          type: string
+          description: Automation that triggered this run via an `automation` step. Present
+            only on child runs.
+        parent_step_key:
+          type: string
+          description: Step key within the parent run's automation that triggered this run.
+            Present only on child runs.
         error_message:
           type: string
           description: Human-readable failure summary; populated on `failed` runs.
@@ -10711,6 +11446,10 @@ components:
           type: string
           format: date-time
           description: Scheduled wake time for a suspended run.
+        wall_clock_deadline_at:
+          type: string
+          format: date-time
+          description: Deadline after which the automation reaper fails the run.
         started_at:
           type: string
           format: date-time
@@ -10905,8 +11644,8 @@ components:
         event_type:
           type: string
           description: Event type from the run-stream taxonomy (e.g. `run.started`, `step.completed`,
-            `wait.opened`, `interaction.requested`, `action.completed`, `artifact.created`,
-            `limit.reached`, `usage.recorded`).
+            `wait.opened`, `interaction.requested`, `interaction.responded`, `action.called`,
+            `action.completed`, `action.failed`, `artifact.created`, `limit.reached`, `usage.recorded`).
         step_id:
           type: string
           nullable: true
@@ -10942,84 +11681,90 @@ components:
         has_more:
           type: boolean
           description: True when more events exist after the returned page.
-    ServiceAccountStatus:
+    PrincipalKind:
+      type: string
+      enum:
+      - service
+      - agent
+      - system
+      description: Machine principal kind. `service` is the standalone user-facing API client
+        identity. `agent` and `system` are internal backing identities for agent execution
+        and platform-internal work. (Human principals are managed as organization members,
+        not on this surface.)
+    PrincipalState:
       type: string
       enum:
       - active
       - disabled
-      description: '`active` allows authentication and job claims; `disabled` blocks them
-        but preserves the record and its assignments.'
-    ServiceAccountPurpose:
-      type: string
-      enum:
-      - api_client
-      - agent
-      - runtime_worker
-      - system
-      description: Why this service account exists. `api_client` is the normal user-facing
-        machine identity. `agent` and `runtime_worker` are internal backing identities for
-        agent and environment execution.
-    ServiceAccount:
+      - archived
+      description: Canonical business-lifecycle state. `active` allows authentication and
+        job claims; `disabled` is a reversible kill switch that blocks them but preserves
+        the record and its assignments; `archived` is terminal/retained.
+    Principal:
       type: object
       additionalProperties: false
-      description: Non-human identity used by automation, agents, and API keys. Service accounts
-        make ownership, permissions, and credential rotation explicit without tying machine
-        access to a human user.
+      description: Non-human identity used by automation, agents, and API keys. A principal
+        makes ownership, permissions, and credential rotation explicit without tying machine
+        access to a human user. The `id` is the principal id used as the `owned_by` value
+        when filtering or claiming resources.
       required:
       - id
+      - kind
+      - state
       - name
-      - purpose
-      - status
       - created_at
       - updated_at
       properties:
         id:
           type: string
-          description: Unique identifier for this service account.
+          description: Unique identifier for this principal (`prin_…`/`agt_…`).
+        kind:
+          $ref: '#/components/schemas/PrincipalKind'
+          description: Machine kind of this principal.
+        state:
+          $ref: '#/components/schemas/PrincipalState'
+          description: 'Current lifecycle state: `active`, `disabled`, or `archived`.'
         name:
           type: string
-          description: Human-readable name for this service account. Immutable after creation.
-        purpose:
-          $ref: '#/components/schemas/ServiceAccountPurpose'
-          description: Product purpose for this service account.
+          description: Human-readable name for this principal. Immutable after creation.
         description:
           type: string
           description: Optional human-readable description.
-        status:
-          $ref: '#/components/schemas/ServiceAccountStatus'
-          description: 'Current service account status: `active` or `disabled`.'
+        handle:
+          type: string
+          description: Typed, human-readable stable reference for this machine principal (`svc:acme-ci`,
+            `agent:harry`, `system`). Replaces the synthetic email for non-humans (PRD 2026-06-04
+            FR-3).
         owner_id:
           type: string
-          description: Optional org member responsible for this service account.
-        user_id:
+          description: Optional human principal accountable for this machine principal.
+        project_id:
           type: string
-          description: 'Linked User record. For agent-backed service accounts this is the
-            agent''s User (kind: agent); for standalone service accounts this is a dedicated
-            User (kind: service_account). Immutable once set.'
+          description: Project that scopes this machine principal.
         role_ids:
           type: array
           items:
             type: string
           uniqueItems: true
-          description: Role IDs currently assigned to this service account in the project.
+          description: Role IDs currently assigned to this principal in the project.
         metadata:
           type: object
           additionalProperties: true
           description: Arbitrary key-value metadata. Subject to size and nesting depth limits.
         tags:
           $ref: '#/components/schemas/TagMap'
-          description: 'Resource tags applied to this service account. Distinct from `metadata`:
+          description: 'Resource tags applied to this principal. Distinct from `metadata`:
             `tags` is the uniform string-to-string field used for filtering and reporting;
             `metadata` is a free-form caller-defined blob.'
         created_at:
           type: string
           format: date-time
-          description: Timestamp when this service account was created.
+          description: Timestamp when this principal was created.
         updated_at:
           type: string
           format: date-time
-          description: Timestamp when this service account was last updated.
-    ServiceAccountListResponse:
+          description: Timestamp when this principal was last updated.
+    PrincipalListResponse:
       type: object
       additionalProperties: false
       required:
@@ -11029,8 +11774,8 @@ components:
           type: array
           description: The list of results for this page.
           items:
-            $ref: '#/components/schemas/ServiceAccount'
-    CreateServiceAccountRequest:
+            $ref: '#/components/schemas/Principal'
+    CreatePrincipalRequest:
       type: object
       additionalProperties: false
       required:
@@ -11038,22 +11783,17 @@ components:
       properties:
         name:
           type: string
-          description: Human-readable name for this service account. Immutable after creation.
+          description: Human-readable name for this principal. Immutable after creation.
         description:
           type: string
           description: Optional human-readable description.
-        purpose:
-          $ref: '#/components/schemas/ServiceAccountPurpose'
-          description: Purpose for this service account. Omit for a normal user-facing API
-            client. Runtime workers and agent backing accounts are normally created by Mobius
-            internals.
         owner_id:
           type: string
-          description: Org member responsible for this service account.
+          description: Human principal accountable for this service principal.
         metadata:
           type: object
           additionalProperties: true
-          description: Arbitrary metadata to attach to the service account.
+          description: Arbitrary metadata to attach to the principal.
         role_ids:
           type: array
           items:
@@ -11061,24 +11801,24 @@ components:
           minItems: 1
           uniqueItems: true
           description: One or more role IDs to assign at creation time. All assignments are
-            created atomically with the service account. Requires `mobius.access.manage`.
-            Each role must belong to this project or be system-defined.
+            created atomically with the principal. Requires `mobius.access.manage`. Each role
+            must belong to this project or be system-defined.
         tags:
           $ref: '#/components/schemas/TagMap'
           description: Initial tag set.
-    UpdateServiceAccountRequest:
+    UpdatePrincipalRequest:
       type: object
       additionalProperties: false
       properties:
         description:
           type: string
           description: Replacement description.
-        status:
-          $ref: '#/components/schemas/ServiceAccountStatus'
-          description: 'Replacement service account status: `active` or `disabled`.'
+        state:
+          $ref: '#/components/schemas/PrincipalState'
+          description: 'Replacement lifecycle state: `active` or `disabled`.'
         owner_id:
           type: string
-          description: ID of the org member responsible for this service account.
+          description: Human principal accountable for this principal.
         metadata:
           type: object
           additionalProperties: true
@@ -11088,12 +11828,12 @@ components:
           items:
             type: string
           uniqueItems: true
-          description: Replacement role IDs for this service account in the project. Send
-            an empty array to remove all project role assignments. Requires `mobius.access.manage`.
+          description: Replacement role IDs for this principal in the project. Send an empty
+            array to remove all project role assignments. Requires `mobius.access.manage`.
         tags:
           $ref: '#/components/schemas/TagMap'
-          description: When supplied, replaces the user tag set on the service account. System
-            tags (`mobius:*`) are preserved.
+          description: When supplied, replaces the user tag set on the principal. System tags
+            (`mobius:*`) are preserved.
     ColumnType:
       type: string
       enum:
@@ -11207,7 +11947,7 @@ components:
             type: string
         owned_by:
           type: string
-          description: Canonical user owner ID. AI-agent owners use their backing user ID.
+          description: Principal owner ID. AI-agent owners use their agent principal ID.
         access_mode:
           allOf:
           - $ref: '#/components/schemas/TableAccessMode'
@@ -11292,9 +12032,11 @@ components:
           type: string
           pattern: ^[a-z][a-z0-9_]*$
           maxLength: 64
+          description: Table name (lowercase, snake_case); unique within the project scope.
         description:
           type: string
           maxLength: 1000
+          description: Optional human-readable description of the table.
         schema:
           $ref: '#/components/schemas/TableSchema'
         scope:
@@ -11312,6 +12054,7 @@ components:
         description:
           type: string
           maxLength: 1000
+          description: Optional human-readable description of the table.
         schema:
           $ref: '#/components/schemas/TableSchema'
         scope:
@@ -11405,6 +12148,7 @@ components:
           minimum: 1
           maximum: 1000
           default: 100
+          description: Maximum number of rows to return (1–1000, default 100).
         cursor:
           type: string
           description: Opaque cursor from a prior response.
@@ -11412,10 +12156,10 @@ components:
       type: object
       additionalProperties: false
       required:
-      - rows
+      - items
       - has_more
       properties:
-        rows:
+        items:
           type: array
           items:
             $ref: '#/components/schemas/TableRow'
@@ -11444,6 +12188,7 @@ components:
           minimum: 1
           maximum: 1000
           default: 100
+          description: Maximum number of rows to return (1–1000, default 100).
         cursor:
           type: string
           description: Opaque cursor from a prior search response.
@@ -11451,10 +12196,10 @@ components:
       type: object
       additionalProperties: false
       required:
-      - rows
+      - items
       - has_more
       properties:
-        rows:
+        items:
           type: array
           items:
             $ref: '#/components/schemas/TableRow'
@@ -11482,11 +12227,11 @@ components:
       additionalProperties: false
       required:
       - inserted
-      - rows
+      - items
       properties:
         inserted:
           type: integer
-        rows:
+        items:
           type: array
           items:
             $ref: '#/components/schemas/TableRow'
@@ -11569,12 +12314,12 @@ components:
           $ref: '#/components/schemas/ArtifactVisibility'
         run_id:
           type: string
+          description: Automation run that produced this artifact, derived from the active
+            worker lease.
         step_id:
           type: string
-        job_id:
-          type: string
-        attempt:
-          type: integer
+          description: Automation step that produced this artifact, derived from the active
+            worker lease.
         name:
           type: string
           description: Display name or relative virtual path. Forward slash may be used to
@@ -11588,13 +12333,6 @@ components:
           type: string
         storage:
           $ref: '#/components/schemas/ArtifactStorageBackend'
-        storage_uri:
-          type: string
-        integration_id:
-          type: string
-        metadata:
-          type: object
-          additionalProperties: true
         tags:
           type: object
           additionalProperties:
@@ -11606,14 +12344,14 @@ components:
           format: date-time
         created_by:
           type: string
-          description: users.id of the principal who created this artifact. Empty for system-initiated
+          description: Principal ID of the actor who created this artifact. Empty for system-initiated
             writes.
         updated_at:
           type: string
           format: date-time
         updated_by:
           type: string
-          description: users.id of the principal who last updated this artifact. Empty for
+          description: Principal ID of the actor who last updated this artifact. Empty for
             system-initiated writes.
         committed_at:
           type: string
@@ -11621,8 +12359,6 @@ components:
         expires_at:
           type: string
           format: date-time
-        pinned:
-          type: boolean
         deleted_at:
           type: string
           format: date-time
@@ -11669,10 +12405,6 @@ components:
           minimum: 0
           description: Optional declared file size. When supplied, Mobius verifies the streamed
             byte count exactly matches this value.
-        run_id:
-          type: string
-        step_id:
-          type: string
         tags:
           type: object
           additionalProperties:
@@ -11681,35 +12413,11 @@ components:
           type: integer
           format: int64
           minimum: 0
-          description: Override the project default TTL for this artifact only.
+          description: Set an artifact-specific expiry relative to upload time. Omit to keep
+            the artifact indefinitely unless project settings configure a default TTL.
         retain_until:
           type: string
           format: date-time
-        pinned:
-          type: boolean
-          default: false
-        visibility:
-          $ref: '#/components/schemas/ArtifactVisibility'
-    UpdateArtifactContentRequest:
-      type: object
-      required:
-      - content
-      additionalProperties: false
-      properties:
-        content:
-          type: string
-          description: Replacement artifact content. Interpreted as UTF-8 text unless `encoding`
-            is `base64`.
-        encoding:
-          type: string
-          enum:
-          - text
-          - base64
-          default: text
-        mime_type:
-          type: string
-          description: Optional MIME type override. Defaults to the artifact's current MIME
-            type.
     ArtifactSignedUrl:
       type: object
       required:
@@ -11727,31 +12435,6 @@ components:
         expires_at:
           type: string
           format: date-time
-    ArtifactStorageSettings:
-      type: object
-      additionalProperties: false
-      properties:
-        backend:
-          $ref: '#/components/schemas/ArtifactStorageBackend'
-        integration_id:
-          type: string
-        default_ttl:
-          type: string
-          description: Default artifact retention duration as a Go duration string.
-          example: 720h
-        max_artifact_size:
-          type: integer
-          format: int64
-          minimum: 0
-        inline_threshold:
-          type: integer
-          format: int64
-          minimum: 0
-        pending_upload_cap:
-          type: integer
-          minimum: 0
-    ArtifactStorageSettingsUpdate:
-      $ref: '#/components/schemas/ArtifactStorageSettings'
     ArtifactQuotaUsage:
       type: object
       required:
@@ -11790,6 +12473,9 @@ x-tagGroups:
 - name: Actions
   tags:
   - actions
+- name: Catalog
+  tags:
+  - catalog
 - name: Environments
   tags:
   - environments
@@ -11831,9 +12517,9 @@ x-tagGroups:
 - name: Skills
   tags:
   - skills
-- name: Service Accounts
+- name: Principals
   tags:
-  - service-accounts
+  - principals
 - name: Tables
   tags:
   - tables

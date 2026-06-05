@@ -29,17 +29,21 @@ type Override struct {
 // `mobius --help`.
 var overrides = map[string]Override{
 	// --- actions ----------------------------------------------------------
-	// Catalog-action ops collide with the project-scoped action ops on the
-	// auto-derived `get` / `list` leaves, so spell them out.
-	"invokeAction":       {Command: "invoke"},
-	"getCatalogAction":   {Command: "get-catalog"},
-	"listCatalogActions": {Command: "list-catalog"},
+	// `invoke` isn't in the verb list, so the auto-derive keeps the redundant
+	// `-action` suffix; strip it. (The catalog list/get ops now live in their
+	// own `catalog` group and auto-derive to clean leaves, so they no longer
+	// need overrides here.)
+	"invokeAction": {Command: "invoke"},
 
 	// --- agents -----------------------------------------------------------
 	// Drop the redundant `agent` token that the auto-derivation can't strip
 	// (the group name already carries it).
 	"provisionAgentInbox":        {Command: "provision-inbox"},
 	"appendAgentSessionMessages": {Command: "append-session-messages"},
+	"saveAgentMessagingBinding":  {Command: "save-messaging-binding"},
+	// `listModels` lives in the agents group and would auto-derive to `list`,
+	// colliding with `listAgents`. Spell out the resource.
+	"listModels": {Command: "list-models"},
 
 	// --- agent-tools ------------------------------------------------------
 	"getAgentToolManifest": {Command: "get-manifest"},
@@ -54,14 +58,6 @@ var overrides = map[string]Override{
 	// `import` isn't in the verb list, so the auto-derive keeps the
 	// redundant `-skill` suffix; strip it.
 	"importSkill": {Command: "import"},
-
-	// --- artifacts --------------------------------------------------------
-	"pinArtifact":    {Command: "pin"},
-	"unpinArtifact":  {Command: "unpin"},
-	"commitArtifact": {Command: "commit"},
-	// The auto-derived leaf is `list-artifacts` (strip `Run`), which reads
-	// no differently from `list` and hides the run-scoping. Be explicit.
-	"listRunArtifacts": {Command: "list-for-run"},
 
 	// --- api-keys ---------------------------------------------------------
 	// Drop the redundant `key` token; the group name already carries it.
@@ -94,6 +90,7 @@ var overrides = map[string]Override{
 	// --- environments -----------------------------------------------------
 	"listEnvironments":        {Command: "list"},
 	"createEnvironment":       {Command: "create"},
+	"attachWorkerEnvironment": {Command: "attach-worker"},
 	"acquireEnvironment":      {Command: "acquire"},
 	"releaseEnvironmentLease": {Command: "release-lease"},
 	"getEnvironment":          {Command: "get"},
@@ -167,13 +164,10 @@ var overrides = map[string]Override{
 	"deleteRoleAssignment": {Command: "delete-assignment"},
 	"listRoleAssignments":  {Command: "list-assignments"},
 
-	// --- service-accounts -------------------------------------------------
-	// Drop the redundant `account` token; the group name already carries it.
-	"createServiceAccount": {Command: "create"},
-	"listServiceAccounts":  {Command: "list"},
-	"getServiceAccount":    {Command: "get"},
-	"updateServiceAccount": {Command: "update"},
-	"deleteServiceAccount": {Command: "delete"},
+	// --- principals -------------------------------------------------------
+	// `createPrincipal`, `listPrincipals`, etc. auto-derive to clean
+	// create/list/get/update/delete leaves (the resource word matches the
+	// group), so no overrides are needed here.
 
 	// --- spans ------------------------------------------------------------
 	"listProjectSpans":         {Command: "list"},
@@ -246,8 +240,10 @@ var groupDescriptions = map[string]string{
 	"agents":                "Agents, sessions, and presence",
 	"agent-tools":           "Resolved agent tool manifests",
 	"api-keys":              "Project and organization API keys",
-	"artifacts":             "Run output artifacts and storage settings",
+	"artifacts":             "Run output artifacts and storage quota",
 	"audit-logs":            "Organization and project audit log entries",
+	"automations":           "Automation definitions, versions, and runs",
+	"catalog":               "Available actions and triggerable events",
 	"channels":              "Chat channels, members, and messages",
 	"events":                "Inbound integration events and live SSE streams",
 	"environments":          "Managed execution environments",
@@ -262,12 +258,12 @@ var groupDescriptions = map[string]string{
 	"metrics":               "Platform and automation metrics",
 	"observables":           "Tracked observables, observations, and state",
 	"permissions":           "Project permission definitions and presets",
+	"principals":            "Machine principals for agents and automation",
 	"projects":              "Projects within the organization",
 	"references":            "Reference lookup and resolution",
 	"roles":                 "Project roles and role assignments",
 	"runs":                  "Automation runs",
 	"secrets":               "Project secrets and secret versions",
-	"service-accounts":      "Project service accounts for agents and automation",
 	"skills":                "Skill templates that shape agent behavior and tool access",
 	"spans":                 "Distributed tracing spans and traces",
 	"tables":                "Project-scoped tables and rows",

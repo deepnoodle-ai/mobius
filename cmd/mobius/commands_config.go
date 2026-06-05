@@ -22,7 +22,7 @@ func registerConfigExtensions(app *cli.App) {
 
 	projectsGrp.Command("set-config").
 		Description("Set config values on a project. Reads current config, overlays the supplied entries, and PUTs the result.").
-		Args("id").
+		AddArg(&cli.Arg{Name: "id", Description: "Project ID.", Required: true}).
 		Flags(
 			cli.Strings("config", "").Help("Dotted key: <key>=<value>. Repeatable. Set value to null to remove the key."),
 			cli.String("config-file", "").Help("YAML/JSON file containing a nested config object; merged client-side with --config."),
@@ -32,7 +32,7 @@ func registerConfigExtensions(app *cli.App) {
 
 	projectsGrp.Command("clear-config").
 		Description("Clear project config, or entries under a key prefix. Without --key-prefix this calls DELETE and clears everything.").
-		Args("id").
+		AddArg(&cli.Arg{Name: "id", Description: "Project ID.", Required: true}).
 		Flags(
 			cli.String("key-prefix", "").Help("Optional key prefix to clear (e.g. `jobs.timeouts.`)."),
 		).
