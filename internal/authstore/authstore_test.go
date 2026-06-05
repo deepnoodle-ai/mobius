@@ -80,6 +80,67 @@ func TestPutProfilePreservesDefaultWhenUpdatingExistingProfile(t *testing.T) {
 	}
 }
 
+func TestPutProfileAdoptsDefaultWhenNoneSelected(t *testing.T) {
+	t.Setenv("MOBIUS_CONFIG_DIR", t.TempDir())
+
+	// Simulate a store that has a profile but no default selected — e.g. the
+	// former default profile was removed, which does not promote a survivor.
+	if err := PutProfile("local", Profile{Token: "mbc_local"}, false); err != nil {
+		t.Fatalf("put first profile: %v", err)
+	}
+	store, err := LoadStore()
+	if err != nil {
+		t.Fatalf("load store: %v", err)
+	}
+	p := store.Profiles["local"]
+	p.Default = false
+	store.Profiles["local"] = p
+	if err := SaveStore(store); err != nil {
+		t.Fatalf("save store: %v", err)
+	}
+
+	// Logging into a new profile while no default exists should adopt it, so
+	// the credential is immediately usable instead of inert.
+	if err := PutProfile("default", Profile{Token: "mbc_default"}, false); err != nil {
+		t.Fatalf("put second profile: %v", err)
+	}
+	profile, err := ResolveProfile("")
+	if err != nil {
+		t.Fatalf("resolve default: %v", err)
+	}
+	if profile.Name != "default" {
+		t.Fatalf("default profile = %q, want default", profile.Name)
+	}
+
+	store, err = LoadStore()
+	if err != nil {
+		t.Fatalf("reload store: %v", err)
+	}
+	if store.Profiles["local"].Default {
+		t.Fatalf("pre-existing local profile unexpectedly became default")
+	}
+}
+
+func TestPutProfileDoesNotStealDefaultFromExistingProfile(t *testing.T) {
+	t.Setenv("MOBIUS_CONFIG_DIR", t.TempDir())
+
+	if err := PutProfile("local", Profile{Token: "mbc_local"}, true); err != nil {
+		t.Fatalf("put default profile: %v", err)
+	}
+	// A new profile arriving while a default already exists must not seize it.
+	if err := PutProfile("default", Profile{Token: "mbc_default"}, false); err != nil {
+		t.Fatalf("put second profile: %v", err)
+	}
+
+	profile, err := ResolveProfile("")
+	if err != nil {
+		t.Fatalf("resolve default: %v", err)
+	}
+	if profile.Name != "local" {
+		t.Fatalf("default profile = %q, want local", profile.Name)
+	}
+}
+
 func TestLoadUsesNoDefaultSentinel(t *testing.T) {
 	t.Setenv("MOBIUS_CONFIG_DIR", t.TempDir())
 
