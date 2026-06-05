@@ -38,7 +38,7 @@ Inspect the resources available in your project:
 
 ```bash
 mobius automations list
-mobius automations list-runs
+mobius runs list
 mobius worker-sessions list
 ```
 
