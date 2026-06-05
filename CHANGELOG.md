@@ -6,6 +6,45 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 
 ## [Unreleased]
 
+## [0.0.22] - 2026-06-04
+
+### Added
+
+- CLI / SDKs: new `catalog` group (`list-actions`,
+  `list-events`, `get-action`) and `principals` group
+  (`create` / `get` / `list` / `update` / `delete`), plus agent
+  messaging-binding commands, `agents list-models`,
+  `environments attach-worker`, and
+  `automations deliver-http-trigger`. (#92)
+- SDKs: unified signed-delivery helpers for constructing and
+  verifying synthetic webhook / action deliveries, with
+  validation that rejects bad overrides (negative or zero
+  timestamps, empty delivery IDs) and malformed envelopes. Also
+  adds `updated_by` and aligns `created_by` descriptions across
+  the Agent, Channel, Workflow, Environment, Secret, Trigger,
+  Webhook, Toolkit, Skill, and Table schemas. (#88)
+- Worker: publish run output artifacts via job leases. (#90)
+- CLI: every command now has argument and flag help. The
+  generator emits positional-argument descriptions (resolving
+  `$ref` path params) and matches header-parameter descriptions
+  (e.g. `X-Idempotency-Key`), so no command shows blank
+  arguments or flag help that echoes the field name. (#92)
+
+### Changed
+
+- SDKs: automation and worker surfaces updated;
+  `AutomationTriggerInput` renamed to `AutomationTrigger` to
+  match the spec, and the worker `--actions` flag honors
+  `MOBIUS_WORKER_ACTION_NAMES`. (#89)
+- CLI: the `service-accounts` group is removed (replaced by
+  `principals` upstream) and audit-log filters use
+  `principal_id` instead of `user_id`. (#92)
+- Go SDK: `ActionCatalogEntry.Available` is replaced by
+  `Readiness` / `ReadinessReason`, catalog actions moved to
+  `/catalog/actions`, and `ListAutomationsOptions.Status` is now
+  typed `ListAutomationsParamsStatus` (the list filter gained an
+  `all` value distinct from `AutomationStatus`). (#92)
+
 ## [0.0.21] - 2026-05-22
 
 ### Added
