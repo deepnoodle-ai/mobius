@@ -1,6 +1,5 @@
 """Mobius SDK for Python - build workers and control automation runs."""
 
-from ._api.models import InteractionKind
 from .action import action
 from .client import (
     DEFAULT_BASE_URL,
@@ -56,10 +55,6 @@ from .worker import (
     WorkerPoolConfig,
 )
 
-INTERACTION_KIND_APPROVAL = InteractionKind.request_approval
-INTERACTION_KIND_REVIEW = InteractionKind.request_review
-INTERACTION_KIND_REQUEST = InteractionKind.request_information
-
 __all__ = [
     "ActionContext",
     "AuthRevokedError",
@@ -90,10 +85,6 @@ __all__ = [
     "WEBHOOK_EVENT_RUN_COMPLETED",
     "WEBHOOK_EVENT_RUN_FAILED",
     "WEBHOOK_EVENT_TYPE_HEADER",
-    "INTERACTION_KIND_APPROVAL",
-    "INTERACTION_KIND_REQUEST",
-    "INTERACTION_KIND_REVIEW",
-    "InteractionKind",
     "DeliveryMeta",
     "InvalidSignatureError",
     "MOBIUS_DELIVERY_ID_HEADER",

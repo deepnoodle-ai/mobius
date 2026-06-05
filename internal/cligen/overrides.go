@@ -30,27 +30,17 @@ type Override struct {
 var overrides = map[string]Override{
 	// --- actions ----------------------------------------------------------
 	// `invoke` isn't in the verb list, so the auto-derive keeps the redundant
-	// `-action` suffix; strip it. (The catalog list/get ops now live in their
-	// own `catalog` group and auto-derive to clean leaves, so they no longer
-	// need overrides here.)
+	// `-action` suffix; strip it.
 	"invokeAction": {Command: "invoke"},
 
 	// --- agents -----------------------------------------------------------
 	// Drop the redundant `agent` token that the auto-derivation can't strip
 	// (the group name already carries it).
-	"provisionAgentInbox":        {Command: "provision-inbox"},
-	"appendAgentSessionMessages": {Command: "append-session-messages"},
-	"saveAgentMessagingBinding":  {Command: "save-messaging-binding"},
-	// `listModels` lives in the agents group and would auto-derive to `list`,
-	// colliding with `listAgents`. Spell out the resource.
-	"listModels": {Command: "list-models"},
-
-	// --- agent-tools ------------------------------------------------------
-	"getAgentToolManifest": {Command: "get-manifest"},
-
-	// --- agents (skill/toolkit assignment ops) ----------------------------
-	// These live in the `agents` group; auto-derivation would collapse both
-	// to `list-assignments` and collide. Spell out the resource.
+	"provisionAgentInbox":       {Command: "provision-inbox"},
+	"saveAgentMessagingBinding": {Command: "save-messaging-binding"},
+	// Skill/toolkit assignment ops also live in the `agents` group;
+	// auto-derivation would collapse both to `list-assignments` and collide.
+	// Spell out the resource.
 	"listSkillAssignments":   {Command: "list-skill-assignments"},
 	"listToolkitAssignments": {Command: "list-toolkit-assignments"},
 
@@ -66,27 +56,6 @@ var overrides = map[string]Override{
 	"getAPIKey":    {Command: "get"},
 	"revokeAPIKey": {Command: "revoke"},
 
-	// --- audit-logs -------------------------------------------------------
-	"listAuditLogs":    {Command: "list"},
-	"listOrgAuditLogs": {Command: "list-org"},
-
-	// --- channels ---------------------------------------------------------
-	// Drop the redundant `channel` token from interaction/entity ops.
-	"associateChannelInteraction": {Command: "associate-interaction"},
-	"respondToChannelInteraction": {Command: "respond-to-interaction"},
-	"shareChannelEntity":          {Command: "share-entity"},
-	"releaseChannelInteraction":   {Command: "release-interaction"},
-
-	// --- events -----------------------------------------------------------
-	// The `events` group is project integration events; the `Integration`
-	// token in the operationId is redundant once you're inside the group.
-	"listIntegrationEvents":           {Command: "list"},
-	"getIntegrationEvent":             {Command: "get"},
-	"listIntegrationEventTestSamples": {Command: "list-test-samples"},
-	"createIntegrationEventTestFire":  {Command: "test-fire"},
-	"streamProjectEvents":             {Command: "stream-project"},
-	"streamRunEvents":                 {Command: "stream-run"},
-
 	// --- environments -----------------------------------------------------
 	"listEnvironments":        {Command: "list"},
 	"createEnvironment":       {Command: "create"},
@@ -101,77 +70,20 @@ var overrides = map[string]Override{
 	"writeEnvironmentFile":    {Command: "write-file"},
 	"startEnvironmentWorker":  {Command: "start-worker"},
 
-	// --- groups -----------------------------------------------------------
-	// Differentiate "list groups in project" from "list groups a member is in".
-	"listMemberGroups": {Command: "list-for-member"},
-
-	// --- integration-providers -------------------------------------------
-	"listIntegrationProviders": {Command: "list"},
-
-	// --- interactions -----------------------------------------------------
-	// Drop the redundant `interaction` token; the group name carries it.
-	"submitInteractionHandoff":   {Command: "submit-handoff"},
-	"acceptInteractionHandoff":   {Command: "accept-handoff"},
-	"sendBackInteractionHandoff": {Command: "return-handoff"},
-	"castInteractionBallot":      {Command: "cast-ballot"},
-	"withdrawInteractionBallot":  {Command: "withdraw-ballot"},
-	"closeInteractionVote":       {Command: "close-vote"},
-	"releaseInteraction":         {Command: "release"},
-	"respondToInteraction":       {Command: "respond"},
-
 	// --- jobs -------------------------------------------------------------
 	// The worker socket is a WebSocket transport endpoint, not a normal JSON
 	// request/response operation. The hand-written `mobius worker` command is
 	// the public CLI entrypoint for this path.
 	"openWorkerSocket": {Skip: true},
-	"reportJob":        {Command: "report"},
-	"runJobAction":     {Command: "run-action"},
-	"emitJobEvents":    {Command: "emit-events"},
-
-	// --- logs -------------------------------------------------------------
-	"ingestProjectLogs":     {Command: "ingest"},
-	"ingestProjectLogsOTLP": {Command: "ingest-otlp"},
-	"listProjectLogs":       {Command: "list"},
-
-	// --- messages ---------------------------------------------------------
-	"markMessagesRead": {Command: "mark-read"},
-
-	// --- metrics ----------------------------------------------------------
-	"getProjectMetrics": {Command: "get"},
-
-	// --- observables ------------------------------------------------------
-	"submitObservableObservation": {Command: "submit-observation"},
 
 	// --- projects ---------------------------------------------------------
 	"archiveProject": {Command: "archive"},
 	"restoreProject": {Command: "restore"},
-	// `deleteProjectConfig` does the same DELETE as the hand-written
-	// `projects clear-config` (when called without --key-prefix). Suppress
-	// the auto-generated leaf so users see only the ergonomic wrapper.
-	"deleteProjectConfig": {Skip: true},
 
-	// --- references -------------------------------------------------------
-	"lookupReferences":  {Command: "lookup"},
-	"resolveReferences": {Command: "resolve"},
-
-	// --- permissions ------------------------------------------------------
-	"listProjectPermissions": {Command: "list"},
-
-	// --- roles ------------------------------------------------------------
-	// Role-assignment ops live in the same group; spell them out so each
-	// command reads as `<verb>` or `<verb>-assignment`.
-	"createRoleAssignment": {Command: "create-assignment"},
-	"deleteRoleAssignment": {Command: "delete-assignment"},
-	"listRoleAssignments":  {Command: "list-assignments"},
-
-	// --- principals -------------------------------------------------------
-	// `createPrincipal`, `listPrincipals`, etc. auto-derive to clean
-	// create/list/get/update/delete leaves (the resource word matches the
-	// group), so no overrides are needed here.
-
-	// --- spans ------------------------------------------------------------
-	"listProjectSpans":         {Command: "list"},
-	"getProjectStepSpanCounts": {Command: "step-counts"},
+	// --- runs -------------------------------------------------------------
+	// `stream` isn't in the verb list, so the auto-derive keeps the full
+	// `stream-run-events` leaf; shorten it.
+	"streamRunEvents": {Command: "stream-run"},
 
 	// --- tables -----------------------------------------------------------
 	// Row operations use verbs the auto-derivation doesn't recognise
@@ -184,47 +96,11 @@ var overrides = map[string]Override{
 	"searchTableRows":     {Command: "search-rows"},
 	"bulkInsertTableRows": {Command: "bulk-insert-rows"},
 
-	// --- team -------------------------------------------------------------
-	"listProjectTeam": {Command: "list"},
-
-	// --- triggers ---------------------------------------------------------
-	"testFireTrigger":         {Command: "test-fire"},
-	"deleteAllTriggerTargets": {Command: "delete-targets"},
-
-	// --- user-state -------------------------------------------------------
-	"listUserStates":  {Command: "list"},
-	"getUserState":    {Command: "get"},
-	"upsertUserState": {Command: "upsert"},
-
 	// --- webhooks ---------------------------------------------------------
 	"pingWebhook": {Command: "ping"},
 
 	// --- worker-sessions --------------------------------------------------
 	"listWorkerSessions": {Command: "list"},
-
-	// --- Skipped: hand-written in cmd/mobius -----------------------------
-	// The browser-based CLI login flow is hand-written in auth.go because it
-	// needs to drive the device challenge, open the browser, poll for
-	// completion, and persist the returned credential locally — none of which
-	// the generic generator can produce. (The RFC 8628 device authorization
-	// and token endpoints themselves are intentionally absent from the typed
-	// OpenAPI surface — they use form bodies and OAuth error envelopes — so
-	// no Skip entry is needed for those.) The CLI-credential management
-	// commands (list / revoke) are also hand-written so they render as
-	// ergonomic `mobius auth list` / `mobius auth revoke` subcommands that
-	// authenticate using the saved credential rather than forcing --api-key.
-	"confirmDeviceCode":   {Skip: true},
-	"getAuthContext":      {Skip: true},
-	"listCLICredentials":  {Skip: true},
-	"revokeCLICredential": {Skip: true},
-
-	// --- Skipped: low-value or webhook-style endpoints -------------------
-	// These accept opaque payloads and are intended for external callers
-	// (Slack, third-party webhooks), not interactive CLI use.
-	"handleSlackCommands": {Skip: true},
-	"handleSlackEvents":   {Skip: true},
-	"handleSlackInteract": {Skip: true},
-	"slackOAuthCallback":  {Skip: true},
 }
 
 // groupDescriptions is an opt-in table of subcommand group descriptions,
@@ -234,44 +110,18 @@ var overrides = map[string]Override{
 // well when listed vertically in `mobius --help`. Prefer consistent
 // grammatical shape across entries.
 var groupDescriptions = map[string]string{
-	"actions":               "Actions available to automations and agents",
-	"actor-state":           "Reportable actor state and per-target assignments",
-	"agent-invocations":     "Agent invocation lifecycle and results",
-	"agents":                "Agents, sessions, and presence",
-	"agent-tools":           "Resolved agent tool manifests",
-	"api-keys":              "Project and organization API keys",
-	"artifacts":             "Run output artifacts and storage quota",
-	"audit-logs":            "Organization and project audit log entries",
-	"automations":           "Automation definitions, versions, and runs",
-	"catalog":               "Available actions and triggerable events",
-	"channels":              "Chat channels, members, and messages",
-	"events":                "Inbound integration events and live SSE streams",
-	"environments":          "Managed execution environments",
-	"generate":              "LLM message generation",
-	"groups":                "Member groups for routing interactions",
-	"integration-catalog":   "Available integration providers and capabilities",
-	"integration-providers": "Connect and manage third-party integration providers",
-	"interactions":          "Approval, review, vote, and handoff prompts",
-	"jobs":                  "Internal worker runtime operations",
-	"logs":                  "Structured log ingestion and retrieval",
-	"messages":              "Send, list, and update channel messages",
-	"metrics":               "Platform and automation metrics",
-	"observables":           "Tracked observables, observations, and state",
-	"permissions":           "Project permission definitions and presets",
-	"principals":            "Machine principals for agents and automation",
-	"projects":              "Projects within the organization",
-	"references":            "Reference lookup and resolution",
-	"roles":                 "Project roles and role assignments",
-	"runs":                  "Automation runs",
-	"secrets":               "Project secrets and secret versions",
-	"skills":                "Skill templates that shape agent behavior and tool access",
-	"spans":                 "Distributed tracing spans and traces",
-	"tables":                "Project-scoped tables and rows",
-	"team":                  "Project team membership",
-	"toolkits":              "Sets of tools agents can use to take action",
-	"tools":                 "Automations published as callable tools",
-	"triggers":              "Event, schedule, and webhook triggers",
-	"user-state":            "Per-user project state and assignments",
-	"webhooks":              "Outgoing webhook subscriptions",
-	"worker-sessions":       "Registered worker sessions",
+	"actions":         "Actions available to automations and agents",
+	"agents":          "Agents, sessions, and presence",
+	"api-keys":        "Project and organization API keys",
+	"artifacts":       "Run output artifacts and storage quota",
+	"automations":     "Automation definitions, versions, and runs",
+	"catalog":         "Available actions and triggerable events",
+	"environments":    "Managed execution environments",
+	"projects":        "Projects within the organization",
+	"runs":            "Automation runs",
+	"skills":          "Skill templates that shape agent behavior and tool access",
+	"tables":          "Project-scoped tables and rows",
+	"toolkits":        "Sets of tools agents can use to take action",
+	"webhooks":        "Outgoing webhook subscriptions",
+	"worker-sessions": "Registered worker sessions",
 }

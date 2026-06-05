@@ -34,7 +34,7 @@ func newRunGetServer(t *testing.T) *httptest.Server {
 }
 
 // TestGetRunRendererFiresOnPretty exercises the registered renderer for the
-// getAutomationRun operationId. Forces --output pretty so the test runner (where
+// getRun operationId. Forces --output pretty so the test runner (where
 // stdout isn't a TTY) still routes through the custom renderer.
 func TestGetRunRendererFiresOnPretty(t *testing.T) {
 	srv := newRunGetServer(t)
@@ -42,14 +42,14 @@ func TestGetRunRendererFiresOnPretty(t *testing.T) {
 
 	result := newApp().Test(t,
 		cli.TestArgs(
-			"automations", "get-run", "run_abc",
+			"runs", "get", "run_abc",
 			"--api-url", srv.URL,
 			"--api-key", "mbx_test",
 			"--output", "pretty",
 		),
 	)
 	if !result.Success() {
-		t.Fatalf("automations get-run failed: %v\nstderr: %s", result.Err, result.Stderr)
+		t.Fatalf("runs get failed: %v\nstderr: %s", result.Err, result.Stderr)
 	}
 	mustContain(t, result.Stdout, "aut_greeter")
 	mustContain(t, result.Stdout, "run_abc")
@@ -67,14 +67,14 @@ func TestGetRunJSONOutputBypassesRenderer(t *testing.T) {
 
 	result := newApp().Test(t,
 		cli.TestArgs(
-			"automations", "get-run", "run_abc",
+			"runs", "get", "run_abc",
 			"--api-url", srv.URL,
 			"--api-key", "mbx_test",
 			"--output", "json",
 		),
 	)
 	if !result.Success() {
-		t.Fatalf("automations get-run failed: %v\nstderr: %s", result.Err, result.Stderr)
+		t.Fatalf("runs get failed: %v\nstderr: %s", result.Err, result.Stderr)
 	}
 	out := strings.TrimSpace(result.Stdout)
 	if !strings.HasPrefix(out, "{") {

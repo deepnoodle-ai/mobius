@@ -19,45 +19,8 @@ import (
 func registerProjectsCommands(app *cli.App) {
 	projectsGrp := app.Group("projects").Description("Projects within the organization")
 	projectsGrp.Alias("project")
-	projectsGrp.Command("add-member").
-		Description("Add a project member").
-		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
-		Flags(
-			cli.String("principal-id", "").Help("[required] ID of the org member principal to add to this project."),
-			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
-			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
-		).
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := ctx.Arg(0)
-			var body api.AddProjectMemberJSONRequestBody
-			if err := readJSONBody(ctx, &body); err != nil {
-				return err
-			}
-			if ctx.IsSet("principal-id") {
-				body.PrincipalId = ctx.String("principal-id")
-			}
-			if body.PrincipalId == "" {
-				return fmt.Errorf("--principal-id is required (or supply it via --file)")
-			}
-			if ctx.Bool("dry-run") {
-				return printDryRun(ctx, body)
-			}
-			resp, err := client.AddProjectMemberWithResponse(ctx.Context(), p0, body)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "addProjectMember", resp.StatusCode(), resp.Body)
-		})
-
 	projectsGrp.Command("archive").
 		Description("Archive a project").
-		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -65,7 +28,7 @@ func registerProjectsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.Arg(0)
+			p0 := authFor(ctx).Project
 			resp, err := client.ArchiveProjectWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
@@ -131,7 +94,6 @@ func registerProjectsCommands(app *cli.App) {
 
 	projectsGrp.Command("delete").
 		Description("Delete a project").
-		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -139,7 +101,7 @@ func registerProjectsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.Arg(0)
+			p0 := authFor(ctx).Project
 			resp, err := client.DeleteProjectWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
@@ -149,7 +111,6 @@ func registerProjectsCommands(app *cli.App) {
 
 	projectsGrp.Command("get").
 		Description("Get a project").
-		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -157,30 +118,12 @@ func registerProjectsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.Arg(0)
+			p0 := authFor(ctx).Project
 			resp, err := client.GetProjectWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
 			}
 			return printResponse(ctx, "getProject", resp.StatusCode(), resp.Body)
-		})
-
-	projectsGrp.Command("get-config").
-		Description("Get project config").
-		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := ctx.Arg(0)
-			resp, err := client.GetProjectConfigWithResponse(ctx.Context(), p0)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "getProjectConfig", resp.StatusCode(), resp.Body)
 		})
 
 	projectsGrp.Command("list").
@@ -212,8 +155,8 @@ func registerProjectsCommands(app *cli.App) {
 			return printResponse(ctx, "listProjects", resp.StatusCode(), resp.Body)
 		})
 
-	projectsGrp.Command("list-features").
-		Description("List effective project feature gates").
+	projectsGrp.Command("restore").
+		Description("Restore an archived project").
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -222,75 +165,6 @@ func registerProjectsCommands(app *cli.App) {
 			}
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
-			resp, err := client.ListProjectFeaturesWithResponse(ctx.Context(), p0)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "listProjectFeatures", resp.StatusCode(), resp.Body)
-		})
-
-	projectsGrp.Command("list-members").
-		Description("List project members").
-		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
-		Flags(
-			cli.String("cursor", "").Help("Cursor for pagination (opaque string from previous response)"),
-			cli.Int("limit", "").Help("Maximum number of items to return"),
-		).
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := ctx.Arg(0)
-			params := &api.ListProjectMembersParams{}
-			if ctx.IsSet("cursor") {
-				v := api.CursorParam(ctx.String("cursor"))
-				params.Cursor = &v
-			}
-			if ctx.IsSet("limit") {
-				v := api.LimitParam(ctx.Int("limit"))
-				params.Limit = &v
-			}
-			resp, err := client.ListProjectMembersWithResponse(ctx.Context(), p0, params)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "listProjectMembers", resp.StatusCode(), resp.Body)
-		})
-
-	projectsGrp.Command("remove-member").
-		Description("Remove a project member").
-		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
-		AddArg(&cli.Arg{Name: "principal-id", Description: "Principal ID.", Required: true}).
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := ctx.Arg(0)
-			p1 := ctx.Arg(1)
-			resp, err := client.RemoveProjectMemberWithResponse(ctx.Context(), p0, p1)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "removeProjectMember", resp.StatusCode(), resp.Body)
-		})
-
-	projectsGrp.Command("restore").
-		Description("Restore an archived project").
-		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := ctx.Arg(0)
 			resp, err := client.RestoreProjectWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
@@ -300,7 +174,6 @@ func registerProjectsCommands(app *cli.App) {
 
 	projectsGrp.Command("update").
 		Description("Update a project").
-		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
 		Flags(
 			cli.String("access-mode", "").Help("`org_open`: every org member can see and use the project, subject to role assignments. `restricted`…"),
 			cli.String("default-agent-role-id", "").Help("Replacement role assigned to the auto-created agent principal of any new agent in this project. `nu…"),
@@ -318,7 +191,7 @@ func registerProjectsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.Arg(0)
+			p0 := authFor(ctx).Project
 			var body api.UpdateProjectJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -360,38 +233,6 @@ func registerProjectsCommands(app *cli.App) {
 				return err
 			}
 			return printResponse(ctx, "updateProject", resp.StatusCode(), resp.Body)
-		})
-
-	projectsGrp.Command("update-config").
-		Description("Replace project config").
-		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
-		Flags(
-			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
-			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
-		).
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := ctx.Arg(0)
-			var body api.UpdateProjectConfigJSONRequestBody
-			if err := readJSONBody(ctx, &body); err != nil {
-				return err
-			}
-			if ctx.String("file") == "" {
-				return fmt.Errorf("--file is required")
-			}
-			if ctx.Bool("dry-run") {
-				return printDryRun(ctx, body)
-			}
-			resp, err := client.UpdateProjectConfigWithResponse(ctx.Context(), p0, body)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "updateProjectConfig", resp.StatusCode(), resp.Body)
 		})
 
 }

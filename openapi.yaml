@@ -12,9 +12,6 @@ servers:
 security:
 - BearerAuth: []
 tags:
-- name: audit-logs
-  x-displayName: Audit Logs
-  description: Immutable audit records for security-sensitive project and organization activity.
 - name: api-keys
   x-displayName: API Keys
   description: Organization and project API keys used for programmatic authentication.
@@ -27,9 +24,6 @@ tags:
 - name: environments
   x-displayName: Environments
   description: Provider-backed isolated workspaces allocated to agents and automation runs.
-- name: secrets
-  x-displayName: Secrets
-  description: Project-scoped secret metadata and immutable secret versions.
 - name: worker-sessions
   x-displayName: Worker Sessions
   description: Worker sessions opened by long-running customer-side worker processes.
@@ -42,29 +36,16 @@ tags:
 - name: webhooks
   x-displayName: Webhooks
   description: Outgoing webhook subscriptions, tests, and delivery history.
-- name: permissions
-  x-displayName: Permissions
-  description: Permission definitions and presets used to build project roles.
-- name: roles
-  x-displayName: Roles
-  description: System and custom roles plus user role assignments.
-- name: interactions
-  x-displayName: Interactions
-  description: Structured requests between users and agents (request information, approval,
-    review).
 - name: agents
   x-displayName: Agents
   description: Agent identities, sessions, presence, and lifecycle administration.
-- name: agent-tools
-  x-displayName: Agent Tools
-  description: Resolved agent tool manifests for agent invocations.
-- name: agent-capabilities
-  x-displayName: Agent Tools (Legacy)
-  description: Compatibility tag for resolved agent tool manifest operations; prefer agent-tools.
 - name: automations
   x-displayName: Automations
-  description: Automation definitions, versions, triggers, and durable runs with their event
-    streams.
+  description: Automation definitions, versions, publication, and the triggers that start
+    runs.
+- name: runs
+  x-displayName: Runs
+  description: Durable automation run executions with their steps and event streams.
 - name: toolkits
   x-displayName: Toolkits
   description: Project-local and system toolkit templates that grant agents access to action
@@ -73,9 +54,6 @@ tags:
   x-displayName: Skills
   description: Project-local and system skill templates used to shape agent behavior and requested
     tools.
-- name: principals
-  x-displayName: Principals
-  description: Principals API operations.
 - name: tables
   x-displayName: Tables
   description: Agent-readable and -writable project tables.
@@ -83,123 +61,6 @@ tags:
   x-displayName: Artifacts
   description: Files produced by agents during automation runs and stored for later inspection.
 paths:
-  /v1/audit-logs:
-    get:
-      operationId: listOrgAuditLogs
-      tags:
-      - audit-logs
-      summary: List organization audit log entries
-      description: |-
-        Returns an immutable, append-only log of create/update/delete/archive/restore actions performed against org resources. Each entry attributes the action to a `principal_id` (the universal principal) along with the credential used, enabling attribution even when keys are later revoked.
-
-        Combine `principal_id` + `resource_type` to audit a specific user's writes to a resource class. Use `created_after` / `created_before` for time-bounded compliance exports.
-      parameters:
-      - name: resource_type
-        in: query
-        schema:
-          type: string
-        description: Filter by resource type
-      - name: project_id
-        in: query
-        schema:
-          type: string
-        description: Filter by project ID
-      - name: resource_id
-        in: query
-        schema:
-          type: string
-        description: Filter by resource ID
-      - name: principal_id
-        in: query
-        schema:
-          type: string
-        description: Filter by principal ID
-      - name: action
-        in: query
-        schema:
-          type: string
-        description: Filter by action (create, update, delete, archive, restore)
-      - name: created_after
-        in: query
-        schema:
-          type: string
-          format: date-time
-        description: Filter to entries created after this timestamp
-      - name: created_before
-        in: query
-        schema:
-          type: string
-          format: date-time
-        description: Filter to entries created before this timestamp
-      - $ref: '#/components/parameters/CursorParam'
-      - $ref: '#/components/parameters/LimitParam'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AuditLogListResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-  /v1/projects/{project}/audit-logs:
-    get:
-      operationId: listAuditLogs
-      tags:
-      - audit-logs
-      summary: List project audit log entries
-      description: Returns immutable audit log entries for the selected project. Project-pinned
-        CLI tokens and machine-principal API keys can use this route because the project is
-        resolved from the path before permission checks run.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      - name: resource_type
-        in: query
-        schema:
-          type: string
-        description: Filter by resource type
-      - name: resource_id
-        in: query
-        schema:
-          type: string
-        description: Filter by resource ID
-      - name: principal_id
-        in: query
-        schema:
-          type: string
-        description: Filter by principal ID
-      - name: action
-        in: query
-        schema:
-          type: string
-        description: Filter by action (create, update, delete, archive, restore)
-      - name: created_after
-        in: query
-        schema:
-          type: string
-          format: date-time
-        description: Filter to entries created after this timestamp
-      - name: created_before
-        in: query
-        schema:
-          type: string
-          format: date-time
-        description: Filter to entries created before this timestamp
-      - $ref: '#/components/parameters/CursorParam'
-      - $ref: '#/components/parameters/LimitParam'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AuditLogListResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
   /v1/projects/{project}/api-keys:
     post:
       operationId: createAPIKey
@@ -511,7 +372,7 @@ paths:
       description: |-
         Returns every event source an automation trigger (or `wait_for_event` step) can subscribe to within this project: built-in platform sources (tables, email, runs, HTTP triggers, sessions, artifacts) and integration provider sources (with project connection state). `items` contains those sources; each source lists its concrete, currently-active event types.
 
-        `reserved_prefixes` enumerates platform namespaces that are recognized but not themselves triggerable event sources (for example `signal`, `schedule`, `interaction`), so authoring UIs can distinguish a recognized-but-unsupported matcher prefix from a wholly unknown one.
+        `reserved_prefixes` enumerates platform namespaces that are recognized but not themselves triggerable event sources (for example `signal`, `schedule`), so authoring UIs can distinguish a recognized-but-unsupported matcher prefix from a wholly unknown one.
 
         Matcher grammar: an `event_type` is a dotted name of segments matching `[A-Za-z_][A-Za-z0-9_]*`, optionally ending in `.*` for prefix matching (e.g. `github.*`, `github.pull_request.opened`, `table.row.inserted`).
       parameters:
@@ -568,6 +429,31 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ActionCatalogEntry'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/projects/{project}/catalog/models:
+    get:
+      operationId: listCatalogModels
+      tags:
+      - catalog
+      summary: List the model catalog
+      description: |-
+        Returns the models a platform agent in this project can be assigned, grouped by provider. Only providers the project can actually run are included: a provider appears when the project has an active BYOK integration for it, or when a platform-managed key is configured.
+
+        An agent's `model` field accepts any returned model id, optionally prefixed with `provider/` (e.g. `xai/grok-4`); bare known ids such as `claude-sonnet-4-6` are auto-detected to their provider.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModelCatalogResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -1076,189 +962,6 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
-  /v1/projects/{project}/secrets:
-    get:
-      operationId: listSecrets
-      tags:
-      - secrets
-      summary: List secrets
-      description: Returns project secret metadata and key names. Secret values are never
-        returned.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      - $ref: '#/components/parameters/CursorParam'
-      - $ref: '#/components/parameters/LimitParam'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SecretListResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-    post:
-      operationId: createSecret
-      tags:
-      - secrets
-      summary: Create a secret
-      description: Creates a project secret and its first enabled version. `values` must be
-        a JSON object whose values are strings. The response returns metadata only; plaintext
-        values are not returned.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateSecretRequest'
-      responses:
-        '201':
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Secret'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
-  /v1/projects/{project}/secrets/{secret}:
-    get:
-      operationId: getSecret
-      tags:
-      - secrets
-      summary: Get a secret
-      description: Returns project secret metadata by ID or name. Values are never returned.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      - $ref: '#/components/parameters/SecretParam'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Secret'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-    patch:
-      operationId: updateSecret
-      tags:
-      - secrets
-      summary: Update a secret
-      description: Updates metadata and optionally creates a new enabled SecretVersion from
-        replacement `values`. Omit `values` to update metadata only. Secret values are not
-        returned.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      - $ref: '#/components/parameters/SecretParam'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpdateSecretRequest'
-      responses:
-        '200':
-          description: Updated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Secret'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
-    delete:
-      operationId: deleteSecret
-      tags:
-      - secrets
-      summary: Delete a secret
-      description: Hard-deletes the secret and its versions.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      - $ref: '#/components/parameters/SecretParam'
-      responses:
-        '204':
-          description: No Content
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-  /v1/projects/{project}/secrets/{secret}/versions:
-    get:
-      operationId: listSecretVersions
-      tags:
-      - secrets
-      summary: List secret versions
-      description: Lists metadata for all versions of a secret. Values are never returned.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      - $ref: '#/components/parameters/SecretParam'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SecretVersionListResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-  /v1/projects/{project}/secrets/{secret}/versions/{version}:
-    get:
-      operationId: getSecretVersion
-      tags:
-      - secrets
-      summary: Get secret version metadata
-      description: Returns metadata for a specific version. Use `latest` or a positive integer
-        version. Values are never returned.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      - $ref: '#/components/parameters/SecretParam'
-      - $ref: '#/components/parameters/SecretVersionParam'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SecretVersion'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
   /v1/projects/{project}/worker-sessions:
     get:
       operationId: listWorkerSessions
@@ -1379,7 +1082,7 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '409':
           $ref: '#/components/responses/Conflict'
-  /v1/projects/{id}:
+  /v1/projects/{project}:
     get:
       operationId: getProject
       tags:
@@ -1387,7 +1090,7 @@ paths:
       summary: Get a project
       description: Requires the `mobius.project.view` permission for the project.
       parameters:
-      - $ref: '#/components/parameters/IDParam'
+      - $ref: '#/components/parameters/ProjectHandleParam'
       responses:
         '200':
           description: OK
@@ -1410,7 +1113,7 @@ paths:
         `seed_existing_members` when flipping `access_mode` from `org_open` to `restricted`.
         The project handle is immutable and cannot be changed after creation.
       parameters:
-      - $ref: '#/components/parameters/IDParam'
+      - $ref: '#/components/parameters/ProjectHandleParam'
       requestBody:
         required: true
         content:
@@ -1440,11 +1143,11 @@ paths:
       - projects
       summary: Delete a project
       description: |-
-        Permanently deletes the project and all child resources (automations, runs, jobs, triggers, webhooks, interactions, actions, agents, machine principals). This operation is irreversible.
+        Permanently deletes the project and all child resources (automations, runs, jobs, triggers, webhooks, actions, agents, machine principals). This operation is irreversible.
 
-        The project must be archived first; calling delete on an active project returns `409 project_not_archived`. Archive via `POST /v1/projects/{id}/archive`.
+        The project must be archived first; calling delete on an active project returns `409 project_not_archived`. Archive via `POST /v1/projects/{project}/archive`.
       parameters:
-      - $ref: '#/components/parameters/IDParam'
+      - $ref: '#/components/parameters/ProjectHandleParam'
       responses:
         '204':
           description: No Content
@@ -1456,32 +1159,7 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
-  /v1/projects/{project}/features:
-    get:
-      operationId: listProjectFeatures
-      tags:
-      - projects
-      summary: List effective project feature gates
-      description: Returns the server-resolved feature gates for the active project. Results
-        combine the built-in default, any org-level override, and any project-level override
-        so clients can hide unavailable product areas using the same answer enforced by backend
-        handlers.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      responses:
-        '200':
-          description: Effective feature gates for the project
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/FeatureGateListResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-  /v1/projects/{id}/archive:
+  /v1/projects/{project}/archive:
     post:
       operationId: archiveProject
       tags:
@@ -1492,7 +1170,7 @@ paths:
         allowed to drain. The project can be restored at any time. Idempotent — archiving
         an already-archived project returns the current state.'
       parameters:
-      - $ref: '#/components/parameters/IDParam'
+      - $ref: '#/components/parameters/ProjectHandleParam'
       responses:
         '200':
           description: OK
@@ -1506,7 +1184,7 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-  /v1/projects/{id}/restore:
+  /v1/projects/{project}/restore:
     post:
       operationId: restoreProject
       tags:
@@ -1517,7 +1195,7 @@ paths:
         backfill of missed fires during the archive window. Idempotent — restoring an active
         project returns the current state.
       parameters:
-      - $ref: '#/components/parameters/IDParam'
+      - $ref: '#/components/parameters/ProjectHandleParam'
       responses:
         '200':
           description: OK
@@ -1525,165 +1203,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Project'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-  /v1/projects/{id}/config:
-    get:
-      operationId: getProjectConfig
-      tags:
-      - projects
-      summary: Get project config
-      description: Returns the project's stored flat config entries. When the project has
-        no stored config, this returns `[]`.
-      parameters:
-      - $ref: '#/components/parameters/IDParam'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ConfigEntries'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-    put:
-      operationId: updateProjectConfig
-      tags:
-      - projects
-      summary: Replace project config
-      description: Replaces the project's entire stored config entry set with the provided
-        flat list. `PUT []` clears the project config. Reapplying the same payload is a safe
-        retry.
-      parameters:
-      - $ref: '#/components/parameters/IDParam'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ConfigEntries'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ConfigEntries'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-    delete:
-      operationId: deleteProjectConfig
-      tags:
-      - projects
-      summary: Clear project config
-      description: Deletes all stored project-layer config so the project inherits service
-        defaults for every registered key.
-      parameters:
-      - $ref: '#/components/parameters/IDParam'
-      responses:
-        '204':
-          description: No Content
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-  /v1/projects/{id}/members:
-    get:
-      operationId: listProjectMembers
-      tags:
-      - projects
-      summary: List project members
-      description: 'Returns the users listed as members of this project. Membership is a pure
-        visibility layer: for `restricted` projects only listed members (plus org owners/admins)
-        can see or use the project. For `org_open` projects, membership has no visibility
-        effect.'
-      parameters:
-      - $ref: '#/components/parameters/IDParam'
-      - $ref: '#/components/parameters/CursorParam'
-      - $ref: '#/components/parameters/LimitParam'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProjectMemberListResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-    post:
-      operationId: addProjectMember
-      tags:
-      - projects
-      summary: Add a project member
-      description: Adds a user as a project member. The user must already be an org member.
-        Add is idempotent — adding an existing member returns the existing row with `200 OK`,
-        not `409`. New memberships are returned with `201 Created`.
-      parameters:
-      - $ref: '#/components/parameters/IDParam'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AddProjectMemberRequest'
-      responses:
-        '200':
-          description: OK — member already existed
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProjectMember'
-        '201':
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProjectMember'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-  /v1/projects/{id}/members/{principal_id}:
-    delete:
-      operationId: removeProjectMember
-      tags:
-      - projects
-      summary: Remove a project member
-      description: Removes a user from the project members list. On `restricted` projects,
-        removing the last remaining member is rejected — flip the project to `org_open` or
-        add another member first.
-      parameters:
-      - $ref: '#/components/parameters/IDParam'
-      - $ref: '#/components/parameters/principal_id'
-      responses:
-        '204':
-          description: No Content
-        '400':
-          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -1969,531 +1488,6 @@ paths:
                   created_at: '2026-04-24T14:44:00Z'
                   delivered_at: '2026-04-24T14:44:01Z'
                 has_more: false
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-  /v1/projects/{project}/permissions:
-    get:
-      operationId: listProjectPermissions
-      tags:
-      - permissions
-      summary: List project permissions
-      description: Returns the canonical permission definitions, role presets, and action
-        execution permission groups available when building project-scoped roles. Use this
-        endpoint to source the permission IDs accepted by the role creation and update endpoints.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PermissionCatalogResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-  /v1/projects/{project}/roles:
-    get:
-      operationId: listRoles
-      tags:
-      - roles
-      summary: List roles
-      description: Returns system-defined roles plus custom roles scoped to this project.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      - $ref: '#/components/parameters/LimitParam'
-      - $ref: '#/components/parameters/CursorParam'
-      - $ref: '#/components/parameters/TagFilterParam'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RoleListResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-    post:
-      operationId: createRole
-      tags:
-      - roles
-      summary: Create a role
-      description: Creates a custom role scoped to the project. Only system-defined roles
-        exist at the org/global tier and are created automatically by the platform.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateRoleRequest'
-      responses:
-        '201':
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Role'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '409':
-          $ref: '#/components/responses/Conflict'
-  /v1/projects/{project}/roles/{id}:
-    get:
-      operationId: getRole
-      tags:
-      - roles
-      summary: Get a role
-      description: Returns a role by ID. Both system-defined and custom roles belonging to
-        this project are accessible via this endpoint.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      - $ref: '#/components/parameters/IDParam'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Role'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-    patch:
-      operationId: updateRole
-      tags:
-      - roles
-      summary: Update a role
-      description: Updates description or permissions of a custom role. Role names are immutable.
-        System-defined roles (system_defined=true) cannot be updated and return 403.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      - $ref: '#/components/parameters/IDParam'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpdateRoleRequest'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Role'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
-    delete:
-      operationId: deleteRole
-      tags:
-      - roles
-      summary: Delete a role
-      description: Hard-deletes the role and all its assignments. System-defined roles cannot
-        be deleted.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      - $ref: '#/components/parameters/IDParam'
-      responses:
-        '204':
-          description: No Content
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-  /v1/projects/{project}/role-assignments:
-    get:
-      operationId: listRoleAssignments
-      tags:
-      - roles
-      summary: List role assignments
-      description: Returns project-scoped assignments optionally filtered by principal or
-        role.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      - name: principal_id
-        in: query
-        description: Filter to assignments for a specific principal.
-        schema:
-          type: string
-      - name: role_id
-        in: query
-        description: Filter to assignments for a specific role.
-        schema:
-          type: string
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RoleAssignmentListResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-    post:
-      operationId: createRoleAssignment
-      tags:
-      - roles
-      summary: Assign a role to a principal
-      description: Binds a role to a principal in this project (human or machine). The assignment
-        records the creating user in `granted_by`. To manage a machine principal's roles without
-        referencing its ID directly, use `role_ids` on the principal create and update endpoints.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateRoleAssignmentRequest'
-      responses:
-        '201':
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RoleAssignment'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
-  /v1/projects/{project}/role-assignments/{id}:
-    delete:
-      operationId: deleteRoleAssignment
-      tags:
-      - roles
-      summary: Remove a role assignment
-      description: Deletes a single role assignment by ID. The underlying role and user are
-        not deleted, but the user immediately loses permissions granted only through this
-        assignment.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      - $ref: '#/components/parameters/IDParam'
-      responses:
-        '204':
-          description: No Content
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-  /v1/projects/{project}/interactions:
-    post:
-      operationId: createInteraction
-      tags:
-      - interactions
-      summary: Create an interaction
-      description: Creates a standalone or run-backed interaction. When `run_id` is provided,
-        completing the interaction enqueues an `interaction.responded` source event that the
-        SubscriptionRouter (RFC 064) matches to the run's `interaction` step by `interaction_id`
-        — not by signal name. The `signal_name` field is retained for historical request shape
-        and audit logging; routing no longer depends on it. Omit both `run_id` and `signal_name`
-        for a standalone interaction that completes with no automation-run side effect. Workers
-        creating interactions from within a job should use the job-scoped route (`POST /v1/projects/{project}/jobs/{id}/interactions`)
-        instead, which derives the run automatically.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateInteractionRequest'
-            example:
-              run_id: run_01hw1n1a2b3c4d5e6f7g8h9j0k
-              signal_name: manager_approval
-              target_user_ids:
-              - user_2f9s3k4m5n6p7q8r9s0t1u2v3w
-              kind: request_approval
-              title: Approve publishing the April billing report?
-              context:
-                report_id: rpt_2026_04
-                amount_usd: 12850
-              spec:
-                mode: confirm
-                default_confirmed: false
-              require_all: false
-              expires_at: '2026-04-25T14:30:00Z'
-      responses:
-        '201':
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Interaction'
-              example:
-                id: iact_01hw1r2s3t4u5v6w7x8y9z0a1b
-                run_id: run_01hw1n1a2b3c4d5e6f7g8h9j0k
-                signal_name: manager_approval
-                kind: request_approval
-                status: pending
-                title: Approve publishing the April billing report?
-                context:
-                  report_id: rpt_2026_04
-                  amount_usd: 12850
-                spec:
-                  mode: confirm
-                  default_confirmed: false
-                target_user_ids:
-                - user_2f9s3k4m5n6p7q8r9s0t1u2v3w
-                expires_at: '2026-04-25T14:30:00Z'
-                created_at: '2026-04-24T14:30:00Z'
-                updated_at: '2026-04-24T14:30:00Z'
-                require_all: false
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-    get:
-      operationId: listInteractions
-      tags:
-      - interactions
-      summary: List interactions
-      description: Returns interactions newest-first, optionally filtered by kind, status,
-        run, target, or the current caller's inbox. Inbox filtering includes direct targets.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      - name: status
-        in: query
-        schema:
-          type: string
-          enum:
-          - pending
-          - completed
-          - expired
-          - cancelled
-        description: Filter by status
-      - name: kind
-        in: query
-        schema:
-          $ref: '#/components/schemas/InteractionKind'
-        description: Filter by interaction protocol kind
-      - name: run_id
-        in: query
-        schema:
-          type: string
-        description: Filter by originating run ID
-      - name: target_user_id
-        in: query
-        schema:
-          type: string
-        description: Filter by resolved target user ID.
-      - name: inbox
-        in: query
-        schema:
-          type: boolean
-        description: When true, returns only interactions visible to the authenticated user.
-      - $ref: '#/components/parameters/CursorParam'
-      - $ref: '#/components/parameters/LimitParam'
-      - $ref: '#/components/parameters/TagFilterParam'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/InteractionListResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-  /v1/projects/{project}/interactions/{id}:
-    get:
-      operationId: getInteraction
-      tags:
-      - interactions
-      summary: Get an interaction
-      description: Returns one interaction with target, response, and completion metadata.
-        Run-backed interactions include the run and signal identifiers used to resume automation
-        execution.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      - $ref: '#/components/parameters/IDParam'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Interaction'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-    delete:
-      operationId: deleteInteraction
-      tags:
-      - interactions
-      summary: Delete an interaction
-      description: Soft-deletes an interaction so it disappears from inbox and project listings.
-        The row is retained for audit history. Only terminal interactions (`completed`, `cancelled`,
-        `expired`) may be deleted; pending or in-review interactions must be cancelled first
-        so any waiting automation run can route to a fallback.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      - $ref: '#/components/parameters/IDParam'
-      responses:
-        '204':
-          description: No Content
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-  /v1/projects/{project}/interactions/{id}/respond:
-    post:
-      operationId: respondToInteraction
-      tags:
-      - interactions
-      summary: Submit a response to an interaction
-      description: |-
-        Canonical response endpoint for every interaction kind. `action` defaults to `submit`; lifecycle operations beyond submit are not part of the launch model.
-
-        The request body is intentionally the same envelope for every kind: `action`, `value`, and `comment`. Kind-specific behavior is selected from the interaction itself, not from separate request-body shapes.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      - $ref: '#/components/parameters/IDParam'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/RespondToInteractionRequest'
-            examples:
-              approval:
-                summary: Approve an interaction
-                value:
-                  action: submit
-                  value: true
-                  comment: Approved for publication.
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Interaction'
-              example:
-                id: iact_01hw1r2s3t4u5v6w7x8y9z0a1b
-                run_id: run_01hw1n1a2b3c4d5e6f7g8h9j0k
-                signal_name: manager_approval
-                kind: request_approval
-                status: completed
-                title: Approve publishing the April billing report?
-                context:
-                  report_id: rpt_2026_04
-                  amount_usd: 12850
-                spec:
-                  mode: confirm
-                  default_confirmed: false
-                target_user_ids:
-                - user_2f9s3k4m5n6p7q8r9s0t1u2v3w
-                responder:
-                  user_id: user_2f9s3k4m5n6p7q8r9s0t1u2v3w
-                resolving_response_id: iresp_01hw1r3s3t4u5v6w7x8y9z0c1d
-                responses:
-                - id: iresp_01hw1r3s3t4u5v6w7x8y9z0c1d
-                  interaction_id: iact_01hw1r2s3t4u5v6w7x8y9z0a1b
-                  response_kind: response
-                  state: submitted
-                  responder_user_id: user_2f9s3k4m5n6p7q8r9s0t1u2v3w
-                  value: true
-                  comment: Approved for publication.
-                  responded_at: '2026-04-24T14:42:00Z'
-                  created_at: '2026-04-24T14:42:00Z'
-                  updated_at: '2026-04-24T14:42:00Z'
-                outcome: true
-                resolved_by: any_of
-                expires_at: '2026-04-25T14:30:00Z'
-                completed_at: '2026-04-24T14:42:00Z'
-                created_at: '2026-04-24T14:30:00Z'
-                updated_at: '2026-04-24T14:42:00Z'
-                require_all: false
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
-  /v1/projects/{project}/interactions/{id}/cancel:
-    post:
-      operationId: cancelInteraction
-      tags:
-      - interactions
-      summary: Cancel an open interaction
-      description: 'Cancels an open interaction, recording who cancelled and an optional reason.
-        Run-backed interactions resume the waiting automation step with a `{status: cancelled,
-        reason}` signal payload so automations can route to a fallback. Only humans may cancel
-        by default — agents must request cancellation through an interaction.'
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      - $ref: '#/components/parameters/IDParam'
-      requestBody:
-        required: false
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CancelInteractionRequest'
-            example:
-              reason: Superseded by a revised approval request.
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Interaction'
-        '400':
-          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -3085,17 +2079,16 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-  /v1/projects/{project}/agents/{id}/tool-manifest:
+  /v1/projects/{project}/agents/{id}/tools:
     get:
-      operationId: getAgentToolManifest
+      operationId: getAgentTools
       tags:
-      - agent-tools
-      - agent-capabilities
-      summary: Resolve an agent tool manifest
-      description: 'Resolves the effective tool manifest for an agent: the flat set of actions
-        the agent can invoke, computed from toolkit grants, the agent principal''s permissions,
-        optional toolkit filters, optional per-invocation tool filters, and optional active
-        skill narrowing.'
+      - agents
+      summary: List an agent's resolved tools
+      description: 'Resolves the effective set of tools an agent can invoke: the flat set
+        of actions the agent can invoke, computed from toolkit grants, the agent principal''s
+        permissions, optional toolkit filters, optional per-invocation tool filters, and optional
+        active skill narrowing.'
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/IDParam'
@@ -3125,31 +2118,6 @@ paths:
                 $ref: '#/components/schemas/AgentToolManifest'
         '400':
           $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-  /v1/projects/{project}/models:
-    get:
-      operationId: listModels
-      tags:
-      - agents
-      summary: List available models
-      description: |-
-        Returns the LLM models a platform agent in this project can be assigned, grouped by provider. Only providers the project can actually run are returned: a provider appears when the project has an active BYOK integration for it, or when a platform-managed key is configured.
-
-        An agent's `model` field accepts any returned model id, optionally prefixed with `provider/` (e.g. `xai/grok-4`); bare known ids such as `claude-sonnet-4-6` are auto-detected to their provider.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProjectModelsResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -3483,9 +2451,9 @@ paths:
           $ref: '#/components/responses/Conflict'
   /v1/projects/{project}/automations/{handle}/runs:
     post:
-      operationId: startAutomationRun
+      operationId: startRun
       tags:
-      - automations
+      - runs
       summary: Start a new automation run
       description: |-
         Resolves `{handle}` to the latest runnable version and starts a run. Returns the created run when accepted, or the existing run when the request carries a `trigger_fire_id` (or `external_id`) that matches a still-active prior run (idempotent retry).
@@ -3524,9 +2492,9 @@ paths:
           $ref: '#/components/responses/Conflict'
   /v1/projects/{project}/runs:
     get:
-      operationId: listAutomationRuns
+      operationId: listRuns
       tags:
-      - automations
+      - runs
       summary: List automation runs
       description: Returns automation runs for the project, newest-first. Supports filters
         by status, automation_id, and source_event_id, plus cursor-based pagination.
@@ -3574,9 +2542,9 @@ paths:
           $ref: '#/components/responses/Forbidden'
   /v1/projects/{project}/runs/{id}:
     get:
-      operationId: getAutomationRun
+      operationId: getRun
       tags:
-      - automations
+      - runs
       summary: Get an automation run
       description: Returns one automation run by ID with its current status, inputs, result,
         and source attribution.
@@ -3598,9 +2566,9 @@ paths:
           $ref: '#/components/responses/NotFound'
   /v1/projects/{project}/runs/{id}/cancellations:
     post:
-      operationId: cancelAutomationRun
+      operationId: cancelRun
       tags:
-      - automations
+      - runs
       summary: Cancel an in-flight run
       description: Marks the run cancelled and closes any open waits. Safe to call on an already-terminal
         run (returns the current state, no error).
@@ -3628,9 +2596,9 @@ paths:
           $ref: '#/components/responses/NotFound'
   /v1/projects/{project}/runs/{id}/steps:
     get:
-      operationId: listAutomationRunSteps
+      operationId: listRunSteps
       tags:
-      - automations
+      - runs
       summary: List the steps of an automation run
       description: Returns the durable step records for one run, ordered by step index. Each
         row carries the step's kind, status, attempt count, inputs, result, and any error
@@ -3653,13 +2621,13 @@ paths:
           $ref: '#/components/responses/NotFound'
   /v1/projects/{project}/runs/{id}/events:
     get:
-      operationId: listAutomationRunEvents
+      operationId: listRunEvents
       tags:
-      - automations
+      - runs
       summary: List run events
       description: Returns the durable run-event log used by clients (UI, SDK, integrations)
         to observe a run as it progresses. Events are ordered by sequence number and cover
-        run, step, turn, tool, action, interaction, artifact, and cleanup lifecycle. Use `since_sequence`
+        run, step, turn, tool, action, artifact, and cleanup lifecycle. Use `since_sequence`
         to fetch only events strictly after a previously observed sequence number, which is
         the standard polling pattern paired with the SSE stream.
       parameters:
@@ -3689,9 +2657,9 @@ paths:
           $ref: '#/components/responses/NotFound'
   /v1/projects/{project}/runs/{id}/events.stream:
     get:
-      operationId: streamAutomationRunEvents
+      operationId: streamRunEvents
       tags:
-      - automations
+      - runs
       summary: Stream run events over Server-Sent Events
       description: Long-lived SSE stream of run events ordered by sequence number. Each `data:`
         frame is a JSON-encoded `AutomationRunEvent`. The stream terminates when the run reaches
@@ -3723,14 +2691,13 @@ paths:
           $ref: '#/components/responses/NotFound'
   /v1/projects/{project}/runs/{id}/signals:
     post:
-      operationId: signalAutomationRun
+      operationId: signalRun
       tags:
-      - automations
+      - runs
       summary: Deliver a signal to a suspended run
-      description: |-
-        Resumes a run that is suspended on a `wait_event` step matching the provided `step_key`. The `result` payload becomes the step's output and is available to downstream steps via `{{ .context.<save_as> }}`.
-
-        For interaction-suspended steps, prefer responding to the interaction directly through `POST /v1/interactions/{id}/responses`; this endpoint is the lower-level escape hatch.
+      description: Resumes a run that is suspended on a `wait_event` step matching the provided
+        `step_key`. The `result` payload becomes the step's output and is available to downstream
+        steps via `{{ .context.<save_as> }}`.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/IDParam'
@@ -4109,161 +3076,6 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
-  /v1/projects/{project}/principals:
-    post:
-      operationId: createPrincipal
-      tags:
-      - principals
-      summary: Create a service principal
-      description: |-
-        Creates a standalone `service` principal within the project. Supply `role_ids` to atomically assign one or more roles at creation time; requires the caller to hold `mobius.access.manage`. Each role must belong to the same project or be a system-defined role.
-
-        Agent and system principals are created by their own flows (the agents API and Mobius internals), not here.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreatePrincipalRequest'
-      responses:
-        '201':
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Principal'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
-    get:
-      operationId: listPrincipals
-      tags:
-      - principals
-      summary: List machine principals
-      description: Returns project machine principals (`service`, `agent`, `system`) used
-        by workers, agents, and automation. Only active principals are returned by default;
-        pass `include_disabled=true` to also include disabled ones (e.g. for an admin audit).
-        Filter by `kind` to narrow to a single kind.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      - name: kind
-        in: query
-        required: false
-        description: Filter principals by kind.
-        schema:
-          $ref: '#/components/schemas/PrincipalKind'
-      - name: include_disabled
-        in: query
-        required: false
-        description: Include disabled principals. By default only active ones are returned.
-        schema:
-          type: boolean
-          default: false
-      - $ref: '#/components/parameters/TagFilterParam'
-      - $ref: '#/components/parameters/LimitParam'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PrincipalListResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-  /v1/projects/{project}/principals/{id}:
-    get:
-      operationId: getPrincipal
-      tags:
-      - principals
-      summary: Get a principal
-      description: Returns one machine principal, including disabled state, owner, metadata,
-        and timestamps. API keys belonging to the principal are managed through the API key
-        endpoints.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      - $ref: '#/components/parameters/IDParam'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Principal'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-    patch:
-      operationId: updatePrincipal
-      tags:
-      - principals
-      summary: Update a principal
-      description: Updates mutable fields. To disable without deleting, set `state` to `disabled`.
-        The `name` field is immutable after creation.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      - $ref: '#/components/parameters/IDParam'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpdatePrincipalRequest'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Principal'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-    delete:
-      operationId: deletePrincipal
-      tags:
-      - principals
-      summary: Delete a principal
-      description: |-
-        Hard-deletes the principal and its role assignments.
-
-        Returns `409 Conflict` when the principal still backs an agent (the agent↔principal binding is immutable per the 1:1 invariant — delete the agent first) or when active API keys still reference it. Disable instead when you need an immediate kill switch.
-
-        Consider disabling instead of deleting for audit continuity.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      - $ref: '#/components/parameters/IDParam'
-      responses:
-        '204':
-          description: No Content
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
   /v1/projects/{project}/tables:
     get:
       operationId: listTables
@@ -4275,6 +3087,7 @@ paths:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/CursorParam'
       - $ref: '#/components/parameters/LimitParam'
+      - $ref: '#/components/parameters/TableNameQueryParam'
       - $ref: '#/components/parameters/TableOwnedByMeParam'
       - $ref: '#/components/parameters/TableOwnedByParam'
       - $ref: '#/components/parameters/TableScopeParam'
@@ -4316,19 +3129,16 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
-  /v1/projects/{project}/tables/{table_name}:
+  /v1/projects/{project}/tables/{table_id}:
     get:
       operationId: getTable
       tags:
       - tables
       summary: Get a table
-      description: Get table metadata and schema by table name.
+      description: Get table metadata and schema by table ID.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
-      - $ref: '#/components/parameters/TableNameParam'
-      - $ref: '#/components/parameters/TableScopeParam'
-      - $ref: '#/components/parameters/TableOwnedByParam'
-      - $ref: '#/components/parameters/TableOwnedByMeParam'
+      - $ref: '#/components/parameters/TableIDParam'
       responses:
         '200':
           description: OK
@@ -4350,10 +3160,7 @@ paths:
       description: Update table description or schema and resync declared indexes.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
-      - $ref: '#/components/parameters/TableNameParam'
-      - $ref: '#/components/parameters/TableScopeParam'
-      - $ref: '#/components/parameters/TableOwnedByParam'
-      - $ref: '#/components/parameters/TableOwnedByMeParam'
+      - $ref: '#/components/parameters/TableIDParam'
       requestBody:
         required: true
         content:
@@ -4383,10 +3190,7 @@ paths:
       description: Delete one table and all rows stored under it.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
-      - $ref: '#/components/parameters/TableNameParam'
-      - $ref: '#/components/parameters/TableScopeParam'
-      - $ref: '#/components/parameters/TableOwnedByParam'
-      - $ref: '#/components/parameters/TableOwnedByMeParam'
+      - $ref: '#/components/parameters/TableIDParam'
       responses:
         '204':
           description: No Content
@@ -4396,7 +3200,7 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-  /v1/projects/{project}/tables/{table_name}/stats:
+  /v1/projects/{project}/tables/{table_id}/stats:
     get:
       operationId: getTableStats
       tags:
@@ -4408,10 +3212,7 @@ paths:
         not billing.'
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
-      - $ref: '#/components/parameters/TableNameParam'
-      - $ref: '#/components/parameters/TableScopeParam'
-      - $ref: '#/components/parameters/TableOwnedByParam'
-      - $ref: '#/components/parameters/TableOwnedByMeParam'
+      - $ref: '#/components/parameters/TableIDParam'
       responses:
         '200':
           description: OK
@@ -4425,19 +3226,16 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-  /v1/projects/{project}/tables/{table_name}/rows:
+  /v1/projects/{project}/tables/{table_id}/rows:
     post:
       operationId: insertTableRow
       tags:
       - tables
       summary: Insert a row
-      description: Validate and insert one row into the named table.
+      description: Validate and insert one row into the table.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
-      - $ref: '#/components/parameters/TableNameParam'
-      - $ref: '#/components/parameters/TableScopeParam'
-      - $ref: '#/components/parameters/TableOwnedByParam'
-      - $ref: '#/components/parameters/TableOwnedByMeParam'
+      - $ref: '#/components/parameters/TableIDParam'
       requestBody:
         required: true
         content:
@@ -4459,7 +3257,7 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-  /v1/projects/{project}/tables/{table_name}/rows/query:
+  /v1/projects/{project}/tables/{table_id}/query:
     post:
       operationId: queryTableRows
       tags:
@@ -4471,10 +3269,7 @@ paths:
         bool}`.'
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
-      - $ref: '#/components/parameters/TableNameParam'
-      - $ref: '#/components/parameters/TableScopeParam'
-      - $ref: '#/components/parameters/TableOwnedByParam'
-      - $ref: '#/components/parameters/TableOwnedByMeParam'
+      - $ref: '#/components/parameters/TableIDParam'
       requestBody:
         required: false
         content:
@@ -4496,7 +3291,7 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-  /v1/projects/{project}/tables/{table_name}/rows/search:
+  /v1/projects/{project}/tables/{table_id}/search:
     post:
       operationId: searchTableRows
       tags:
@@ -4506,10 +3301,7 @@ paths:
         filters use the same syntax as row queries and are applied before text search.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
-      - $ref: '#/components/parameters/TableNameParam'
-      - $ref: '#/components/parameters/TableScopeParam'
-      - $ref: '#/components/parameters/TableOwnedByParam'
-      - $ref: '#/components/parameters/TableOwnedByMeParam'
+      - $ref: '#/components/parameters/TableIDParam'
       requestBody:
         required: true
         content:
@@ -4531,7 +3323,7 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-  /v1/projects/{project}/tables/{table_name}/rows/upsert:
+  /v1/projects/{project}/tables/{table_id}/upsert:
     post:
       operationId: upsertTableRow
       tags:
@@ -4543,10 +3335,7 @@ paths:
         Returns 201 Created when a new row was inserted, 200 OK when an existing row was updated.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
-      - $ref: '#/components/parameters/TableNameParam'
-      - $ref: '#/components/parameters/TableScopeParam'
-      - $ref: '#/components/parameters/TableOwnedByParam'
-      - $ref: '#/components/parameters/TableOwnedByMeParam'
+      - $ref: '#/components/parameters/TableIDParam'
       requestBody:
         required: true
         content:
@@ -4576,19 +3365,16 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
-  /v1/projects/{project}/tables/{table_name}/rows/bulk:
+  /v1/projects/{project}/tables/{table_id}/bulk:
     post:
       operationId: bulkInsertTableRows
       tags:
       - tables
       summary: Bulk insert rows
-      description: Validate and insert up to 1,000 rows into the named table.
+      description: Validate and insert up to 1,000 rows into the table.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
-      - $ref: '#/components/parameters/TableNameParam'
-      - $ref: '#/components/parameters/TableScopeParam'
-      - $ref: '#/components/parameters/TableOwnedByParam'
-      - $ref: '#/components/parameters/TableOwnedByMeParam'
+      - $ref: '#/components/parameters/TableIDParam'
       requestBody:
         required: true
         content:
@@ -4610,7 +3396,7 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-  /v1/projects/{project}/tables/{table_name}/rows/{row_id}:
+  /v1/projects/{project}/tables/{table_id}/rows/{row_id}:
     get:
       operationId: getTableRow
       tags:
@@ -4619,10 +3405,7 @@ paths:
       description: Get one table row by row ID.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
-      - $ref: '#/components/parameters/TableNameParam'
-      - $ref: '#/components/parameters/TableScopeParam'
-      - $ref: '#/components/parameters/TableOwnedByParam'
-      - $ref: '#/components/parameters/TableOwnedByMeParam'
+      - $ref: '#/components/parameters/TableIDParam'
       - name: row_id
         in: path
         required: true
@@ -4651,10 +3434,7 @@ paths:
         current row version.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
-      - $ref: '#/components/parameters/TableNameParam'
-      - $ref: '#/components/parameters/TableScopeParam'
-      - $ref: '#/components/parameters/TableOwnedByParam'
-      - $ref: '#/components/parameters/TableOwnedByMeParam'
+      - $ref: '#/components/parameters/TableIDParam'
       - name: row_id
         in: path
         required: true
@@ -4689,13 +3469,10 @@ paths:
       tags:
       - tables
       summary: Delete a row
-      description: Delete one row from the named table.
+      description: Delete one row from the table.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
-      - $ref: '#/components/parameters/TableNameParam'
-      - $ref: '#/components/parameters/TableScopeParam'
-      - $ref: '#/components/parameters/TableOwnedByParam'
-      - $ref: '#/components/parameters/TableOwnedByMeParam'
+      - $ref: '#/components/parameters/TableIDParam'
       - name: row_id
         in: path
         required: true
@@ -5056,27 +3833,47 @@ components:
       description: Reference type name, such as `slack.channel` or `table.table`.
       schema:
         type: string
-    TableNameParam:
-      name: table_name
+    IntegrationIDParam:
+      name: integration_id
       in: path
       required: true
+      description: Integration record ID.
+      schema:
+        type: string
+        pattern: ^intg_[A-Za-z0-9]+$
+    IntegrationEventIDParam:
+      name: event_id
+      in: path
+      required: true
+      description: Integration event receipt ID.
+      schema:
+        type: string
+        pattern: ^ievt_[A-Za-z0-9]+$
+    TableIDParam:
+      name: table_id
+      in: path
+      required: true
+      description: Table ID.
+      schema:
+        type: string
+        pattern: ^table_[A-Za-z0-9]+$
+    TableNameQueryParam:
+      name: name
+      in: query
       schema:
         type: string
         pattern: ^[a-z][a-z0-9_]*$
         maxLength: 64
-      description: Table name, lowercase alphanumeric and underscores. Names are unique within
-        the resolved scope. Omitted scope means the project/default scope; use `scope=owner`
-        together with `owned_by` or `owned_by_me=true` for per-user memory tables. With `scope=owner`,
-        the same table_name may exist under different owner scopes, so consumers must consider
-        scope plus name when resolving uniqueness.
+      description: Filter tables by name. Names are unique within a scope, but are not globally
+        unique across owner-scoped tables; use this as a discovery filter and use the returned
+        table `id` for follow-up operations.
     TableScopeParam:
       name: scope
       in: query
       schema:
         $ref: '#/components/schemas/ResourceScope'
-      description: Scope used to resolve `table_name`. Omit for the project/default scope;
-        use `owner` with `owned_by` or `owned_by_me=true` for per-user memory tables. For
-        list filters, scope is orthogonal and does not affect ownership-filter precedence.
+      description: Filter tables by scope. Omit to include project/default and owner scopes;
+        use `owner` with `owned_by` or `owned_by_me=true` for per-user memory tables.
     TableOwnedByParam:
       name: owned_by
       in: query
@@ -5090,8 +3887,7 @@ components:
       in: query
       schema:
         type: boolean
-      description: Resolve `table_name` in the authenticated user's owner scope, or filter
-        lists to tables owned by the authenticated user.
+      description: Filter lists to tables owned by the authenticated user.
     ArtifactIdParam:
       name: id
       in: path
@@ -5264,90 +4060,6 @@ components:
       example:
         Environment: Production
         Department: Finance
-        Owner: team@example.com
-    InteractionMode:
-      type: string
-      enum:
-      - confirm
-      - select
-      - multi_select
-      - input
-      description: Declarative UI/input primitive for collecting the response. This is a portable
-        rendering contract, not executable code. Values are `confirm`, `select`, `multi_select`,
-        and `input`.
-    InteractionOption:
-      type: object
-      required:
-      - value
-      - label
-      additionalProperties: false
-      description: Selectable option for `select` and `multi_select` modes.
-      properties:
-        value:
-          type: string
-          description: Machine-readable value submitted when this option is chosen.
-        label:
-          type: string
-          description: Human-readable label displayed for this option.
-        description:
-          type: string
-          description: Optional additional context shown beneath the label.
-    InteractionSpec:
-      type: object
-      required:
-      - mode
-      additionalProperties: false
-      description: |-
-        Declarative dialog contract for rendering and validating an interaction. Used at both authoring time (inside an automation definition) and runtime (persisted on an interaction). PRD 077 decouples protocol kind from input shape: each kind declares which spec modes are *allowed*, not which is *implied*. An approval may now legitimately use `select` mode (approve/deny/defer), for example.
-
-        Allowed combinations:
-        * `approval` → `confirm`, `select`
-        * `review` → `select`, `input`
-        * `request` → `select`, `multi_select`, `input`
-      properties:
-        mode:
-          $ref: '#/components/schemas/InteractionMode'
-          description: UI/input mode used to render and validate the response.
-        options:
-          type: array
-          maxItems: 100
-          description: Required for `select` and `multi_select` modes.
-          items:
-            $ref: '#/components/schemas/InteractionOption'
-        default_value:
-          type: string
-          description: Default selected option for `select` mode.
-        default_values:
-          type: array
-          maxItems: 100
-          description: Default selected options for `multi_select` mode.
-          items:
-            type: string
-        default_text:
-          type: string
-          description: Initial text value for `input` mode.
-        default_confirmed:
-          type: boolean
-          description: Initial yes/no value for `confirm` mode.
-        placeholder:
-          type: string
-          description: Hint text shown for `input` mode.
-        multiline:
-          type: boolean
-          description: When true, render `input` mode as a multiline text area.
-    FeatureKey:
-      type: string
-      description: Server-defined product feature key. The launch product currently has no
-        public/developer feature gates; this string type remains for internal operator override
-        plumbing.
-    FeatureOverrideScope:
-      type: string
-      enum:
-      - org
-      - project
-      description: Scope for a feature override. Org overrides apply across the organization;
-        project overrides apply only to the specified project and take precedence over org
-        overrides.
     User:
       type: object
       additionalProperties: false
@@ -5452,7 +4164,7 @@ components:
           description: 'Current project access policy: `org_open` or `restricted`.'
         created_by:
           type: string
-          description: User ID of the org member who created this project.
+          description: Principal ID of whoever created this project.
         archived_at:
           type: string
           format: date-time
@@ -5579,9 +4291,9 @@ components:
         model:
           type: string
           description: Model identifier for platform agents. Accepts any id returned by `GET
-            /v1/projects/{project}/models`, optionally `provider/`-prefixed (e.g. `xai/grok-4`);
-            bare known ids (e.g. `claude-sonnet-4-6`) are auto-detected to their provider.
-            Empty string falls back to the platform default.
+            /v1/projects/{project}/catalog/models`, optionally `provider/`-prefixed (e.g.
+            `xai/grok-4`); bare known ids (e.g. `claude-sonnet-4-6`) are auto-detected to
+            their provider. Empty string falls back to the platform default.
         model_route:
           $ref: '#/components/schemas/AgentModelRoute'
         tool_presentation:
@@ -5637,101 +4349,6 @@ components:
           description: The list of results for this page.
           items:
             $ref: '#/components/schemas/Agent'
-    AuditChanges:
-      type: object
-      additionalProperties: false
-      description: Before/after field snapshots captured for an audited mutation.
-      properties:
-        before:
-          type: object
-          additionalProperties: true
-          description: Field values before the mutation.
-        after:
-          type: object
-          additionalProperties: true
-          description: Field values after the mutation.
-    AuditLogEntry:
-      type: object
-      additionalProperties: false
-      description: Immutable record of a security- or configuration-relevant change. Use audit
-        log entries to answer who changed a resource, when it happened, and which project
-        or credential was involved.
-      required:
-      - id
-      - action
-      - resource_type
-      - resource_id
-      - created_at
-      properties:
-        id:
-          type: string
-          description: Unique audit log entry ID
-        principal_id:
-          type: string
-          description: ID of the user who performed the action
-        project_id:
-          type: string
-          description: Project ID when the audited resource is project-scoped
-        actor_name:
-          type: string
-          description: Display name of the user at the time the entry was written (snapshotted)
-        credential_id:
-          type: string
-          description: Credential ID used for the request, when applicable
-        credential_name:
-          type: string
-          description: Human-readable credential name or session label captured when the audit
-            entry was written
-        action:
-          type: string
-          enum:
-          - create
-          - update
-          - delete
-          - archive
-          - restore
-          description: 'Type of action performed: `create`, `update`, `delete`, `archive`,
-            or `restore`.'
-        resource_type:
-          type: string
-          description: Type of resource affected (e.g., automation, job, artifact)
-        resource_id:
-          type: string
-          description: ID of the affected resource
-        resource_name:
-          type: string
-          description: Human-readable name of the affected resource
-        changes:
-          $ref: '#/components/schemas/AuditChanges'
-          description: Object containing before/after changes for update actions
-        ip_address:
-          type: string
-          description: IP address of the request
-        user_agent:
-          type: string
-          description: User agent of the request
-        created_at:
-          type: string
-          format: date-time
-          description: Timestamp when the action was performed
-    AuditLogListResponse:
-      type: object
-      additionalProperties: false
-      required:
-      - items
-      - has_more
-      properties:
-        items:
-          type: array
-          description: The list of results for this page.
-          items:
-            $ref: '#/components/schemas/AuditLogEntry'
-        next_cursor:
-          type: string
-          description: Cursor for fetching next page of results
-        has_more:
-          type: boolean
-          description: Whether more results are available
     APIKey:
       type: object
       additionalProperties: false
@@ -6413,6 +5030,73 @@ components:
           enum:
           - capability
           - utility
+    ModelCatalogResponse:
+      type: object
+      additionalProperties: false
+      description: Models a platform agent can be assigned in this project, grouped by available
+        provider.
+      required:
+      - default_model
+      - items
+      properties:
+        default_model:
+          type: string
+          description: Model id assigned when an agent specifies no model.
+        items:
+          type: array
+          description: Available providers in display order. Providers with no configured
+            credentials are omitted.
+          items:
+            $ref: '#/components/schemas/ModelProviderGroup'
+    ModelProviderGroup:
+      type: object
+      additionalProperties: false
+      required:
+      - provider
+      - display_name
+      - source
+      - models
+      properties:
+        provider:
+          type: string
+          description: Canonical provider id (`anthropic`, `openai`, `gemini`, `xai`).
+        display_name:
+          type: string
+          description: Human-readable provider label.
+        source:
+          type: string
+          enum:
+          - byok
+          - platform
+          description: Where credentials come from — a project integration (`byok`) or a platform-managed
+            key (`platform`).
+        models:
+          type: array
+          items:
+            $ref: '#/components/schemas/ModelOption'
+    ModelOption:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - provider
+      - label
+      properties:
+        id:
+          type: string
+          description: Bare model id assigned to an agent's `model` field.
+        provider:
+          type: string
+          description: Canonical provider id this model belongs to.
+        label:
+          type: string
+          description: Human-readable model label for UI.
+        description:
+          type: string
+          description: Short guidance about when to use this model.
+        recommended:
+          type: boolean
+          description: Whether this is the suggested default for its provider.
     EnvironmentProvider:
       type: string
       enum:
@@ -6993,147 +5677,6 @@ components:
           format: date-time
         repo_full_name:
           type: string
-    SecretValues:
-      type: object
-      additionalProperties:
-        type: string
-      minProperties: 1
-      description: JSON key/value payload encrypted as a SecretVersion.
-    SecretVersionState:
-      type: string
-      enum:
-      - ENABLED
-      - DISABLED
-      - DESTROYED
-      description: Secret version lifecycle state.
-    Secret:
-      type: object
-      additionalProperties: false
-      description: Project-scoped secret metadata. Values are never returned.
-      required:
-      - id
-      - name
-      - version
-      - key_names
-      - created_at
-      - updated_at
-      properties:
-        id:
-          type: string
-          description: Unique secret ID.
-        name:
-          type: string
-          description: Project-scoped secret name.
-        description:
-          type: string
-          description: Optional human-readable description.
-        version:
-          type: integer
-          format: int64
-          description: Latest version number.
-        key_names:
-          type: array
-          items:
-            type: string
-          description: Sorted keys present in the latest version.
-        created_by:
-          type: string
-          description: User ID of the principal who created this secret.
-        updated_by:
-          type: string
-          description: User ID of the principal who last updated this secret.
-        created_at:
-          type: string
-          format: date-time
-        updated_at:
-          type: string
-          format: date-time
-    SecretVersion:
-      type: object
-      additionalProperties: false
-      description: SecretVersion metadata. Values are never returned.
-      required:
-      - id
-      - secret_id
-      - version
-      - state
-      - sha256
-      - created_at
-      properties:
-        id:
-          type: string
-          description: Unique secret version ID.
-        secret_id:
-          type: string
-          description: Parent secret ID.
-        version:
-          type: integer
-          format: int64
-          description: Version number.
-        state:
-          $ref: '#/components/schemas/SecretVersionState'
-        sha256:
-          type: string
-          description: SHA-256 of the canonical JSON plaintext, for change detection only.
-        kms_key_id:
-          type: string
-          description: Key identifier used to seal the payload.
-        created_by:
-          type: string
-          description: User that created this version, when known.
-        created_at:
-          type: string
-          format: date-time
-        destroyed_at:
-          type: string
-          format: date-time
-    SecretListResponse:
-      type: object
-      additionalProperties: false
-      required:
-      - items
-      properties:
-        items:
-          type: array
-          items:
-            $ref: '#/components/schemas/Secret'
-        next_cursor:
-          type: string
-          description: Cursor for the next page, when more results exist.
-    SecretVersionListResponse:
-      type: object
-      additionalProperties: false
-      required:
-      - items
-      properties:
-        items:
-          type: array
-          items:
-            $ref: '#/components/schemas/SecretVersion'
-    CreateSecretRequest:
-      type: object
-      additionalProperties: false
-      required:
-      - name
-      - values
-      properties:
-        name:
-          type: string
-          description: Project-scoped secret name.
-        description:
-          type: string
-          description: Optional human-readable description.
-        values:
-          $ref: '#/components/schemas/SecretValues'
-    UpdateSecretRequest:
-      type: object
-      additionalProperties: false
-      properties:
-        description:
-          type: string
-          description: Replacement description.
-        values:
-          $ref: '#/components/schemas/SecretValues'
     WorkerSession:
       type: object
       additionalProperties: false
@@ -7883,22 +6426,6 @@ components:
           $ref: '#/components/schemas/WorkerSocketMessageID'
         error:
           $ref: '#/components/schemas/WorkerSocketProtocolError'
-    ConfigEntry:
-      type: object
-      additionalProperties: false
-      required:
-      - key
-      - value
-      properties:
-        key:
-          type: string
-          minLength: 1
-        value:
-          type: string
-    ConfigEntries:
-      type: array
-      items:
-        $ref: '#/components/schemas/ConfigEntry'
     CreateProjectRequest:
       type: object
       additionalProperties: false
@@ -7949,133 +6476,6 @@ components:
         tags:
           $ref: '#/components/schemas/TagMap'
           description: When supplied, replaces the user tag set on the project.
-    ProjectMember:
-      type: object
-      additionalProperties: false
-      description: Explicit project membership used when a project is restricted. Use this
-        record to decide who can see or operate on a project outside the default org-wide
-        access model.
-      required:
-      - id
-      - project_id
-      - principal_id
-      - added_at
-      properties:
-        id:
-          type: string
-          description: Unique identifier for this membership record.
-        project_id:
-          type: string
-          description: ID of the project this membership belongs to.
-        principal_id:
-          type: string
-          description: ID of the principal that is a member.
-        principal:
-          $ref: '#/components/schemas/User'
-          description: Profile of the member. Embedded by `listProjectMembers` so UIs can
-            render names, emails, and avatars without a separate user lookup. Absent on the
-            `addProjectMember` response.
-        added_by:
-          type: string
-          description: User ID of whoever added this member, if recorded.
-        added_at:
-          type: string
-          format: date-time
-          description: Timestamp when the member was added.
-    ProjectMemberListResponse:
-      type: object
-      additionalProperties: false
-      required:
-      - items
-      - has_more
-      properties:
-        items:
-          type: array
-          description: The list of members for this project.
-          items:
-            $ref: '#/components/schemas/ProjectMember'
-        has_more:
-          type: boolean
-          description: Whether more results are available.
-        next_cursor:
-          type: string
-          description: Opaque cursor to pass as `cursor` on the next request. Absent when
-            `has_more` is false.
-    AddProjectMemberRequest:
-      type: object
-      additionalProperties: false
-      required:
-      - principal_id
-      properties:
-        principal_id:
-          type: string
-          description: ID of the org member principal to add to this project.
-    FeatureGateSource:
-      type: string
-      enum:
-      - default
-      - org_override
-      - project_override
-      description: Source of the effective feature gate decision.
-    FeatureGate:
-      type: object
-      additionalProperties: false
-      required:
-      - key
-      - label
-      - description
-      - enabled
-      - default_enabled
-      - source
-      - allowed_scopes
-      properties:
-        key:
-          $ref: '#/components/schemas/FeatureKey'
-        label:
-          type: string
-          description: Short user-facing name.
-        description:
-          type: string
-          description: User-facing description of the gated product area.
-        enabled:
-          type: boolean
-          description: Effective state after resolving defaults and overrides.
-        default_enabled:
-          type: boolean
-          description: Built-in fallback state when no active override applies.
-        source:
-          $ref: '#/components/schemas/FeatureGateSource'
-        source_scope:
-          $ref: '#/components/schemas/FeatureOverrideScope'
-          description: Override scope that produced this state, omitted for defaults.
-        source_org_id:
-          type: string
-          description: Org ID for the override that produced this state.
-        source_project_id:
-          type: string
-          description: Project ID for the override that produced this state.
-        reason:
-          type: string
-          description: Optional operator-supplied reason from the active override.
-        expires_at:
-          type: string
-          format: date-time
-          nullable: true
-          description: Optional expiry for the active override.
-        allowed_scopes:
-          type: array
-          items:
-            $ref: '#/components/schemas/FeatureOverrideScope'
-    FeatureGateListResponse:
-      type: object
-      additionalProperties: false
-      required:
-      - items
-      properties:
-        items:
-          type: array
-          items:
-            $ref: '#/components/schemas/FeatureGate'
     WebhookDeliveryStatus:
       type: string
       enum:
@@ -8304,1037 +6704,6 @@ components:
         latency_ms:
           type: integer
           description: Round-trip latency in milliseconds.
-    PermissionDefinition:
-      type: object
-      additionalProperties: false
-      required:
-      - id
-      - label
-      - description
-      - scope
-      - category
-      - risk
-      - assignable
-      - user_kinds
-      properties:
-        id:
-          type: string
-          description: Stable permission ID stored on roles.
-        label:
-          type: string
-          description: Human-readable label for product UI.
-        description:
-          type: string
-          description: Short explanation of what the permission grants.
-        scope:
-          type: string
-          enum:
-          - project
-          - org
-          - platform
-          - action
-        category:
-          type: string
-          enum:
-          - project
-          - access
-          - automations
-          - runs
-          - work
-          - integrations
-          - audit
-          - billing
-          - platform
-          - actions
-        risk:
-          type: string
-          enum:
-          - low
-          - medium
-          - high
-          - critical
-        assignable:
-          type: boolean
-          description: Whether this permission should be selectable in the current project
-            role builder.
-        user_kinds:
-          type: array
-          minItems: 1
-          maxItems: 4
-          uniqueItems: true
-          items:
-            type: string
-            enum:
-            - human
-            - agent
-            - service
-            - system
-          description: User kinds this permission is intended for.
-    PermissionPreset:
-      type: object
-      additionalProperties: false
-      required:
-      - id
-      - label
-      - description
-      - scope
-      - permissions
-      properties:
-        id:
-          type: string
-        label:
-          type: string
-        description:
-          type: string
-        scope:
-          type: string
-          enum:
-          - project
-          - org
-          - platform
-          - action
-        permissions:
-          type: array
-          maxItems: 64
-          items:
-            type: string
-    ActionPermissionGroup:
-      type: object
-      additionalProperties: false
-      required:
-      - id
-      - label
-      - source
-      - children
-      properties:
-        id:
-          type: string
-          description: Wildcard permission ID, for example `actions.execute.slack.*`.
-        label:
-          type: string
-        source:
-          type: string
-          enum:
-          - platform
-          - integration
-          - custom
-        children:
-          type: array
-          maxItems: 200
-          items:
-            type: string
-          description: Concrete action execution permission IDs included in this group.
-    PermissionCatalogResponse:
-      type: object
-      additionalProperties: false
-      required:
-      - items
-      - presets
-      - action_groups
-      properties:
-        items:
-          type: array
-          maxItems: 64
-          items:
-            $ref: '#/components/schemas/PermissionDefinition'
-        presets:
-          type: array
-          maxItems: 32
-          items:
-            $ref: '#/components/schemas/PermissionPreset'
-        action_groups:
-          type: array
-          maxItems: 64
-          items:
-            $ref: '#/components/schemas/ActionPermissionGroup'
-    Role:
-      type: object
-      additionalProperties: false
-      description: Named bundle of permissions assignable to human or machine principals.
-        Roles let admins grant automation, project, and integration capabilities consistently
-        without editing every user individually.
-      required:
-      - id
-      - name
-      - permissions
-      - system_defined
-      - created_at
-      - updated_at
-      properties:
-        id:
-          type: string
-          description: Unique identifier for this role.
-        project_id:
-          type: string
-          description: Scoping project. Empty for system-defined roles.
-        name:
-          type: string
-          description: Human-readable role name, unique within org+project scope.
-        description:
-          type: string
-          description: Optional human-readable description of what this role grants.
-        permissions:
-          type: array
-          items:
-            type: string
-          description: Permission strings granted by this role. Source allowed values from
-            `GET /v1/projects/{project}/permissions`; legacy IDs or values not present in
-            that catalog are rejected.
-        system_defined:
-          type: boolean
-          description: True for built-in platform roles that cannot be modified or deleted.
-        tags:
-          $ref: '#/components/schemas/TagMap'
-          description: Resource tags applied to this role.
-        created_at:
-          type: string
-          format: date-time
-          description: Timestamp when this role was created.
-        updated_at:
-          type: string
-          format: date-time
-          description: Timestamp when this role was last updated.
-    RoleAssignment:
-      type: object
-      additionalProperties: false
-      description: Binding between a principal and a role in one project. Use assignments
-        to explain why a principal (human or machine) has access and to audit who granted
-        it.
-      required:
-      - id
-      - principal_id
-      - role_id
-      - role_name
-      - project_id
-      - created_at
-      properties:
-        id:
-          type: string
-          description: Unique identifier for this role assignment.
-        principal_id:
-          type: string
-          description: Principal ID receiving the role.
-        role_id:
-          type: string
-          description: ID of the assigned role.
-        role_name:
-          type: string
-          description: Name of the assigned role.
-        project_id:
-          type: string
-          description: Project this assignment belongs to.
-        granted_by:
-          type: string
-          description: User ID of the caller who created this assignment.
-        created_at:
-          type: string
-          format: date-time
-          description: Timestamp when this assignment was created.
-    RoleListResponse:
-      type: object
-      additionalProperties: false
-      required:
-      - items
-      - has_more
-      properties:
-        items:
-          type: array
-          description: The list of results for this page.
-          items:
-            $ref: '#/components/schemas/Role'
-        next_cursor:
-          type: string
-          description: Opaque cursor to pass as `cursor` on the next request. Absent when
-            `has_more` is false.
-        has_more:
-          type: boolean
-          description: Whether additional pages are available.
-    RoleAssignmentListResponse:
-      type: object
-      additionalProperties: false
-      required:
-      - items
-      properties:
-        items:
-          type: array
-          description: The list of results for this page.
-          items:
-            $ref: '#/components/schemas/RoleAssignment'
-    CreateRoleRequest:
-      type: object
-      additionalProperties: false
-      required:
-      - name
-      - permissions
-      properties:
-        name:
-          type: string
-          description: Unique name within the project.
-        description:
-          type: string
-          description: Optional human-readable description of what this role grants.
-        permissions:
-          type: array
-          items:
-            type: string
-          description: Permission strings to include. Source allowed values from `GET /v1/projects/{project}/permissions`;
-            legacy IDs or values not present in that catalog are rejected.
-        tags:
-          $ref: '#/components/schemas/TagMap'
-          description: Initial tag set.
-    UpdateRoleRequest:
-      type: object
-      additionalProperties: false
-      properties:
-        description:
-          type: string
-          description: Replacement description.
-        permissions:
-          type: array
-          items:
-            type: string
-          description: Replaces the existing permissions array entirely. Source allowed values
-            from `GET /v1/projects/{project}/permissions`; legacy IDs or values not present
-            in that catalog are rejected.
-        tags:
-          $ref: '#/components/schemas/TagMap'
-          description: When supplied, replaces the user tag set on the role. System tags (`mobius:*`)
-            are preserved.
-    CreateRoleAssignmentRequest:
-      type: object
-      additionalProperties: false
-      required:
-      - principal_id
-      oneOf:
-      - required:
-        - role_id
-      - required:
-        - role_name
-      properties:
-        principal_id:
-          type: string
-          description: Principal ID to assign the role to (human or machine).
-        role_id:
-          type: string
-          description: Mutually exclusive with `role_name`.
-        role_name:
-          type: string
-          description: Resolved to a role ID server-side. Mutually exclusive with `role_id`.
-    InteractionKind:
-      type: string
-      enum:
-      - request_information
-      - request_approval
-      - request_review
-      description: |-
-        Protocol kind of the interaction. Launch keeps this intentionally
-        small:
-        * `request_information` — a data-collection protocol with structured
-        or free-form input
-        * `request_approval` — a decision protocol (yes/no, optionally
-        yes/no/defer)
-        * `request_review` — a judgment protocol that evaluates supplied
-        material
-    InteractionValue:
-      description: Free-form JSON payload. Used both for responder-supplied values and for
-        policy-derived values (e.g. `Interaction.outcome`, `ResolutionPolicy.proposal`); each
-        consumer documents which.
-      anyOf:
-      - type: object
-        nullable: true
-        additionalProperties: true
-      - type: array
-        items: {}
-      - type: string
-      - type: number
-      - type: boolean
-    InteractionResponder:
-      type: object
-      required:
-      - user_id
-      additionalProperties: false
-      description: Identifies the principal who answered an interaction. Agents answer through
-        their agent principal ID.
-      properties:
-        user_id:
-          type: string
-          description: Responder user ID.
-    InteractionReference:
-      type: object
-      additionalProperties: false
-      required:
-      - kind
-      description: Pointer to the work item, artifact, external ticket, or Mobius entity this
-        interaction is about.
-      properties:
-        kind:
-          type: string
-          enum:
-          - external_url
-          - mobius_entity
-        url:
-          type: string
-          format: uri
-          description: Required when kind is `external_url`.
-        entity_type:
-          type: string
-          description: Required when kind is `mobius_entity`.
-        entity_id:
-          type: string
-          description: Required when kind is `mobius_entity`.
-        project_id:
-          type: string
-          description: Optional project scope for Mobius entity references.
-        relation:
-          type: string
-          description: Relationship such as `subject`, `evidence`, or `related`.
-        label:
-          type: string
-          description: User-facing label for display.
-    Delivery:
-      type: object
-      additionalProperties: false
-      required:
-      - channels
-      description: Optional per-interaction delivery override. When absent, each participant
-        is notified via the app inbox only.
-      properties:
-        channels:
-          type: array
-          minItems: 1
-          items:
-            $ref: '#/components/schemas/DeliveryChannel'
-    DeliveryChannel:
-      type: object
-      additionalProperties: false
-      required:
-      - kind
-      description: A single delivery destination. `inbox_only` carries no payload; `email`
-        requires the `email` variant.
-      properties:
-        kind:
-          type: string
-          enum:
-          - inbox_only
-          - email
-        email:
-          type: object
-          allOf:
-          - $ref: '#/components/schemas/EmailDelivery'
-          nullable: true
-    EmailDelivery:
-      type: object
-      additionalProperties: false
-      required:
-      - to
-      properties:
-        to:
-          type: array
-          minItems: 1
-          items:
-            type: string
-            format: email
-    Consumer:
-      type: object
-      additionalProperties: false
-      required:
-      - kind
-      description: 'Polymorphic identifier of what is waiting on this interaction''s resolution
-        (PRD 077 §3.7). Replaces the previously special-cased `run_id` + `signal_name` pair.
-        When `kind=run`, the legacy fields are also populated for compatibility. `http_subscriber`
-        requires `secret_ref` and enqueues a durable callback dispatch to `callback_url` when
-        the interaction resolves; the canonical string `v1.{delivery_id}.{unix_timestamp}.{raw_body}`
-        is signed with HMAC-SHA256 against the resolved project signing key and the signed
-        dispatch carries `X-Mobius-Signature`, `X-Mobius-Secret-Ref`, `X-Mobius-Secret-Version`,
-        and `X-Mobius-Timestamp`. Signed dispatches also carry `X-Mobius-Signature-Version:
-        v1`. Every durable dispatch also carries the stable outbox row id in `X-Mobius-Delivery-Id`
-        and `Idempotency-Key`; retries reuse the same value. Verifiers should recompute the
-        signature over the exact raw body, reject stale timestamps (for example, older than
-        five minutes), deduplicate by delivery id, and check the signing headers.'
-      properties:
-        kind:
-          type: string
-          enum:
-          - run
-          - agent_tool
-          - http_subscriber
-          - none
-        run:
-          type: object
-          allOf:
-          - $ref: '#/components/schemas/RunConsumer'
-          nullable: true
-        agent_tool:
-          type: object
-          allOf:
-          - $ref: '#/components/schemas/AgentToolConsumer'
-          nullable: true
-        http_subscriber:
-          type: object
-          allOf:
-          - $ref: '#/components/schemas/HttpSubscriberConsumer'
-          nullable: true
-    RunConsumer:
-      type: object
-      additionalProperties: false
-      required:
-      - run_id
-      - signal_name
-      properties:
-        run_id:
-          type: string
-        signal_name:
-          type: string
-    AgentToolConsumer:
-      type: object
-      additionalProperties: false
-      required:
-      - invocation_id
-      - tool_call_id
-      properties:
-        invocation_id:
-          type: string
-        tool_call_id:
-          type: string
-    HttpSubscriberConsumer:
-      type: object
-      additionalProperties: false
-      required:
-      - callback_url
-      - secret_ref
-      properties:
-        callback_url:
-          type: string
-          format: uri
-          description: Absolute http(s) URL the server POSTs to when the interaction resolves.
-            The body is a JSON object with the interaction id, kind, status, outcome value,
-            comment, responder, and `resolved_by`. Delivery is enqueued as a `source_events`
-            dispatch so the worker can retry failed attempts instead of dropping them inline
-            with interaction resolution.
-        secret_ref:
-          type: string
-          description: 'Required reference to a project secret used to sign deliveries with
-            HMAC-SHA256 over the canonical string `v1.{delivery_id}.{unix_timestamp}.{raw_body}`,
-            where `delivery_id` is the value in `X-Mobius-Delivery-Id` and `raw_body` is the
-            exact callback request body bytes. Accepts `<name>` for the latest enabled version
-            or `<name>:<version>` to pin a specific positive-integer version. The plaintext
-            signing bytes are taken from the secret''s `signing_key_b64` key, which must base64-decode
-            to exactly 32 bytes. The hex signature is forwarded as `X-Mobius-Signature: sha256=<hex>`
-            alongside `X-Mobius-Secret-Ref`, `X-Mobius-Secret-Version`, `X-Mobius-Signature-Version:
-            v1`, and a unix `X-Mobius-Timestamp`. Consumers should reject stale timestamps
-            (for example, older than five minutes). When `secret_ref` resolution fails the
-            dispatch is retried by the event processor rather than sent unsigned.'
-    InteractionResponse:
-      type: object
-      additionalProperties: false
-      description: One persisted answer artifact for an interaction. The response that triggered
-        resolution is referenced from `Interaction.resolving_response_id`.
-      required:
-      - id
-      - interaction_id
-      - response_kind
-      - state
-      - responder_user_id
-      - value
-      - responded_at
-      - created_at
-      - updated_at
-      properties:
-        id:
-          type: string
-          description: Unique identifier for this response.
-        interaction_id:
-          type: string
-          description: ID of the interaction this response belongs to.
-        response_kind:
-          type: string
-          enum:
-          - response
-          description: Answer response.
-        state:
-          type: string
-          enum:
-          - submitted
-          description: Lifecycle state for this response row.
-        responder_user_id:
-          type: string
-          description: User ID that submitted this response.
-        value:
-          $ref: '#/components/schemas/InteractionValue'
-          description: JSON value supplied by this participant.
-        comment:
-          type: string
-          nullable: true
-          description: Optional free-text comment from this responder.
-        responded_at:
-          type: string
-          format: date-time
-          description: Timestamp when this response was submitted.
-        attempt:
-          type: integer
-          nullable: true
-          description: Reserved for future retry-aware response flows.
-        created_at:
-          type: string
-          format: date-time
-        updated_at:
-          type: string
-          format: date-time
-    ResolutionPolicy:
-      type: object
-      additionalProperties: false
-      required:
-      - type
-      description: Declarative resolution rule attached to an Interaction. Determines how
-        participant responses become a final outcome.
-      properties:
-        type:
-          type: string
-          enum:
-          - any_of
-          - all_of
-          - quorum
-          description: Resolution rule. `any_of` resolves on the first acceptable response.
-            `all_of` waits for every assigned participant. `quorum` resolves once `threshold`
-            distinct participants respond.
-        threshold:
-          type: integer
-          minimum: 1
-          description: Required when `type` is `quorum`. Number of distinct eligible participants
-            that must respond before the interaction resolves. Must be `>= 1` and `<=` the
-            participant count.
-    Interaction:
-      type: object
-      additionalProperties: false
-      description: Human or agent interaction request and its current response state.
-      required:
-      - id
-      - kind
-      - status
-      - title
-      - target_user_ids
-      - created_at
-      - updated_at
-      properties:
-        id:
-          type: string
-          description: Unique identifier for this interaction.
-        run_id:
-          type: string
-          nullable: true
-          description: Originating automation run when the interaction is run-backed.
-        signal_name:
-          type: string
-          nullable: true
-          description: Signal name used to resume the originating run when run-backed.
-        created_by:
-          type: string
-          nullable: true
-          description: Canonical principal ID of the human or agent that created the interaction.
-        kind:
-          $ref: '#/components/schemas/InteractionKind'
-          description: Protocol kind of the interaction.
-        status:
-          type: string
-          enum:
-          - pending
-          - completed
-          - expired
-          - cancelled
-          description: 'Current status of the interaction: pending, completed, expired, or
-            cancelled.'
-        title:
-          type: string
-          minLength: 1
-          description: Short non-empty title shown to the responder.
-        description:
-          type: string
-          nullable: true
-          description: Optional longer responder-facing detail or instructions.
-        subject:
-          type: object
-          allOf:
-          - $ref: '#/components/schemas/InteractionReference'
-          nullable: true
-          description: Primary work item or artifact the interaction is about.
-        references:
-          type: array
-          items:
-            $ref: '#/components/schemas/InteractionReference'
-          description: Supporting links and related entities.
-        context:
-          type: object
-          additionalProperties: true
-          nullable: true
-          description: Additional key-value context surfaced in the UI alongside the title
-            and description when supplied.
-        tags:
-          $ref: '#/components/schemas/TagMap'
-          description: Uniform string key/value labels used for interaction list filtering
-            and reporting.
-        properties:
-          type: object
-          additionalProperties: true
-          nullable: true
-          description: Free-form structured metadata attached to the interaction.
-        spec:
-          $ref: '#/components/schemas/InteractionSpec'
-          description: Response controls and validation rules rendered to the recipient.
-        target_user_ids:
-          type: array
-          items:
-            type: string
-          description: Resolved user IDs targeted by the interaction.
-        responder:
-          type: object
-          allOf:
-          - $ref: '#/components/schemas/InteractionResponder'
-          nullable: true
-          description: User or agent that completed the interaction; null until completion.
-        resolving_response_id:
-          type: string
-          nullable: true
-          description: ID of the response that triggered resolution. Null while the interaction
-            is pending, cancelled, or expired. Look up the response in `responses` for the
-            full payload.
-        responses:
-          type: array
-          items:
-            $ref: '#/components/schemas/InteractionResponse'
-          description: All response artifacts recorded against this interaction in arrival
-            order.
-        expires_at:
-          type: string
-          format: date-time
-          nullable: true
-          description: Timestamp when this interaction expires if not responded to.
-        completed_at:
-          type: string
-          format: date-time
-          nullable: true
-          description: Timestamp when the interaction received a terminal response.
-        created_at:
-          type: string
-          format: date-time
-          description: Timestamp when this interaction was created.
-        updated_at:
-          type: string
-          format: date-time
-          description: Timestamp when this interaction was last updated.
-        require_all:
-          type: boolean
-          description: When true, all target users must respond before completion.
-        resolution_policy:
-          type: object
-          allOf:
-          - $ref: '#/components/schemas/ResolutionPolicy'
-          nullable: true
-          description: Declarative resolution rule attached at creation time. Legacy `require_all`
-            inputs are synthesized into an equivalent policy at create time when present.
-            Newer rows typically include this field; nullability covers historical rows and
-            callers that omit it.
-        consumer:
-          type: object
-          allOf:
-          - $ref: '#/components/schemas/Consumer'
-          nullable: true
-          description: Polymorphic identifier of what is waiting on this interaction's resolution
-            (PRD 077 §3.7). Replaces the special-cased `run_id`/`signal_name` pair; the latter
-            remain populated when `consumer.kind=run`.
-        delivery:
-          type: object
-          allOf:
-          - $ref: '#/components/schemas/Delivery'
-          nullable: true
-          description: Optional per-interaction delivery override. When absent, the dispatcher
-            delivers to the app inbox only.
-        outcome:
-          $ref: '#/components/schemas/InteractionValue'
-          description: Final outcome selected by the resolution policy. Omitted while the
-            interaction is still pending.
-        resolved_by:
-          type: string
-          nullable: true
-          description: Short audit string identifying which policy rule fired. Null until
-            the interaction reaches a resolved state.
-        cancel_reason:
-          type: string
-          nullable: true
-          description: Reason recorded when the interaction was cancelled.
-    InteractionListResponse:
-      type: object
-      additionalProperties: false
-      required:
-      - items
-      properties:
-        items:
-          type: array
-          description: The list of results for this page.
-          items:
-            $ref: '#/components/schemas/Interaction'
-        has_more:
-          type: boolean
-          description: Whether additional pages are available.
-        next_cursor:
-          type: string
-          description: Opaque cursor to pass as `cursor` on the next request. Absent when
-            `has_more` is false.
-    CreateInteractionRequest:
-      description: Creates an interaction directly. Use the standalone variant with no automation-run
-        side effect, or the run-backed variant that requires both `run_id` and `signal_name`
-        so completion can resume the run. For worker/job usage, prefer the job-scoped route
-        so the server can derive the owning run from the claimed job context.
-      oneOf:
-      - $ref: '#/components/schemas/CreateStandaloneInteractionRequest'
-      - $ref: '#/components/schemas/CreateRunBackedInteractionRequest'
-    CreateStandaloneInteractionRequest:
-      type: object
-      additionalProperties: false
-      required:
-      - kind
-      - title
-      description: Creates a standalone interaction. Completion records the response but does
-        not deliver an automation signal.
-      properties:
-        target_user_ids:
-          type: array
-          items:
-            type: string
-          description: Resolved user IDs to target directly. Agents use their agent principal
-            IDs.
-        kind:
-          $ref: '#/components/schemas/InteractionKind'
-          description: Protocol kind. Renamed from `type` in the PRD 077 v-bump.
-        title:
-          type: string
-          minLength: 1
-          description: Short non-empty title shown to the responder.
-        description:
-          type: string
-          description: Optional longer responder-facing detail or instructions.
-        subject:
-          $ref: '#/components/schemas/InteractionReference'
-          description: Primary work item or artifact the interaction is about.
-        references:
-          type: array
-          items:
-            $ref: '#/components/schemas/InteractionReference'
-          description: Supporting links and related entities.
-        context:
-          type: object
-          additionalProperties: true
-          description: Additional key-value context surfaced in the UI alongside the title
-            and description.
-        tags:
-          $ref: '#/components/schemas/TagMap'
-          description: Initial interaction tag set used by list filtering and reporting.
-        properties:
-          type: object
-          additionalProperties: true
-          description: Free-form structured metadata to attach to the interaction.
-        spec:
-          $ref: '#/components/schemas/InteractionSpec'
-          description: Response controls and validation rules rendered to the recipient.
-        require_all:
-          type: boolean
-          description: When true, all target users must respond before the interaction is
-            considered complete. Defaults to false when omitted. Mutually exclusive with `resolution_policy`;
-            prefer the policy form for new code.
-        resolution_policy:
-          $ref: '#/components/schemas/ResolutionPolicy'
-          description: Declarative resolution rule. When supplied the policy evaluator drives
-            completion.
-        consumer:
-          $ref: '#/components/schemas/Consumer'
-          description: Polymorphic identifier of what is waiting on this interaction's resolution
-            (PRD 077 §3.7). When omitted on a run-backed create request, the server derives
-            a `kind=run` consumer from `run_id` and `signal_name`.
-        delivery:
-          $ref: '#/components/schemas/Delivery'
-          description: Optional per-interaction delivery override (PRD 077 §3.8).
-        expires_at:
-          type: string
-          format: date-time
-          description: Timestamp after which this interaction expires if not responded to.
-    CreateRunBackedInteractionRequest:
-      type: object
-      additionalProperties: false
-      required:
-      - run_id
-      - signal_name
-      - kind
-      - title
-      description: Creates a run-backed interaction. **Deprecated as a resume mechanism.**
-        Under RFC 064 an automation run only resumes from an interaction response when its
-        materializer registered a `run_subscription` with `Subject{kind:interaction, interaction_id:...}`.
-        That registration only happens for interactions created from within an automation
-        step (declarative `interaction` step or job-scoped `POST /v1/projects/{project}/jobs/{id}/interactions`).
-        Direct run-backed creates through this endpoint produce a pending interaction record
-        linked to `run_id` for audit, but completion will not wake the run. Use the job-scoped
-        route for resume semantics. `signal_name` is retained on the request shape for backwards
-        compatibility and audit; routing no longer depends on it.
-      properties:
-        run_id:
-          type: string
-          description: ID of the automation run to resume when this interaction is completed.
-        signal_name:
-          type: string
-          description: Signal name the interaction will complete against when run-backed.
-        target_user_ids:
-          type: array
-          items:
-            type: string
-          description: Resolved user IDs to target directly. Agents use their agent principal
-            IDs.
-        kind:
-          $ref: '#/components/schemas/InteractionKind'
-          description: Protocol kind. Renamed from `type` in the PRD 077 v-bump.
-        title:
-          type: string
-          minLength: 1
-          description: Short non-empty title shown to the responder.
-        description:
-          type: string
-          description: Optional longer responder-facing detail or instructions.
-        subject:
-          $ref: '#/components/schemas/InteractionReference'
-          description: Primary work item or artifact the interaction is about.
-        references:
-          type: array
-          items:
-            $ref: '#/components/schemas/InteractionReference'
-          description: Supporting links and related entities.
-        context:
-          type: object
-          additionalProperties: true
-          description: Additional key-value context surfaced in the UI alongside the title
-            and description.
-        tags:
-          $ref: '#/components/schemas/TagMap'
-          description: Initial interaction tag set used by list filtering and reporting.
-        properties:
-          type: object
-          additionalProperties: true
-          description: Free-form structured metadata to attach to the interaction.
-        spec:
-          $ref: '#/components/schemas/InteractionSpec'
-          description: Response controls and validation rules rendered to the recipient.
-        require_all:
-          type: boolean
-          description: When true, all target users must respond before the interaction is
-            considered complete. Defaults to false when omitted. Mutually exclusive with `resolution_policy`;
-            prefer the policy form for new code.
-        resolution_policy:
-          $ref: '#/components/schemas/ResolutionPolicy'
-          description: Declarative resolution rule. When supplied the policy evaluator drives
-            completion.
-        consumer:
-          $ref: '#/components/schemas/Consumer'
-          description: Polymorphic identifier of what is waiting on this interaction's resolution
-            (PRD 077 §3.7). When omitted on a run-backed create request, the server derives
-            a `kind=run` consumer from `run_id` and `signal_name`.
-        delivery:
-          $ref: '#/components/schemas/Delivery'
-          description: Optional per-interaction delivery override (PRD 077 §3.8).
-        expires_at:
-          type: string
-          format: date-time
-          description: Timestamp after which this interaction expires if not responded to.
-    RespondToInteractionRequest:
-      type: object
-      additionalProperties: false
-      properties:
-        action:
-          type: string
-          enum:
-          - submit
-          description: Operation to perform through the canonical response endpoint. `submit`
-            answers the interaction.
-        value:
-          $ref: '#/components/schemas/InteractionValue'
-          description: JSON value supplied by the responder. Required for `submit`.
-        comment:
-          type: string
-          description: Optional free-text comment accompanying the action. Available on every
-            interaction kind and never gated by the spec; the responder may always attach
-            reasoning, caveats, or follow-up notes alongside `value`.
-    CancelInteractionRequest:
-      type: object
-      additionalProperties: false
-      description: Optional payload accompanying a cancel request. The reason is recorded
-        on the interaction and forwarded in the cancellation signal so automations can route
-        to a fallback.
-      properties:
-        reason:
-          type: string
-          description: Free-text reason recorded on the interaction.
-    ProjectModelsResponse:
-      type: object
-      additionalProperties: false
-      description: Models a platform agent can be assigned in this project, grouped by available
-        provider.
-      required:
-      - default_model
-      - items
-      properties:
-        default_model:
-          type: string
-          description: Model id assigned when an agent specifies no model.
-        items:
-          type: array
-          description: Available providers in display order. Providers with no configured
-            credentials are omitted.
-          items:
-            $ref: '#/components/schemas/ModelProviderGroup'
-    ModelProviderGroup:
-      type: object
-      additionalProperties: false
-      required:
-      - provider
-      - display_name
-      - source
-      - models
-      properties:
-        provider:
-          type: string
-          description: Canonical provider id (`anthropic`, `openai`, `gemini`, `xai`).
-        display_name:
-          type: string
-          description: Human-readable provider label.
-        source:
-          type: string
-          enum:
-          - byok
-          - platform
-          description: Where credentials come from — a project integration (`byok`) or a platform-managed
-            key (`platform`).
-        models:
-          type: array
-          items:
-            $ref: '#/components/schemas/ModelOption'
-    ModelOption:
-      type: object
-      additionalProperties: false
-      required:
-      - id
-      - provider
-      - label
-      properties:
-        id:
-          type: string
-          description: Bare model id assigned to an agent's `model` field.
-        provider:
-          type: string
-          description: Canonical provider id this model belongs to.
-        label:
-          type: string
-          description: Human-readable model label for UI.
-        description:
-          type: string
-          description: Short guidance about when to use this model.
-        recommended:
-          type: boolean
-          description: Whether this is the suggested default for its provider.
     AgentMessagingDMPolicy:
       type: string
       enum:
@@ -9482,7 +6851,6 @@ components:
     SessionOrigin:
       type: string
       enum:
-      - interaction
       - manual
       - api
       - automation
@@ -10386,7 +7754,7 @@ components:
           description: Capability names used by orchestrators to select suitable agents.
         model:
           type: string
-          description: Model identifier for platform agents. Any id from `GET /v1/projects/{project}/models`,
+          description: Model identifier for platform agents. Any id from `GET /v1/projects/{project}/catalog/models`,
             optionally `provider/`-prefixed (e.g. `xai/grok-4`); bare known ids (e.g. `claude-sonnet-4-6`)
             are auto-detected. Empty falls back to the platform default.
         model_route:
@@ -10434,7 +7802,7 @@ components:
         model:
           type: string
           description: Replacement model identifier for platform agents (any id from `GET
-            /v1/projects/{project}/models`, optionally `provider/`-prefixed).
+            /v1/projects/{project}/catalog/models`, optionally `provider/`-prefixed).
         model_route:
           $ref: '#/components/schemas/AgentModelRoute'
         tool_presentation:
@@ -10825,7 +8193,6 @@ components:
           - action
           - sleep
           - wait_for_event
-          - interaction
           - automation
         config:
           oneOf:
@@ -10833,7 +8200,6 @@ components:
           - $ref: '#/components/schemas/AutomationActionStep'
           - $ref: '#/components/schemas/AutomationSleepStep'
           - $ref: '#/components/schemas/AutomationWaitForEventStep'
-          - $ref: '#/components/schemas/AutomationInteractionStep'
           - $ref: '#/components/schemas/AutomationSubAutomationStep'
           description: Kind-specific step configuration.
         input:
@@ -11102,31 +8468,6 @@ components:
             envelope of the parent run before the child is triggered. It must evaluate to
             a bool; a false result skips the step and starts no child run. Same predicate
             language as `wait_for_event` and event trigger conditions.
-    AutomationInteractionStep:
-      type: object
-      additionalProperties: false
-      description: Human interaction step configuration recognised inside `AutomationSpec.steps[].config`.
-      required:
-      - protocol
-      - targets
-      properties:
-        protocol:
-          type: string
-          enum:
-          - request_information
-          - request_approval
-          - request_review
-        targets:
-          type: array
-          items:
-            type: string
-        prompt:
-          type: string
-        resolution_policy:
-          type: string
-        spec:
-          type: object
-          additionalProperties: true
     AutomationRetryPolicy:
       type: object
       additionalProperties: false
@@ -11360,7 +8701,7 @@ components:
       properties:
         type:
           type: string
-          description: One of `api`, `trigger`, `manual`, `interaction`, `signal`.
+          description: One of `api`, `trigger`, `manual`, `signal`.
         id:
           type: string
           description: Identifier within the source type's namespace.
@@ -11500,7 +8841,6 @@ components:
       - action
       - sleep
       - wait_for_event
-      - interaction
       - cleanup
       description: The step type. `cleanup` is system-materialized — it appears in run step
         listings for terminal cleanup work but cannot be authored in an `AutomationSpec`.
@@ -11644,8 +8984,8 @@ components:
         event_type:
           type: string
           description: Event type from the run-stream taxonomy (e.g. `run.started`, `step.completed`,
-            `wait.opened`, `interaction.requested`, `interaction.responded`, `action.called`,
-            `action.completed`, `action.failed`, `artifact.created`, `limit.reached`, `usage.recorded`).
+            `wait.opened`, `action.called`, `action.completed`, `action.failed`, `artifact.created`,
+            `limit.reached`, `usage.recorded`).
         step_id:
           type: string
           nullable: true
@@ -11681,159 +9021,6 @@ components:
         has_more:
           type: boolean
           description: True when more events exist after the returned page.
-    PrincipalKind:
-      type: string
-      enum:
-      - service
-      - agent
-      - system
-      description: Machine principal kind. `service` is the standalone user-facing API client
-        identity. `agent` and `system` are internal backing identities for agent execution
-        and platform-internal work. (Human principals are managed as organization members,
-        not on this surface.)
-    PrincipalState:
-      type: string
-      enum:
-      - active
-      - disabled
-      - archived
-      description: Canonical business-lifecycle state. `active` allows authentication and
-        job claims; `disabled` is a reversible kill switch that blocks them but preserves
-        the record and its assignments; `archived` is terminal/retained.
-    Principal:
-      type: object
-      additionalProperties: false
-      description: Non-human identity used by automation, agents, and API keys. A principal
-        makes ownership, permissions, and credential rotation explicit without tying machine
-        access to a human user. The `id` is the principal id used as the `owned_by` value
-        when filtering or claiming resources.
-      required:
-      - id
-      - kind
-      - state
-      - name
-      - created_at
-      - updated_at
-      properties:
-        id:
-          type: string
-          description: Unique identifier for this principal (`prin_…`/`agt_…`).
-        kind:
-          $ref: '#/components/schemas/PrincipalKind'
-          description: Machine kind of this principal.
-        state:
-          $ref: '#/components/schemas/PrincipalState'
-          description: 'Current lifecycle state: `active`, `disabled`, or `archived`.'
-        name:
-          type: string
-          description: Human-readable name for this principal. Immutable after creation.
-        description:
-          type: string
-          description: Optional human-readable description.
-        handle:
-          type: string
-          description: Typed, human-readable stable reference for this machine principal (`svc:acme-ci`,
-            `agent:harry`, `system`). Replaces the synthetic email for non-humans (PRD 2026-06-04
-            FR-3).
-        owner_id:
-          type: string
-          description: Optional human principal accountable for this machine principal.
-        project_id:
-          type: string
-          description: Project that scopes this machine principal.
-        role_ids:
-          type: array
-          items:
-            type: string
-          uniqueItems: true
-          description: Role IDs currently assigned to this principal in the project.
-        metadata:
-          type: object
-          additionalProperties: true
-          description: Arbitrary key-value metadata. Subject to size and nesting depth limits.
-        tags:
-          $ref: '#/components/schemas/TagMap'
-          description: 'Resource tags applied to this principal. Distinct from `metadata`:
-            `tags` is the uniform string-to-string field used for filtering and reporting;
-            `metadata` is a free-form caller-defined blob.'
-        created_at:
-          type: string
-          format: date-time
-          description: Timestamp when this principal was created.
-        updated_at:
-          type: string
-          format: date-time
-          description: Timestamp when this principal was last updated.
-    PrincipalListResponse:
-      type: object
-      additionalProperties: false
-      required:
-      - items
-      properties:
-        items:
-          type: array
-          description: The list of results for this page.
-          items:
-            $ref: '#/components/schemas/Principal'
-    CreatePrincipalRequest:
-      type: object
-      additionalProperties: false
-      required:
-      - name
-      properties:
-        name:
-          type: string
-          description: Human-readable name for this principal. Immutable after creation.
-        description:
-          type: string
-          description: Optional human-readable description.
-        owner_id:
-          type: string
-          description: Human principal accountable for this service principal.
-        metadata:
-          type: object
-          additionalProperties: true
-          description: Arbitrary metadata to attach to the principal.
-        role_ids:
-          type: array
-          items:
-            type: string
-          minItems: 1
-          uniqueItems: true
-          description: One or more role IDs to assign at creation time. All assignments are
-            created atomically with the principal. Requires `mobius.access.manage`. Each role
-            must belong to this project or be system-defined.
-        tags:
-          $ref: '#/components/schemas/TagMap'
-          description: Initial tag set.
-    UpdatePrincipalRequest:
-      type: object
-      additionalProperties: false
-      properties:
-        description:
-          type: string
-          description: Replacement description.
-        state:
-          $ref: '#/components/schemas/PrincipalState'
-          description: 'Replacement lifecycle state: `active` or `disabled`.'
-        owner_id:
-          type: string
-          description: Human principal accountable for this principal.
-        metadata:
-          type: object
-          additionalProperties: true
-          description: Replacement metadata.
-        role_ids:
-          type: array
-          items:
-            type: string
-          uniqueItems: true
-          description: Replacement role IDs for this principal in the project. Send an empty
-            array to remove all project role assignments. Requires `mobius.access.manage`.
-        tags:
-          $ref: '#/components/schemas/TagMap'
-          description: When supplied, replaces the user tag set on the principal. System tags
-            (`mobius:*`) are preserved.
     ColumnType:
       type: string
       enum:
@@ -12464,9 +9651,6 @@ components:
           type: string
           format: date-time
 x-tagGroups:
-- name: Audit Logs
-  tags:
-  - audit-logs
 - name: API Keys
   tags:
   - api-keys
@@ -12479,9 +9663,6 @@ x-tagGroups:
 - name: Environments
   tags:
   - environments
-- name: Secrets
-  tags:
-  - secrets
 - name: Worker Sessions
   tags:
   - worker-sessions
@@ -12494,32 +9675,21 @@ x-tagGroups:
 - name: Webhooks
   tags:
   - webhooks
-- name: Permissions
-  tags:
-  - permissions
-- name: Roles
-  tags:
-  - roles
-- name: Interactions
-  tags:
-  - interactions
 - name: Agents
   tags:
   - agents
-  - agent-tools
-  - agent-capabilities
 - name: Automations
   tags:
   - automations
+- name: Runs
+  tags:
+  - runs
 - name: Toolkits
   tags:
   - toolkits
 - name: Skills
   tags:
   - skills
-- name: Principals
-  tags:
-  - principals
 - name: Tables
   tags:
   - tables
