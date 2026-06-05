@@ -6,6 +6,33 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 
 ## [Unreleased]
 
+### Added
+
+- CLI / SDKs: automation runs are now a top-level `runs` group
+  (`get` / `list` / `cancel` / `signal-run` / `start-run` /
+  `stream-run` / `list-events` / `list-steps`), synced from the
+  mobius-cloud spec. (#95)
+
+### Changed
+
+- SDKs: regenerated from the mobius-cloud spec. The generated
+  automation-run operations were renamed (`*AutomationRun*` ->
+  `*Run*`); the hand-written `mobius` client wrappers (`StartRun`,
+  `ListRuns`, `GetRun`, `CancelRun`, `SignalRun`, `WatchRun`,
+  `WaitRun`) keep their existing signatures. (#95)
+
+### Removed
+
+- CLI: the `projects set-config` / `clear-config` commands were
+  removed with the upstream project-config endpoints. (#95)
+- CLI / SDKs: the `agent-tools`, `audit-logs`, `interactions`,
+  `permissions`, `principals`, `roles`, and `secrets` command
+  groups are no longer generated; the spec no longer exposes them.
+  (#95)
+- Python: the `INTERACTION_KIND_*` constants and the `InteractionKind`
+  export were removed with the upstream interactions API. The generic
+  `parse_interaction_callback` delivery helper is retained. (#95)
+
 ## [0.0.22] - 2026-06-04
 
 ### Added
