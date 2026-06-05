@@ -62,8 +62,8 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Create an action
-         * @description Creates a project-scoped HTTP action. `name` is the stable identifier used in automation definitions and must be unique within the project. A signing secret is generated automatically and returned in the response; this is the only time the raw secret is exposed — store it securely. Actions created via this endpoint always have `endpoint_kind: http`.
+         * Create a custom action
+         * @description Registers a project-owned custom action definition. HTTP actions require `endpoint_url` and receive a signing secret. Worker-backed actions omit `endpoint_url`; compatible workers make the registered action ready by advertising its name when connected.
          */
         post: operations["createAction"];
         delete?: never;
@@ -83,15 +83,15 @@ export interface paths {
         put?: never;
         post?: never;
         /**
-         * Delete an action
-         * @description Rejected with 409 if any automation step currently references this action by name (`ErrActionInUse`). Remove all references before deleting.
+         * Delete a custom action
+         * @description Deletes a project-owned custom action definition. Automations that still reference the action block deletion until the reference is removed.
          */
         delete: operations["deleteAction"];
         options?: never;
         head?: never;
         /**
-         * Update an action
-         * @description Patches action metadata and schemas. All fields are optional; omitted fields are unchanged. Updating `annotations` replaces the entire annotations object — pass `null` to clear all annotation flags. Only applicable to `endpoint_kind: http` actions.
+         * Update a custom action
+         * @description Updates action metadata, schemas, annotations, tags, or the HTTP endpoint URL. Worker-backed actions cannot set an endpoint URL.
          */
         patch: operations["updateAction"];
         trace?: never;
@@ -106,8 +106,8 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Rotate an action signing secret
-         * @description Generates a new HMAC-SHA256 signing key version for the action. Existing deliveries are verified against the version named in their headers; no paired previous-signature header is emitted. Store the returned key immediately — it cannot be retrieved again. Only applicable to `endpoint_kind: http` actions.
+         * Rotate an HTTP action signing secret
+         * @description Rotates the signing secret for an HTTP-backed custom action. Worker actions do not have signing secrets and return a validation error.
          */
         post: operations["rotateActionSecret"];
         delete?: never;
@@ -125,7 +125,7 @@ export interface paths {
         };
         /**
          * List action invocation records
-         * @description Returns per-invocation telemetry records for action executions in the project. Each record captures the action name, input parameters, output summary, final status, error details, and retry count. Filter by `run_id` to inspect all action calls within a single automation run, by `job_id` to scope to a specific job, or by `action_name` for cross-run analysis.
+         * @description Lists recent action invocation audit records from automations, agents, direct invocations, and job-backed execution.
          */
         get: operations["listActionInvocations"];
         put?: never;
@@ -146,12 +146,8 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Invoke an action
-         * @description User-driven invocation of any catalog action. The request waits up to `timeout_seconds` for synchronous completion and returns the output directly on 200.
-         *
-         *     - **HTTP-backed** actions (`endpoint_kind: http`) complete inline.
-         *
-         *     Worker-fenced invocations from within a job stay at `POST /v1/projects/{p}/jobs/{id}/actions/{name}`.
+         * Invoke an action directly
+         * @description Invokes a catalog action through the same job-backed execution surface used by automations. HTTP and managed platform actions are dispatched to Mobius server workers; worker-backed custom actions are dispatched to compatible customer workers.
          */
         post: operations["invokeAction"];
         delete?: never;
@@ -487,7 +483,7 @@ export interface paths {
         };
         /**
          * List worker sessions
-         * @description Returns worker sessions registered against the project. Each session's `stale` flag is computed at read time: if `last_seen_at` is older than 2 minutes (or absent), the session is considered stale. Stale sessions are retained for display until the 30-day retention floor; rows older than that are hard-deleted by a background sweeper.
+         * @description Returns worker sessions registered against the project. Each session's `stale` flag is computed at read time: if `last_seen_at` is older than 90 seconds (or absent), the session is considered stale. Stale sessions are retained for display until the 30-day retention floor; rows older than that are hard-deleted by a background sweeper.
          */
         get: operations["listWorkerSessions"];
         put?: never;
@@ -1460,7 +1456,7 @@ export interface paths {
         get: operations["getTable"];
         /**
          * Update a table
-         * @description Update table description or schema and resync declared indexes.
+         * @description Update table name, description, ownership, or schema and resync declared indexes.
          */
         put: operations["updateTable"];
         post?: never;
@@ -1545,7 +1541,7 @@ export interface paths {
         put?: never;
         /**
          * Search rows
-         * @description Full-text keyword search over row data within one table. Optional field filters use the same syntax as row queries and are applied before text search.
+         * @description Token-prefix search over row data within one table. Punctuation, including hyphens, splits terms: searching `from-ui` matches a value like `from-ui-insert` because the `from` and `ui` tokens match. Optional field filters use the same syntax as row queries and are applied before text search.
          */
         post: operations["searchTableRows"];
         delete?: never;
@@ -1703,7 +1699,7 @@ export interface paths {
         put?: never;
         /**
          * Create a signed artifact URL
-         * @description Generates a fresh, time-boxed storage URL for the artifact after enforcing the caller's artifact access scope. Use `getArtifactContent` when bytes should flow through the Mobius API instead of directly from object storage.
+         * @description Generates a fresh, time-boxed Mobius-managed storage URL for the artifact after enforcing the caller's artifact access scope. Use `getArtifactContent` when bytes should flow through the Mobius API instead of a signed storage URL.
          */
         post: operations["createArtifactSignedUrl"];
         delete?: never;
@@ -2053,7 +2049,12 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
-        /** @description Registers a project-owned HTTP action endpoint callable from automations. */
+        /**
+         * @description Backing kind for a project-owned custom action. `http` actions POST to a registered endpoint. `worker` actions dispatch jobs to connected workers that advertise the registered action name.
+         * @enum {string}
+         */
+        ActionEndpointKind: "http" | "worker";
+        /** @description Registers a project-owned custom action callable from automations and agents. */
         CreateActionRequest: {
             /** @description Project-scoped identifier used in automation step definitions. Lowercase alphanumeric + hyphens, e.g. "send-email". Must be unique within the project. Cannot start with "mobius." (reserved prefix). */
             name: string;
@@ -2062,10 +2063,15 @@ export interface components {
             /** @description Markdown-safe description of what the action does. */
             description?: string;
             /**
-             * Format: uri
-             * @description HTTP/HTTPS URL Mobius will POST to when invoking the action.
+             * @description Backing kind for the action. `http` actions POST to `endpoint_url` with a Mobius signature. `worker` actions are dispatched through jobs to connected workers that advertise this registered name.
+             * @default http
              */
-            endpoint_url: string;
+            endpoint_kind: components["schemas"]["ActionEndpointKind"];
+            /**
+             * Format: uri
+             * @description Required when endpoint_kind is `http`; omitted for worker actions.
+             */
+            endpoint_url?: string;
             /** @description JSON Schema describing the expected input parameters. */
             input_schema?: {
                 [key: string]: unknown;
@@ -2089,7 +2095,7 @@ export interface components {
             description?: string;
             /**
              * Format: uri
-             * @description Replacement endpoint URL.
+             * @description Replacement endpoint URL. Valid for HTTP actions only.
              */
             endpoint_url?: string;
             /** @description Replacement JSON Schema for inputs. Replaces the existing schema. */
@@ -2107,7 +2113,7 @@ export interface components {
                 [key: string]: string;
             };
         };
-        /** @description Project-owned HTTP action endpoint callable by automations. */
+        /** @description Project-owned custom action definition callable by automations and agents. */
         Action: {
             /** @description Unique identifier for this action. */
             id: string;
@@ -2117,16 +2123,13 @@ export interface components {
             title?: string;
             /** @description Markdown description of what the action does. */
             description?: string;
-            /**
-             * @description Backing kind of this action. `http` actions are project-owned HTTP endpoints invoked via POST. `builtin` actions are Mobius platform actions registered in Go.
-             * @enum {string}
-             */
-            endpoint_kind: "http" | "builtin";
+            /** @description Backing kind of this project-owned action. `http` actions POST to an endpoint URL. `worker` actions are dispatched through jobs to connected workers that advertise this registered name. */
+            endpoint_kind: components["schemas"]["ActionEndpointKind"];
             /**
              * Format: uri
              * @description HTTP/HTTPS URL Mobius POSTs to when invoking this action. Populated for endpoint_kind: http only.
              */
-            endpoint_url: string;
+            endpoint_url?: string;
             /** @description JSON Schema describing expected input parameters. */
             input_schema?: {
                 [key: string]: unknown;
@@ -2182,14 +2185,14 @@ export interface components {
             /** @description Markdown description of what the action does. */
             description?: string;
             /**
-             * @description Backing kind. "builtin" for Mobius platform actions implemented in Go (no DB row), "http" for project-owned or integration HTTP endpoints.
+             * @description Backing kind. "builtin" for Mobius platform actions implemented in Go (no DB row), "http" for project-owned or integration HTTP endpoints, and "worker" for project-owned custom actions dispatched to connected workers.
              * @enum {string}
              */
-            endpoint_kind: "builtin" | "http";
+            endpoint_kind: "builtin" | "http" | "worker";
             /** @description Integration slug this action belongs to (e.g. "slack"), if platform-provided. */
             integration?: string;
             /**
-             * @description Origin of this action: "platform" for built-in or integration-backed actions provided by Mobius, "custom" for project-owned HTTP endpoints registered as actions. The `integration` field carries the provider slug for integration-backed platform actions.
+             * @description Origin of this action: "platform" for built-in or integration-backed actions provided by Mobius, "custom" for project-specific HTTP or worker-backed actions. The `integration` field carries the provider slug for integration-backed platform actions.
              * @enum {string}
              */
             source: "platform" | "custom";
@@ -2244,18 +2247,20 @@ export interface components {
             input?: {
                 [key: string]: unknown;
             };
-            /** @description How long (in seconds) to wait for synchronous completion. Default 30, max 120. HTTP-backed actions complete inline. */
+            /** @description How long (in seconds) to wait for synchronous completion. Default 30, max 120. */
             timeout_seconds?: number;
             /** @description When true, validates the input but does not execute. Applies to read-only actions only. */
             dry_run?: boolean;
         };
-        /** @description Unified invocation result for any action kind. HTTP-backed actions produce status "completed". */
+        /** @description Unified invocation result for any action kind. */
         ActionInvocationResult: {
             /**
              * @description Terminal or in-progress status of the invocation.
              * @enum {string}
              */
             status: "active" | "completed" | "failed";
+            /** @description Job created for this direct invocation. */
+            job_id?: string;
             /** @description Automation run ID. Present when an asynchronous run was created. */
             run_id?: string;
             /** @description Action output. Present when status is "completed". */
@@ -2708,7 +2713,7 @@ export interface components {
              * @enum {string}
              */
             instance_status: "active" | "stale" | "draining";
-            /** @description True when `last_seen_at` is older than 2 minutes or absent. Computed at read time, not stored. Equivalent to `instance_status == "stale"`; both are returned for backward compatibility while clients update. */
+            /** @description True when `last_seen_at` is older than 90 seconds or absent. Computed at read time, not stored. Equivalent to `instance_status == "stale"`; both are returned for backward compatibility while clients update. */
             stale: boolean;
             /** @description Number of jobs this worker session is currently holding. */
             busy_job_count: number;
@@ -2848,7 +2853,7 @@ export interface components {
             /** @enum {string} */
             kind: "action_execution" | "llm_generation";
             /** @enum {string} */
-            origin: "automation_action_step" | "agent_tool_call" | "agent_llm_call" | "conversation_tool_call" | "conversation_llm_call" | "server_internal";
+            origin: "automation_action_step" | "agent_tool_call" | "agent_llm_call" | "conversation_tool_call" | "conversation_llm_call" | "direct_action_invoke" | "server_internal";
             /** @enum {string} */
             executor_kind: "customer_worker" | "server_worker";
             queue: string;
@@ -3317,10 +3322,8 @@ export interface components {
             /** @description Agent that owns the parent session. */
             agent_id: string;
             role: components["schemas"]["SessionMessageRole"];
-            /** @description Plain-text content. For multimodal messages, see `content_blocks`. */
-            content: string;
-            /** @description Structured content blocks (text, tool calls, tool results, etc.) for multimodal messages. */
-            content_blocks?: {
+            /** @description Ordered content blocks (text, tool calls, tool results, images). */
+            content: {
                 [key: string]: unknown;
             }[];
             entry_type: components["schemas"]["SessionMessageEntryType"];
@@ -3356,10 +3359,8 @@ export interface components {
         };
         AppendSessionMessage: {
             role: components["schemas"]["SessionMessageRole"];
-            /** @description Plain-text content for the message. */
-            content: string;
-            /** @description Structured content blocks for multimodal messages. */
-            content_blocks?: {
+            /** @description Ordered content blocks (text, tool calls, tool results, images). */
+            content: {
                 [key: string]: unknown;
             }[];
             /** @description Free-form caller metadata for this message. */
@@ -4087,9 +4088,10 @@ export interface components {
             /** @description Optional expr predicate evaluated against the `{ inputs, context }` envelope of the parent run before the child is triggered. It must evaluate to a bool; a false result skips the step and starts no child run. Same predicate language as `wait_for_event` and event trigger conditions. */
             condition?: string;
         };
+        /** @description Retry policy for a step. `max_attempts` is the total number of attempts (1 = no retry); it bounds both worker-reported failures and lease-loss recovery for worker-executed action steps. A worker that reports a failure with attempts remaining re-queues for another attempt rather than failing the run; the run fails once attempts are exhausted. The attempt count is visible on the run timeline (`action.retried`, `action.failed`) and on the executing job (`claim_attempt` / `max_attempts`). Cancellation is always terminal. Capped server-side at 10 attempts. */
         AutomationRetryPolicy: {
             max_attempts?: number;
-            /** @description Go duration string such as `30s`, `5m`, or `2h`. */
+            /** @description Go duration string such as `30s`, `5m`, or `2h`. Applied between attempts for in-process (synchronous) action retries; worker-executed actions re-queue immediately for the next attempt. */
             delay?: string;
         };
         AutomationTimeoutPolicy: {
@@ -4262,11 +4264,11 @@ export interface components {
             /** @description Version number of the AutomationVersion this run is executing. */
             automation_version: number;
             status: components["schemas"]["AutomationRunStatus"];
-            /** @description Input map supplied when the run started, merged over the automation's `default_inputs`. */
+            /** @description Input map supplied when the run started, merged over the automation's `default_inputs`, and reachable in step templates at `{{ .inputs.<key> }}`. For event-kind trigger runs this is the normalized `{ event, meta }` envelope (`{{ .inputs.event.* }}`, `{{ .inputs.meta.* }}`) — see the automation templating guide. */
             inputs?: {
                 [key: string]: unknown;
             };
-            /** @description Final result payload returned by the automation. Absent until the run terminates successfully. */
+            /** @description Final result payload: the run's accumulated step outputs, keyed by each step's `save_as`. Absent until the run terminates successfully. */
             result?: {
                 [key: string]: unknown;
             };
@@ -4365,7 +4367,7 @@ export interface components {
             parameters?: {
                 [key: string]: unknown;
             };
-            /** @description Step output (shape varies by kind); absent until completion. */
+            /** @description Step output (shape varies by kind); absent until completion. When the step sets `save_as`, this value is also reachable in downstream step templates at `{{ .context.<save_as> }}`. */
             result?: unknown;
             /** @description Worker job that executed this step, when applicable. */
             job_id?: string | null;
@@ -4535,6 +4537,8 @@ export interface components {
             access_mode?: components["schemas"]["TableAccessMode"];
         };
         UpdateTableRequest: {
+            /** @description Table name (lowercase, snake_case); unique within the project scope. */
+            name?: string;
             /** @description Optional human-readable description of the table. */
             description?: string;
             schema?: components["schemas"]["TableSchema"];
@@ -4596,7 +4600,7 @@ export interface components {
             next_cursor?: string;
         };
         SearchRowsRequest: {
-            /** @description Keyword search query. */
+            /** @description Token-prefix search query. Hyphens and other punctuation split terms. */
             query: string;
             /** @description Optional column equality or operator filter applied before text search. */
             filter?: {
@@ -4641,7 +4645,7 @@ export interface components {
         /** @enum {string} */
         ArtifactState: "pending_upload" | "available" | "expired" | "deleted" | "failed";
         /** @enum {string} */
-        ArtifactStorageBackend: "mobius" | "s3";
+        ArtifactStorageBackend: "mobius";
         /**
          * @description Private artifacts are visible only to their owner user. Shared artifacts are visible to the project.
          * @enum {string}
@@ -5202,6 +5206,7 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
         };
     };
     listCatalogEvents: {
@@ -7929,6 +7934,7 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
         };
     };
     getTable: {
@@ -7990,6 +7996,7 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
         };
     };
     deleteTable: {

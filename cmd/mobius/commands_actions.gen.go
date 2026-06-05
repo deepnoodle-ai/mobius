@@ -20,11 +20,12 @@ func registerActionsCommands(app *cli.App) {
 	actionsGrp := app.Group("actions").Description("Actions available to automations and agents")
 	actionsGrp.Alias("action")
 	actionsGrp.Command("create").
-		Description("Create an action").
+		Description("Create a custom action").
 		Flags(
 			cli.String("annotations", "").Help("Request hints that describe the safe-use properties of the action. Used by the engine and tooling t… Accepts JSON, @file, or @-."),
 			cli.String("description", "").Help("Markdown-safe description of what the action does."),
-			cli.String("endpoint-url", "").Help("[required] HTTP/HTTPS URL Mobius will POST to when invoking the action."),
+			cli.String("endpoint-kind", "").Help("Backing kind for the action. `http` actions POST to `endpoint_url` with a Mobius signature. `worker…"),
+			cli.String("endpoint-url", "").Help("Required when endpoint_kind is `http`; omitted for worker actions."),
 			cli.String("input-schema", "").Help("JSON Schema describing the expected input parameters. Accepts JSON, @file, or @-."),
 			cli.String("name", "").Help("[required] Project-scoped identifier used in automation step definitions. Lowercase alphanumeric + hyphens, e.…"),
 			cli.String("output-schema", "").Help("JSON Schema describing the expected output shape. Accepts JSON, @file, or @-."),
@@ -54,8 +55,13 @@ func registerActionsCommands(app *cli.App) {
 				v := ctx.String("description")
 				body.Description = &v
 			}
+			if ctx.IsSet("endpoint-kind") {
+				v := api.ActionEndpointKind(ctx.String("endpoint-kind"))
+				body.EndpointKind = &v
+			}
 			if ctx.IsSet("endpoint-url") {
-				body.EndpointUrl = ctx.String("endpoint-url")
+				v := ctx.String("endpoint-url")
+				body.EndpointUrl = &v
 			}
 			if ctx.IsSet("input-schema") {
 				if err := decodeFlagJSON(ctx, "input-schema", ctx.String("input-schema"), &body.InputSchema); err != nil {
@@ -79,9 +85,6 @@ func registerActionsCommands(app *cli.App) {
 				v := ctx.String("title")
 				body.Title = &v
 			}
-			if body.EndpointUrl == "" {
-				return fmt.Errorf("--endpoint-url is required (or supply it via --file)")
-			}
 			if body.Name == "" {
 				return fmt.Errorf("--name is required (or supply it via --file)")
 			}
@@ -96,7 +99,7 @@ func registerActionsCommands(app *cli.App) {
 		})
 
 	actionsGrp.Command("delete").
-		Description("Delete an action").
+		Description("Delete a custom action").
 		AddArg(&cli.Arg{Name: "action-name", Description: "Project-scoped action name used in automation step definitions.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -115,11 +118,11 @@ func registerActionsCommands(app *cli.App) {
 		})
 
 	actionsGrp.Command("invoke").
-		Description("Invoke an action").
+		Description("Invoke an action directly").
 		AddArg(&cli.Arg{Name: "action-name", Description: "Project-scoped action name used in automation step definitions.", Required: true}).
 		Flags(
 			cli.String("input", "").Help("Input values matching the action's input_schema. Accepts JSON, @file, or @-."),
-			cli.Int("timeout-seconds", "").Help("How long (in seconds) to wait for synchronous completion. Default 30, max 120. HTTP-backed actions …"),
+			cli.Int("timeout-seconds", "").Help("How long (in seconds) to wait for synchronous completion. Default 30, max 120."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -209,7 +212,7 @@ func registerActionsCommands(app *cli.App) {
 		})
 
 	actionsGrp.Command("rotate-secret").
-		Description("Rotate an action signing secret").
+		Description("Rotate an HTTP action signing secret").
 		AddArg(&cli.Arg{Name: "action-name", Description: "Project-scoped action name used in automation step definitions.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -228,12 +231,12 @@ func registerActionsCommands(app *cli.App) {
 		})
 
 	actionsGrp.Command("update").
-		Description("Update an action").
+		Description("Update a custom action").
 		AddArg(&cli.Arg{Name: "action-name", Description: "Project-scoped action name used in automation step definitions.", Required: true}).
 		Flags(
 			cli.String("annotations", "").Help("Pass null to clear all annotation flags. Accepts JSON, @file, or @-."),
 			cli.String("description", "").Help("Replacement Markdown description."),
-			cli.String("endpoint-url", "").Help("Replacement endpoint URL."),
+			cli.String("endpoint-url", "").Help("Replacement endpoint URL. Valid for HTTP actions only."),
 			cli.String("input-schema", "").Help("Replacement JSON Schema for inputs. Replaces the existing schema. Accepts JSON, @file, or @-."),
 			cli.String("output-schema", "").Help("Replacement JSON Schema for outputs. Replaces the existing schema. Accepts JSON, @file, or @-."),
 			cli.String("tags", "").Help("Replacement tag map. Replaces the existing tags entirely. Accepts JSON, @file, or @-."),

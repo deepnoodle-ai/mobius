@@ -37,28 +37,11 @@ func (e AcquireEnvironmentRequestTemplateId) Valid() bool {
 	}
 }
 
-// Defines values for ActionEndpointKind.
-const (
-	ActionEndpointKindBuiltin ActionEndpointKind = "builtin"
-	ActionEndpointKindHttp    ActionEndpointKind = "http"
-)
-
-// Valid indicates whether the value is a known member of the ActionEndpointKind enum.
-func (e ActionEndpointKind) Valid() bool {
-	switch e {
-	case ActionEndpointKindBuiltin:
-		return true
-	case ActionEndpointKindHttp:
-		return true
-	default:
-		return false
-	}
-}
-
 // Defines values for ActionCatalogEntryEndpointKind.
 const (
 	ActionCatalogEntryEndpointKindBuiltin ActionCatalogEntryEndpointKind = "builtin"
 	ActionCatalogEntryEndpointKindHttp    ActionCatalogEntryEndpointKind = "http"
+	ActionCatalogEntryEndpointKindWorker  ActionCatalogEntryEndpointKind = "worker"
 )
 
 // Valid indicates whether the value is a known member of the ActionCatalogEntryEndpointKind enum.
@@ -67,6 +50,8 @@ func (e ActionCatalogEntryEndpointKind) Valid() bool {
 	case ActionCatalogEntryEndpointKindBuiltin:
 		return true
 	case ActionCatalogEntryEndpointKindHttp:
+		return true
+	case ActionCatalogEntryEndpointKindWorker:
 		return true
 	default:
 		return false
@@ -109,6 +94,24 @@ func (e ActionCatalogEntrySource) Valid() bool {
 	case ActionCatalogEntrySourceCustom:
 		return true
 	case ActionCatalogEntrySourcePlatform:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ActionEndpointKind.
+const (
+	ActionEndpointKindHttp   ActionEndpointKind = "http"
+	ActionEndpointKindWorker ActionEndpointKind = "worker"
+)
+
+// Valid indicates whether the value is a known member of the ActionEndpointKind enum.
+func (e ActionEndpointKind) Valid() bool {
+	switch e {
+	case ActionEndpointKindHttp:
+		return true
+	case ActionEndpointKindWorker:
 		return true
 	default:
 		return false
@@ -355,15 +358,12 @@ func (e ArtifactState) Valid() bool {
 // Defines values for ArtifactStorageBackend.
 const (
 	ArtifactStorageBackendMobius ArtifactStorageBackend = "mobius"
-	ArtifactStorageBackendS3     ArtifactStorageBackend = "s3"
 )
 
 // Valid indicates whether the value is a known member of the ArtifactStorageBackend enum.
 func (e ArtifactStorageBackend) Valid() bool {
 	switch e {
 	case ArtifactStorageBackendMobius:
-		return true
-	case ArtifactStorageBackendS3:
 		return true
 	default:
 		return false
@@ -1718,6 +1718,7 @@ const (
 	WorkerSocketClaimedJobOriginAutomationActionStep WorkerSocketClaimedJobOrigin = "automation_action_step"
 	WorkerSocketClaimedJobOriginConversationLlmCall  WorkerSocketClaimedJobOrigin = "conversation_llm_call"
 	WorkerSocketClaimedJobOriginConversationToolCall WorkerSocketClaimedJobOrigin = "conversation_tool_call"
+	WorkerSocketClaimedJobOriginDirectActionInvoke   WorkerSocketClaimedJobOrigin = "direct_action_invoke"
 	WorkerSocketClaimedJobOriginServerInternal       WorkerSocketClaimedJobOrigin = "server_internal"
 )
 
@@ -1733,6 +1734,8 @@ func (e WorkerSocketClaimedJobOrigin) Valid() bool {
 	case WorkerSocketClaimedJobOriginConversationLlmCall:
 		return true
 	case WorkerSocketClaimedJobOriginConversationToolCall:
+		return true
+	case WorkerSocketClaimedJobOriginDirectActionInvoke:
 		return true
 	case WorkerSocketClaimedJobOriginServerInternal:
 		return true
@@ -2282,7 +2285,7 @@ type AcquireEnvironmentRequest struct {
 // AcquireEnvironmentRequestTemplateId V1 supports only coding-default.
 type AcquireEnvironmentRequestTemplateId string
 
-// Action Project-owned HTTP action endpoint callable by automations.
+// Action Project-owned custom action definition callable by automations and agents.
 type Action struct {
 	// Annotations Response hints that describe the safe-use properties of the action. Response annotations are forward-compatible so the server can add response-only hints without breaking strict clients.
 	Annotations *ActionAnnotationsResponse `json:"annotations,omitempty"`
@@ -2293,11 +2296,11 @@ type Action struct {
 	// Description Markdown description of what the action does.
 	Description *string `json:"description,omitempty"`
 
-	// EndpointKind Backing kind of this action. `http` actions are project-owned HTTP endpoints invoked via POST. `builtin` actions are Mobius platform actions registered in Go.
+	// EndpointKind Backing kind of this project-owned action. `http` actions POST to an endpoint URL. `worker` actions are dispatched through jobs to connected workers that advertise this registered name.
 	EndpointKind ActionEndpointKind `json:"endpoint_kind"`
 
 	// EndpointUrl HTTP/HTTPS URL Mobius POSTs to when invoking this action. Populated for endpoint_kind: http only.
-	EndpointUrl string `json:"endpoint_url"`
+	EndpointUrl *string `json:"endpoint_url,omitempty"`
 
 	// Id Unique identifier for this action.
 	Id string `json:"id"`
@@ -2329,9 +2332,6 @@ type Action struct {
 	// UpdatedAt Timestamp when this action was last updated.
 	UpdatedAt time.Time `json:"updated_at"`
 }
-
-// ActionEndpointKind Backing kind of this action. `http` actions are project-owned HTTP endpoints invoked via POST. `builtin` actions are Mobius platform actions registered in Go.
-type ActionEndpointKind string
 
 // ActionAnnotationsRequest Request hints that describe the safe-use properties of the action. Used by the engine and tooling to decide retry behavior, dry-run eligibility, etc. Unknown request properties are rejected.
 type ActionAnnotationsRequest struct {
@@ -2366,7 +2366,7 @@ type ActionCatalogEntry struct {
 	// Description Markdown description of what the action does.
 	Description *string `json:"description,omitempty"`
 
-	// EndpointKind Backing kind. "builtin" for Mobius platform actions implemented in Go (no DB row), "http" for project-owned or integration HTTP endpoints.
+	// EndpointKind Backing kind. "builtin" for Mobius platform actions implemented in Go (no DB row), "http" for project-owned or integration HTTP endpoints, and "worker" for project-owned custom actions dispatched to connected workers.
 	EndpointKind ActionCatalogEntryEndpointKind `json:"endpoint_kind"`
 
 	// EndpointUrl Endpoint URL (populated for endpoint_kind: http actions only).
@@ -2394,20 +2394,20 @@ type ActionCatalogEntry struct {
 	// Risk Author-declared risk classification. Used by toolkit-author UIs to surface warnings and by audit views to prioritize attention.
 	Risk ActionCatalogEntryRisk `json:"risk"`
 
-	// Source Origin of this action: "platform" for built-in or integration-backed actions provided by Mobius, "custom" for project-owned HTTP endpoints registered as actions. The `integration` field carries the provider slug for integration-backed platform actions.
+	// Source Origin of this action: "platform" for built-in or integration-backed actions provided by Mobius, "custom" for project-specific HTTP or worker-backed actions. The `integration` field carries the provider slug for integration-backed platform actions.
 	Source ActionCatalogEntrySource `json:"source"`
 
 	// Title Human-readable display title for the action.
 	Title *string `json:"title,omitempty"`
 }
 
-// ActionCatalogEntryEndpointKind Backing kind. "builtin" for Mobius platform actions implemented in Go (no DB row), "http" for project-owned or integration HTTP endpoints.
+// ActionCatalogEntryEndpointKind Backing kind. "builtin" for Mobius platform actions implemented in Go (no DB row), "http" for project-owned or integration HTTP endpoints, and "worker" for project-owned custom actions dispatched to connected workers.
 type ActionCatalogEntryEndpointKind string
 
 // ActionCatalogEntryRisk Author-declared risk classification. Used by toolkit-author UIs to surface warnings and by audit views to prioritize attention.
 type ActionCatalogEntryRisk string
 
-// ActionCatalogEntrySource Origin of this action: "platform" for built-in or integration-backed actions provided by Mobius, "custom" for project-owned HTTP endpoints registered as actions. The `integration` field carries the provider slug for integration-backed platform actions.
+// ActionCatalogEntrySource Origin of this action: "platform" for built-in or integration-backed actions provided by Mobius, "custom" for project-specific HTTP or worker-backed actions. The `integration` field carries the provider slug for integration-backed platform actions.
 type ActionCatalogEntrySource string
 
 // ActionCatalogListResponse Unpaginated project action catalog. This endpoint returns the complete set of available project and platform actions so clients can build pickers without paging across a small catalog.
@@ -2415,6 +2415,9 @@ type ActionCatalogListResponse struct {
 	// Items The full list of catalog entries.
 	Items []ActionCatalogEntry `json:"items"`
 }
+
+// ActionEndpointKind Backing kind for a project-owned custom action. `http` actions POST to a registered endpoint. `worker` actions dispatch jobs to connected workers that advertise the registered action name.
+type ActionEndpointKind string
 
 // ActionExecutionMetadata defines model for ActionExecutionMetadata.
 type ActionExecutionMetadata struct {
@@ -2494,10 +2497,13 @@ type ActionInvocationListResponse struct {
 	NextCursor *string `json:"next_cursor,omitempty"`
 }
 
-// ActionInvocationResult Unified invocation result for any action kind. HTTP-backed actions produce status "completed".
+// ActionInvocationResult Unified invocation result for any action kind.
 type ActionInvocationResult struct {
 	// Error Error message. Present when status is "failed".
 	Error *string `json:"error,omitempty"`
+
+	// JobId Job created for this direct invocation.
+	JobId *string `json:"job_id,omitempty"`
 
 	// Output Action output. Present when status is "completed".
 	Output *map[string]interface{} `json:"output,omitempty"`
@@ -2821,11 +2827,8 @@ type AgentToolPresentation string
 
 // AppendSessionMessage defines model for AppendSessionMessage.
 type AppendSessionMessage struct {
-	// Content Plain-text content for the message.
-	Content string `json:"content"`
-
-	// ContentBlocks Structured content blocks for multimodal messages.
-	ContentBlocks *[]map[string]interface{} `json:"content_blocks,omitempty"`
+	// Content Ordered content blocks (text, tool calls, tool results, images).
+	Content []map[string]interface{} `json:"content"`
 
 	// CreatedAt Caller-supplied creation timestamp. The server assigns one if absent.
 	CreatedAt *time.Time `json:"created_at,omitempty"`
@@ -3135,9 +3138,9 @@ type AutomationModelRoute struct {
 // AutomationModelRouteMode defines model for AutomationModelRoute.Mode.
 type AutomationModelRouteMode string
 
-// AutomationRetryPolicy defines model for AutomationRetryPolicy.
+// AutomationRetryPolicy Retry policy for a step. `max_attempts` is the total number of attempts (1 = no retry); it bounds both worker-reported failures and lease-loss recovery for worker-executed action steps. A worker that reports a failure with attempts remaining re-queues for another attempt rather than failing the run; the run fails once attempts are exhausted. The attempt count is visible on the run timeline (`action.retried`, `action.failed`) and on the executing job (`claim_attempt` / `max_attempts`). Cancellation is always terminal. Capped server-side at 10 attempts.
 type AutomationRetryPolicy struct {
-	// Delay Go duration string such as `30s`, `5m`, or `2h`.
+	// Delay Go duration string such as `30s`, `5m`, or `2h`. Applied between attempts for in-process (synchronous) action retries; worker-executed actions re-queue immediately for the next attempt.
 	Delay       *string `json:"delay,omitempty"`
 	MaxAttempts *int    `json:"max_attempts,omitempty"`
 }
@@ -3171,7 +3174,7 @@ type AutomationRun struct {
 	// Id Stable run identifier.
 	Id string `json:"id"`
 
-	// Inputs Input map supplied when the run started, merged over the automation's `default_inputs`.
+	// Inputs Input map supplied when the run started, merged over the automation's `default_inputs`, and reachable in step templates at `{{ .inputs.<key> }}`. For event-kind trigger runs this is the normalized `{ event, meta }` envelope (`{{ .inputs.event.* }}`, `{{ .inputs.meta.* }}`) — see the automation templating guide.
 	Inputs *map[string]interface{} `json:"inputs,omitempty"`
 
 	// OrgId Organization that owns this run.
@@ -3189,7 +3192,7 @@ type AutomationRun struct {
 	// ProjectId Project that owns this run.
 	ProjectId string `json:"project_id"`
 
-	// Result Final result payload returned by the automation. Absent until the run terminates successfully.
+	// Result Final result payload: the run's accumulated step outputs, keyed by each step's `save_as`. Absent until the run terminates successfully.
 	Result *map[string]interface{} `json:"result,omitempty"`
 
 	// Source Optional attribution for the call that started this run. Triggers and webhooks populate `trigger_id` and `trigger_fire_id`; API callers usually only set `type` and `id`.
@@ -3327,7 +3330,7 @@ type AutomationRunStep struct {
 	// ProjectId Project that owns the parent run.
 	ProjectId string `json:"project_id"`
 
-	// Result Step output (shape varies by kind); absent until completion.
+	// Result Step output (shape varies by kind); absent until completion. When the step sets `save_as`, this value is also reachable in downstream step templates at `{{ .context.<save_as> }}`.
 	Result interface{} `json:"result,omitempty"`
 
 	// RunId Run this step belongs to.
@@ -3497,7 +3500,9 @@ type AutomationStep struct {
 	Kind AutomationStepKind `json:"kind"`
 
 	// Name Human-readable step name.
-	Name  *string                `json:"name,omitempty"`
+	Name *string `json:"name,omitempty"`
+
+	// Retry Retry policy for a step. `max_attempts` is the total number of attempts (1 = no retry); it bounds both worker-reported failures and lease-loss recovery for worker-executed action steps. A worker that reports a failure with attempts remaining re-queues for another attempt rather than failing the run; the run fails once attempts are exhausted. The attempt count is visible on the run timeline (`action.retried`, `action.failed`) and on the executing job (`claim_attempt` / `max_attempts`). Cancellation is always terminal. Capped server-side at 10 attempts.
 	Retry *AutomationRetryPolicy `json:"retry,omitempty"`
 
 	// SaveAs Context key used to store this step's output. Defaults to `key`.
@@ -3711,7 +3716,7 @@ type CreateAPIKeyRequest struct {
 	Tags *TagMap `json:"tags,omitempty"`
 }
 
-// CreateActionRequest Registers a project-owned HTTP action endpoint callable from automations.
+// CreateActionRequest Registers a project-owned custom action callable from automations and agents.
 type CreateActionRequest struct {
 	// Annotations Request hints that describe the safe-use properties of the action. Used by the engine and tooling to decide retry behavior, dry-run eligibility, etc. Unknown request properties are rejected.
 	Annotations *ActionAnnotationsRequest `json:"annotations,omitempty"`
@@ -3719,8 +3724,11 @@ type CreateActionRequest struct {
 	// Description Markdown-safe description of what the action does.
 	Description *string `json:"description,omitempty"`
 
-	// EndpointUrl HTTP/HTTPS URL Mobius will POST to when invoking the action.
-	EndpointUrl string `json:"endpoint_url"`
+	// EndpointKind Backing kind for the action. `http` actions POST to `endpoint_url` with a Mobius signature. `worker` actions are dispatched through jobs to connected workers that advertise this registered name.
+	EndpointKind *ActionEndpointKind `json:"endpoint_kind,omitempty"`
+
+	// EndpointUrl Required when endpoint_kind is `http`; omitted for worker actions.
+	EndpointUrl *string `json:"endpoint_url,omitempty"`
 
 	// InputSchema JSON Schema describing the expected input parameters.
 	InputSchema *map[string]interface{} `json:"input_schema,omitempty"`
@@ -4233,7 +4241,7 @@ type InvokeActionRequest struct {
 	// Input Input values matching the action's input_schema.
 	Input *map[string]interface{} `json:"input,omitempty"`
 
-	// TimeoutSeconds How long (in seconds) to wait for synchronous completion. Default 30, max 120. HTTP-backed actions complete inline.
+	// TimeoutSeconds How long (in seconds) to wait for synchronous completion. Default 30, max 120.
 	TimeoutSeconds *int `json:"timeout_seconds,omitempty"`
 }
 
@@ -4432,7 +4440,7 @@ type SearchRowsRequest struct {
 	// Limit Maximum number of rows to return (1–1000, default 100).
 	Limit *int `json:"limit,omitempty"`
 
-	// Query Keyword search query.
+	// Query Token-prefix search query. Hyphens and other punctuation split terms.
 	Query string `json:"query"`
 }
 
@@ -4533,11 +4541,8 @@ type SessionMessage struct {
 	// AgentId Agent that owns the parent session.
 	AgentId string `json:"agent_id"`
 
-	// Content Plain-text content. For multimodal messages, see `content_blocks`.
-	Content string `json:"content"`
-
-	// ContentBlocks Structured content blocks (text, tool calls, tool results, etc.) for multimodal messages.
-	ContentBlocks *[]map[string]interface{} `json:"content_blocks,omitempty"`
+	// Content Ordered content blocks (text, tool calls, tool results, images).
+	Content []map[string]interface{} `json:"content"`
 
 	// CoversThroughSequence For `compaction` messages, the highest sequence number this summary covers.
 	CoversThroughSequence *int `json:"covers_through_sequence,omitempty"`
@@ -4963,7 +4968,7 @@ type UpdateActionRequest struct {
 	// Description Replacement Markdown description.
 	Description *string `json:"description,omitempty"`
 
-	// EndpointUrl Replacement endpoint URL.
+	// EndpointUrl Replacement endpoint URL. Valid for HTTP actions only.
 	EndpointUrl *string `json:"endpoint_url,omitempty"`
 
 	// InputSchema Replacement JSON Schema for inputs. Replaces the existing schema.
@@ -5102,6 +5107,9 @@ type UpdateTableRequest struct {
 
 	// Description Optional human-readable description of the table.
 	Description *string `json:"description,omitempty"`
+
+	// Name Table name (lowercase, snake_case); unique within the project scope.
+	Name *string `json:"name,omitempty"`
 
 	// OwnedBy Canonical user owner ID. Send null to clear ownership.
 	OwnedBy *string      `json:"owned_by,omitempty"`
@@ -5344,7 +5352,7 @@ type WorkerSession struct {
 	// Queues Queue names this worker can claim. Empty or absent means the default project queue set.
 	Queues *[]string `json:"queues,omitempty"`
 
-	// Stale True when `last_seen_at` is older than 2 minutes or absent. Computed at read time, not stored. Equivalent to `instance_status == "stale"`; both are returned for backward compatibility while clients update.
+	// Stale True when `last_seen_at` is older than 90 seconds or absent. Computed at read time, not stored. Equivalent to `instance_status == "stale"`; both are returned for backward compatibility while clients update.
 	Stale bool `json:"stale"`
 
 	// Version Optional version string supplied in the claim request.
@@ -16614,6 +16622,7 @@ type InvokeActionResponse struct {
 	JSON401      *Unauthorized
 	JSON403      *Forbidden
 	JSON404      *NotFound
+	JSON409      *Conflict
 }
 
 // Status returns HTTPResponse.Status
@@ -19175,6 +19184,7 @@ type CreateTableResponse struct {
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
 	JSON403      *Forbidden
+	JSON409      *Conflict
 }
 
 // Status returns HTTPResponse.Status
@@ -19274,6 +19284,7 @@ type UpdateTableResponse struct {
 	JSON401      *Unauthorized
 	JSON403      *Forbidden
 	JSON404      *NotFound
+	JSON409      *Conflict
 }
 
 // Status returns HTTPResponse.Status
@@ -22027,6 +22038,13 @@ func ParseInvokeActionResponse(rsp *http.Response) (*InvokeActionResponse, error
 			return nil, err
 		}
 		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	}
 
@@ -25787,6 +25805,13 @@ func ParseCreateTableResponse(rsp *http.Response) (*CreateTableResponse, error) 
 		}
 		response.JSON403 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
 	}
 
 	return response, nil
@@ -25927,6 +25952,13 @@ func ParseUpdateTableResponse(rsp *http.Response) (*UpdateTableResponse, error) 
 			return nil, err
 		}
 		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	}
 
