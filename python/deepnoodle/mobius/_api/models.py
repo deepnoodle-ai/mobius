@@ -6,15 +6,7 @@ from __future__ import annotations
 from enum import StrEnum
 from typing import Any
 
-from pydantic import (
-    AnyUrl,
-    AwareDatetime,
-    BaseModel,
-    ConfigDict,
-    EmailStr,
-    Field,
-    RootModel,
-)
+from pydantic import AnyUrl, AwareDatetime, BaseModel, ConfigDict, Field, RootModel
 
 
 class Error(BaseModel):
@@ -84,95 +76,6 @@ class TagMap(RootModel[dict[str, str]]):
     """
 
     root: dict[str, str] = Field(..., max_length=256)
-
-
-class InteractionMode(StrEnum):
-    """
-    Declarative UI/input primitive for collecting the response. This is a portable rendering contract, not executable code. Values are `confirm`, `select`, `multi_select`, and `input`.
-    """
-
-    confirm = 'confirm'
-    select = 'select'
-    multi_select = 'multi_select'
-    input = 'input'
-
-
-class InteractionOption(BaseModel):
-    """
-    Selectable option for `select` and `multi_select` modes.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    value: str = Field(
-        ..., description='Machine-readable value submitted when this option is chosen.'
-    )
-    label: str = Field(
-        ..., description='Human-readable label displayed for this option.'
-    )
-    description: str | None = Field(
-        None, description='Optional additional context shown beneath the label.'
-    )
-
-
-class InteractionSpec(BaseModel):
-    """
-    Declarative dialog contract for rendering and validating an interaction. Used at both authoring time (inside an automation definition) and runtime (persisted on an interaction). PRD 077 decouples protocol kind from input shape: each kind declares which spec modes are *allowed*, not which is *implied*. An approval may now legitimately use `select` mode (approve/deny/defer), for example.
-
-    Allowed combinations:
-    * `approval` → `confirm`, `select`
-    * `review` → `select`, `input`
-    * `request` → `select`, `multi_select`, `input`
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    mode: InteractionMode = Field(
-        ..., description='UI/input mode used to render and validate the response.'
-    )
-    options: list[InteractionOption] | None = Field(
-        None,
-        description='Required for `select` and `multi_select` modes.',
-        max_length=100,
-    )
-    default_value: str | None = Field(
-        None, description='Default selected option for `select` mode.'
-    )
-    default_values: list[str] | None = Field(
-        None,
-        description='Default selected options for `multi_select` mode.',
-        max_length=100,
-    )
-    default_text: str | None = Field(
-        None, description='Initial text value for `input` mode.'
-    )
-    default_confirmed: bool | None = Field(
-        None, description='Initial yes/no value for `confirm` mode.'
-    )
-    placeholder: str | None = Field(
-        None, description='Hint text shown for `input` mode.'
-    )
-    multiline: bool | None = Field(
-        None, description='When true, render `input` mode as a multiline text area.'
-    )
-
-
-class FeatureKey(RootModel[str]):
-    root: str = Field(
-        ...,
-        description='Server-defined product feature key. The launch product currently has no public/developer feature gates; this string type remains for internal operator override plumbing.',
-    )
-
-
-class FeatureOverrideScope(StrEnum):
-    """
-    Scope for a feature override. Org overrides apply across the organization; project overrides apply only to the specified project and take precedence over org overrides.
-    """
-
-    org = 'org'
-    project = 'project'
 
 
 class Kind(StrEnum):
@@ -269,7 +172,7 @@ class Project(BaseModel):
         ..., description='Current project access policy: `org_open` or `restricted`.'
     )
     created_by: str | None = Field(
-        None, description='User ID of the org member who created this project.'
+        None, description='Principal ID of whoever created this project.'
     )
     archived_at: AwareDatetime | None = Field(
         None,
@@ -377,7 +280,7 @@ class Agent(BaseModel):
     )
     model: str | None = Field(
         None,
-        description='Model identifier for platform agents. Accepts any id returned by `GET /v1/projects/{project}/models`, optionally `provider/`-prefixed (e.g. `xai/grok-4`); bare known ids (e.g. `claude-sonnet-4-6`) are auto-detected to their provider. Empty string falls back to the platform default.',
+        description='Model identifier for platform agents. Accepts any id returned by `GET /v1/projects/{project}/catalog/models`, optionally `provider/`-prefixed (e.g. `xai/grok-4`); bare known ids (e.g. `claude-sonnet-4-6`) are auto-detected to their provider. Empty string falls back to the platform default.',
     )
     model_route: AgentModelRoute | None = None
     tool_presentation: AgentToolPresentation | None = Field(
@@ -421,94 +324,6 @@ class AgentListResponse(BaseModel):
         extra='forbid',
     )
     items: list[Agent] = Field(..., description='The list of results for this page.')
-
-
-class AuditChanges(BaseModel):
-    """
-    Before/after field snapshots captured for an audited mutation.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    before: dict[str, Any] | None = Field(
-        None, description='Field values before the mutation.'
-    )
-    after: dict[str, Any] | None = Field(
-        None, description='Field values after the mutation.'
-    )
-
-
-class Action(StrEnum):
-    """
-    Type of action performed: `create`, `update`, `delete`, `archive`, or `restore`.
-    """
-
-    create = 'create'
-    update = 'update'
-    delete = 'delete'
-    archive = 'archive'
-    restore = 'restore'
-
-
-class AuditLogEntry(BaseModel):
-    """
-    Immutable record of a security- or configuration-relevant change. Use audit log entries to answer who changed a resource, when it happened, and which project or credential was involved.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    id: str = Field(..., description='Unique audit log entry ID')
-    principal_id: str | None = Field(
-        None, description='ID of the user who performed the action'
-    )
-    project_id: str | None = Field(
-        None, description='Project ID when the audited resource is project-scoped'
-    )
-    actor_name: str | None = Field(
-        None,
-        description='Display name of the user at the time the entry was written (snapshotted)',
-    )
-    credential_id: str | None = Field(
-        None, description='Credential ID used for the request, when applicable'
-    )
-    credential_name: str | None = Field(
-        None,
-        description='Human-readable credential name or session label captured when the audit entry was written',
-    )
-    action: Action = Field(
-        ...,
-        description='Type of action performed: `create`, `update`, `delete`, `archive`, or `restore`.',
-    )
-    resource_type: str = Field(
-        ..., description='Type of resource affected (e.g., automation, job, artifact)'
-    )
-    resource_id: str = Field(..., description='ID of the affected resource')
-    resource_name: str | None = Field(
-        None, description='Human-readable name of the affected resource'
-    )
-    changes: AuditChanges | None = Field(
-        None, description='Object containing before/after changes for update actions'
-    )
-    ip_address: str | None = Field(None, description='IP address of the request')
-    user_agent: str | None = Field(None, description='User agent of the request')
-    created_at: AwareDatetime = Field(
-        ..., description='Timestamp when the action was performed'
-    )
-
-
-class AuditLogListResponse(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    items: list[AuditLogEntry] = Field(
-        ..., description='The list of results for this page.'
-    )
-    next_cursor: str | None = Field(
-        None, description='Cursor for fetching next page of results'
-    )
-    has_more: bool = Field(..., description='Whether more results are available')
 
 
 class APIKey(BaseModel):
@@ -738,7 +553,7 @@ class EndpointKind(StrEnum):
     builtin = 'builtin'
 
 
-class Action1(BaseModel):
+class Action(BaseModel):
     """
     Project-owned HTTP action endpoint callable by automations.
     """
@@ -1036,6 +851,34 @@ class EventCatalogReservedPrefix(BaseModel):
     )
     prefix: str
     kind: Kind2
+
+
+class Source1(StrEnum):
+    """
+    Where credentials come from — a project integration (`byok`) or a platform-managed key (`platform`).
+    """
+
+    byok = 'byok'
+    platform = 'platform'
+
+
+class ModelOption(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str = Field(
+        ..., description="Bare model id assigned to an agent's `model` field."
+    )
+    provider: str = Field(
+        ..., description='Canonical provider id this model belongs to.'
+    )
+    label: str = Field(..., description='Human-readable model label for UI.')
+    description: str | None = Field(
+        None, description='Short guidance about when to use this model.'
+    )
+    recommended: bool | None = Field(
+        None, description='Whether this is the suggested default for its provider.'
+    )
 
 
 class EnvironmentProvider(StrEnum):
@@ -1478,113 +1321,6 @@ class EnvironmentGitCredentialResult(BaseModel):
     )
     expires_at: AwareDatetime
     repo_full_name: str
-
-
-class SecretValues(RootModel[dict[str, str]]):
-    """
-    JSON key/value payload encrypted as a SecretVersion.
-    """
-
-    root: dict[str, str]
-
-
-class SecretVersionState(StrEnum):
-    """
-    Secret version lifecycle state.
-    """
-
-    ENABLED = 'ENABLED'
-    DISABLED = 'DISABLED'
-    DESTROYED = 'DESTROYED'
-
-
-class Secret(BaseModel):
-    """
-    Project-scoped secret metadata. Values are never returned.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    id: str = Field(..., description='Unique secret ID.')
-    name: str = Field(..., description='Project-scoped secret name.')
-    description: str | None = Field(
-        None, description='Optional human-readable description.'
-    )
-    version: int = Field(..., description='Latest version number.')
-    key_names: list[str] = Field(
-        ..., description='Sorted keys present in the latest version.'
-    )
-    created_by: str | None = Field(
-        None, description='User ID of the principal who created this secret.'
-    )
-    updated_by: str | None = Field(
-        None, description='User ID of the principal who last updated this secret.'
-    )
-    created_at: AwareDatetime
-    updated_at: AwareDatetime
-
-
-class SecretVersion(BaseModel):
-    """
-    SecretVersion metadata. Values are never returned.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    id: str = Field(..., description='Unique secret version ID.')
-    secret_id: str = Field(..., description='Parent secret ID.')
-    version: int = Field(..., description='Version number.')
-    state: SecretVersionState
-    sha256: str = Field(
-        ...,
-        description='SHA-256 of the canonical JSON plaintext, for change detection only.',
-    )
-    kms_key_id: str | None = Field(
-        None, description='Key identifier used to seal the payload.'
-    )
-    created_by: str | None = Field(
-        None, description='User that created this version, when known.'
-    )
-    created_at: AwareDatetime
-    destroyed_at: AwareDatetime | None = None
-
-
-class SecretListResponse(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    items: list[Secret]
-    next_cursor: str | None = Field(
-        None, description='Cursor for the next page, when more results exist.'
-    )
-
-
-class SecretVersionListResponse(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    items: list[SecretVersion]
-
-
-class CreateSecretRequest(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    name: str = Field(..., description='Project-scoped secret name.')
-    description: str | None = Field(
-        None, description='Optional human-readable description.'
-    )
-    values: SecretValues
-
-
-class UpdateSecretRequest(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    description: str | None = Field(None, description='Replacement description.')
-    values: SecretValues | None = None
 
 
 class InstanceStatus(StrEnum):
@@ -2061,18 +1797,6 @@ class WorkerSocketErrorFrame(BaseModel):
     error: WorkerSocketProtocolError
 
 
-class ConfigEntry(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    key: str = Field(..., min_length=1)
-    value: str
-
-
-class ConfigEntries(RootModel[list[ConfigEntry]]):
-    root: list[ConfigEntry]
-
-
 class CreateProjectRequest(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
@@ -2112,106 +1836,6 @@ class UpdateProjectRequest(BaseModel):
     tags: TagMap | None = Field(
         None, description='When supplied, replaces the user tag set on the project.'
     )
-
-
-class ProjectMember(BaseModel):
-    """
-    Explicit project membership used when a project is restricted. Use this record to decide who can see or operate on a project outside the default org-wide access model.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    id: str = Field(..., description='Unique identifier for this membership record.')
-    project_id: str = Field(
-        ..., description='ID of the project this membership belongs to.'
-    )
-    principal_id: str = Field(..., description='ID of the principal that is a member.')
-    principal: User | None = Field(
-        None,
-        description='Profile of the member. Embedded by `listProjectMembers` so UIs can render names, emails, and avatars without a separate user lookup. Absent on the `addProjectMember` response.',
-    )
-    added_by: str | None = Field(
-        None, description='User ID of whoever added this member, if recorded.'
-    )
-    added_at: AwareDatetime = Field(
-        ..., description='Timestamp when the member was added.'
-    )
-
-
-class ProjectMemberListResponse(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    items: list[ProjectMember] = Field(
-        ..., description='The list of members for this project.'
-    )
-    has_more: bool = Field(..., description='Whether more results are available.')
-    next_cursor: str | None = Field(
-        None,
-        description='Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.',
-    )
-
-
-class AddProjectMemberRequest(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    principal_id: str = Field(
-        ..., description='ID of the org member principal to add to this project.'
-    )
-
-
-class FeatureGateSource(StrEnum):
-    """
-    Source of the effective feature gate decision.
-    """
-
-    default = 'default'
-    org_override = 'org_override'
-    project_override = 'project_override'
-
-
-class FeatureGate(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    key: FeatureKey
-    label: str = Field(..., description='Short user-facing name.')
-    description: str = Field(
-        ..., description='User-facing description of the gated product area.'
-    )
-    enabled: bool = Field(
-        ..., description='Effective state after resolving defaults and overrides.'
-    )
-    default_enabled: bool = Field(
-        ..., description='Built-in fallback state when no active override applies.'
-    )
-    source: FeatureGateSource
-    source_scope: FeatureOverrideScope | None = Field(
-        None,
-        description='Override scope that produced this state, omitted for defaults.',
-    )
-    source_org_id: str | None = Field(
-        None, description='Org ID for the override that produced this state.'
-    )
-    source_project_id: str | None = Field(
-        None, description='Project ID for the override that produced this state.'
-    )
-    reason: str | None = Field(
-        None, description='Optional operator-supplied reason from the active override.'
-    )
-    expires_at: AwareDatetime | None = Field(
-        None, description='Optional expiry for the active override.'
-    )
-    allowed_scopes: list[FeatureOverrideScope]
-
-
-class FeatureGateListResponse(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    items: list[FeatureGate]
 
 
 class WebhookDeliveryStatus(StrEnum):
@@ -2412,523 +2036,6 @@ class PingWebhookResult(BaseModel):
     )
 
 
-class Scope(StrEnum):
-    project = 'project'
-    org = 'org'
-    platform = 'platform'
-    action = 'action'
-
-
-class Category(StrEnum):
-    project = 'project'
-    access = 'access'
-    automations = 'automations'
-    runs = 'runs'
-    work = 'work'
-    integrations = 'integrations'
-    audit = 'audit'
-    billing = 'billing'
-    platform = 'platform'
-    actions = 'actions'
-
-
-class Risk1(StrEnum):
-    low = 'low'
-    medium = 'medium'
-    high = 'high'
-    critical = 'critical'
-
-
-class UserKind(StrEnum):
-    human = 'human'
-    agent = 'agent'
-    service = 'service'
-    system = 'system'
-
-
-class PermissionDefinition(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    id: str = Field(..., description='Stable permission ID stored on roles.')
-    label: str = Field(..., description='Human-readable label for product UI.')
-    description: str = Field(
-        ..., description='Short explanation of what the permission grants.'
-    )
-    scope: Scope
-    category: Category
-    risk: Risk1
-    assignable: bool = Field(
-        ...,
-        description='Whether this permission should be selectable in the current project role builder.',
-    )
-    user_kinds: list[UserKind] = Field(
-        ...,
-        description='User kinds this permission is intended for.',
-        max_length=4,
-        min_length=1,
-    )
-
-
-class PermissionPreset(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    id: str
-    label: str
-    description: str
-    scope: Scope
-    permissions: list[str] = Field(..., max_length=64)
-
-
-class Source1(StrEnum):
-    platform = 'platform'
-    integration = 'integration'
-    custom = 'custom'
-
-
-class ActionPermissionGroup(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    id: str = Field(
-        ...,
-        description='Wildcard permission ID, for example `actions.execute.slack.*`.',
-    )
-    label: str
-    source: Source1
-    children: list[str] = Field(
-        ...,
-        description='Concrete action execution permission IDs included in this group.',
-        max_length=200,
-    )
-
-
-class PermissionCatalogResponse(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    items: list[PermissionDefinition] = Field(..., max_length=64)
-    presets: list[PermissionPreset] = Field(..., max_length=32)
-    action_groups: list[ActionPermissionGroup] = Field(..., max_length=64)
-
-
-class Role(BaseModel):
-    """
-    Named bundle of permissions assignable to human or machine principals. Roles let admins grant automation, project, and integration capabilities consistently without editing every user individually.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    id: str = Field(..., description='Unique identifier for this role.')
-    project_id: str | None = Field(
-        None, description='Scoping project. Empty for system-defined roles.'
-    )
-    name: str = Field(
-        ..., description='Human-readable role name, unique within org+project scope.'
-    )
-    description: str | None = Field(
-        None,
-        description='Optional human-readable description of what this role grants.',
-    )
-    permissions: list[str] = Field(
-        ...,
-        description='Permission strings granted by this role. Source allowed values from `GET /v1/projects/{project}/permissions`; legacy IDs or values not present in that catalog are rejected.',
-    )
-    system_defined: bool = Field(
-        ...,
-        description='True for built-in platform roles that cannot be modified or deleted.',
-    )
-    tags: TagMap | None = Field(None, description='Resource tags applied to this role.')
-    created_at: AwareDatetime = Field(
-        ..., description='Timestamp when this role was created.'
-    )
-    updated_at: AwareDatetime = Field(
-        ..., description='Timestamp when this role was last updated.'
-    )
-
-
-class RoleAssignment(BaseModel):
-    """
-    Binding between a principal and a role in one project. Use assignments to explain why a principal (human or machine) has access and to audit who granted it.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    id: str = Field(..., description='Unique identifier for this role assignment.')
-    principal_id: str = Field(..., description='Principal ID receiving the role.')
-    role_id: str = Field(..., description='ID of the assigned role.')
-    role_name: str = Field(..., description='Name of the assigned role.')
-    project_id: str = Field(..., description='Project this assignment belongs to.')
-    granted_by: str | None = Field(
-        None, description='User ID of the caller who created this assignment.'
-    )
-    created_at: AwareDatetime = Field(
-        ..., description='Timestamp when this assignment was created.'
-    )
-
-
-class RoleListResponse(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    items: list[Role] = Field(..., description='The list of results for this page.')
-    next_cursor: str | None = Field(
-        None,
-        description='Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.',
-    )
-    has_more: bool = Field(..., description='Whether additional pages are available.')
-
-
-class RoleAssignmentListResponse(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    items: list[RoleAssignment] = Field(
-        ..., description='The list of results for this page.'
-    )
-
-
-class CreateRoleRequest(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    name: str = Field(..., description='Unique name within the project.')
-    description: str | None = Field(
-        None,
-        description='Optional human-readable description of what this role grants.',
-    )
-    permissions: list[str] = Field(
-        ...,
-        description='Permission strings to include. Source allowed values from `GET /v1/projects/{project}/permissions`; legacy IDs or values not present in that catalog are rejected.',
-    )
-    tags: TagMap | None = Field(None, description='Initial tag set.')
-
-
-class UpdateRoleRequest(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    description: str | None = Field(None, description='Replacement description.')
-    permissions: list[str] | None = Field(
-        None,
-        description='Replaces the existing permissions array entirely. Source allowed values from `GET /v1/projects/{project}/permissions`; legacy IDs or values not present in that catalog are rejected.',
-    )
-    tags: TagMap | None = Field(
-        None,
-        description='When supplied, replaces the user tag set on the role. System tags (`mobius:*`) are preserved.',
-    )
-
-
-class CreateRoleAssignmentRequest1(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    principal_id: str = Field(
-        ..., description='Principal ID to assign the role to (human or machine).'
-    )
-    role_id: str = Field(..., description='Mutually exclusive with `role_name`.')
-    role_name: str | None = Field(
-        None,
-        description='Resolved to a role ID server-side. Mutually exclusive with `role_id`.',
-    )
-
-
-class CreateRoleAssignmentRequest2(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    principal_id: str = Field(
-        ..., description='Principal ID to assign the role to (human or machine).'
-    )
-    role_id: str | None = Field(
-        None, description='Mutually exclusive with `role_name`.'
-    )
-    role_name: str = Field(
-        ...,
-        description='Resolved to a role ID server-side. Mutually exclusive with `role_id`.',
-    )
-
-
-class CreateRoleAssignmentRequest(
-    RootModel[CreateRoleAssignmentRequest1 | CreateRoleAssignmentRequest2]
-):
-    root: CreateRoleAssignmentRequest1 | CreateRoleAssignmentRequest2
-
-
-class InteractionKind(StrEnum):
-    """
-    Protocol kind of the interaction. Launch keeps this intentionally
-    small:
-    * `request_information` — a data-collection protocol with structured
-    or free-form input
-    * `request_approval` — a decision protocol (yes/no, optionally
-    yes/no/defer)
-    * `request_review` — a judgment protocol that evaluates supplied
-    material
-    """
-
-    request_information = 'request_information'
-    request_approval = 'request_approval'
-    request_review = 'request_review'
-
-
-class InteractionValue(RootModel[dict[str, Any] | list[Any] | str | float | bool]):
-    root: dict[str, Any] | list[Any] | str | float | bool = Field(
-        ...,
-        description='Free-form JSON payload. Used both for responder-supplied values and for policy-derived values (e.g. `Interaction.outcome`, `ResolutionPolicy.proposal`); each consumer documents which.',
-    )
-
-
-class InteractionResponder(BaseModel):
-    """
-    Identifies the principal who answered an interaction. Agents answer through their agent principal ID.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    user_id: str = Field(..., description='Responder user ID.')
-
-
-class Kind4(StrEnum):
-    external_url = 'external_url'
-    mobius_entity = 'mobius_entity'
-
-
-class InteractionReference(BaseModel):
-    """
-    Pointer to the work item, artifact, external ticket, or Mobius entity this interaction is about.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    kind: Kind4
-    url: AnyUrl | None = Field(
-        None, description='Required when kind is `external_url`.'
-    )
-    entity_type: str | None = Field(
-        None, description='Required when kind is `mobius_entity`.'
-    )
-    entity_id: str | None = Field(
-        None, description='Required when kind is `mobius_entity`.'
-    )
-    project_id: str | None = Field(
-        None, description='Optional project scope for Mobius entity references.'
-    )
-    relation: str | None = Field(
-        None, description='Relationship such as `subject`, `evidence`, or `related`.'
-    )
-    label: str | None = Field(None, description='User-facing label for display.')
-
-
-class Kind5(StrEnum):
-    inbox_only = 'inbox_only'
-    email = 'email'
-
-
-class EmailDelivery(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    to: list[EmailStr] = Field(..., min_length=1)
-
-
-class Kind6(StrEnum):
-    run = 'run'
-    agent_tool = 'agent_tool'
-    http_subscriber = 'http_subscriber'
-    none = 'none'
-
-
-class RunConsumer(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    run_id: str
-    signal_name: str
-
-
-class AgentToolConsumer(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    invocation_id: str
-    tool_call_id: str
-
-
-class HttpSubscriberConsumer(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    callback_url: AnyUrl = Field(
-        ...,
-        description='Absolute http(s) URL the server POSTs to when the interaction resolves. The body is a JSON object with the interaction id, kind, status, outcome value, comment, responder, and `resolved_by`. Delivery is enqueued as a `source_events` dispatch so the worker can retry failed attempts instead of dropping them inline with interaction resolution.',
-    )
-    secret_ref: str = Field(
-        ...,
-        description="Required reference to a project secret used to sign deliveries with HMAC-SHA256 over the canonical string `v1.{delivery_id}.{unix_timestamp}.{raw_body}`, where `delivery_id` is the value in `X-Mobius-Delivery-Id` and `raw_body` is the exact callback request body bytes. Accepts `<name>` for the latest enabled version or `<name>:<version>` to pin a specific positive-integer version. The plaintext signing bytes are taken from the secret's `signing_key_b64` key, which must base64-decode to exactly 32 bytes. The hex signature is forwarded as `X-Mobius-Signature: sha256=<hex>` alongside `X-Mobius-Secret-Ref`, `X-Mobius-Secret-Version`, `X-Mobius-Signature-Version: v1`, and a unix `X-Mobius-Timestamp`. Consumers should reject stale timestamps (for example, older than five minutes). When `secret_ref` resolution fails the dispatch is retried by the event processor rather than sent unsigned.",
-    )
-
-
-class ResponseKind(StrEnum):
-    """
-    Answer response.
-    """
-
-    response = 'response'
-
-
-class State(StrEnum):
-    """
-    Lifecycle state for this response row.
-    """
-
-    submitted = 'submitted'
-
-
-class InteractionResponse(BaseModel):
-    """
-    One persisted answer artifact for an interaction. The response that triggered resolution is referenced from `Interaction.resolving_response_id`.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    id: str = Field(..., description='Unique identifier for this response.')
-    interaction_id: str = Field(
-        ..., description='ID of the interaction this response belongs to.'
-    )
-    response_kind: ResponseKind = Field(..., description='Answer response.')
-    state: State = Field(..., description='Lifecycle state for this response row.')
-    responder_user_id: str = Field(
-        ..., description='User ID that submitted this response.'
-    )
-    value: InteractionValue = Field(
-        ..., description='JSON value supplied by this participant.'
-    )
-    comment: str | None = Field(
-        None, description='Optional free-text comment from this responder.'
-    )
-    responded_at: AwareDatetime = Field(
-        ..., description='Timestamp when this response was submitted.'
-    )
-    attempt: int | None = Field(
-        None, description='Reserved for future retry-aware response flows.'
-    )
-    created_at: AwareDatetime
-    updated_at: AwareDatetime
-
-
-class Type18(StrEnum):
-    """
-    Resolution rule. `any_of` resolves on the first acceptable response. `all_of` waits for every assigned participant. `quorum` resolves once `threshold` distinct participants respond.
-    """
-
-    any_of = 'any_of'
-    all_of = 'all_of'
-    quorum = 'quorum'
-
-
-class ResolutionPolicy(BaseModel):
-    """
-    Declarative resolution rule attached to an Interaction. Determines how participant responses become a final outcome.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    type: Type18 = Field(
-        ...,
-        description='Resolution rule. `any_of` resolves on the first acceptable response. `all_of` waits for every assigned participant. `quorum` resolves once `threshold` distinct participants respond.',
-    )
-    threshold: int | None = Field(
-        None,
-        description='Required when `type` is `quorum`. Number of distinct eligible participants that must respond before the interaction resolves. Must be `>= 1` and `<=` the participant count.',
-        ge=1,
-    )
-
-
-class Status3(StrEnum):
-    """
-    Current status of the interaction: pending, completed, expired, or cancelled.
-    """
-
-    pending = 'pending'
-    completed = 'completed'
-    expired = 'expired'
-    cancelled = 'cancelled'
-
-
-class Action2(StrEnum):
-    """
-    Operation to perform through the canonical response endpoint. `submit` answers the interaction.
-    """
-
-    submit = 'submit'
-
-
-class RespondToInteractionRequest(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    action: Action2 | None = Field(
-        None,
-        description='Operation to perform through the canonical response endpoint. `submit` answers the interaction.',
-    )
-    value: InteractionValue | None = Field(
-        None, description='JSON value supplied by the responder. Required for `submit`.'
-    )
-    comment: str | None = Field(
-        None,
-        description='Optional free-text comment accompanying the action. Available on every interaction kind and never gated by the spec; the responder may always attach reasoning, caveats, or follow-up notes alongside `value`.',
-    )
-
-
-class CancelInteractionRequest(BaseModel):
-    """
-    Optional payload accompanying a cancel request. The reason is recorded on the interaction and forwarded in the cancellation signal so automations can route to a fallback.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    reason: str | None = Field(
-        None, description='Free-text reason recorded on the interaction.'
-    )
-
-
-class Source2(StrEnum):
-    """
-    Where credentials come from — a project integration (`byok`) or a platform-managed key (`platform`).
-    """
-
-    byok = 'byok'
-    platform = 'platform'
-
-
-class ModelOption(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    id: str = Field(
-        ..., description="Bare model id assigned to an agent's `model` field."
-    )
-    provider: str = Field(
-        ..., description='Canonical provider id this model belongs to.'
-    )
-    label: str = Field(..., description='Human-readable model label for UI.')
-    description: str | None = Field(
-        None, description='Short guidance about when to use this model.'
-    )
-    recommended: bool | None = Field(
-        None, description='Whether this is the suggested default for its provider.'
-    )
-
-
 class AgentMessagingDMPolicy(StrEnum):
     """
     Direct-message access policy for the binding.
@@ -3044,7 +2151,6 @@ class SessionOrigin(StrEnum):
     Surface that created the session.
     """
 
-    interaction = 'interaction'
     manual = 'manual'
     api = 'api'
     automation = 'automation'
@@ -3247,7 +2353,7 @@ class ToolkitActionGrant(BaseModel):
     )
 
 
-class Source3(StrEnum):
+class Source2(StrEnum):
     """
     Provenance of this toolkit. `system` toolkits are built-in; `project` toolkits are user-authored.
     """
@@ -3256,7 +2362,7 @@ class Source3(StrEnum):
     project = 'project'
 
 
-class Status4(StrEnum):
+class Status3(StrEnum):
     """
     Lifecycle status of the toolkit.
     """
@@ -3279,11 +2385,11 @@ class Toolkit(BaseModel):
     description: str | None = Field(
         None, description="Markdown description of the toolkit's purpose."
     )
-    source: Source3 = Field(
+    source: Source2 = Field(
         ...,
         description='Provenance of this toolkit. `system` toolkits are built-in; `project` toolkits are user-authored.',
     )
-    status: Status4 = Field(..., description='Lifecycle status of the toolkit.')
+    status: Status3 = Field(..., description='Lifecycle status of the toolkit.')
     action_grants: list[ToolkitActionGrant] = Field(
         ...,
         description='Action selectors granted by this toolkit. Each entry is matched against the unified action catalog at manifest-resolution time.',
@@ -3416,7 +2522,7 @@ class AgentTableGrantListResponse(BaseModel):
     )
 
 
-class Source4(StrEnum):
+class Source3(StrEnum):
     """
     Provenance of this skill. `system` is built-in; `project` is user-authored; `imported` came from an external bundle.
     """
@@ -3426,7 +2532,7 @@ class Source4(StrEnum):
     imported = 'imported'
 
 
-class Status5(StrEnum):
+class Status4(StrEnum):
     """
     Lifecycle status of the skill.
     """
@@ -3449,11 +2555,11 @@ class Skill(BaseModel):
     description: str | None = Field(
         None, description="Markdown description of the skill's purpose."
     )
-    source: Source4 = Field(
+    source: Source3 = Field(
         ...,
         description='Provenance of this skill. `system` is built-in; `project` is user-authored; `imported` came from an external bundle.',
     )
-    status: Status5 = Field(..., description='Lifecycle status of the skill.')
+    status: Status4 = Field(..., description='Lifecycle status of the skill.')
     instructions: str = Field(
         ..., description='Markdown instructions loaded when the skill is active.'
     )
@@ -3688,7 +2794,7 @@ class CreateAgentRequest(BaseModel):
     )
     model: str | None = Field(
         None,
-        description='Model identifier for platform agents. Any id from `GET /v1/projects/{project}/models`, optionally `provider/`-prefixed (e.g. `xai/grok-4`); bare known ids (e.g. `claude-sonnet-4-6`) are auto-detected. Empty falls back to the platform default.',
+        description='Model identifier for platform agents. Any id from `GET /v1/projects/{project}/catalog/models`, optionally `provider/`-prefixed (e.g. `xai/grok-4`); bare known ids (e.g. `claude-sonnet-4-6`) are auto-detected. Empty falls back to the platform default.',
     )
     model_route: AgentModelRoute | None = None
     tool_presentation: AgentToolPresentation | None = Field(
@@ -3701,7 +2807,7 @@ class CreateAgentRequest(BaseModel):
     tags: TagMap | None = Field(None, description='Initial tag set.')
 
 
-class Status6(StrEnum):
+class Status5(StrEnum):
     """
     Replacement agent status: `active` or `inactive`. Use DELETE to soft-delete.
     """
@@ -3741,14 +2847,14 @@ class UpdateAgentRequest(BaseModel):
     )
     model: str | None = Field(
         None,
-        description='Replacement model identifier for platform agents (any id from `GET /v1/projects/{project}/models`, optionally `provider/`-prefixed).',
+        description='Replacement model identifier for platform agents (any id from `GET /v1/projects/{project}/catalog/models`, optionally `provider/`-prefixed).',
     )
     model_route: AgentModelRoute | None = None
     tool_presentation: AgentToolPresentation | None = None
     system_prompt: str | None = Field(
         None, description='Replacement system prompt for platform agents.'
     )
-    status: Status6 | None = Field(
+    status: Status5 | None = Field(
         None,
         description='Replacement agent status: `active` or `inactive`. Use DELETE to soft-delete.',
     )
@@ -3828,7 +2934,7 @@ class UpdateAutomationRequest(BaseModel):
     )
 
 
-class Status7(StrEnum):
+class Status6(StrEnum):
     """
     Publication state. `draft` is editable but not runnable; `published` is the currently runnable version; `superseded` is a prior published version retained for historical runs.
     """
@@ -3899,7 +3005,7 @@ class AutomationSpecInput(BaseModel):
     )
 
 
-class Kind7(StrEnum):
+class Kind4(StrEnum):
     http = 'http'
     schedule = 'schedule'
     event = 'event'
@@ -3921,7 +3027,7 @@ class AutomationSpecTrigger(BaseModel):
         None, description='Stable user-authored trigger key within the spec.'
     )
     name: str | None = Field(None, description='Human-readable trigger name.')
-    kind: Kind7
+    kind: Kind4
     enabled: bool | None = None
     config: dict[str, Any] | None = Field(
         None, description='Kind-specific trigger configuration.'
@@ -3930,12 +3036,11 @@ class AutomationSpecTrigger(BaseModel):
     max_concurrent_runs: int | None = Field(None, ge=1)
 
 
-class Kind8(StrEnum):
+class Kind5(StrEnum):
     agent = 'agent'
     action = 'action'
     sleep = 'sleep'
     wait_for_event = 'wait_for_event'
-    interaction = 'interaction'
     automation = 'automation'
 
 
@@ -3969,7 +3074,7 @@ class AutomationEnvironmentPolicy(BaseModel):
     retention_policy: EnvironmentRetentionPolicy | None = None
 
 
-class Scope2(StrEnum):
+class Scope(StrEnum):
     """
     Named-session boundary. `auto` and omitted use `automation`. `agent` intentionally shares the named session across automations using the same agent.
     """
@@ -4022,7 +3127,7 @@ class AutomationAgentSessionPolicy(BaseModel):
         None,
         description='Disable durable session context and transcript writes for the affected agent step(s).',
     )
-    scope: Scope2 | None = Field(
+    scope: Scope | None = Field(
         None,
         description='Named-session boundary. `auto` and omitted use `automation`. `agent` intentionally shares the named session across automations using the same agent.',
     )
@@ -4160,27 +3265,6 @@ class AutomationSubAutomationStep(BaseModel):
     )
 
 
-class Protocol(StrEnum):
-    request_information = 'request_information'
-    request_approval = 'request_approval'
-    request_review = 'request_review'
-
-
-class AutomationInteractionStep(BaseModel):
-    """
-    Human interaction step configuration recognised inside `AutomationSpec.steps[].config`.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    protocol: Protocol
-    targets: list[str]
-    prompt: str | None = None
-    resolution_policy: str | None = None
-    spec: dict[str, Any] | None = None
-
-
 class AutomationRetryPolicy(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
@@ -4270,7 +3354,7 @@ class AutomationTrigger(BaseModel):
     updated_at: AwareDatetime = Field(..., description='Last update timestamp.')
 
 
-class Status8(StrEnum):
+class Status7(StrEnum):
     """
     Acceptance status of the source-event row:
     * `accepted` — the row is durable; processing happens asynchronously.
@@ -4295,7 +3379,7 @@ class HTTPTriggerDeliveryResponse(BaseModel):
         ...,
         description='Durable source-event id (also the `dedup_key` seed). Stable across retries with the same `Idempotency-Key`.',
     )
-    status: Status8 = Field(
+    status: Status7 = Field(
         ...,
         description='Acceptance status of the source-event row:\n* `accepted` — the row is durable; processing happens asynchronously.\n* `skipped` — the trigger is disabled or has no live subscribers.\n* `failed` — the row could not be enqueued (synchronous validation error).',
     )
@@ -4344,7 +3428,7 @@ class AutomationRunSource(BaseModel):
         extra='forbid',
     )
     type: str | None = Field(
-        None, description='One of `api`, `trigger`, `manual`, `interaction`, `signal`.'
+        None, description='One of `api`, `trigger`, `manual`, `signal`.'
     )
     id: str | None = Field(
         None, description="Identifier within the source type's namespace."
@@ -4381,7 +3465,6 @@ class AutomationRunStepKind(StrEnum):
     action = 'action'
     sleep = 'sleep'
     wait_for_event = 'wait_for_event'
-    interaction = 'interaction'
     cleanup = 'cleanup'
 
 
@@ -4476,7 +3559,7 @@ class AutomationRunEvent(BaseModel):
     )
     event_type: str = Field(
         ...,
-        description='Event type from the run-stream taxonomy (e.g. `run.started`, `step.completed`, `wait.opened`, `interaction.requested`, `interaction.responded`, `action.called`, `action.completed`, `action.failed`, `artifact.created`, `limit.reached`, `usage.recorded`).',
+        description='Event type from the run-stream taxonomy (e.g. `run.started`, `step.completed`, `wait.opened`, `action.called`, `action.completed`, `action.failed`, `artifact.created`, `limit.reached`, `usage.recorded`).',
     )
     step_id: str | None = Field(
         None, description='ID of the step this event belongs to, when applicable.'
@@ -4506,135 +3589,6 @@ class AutomationRunEventListResponse(BaseModel):
     )
     has_more: bool | None = Field(
         None, description='True when more events exist after the returned page.'
-    )
-
-
-class PrincipalKind(StrEnum):
-    """
-    Machine principal kind. `service` is the standalone user-facing API client identity. `agent` and `system` are internal backing identities for agent execution and platform-internal work. (Human principals are managed as organization members, not on this surface.)
-    """
-
-    service = 'service'
-    agent = 'agent'
-    system = 'system'
-
-
-class PrincipalState(StrEnum):
-    """
-    Canonical business-lifecycle state. `active` allows authentication and job claims; `disabled` is a reversible kill switch that blocks them but preserves the record and its assignments; `archived` is terminal/retained.
-    """
-
-    active = 'active'
-    disabled = 'disabled'
-    archived = 'archived'
-
-
-class Principal(BaseModel):
-    """
-    Non-human identity used by automation, agents, and API keys. A principal makes ownership, permissions, and credential rotation explicit without tying machine access to a human user. The `id` is the principal id used as the `owned_by` value when filtering or claiming resources.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    id: str = Field(
-        ..., description='Unique identifier for this principal (`prin_…`/`agt_…`).'
-    )
-    kind: PrincipalKind = Field(..., description='Machine kind of this principal.')
-    state: PrincipalState = Field(
-        ..., description='Current lifecycle state: `active`, `disabled`, or `archived`.'
-    )
-    name: str = Field(
-        ...,
-        description='Human-readable name for this principal. Immutable after creation.',
-    )
-    description: str | None = Field(
-        None, description='Optional human-readable description.'
-    )
-    handle: str | None = Field(
-        None,
-        description='Typed, human-readable stable reference for this machine principal (`svc:acme-ci`, `agent:harry`, `system`). Replaces the synthetic email for non-humans (PRD 2026-06-04 FR-3).',
-    )
-    owner_id: str | None = Field(
-        None,
-        description='Optional human principal accountable for this machine principal.',
-    )
-    project_id: str | None = Field(
-        None, description='Project that scopes this machine principal.'
-    )
-    role_ids: list[str] | None = Field(
-        None,
-        description='Role IDs currently assigned to this principal in the project.',
-    )
-    metadata: dict[str, Any] | None = Field(
-        None,
-        description='Arbitrary key-value metadata. Subject to size and nesting depth limits.',
-    )
-    tags: TagMap | None = Field(
-        None,
-        description='Resource tags applied to this principal. Distinct from `metadata`: `tags` is the uniform string-to-string field used for filtering and reporting; `metadata` is a free-form caller-defined blob.',
-    )
-    created_at: AwareDatetime = Field(
-        ..., description='Timestamp when this principal was created.'
-    )
-    updated_at: AwareDatetime = Field(
-        ..., description='Timestamp when this principal was last updated.'
-    )
-
-
-class PrincipalListResponse(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    items: list[Principal] = Field(
-        ..., description='The list of results for this page.'
-    )
-
-
-class CreatePrincipalRequest(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    name: str = Field(
-        ...,
-        description='Human-readable name for this principal. Immutable after creation.',
-    )
-    description: str | None = Field(
-        None, description='Optional human-readable description.'
-    )
-    owner_id: str | None = Field(
-        None, description='Human principal accountable for this service principal.'
-    )
-    metadata: dict[str, Any] | None = Field(
-        None, description='Arbitrary metadata to attach to the principal.'
-    )
-    role_ids: list[str] | None = Field(
-        None,
-        description='One or more role IDs to assign at creation time. All assignments are created atomically with the principal. Requires `mobius.access.manage`. Each role must belong to this project or be system-defined.',
-        min_length=1,
-    )
-    tags: TagMap | None = Field(None, description='Initial tag set.')
-
-
-class UpdatePrincipalRequest(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    description: str | None = Field(None, description='Replacement description.')
-    state: PrincipalState | None = Field(
-        None, description='Replacement lifecycle state: `active` or `disabled`.'
-    )
-    owner_id: str | None = Field(
-        None, description='Human principal accountable for this principal.'
-    )
-    metadata: dict[str, Any] | None = Field(None, description='Replacement metadata.')
-    role_ids: list[str] | None = Field(
-        None,
-        description='Replacement role IDs for this principal in the project. Send an empty array to remove all project role assignments. Requires `mobius.access.manage`.',
-    )
-    tags: TagMap | None = Field(
-        None,
-        description='When supplied, replaces the user tag set on the principal. System tags (`mobius:*`) are preserved.',
     )
 
 
@@ -5170,6 +4124,22 @@ class EventCatalogSource(BaseModel):
     event_types: list[EventCatalogEventType]
 
 
+class ModelProviderGroup(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    provider: str = Field(
+        ...,
+        description='Canonical provider id (`anthropic`, `openai`, `gemini`, `xai`).',
+    )
+    display_name: str = Field(..., description='Human-readable provider label.')
+    source: Source1 = Field(
+        ...,
+        description='Where credentials come from — a project integration (`byok`) or a platform-managed key (`platform`).',
+    )
+    models: list[ModelOption]
+
+
 class WorkerSession(BaseModel):
     """
     Recently observed worker process for a project. Use sessions to see which machines, users, API clients, or agents are polling for work, what their configured concurrency is, and whether they appear stale.
@@ -5320,48 +4290,6 @@ class WorkerSocketFrame(
         ...,
         description='Typed JSON frame exchanged over `/workers/socket`. WebSocket traffic is not ordinary request/response HTTP, but the frame schemas are included in the public OpenAPI contract so SDKs can share a wire format.',
     )
-
-
-class DeliveryChannel(BaseModel):
-    """
-    A single delivery destination. `inbox_only` carries no payload; `email` requires the `email` variant.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    kind: Kind5
-    email: EmailDelivery | None = None
-
-
-class Consumer(BaseModel):
-    """
-    Polymorphic identifier of what is waiting on this interaction's resolution (PRD 077 §3.7). Replaces the previously special-cased `run_id` + `signal_name` pair. When `kind=run`, the legacy fields are also populated for compatibility. `http_subscriber` requires `secret_ref` and enqueues a durable callback dispatch to `callback_url` when the interaction resolves; the canonical string `v1.{delivery_id}.{unix_timestamp}.{raw_body}` is signed with HMAC-SHA256 against the resolved project signing key and the signed dispatch carries `X-Mobius-Signature`, `X-Mobius-Secret-Ref`, `X-Mobius-Secret-Version`, and `X-Mobius-Timestamp`. Signed dispatches also carry `X-Mobius-Signature-Version: v1`. Every durable dispatch also carries the stable outbox row id in `X-Mobius-Delivery-Id` and `Idempotency-Key`; retries reuse the same value. Verifiers should recompute the signature over the exact raw body, reject stale timestamps (for example, older than five minutes), deduplicate by delivery id, and check the signing headers.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    kind: Kind6
-    run: RunConsumer | None = None
-    agent_tool: AgentToolConsumer | None = None
-    http_subscriber: HttpSubscriberConsumer | None = None
-
-
-class ModelProviderGroup(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    provider: str = Field(
-        ...,
-        description='Canonical provider id (`anthropic`, `openai`, `gemini`, `xai`).',
-    )
-    display_name: str = Field(..., description='Human-readable provider label.')
-    source: Source2 = Field(
-        ...,
-        description='Where credentials come from — a project integration (`byok`) or a platform-managed key (`platform`).',
-    )
-    models: list[ModelOption]
 
 
 class AppendSessionMessagesRequest(BaseModel):
@@ -5645,276 +4573,7 @@ class EventCatalogResponse(BaseModel):
     )
 
 
-class Delivery(BaseModel):
-    """
-    Optional per-interaction delivery override. When absent, each participant is notified via the app inbox only.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    channels: list[DeliveryChannel] = Field(..., min_length=1)
-
-
-class Interaction(BaseModel):
-    """
-    Human or agent interaction request and its current response state.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    id: str = Field(..., description='Unique identifier for this interaction.')
-    run_id: str | None = Field(
-        None,
-        description='Originating automation run when the interaction is run-backed.',
-    )
-    signal_name: str | None = Field(
-        None,
-        description='Signal name used to resume the originating run when run-backed.',
-    )
-    created_by: str | None = Field(
-        None,
-        description='Canonical principal ID of the human or agent that created the interaction.',
-    )
-    kind: InteractionKind = Field(..., description='Protocol kind of the interaction.')
-    status: Status3 = Field(
-        ...,
-        description='Current status of the interaction: pending, completed, expired, or cancelled.',
-    )
-    title: str = Field(
-        ..., description='Short non-empty title shown to the responder.', min_length=1
-    )
-    description: str | None = Field(
-        None, description='Optional longer responder-facing detail or instructions.'
-    )
-    subject: InteractionReference | None = Field(
-        None, description='Primary work item or artifact the interaction is about.'
-    )
-    references: list[InteractionReference] | None = Field(
-        None, description='Supporting links and related entities.'
-    )
-    context: dict[str, Any] | None = Field(
-        None,
-        description='Additional key-value context surfaced in the UI alongside the title and description when supplied.',
-    )
-    tags: TagMap | None = Field(
-        None,
-        description='Uniform string key/value labels used for interaction list filtering and reporting.',
-    )
-    properties: dict[str, Any] | None = Field(
-        None, description='Free-form structured metadata attached to the interaction.'
-    )
-    spec: InteractionSpec | None = Field(
-        None,
-        description='Response controls and validation rules rendered to the recipient.',
-    )
-    target_user_ids: list[str] = Field(
-        ..., description='Resolved user IDs targeted by the interaction.'
-    )
-    responder: InteractionResponder | None = Field(
-        None,
-        description='User or agent that completed the interaction; null until completion.',
-    )
-    resolving_response_id: str | None = Field(
-        None,
-        description='ID of the response that triggered resolution. Null while the interaction is pending, cancelled, or expired. Look up the response in `responses` for the full payload.',
-    )
-    responses: list[InteractionResponse] | None = Field(
-        None,
-        description='All response artifacts recorded against this interaction in arrival order.',
-    )
-    expires_at: AwareDatetime | None = Field(
-        None, description='Timestamp when this interaction expires if not responded to.'
-    )
-    completed_at: AwareDatetime | None = Field(
-        None, description='Timestamp when the interaction received a terminal response.'
-    )
-    created_at: AwareDatetime = Field(
-        ..., description='Timestamp when this interaction was created.'
-    )
-    updated_at: AwareDatetime = Field(
-        ..., description='Timestamp when this interaction was last updated.'
-    )
-    require_all: bool | None = Field(
-        None, description='When true, all target users must respond before completion.'
-    )
-    resolution_policy: ResolutionPolicy | None = Field(
-        None,
-        description='Declarative resolution rule attached at creation time. Legacy `require_all` inputs are synthesized into an equivalent policy at create time when present. Newer rows typically include this field; nullability covers historical rows and callers that omit it.',
-    )
-    consumer: Consumer | None = Field(
-        None,
-        description="Polymorphic identifier of what is waiting on this interaction's resolution (PRD 077 §3.7). Replaces the special-cased `run_id`/`signal_name` pair; the latter remain populated when `consumer.kind=run`.",
-    )
-    delivery: Delivery | None = Field(
-        None,
-        description='Optional per-interaction delivery override. When absent, the dispatcher delivers to the app inbox only.',
-    )
-    outcome: InteractionValue | None = Field(
-        None,
-        description='Final outcome selected by the resolution policy. Omitted while the interaction is still pending.',
-    )
-    resolved_by: str | None = Field(
-        None,
-        description='Short audit string identifying which policy rule fired. Null until the interaction reaches a resolved state.',
-    )
-    cancel_reason: str | None = Field(
-        None, description='Reason recorded when the interaction was cancelled.'
-    )
-
-
-class InteractionListResponse(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    items: list[Interaction] = Field(
-        ..., description='The list of results for this page.'
-    )
-    has_more: bool | None = Field(
-        None, description='Whether additional pages are available.'
-    )
-    next_cursor: str | None = Field(
-        None,
-        description='Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.',
-    )
-
-
-class CreateStandaloneInteractionRequest(BaseModel):
-    """
-    Creates a standalone interaction. Completion records the response but does not deliver an automation signal.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    target_user_ids: list[str] | None = Field(
-        None,
-        description='Resolved user IDs to target directly. Agents use their agent principal IDs.',
-    )
-    kind: InteractionKind = Field(
-        ..., description='Protocol kind. Renamed from `type` in the PRD 077 v-bump.'
-    )
-    title: str = Field(
-        ..., description='Short non-empty title shown to the responder.', min_length=1
-    )
-    description: str | None = Field(
-        None, description='Optional longer responder-facing detail or instructions.'
-    )
-    subject: InteractionReference | None = Field(
-        None, description='Primary work item or artifact the interaction is about.'
-    )
-    references: list[InteractionReference] | None = Field(
-        None, description='Supporting links and related entities.'
-    )
-    context: dict[str, Any] | None = Field(
-        None,
-        description='Additional key-value context surfaced in the UI alongside the title and description.',
-    )
-    tags: TagMap | None = Field(
-        None,
-        description='Initial interaction tag set used by list filtering and reporting.',
-    )
-    properties: dict[str, Any] | None = Field(
-        None, description='Free-form structured metadata to attach to the interaction.'
-    )
-    spec: InteractionSpec | None = Field(
-        None,
-        description='Response controls and validation rules rendered to the recipient.',
-    )
-    require_all: bool | None = Field(
-        None,
-        description='When true, all target users must respond before the interaction is considered complete. Defaults to false when omitted. Mutually exclusive with `resolution_policy`; prefer the policy form for new code.',
-    )
-    resolution_policy: ResolutionPolicy | None = Field(
-        None,
-        description='Declarative resolution rule. When supplied the policy evaluator drives completion.',
-    )
-    consumer: Consumer | None = Field(
-        None,
-        description="Polymorphic identifier of what is waiting on this interaction's resolution (PRD 077 §3.7). When omitted on a run-backed create request, the server derives a `kind=run` consumer from `run_id` and `signal_name`.",
-    )
-    delivery: Delivery | None = Field(
-        None, description='Optional per-interaction delivery override (PRD 077 §3.8).'
-    )
-    expires_at: AwareDatetime | None = Field(
-        None,
-        description='Timestamp after which this interaction expires if not responded to.',
-    )
-
-
-class CreateRunBackedInteractionRequest(BaseModel):
-    """
-    Creates a run-backed interaction. **Deprecated as a resume mechanism.** Under RFC 064 an automation run only resumes from an interaction response when its materializer registered a `run_subscription` with `Subject{kind:interaction, interaction_id:...}`. That registration only happens for interactions created from within an automation step (declarative `interaction` step or job-scoped `POST /v1/projects/{project}/jobs/{id}/interactions`). Direct run-backed creates through this endpoint produce a pending interaction record linked to `run_id` for audit, but completion will not wake the run. Use the job-scoped route for resume semantics. `signal_name` is retained on the request shape for backwards compatibility and audit; routing no longer depends on it.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    run_id: str = Field(
-        ...,
-        description='ID of the automation run to resume when this interaction is completed.',
-    )
-    signal_name: str = Field(
-        ...,
-        description='Signal name the interaction will complete against when run-backed.',
-    )
-    target_user_ids: list[str] | None = Field(
-        None,
-        description='Resolved user IDs to target directly. Agents use their agent principal IDs.',
-    )
-    kind: InteractionKind = Field(
-        ..., description='Protocol kind. Renamed from `type` in the PRD 077 v-bump.'
-    )
-    title: str = Field(
-        ..., description='Short non-empty title shown to the responder.', min_length=1
-    )
-    description: str | None = Field(
-        None, description='Optional longer responder-facing detail or instructions.'
-    )
-    subject: InteractionReference | None = Field(
-        None, description='Primary work item or artifact the interaction is about.'
-    )
-    references: list[InteractionReference] | None = Field(
-        None, description='Supporting links and related entities.'
-    )
-    context: dict[str, Any] | None = Field(
-        None,
-        description='Additional key-value context surfaced in the UI alongside the title and description.',
-    )
-    tags: TagMap | None = Field(
-        None,
-        description='Initial interaction tag set used by list filtering and reporting.',
-    )
-    properties: dict[str, Any] | None = Field(
-        None, description='Free-form structured metadata to attach to the interaction.'
-    )
-    spec: InteractionSpec | None = Field(
-        None,
-        description='Response controls and validation rules rendered to the recipient.',
-    )
-    require_all: bool | None = Field(
-        None,
-        description='When true, all target users must respond before the interaction is considered complete. Defaults to false when omitted. Mutually exclusive with `resolution_policy`; prefer the policy form for new code.',
-    )
-    resolution_policy: ResolutionPolicy | None = Field(
-        None,
-        description='Declarative resolution rule. When supplied the policy evaluator drives completion.',
-    )
-    consumer: Consumer | None = Field(
-        None,
-        description="Polymorphic identifier of what is waiting on this interaction's resolution (PRD 077 §3.7). When omitted on a run-backed create request, the server derives a `kind=run` consumer from `run_id` and `signal_name`.",
-    )
-    delivery: Delivery | None = Field(
-        None, description='Optional per-interaction delivery override (PRD 077 §3.8).'
-    )
-    expires_at: AwareDatetime | None = Field(
-        None,
-        description='Timestamp after which this interaction expires if not responded to.',
-    )
-
-
-class ProjectModelsResponse(BaseModel):
+class ModelCatalogResponse(BaseModel):
     """
     Models a platform agent can be assigned in this project, grouped by available provider.
     """
@@ -5937,13 +4596,12 @@ class AutomationStep(BaseModel):
     )
     key: str = Field(..., description='Stable step key within the spec.')
     name: str | None = Field(None, description='Human-readable step name.')
-    kind: Kind8
+    kind: Kind5
     config: (
         AutomationAgentStep
         | AutomationActionStep
         | AutomationSleepStep
         | AutomationWaitForEventStep
-        | AutomationInteractionStep
         | AutomationSubAutomationStep
     ) = Field(..., description='Kind-specific step configuration.')
     input: dict[str, Any] | None = Field(
@@ -5955,17 +4613,6 @@ class AutomationStep(BaseModel):
     save_as: str | None = Field(
         None,
         description="Context key used to store this step's output. Defaults to `key`.",
-    )
-
-
-class CreateInteractionRequest(
-    RootModel[CreateStandaloneInteractionRequest | CreateRunBackedInteractionRequest]
-):
-    root: CreateStandaloneInteractionRequest | CreateRunBackedInteractionRequest = (
-        Field(
-            ...,
-            description='Creates an interaction directly. Use the standalone variant with no automation-run side effect, or the run-backed variant that requires both `run_id` and `signal_name` so completion can resume the run. For worker/job usage, prefer the job-scoped route so the server can derive the owning run from the claimed job context.',
-        )
     )
 
 
@@ -6025,7 +4672,7 @@ class AutomationVersion(BaseModel):
     version: int = Field(
         ..., description='Monotonic version number, unique per automation.'
     )
-    status: Status7 = Field(
+    status: Status6 = Field(
         ...,
         description='Publication state. `draft` is editable but not runnable; `published` is the currently runnable version; `superseded` is a prior published version retained for historical runs.',
     )

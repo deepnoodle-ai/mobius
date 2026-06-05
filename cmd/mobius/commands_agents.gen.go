@@ -87,7 +87,7 @@ func registerAgentsCommands(app *cli.App) {
 			cli.String("color", "").Help("Display color for this agent (Mantine palette key, e.g. `indigo`). Optional; empty falls back to a …"),
 			cli.String("description", "").Help("Optional human-readable description."),
 			cli.String("kind", "").Help("Freeform classification (e.g. \"llm\", \"rpa\", \"integration\")."),
-			cli.String("model", "").Help("Model identifier for platform agents. Any id from `GET /v1/projects/{project}/models`, optionally `…"),
+			cli.String("model", "").Help("Model identifier for platform agents. Any id from `GET /v1/projects/{project}/catalog/models`, opti…"),
 			cli.String("model-route", "").Help("Default model route used by built-in messaging and by automation agent steps that do not override t… Accepts JSON, @file, or @-."),
 			cli.String("name", "").Help("[required] Project-scoped unique name for this agent. Free-form human-readable label, 1-63 characters."),
 			cli.Strings("role-ids", "").Help("Roles to assign to the agent's principal. When omitted, the agent inherits the project's `default_a…"),
@@ -248,6 +248,43 @@ func registerAgentsCommands(app *cli.App) {
 			return printResponse(ctx, "getAgentSession", resp.StatusCode(), resp.Body)
 		})
 
+	agentsGrp.Command("get-tools").
+		Description("List an agent's resolved tools").
+		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
+		Flags(
+			cli.String("toolkit-ids", "").Help("Optional comma-separated toolkit subset to apply."),
+			cli.String("skill-name", "").Help("Optional assigned skill name to preselect as active."),
+			cli.String("allowed-tools", "").Help("Optional comma-separated canonical action names, wildcard selectors, or group references to apply a…"),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			p1 := ctx.Arg(0)
+			params := &api.GetAgentToolsParams{}
+			if ctx.IsSet("toolkit-ids") {
+				v := ctx.String("toolkit-ids")
+				params.ToolkitIds = &v
+			}
+			if ctx.IsSet("skill-name") {
+				v := ctx.String("skill-name")
+				params.SkillName = &v
+			}
+			if ctx.IsSet("allowed-tools") {
+				v := ctx.String("allowed-tools")
+				params.AllowedTools = &v
+			}
+			resp, err := client.GetAgentToolsWithResponse(ctx.Context(), p0, p1, params)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "getAgentTools", resp.StatusCode(), resp.Body)
+		})
+
 	agentsGrp.Command("list").
 		Description("List agents").
 		Flags(
@@ -334,23 +371,6 @@ func registerAgentsCommands(app *cli.App) {
 				return err
 			}
 			return printResponse(ctx, "listAgentMessagingBindings", resp.StatusCode(), resp.Body)
-		})
-
-	agentsGrp.Command("list-models").
-		Description("List available models").
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			resp, err := client.ListModelsWithResponse(ctx.Context(), p0)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "listModels", resp.StatusCode(), resp.Body)
 		})
 
 	agentsGrp.Command("list-sessions").
@@ -703,7 +723,7 @@ func registerAgentsCommands(app *cli.App) {
 			cli.String("color", "").Help("Replacement display color (Mantine palette key, e.g. `indigo`). Pass empty string to clear and fall…"),
 			cli.String("description", "").Help("Replacement description."),
 			cli.String("kind", "").Help("Replacement freeform agent classification (e.g. `llm`, `rpa`)."),
-			cli.String("model", "").Help("Replacement model identifier for platform agents (any id from `GET /v1/projects/{project}/models`, …"),
+			cli.String("model", "").Help("Replacement model identifier for platform agents (any id from `GET /v1/projects/{project}/catalog/m…"),
 			cli.String("model-route", "").Help("Default model route used by built-in messaging and by automation agent steps that do not override t… Accepts JSON, @file, or @-."),
 			cli.String("name", "").Help("Free-form human-readable label, 1-63 characters; must be unique within the project."),
 			cli.String("status", "").Help("Replacement agent status: `active` or `inactive`. Use DELETE to soft-delete."),

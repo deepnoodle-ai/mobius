@@ -4,48 +4,6 @@
  */
 
 export interface paths {
-    "/v1/audit-logs": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List organization audit log entries
-         * @description Returns an immutable, append-only log of create/update/delete/archive/restore actions performed against org resources. Each entry attributes the action to a `principal_id` (the universal principal) along with the credential used, enabling attribution even when keys are later revoked.
-         *
-         *     Combine `principal_id` + `resource_type` to audit a specific user's writes to a resource class. Use `created_after` / `created_before` for time-bounded compliance exports.
-         */
-        get: operations["listOrgAuditLogs"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/projects/{project}/audit-logs": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List project audit log entries
-         * @description Returns immutable audit log entries for the selected project. Project-pinned CLI tokens and machine-principal API keys can use this route because the project is resolved from the path before permission checks run.
-         */
-        get: operations["listAuditLogs"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/projects/{project}/api-keys": {
         parameters: {
             query?: never;
@@ -213,7 +171,7 @@ export interface paths {
          * List the triggerable event catalog
          * @description Returns every event source an automation trigger (or `wait_for_event` step) can subscribe to within this project: built-in platform sources (tables, email, runs, HTTP triggers, sessions, artifacts) and integration provider sources (with project connection state). `items` contains those sources; each source lists its concrete, currently-active event types.
          *
-         *     `reserved_prefixes` enumerates platform namespaces that are recognized but not themselves triggerable event sources (for example `signal`, `schedule`, `interaction`), so authoring UIs can distinguish a recognized-but-unsupported matcher prefix from a wholly unknown one.
+         *     `reserved_prefixes` enumerates platform namespaces that are recognized but not themselves triggerable event sources (for example `signal`, `schedule`), so authoring UIs can distinguish a recognized-but-unsupported matcher prefix from a wholly unknown one.
          *
          *     Matcher grammar: an `event_type` is a dotted name of segments matching `[A-Za-z_][A-Za-z0-9_]*`, optionally ending in `.*` for prefix matching (e.g. `github.*`, `github.pull_request.opened`, `table.row.inserted`).
          */
@@ -258,6 +216,28 @@ export interface paths {
          * @description Returns availability status, schemas, and metadata for a single catalog entry.
          */
         get: operations["getCatalogAction"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project}/catalog/models": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the model catalog
+         * @description Returns the models a platform agent in this project can be assigned, grouped by provider. Only providers the project can actually run are included: a provider appears when the project has an active BYOK integration for it, or when a platform-managed key is configured.
+         *
+         *     An agent's `model` field accepts any returned model id, optionally prefixed with `provider/` (e.g. `xai/grok-4`); bare known ids such as `claude-sonnet-4-6` are auto-detected to their provider.
+         */
+        get: operations["listCatalogModels"];
         put?: never;
         post?: never;
         delete?: never;
@@ -498,98 +478,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project}/secrets": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List secrets
-         * @description Returns project secret metadata and key names. Secret values are never returned.
-         */
-        get: operations["listSecrets"];
-        put?: never;
-        /**
-         * Create a secret
-         * @description Creates a project secret and its first enabled version. `values` must be a JSON object whose values are strings. The response returns metadata only; plaintext values are not returned.
-         */
-        post: operations["createSecret"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/projects/{project}/secrets/{secret}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get a secret
-         * @description Returns project secret metadata by ID or name. Values are never returned.
-         */
-        get: operations["getSecret"];
-        put?: never;
-        post?: never;
-        /**
-         * Delete a secret
-         * @description Hard-deletes the secret and its versions.
-         */
-        delete: operations["deleteSecret"];
-        options?: never;
-        head?: never;
-        /**
-         * Update a secret
-         * @description Updates metadata and optionally creates a new enabled SecretVersion from replacement `values`. Omit `values` to update metadata only. Secret values are not returned.
-         */
-        patch: operations["updateSecret"];
-        trace?: never;
-    };
-    "/v1/projects/{project}/secrets/{secret}/versions": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List secret versions
-         * @description Lists metadata for all versions of a secret. Values are never returned.
-         */
-        get: operations["listSecretVersions"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/projects/{project}/secrets/{secret}/versions/{version}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get secret version metadata
-         * @description Returns metadata for a specific version. Use `latest` or a positive integer version. Values are never returned.
-         */
-        get: operations["getSecretVersion"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/projects/{project}/worker-sessions": {
         parameters: {
             query?: never;
@@ -654,7 +542,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{id}": {
+    "/v1/projects/{project}": {
         parameters: {
             query?: never;
             header?: never;
@@ -670,9 +558,9 @@ export interface paths {
         post?: never;
         /**
          * Delete a project
-         * @description Permanently deletes the project and all child resources (automations, runs, jobs, triggers, webhooks, interactions, actions, agents, machine principals). This operation is irreversible.
+         * @description Permanently deletes the project and all child resources (automations, runs, jobs, triggers, webhooks, actions, agents, machine principals). This operation is irreversible.
          *
-         *     The project must be archived first; calling delete on an active project returns `409 project_not_archived`. Archive via `POST /v1/projects/{id}/archive`.
+         *     The project must be archived first; calling delete on an active project returns `409 project_not_archived`. Archive via `POST /v1/projects/{project}/archive`.
          */
         delete: operations["deleteProject"];
         options?: never;
@@ -684,27 +572,7 @@ export interface paths {
         patch: operations["updateProject"];
         trace?: never;
     };
-    "/v1/projects/{project}/features": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List effective project feature gates
-         * @description Returns the server-resolved feature gates for the active project. Results combine the built-in default, any org-level override, and any project-level override so clients can hide unavailable product areas using the same answer enforced by backend handlers.
-         */
-        get: operations["listProjectFeatures"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/projects/{id}/archive": {
+    "/v1/projects/{project}/archive": {
         parameters: {
             query?: never;
             header?: never;
@@ -724,7 +592,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{id}/restore": {
+    "/v1/projects/{project}/restore": {
         parameters: {
             query?: never;
             header?: never;
@@ -739,78 +607,6 @@ export interface paths {
          */
         post: operations["restoreProject"];
         delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/projects/{id}/config": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get project config
-         * @description Returns the project's stored flat config entries. When the project has no stored config, this returns `[]`.
-         */
-        get: operations["getProjectConfig"];
-        /**
-         * Replace project config
-         * @description Replaces the project's entire stored config entry set with the provided flat list. `PUT []` clears the project config. Reapplying the same payload is a safe retry.
-         */
-        put: operations["updateProjectConfig"];
-        post?: never;
-        /**
-         * Clear project config
-         * @description Deletes all stored project-layer config so the project inherits service defaults for every registered key.
-         */
-        delete: operations["deleteProjectConfig"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/projects/{id}/members": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List project members
-         * @description Returns the users listed as members of this project. Membership is a pure visibility layer: for `restricted` projects only listed members (plus org owners/admins) can see or use the project. For `org_open` projects, membership has no visibility effect.
-         */
-        get: operations["listProjectMembers"];
-        put?: never;
-        /**
-         * Add a project member
-         * @description Adds a user as a project member. The user must already be an org member. Add is idempotent — adding an existing member returns the existing row with `200 OK`, not `409`. New memberships are returned with `201 Created`.
-         */
-        post: operations["addProjectMember"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/projects/{id}/members/{principal_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /**
-         * Remove a project member
-         * @description Removes a user from the project members list. On `restricted` projects, removing the last remaining member is rejected — flip the project to `org_open` or add another member first.
-         */
-        delete: operations["removeProjectMember"];
         options?: never;
         head?: never;
         patch?: never;
@@ -924,212 +720,6 @@ export interface paths {
         get: operations["listWebhookDeliveries"];
         put?: never;
         post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/projects/{project}/permissions": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List project permissions
-         * @description Returns the canonical permission definitions, role presets, and action execution permission groups available when building project-scoped roles. Use this endpoint to source the permission IDs accepted by the role creation and update endpoints.
-         */
-        get: operations["listProjectPermissions"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/projects/{project}/roles": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List roles
-         * @description Returns system-defined roles plus custom roles scoped to this project.
-         */
-        get: operations["listRoles"];
-        put?: never;
-        /**
-         * Create a role
-         * @description Creates a custom role scoped to the project. Only system-defined roles exist at the org/global tier and are created automatically by the platform.
-         */
-        post: operations["createRole"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/projects/{project}/roles/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get a role
-         * @description Returns a role by ID. Both system-defined and custom roles belonging to this project are accessible via this endpoint.
-         */
-        get: operations["getRole"];
-        put?: never;
-        post?: never;
-        /**
-         * Delete a role
-         * @description Hard-deletes the role and all its assignments. System-defined roles cannot be deleted.
-         */
-        delete: operations["deleteRole"];
-        options?: never;
-        head?: never;
-        /**
-         * Update a role
-         * @description Updates description or permissions of a custom role. Role names are immutable. System-defined roles (system_defined=true) cannot be updated and return 403.
-         */
-        patch: operations["updateRole"];
-        trace?: never;
-    };
-    "/v1/projects/{project}/role-assignments": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List role assignments
-         * @description Returns project-scoped assignments optionally filtered by principal or role.
-         */
-        get: operations["listRoleAssignments"];
-        put?: never;
-        /**
-         * Assign a role to a principal
-         * @description Binds a role to a principal in this project (human or machine). The assignment records the creating user in `granted_by`. To manage a machine principal's roles without referencing its ID directly, use `role_ids` on the principal create and update endpoints.
-         */
-        post: operations["createRoleAssignment"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/projects/{project}/role-assignments/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /**
-         * Remove a role assignment
-         * @description Deletes a single role assignment by ID. The underlying role and user are not deleted, but the user immediately loses permissions granted only through this assignment.
-         */
-        delete: operations["deleteRoleAssignment"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/projects/{project}/interactions": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List interactions
-         * @description Returns interactions newest-first, optionally filtered by kind, status, run, target, or the current caller's inbox. Inbox filtering includes direct targets.
-         */
-        get: operations["listInteractions"];
-        put?: never;
-        /**
-         * Create an interaction
-         * @description Creates a standalone or run-backed interaction. When `run_id` is provided, completing the interaction enqueues an `interaction.responded` source event that the SubscriptionRouter (RFC 064) matches to the run's `interaction` step by `interaction_id` — not by signal name. The `signal_name` field is retained for historical request shape and audit logging; routing no longer depends on it. Omit both `run_id` and `signal_name` for a standalone interaction that completes with no automation-run side effect. Workers creating interactions from within a job should use the job-scoped route (`POST /v1/projects/{project}/jobs/{id}/interactions`) instead, which derives the run automatically.
-         */
-        post: operations["createInteraction"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/projects/{project}/interactions/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get an interaction
-         * @description Returns one interaction with target, response, and completion metadata. Run-backed interactions include the run and signal identifiers used to resume automation execution.
-         */
-        get: operations["getInteraction"];
-        put?: never;
-        post?: never;
-        /**
-         * Delete an interaction
-         * @description Soft-deletes an interaction so it disappears from inbox and project listings. The row is retained for audit history. Only terminal interactions (`completed`, `cancelled`, `expired`) may be deleted; pending or in-review interactions must be cancelled first so any waiting automation run can route to a fallback.
-         */
-        delete: operations["deleteInteraction"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/projects/{project}/interactions/{id}/respond": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Submit a response to an interaction
-         * @description Canonical response endpoint for every interaction kind. `action` defaults to `submit`; lifecycle operations beyond submit are not part of the launch model.
-         *
-         *     The request body is intentionally the same envelope for every kind: `action`, `value`, and `comment`. Kind-specific behavior is selected from the interaction itself, not from separate request-body shapes.
-         */
-        post: operations["respondToInteraction"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/projects/{project}/interactions/{id}/cancel": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Cancel an open interaction
-         * @description Cancels an open interaction, recording who cancelled and an optional reason. Run-backed interactions resume the waiting automation step with a `{status: cancelled, reason}` signal payload so automations can route to a fallback. Only humans may cancel by default — agents must request cancellation through an interaction.
-         */
-        post: operations["cancelInteraction"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1410,7 +1000,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project}/agents/{id}/tool-manifest": {
+    "/v1/projects/{project}/agents/{id}/tools": {
         parameters: {
             query?: never;
             header?: never;
@@ -1418,32 +1008,10 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Resolve an agent tool manifest
-         * @description Resolves the effective tool manifest for an agent: the flat set of actions the agent can invoke, computed from toolkit grants, the agent principal's permissions, optional toolkit filters, optional per-invocation tool filters, and optional active skill narrowing.
+         * List an agent's resolved tools
+         * @description Resolves the effective set of tools an agent can invoke: the flat set of actions the agent can invoke, computed from toolkit grants, the agent principal's permissions, optional toolkit filters, optional per-invocation tool filters, and optional active skill narrowing.
          */
-        get: operations["getAgentToolManifest"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/projects/{project}/models": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List available models
-         * @description Returns the LLM models a platform agent in this project can be assigned, grouped by provider. Only providers the project can actually run are returned: a provider appears when the project has an active BYOK integration for it, or when a platform-managed key is configured.
-         *
-         *     An agent's `model` field accepts any returned model id, optionally prefixed with `provider/` (e.g. `xai/grok-4`); bare known ids such as `claude-sonnet-4-6` are auto-detected to their provider.
-         */
-        get: operations["listModels"];
+        get: operations["getAgentTools"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1583,7 +1151,7 @@ export interface paths {
          *
          *     Idempotency conflicts on `external_id` against a terminal-prior run surface as `409 Conflict` with error code `external_id_conflict` and `details` populated with `existing_run_id`, `status`, and `external_id`.
          */
-        post: operations["startAutomationRun"];
+        post: operations["startRun"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1601,7 +1169,7 @@ export interface paths {
          * List automation runs
          * @description Returns automation runs for the project, newest-first. Supports filters by status, automation_id, and source_event_id, plus cursor-based pagination.
          */
-        get: operations["listAutomationRuns"];
+        get: operations["listRuns"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1621,7 +1189,7 @@ export interface paths {
          * Get an automation run
          * @description Returns one automation run by ID with its current status, inputs, result, and source attribution.
          */
-        get: operations["getAutomationRun"];
+        get: operations["getRun"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1643,7 +1211,7 @@ export interface paths {
          * Cancel an in-flight run
          * @description Marks the run cancelled and closes any open waits. Safe to call on an already-terminal run (returns the current state, no error).
          */
-        post: operations["cancelAutomationRun"];
+        post: operations["cancelRun"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1661,7 +1229,7 @@ export interface paths {
          * List the steps of an automation run
          * @description Returns the durable step records for one run, ordered by step index. Each row carries the step's kind, status, attempt count, inputs, result, and any error metadata recorded by the engine.
          */
-        get: operations["listAutomationRunSteps"];
+        get: operations["listRunSteps"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1679,9 +1247,9 @@ export interface paths {
         };
         /**
          * List run events
-         * @description Returns the durable run-event log used by clients (UI, SDK, integrations) to observe a run as it progresses. Events are ordered by sequence number and cover run, step, turn, tool, action, interaction, artifact, and cleanup lifecycle. Use `since_sequence` to fetch only events strictly after a previously observed sequence number, which is the standard polling pattern paired with the SSE stream.
+         * @description Returns the durable run-event log used by clients (UI, SDK, integrations) to observe a run as it progresses. Events are ordered by sequence number and cover run, step, turn, tool, action, artifact, and cleanup lifecycle. Use `since_sequence` to fetch only events strictly after a previously observed sequence number, which is the standard polling pattern paired with the SSE stream.
          */
-        get: operations["listAutomationRunEvents"];
+        get: operations["listRunEvents"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1701,7 +1269,7 @@ export interface paths {
          * Stream run events over Server-Sent Events
          * @description Long-lived SSE stream of run events ordered by sequence number. Each `data:` frame is a JSON-encoded `AutomationRunEvent`. The stream terminates when the run reaches a terminal status. Clients that disconnect should reconnect using `?since_sequence=N` (or the SSE `Last-Event-ID` header set to the last sequence) to resume without gaps.
          */
-        get: operations["streamAutomationRunEvents"];
+        get: operations["streamRunEvents"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1722,10 +1290,8 @@ export interface paths {
         /**
          * Deliver a signal to a suspended run
          * @description Resumes a run that is suspended on a `wait_event` step matching the provided `step_key`. The `result` payload becomes the step's output and is available to downstream steps via `{{ .context.<save_as> }}`.
-         *
-         *     For interaction-suspended steps, prefer responding to the interaction directly through `POST /v1/interactions/{id}/responses`; this endpoint is the lower-level escape hatch.
          */
-        post: operations["signalAutomationRun"];
+        post: operations["signalRun"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1856,64 +1422,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project}/principals": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List machine principals
-         * @description Returns project machine principals (`service`, `agent`, `system`) used by workers, agents, and automation. Only active principals are returned by default; pass `include_disabled=true` to also include disabled ones (e.g. for an admin audit). Filter by `kind` to narrow to a single kind.
-         */
-        get: operations["listPrincipals"];
-        put?: never;
-        /**
-         * Create a service principal
-         * @description Creates a standalone `service` principal within the project. Supply `role_ids` to atomically assign one or more roles at creation time; requires the caller to hold `mobius.access.manage`. Each role must belong to the same project or be a system-defined role.
-         *
-         *     Agent and system principals are created by their own flows (the agents API and Mobius internals), not here.
-         */
-        post: operations["createPrincipal"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/projects/{project}/principals/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get a principal
-         * @description Returns one machine principal, including disabled state, owner, metadata, and timestamps. API keys belonging to the principal are managed through the API key endpoints.
-         */
-        get: operations["getPrincipal"];
-        put?: never;
-        post?: never;
-        /**
-         * Delete a principal
-         * @description Hard-deletes the principal and its role assignments.
-         *
-         *     Returns `409 Conflict` when the principal still backs an agent (the agent↔principal binding is immutable per the 1:1 invariant — delete the agent first) or when active API keys still reference it. Disable instead when you need an immediate kill switch.
-         *
-         *     Consider disabling instead of deleting for audit continuity.
-         */
-        delete: operations["deletePrincipal"];
-        options?: never;
-        head?: never;
-        /**
-         * Update a principal
-         * @description Updates mutable fields. To disable without deleting, set `state` to `disabled`. The `name` field is immutable after creation.
-         */
-        patch: operations["updatePrincipal"];
-        trace?: never;
-    };
     "/v1/projects/{project}/tables": {
         parameters: {
             query?: never;
@@ -1938,7 +1446,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project}/tables/{table_name}": {
+    "/v1/projects/{project}/tables/{table_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -1947,7 +1455,7 @@ export interface paths {
         };
         /**
          * Get a table
-         * @description Get table metadata and schema by table name.
+         * @description Get table metadata and schema by table ID.
          */
         get: operations["getTable"];
         /**
@@ -1966,7 +1474,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project}/tables/{table_name}/stats": {
+    "/v1/projects/{project}/tables/{table_id}/stats": {
         parameters: {
             query?: never;
             header?: never;
@@ -1986,7 +1494,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project}/tables/{table_name}/rows": {
+    "/v1/projects/{project}/tables/{table_id}/rows": {
         parameters: {
             query?: never;
             header?: never;
@@ -1997,7 +1505,7 @@ export interface paths {
         put?: never;
         /**
          * Insert a row
-         * @description Validate and insert one row into the named table.
+         * @description Validate and insert one row into the table.
          */
         post: operations["insertTableRow"];
         delete?: never;
@@ -2006,7 +1514,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project}/tables/{table_name}/rows/query": {
+    "/v1/projects/{project}/tables/{table_id}/query": {
         parameters: {
             query?: never;
             header?: never;
@@ -2026,7 +1534,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project}/tables/{table_name}/rows/search": {
+    "/v1/projects/{project}/tables/{table_id}/search": {
         parameters: {
             query?: never;
             header?: never;
@@ -2046,7 +1554,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project}/tables/{table_name}/rows/upsert": {
+    "/v1/projects/{project}/tables/{table_id}/upsert": {
         parameters: {
             query?: never;
             header?: never;
@@ -2068,7 +1576,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project}/tables/{table_name}/rows/bulk": {
+    "/v1/projects/{project}/tables/{table_id}/bulk": {
         parameters: {
             query?: never;
             header?: never;
@@ -2079,7 +1587,7 @@ export interface paths {
         put?: never;
         /**
          * Bulk insert rows
-         * @description Validate and insert up to 1,000 rows into the named table.
+         * @description Validate and insert up to 1,000 rows into the table.
          */
         post: operations["bulkInsertTableRows"];
         delete?: never;
@@ -2088,7 +1596,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project}/tables/{table_name}/rows/{row_id}": {
+    "/v1/projects/{project}/tables/{table_id}/rows/{row_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -2104,7 +1612,7 @@ export interface paths {
         post?: never;
         /**
          * Delete a row
-         * @description Delete one row from the named table.
+         * @description Delete one row from the table.
          */
         delete: operations["deleteTableRow"];
         options?: never;
@@ -2263,60 +1771,12 @@ export interface components {
          * @description Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints.
          * @example {
          *       "Environment": "Production",
-         *       "Department": "Finance",
-         *       "Owner": "team@example.com"
+         *       "Department": "Finance"
          *     }
          */
         TagMap: {
             [key: string]: string;
         };
-        /**
-         * @description Declarative UI/input primitive for collecting the response. This is a portable rendering contract, not executable code. Values are `confirm`, `select`, `multi_select`, and `input`.
-         * @enum {string}
-         */
-        InteractionMode: "confirm" | "select" | "multi_select" | "input";
-        /** @description Selectable option for `select` and `multi_select` modes. */
-        InteractionOption: {
-            /** @description Machine-readable value submitted when this option is chosen. */
-            value: string;
-            /** @description Human-readable label displayed for this option. */
-            label: string;
-            /** @description Optional additional context shown beneath the label. */
-            description?: string;
-        };
-        /**
-         * @description Declarative dialog contract for rendering and validating an interaction. Used at both authoring time (inside an automation definition) and runtime (persisted on an interaction). PRD 077 decouples protocol kind from input shape: each kind declares which spec modes are *allowed*, not which is *implied*. An approval may now legitimately use `select` mode (approve/deny/defer), for example.
-         *
-         *     Allowed combinations:
-         *     * `approval` → `confirm`, `select`
-         *     * `review` → `select`, `input`
-         *     * `request` → `select`, `multi_select`, `input`
-         */
-        InteractionSpec: {
-            /** @description UI/input mode used to render and validate the response. */
-            mode: components["schemas"]["InteractionMode"];
-            /** @description Required for `select` and `multi_select` modes. */
-            options?: components["schemas"]["InteractionOption"][];
-            /** @description Default selected option for `select` mode. */
-            default_value?: string;
-            /** @description Default selected options for `multi_select` mode. */
-            default_values?: string[];
-            /** @description Initial text value for `input` mode. */
-            default_text?: string;
-            /** @description Initial yes/no value for `confirm` mode. */
-            default_confirmed?: boolean;
-            /** @description Hint text shown for `input` mode. */
-            placeholder?: string;
-            /** @description When true, render `input` mode as a multiline text area. */
-            multiline?: boolean;
-        };
-        /** @description Server-defined product feature key. The launch product currently has no public/developer feature gates; this string type remains for internal operator override plumbing. */
-        FeatureKey: string;
-        /**
-         * @description Scope for a feature override. Org overrides apply across the organization; project overrides apply only to the specified project and take precedence over org overrides.
-         * @enum {string}
-         */
-        FeatureOverrideScope: "org" | "project";
         /** @description User or principal identity known to the organization. User records are useful for membership lists, role assignment UIs, attribution, and displaying profile information next to actions. */
         User: {
             /** @description Clerk user ID. Stable and globally unique across all orgs. */
@@ -2376,7 +1836,7 @@ export interface components {
             description?: string;
             /** @description Current project access policy: `org_open` or `restricted`. */
             access_mode: components["schemas"]["ProjectAccessMode"];
-            /** @description User ID of the org member who created this project. */
+            /** @description Principal ID of whoever created this project. */
             created_by?: string;
             /**
              * Format: date-time
@@ -2442,7 +1902,7 @@ export interface components {
             color?: string;
             /** @description Capability names used by orchestrators to select suitable agents. */
             capabilities?: string[];
-            /** @description Model identifier for platform agents. Accepts any id returned by `GET /v1/projects/{project}/models`, optionally `provider/`-prefixed (e.g. `xai/grok-4`); bare known ids (e.g. `claude-sonnet-4-6`) are auto-detected to their provider. Empty string falls back to the platform default. */
+            /** @description Model identifier for platform agents. Accepts any id returned by `GET /v1/projects/{project}/catalog/models`, optionally `provider/`-prefixed (e.g. `xai/grok-4`); bare known ids (e.g. `claude-sonnet-4-6`) are auto-detected to their provider. Empty string falls back to the platform default. */
             model?: string;
             model_route?: components["schemas"]["AgentModelRoute"];
             /** @description Default tool presentation used by automation agent steps and built-in channel-message replies for this agent. */
@@ -2478,62 +1938,6 @@ export interface components {
         AgentListResponse: {
             /** @description The list of results for this page. */
             items: components["schemas"]["Agent"][];
-        };
-        /** @description Before/after field snapshots captured for an audited mutation. */
-        AuditChanges: {
-            /** @description Field values before the mutation. */
-            before?: {
-                [key: string]: unknown;
-            };
-            /** @description Field values after the mutation. */
-            after?: {
-                [key: string]: unknown;
-            };
-        };
-        /** @description Immutable record of a security- or configuration-relevant change. Use audit log entries to answer who changed a resource, when it happened, and which project or credential was involved. */
-        AuditLogEntry: {
-            /** @description Unique audit log entry ID */
-            id: string;
-            /** @description ID of the user who performed the action */
-            principal_id?: string;
-            /** @description Project ID when the audited resource is project-scoped */
-            project_id?: string;
-            /** @description Display name of the user at the time the entry was written (snapshotted) */
-            actor_name?: string;
-            /** @description Credential ID used for the request, when applicable */
-            credential_id?: string;
-            /** @description Human-readable credential name or session label captured when the audit entry was written */
-            credential_name?: string;
-            /**
-             * @description Type of action performed: `create`, `update`, `delete`, `archive`, or `restore`.
-             * @enum {string}
-             */
-            action: "create" | "update" | "delete" | "archive" | "restore";
-            /** @description Type of resource affected (e.g., automation, job, artifact) */
-            resource_type: string;
-            /** @description ID of the affected resource */
-            resource_id: string;
-            /** @description Human-readable name of the affected resource */
-            resource_name?: string;
-            /** @description Object containing before/after changes for update actions */
-            changes?: components["schemas"]["AuditChanges"];
-            /** @description IP address of the request */
-            ip_address?: string;
-            /** @description User agent of the request */
-            user_agent?: string;
-            /**
-             * Format: date-time
-             * @description Timestamp when the action was performed
-             */
-            created_at: string;
-        };
-        AuditLogListResponse: {
-            /** @description The list of results for this page. */
-            items: components["schemas"]["AuditLogEntry"][];
-            /** @description Cursor for fetching next page of results */
-            next_cursor?: string;
-            /** @description Whether more results are available */
-            has_more: boolean;
         };
         /** @description Stored API credential metadata for automation and service access. The raw secret is never returned here; use this object to list, audit, expire, or identify keys by prefix without exposing tokens. */
         APIKey: {
@@ -2944,6 +2348,37 @@ export interface components {
             /** @enum {string} */
             kind: "capability" | "utility";
         };
+        /** @description Models a platform agent can be assigned in this project, grouped by available provider. */
+        ModelCatalogResponse: {
+            /** @description Model id assigned when an agent specifies no model. */
+            default_model: string;
+            /** @description Available providers in display order. Providers with no configured credentials are omitted. */
+            items: components["schemas"]["ModelProviderGroup"][];
+        };
+        ModelProviderGroup: {
+            /** @description Canonical provider id (`anthropic`, `openai`, `gemini`, `xai`). */
+            provider: string;
+            /** @description Human-readable provider label. */
+            display_name: string;
+            /**
+             * @description Where credentials come from — a project integration (`byok`) or a platform-managed key (`platform`).
+             * @enum {string}
+             */
+            source: "byok" | "platform";
+            models: components["schemas"]["ModelOption"][];
+        };
+        ModelOption: {
+            /** @description Bare model id assigned to an agent's `model` field. */
+            id: string;
+            /** @description Canonical provider id this model belongs to. */
+            provider: string;
+            /** @description Human-readable model label for UI. */
+            label: string;
+            /** @description Short guidance about when to use this model. */
+            description?: string;
+            /** @description Whether this is the suggested default for its provider. */
+            recommended?: boolean;
+        };
         /** @enum {string} */
         EnvironmentProvider: "sprites" | "cloudflare_containers" | "worker";
         /**
@@ -3220,82 +2655,6 @@ export interface components {
             /** Format: date-time */
             expires_at: string;
             repo_full_name: string;
-        };
-        /** @description JSON key/value payload encrypted as a SecretVersion. */
-        SecretValues: {
-            [key: string]: string;
-        };
-        /**
-         * @description Secret version lifecycle state.
-         * @enum {string}
-         */
-        SecretVersionState: "ENABLED" | "DISABLED" | "DESTROYED";
-        /** @description Project-scoped secret metadata. Values are never returned. */
-        Secret: {
-            /** @description Unique secret ID. */
-            id: string;
-            /** @description Project-scoped secret name. */
-            name: string;
-            /** @description Optional human-readable description. */
-            description?: string;
-            /**
-             * Format: int64
-             * @description Latest version number.
-             */
-            version: number;
-            /** @description Sorted keys present in the latest version. */
-            key_names: string[];
-            /** @description User ID of the principal who created this secret. */
-            created_by?: string;
-            /** @description User ID of the principal who last updated this secret. */
-            updated_by?: string;
-            /** Format: date-time */
-            created_at: string;
-            /** Format: date-time */
-            updated_at: string;
-        };
-        /** @description SecretVersion metadata. Values are never returned. */
-        SecretVersion: {
-            /** @description Unique secret version ID. */
-            id: string;
-            /** @description Parent secret ID. */
-            secret_id: string;
-            /**
-             * Format: int64
-             * @description Version number.
-             */
-            version: number;
-            state: components["schemas"]["SecretVersionState"];
-            /** @description SHA-256 of the canonical JSON plaintext, for change detection only. */
-            sha256: string;
-            /** @description Key identifier used to seal the payload. */
-            kms_key_id?: string;
-            /** @description User that created this version, when known. */
-            created_by?: string;
-            /** Format: date-time */
-            created_at: string;
-            /** Format: date-time */
-            destroyed_at?: string;
-        };
-        SecretListResponse: {
-            items: components["schemas"]["Secret"][];
-            /** @description Cursor for the next page, when more results exist. */
-            next_cursor?: string;
-        };
-        SecretVersionListResponse: {
-            items: components["schemas"]["SecretVersion"][];
-        };
-        CreateSecretRequest: {
-            /** @description Project-scoped secret name. */
-            name: string;
-            /** @description Optional human-readable description. */
-            description?: string;
-            values: components["schemas"]["SecretValues"];
-        };
-        UpdateSecretRequest: {
-            /** @description Replacement description. */
-            description?: string;
-            values?: components["schemas"]["SecretValues"];
         };
         /** @description Recently observed worker process for a project. Use sessions to see which machines, users, API clients, or agents are polling for work, what their configured concurrency is, and whether they appear stale. */
         WorkerSession: {
@@ -3626,11 +2985,6 @@ export interface components {
             message_id?: components["schemas"]["WorkerSocketMessageID"];
             error: components["schemas"]["WorkerSocketProtocolError"];
         };
-        ConfigEntry: {
-            key: string;
-            value: string;
-        };
-        ConfigEntries: components["schemas"]["ConfigEntry"][];
         CreateProjectRequest: {
             /** @description Human-readable project name. */
             name: string;
@@ -3656,70 +3010,6 @@ export interface components {
             default_agent_role_id?: string | null;
             /** @description When supplied, replaces the user tag set on the project. */
             tags?: components["schemas"]["TagMap"];
-        };
-        /** @description Explicit project membership used when a project is restricted. Use this record to decide who can see or operate on a project outside the default org-wide access model. */
-        ProjectMember: {
-            /** @description Unique identifier for this membership record. */
-            id: string;
-            /** @description ID of the project this membership belongs to. */
-            project_id: string;
-            /** @description ID of the principal that is a member. */
-            principal_id: string;
-            /** @description Profile of the member. Embedded by `listProjectMembers` so UIs can render names, emails, and avatars without a separate user lookup. Absent on the `addProjectMember` response. */
-            principal?: components["schemas"]["User"];
-            /** @description User ID of whoever added this member, if recorded. */
-            added_by?: string;
-            /**
-             * Format: date-time
-             * @description Timestamp when the member was added.
-             */
-            added_at: string;
-        };
-        ProjectMemberListResponse: {
-            /** @description The list of members for this project. */
-            items: components["schemas"]["ProjectMember"][];
-            /** @description Whether more results are available. */
-            has_more: boolean;
-            /** @description Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false. */
-            next_cursor?: string;
-        };
-        AddProjectMemberRequest: {
-            /** @description ID of the org member principal to add to this project. */
-            principal_id: string;
-        };
-        /**
-         * @description Source of the effective feature gate decision.
-         * @enum {string}
-         */
-        FeatureGateSource: "default" | "org_override" | "project_override";
-        FeatureGate: {
-            key: components["schemas"]["FeatureKey"];
-            /** @description Short user-facing name. */
-            label: string;
-            /** @description User-facing description of the gated product area. */
-            description: string;
-            /** @description Effective state after resolving defaults and overrides. */
-            enabled: boolean;
-            /** @description Built-in fallback state when no active override applies. */
-            default_enabled: boolean;
-            source: components["schemas"]["FeatureGateSource"];
-            /** @description Override scope that produced this state, omitted for defaults. */
-            source_scope?: components["schemas"]["FeatureOverrideScope"];
-            /** @description Org ID for the override that produced this state. */
-            source_org_id?: string;
-            /** @description Project ID for the override that produced this state. */
-            source_project_id?: string;
-            /** @description Optional operator-supplied reason from the active override. */
-            reason?: string;
-            /**
-             * Format: date-time
-             * @description Optional expiry for the active override.
-             */
-            expires_at?: string | null;
-            allowed_scopes: components["schemas"]["FeatureOverrideScope"][];
-        };
-        FeatureGateListResponse: {
-            items: components["schemas"]["FeatureGate"][];
         };
         /**
          * @description `pending` — queued, not yet attempted. `processing` — currently being delivered. `delivered` — recipient returned 2xx. `failed` — all retry attempts exhausted.
@@ -3845,475 +3135,6 @@ export interface components {
             /** @description Round-trip latency in milliseconds. */
             latency_ms?: number;
         };
-        PermissionDefinition: {
-            /** @description Stable permission ID stored on roles. */
-            id: string;
-            /** @description Human-readable label for product UI. */
-            label: string;
-            /** @description Short explanation of what the permission grants. */
-            description: string;
-            /** @enum {string} */
-            scope: "project" | "org" | "platform" | "action";
-            /** @enum {string} */
-            category: "project" | "access" | "automations" | "runs" | "work" | "integrations" | "audit" | "billing" | "platform" | "actions";
-            /** @enum {string} */
-            risk: "low" | "medium" | "high" | "critical";
-            /** @description Whether this permission should be selectable in the current project role builder. */
-            assignable: boolean;
-            /** @description User kinds this permission is intended for. */
-            user_kinds: ("human" | "agent" | "service" | "system")[];
-        };
-        PermissionPreset: {
-            id: string;
-            label: string;
-            description: string;
-            /** @enum {string} */
-            scope: "project" | "org" | "platform" | "action";
-            permissions: string[];
-        };
-        ActionPermissionGroup: {
-            /** @description Wildcard permission ID, for example `actions.execute.slack.*`. */
-            id: string;
-            label: string;
-            /** @enum {string} */
-            source: "platform" | "integration" | "custom";
-            /** @description Concrete action execution permission IDs included in this group. */
-            children: string[];
-        };
-        PermissionCatalogResponse: {
-            items: components["schemas"]["PermissionDefinition"][];
-            presets: components["schemas"]["PermissionPreset"][];
-            action_groups: components["schemas"]["ActionPermissionGroup"][];
-        };
-        /** @description Named bundle of permissions assignable to human or machine principals. Roles let admins grant automation, project, and integration capabilities consistently without editing every user individually. */
-        Role: {
-            /** @description Unique identifier for this role. */
-            id: string;
-            /** @description Scoping project. Empty for system-defined roles. */
-            project_id?: string;
-            /** @description Human-readable role name, unique within org+project scope. */
-            name: string;
-            /** @description Optional human-readable description of what this role grants. */
-            description?: string;
-            /** @description Permission strings granted by this role. Source allowed values from `GET /v1/projects/{project}/permissions`; legacy IDs or values not present in that catalog are rejected. */
-            permissions: string[];
-            /** @description True for built-in platform roles that cannot be modified or deleted. */
-            system_defined: boolean;
-            /** @description Resource tags applied to this role. */
-            tags?: components["schemas"]["TagMap"];
-            /**
-             * Format: date-time
-             * @description Timestamp when this role was created.
-             */
-            created_at: string;
-            /**
-             * Format: date-time
-             * @description Timestamp when this role was last updated.
-             */
-            updated_at: string;
-        };
-        /** @description Binding between a principal and a role in one project. Use assignments to explain why a principal (human or machine) has access and to audit who granted it. */
-        RoleAssignment: {
-            /** @description Unique identifier for this role assignment. */
-            id: string;
-            /** @description Principal ID receiving the role. */
-            principal_id: string;
-            /** @description ID of the assigned role. */
-            role_id: string;
-            /** @description Name of the assigned role. */
-            role_name: string;
-            /** @description Project this assignment belongs to. */
-            project_id: string;
-            /** @description User ID of the caller who created this assignment. */
-            granted_by?: string;
-            /**
-             * Format: date-time
-             * @description Timestamp when this assignment was created.
-             */
-            created_at: string;
-        };
-        RoleListResponse: {
-            /** @description The list of results for this page. */
-            items: components["schemas"]["Role"][];
-            /** @description Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false. */
-            next_cursor?: string;
-            /** @description Whether additional pages are available. */
-            has_more: boolean;
-        };
-        RoleAssignmentListResponse: {
-            /** @description The list of results for this page. */
-            items: components["schemas"]["RoleAssignment"][];
-        };
-        CreateRoleRequest: {
-            /** @description Unique name within the project. */
-            name: string;
-            /** @description Optional human-readable description of what this role grants. */
-            description?: string;
-            /** @description Permission strings to include. Source allowed values from `GET /v1/projects/{project}/permissions`; legacy IDs or values not present in that catalog are rejected. */
-            permissions: string[];
-            /** @description Initial tag set. */
-            tags?: components["schemas"]["TagMap"];
-        };
-        UpdateRoleRequest: {
-            /** @description Replacement description. */
-            description?: string;
-            /** @description Replaces the existing permissions array entirely. Source allowed values from `GET /v1/projects/{project}/permissions`; legacy IDs or values not present in that catalog are rejected. */
-            permissions?: string[];
-            /** @description When supplied, replaces the user tag set on the role. System tags (`mobius:*`) are preserved. */
-            tags?: components["schemas"]["TagMap"];
-        };
-        CreateRoleAssignmentRequest: {
-            /** @description Principal ID to assign the role to (human or machine). */
-            principal_id: string;
-            /** @description Mutually exclusive with `role_name`. */
-            role_id?: string;
-            /** @description Resolved to a role ID server-side. Mutually exclusive with `role_id`. */
-            role_name?: string;
-        } & (unknown | unknown);
-        /**
-         * @description Protocol kind of the interaction. Launch keeps this intentionally
-         *     small:
-         *     * `request_information` — a data-collection protocol with structured
-         *     or free-form input
-         *     * `request_approval` — a decision protocol (yes/no, optionally
-         *     yes/no/defer)
-         *     * `request_review` — a judgment protocol that evaluates supplied
-         *     material
-         * @enum {string}
-         */
-        InteractionKind: "request_information" | "request_approval" | "request_review";
-        /** @description Free-form JSON payload. Used both for responder-supplied values and for policy-derived values (e.g. `Interaction.outcome`, `ResolutionPolicy.proposal`); each consumer documents which. */
-        InteractionValue: ({
-            [key: string]: unknown;
-        } | null) | unknown[] | string | number | boolean;
-        /** @description Identifies the principal who answered an interaction. Agents answer through their agent principal ID. */
-        InteractionResponder: {
-            /** @description Responder user ID. */
-            user_id: string;
-        };
-        /** @description Pointer to the work item, artifact, external ticket, or Mobius entity this interaction is about. */
-        InteractionReference: {
-            /** @enum {string} */
-            kind: "external_url" | "mobius_entity";
-            /**
-             * Format: uri
-             * @description Required when kind is `external_url`.
-             */
-            url?: string;
-            /** @description Required when kind is `mobius_entity`. */
-            entity_type?: string;
-            /** @description Required when kind is `mobius_entity`. */
-            entity_id?: string;
-            /** @description Optional project scope for Mobius entity references. */
-            project_id?: string;
-            /** @description Relationship such as `subject`, `evidence`, or `related`. */
-            relation?: string;
-            /** @description User-facing label for display. */
-            label?: string;
-        };
-        /** @description Optional per-interaction delivery override. When absent, each participant is notified via the app inbox only. */
-        Delivery: {
-            channels: components["schemas"]["DeliveryChannel"][];
-        };
-        /** @description A single delivery destination. `inbox_only` carries no payload; `email` requires the `email` variant. */
-        DeliveryChannel: {
-            /** @enum {string} */
-            kind: "inbox_only" | "email";
-            email?: components["schemas"]["EmailDelivery"] | null;
-        };
-        EmailDelivery: {
-            to: string[];
-        };
-        /** @description Polymorphic identifier of what is waiting on this interaction's resolution (PRD 077 §3.7). Replaces the previously special-cased `run_id` + `signal_name` pair. When `kind=run`, the legacy fields are also populated for compatibility. `http_subscriber` requires `secret_ref` and enqueues a durable callback dispatch to `callback_url` when the interaction resolves; the canonical string `v1.{delivery_id}.{unix_timestamp}.{raw_body}` is signed with HMAC-SHA256 against the resolved project signing key and the signed dispatch carries `X-Mobius-Signature`, `X-Mobius-Secret-Ref`, `X-Mobius-Secret-Version`, and `X-Mobius-Timestamp`. Signed dispatches also carry `X-Mobius-Signature-Version: v1`. Every durable dispatch also carries the stable outbox row id in `X-Mobius-Delivery-Id` and `Idempotency-Key`; retries reuse the same value. Verifiers should recompute the signature over the exact raw body, reject stale timestamps (for example, older than five minutes), deduplicate by delivery id, and check the signing headers. */
-        Consumer: {
-            /** @enum {string} */
-            kind: "run" | "agent_tool" | "http_subscriber" | "none";
-            run?: components["schemas"]["RunConsumer"] | null;
-            agent_tool?: components["schemas"]["AgentToolConsumer"] | null;
-            http_subscriber?: components["schemas"]["HttpSubscriberConsumer"] | null;
-        };
-        RunConsumer: {
-            run_id: string;
-            signal_name: string;
-        };
-        AgentToolConsumer: {
-            invocation_id: string;
-            tool_call_id: string;
-        };
-        HttpSubscriberConsumer: {
-            /**
-             * Format: uri
-             * @description Absolute http(s) URL the server POSTs to when the interaction resolves. The body is a JSON object with the interaction id, kind, status, outcome value, comment, responder, and `resolved_by`. Delivery is enqueued as a `source_events` dispatch so the worker can retry failed attempts instead of dropping them inline with interaction resolution.
-             */
-            callback_url: string;
-            /** @description Required reference to a project secret used to sign deliveries with HMAC-SHA256 over the canonical string `v1.{delivery_id}.{unix_timestamp}.{raw_body}`, where `delivery_id` is the value in `X-Mobius-Delivery-Id` and `raw_body` is the exact callback request body bytes. Accepts `<name>` for the latest enabled version or `<name>:<version>` to pin a specific positive-integer version. The plaintext signing bytes are taken from the secret's `signing_key_b64` key, which must base64-decode to exactly 32 bytes. The hex signature is forwarded as `X-Mobius-Signature: sha256=<hex>` alongside `X-Mobius-Secret-Ref`, `X-Mobius-Secret-Version`, `X-Mobius-Signature-Version: v1`, and a unix `X-Mobius-Timestamp`. Consumers should reject stale timestamps (for example, older than five minutes). When `secret_ref` resolution fails the dispatch is retried by the event processor rather than sent unsigned. */
-            secret_ref: string;
-        };
-        /** @description One persisted answer artifact for an interaction. The response that triggered resolution is referenced from `Interaction.resolving_response_id`. */
-        InteractionResponse: {
-            /** @description Unique identifier for this response. */
-            id: string;
-            /** @description ID of the interaction this response belongs to. */
-            interaction_id: string;
-            /**
-             * @description Answer response.
-             * @enum {string}
-             */
-            response_kind: "response";
-            /**
-             * @description Lifecycle state for this response row.
-             * @enum {string}
-             */
-            state: "submitted";
-            /** @description User ID that submitted this response. */
-            responder_user_id: string;
-            /** @description JSON value supplied by this participant. */
-            value: components["schemas"]["InteractionValue"];
-            /** @description Optional free-text comment from this responder. */
-            comment?: string | null;
-            /**
-             * Format: date-time
-             * @description Timestamp when this response was submitted.
-             */
-            responded_at: string;
-            /** @description Reserved for future retry-aware response flows. */
-            attempt?: number | null;
-            /** Format: date-time */
-            created_at: string;
-            /** Format: date-time */
-            updated_at: string;
-        };
-        /** @description Declarative resolution rule attached to an Interaction. Determines how participant responses become a final outcome. */
-        ResolutionPolicy: {
-            /**
-             * @description Resolution rule. `any_of` resolves on the first acceptable response. `all_of` waits for every assigned participant. `quorum` resolves once `threshold` distinct participants respond.
-             * @enum {string}
-             */
-            type: "any_of" | "all_of" | "quorum";
-            /** @description Required when `type` is `quorum`. Number of distinct eligible participants that must respond before the interaction resolves. Must be `>= 1` and `<=` the participant count. */
-            threshold?: number;
-        };
-        /** @description Human or agent interaction request and its current response state. */
-        Interaction: {
-            /** @description Unique identifier for this interaction. */
-            id: string;
-            /** @description Originating automation run when the interaction is run-backed. */
-            run_id?: string | null;
-            /** @description Signal name used to resume the originating run when run-backed. */
-            signal_name?: string | null;
-            /** @description Canonical principal ID of the human or agent that created the interaction. */
-            created_by?: string | null;
-            /** @description Protocol kind of the interaction. */
-            kind: components["schemas"]["InteractionKind"];
-            /**
-             * @description Current status of the interaction: pending, completed, expired, or cancelled.
-             * @enum {string}
-             */
-            status: "pending" | "completed" | "expired" | "cancelled";
-            /** @description Short non-empty title shown to the responder. */
-            title: string;
-            /** @description Optional longer responder-facing detail or instructions. */
-            description?: string | null;
-            /** @description Primary work item or artifact the interaction is about. */
-            subject?: components["schemas"]["InteractionReference"] | null;
-            /** @description Supporting links and related entities. */
-            references?: components["schemas"]["InteractionReference"][];
-            /** @description Additional key-value context surfaced in the UI alongside the title and description when supplied. */
-            context?: {
-                [key: string]: unknown;
-            } | null;
-            /** @description Uniform string key/value labels used for interaction list filtering and reporting. */
-            tags?: components["schemas"]["TagMap"];
-            /** @description Free-form structured metadata attached to the interaction. */
-            properties?: {
-                [key: string]: unknown;
-            } | null;
-            /** @description Response controls and validation rules rendered to the recipient. */
-            spec?: components["schemas"]["InteractionSpec"];
-            /** @description Resolved user IDs targeted by the interaction. */
-            target_user_ids: string[];
-            /** @description User or agent that completed the interaction; null until completion. */
-            responder?: components["schemas"]["InteractionResponder"] | null;
-            /** @description ID of the response that triggered resolution. Null while the interaction is pending, cancelled, or expired. Look up the response in `responses` for the full payload. */
-            resolving_response_id?: string | null;
-            /** @description All response artifacts recorded against this interaction in arrival order. */
-            responses?: components["schemas"]["InteractionResponse"][];
-            /**
-             * Format: date-time
-             * @description Timestamp when this interaction expires if not responded to.
-             */
-            expires_at?: string | null;
-            /**
-             * Format: date-time
-             * @description Timestamp when the interaction received a terminal response.
-             */
-            completed_at?: string | null;
-            /**
-             * Format: date-time
-             * @description Timestamp when this interaction was created.
-             */
-            created_at: string;
-            /**
-             * Format: date-time
-             * @description Timestamp when this interaction was last updated.
-             */
-            updated_at: string;
-            /** @description When true, all target users must respond before completion. */
-            require_all?: boolean;
-            /** @description Declarative resolution rule attached at creation time. Legacy `require_all` inputs are synthesized into an equivalent policy at create time when present. Newer rows typically include this field; nullability covers historical rows and callers that omit it. */
-            resolution_policy?: components["schemas"]["ResolutionPolicy"] | null;
-            /** @description Polymorphic identifier of what is waiting on this interaction's resolution (PRD 077 §3.7). Replaces the special-cased `run_id`/`signal_name` pair; the latter remain populated when `consumer.kind=run`. */
-            consumer?: components["schemas"]["Consumer"] | null;
-            /** @description Optional per-interaction delivery override. When absent, the dispatcher delivers to the app inbox only. */
-            delivery?: components["schemas"]["Delivery"] | null;
-            /** @description Final outcome selected by the resolution policy. Omitted while the interaction is still pending. */
-            outcome?: components["schemas"]["InteractionValue"];
-            /** @description Short audit string identifying which policy rule fired. Null until the interaction reaches a resolved state. */
-            resolved_by?: string | null;
-            /** @description Reason recorded when the interaction was cancelled. */
-            cancel_reason?: string | null;
-        };
-        InteractionListResponse: {
-            /** @description The list of results for this page. */
-            items: components["schemas"]["Interaction"][];
-            /** @description Whether additional pages are available. */
-            has_more?: boolean;
-            /** @description Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false. */
-            next_cursor?: string;
-        };
-        /** @description Creates an interaction directly. Use the standalone variant with no automation-run side effect, or the run-backed variant that requires both `run_id` and `signal_name` so completion can resume the run. For worker/job usage, prefer the job-scoped route so the server can derive the owning run from the claimed job context. */
-        CreateInteractionRequest: components["schemas"]["CreateStandaloneInteractionRequest"] | components["schemas"]["CreateRunBackedInteractionRequest"];
-        /** @description Creates a standalone interaction. Completion records the response but does not deliver an automation signal. */
-        CreateStandaloneInteractionRequest: {
-            /** @description Resolved user IDs to target directly. Agents use their agent principal IDs. */
-            target_user_ids?: string[];
-            /** @description Protocol kind. Renamed from `type` in the PRD 077 v-bump. */
-            kind: components["schemas"]["InteractionKind"];
-            /** @description Short non-empty title shown to the responder. */
-            title: string;
-            /** @description Optional longer responder-facing detail or instructions. */
-            description?: string;
-            /** @description Primary work item or artifact the interaction is about. */
-            subject?: components["schemas"]["InteractionReference"];
-            /** @description Supporting links and related entities. */
-            references?: components["schemas"]["InteractionReference"][];
-            /** @description Additional key-value context surfaced in the UI alongside the title and description. */
-            context?: {
-                [key: string]: unknown;
-            };
-            /** @description Initial interaction tag set used by list filtering and reporting. */
-            tags?: components["schemas"]["TagMap"];
-            /** @description Free-form structured metadata to attach to the interaction. */
-            properties?: {
-                [key: string]: unknown;
-            };
-            /** @description Response controls and validation rules rendered to the recipient. */
-            spec?: components["schemas"]["InteractionSpec"];
-            /** @description When true, all target users must respond before the interaction is considered complete. Defaults to false when omitted. Mutually exclusive with `resolution_policy`; prefer the policy form for new code. */
-            require_all?: boolean;
-            /** @description Declarative resolution rule. When supplied the policy evaluator drives completion. */
-            resolution_policy?: components["schemas"]["ResolutionPolicy"];
-            /** @description Polymorphic identifier of what is waiting on this interaction's resolution (PRD 077 §3.7). When omitted on a run-backed create request, the server derives a `kind=run` consumer from `run_id` and `signal_name`. */
-            consumer?: components["schemas"]["Consumer"];
-            /** @description Optional per-interaction delivery override (PRD 077 §3.8). */
-            delivery?: components["schemas"]["Delivery"];
-            /**
-             * Format: date-time
-             * @description Timestamp after which this interaction expires if not responded to.
-             */
-            expires_at?: string;
-        };
-        /** @description Creates a run-backed interaction. **Deprecated as a resume mechanism.** Under RFC 064 an automation run only resumes from an interaction response when its materializer registered a `run_subscription` with `Subject{kind:interaction, interaction_id:...}`. That registration only happens for interactions created from within an automation step (declarative `interaction` step or job-scoped `POST /v1/projects/{project}/jobs/{id}/interactions`). Direct run-backed creates through this endpoint produce a pending interaction record linked to `run_id` for audit, but completion will not wake the run. Use the job-scoped route for resume semantics. `signal_name` is retained on the request shape for backwards compatibility and audit; routing no longer depends on it. */
-        CreateRunBackedInteractionRequest: {
-            /** @description ID of the automation run to resume when this interaction is completed. */
-            run_id: string;
-            /** @description Signal name the interaction will complete against when run-backed. */
-            signal_name: string;
-            /** @description Resolved user IDs to target directly. Agents use their agent principal IDs. */
-            target_user_ids?: string[];
-            /** @description Protocol kind. Renamed from `type` in the PRD 077 v-bump. */
-            kind: components["schemas"]["InteractionKind"];
-            /** @description Short non-empty title shown to the responder. */
-            title: string;
-            /** @description Optional longer responder-facing detail or instructions. */
-            description?: string;
-            /** @description Primary work item or artifact the interaction is about. */
-            subject?: components["schemas"]["InteractionReference"];
-            /** @description Supporting links and related entities. */
-            references?: components["schemas"]["InteractionReference"][];
-            /** @description Additional key-value context surfaced in the UI alongside the title and description. */
-            context?: {
-                [key: string]: unknown;
-            };
-            /** @description Initial interaction tag set used by list filtering and reporting. */
-            tags?: components["schemas"]["TagMap"];
-            /** @description Free-form structured metadata to attach to the interaction. */
-            properties?: {
-                [key: string]: unknown;
-            };
-            /** @description Response controls and validation rules rendered to the recipient. */
-            spec?: components["schemas"]["InteractionSpec"];
-            /** @description When true, all target users must respond before the interaction is considered complete. Defaults to false when omitted. Mutually exclusive with `resolution_policy`; prefer the policy form for new code. */
-            require_all?: boolean;
-            /** @description Declarative resolution rule. When supplied the policy evaluator drives completion. */
-            resolution_policy?: components["schemas"]["ResolutionPolicy"];
-            /** @description Polymorphic identifier of what is waiting on this interaction's resolution (PRD 077 §3.7). When omitted on a run-backed create request, the server derives a `kind=run` consumer from `run_id` and `signal_name`. */
-            consumer?: components["schemas"]["Consumer"];
-            /** @description Optional per-interaction delivery override (PRD 077 §3.8). */
-            delivery?: components["schemas"]["Delivery"];
-            /**
-             * Format: date-time
-             * @description Timestamp after which this interaction expires if not responded to.
-             */
-            expires_at?: string;
-        };
-        RespondToInteractionRequest: {
-            /**
-             * @description Operation to perform through the canonical response endpoint. `submit` answers the interaction.
-             * @enum {string}
-             */
-            action?: "submit";
-            /** @description JSON value supplied by the responder. Required for `submit`. */
-            value?: components["schemas"]["InteractionValue"];
-            /** @description Optional free-text comment accompanying the action. Available on every interaction kind and never gated by the spec; the responder may always attach reasoning, caveats, or follow-up notes alongside `value`. */
-            comment?: string;
-        };
-        /** @description Optional payload accompanying a cancel request. The reason is recorded on the interaction and forwarded in the cancellation signal so automations can route to a fallback. */
-        CancelInteractionRequest: {
-            /** @description Free-text reason recorded on the interaction. */
-            reason?: string;
-        };
-        /** @description Models a platform agent can be assigned in this project, grouped by available provider. */
-        ProjectModelsResponse: {
-            /** @description Model id assigned when an agent specifies no model. */
-            default_model: string;
-            /** @description Available providers in display order. Providers with no configured credentials are omitted. */
-            items: components["schemas"]["ModelProviderGroup"][];
-        };
-        ModelProviderGroup: {
-            /** @description Canonical provider id (`anthropic`, `openai`, `gemini`, `xai`). */
-            provider: string;
-            /** @description Human-readable provider label. */
-            display_name: string;
-            /**
-             * @description Where credentials come from — a project integration (`byok`) or a platform-managed key (`platform`).
-             * @enum {string}
-             */
-            source: "byok" | "platform";
-            models: components["schemas"]["ModelOption"][];
-        };
-        ModelOption: {
-            /** @description Bare model id assigned to an agent's `model` field. */
-            id: string;
-            /** @description Canonical provider id this model belongs to. */
-            provider: string;
-            /** @description Human-readable model label for UI. */
-            label: string;
-            /** @description Short guidance about when to use this model. */
-            description?: string;
-            /** @description Whether this is the suggested default for its provider. */
-            recommended?: boolean;
-        };
         /**
          * @description Direct-message access policy for the binding.
          * @enum {string}
@@ -4401,7 +3222,7 @@ export interface components {
          * @description Surface that created the session.
          * @enum {string}
          */
-        SessionOrigin: "interaction" | "manual" | "api" | "automation";
+        SessionOrigin: "manual" | "api" | "automation";
         /**
          * @description Boundary used to resolve named sessions.
          * @enum {string}
@@ -4866,7 +3687,7 @@ export interface components {
             color?: string;
             /** @description Capability names used by orchestrators to select suitable agents. */
             capabilities?: string[];
-            /** @description Model identifier for platform agents. Any id from `GET /v1/projects/{project}/models`, optionally `provider/`-prefixed (e.g. `xai/grok-4`); bare known ids (e.g. `claude-sonnet-4-6`) are auto-detected. Empty falls back to the platform default. */
+            /** @description Model identifier for platform agents. Any id from `GET /v1/projects/{project}/catalog/models`, optionally `provider/`-prefixed (e.g. `xai/grok-4`); bare known ids (e.g. `claude-sonnet-4-6`) are auto-detected. Empty falls back to the platform default. */
             model?: string;
             model_route?: components["schemas"]["AgentModelRoute"];
             /** @description Omit to use the create-time default, `flat`. */
@@ -4888,7 +3709,7 @@ export interface components {
             color?: string;
             /** @description Replacement capability names. */
             capabilities?: string[];
-            /** @description Replacement model identifier for platform agents (any id from `GET /v1/projects/{project}/models`, optionally `provider/`-prefixed). */
+            /** @description Replacement model identifier for platform agents (any id from `GET /v1/projects/{project}/catalog/models`, optionally `provider/`-prefixed). */
             model?: string;
             model_route?: components["schemas"]["AgentModelRoute"];
             tool_presentation?: components["schemas"]["AgentToolPresentation"];
@@ -5124,9 +3945,9 @@ export interface components {
             /** @description Human-readable step name. */
             name?: string;
             /** @enum {string} */
-            kind: "agent" | "action" | "sleep" | "wait_for_event" | "interaction" | "automation";
+            kind: "agent" | "action" | "sleep" | "wait_for_event" | "automation";
             /** @description Kind-specific step configuration. */
-            config: components["schemas"]["AutomationAgentStep"] | components["schemas"]["AutomationActionStep"] | components["schemas"]["AutomationSleepStep"] | components["schemas"]["AutomationWaitForEventStep"] | components["schemas"]["AutomationInteractionStep"] | components["schemas"]["AutomationSubAutomationStep"];
+            config: components["schemas"]["AutomationAgentStep"] | components["schemas"]["AutomationActionStep"] | components["schemas"]["AutomationSleepStep"] | components["schemas"]["AutomationWaitForEventStep"] | components["schemas"]["AutomationSubAutomationStep"];
             /** @description Step-local input object resolved when the step starts. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions. */
             input?: {
                 [key: string]: unknown;
@@ -5264,17 +4085,6 @@ export interface components {
             };
             /** @description Optional expr predicate evaluated against the `{ inputs, context }` envelope of the parent run before the child is triggered. It must evaluate to a bool; a false result skips the step and starts no child run. Same predicate language as `wait_for_event` and event trigger conditions. */
             condition?: string;
-        };
-        /** @description Human interaction step configuration recognised inside `AutomationSpec.steps[].config`. */
-        AutomationInteractionStep: {
-            /** @enum {string} */
-            protocol: "request_information" | "request_approval" | "request_review";
-            targets: string[];
-            prompt?: string;
-            resolution_policy?: string;
-            spec?: {
-                [key: string]: unknown;
-            };
         };
         AutomationRetryPolicy: {
             max_attempts?: number;
@@ -5423,7 +4233,7 @@ export interface components {
         };
         /** @description Optional attribution for the call that started this run. Triggers and webhooks populate `trigger_id` and `trigger_fire_id`; API callers usually only set `type` and `id`. */
         AutomationRunSource: {
-            /** @description One of `api`, `trigger`, `manual`, `interaction`, `signal`. */
+            /** @description One of `api`, `trigger`, `manual`, `signal`. */
             type?: string;
             /** @description Identifier within the source type's namespace. */
             id?: string;
@@ -5518,7 +4328,7 @@ export interface components {
          * @description The step type. `cleanup` is system-materialized — it appears in run step listings for terminal cleanup work but cannot be authored in an `AutomationSpec`.
          * @enum {string}
          */
-        AutomationRunStepKind: "agent" | "action" | "sleep" | "wait_for_event" | "interaction" | "cleanup";
+        AutomationRunStepKind: "agent" | "action" | "sleep" | "wait_for_event" | "cleanup";
         /**
          * @description Lifecycle state of an automation run step.
          * @enum {string}
@@ -5603,7 +4413,7 @@ export interface components {
              * @description Monotonic per-run sequence number used for ordering and resume.
              */
             sequence: number;
-            /** @description Event type from the run-stream taxonomy (e.g. `run.started`, `step.completed`, `wait.opened`, `interaction.requested`, `interaction.responded`, `action.called`, `action.completed`, `action.failed`, `artifact.created`, `limit.reached`, `usage.recorded`). */
+            /** @description Event type from the run-stream taxonomy (e.g. `run.started`, `step.completed`, `wait.opened`, `action.called`, `action.completed`, `action.failed`, `artifact.created`, `limit.reached`, `usage.recorded`). */
             event_type: string;
             /** @description ID of the step this event belongs to, when applicable. */
             step_id?: string | null;
@@ -5629,89 +4439,6 @@ export interface components {
             next_sequence?: number;
             /** @description True when more events exist after the returned page. */
             has_more?: boolean;
-        };
-        /**
-         * @description Machine principal kind. `service` is the standalone user-facing API client identity. `agent` and `system` are internal backing identities for agent execution and platform-internal work. (Human principals are managed as organization members, not on this surface.)
-         * @enum {string}
-         */
-        PrincipalKind: "service" | "agent" | "system";
-        /**
-         * @description Canonical business-lifecycle state. `active` allows authentication and job claims; `disabled` is a reversible kill switch that blocks them but preserves the record and its assignments; `archived` is terminal/retained.
-         * @enum {string}
-         */
-        PrincipalState: "active" | "disabled" | "archived";
-        /** @description Non-human identity used by automation, agents, and API keys. A principal makes ownership, permissions, and credential rotation explicit without tying machine access to a human user. The `id` is the principal id used as the `owned_by` value when filtering or claiming resources. */
-        Principal: {
-            /** @description Unique identifier for this principal (`prin_…`/`agt_…`). */
-            id: string;
-            /** @description Machine kind of this principal. */
-            kind: components["schemas"]["PrincipalKind"];
-            /** @description Current lifecycle state: `active`, `disabled`, or `archived`. */
-            state: components["schemas"]["PrincipalState"];
-            /** @description Human-readable name for this principal. Immutable after creation. */
-            name: string;
-            /** @description Optional human-readable description. */
-            description?: string;
-            /** @description Typed, human-readable stable reference for this machine principal (`svc:acme-ci`, `agent:harry`, `system`). Replaces the synthetic email for non-humans (PRD 2026-06-04 FR-3). */
-            handle?: string;
-            /** @description Optional human principal accountable for this machine principal. */
-            owner_id?: string;
-            /** @description Project that scopes this machine principal. */
-            project_id?: string;
-            /** @description Role IDs currently assigned to this principal in the project. */
-            role_ids?: string[];
-            /** @description Arbitrary key-value metadata. Subject to size and nesting depth limits. */
-            metadata?: {
-                [key: string]: unknown;
-            };
-            /** @description Resource tags applied to this principal. Distinct from `metadata`: `tags` is the uniform string-to-string field used for filtering and reporting; `metadata` is a free-form caller-defined blob. */
-            tags?: components["schemas"]["TagMap"];
-            /**
-             * Format: date-time
-             * @description Timestamp when this principal was created.
-             */
-            created_at: string;
-            /**
-             * Format: date-time
-             * @description Timestamp when this principal was last updated.
-             */
-            updated_at: string;
-        };
-        PrincipalListResponse: {
-            /** @description The list of results for this page. */
-            items: components["schemas"]["Principal"][];
-        };
-        CreatePrincipalRequest: {
-            /** @description Human-readable name for this principal. Immutable after creation. */
-            name: string;
-            /** @description Optional human-readable description. */
-            description?: string;
-            /** @description Human principal accountable for this service principal. */
-            owner_id?: string;
-            /** @description Arbitrary metadata to attach to the principal. */
-            metadata?: {
-                [key: string]: unknown;
-            };
-            /** @description One or more role IDs to assign at creation time. All assignments are created atomically with the principal. Requires `mobius.access.manage`. Each role must belong to this project or be system-defined. */
-            role_ids?: string[];
-            /** @description Initial tag set. */
-            tags?: components["schemas"]["TagMap"];
-        };
-        UpdatePrincipalRequest: {
-            /** @description Replacement description. */
-            description?: string;
-            /** @description Replacement lifecycle state: `active` or `disabled`. */
-            state?: components["schemas"]["PrincipalState"];
-            /** @description Human principal accountable for this principal. */
-            owner_id?: string;
-            /** @description Replacement metadata. */
-            metadata?: {
-                [key: string]: unknown;
-            };
-            /** @description Replacement role IDs for this principal in the project. Send an empty array to remove all project role assignments. Requires `mobius.access.manage`. */
-            role_ids?: string[];
-            /** @description When supplied, replaces the user tag set on the principal. System tags (`mobius:*`) are preserved. */
-            tags?: components["schemas"]["TagMap"];
         };
         /** @enum {string} */
         ColumnType: "string" | "number" | "boolean" | "date" | "object" | "array" | "any";
@@ -6134,13 +4861,19 @@ export interface components {
         SecretVersionParam: string;
         /** @description Reference type name, such as `slack.channel` or `table.table`. */
         ReferenceTypeParam: string;
-        /** @description Table name, lowercase alphanumeric and underscores. Names are unique within the resolved scope. Omitted scope means the project/default scope; use `scope=owner` together with `owned_by` or `owned_by_me=true` for per-user memory tables. With `scope=owner`, the same table_name may exist under different owner scopes, so consumers must consider scope plus name when resolving uniqueness. */
-        TableNameParam: string;
-        /** @description Scope used to resolve `table_name`. Omit for the project/default scope; use `owner` with `owned_by` or `owned_by_me=true` for per-user memory tables. For list filters, scope is orthogonal and does not affect ownership-filter precedence. */
+        /** @description Integration record ID. */
+        IntegrationIDParam: string;
+        /** @description Integration event receipt ID. */
+        IntegrationEventIDParam: string;
+        /** @description Table ID. */
+        TableIDParam: string;
+        /** @description Filter tables by name. Names are unique within a scope, but are not globally unique across owner-scoped tables; use this as a discovery filter and use the returned table `id` for follow-up operations. */
+        TableNameQueryParam: string;
+        /** @description Filter tables by scope. Omit to include project/default and owner scopes; use `owner` with `owned_by` or `owned_by_me=true` for per-user memory tables. */
         TableScopeParam: components["schemas"]["ResourceScope"];
         /** @description Canonical user owner ID. Used with `scope=owner` for lookups; for list filters, narrows to tables owned by this user. Ignored when `owned_by_me=true` is present. */
         TableOwnedByParam: string;
-        /** @description Resolve `table_name` in the authenticated user's owner scope, or filter lists to tables owned by the authenticated user. */
+        /** @description Filter lists to tables owned by the authenticated user. */
         TableOwnedByMeParam: boolean;
         /** @description TypeID of the artifact (`art_...`) */
         ArtifactIdParam: string;
@@ -6153,89 +4886,6 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    listOrgAuditLogs: {
-        parameters: {
-            query?: {
-                /** @description Filter by resource type */
-                resource_type?: string;
-                /** @description Filter by project ID */
-                project_id?: string;
-                /** @description Filter by resource ID */
-                resource_id?: string;
-                /** @description Filter by principal ID */
-                principal_id?: string;
-                /** @description Filter by action (create, update, delete, archive, restore) */
-                action?: string;
-                /** @description Filter to entries created after this timestamp */
-                created_after?: string;
-                /** @description Filter to entries created before this timestamp */
-                created_before?: string;
-                /** @description Cursor for pagination (opaque string from previous response) */
-                cursor?: components["parameters"]["CursorParam"];
-                /** @description Maximum number of items to return */
-                limit?: components["parameters"]["LimitParam"];
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AuditLogListResponse"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-        };
-    };
-    listAuditLogs: {
-        parameters: {
-            query?: {
-                /** @description Filter by resource type */
-                resource_type?: string;
-                /** @description Filter by resource ID */
-                resource_id?: string;
-                /** @description Filter by principal ID */
-                principal_id?: string;
-                /** @description Filter by action (create, update, delete, archive, restore) */
-                action?: string;
-                /** @description Filter to entries created after this timestamp */
-                created_after?: string;
-                /** @description Filter to entries created before this timestamp */
-                created_before?: string;
-                /** @description Cursor for pagination (opaque string from previous response) */
-                cursor?: components["parameters"]["CursorParam"];
-                /** @description Maximum number of items to return */
-                limit?: components["parameters"]["LimitParam"];
-            };
-            header?: never;
-            path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AuditLogListResponse"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-        };
-    };
     listAPIKeys: {
         parameters: {
             query?: {
@@ -6624,6 +5274,32 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ActionCatalogEntry"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listCatalogModels: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModelCatalogResponse"];
                 };
             };
             401: components["responses"]["Unauthorized"];
@@ -7084,216 +5760,6 @@ export interface operations {
             409: components["responses"]["Conflict"];
         };
     };
-    listSecrets: {
-        parameters: {
-            query?: {
-                /** @description Cursor for pagination (opaque string from previous response) */
-                cursor?: components["parameters"]["CursorParam"];
-                /** @description Maximum number of items to return */
-                limit?: components["parameters"]["LimitParam"];
-            };
-            header?: never;
-            path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SecretListResponse"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    createSecret: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateSecretRequest"];
-            };
-        };
-        responses: {
-            /** @description Created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Secret"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            409: components["responses"]["Conflict"];
-        };
-    };
-    getSecret: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
-                /** @description Secret ID or project-scoped secret name. */
-                secret: components["parameters"]["SecretParam"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Secret"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    deleteSecret: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
-                /** @description Secret ID or project-scoped secret name. */
-                secret: components["parameters"]["SecretParam"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description No Content */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    updateSecret: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
-                /** @description Secret ID or project-scoped secret name. */
-                secret: components["parameters"]["SecretParam"];
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateSecretRequest"];
-            };
-        };
-        responses: {
-            /** @description Updated */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Secret"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            409: components["responses"]["Conflict"];
-        };
-    };
-    listSecretVersions: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
-                /** @description Secret ID or project-scoped secret name. */
-                secret: components["parameters"]["SecretParam"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SecretVersionListResponse"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    getSecretVersion: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
-                /** @description Secret ID or project-scoped secret name. */
-                secret: components["parameters"]["SecretParam"];
-                /** @description Secret version number or `latest`. */
-                version: components["parameters"]["SecretVersionParam"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SecretVersion"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-        };
-    };
     listWorkerSessions: {
         parameters: {
             query?: never;
@@ -7421,8 +5887,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Resource ID. */
-                id: components["parameters"]["IDParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
             };
             cookie?: never;
         };
@@ -7447,8 +5913,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Resource ID. */
-                id: components["parameters"]["IDParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
             };
             cookie?: never;
         };
@@ -7472,8 +5938,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Resource ID. */
-                id: components["parameters"]["IDParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
             };
             cookie?: never;
         };
@@ -7499,39 +5965,13 @@ export interface operations {
             409: components["responses"]["Conflict"];
         };
     };
-    listProjectFeatures: {
+    archiveProject: {
         parameters: {
             query?: never;
             header?: never;
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Effective feature gates for the project */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["FeatureGateListResponse"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    archiveProject: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Resource ID. */
-                id: components["parameters"]["IDParam"];
             };
             cookie?: never;
         };
@@ -7556,8 +5996,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Resource ID. */
-                id: components["parameters"]["IDParam"];
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
             };
             cookie?: never;
         };
@@ -7572,185 +6012,6 @@ export interface operations {
                     "application/json": components["schemas"]["Project"];
                 };
             };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    getProjectConfig: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Resource ID. */
-                id: components["parameters"]["IDParam"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ConfigEntries"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    updateProjectConfig: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Resource ID. */
-                id: components["parameters"]["IDParam"];
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ConfigEntries"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ConfigEntries"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    deleteProjectConfig: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Resource ID. */
-                id: components["parameters"]["IDParam"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description No Content */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    listProjectMembers: {
-        parameters: {
-            query?: {
-                /** @description Cursor for pagination (opaque string from previous response) */
-                cursor?: components["parameters"]["CursorParam"];
-                /** @description Maximum number of items to return */
-                limit?: components["parameters"]["LimitParam"];
-            };
-            header?: never;
-            path: {
-                /** @description Resource ID. */
-                id: components["parameters"]["IDParam"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ProjectMemberListResponse"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    addProjectMember: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Resource ID. */
-                id: components["parameters"]["IDParam"];
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AddProjectMemberRequest"];
-            };
-        };
-        responses: {
-            /** @description OK — member already existed */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ProjectMember"];
-                };
-            };
-            /** @description Created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ProjectMember"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    removeProjectMember: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Resource ID. */
-                id: components["parameters"]["IDParam"];
-                /** @description Principal ID. */
-                principal_id: components["parameters"]["principal_id"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description No Content */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
@@ -8064,575 +6325,6 @@ export interface operations {
                     "application/json": components["schemas"]["WebhookDeliveryListResponse"];
                 };
             };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    listProjectPermissions: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PermissionCatalogResponse"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    listRoles: {
-        parameters: {
-            query?: {
-                /** @description Maximum number of items to return */
-                limit?: components["parameters"]["LimitParam"];
-                /** @description Cursor for pagination (opaque string from previous response) */
-                cursor?: components["parameters"]["CursorParam"];
-                /**
-                 * @description Filter results by tag. Repeatable; multiple values combine with AND. Format: `Key:Value`, `Key:*` for any value, `Key:a,b,c` for IN.
-                 *
-                 *     Tag values containing `:` or `,` cannot be filtered with this grammar — the parser splits on those literally. Constrain values to plain identifiers when you intend to filter on them.
-                 *
-                 *     Some high-cardinality resources may ignore ad-hoc tag filtering.
-                 */
-                tag?: components["parameters"]["TagFilterParam"];
-            };
-            header?: never;
-            path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["RoleListResponse"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-        };
-    };
-    createRole: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateRoleRequest"];
-            };
-        };
-        responses: {
-            /** @description Created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Role"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            409: components["responses"]["Conflict"];
-        };
-    };
-    getRole: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
-                /** @description Resource ID. */
-                id: components["parameters"]["IDParam"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Role"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    deleteRole: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
-                /** @description Resource ID. */
-                id: components["parameters"]["IDParam"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description No Content */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    updateRole: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
-                /** @description Resource ID. */
-                id: components["parameters"]["IDParam"];
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateRoleRequest"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Role"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            409: components["responses"]["Conflict"];
-        };
-    };
-    listRoleAssignments: {
-        parameters: {
-            query?: {
-                /** @description Filter to assignments for a specific principal. */
-                principal_id?: string;
-                /** @description Filter to assignments for a specific role. */
-                role_id?: string;
-            };
-            header?: never;
-            path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["RoleAssignmentListResponse"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-        };
-    };
-    createRoleAssignment: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateRoleAssignmentRequest"];
-            };
-        };
-        responses: {
-            /** @description Created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["RoleAssignment"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            409: components["responses"]["Conflict"];
-        };
-    };
-    deleteRoleAssignment: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
-                /** @description Resource ID. */
-                id: components["parameters"]["IDParam"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description No Content */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    listInteractions: {
-        parameters: {
-            query?: {
-                /** @description Filter by status */
-                status?: "pending" | "completed" | "expired" | "cancelled";
-                /** @description Filter by interaction protocol kind */
-                kind?: components["schemas"]["InteractionKind"];
-                /** @description Filter by originating run ID */
-                run_id?: string;
-                /** @description Filter by resolved target user ID. */
-                target_user_id?: string;
-                /** @description When true, returns only interactions visible to the authenticated user. */
-                inbox?: boolean;
-                /** @description Cursor for pagination (opaque string from previous response) */
-                cursor?: components["parameters"]["CursorParam"];
-                /** @description Maximum number of items to return */
-                limit?: components["parameters"]["LimitParam"];
-                /**
-                 * @description Filter results by tag. Repeatable; multiple values combine with AND. Format: `Key:Value`, `Key:*` for any value, `Key:a,b,c` for IN.
-                 *
-                 *     Tag values containing `:` or `,` cannot be filtered with this grammar — the parser splits on those literally. Constrain values to plain identifiers when you intend to filter on them.
-                 *
-                 *     Some high-cardinality resources may ignore ad-hoc tag filtering.
-                 */
-                tag?: components["parameters"]["TagFilterParam"];
-            };
-            header?: never;
-            path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["InteractionListResponse"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-        };
-    };
-    createInteraction: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                /**
-                 * @example {
-                 *       "run_id": "run_01hw1n1a2b3c4d5e6f7g8h9j0k",
-                 *       "signal_name": "manager_approval",
-                 *       "target_user_ids": [
-                 *         "user_2f9s3k4m5n6p7q8r9s0t1u2v3w"
-                 *       ],
-                 *       "kind": "request_approval",
-                 *       "title": "Approve publishing the April billing report?",
-                 *       "context": {
-                 *         "report_id": "rpt_2026_04",
-                 *         "amount_usd": 12850
-                 *       },
-                 *       "spec": {
-                 *         "mode": "confirm",
-                 *         "default_confirmed": false
-                 *       },
-                 *       "require_all": false,
-                 *       "expires_at": "2026-04-25T14:30:00Z"
-                 *     }
-                 */
-                "application/json": components["schemas"]["CreateInteractionRequest"];
-            };
-        };
-        responses: {
-            /** @description Created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "id": "iact_01hw1r2s3t4u5v6w7x8y9z0a1b",
-                     *       "run_id": "run_01hw1n1a2b3c4d5e6f7g8h9j0k",
-                     *       "signal_name": "manager_approval",
-                     *       "kind": "request_approval",
-                     *       "status": "pending",
-                     *       "title": "Approve publishing the April billing report?",
-                     *       "context": {
-                     *         "report_id": "rpt_2026_04",
-                     *         "amount_usd": 12850
-                     *       },
-                     *       "spec": {
-                     *         "mode": "confirm",
-                     *         "default_confirmed": false
-                     *       },
-                     *       "target_user_ids": [
-                     *         "user_2f9s3k4m5n6p7q8r9s0t1u2v3w"
-                     *       ],
-                     *       "expires_at": "2026-04-25T14:30:00Z",
-                     *       "created_at": "2026-04-24T14:30:00Z",
-                     *       "updated_at": "2026-04-24T14:30:00Z",
-                     *       "require_all": false
-                     *     }
-                     */
-                    "application/json": components["schemas"]["Interaction"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    getInteraction: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
-                /** @description Resource ID. */
-                id: components["parameters"]["IDParam"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Interaction"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    deleteInteraction: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
-                /** @description Resource ID. */
-                id: components["parameters"]["IDParam"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description No Content */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    respondToInteraction: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
-                /** @description Resource ID. */
-                id: components["parameters"]["IDParam"];
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["RespondToInteractionRequest"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "id": "iact_01hw1r2s3t4u5v6w7x8y9z0a1b",
-                     *       "run_id": "run_01hw1n1a2b3c4d5e6f7g8h9j0k",
-                     *       "signal_name": "manager_approval",
-                     *       "kind": "request_approval",
-                     *       "status": "completed",
-                     *       "title": "Approve publishing the April billing report?",
-                     *       "context": {
-                     *         "report_id": "rpt_2026_04",
-                     *         "amount_usd": 12850
-                     *       },
-                     *       "spec": {
-                     *         "mode": "confirm",
-                     *         "default_confirmed": false
-                     *       },
-                     *       "target_user_ids": [
-                     *         "user_2f9s3k4m5n6p7q8r9s0t1u2v3w"
-                     *       ],
-                     *       "responder": {
-                     *         "user_id": "user_2f9s3k4m5n6p7q8r9s0t1u2v3w"
-                     *       },
-                     *       "resolving_response_id": "iresp_01hw1r3s3t4u5v6w7x8y9z0c1d",
-                     *       "responses": [
-                     *         {
-                     *           "id": "iresp_01hw1r3s3t4u5v6w7x8y9z0c1d",
-                     *           "interaction_id": "iact_01hw1r2s3t4u5v6w7x8y9z0a1b",
-                     *           "response_kind": "response",
-                     *           "state": "submitted",
-                     *           "responder_user_id": "user_2f9s3k4m5n6p7q8r9s0t1u2v3w",
-                     *           "value": true,
-                     *           "comment": "Approved for publication.",
-                     *           "responded_at": "2026-04-24T14:42:00Z",
-                     *           "created_at": "2026-04-24T14:42:00Z",
-                     *           "updated_at": "2026-04-24T14:42:00Z"
-                     *         }
-                     *       ],
-                     *       "outcome": true,
-                     *       "resolved_by": "any_of",
-                     *       "expires_at": "2026-04-25T14:30:00Z",
-                     *       "completed_at": "2026-04-24T14:42:00Z",
-                     *       "created_at": "2026-04-24T14:30:00Z",
-                     *       "updated_at": "2026-04-24T14:42:00Z",
-                     *       "require_all": false
-                     *     }
-                     */
-                    "application/json": components["schemas"]["Interaction"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            409: components["responses"]["Conflict"];
-        };
-    };
-    cancelInteraction: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
-                /** @description Resource ID. */
-                id: components["parameters"]["IDParam"];
-            };
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                /**
-                 * @example {
-                 *       "reason": "Superseded by a revised approval request."
-                 *     }
-                 */
-                "application/json": components["schemas"]["CancelInteractionRequest"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Interaction"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
@@ -9263,7 +6955,7 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
-    getAgentToolManifest: {
+    getAgentTools: {
         parameters: {
             query?: {
                 /** @description Optional comma-separated toolkit subset to apply. */
@@ -9294,32 +6986,6 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    listModels: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ProjectModelsResponse"];
-                };
-            };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
@@ -9605,7 +7271,7 @@ export interface operations {
             409: components["responses"]["Conflict"];
         };
     };
-    startAutomationRun: {
+    startRun: {
         parameters: {
             query?: never;
             header?: never;
@@ -9639,7 +7305,7 @@ export interface operations {
             409: components["responses"]["Conflict"];
         };
     };
-    listAutomationRuns: {
+    listRuns: {
         parameters: {
             query?: {
                 /** @description Filter to one status. */
@@ -9675,7 +7341,7 @@ export interface operations {
             403: components["responses"]["Forbidden"];
         };
     };
-    getAutomationRun: {
+    getRun: {
         parameters: {
             query?: never;
             header?: never;
@@ -9703,7 +7369,7 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
-    cancelAutomationRun: {
+    cancelRun: {
         parameters: {
             query?: never;
             header?: never;
@@ -9735,7 +7401,7 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
-    listAutomationRunSteps: {
+    listRunSteps: {
         parameters: {
             query?: never;
             header?: never;
@@ -9763,7 +7429,7 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
-    listAutomationRunEvents: {
+    listRunEvents: {
         parameters: {
             query?: {
                 /** @description Return events with sequence > since_sequence. */
@@ -9796,7 +7462,7 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
-    streamAutomationRunEvents: {
+    streamRunEvents: {
         parameters: {
             query?: {
                 /** @description Stream events with sequence > since_sequence. */
@@ -9827,7 +7493,7 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
-    signalAutomationRun: {
+    signalRun: {
         parameters: {
             query?: never;
             header?: never;
@@ -10196,167 +7862,6 @@ export interface operations {
             409: components["responses"]["Conflict"];
         };
     };
-    listPrincipals: {
-        parameters: {
-            query?: {
-                /** @description Filter principals by kind. */
-                kind?: components["schemas"]["PrincipalKind"];
-                /** @description Include disabled principals. By default only active ones are returned. */
-                include_disabled?: boolean;
-                /**
-                 * @description Filter results by tag. Repeatable; multiple values combine with AND. Format: `Key:Value`, `Key:*` for any value, `Key:a,b,c` for IN.
-                 *
-                 *     Tag values containing `:` or `,` cannot be filtered with this grammar — the parser splits on those literally. Constrain values to plain identifiers when you intend to filter on them.
-                 *
-                 *     Some high-cardinality resources may ignore ad-hoc tag filtering.
-                 */
-                tag?: components["parameters"]["TagFilterParam"];
-                /** @description Maximum number of items to return */
-                limit?: components["parameters"]["LimitParam"];
-            };
-            header?: never;
-            path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PrincipalListResponse"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    createPrincipal: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreatePrincipalRequest"];
-            };
-        };
-        responses: {
-            /** @description Created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Principal"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            409: components["responses"]["Conflict"];
-        };
-    };
-    getPrincipal: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
-                /** @description Resource ID. */
-                id: components["parameters"]["IDParam"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Principal"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    deletePrincipal: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
-                /** @description Resource ID. */
-                id: components["parameters"]["IDParam"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description No Content */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            409: components["responses"]["Conflict"];
-        };
-    };
-    updatePrincipal: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
-                /** @description Resource ID. */
-                id: components["parameters"]["IDParam"];
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdatePrincipalRequest"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Principal"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-        };
-    };
     listTables: {
         parameters: {
             query?: {
@@ -10364,11 +7869,13 @@ export interface operations {
                 cursor?: components["parameters"]["CursorParam"];
                 /** @description Maximum number of items to return */
                 limit?: components["parameters"]["LimitParam"];
-                /** @description Resolve `table_name` in the authenticated user's owner scope, or filter lists to tables owned by the authenticated user. */
+                /** @description Filter tables by name. Names are unique within a scope, but are not globally unique across owner-scoped tables; use this as a discovery filter and use the returned table `id` for follow-up operations. */
+                name?: components["parameters"]["TableNameQueryParam"];
+                /** @description Filter lists to tables owned by the authenticated user. */
                 owned_by_me?: components["parameters"]["TableOwnedByMeParam"];
                 /** @description Canonical user owner ID. Used with `scope=owner` for lookups; for list filters, narrows to tables owned by this user. Ignored when `owned_by_me=true` is present. */
                 owned_by?: components["parameters"]["TableOwnedByParam"];
-                /** @description Scope used to resolve `table_name`. Omit for the project/default scope; use `owner` with `owned_by` or `owned_by_me=true` for per-user memory tables. For list filters, scope is orthogonal and does not affect ownership-filter precedence. */
+                /** @description Filter tables by scope. Omit to include project/default and owner scopes; use `owner` with `owned_by` or `owned_by_me=true` for per-user memory tables. */
                 scope?: components["parameters"]["TableScopeParam"];
             };
             header?: never;
@@ -10425,20 +7932,13 @@ export interface operations {
     };
     getTable: {
         parameters: {
-            query?: {
-                /** @description Scope used to resolve `table_name`. Omit for the project/default scope; use `owner` with `owned_by` or `owned_by_me=true` for per-user memory tables. For list filters, scope is orthogonal and does not affect ownership-filter precedence. */
-                scope?: components["parameters"]["TableScopeParam"];
-                /** @description Canonical user owner ID. Used with `scope=owner` for lookups; for list filters, narrows to tables owned by this user. Ignored when `owned_by_me=true` is present. */
-                owned_by?: components["parameters"]["TableOwnedByParam"];
-                /** @description Resolve `table_name` in the authenticated user's owner scope, or filter lists to tables owned by the authenticated user. */
-                owned_by_me?: components["parameters"]["TableOwnedByMeParam"];
-            };
+            query?: never;
             header?: never;
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
-                /** @description Table name, lowercase alphanumeric and underscores. Names are unique within the resolved scope. Omitted scope means the project/default scope; use `scope=owner` together with `owned_by` or `owned_by_me=true` for per-user memory tables. With `scope=owner`, the same table_name may exist under different owner scopes, so consumers must consider scope plus name when resolving uniqueness. */
-                table_name: components["parameters"]["TableNameParam"];
+                /** @description Table ID. */
+                table_id: components["parameters"]["TableIDParam"];
             };
             cookie?: never;
         };
@@ -10460,20 +7960,13 @@ export interface operations {
     };
     updateTable: {
         parameters: {
-            query?: {
-                /** @description Scope used to resolve `table_name`. Omit for the project/default scope; use `owner` with `owned_by` or `owned_by_me=true` for per-user memory tables. For list filters, scope is orthogonal and does not affect ownership-filter precedence. */
-                scope?: components["parameters"]["TableScopeParam"];
-                /** @description Canonical user owner ID. Used with `scope=owner` for lookups; for list filters, narrows to tables owned by this user. Ignored when `owned_by_me=true` is present. */
-                owned_by?: components["parameters"]["TableOwnedByParam"];
-                /** @description Resolve `table_name` in the authenticated user's owner scope, or filter lists to tables owned by the authenticated user. */
-                owned_by_me?: components["parameters"]["TableOwnedByMeParam"];
-            };
+            query?: never;
             header?: never;
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
-                /** @description Table name, lowercase alphanumeric and underscores. Names are unique within the resolved scope. Omitted scope means the project/default scope; use `scope=owner` together with `owned_by` or `owned_by_me=true` for per-user memory tables. With `scope=owner`, the same table_name may exist under different owner scopes, so consumers must consider scope plus name when resolving uniqueness. */
-                table_name: components["parameters"]["TableNameParam"];
+                /** @description Table ID. */
+                table_id: components["parameters"]["TableIDParam"];
             };
             cookie?: never;
         };
@@ -10500,20 +7993,13 @@ export interface operations {
     };
     deleteTable: {
         parameters: {
-            query?: {
-                /** @description Scope used to resolve `table_name`. Omit for the project/default scope; use `owner` with `owned_by` or `owned_by_me=true` for per-user memory tables. For list filters, scope is orthogonal and does not affect ownership-filter precedence. */
-                scope?: components["parameters"]["TableScopeParam"];
-                /** @description Canonical user owner ID. Used with `scope=owner` for lookups; for list filters, narrows to tables owned by this user. Ignored when `owned_by_me=true` is present. */
-                owned_by?: components["parameters"]["TableOwnedByParam"];
-                /** @description Resolve `table_name` in the authenticated user's owner scope, or filter lists to tables owned by the authenticated user. */
-                owned_by_me?: components["parameters"]["TableOwnedByMeParam"];
-            };
+            query?: never;
             header?: never;
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
-                /** @description Table name, lowercase alphanumeric and underscores. Names are unique within the resolved scope. Omitted scope means the project/default scope; use `scope=owner` together with `owned_by` or `owned_by_me=true` for per-user memory tables. With `scope=owner`, the same table_name may exist under different owner scopes, so consumers must consider scope plus name when resolving uniqueness. */
-                table_name: components["parameters"]["TableNameParam"];
+                /** @description Table ID. */
+                table_id: components["parameters"]["TableIDParam"];
             };
             cookie?: never;
         };
@@ -10533,20 +8019,13 @@ export interface operations {
     };
     getTableStats: {
         parameters: {
-            query?: {
-                /** @description Scope used to resolve `table_name`. Omit for the project/default scope; use `owner` with `owned_by` or `owned_by_me=true` for per-user memory tables. For list filters, scope is orthogonal and does not affect ownership-filter precedence. */
-                scope?: components["parameters"]["TableScopeParam"];
-                /** @description Canonical user owner ID. Used with `scope=owner` for lookups; for list filters, narrows to tables owned by this user. Ignored when `owned_by_me=true` is present. */
-                owned_by?: components["parameters"]["TableOwnedByParam"];
-                /** @description Resolve `table_name` in the authenticated user's owner scope, or filter lists to tables owned by the authenticated user. */
-                owned_by_me?: components["parameters"]["TableOwnedByMeParam"];
-            };
+            query?: never;
             header?: never;
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
-                /** @description Table name, lowercase alphanumeric and underscores. Names are unique within the resolved scope. Omitted scope means the project/default scope; use `scope=owner` together with `owned_by` or `owned_by_me=true` for per-user memory tables. With `scope=owner`, the same table_name may exist under different owner scopes, so consumers must consider scope plus name when resolving uniqueness. */
-                table_name: components["parameters"]["TableNameParam"];
+                /** @description Table ID. */
+                table_id: components["parameters"]["TableIDParam"];
             };
             cookie?: never;
         };
@@ -10568,20 +8047,13 @@ export interface operations {
     };
     insertTableRow: {
         parameters: {
-            query?: {
-                /** @description Scope used to resolve `table_name`. Omit for the project/default scope; use `owner` with `owned_by` or `owned_by_me=true` for per-user memory tables. For list filters, scope is orthogonal and does not affect ownership-filter precedence. */
-                scope?: components["parameters"]["TableScopeParam"];
-                /** @description Canonical user owner ID. Used with `scope=owner` for lookups; for list filters, narrows to tables owned by this user. Ignored when `owned_by_me=true` is present. */
-                owned_by?: components["parameters"]["TableOwnedByParam"];
-                /** @description Resolve `table_name` in the authenticated user's owner scope, or filter lists to tables owned by the authenticated user. */
-                owned_by_me?: components["parameters"]["TableOwnedByMeParam"];
-            };
+            query?: never;
             header?: never;
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
-                /** @description Table name, lowercase alphanumeric and underscores. Names are unique within the resolved scope. Omitted scope means the project/default scope; use `scope=owner` together with `owned_by` or `owned_by_me=true` for per-user memory tables. With `scope=owner`, the same table_name may exist under different owner scopes, so consumers must consider scope plus name when resolving uniqueness. */
-                table_name: components["parameters"]["TableNameParam"];
+                /** @description Table ID. */
+                table_id: components["parameters"]["TableIDParam"];
             };
             cookie?: never;
         };
@@ -10608,20 +8080,13 @@ export interface operations {
     };
     queryTableRows: {
         parameters: {
-            query?: {
-                /** @description Scope used to resolve `table_name`. Omit for the project/default scope; use `owner` with `owned_by` or `owned_by_me=true` for per-user memory tables. For list filters, scope is orthogonal and does not affect ownership-filter precedence. */
-                scope?: components["parameters"]["TableScopeParam"];
-                /** @description Canonical user owner ID. Used with `scope=owner` for lookups; for list filters, narrows to tables owned by this user. Ignored when `owned_by_me=true` is present. */
-                owned_by?: components["parameters"]["TableOwnedByParam"];
-                /** @description Resolve `table_name` in the authenticated user's owner scope, or filter lists to tables owned by the authenticated user. */
-                owned_by_me?: components["parameters"]["TableOwnedByMeParam"];
-            };
+            query?: never;
             header?: never;
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
-                /** @description Table name, lowercase alphanumeric and underscores. Names are unique within the resolved scope. Omitted scope means the project/default scope; use `scope=owner` together with `owned_by` or `owned_by_me=true` for per-user memory tables. With `scope=owner`, the same table_name may exist under different owner scopes, so consumers must consider scope plus name when resolving uniqueness. */
-                table_name: components["parameters"]["TableNameParam"];
+                /** @description Table ID. */
+                table_id: components["parameters"]["TableIDParam"];
             };
             cookie?: never;
         };
@@ -10648,20 +8113,13 @@ export interface operations {
     };
     searchTableRows: {
         parameters: {
-            query?: {
-                /** @description Scope used to resolve `table_name`. Omit for the project/default scope; use `owner` with `owned_by` or `owned_by_me=true` for per-user memory tables. For list filters, scope is orthogonal and does not affect ownership-filter precedence. */
-                scope?: components["parameters"]["TableScopeParam"];
-                /** @description Canonical user owner ID. Used with `scope=owner` for lookups; for list filters, narrows to tables owned by this user. Ignored when `owned_by_me=true` is present. */
-                owned_by?: components["parameters"]["TableOwnedByParam"];
-                /** @description Resolve `table_name` in the authenticated user's owner scope, or filter lists to tables owned by the authenticated user. */
-                owned_by_me?: components["parameters"]["TableOwnedByMeParam"];
-            };
+            query?: never;
             header?: never;
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
-                /** @description Table name, lowercase alphanumeric and underscores. Names are unique within the resolved scope. Omitted scope means the project/default scope; use `scope=owner` together with `owned_by` or `owned_by_me=true` for per-user memory tables. With `scope=owner`, the same table_name may exist under different owner scopes, so consumers must consider scope plus name when resolving uniqueness. */
-                table_name: components["parameters"]["TableNameParam"];
+                /** @description Table ID. */
+                table_id: components["parameters"]["TableIDParam"];
             };
             cookie?: never;
         };
@@ -10688,20 +8146,13 @@ export interface operations {
     };
     upsertTableRow: {
         parameters: {
-            query?: {
-                /** @description Scope used to resolve `table_name`. Omit for the project/default scope; use `owner` with `owned_by` or `owned_by_me=true` for per-user memory tables. For list filters, scope is orthogonal and does not affect ownership-filter precedence. */
-                scope?: components["parameters"]["TableScopeParam"];
-                /** @description Canonical user owner ID. Used with `scope=owner` for lookups; for list filters, narrows to tables owned by this user. Ignored when `owned_by_me=true` is present. */
-                owned_by?: components["parameters"]["TableOwnedByParam"];
-                /** @description Resolve `table_name` in the authenticated user's owner scope, or filter lists to tables owned by the authenticated user. */
-                owned_by_me?: components["parameters"]["TableOwnedByMeParam"];
-            };
+            query?: never;
             header?: never;
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
-                /** @description Table name, lowercase alphanumeric and underscores. Names are unique within the resolved scope. Omitted scope means the project/default scope; use `scope=owner` together with `owned_by` or `owned_by_me=true` for per-user memory tables. With `scope=owner`, the same table_name may exist under different owner scopes, so consumers must consider scope plus name when resolving uniqueness. */
-                table_name: components["parameters"]["TableNameParam"];
+                /** @description Table ID. */
+                table_id: components["parameters"]["TableIDParam"];
             };
             cookie?: never;
         };
@@ -10738,20 +8189,13 @@ export interface operations {
     };
     bulkInsertTableRows: {
         parameters: {
-            query?: {
-                /** @description Scope used to resolve `table_name`. Omit for the project/default scope; use `owner` with `owned_by` or `owned_by_me=true` for per-user memory tables. For list filters, scope is orthogonal and does not affect ownership-filter precedence. */
-                scope?: components["parameters"]["TableScopeParam"];
-                /** @description Canonical user owner ID. Used with `scope=owner` for lookups; for list filters, narrows to tables owned by this user. Ignored when `owned_by_me=true` is present. */
-                owned_by?: components["parameters"]["TableOwnedByParam"];
-                /** @description Resolve `table_name` in the authenticated user's owner scope, or filter lists to tables owned by the authenticated user. */
-                owned_by_me?: components["parameters"]["TableOwnedByMeParam"];
-            };
+            query?: never;
             header?: never;
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
-                /** @description Table name, lowercase alphanumeric and underscores. Names are unique within the resolved scope. Omitted scope means the project/default scope; use `scope=owner` together with `owned_by` or `owned_by_me=true` for per-user memory tables. With `scope=owner`, the same table_name may exist under different owner scopes, so consumers must consider scope plus name when resolving uniqueness. */
-                table_name: components["parameters"]["TableNameParam"];
+                /** @description Table ID. */
+                table_id: components["parameters"]["TableIDParam"];
             };
             cookie?: never;
         };
@@ -10778,20 +8222,13 @@ export interface operations {
     };
     getTableRow: {
         parameters: {
-            query?: {
-                /** @description Scope used to resolve `table_name`. Omit for the project/default scope; use `owner` with `owned_by` or `owned_by_me=true` for per-user memory tables. For list filters, scope is orthogonal and does not affect ownership-filter precedence. */
-                scope?: components["parameters"]["TableScopeParam"];
-                /** @description Canonical user owner ID. Used with `scope=owner` for lookups; for list filters, narrows to tables owned by this user. Ignored when `owned_by_me=true` is present. */
-                owned_by?: components["parameters"]["TableOwnedByParam"];
-                /** @description Resolve `table_name` in the authenticated user's owner scope, or filter lists to tables owned by the authenticated user. */
-                owned_by_me?: components["parameters"]["TableOwnedByMeParam"];
-            };
+            query?: never;
             header?: never;
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
-                /** @description Table name, lowercase alphanumeric and underscores. Names are unique within the resolved scope. Omitted scope means the project/default scope; use `scope=owner` together with `owned_by` or `owned_by_me=true` for per-user memory tables. With `scope=owner`, the same table_name may exist under different owner scopes, so consumers must consider scope plus name when resolving uniqueness. */
-                table_name: components["parameters"]["TableNameParam"];
+                /** @description Table ID. */
+                table_id: components["parameters"]["TableIDParam"];
                 /** @description Table row ID. */
                 row_id: string;
             };
@@ -10815,20 +8252,13 @@ export interface operations {
     };
     deleteTableRow: {
         parameters: {
-            query?: {
-                /** @description Scope used to resolve `table_name`. Omit for the project/default scope; use `owner` with `owned_by` or `owned_by_me=true` for per-user memory tables. For list filters, scope is orthogonal and does not affect ownership-filter precedence. */
-                scope?: components["parameters"]["TableScopeParam"];
-                /** @description Canonical user owner ID. Used with `scope=owner` for lookups; for list filters, narrows to tables owned by this user. Ignored when `owned_by_me=true` is present. */
-                owned_by?: components["parameters"]["TableOwnedByParam"];
-                /** @description Resolve `table_name` in the authenticated user's owner scope, or filter lists to tables owned by the authenticated user. */
-                owned_by_me?: components["parameters"]["TableOwnedByMeParam"];
-            };
+            query?: never;
             header?: never;
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
-                /** @description Table name, lowercase alphanumeric and underscores. Names are unique within the resolved scope. Omitted scope means the project/default scope; use `scope=owner` together with `owned_by` or `owned_by_me=true` for per-user memory tables. With `scope=owner`, the same table_name may exist under different owner scopes, so consumers must consider scope plus name when resolving uniqueness. */
-                table_name: components["parameters"]["TableNameParam"];
+                /** @description Table ID. */
+                table_id: components["parameters"]["TableIDParam"];
                 /** @description Table row ID. */
                 row_id: string;
             };
@@ -10850,20 +8280,13 @@ export interface operations {
     };
     updateTableRow: {
         parameters: {
-            query?: {
-                /** @description Scope used to resolve `table_name`. Omit for the project/default scope; use `owner` with `owned_by` or `owned_by_me=true` for per-user memory tables. For list filters, scope is orthogonal and does not affect ownership-filter precedence. */
-                scope?: components["parameters"]["TableScopeParam"];
-                /** @description Canonical user owner ID. Used with `scope=owner` for lookups; for list filters, narrows to tables owned by this user. Ignored when `owned_by_me=true` is present. */
-                owned_by?: components["parameters"]["TableOwnedByParam"];
-                /** @description Resolve `table_name` in the authenticated user's owner scope, or filter lists to tables owned by the authenticated user. */
-                owned_by_me?: components["parameters"]["TableOwnedByMeParam"];
-            };
+            query?: never;
             header?: never;
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
-                /** @description Table name, lowercase alphanumeric and underscores. Names are unique within the resolved scope. Omitted scope means the project/default scope; use `scope=owner` together with `owned_by` or `owned_by_me=true` for per-user memory tables. With `scope=owner`, the same table_name may exist under different owner scopes, so consumers must consider scope plus name when resolving uniqueness. */
-                table_name: components["parameters"]["TableNameParam"];
+                /** @description Table ID. */
+                table_id: components["parameters"]["TableIDParam"];
                 /** @description Table row ID. */
                 row_id: string;
             };

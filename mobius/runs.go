@@ -43,7 +43,7 @@ func (c *Client) StartRun(ctx context.Context, automationHandle string, opts *St
 // StartAutomationRun starts a published automation by handle.
 func (c *Client) StartAutomationRun(ctx context.Context, automationHandle string, opts *StartRunOptions) (*api.AutomationRun, error) {
 	req := startAutomationRunRequest(opts)
-	resp, err := c.ac.StartAutomationRunWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), automationHandle, req)
+	resp, err := c.ac.StartRunWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), automationHandle, req)
 	if err != nil {
 		return nil, fmt.Errorf("mobius: start automation run: %w", err)
 	}
@@ -55,7 +55,7 @@ func (c *Client) StartAutomationRun(ctx context.Context, automationHandle string
 
 // ListRuns returns project automation runs matching opts.
 func (c *Client) ListRuns(ctx context.Context, opts *ListRunsOptions) (*api.AutomationRunListResponse, error) {
-	resp, err := c.ac.ListAutomationRunsWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), listRunsParams(opts))
+	resp, err := c.ac.ListRunsWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), listRunsParams(opts))
 	if err != nil {
 		return nil, fmt.Errorf("mobius: list runs: %w", err)
 	}
@@ -67,7 +67,7 @@ func (c *Client) ListRuns(ctx context.Context, opts *ListRunsOptions) (*api.Auto
 
 // GetRun returns the current automation run detail.
 func (c *Client) GetRun(ctx context.Context, runID string) (*api.AutomationRun, error) {
-	resp, err := c.ac.GetAutomationRunWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.IDParam(runID))
+	resp, err := c.ac.GetRunWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.IDParam(runID))
 	if err != nil {
 		return nil, fmt.Errorf("mobius: get run: %w", err)
 	}
@@ -83,7 +83,7 @@ func (c *Client) CancelRun(ctx context.Context, runID string, reason string) (*a
 	if reason != "" {
 		req.Reason = &reason
 	}
-	resp, err := c.ac.CancelAutomationRunWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.IDParam(runID), req)
+	resp, err := c.ac.CancelRunWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.IDParam(runID), req)
 	if err != nil {
 		return nil, fmt.Errorf("mobius: cancel run: %w", err)
 	}
@@ -99,7 +99,7 @@ func (c *Client) SignalRun(ctx context.Context, runID, stepKey string, result ma
 	if result != nil {
 		req.Result = &result
 	}
-	resp, err := c.ac.SignalAutomationRunWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.IDParam(runID), req)
+	resp, err := c.ac.SignalRunWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.IDParam(runID), req)
 	if err != nil {
 		return nil, fmt.Errorf("mobius: signal run: %w", err)
 	}
@@ -189,11 +189,11 @@ func startAutomationRunRequest(opts *StartRunOptions) api.StartAutomationRunRequ
 	return req
 }
 
-func listRunsParams(opts *ListRunsOptions) *api.ListAutomationRunsParams {
+func listRunsParams(opts *ListRunsOptions) *api.ListRunsParams {
 	if opts == nil {
 		return nil
 	}
-	params := &api.ListAutomationRunsParams{}
+	params := &api.ListRunsParams{}
 	if opts.Status != "" {
 		params.Status = &opts.Status
 	}

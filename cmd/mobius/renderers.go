@@ -40,7 +40,7 @@ func responseRendererFor(opID string) ResponseRenderer {
 }
 
 func init() {
-	RegisterResponseRenderer("getAutomationRun", renderRunDetail)
+	RegisterResponseRenderer("getRun", renderRunDetail)
 }
 
 // renderRunDetail renders a RunDetail as a status header followed by
