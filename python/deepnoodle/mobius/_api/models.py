@@ -479,9 +479,18 @@ class ActionAnnotationsResponse(BaseModel):
     )
 
 
+class ActionEndpointKind(StrEnum):
+    """
+    Backing kind for a project-owned custom action. `http` actions POST to a registered endpoint. `worker` actions dispatch jobs to connected workers that advertise the registered action name.
+    """
+
+    http = 'http'
+    worker = 'worker'
+
+
 class CreateActionRequest(BaseModel):
     """
-    Registers a project-owned HTTP action endpoint callable from automations.
+    Registers a project-owned custom action callable from automations and agents.
     """
 
     model_config = ConfigDict(
@@ -497,8 +506,13 @@ class CreateActionRequest(BaseModel):
     description: str | None = Field(
         None, description='Markdown-safe description of what the action does.'
     )
-    endpoint_url: AnyUrl = Field(
-        ..., description='HTTP/HTTPS URL Mobius will POST to when invoking the action.'
+    endpoint_kind: ActionEndpointKind = Field(
+        'http',
+        description='Backing kind for the action. `http` actions POST to `endpoint_url` with a Mobius signature. `worker` actions are dispatched through jobs to connected workers that advertise this registered name.',
+    )
+    endpoint_url: AnyUrl | None = Field(
+        None,
+        description='Required when endpoint_kind is `http`; omitted for worker actions.',
     )
     input_schema: dict[str, Any] | None = Field(
         None, description='JSON Schema describing the expected input parameters.'
@@ -527,7 +541,9 @@ class UpdateActionRequest(BaseModel):
     description: str | None = Field(
         None, description='Replacement Markdown description.'
     )
-    endpoint_url: AnyUrl | None = Field(None, description='Replacement endpoint URL.')
+    endpoint_url: AnyUrl | None = Field(
+        None, description='Replacement endpoint URL. Valid for HTTP actions only.'
+    )
     input_schema: dict[str, Any] | None = Field(
         None,
         description='Replacement JSON Schema for inputs. Replaces the existing schema.',
@@ -544,18 +560,9 @@ class UpdateActionRequest(BaseModel):
     )
 
 
-class EndpointKind(StrEnum):
-    """
-    Backing kind of this action. `http` actions are project-owned HTTP endpoints invoked via POST. `builtin` actions are Mobius platform actions registered in Go.
-    """
-
-    http = 'http'
-    builtin = 'builtin'
-
-
 class Action(BaseModel):
     """
-    Project-owned HTTP action endpoint callable by automations.
+    Project-owned custom action definition callable by automations and agents.
     """
 
     model_config = ConfigDict(
@@ -572,12 +579,12 @@ class Action(BaseModel):
     description: str | None = Field(
         None, description='Markdown description of what the action does.'
     )
-    endpoint_kind: EndpointKind = Field(
+    endpoint_kind: ActionEndpointKind = Field(
         ...,
-        description='Backing kind of this action. `http` actions are project-owned HTTP endpoints invoked via POST. `builtin` actions are Mobius platform actions registered in Go.',
+        description='Backing kind of this project-owned action. `http` actions POST to an endpoint URL. `worker` actions are dispatched through jobs to connected workers that advertise this registered name.',
     )
-    endpoint_url: AnyUrl = Field(
-        ...,
+    endpoint_url: AnyUrl | None = Field(
+        None,
         description='HTTP/HTTPS URL Mobius POSTs to when invoking this action. Populated for endpoint_kind: http only.',
     )
     input_schema: dict[str, Any] | None = Field(
@@ -631,18 +638,19 @@ class RotateSecretResult(BaseModel):
     )
 
 
-class EndpointKind1(StrEnum):
+class EndpointKind(StrEnum):
     """
-    Backing kind. "builtin" for Mobius platform actions implemented in Go (no DB row), "http" for project-owned or integration HTTP endpoints.
+    Backing kind. "builtin" for Mobius platform actions implemented in Go (no DB row), "http" for project-owned or integration HTTP endpoints, and "worker" for project-owned custom actions dispatched to connected workers.
     """
 
     builtin = 'builtin'
     http = 'http'
+    worker = 'worker'
 
 
 class Source(StrEnum):
     """
-    Origin of this action: "platform" for built-in or integration-backed actions provided by Mobius, "custom" for project-owned HTTP endpoints registered as actions. The `integration` field carries the provider slug for integration-backed platform actions.
+    Origin of this action: "platform" for built-in or integration-backed actions provided by Mobius, "custom" for project-specific HTTP or worker-backed actions. The `integration` field carries the provider slug for integration-backed platform actions.
     """
 
     platform = 'platform'
@@ -708,7 +716,7 @@ class InvokeActionRequest(BaseModel):
     )
     timeout_seconds: int | None = Field(
         None,
-        description='How long (in seconds) to wait for synchronous completion. Default 30, max 120. HTTP-backed actions complete inline.',
+        description='How long (in seconds) to wait for synchronous completion. Default 30, max 120.',
         ge=1,
         le=120,
     )
@@ -730,7 +738,7 @@ class Status(StrEnum):
 
 class ActionInvocationResult(BaseModel):
     """
-    Unified invocation result for any action kind. HTTP-backed actions produce status "completed".
+    Unified invocation result for any action kind.
     """
 
     model_config = ConfigDict(
@@ -738,6 +746,9 @@ class ActionInvocationResult(BaseModel):
     )
     status: Status = Field(
         ..., description='Terminal or in-progress status of the invocation.'
+    )
+    job_id: str | None = Field(
+        None, description='Job created for this direct invocation.'
     )
     run_id: str | None = Field(
         None,
@@ -1547,6 +1558,7 @@ class Origin(StrEnum):
     agent_llm_call = 'agent_llm_call'
     conversation_tool_call = 'conversation_tool_call'
     conversation_llm_call = 'conversation_llm_call'
+    direct_action_invoke = 'direct_action_invoke'
     server_internal = 'server_internal'
 
 
@@ -2279,13 +2291,9 @@ class SessionMessage(BaseModel):
     session_id: str = Field(..., description='Session this message belongs to.')
     agent_id: str = Field(..., description='Agent that owns the parent session.')
     role: SessionMessageRole
-    content: str = Field(
+    content: list[dict[str, Any]] = Field(
         ...,
-        description='Plain-text content. For multimodal messages, see `content_blocks`.',
-    )
-    content_blocks: list[dict[str, Any]] | None = Field(
-        None,
-        description='Structured content blocks (text, tool calls, tool results, etc.) for multimodal messages.',
+        description='Ordered content blocks (text, tool calls, tool results, images).',
     )
     entry_type: SessionMessageEntryType
     covers_through_sequence: int | None = Field(
@@ -2318,9 +2326,9 @@ class AppendSessionMessage(BaseModel):
         extra='forbid',
     )
     role: SessionMessageRole
-    content: str = Field(..., description='Plain-text content for the message.')
-    content_blocks: list[dict[str, Any]] | None = Field(
-        None, description='Structured content blocks for multimodal messages.'
+    content: list[dict[str, Any]] = Field(
+        ...,
+        description='Ordered content blocks (text, tool calls, tool results, images).',
     )
     metadata: dict[str, Any] | None = Field(
         None, description='Free-form caller metadata for this message.'
@@ -3269,12 +3277,17 @@ class AutomationSubAutomationStep(BaseModel):
 
 
 class AutomationRetryPolicy(BaseModel):
+    """
+    Retry policy for a step. `max_attempts` is the total number of attempts (1 = no retry); it bounds both worker-reported failures and lease-loss recovery for worker-executed action steps. A worker that reports a failure with attempts remaining re-queues for another attempt rather than failing the run; the run fails once attempts are exhausted. The attempt count is visible on the run timeline (`action.retried`, `action.failed`) and on the executing job (`claim_attempt` / `max_attempts`). Cancellation is always terminal. Capped server-side at 10 attempts.
+    """
+
     model_config = ConfigDict(
         extra='forbid',
     )
-    max_attempts: int | None = Field(None, ge=1)
+    max_attempts: int | None = Field(None, ge=1, le=10)
     delay: str | None = Field(
-        None, description='Go duration string such as `30s`, `5m`, or `2h`.'
+        None,
+        description='Go duration string such as `30s`, `5m`, or `2h`. Applied between attempts for in-process (synchronous) action retries; worker-executed actions re-queue immediately for the next attempt.',
     )
 
 
@@ -3515,7 +3528,8 @@ class AutomationRunStep(BaseModel):
         None, description='Authored step parameters, before template rendering.'
     )
     result: Any | None = Field(
-        None, description='Step output (shape varies by kind); absent until completion.'
+        None,
+        description='Step output (shape varies by kind); absent until completion. When the step sets `save_as`, this value is also reachable in downstream step templates at `{{ .context.<save_as> }}`.',
     )
     job_id: str | None = Field(
         None, description='Worker job that executed this step, when applicable.'
@@ -3657,7 +3671,7 @@ class Table(BaseModel):
     id: str
     org_id: str
     project_id: str
-    name: str
+    name: str = Field(..., max_length=64, pattern='^[a-z][a-z0-9_]*$')
     scope: ResourceScope | None = None
     description: str | None = None
     schema_: TableSchema = Field(..., alias='schema')
@@ -3732,6 +3746,12 @@ class CreateTableRequest(BaseModel):
 class UpdateTableRequest(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
+    )
+    name: str | None = Field(
+        None,
+        description='Table name (lowercase, snake_case); unique within the project scope.',
+        max_length=64,
+        pattern='^[a-z][a-z0-9_]*$',
     )
     description: str | None = Field(
         None,
@@ -3824,7 +3844,11 @@ class SearchRowsRequest(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    query: str = Field(..., description='Keyword search query.', min_length=1)
+    query: str = Field(
+        ...,
+        description='Token-prefix search query. Hyphens and other punctuation split terms.',
+        min_length=1,
+    )
     filter: dict[str, Any] | None = Field(
         None,
         description='Optional column equality or operator filter applied before text search.',
@@ -3901,7 +3925,6 @@ class ArtifactState(StrEnum):
 
 class ArtifactStorageBackend(StrEnum):
     mobius = 'mobius'
-    s3 = 's3'
 
 
 class ArtifactVisibility(StrEnum):
@@ -4041,9 +4064,9 @@ class ActionCatalogEntry(BaseModel):
     description: str | None = Field(
         None, description='Markdown description of what the action does.'
     )
-    endpoint_kind: EndpointKind1 = Field(
+    endpoint_kind: EndpointKind = Field(
         ...,
-        description='Backing kind. "builtin" for Mobius platform actions implemented in Go (no DB row), "http" for project-owned or integration HTTP endpoints.',
+        description='Backing kind. "builtin" for Mobius platform actions implemented in Go (no DB row), "http" for project-owned or integration HTTP endpoints, and "worker" for project-owned custom actions dispatched to connected workers.',
     )
     integration: str | None = Field(
         None,
@@ -4051,7 +4074,7 @@ class ActionCatalogEntry(BaseModel):
     )
     source: Source = Field(
         ...,
-        description='Origin of this action: "platform" for built-in or integration-backed actions provided by Mobius, "custom" for project-owned HTTP endpoints registered as actions. The `integration` field carries the provider slug for integration-backed platform actions.',
+        description='Origin of this action: "platform" for built-in or integration-backed actions provided by Mobius, "custom" for project-specific HTTP or worker-backed actions. The `integration` field carries the provider slug for integration-backed platform actions.',
     )
     readiness: CapabilityReadiness = Field(
         ...,
@@ -4219,7 +4242,7 @@ class WorkerSession(BaseModel):
     )
     stale: bool = Field(
         ...,
-        description='True when `last_seen_at` is older than 2 minutes or absent. Computed at read time, not stored. Equivalent to `instance_status == "stale"`; both are returned for backward compatibility while clients update.',
+        description='True when `last_seen_at` is older than 90 seconds or absent. Computed at read time, not stored. Equivalent to `instance_status == "stale"`; both are returned for backward compatibility while clients update.',
     )
     busy_job_count: int = Field(
         ...,
@@ -4504,11 +4527,11 @@ class AutomationRun(BaseModel):
     status: AutomationRunStatus
     inputs: dict[str, Any] | None = Field(
         None,
-        description="Input map supplied when the run started, merged over the automation's `default_inputs`.",
+        description="Input map supplied when the run started, merged over the automation's `default_inputs`, and reachable in step templates at `{{ .inputs.<key> }}`. For event-kind trigger runs this is the normalized `{ event, meta }` envelope (`{{ .inputs.event.* }}`, `{{ .inputs.meta.* }}`) — see the automation templating guide.",
     )
     result: dict[str, Any] | None = Field(
         None,
-        description='Final result payload returned by the automation. Absent until the run terminates successfully.',
+        description="Final result payload: the run's accumulated step outputs, keyed by each step's `save_as`. Absent until the run terminates successfully.",
     )
     source: AutomationRunSource | None = None
     parent_run_id: str | None = Field(

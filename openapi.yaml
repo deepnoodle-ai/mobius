@@ -165,12 +165,10 @@ paths:
       operationId: createAction
       tags:
       - actions
-      summary: Create an action
-      description: 'Creates a project-scoped HTTP action. `name` is the stable identifier
-        used in automation definitions and must be unique within the project. A signing secret
-        is generated automatically and returned in the response; this is the only time the
-        raw secret is exposed — store it securely. Actions created via this endpoint always
-        have `endpoint_kind: http`.'
+      summary: Create a custom action
+      description: Registers a project-owned custom action definition. HTTP actions require
+        `endpoint_url` and receive a signing secret. Worker-backed actions omit `endpoint_url`;
+        compatible workers make the registered action ready by advertising its name when connected.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       requestBody:
@@ -199,11 +197,9 @@ paths:
       operationId: updateAction
       tags:
       - actions
-      summary: Update an action
-      description: 'Patches action metadata and schemas. All fields are optional; omitted
-        fields are unchanged. Updating `annotations` replaces the entire annotations object
-        — pass `null` to clear all annotation flags. Only applicable to `endpoint_kind: http`
-        actions.'
+      summary: Update a custom action
+      description: Updates action metadata, schemas, annotations, tags, or the HTTP endpoint
+        URL. Worker-backed actions cannot set an endpoint URL.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/ActionNameParam'
@@ -232,9 +228,9 @@ paths:
       operationId: deleteAction
       tags:
       - actions
-      summary: Delete an action
-      description: Rejected with 409 if any automation step currently references this action
-        by name (`ErrActionInUse`). Remove all references before deleting.
+      summary: Delete a custom action
+      description: Deletes a project-owned custom action definition. Automations that still
+        reference the action block deletion until the reference is removed.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/ActionNameParam'
@@ -254,11 +250,9 @@ paths:
       operationId: rotateActionSecret
       tags:
       - actions
-      summary: Rotate an action signing secret
-      description: 'Generates a new HMAC-SHA256 signing key version for the action. Existing
-        deliveries are verified against the version named in their headers; no paired previous-signature
-        header is emitted. Store the returned key immediately — it cannot be retrieved again.
-        Only applicable to `endpoint_kind: http` actions.'
+      summary: Rotate an HTTP action signing secret
+      description: Rotates the signing secret for an HTTP-backed custom action. Worker actions
+        do not have signing secrets and return a validation error.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/ActionNameParam'
@@ -281,11 +275,8 @@ paths:
       tags:
       - actions
       summary: List action invocation records
-      description: Returns per-invocation telemetry records for action executions in the project.
-        Each record captures the action name, input parameters, output summary, final status,
-        error details, and retry count. Filter by `run_id` to inspect all action calls within
-        a single automation run, by `job_id` to scope to a specific job, or by `action_name`
-        for cross-run analysis.
+      description: Lists recent action invocation audit records from automations, agents,
+        direct invocations, and job-backed execution.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/CursorParam'
@@ -326,13 +317,10 @@ paths:
       operationId: invokeAction
       tags:
       - actions
-      summary: Invoke an action
-      description: |-
-        User-driven invocation of any catalog action. The request waits up to `timeout_seconds` for synchronous completion and returns the output directly on 200.
-
-        - **HTTP-backed** actions (`endpoint_kind: http`) complete inline.
-
-        Worker-fenced invocations from within a job stay at `POST /v1/projects/{p}/jobs/{id}/actions/{name}`.
+      summary: Invoke an action directly
+      description: Invokes a catalog action through the same job-backed execution surface
+        used by automations. HTTP and managed platform actions are dispatched to Mobius server
+        workers; worker-backed custom actions are dispatched to compatible customer workers.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/ActionNameParam'
@@ -363,6 +351,8 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
   /v1/projects/{project}/catalog/events:
     get:
       operationId: listCatalogEvents
@@ -969,8 +959,8 @@ paths:
       - worker-sessions
       summary: List worker sessions
       description: 'Returns worker sessions registered against the project. Each session''s
-        `stale` flag is computed at read time: if `last_seen_at` is older than 2 minutes (or
-        absent), the session is considered stale. Stale sessions are retained for display
+        `stale` flag is computed at read time: if `last_seen_at` is older than 90 seconds
+        (or absent), the session is considered stale. Stale sessions are retained for display
         until the 30-day retention floor; rows older than that are hard-deleted by a background
         sweeper.'
       parameters:
@@ -3129,6 +3119,8 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
   /v1/projects/{project}/tables/{table_id}:
     get:
       operationId: getTable
@@ -3157,7 +3149,8 @@ paths:
       tags:
       - tables
       summary: Update a table
-      description: Update table description or schema and resync declared indexes.
+      description: Update table name, description, ownership, or schema and resync declared
+        indexes.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/TableIDParam'
@@ -3182,6 +3175,8 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
     delete:
       operationId: deleteTable
       tags:
@@ -3297,8 +3292,10 @@ paths:
       tags:
       - tables
       summary: Search rows
-      description: Full-text keyword search over row data within one table. Optional field
-        filters use the same syntax as row queries and are applied before text search.
+      description: 'Token-prefix search over row data within one table. Punctuation, including
+        hyphens, splits terms: searching `from-ui` matches a value like `from-ui-insert` because
+        the `from` and `ui` tokens match. Optional field filters use the same syntax as row
+        queries and are applied before text search.'
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/TableIDParam'
@@ -3658,9 +3655,9 @@ paths:
       tags:
       - artifacts
       summary: Create a signed artifact URL
-      description: Generates a fresh, time-boxed storage URL for the artifact after enforcing
-        the caller's artifact access scope. Use `getArtifactContent` when bytes should flow
-        through the Mobius API instead of directly from object storage.
+      description: Generates a fresh, time-boxed Mobius-managed storage URL for the artifact
+        after enforcing the caller's artifact access scope. Use `getArtifactContent` when
+        bytes should flow through the Mobius API instead of a signed storage URL.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/ArtifactIdParam'
@@ -4530,13 +4527,20 @@ components:
         read_only:
           type: boolean
           description: The action has no side effects; safe to call in dry-run scenarios.
+    ActionEndpointKind:
+      type: string
+      enum:
+      - http
+      - worker
+      description: Backing kind for a project-owned custom action. `http` actions POST to
+        a registered endpoint. `worker` actions dispatch jobs to connected workers that advertise
+        the registered action name.
     CreateActionRequest:
       type: object
       additionalProperties: false
-      description: Registers a project-owned HTTP action endpoint callable from automations.
+      description: Registers a project-owned custom action callable from automations and agents.
       required:
       - name
-      - endpoint_url
       properties:
         name:
           type: string
@@ -4549,10 +4553,17 @@ components:
         description:
           type: string
           description: Markdown-safe description of what the action does.
+        endpoint_kind:
+          allOf:
+          - $ref: '#/components/schemas/ActionEndpointKind'
+          default: http
+          description: Backing kind for the action. `http` actions POST to `endpoint_url`
+            with a Mobius signature. `worker` actions are dispatched through jobs to connected
+            workers that advertise this registered name.
         endpoint_url:
           type: string
           format: uri
-          description: HTTP/HTTPS URL Mobius will POST to when invoking the action.
+          description: Required when endpoint_kind is `http`; omitted for worker actions.
         input_schema:
           type: object
           additionalProperties: true
@@ -4583,7 +4594,7 @@ components:
         endpoint_url:
           type: string
           format: uri
-          description: Replacement endpoint URL.
+          description: Replacement endpoint URL. Valid for HTTP actions only.
         input_schema:
           type: object
           additionalProperties: true
@@ -4606,12 +4617,11 @@ components:
     Action:
       type: object
       additionalProperties: false
-      description: Project-owned HTTP action endpoint callable by automations.
+      description: Project-owned custom action definition callable by automations and agents.
       required:
       - id
       - name
       - endpoint_kind
-      - endpoint_url
       - created_at
       - updated_at
       properties:
@@ -4628,13 +4638,11 @@ components:
           type: string
           description: Markdown description of what the action does.
         endpoint_kind:
-          type: string
-          enum:
-          - http
-          - builtin
-          description: Backing kind of this action. `http` actions are project-owned HTTP
-            endpoints invoked via POST. `builtin` actions are Mobius platform actions registered
-            in Go.
+          allOf:
+          - $ref: '#/components/schemas/ActionEndpointKind'
+          description: Backing kind of this project-owned action. `http` actions POST to an
+            endpoint URL. `worker` actions are dispatched through jobs to connected workers
+            that advertise this registered name.
         endpoint_url:
           type: string
           format: uri
@@ -4726,8 +4734,10 @@ components:
           enum:
           - builtin
           - http
+          - worker
           description: Backing kind. "builtin" for Mobius platform actions implemented in
-            Go (no DB row), "http" for project-owned or integration HTTP endpoints.
+            Go (no DB row), "http" for project-owned or integration HTTP endpoints, and "worker"
+            for project-owned custom actions dispatched to connected workers.
         integration:
           type: string
           description: Integration slug this action belongs to (e.g. "slack"), if platform-provided.
@@ -4737,8 +4747,8 @@ components:
           - platform
           - custom
           description: 'Origin of this action: "platform" for built-in or integration-backed
-            actions provided by Mobius, "custom" for project-owned HTTP endpoints registered
-            as actions. The `integration` field carries the provider slug for integration-backed
+            actions provided by Mobius, "custom" for project-specific HTTP or worker-backed
+            actions. The `integration` field carries the provider slug for integration-backed
             platform actions.'
         readiness:
           $ref: '#/components/schemas/CapabilityReadiness'
@@ -4835,7 +4845,7 @@ components:
         timeout_seconds:
           type: integer
           description: How long (in seconds) to wait for synchronous completion. Default 30,
-            max 120. HTTP-backed actions complete inline.
+            max 120.
           minimum: 1
           maximum: 120
         dry_run:
@@ -4845,8 +4855,7 @@ components:
     ActionInvocationResult:
       type: object
       additionalProperties: false
-      description: Unified invocation result for any action kind. HTTP-backed actions produce
-        status "completed".
+      description: Unified invocation result for any action kind.
       required:
       - status
       properties:
@@ -4857,6 +4866,9 @@ components:
           - completed
           - failed
           description: Terminal or in-progress status of the invocation.
+        job_id:
+          type: string
+          description: Job created for this direct invocation.
         run_id:
           type: string
           description: Automation run ID. Present when an asynchronous run was created.
@@ -5790,7 +5802,7 @@ components:
             Conflicts (a different process tried to register this `worker_instance_id` within the takeover window and was rejected) are surfaced inline as a 409 from the worker protocol; the previous registration's row remains `active` and never appears as a separate "conflicting" entry.
         stale:
           type: boolean
-          description: True when `last_seen_at` is older than 2 minutes or absent. Computed
+          description: True when `last_seen_at` is older than 90 seconds or absent. Computed
             at read time, not stored. Equivalent to `instance_status == "stale"`; both are
             returned for backward compatibility while clients update.
         busy_job_count:
@@ -6136,6 +6148,7 @@ components:
           - agent_llm_call
           - conversation_tool_call
           - conversation_llm_call
+          - direct_action_invoke
           - server_internal
         executor_kind:
           type: string
@@ -7023,12 +7036,8 @@ components:
         role:
           $ref: '#/components/schemas/SessionMessageRole'
         content:
-          type: string
-          description: Plain-text content. For multimodal messages, see `content_blocks`.
-        content_blocks:
           type: array
-          description: Structured content blocks (text, tool calls, tool results, etc.) for
-            multimodal messages.
+          description: Ordered content blocks (text, tool calls, tool results, images).
           items:
             type: object
             additionalProperties: true
@@ -7096,11 +7105,8 @@ components:
         role:
           $ref: '#/components/schemas/SessionMessageRole'
         content:
-          type: string
-          description: Plain-text content for the message.
-        content_blocks:
           type: array
-          description: Structured content blocks for multimodal messages.
+          description: Ordered content blocks (text, tool calls, tool results, images).
           items:
             type: object
             additionalProperties: true
@@ -8474,13 +8480,23 @@ components:
     AutomationRetryPolicy:
       type: object
       additionalProperties: false
+      description: Retry policy for a step. `max_attempts` is the total number of attempts
+        (1 = no retry); it bounds both worker-reported failures and lease-loss recovery for
+        worker-executed action steps. A worker that reports a failure with attempts remaining
+        re-queues for another attempt rather than failing the run; the run fails once attempts
+        are exhausted. The attempt count is visible on the run timeline (`action.retried`,
+        `action.failed`) and on the executing job (`claim_attempt` / `max_attempts`). Cancellation
+        is always terminal. Capped server-side at 10 attempts.
       properties:
         max_attempts:
           type: integer
           minimum: 1
+          maximum: 10
         delay:
           type: string
-          description: Go duration string such as `30s`, `5m`, or `2h`.
+          description: Go duration string such as `30s`, `5m`, or `2h`. Applied between attempts
+            for in-process (synchronous) action retries; worker-executed actions re-queue
+            immediately for the next attempt.
     AutomationTimeoutPolicy:
       type: object
       additionalProperties: false
@@ -8760,12 +8776,14 @@ components:
           type: object
           additionalProperties: true
           description: Input map supplied when the run started, merged over the automation's
-            `default_inputs`.
+            `default_inputs`, and reachable in step templates at `{{ .inputs.<key> }}`. For
+            event-kind trigger runs this is the normalized `{ event, meta }` envelope (`{{
+            .inputs.event.* }}`, `{{ .inputs.meta.* }}`) — see the automation templating guide.
         result:
           type: object
           additionalProperties: true
-          description: Final result payload returned by the automation. Absent until the run
-            terminates successfully.
+          description: 'Final result payload: the run''s accumulated step outputs, keyed by
+            each step''s `save_as`. Absent until the run terminates successfully.'
         source:
           $ref: '#/components/schemas/AutomationRunSource'
         parent_run_id:
@@ -8912,7 +8930,9 @@ components:
           additionalProperties: true
           description: Authored step parameters, before template rendering.
         result:
-          description: Step output (shape varies by kind); absent until completion.
+          description: Step output (shape varies by kind); absent until completion. When the
+            step sets `save_as`, this value is also reachable in downstream step templates
+            at `{{ .context.<save_as> }}`.
         job_id:
           type: string
           nullable: true
@@ -9125,6 +9145,8 @@ components:
           type: string
         name:
           type: string
+          pattern: ^[a-z][a-z0-9_]*$
+          maxLength: 64
         scope:
           $ref: '#/components/schemas/ResourceScope'
         description:
@@ -9241,6 +9263,11 @@ components:
       type: object
       additionalProperties: false
       properties:
+        name:
+          type: string
+          pattern: ^[a-z][a-z0-9_]*$
+          maxLength: 64
+          description: Table name (lowercase, snake_case); unique within the project scope.
         description:
           type: string
           maxLength: 1000
@@ -9368,7 +9395,7 @@ components:
         query:
           type: string
           minLength: 1
-          description: Keyword search query.
+          description: Token-prefix search query. Hyphens and other punctuation split terms.
         filter:
           type: object
           additionalProperties: true
@@ -9467,7 +9494,6 @@ components:
       type: string
       enum:
       - mobius
-      - s3
     ArtifactVisibility:
       type: string
       enum:

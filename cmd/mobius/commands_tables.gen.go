@@ -372,7 +372,7 @@ func registerTablesCommands(app *cli.App) {
 			cli.String("cursor", "").Help("Opaque cursor from a prior search response."),
 			cli.String("filter", "").Help("Optional column equality or operator filter applied before text search. Accepts JSON, @file, or @-."),
 			cli.Int("limit", "").Help("Maximum number of rows to return (1–1000, default 100)."),
-			cli.String("query", "").Help("[required] Keyword search query."),
+			cli.String("query", "").Help("[required] Token-prefix search query. Hyphens and other punctuation split terms."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -424,6 +424,7 @@ func registerTablesCommands(app *cli.App) {
 		Flags(
 			cli.String("access-mode", "").Help("Controls read/write access to the table. \"project\" allows anyone with project table permissions (de…"),
 			cli.String("description", "").Help("Optional human-readable description of the table."),
+			cli.String("name", "").Help("Table name (lowercase, snake_case); unique within the project scope."),
 			cli.String("owned-by", "").Help("Canonical user owner ID. Send null to clear ownership."),
 			cli.String("schema", "").Help("schema Accepts JSON, @file, or @-."),
 			cli.String("scope", "").Help("Set to `owner` for owner-scoped names, or null to return to the project/default scope."),
@@ -451,6 +452,10 @@ func registerTablesCommands(app *cli.App) {
 				v := ctx.String("description")
 				body.Description = &v
 			}
+			if ctx.IsSet("name") {
+				v := ctx.String("name")
+				body.Name = &v
+			}
 			if ctx.IsSet("owned-by") {
 				v := ctx.String("owned-by")
 				body.OwnedBy = &v
@@ -464,7 +469,7 @@ func registerTablesCommands(app *cli.App) {
 				v := api.ResourceScope(ctx.String("scope"))
 				body.Scope = &v
 			}
-			if ctx.String("file") == "" && !ctx.IsSet("access-mode") && !ctx.IsSet("description") && !ctx.IsSet("owned-by") && !ctx.IsSet("schema") && !ctx.IsSet("scope") {
+			if ctx.String("file") == "" && !ctx.IsSet("access-mode") && !ctx.IsSet("description") && !ctx.IsSet("name") && !ctx.IsSet("owned-by") && !ctx.IsSet("schema") && !ctx.IsSet("scope") {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
 			if ctx.Bool("dry-run") {

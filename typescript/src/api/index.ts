@@ -17,6 +17,7 @@ export type ActionAnnotationsRequest = components["schemas"]["ActionAnnotationsR
 export type ActionAnnotationsResponse = components["schemas"]["ActionAnnotationsResponse"];
 export type ActionCatalogEntry = components["schemas"]["ActionCatalogEntry"];
 export type ActionCatalogListResponse = components["schemas"]["ActionCatalogListResponse"];
+export type ActionEndpointKind = components["schemas"]["ActionEndpointKind"];
 export type ActionExecutionMetadata = components["schemas"]["ActionExecutionMetadata"];
 export type ActionInvocationEntry = components["schemas"]["ActionInvocationEntry"];
 export type ActionInvocationListResponse = components["schemas"]["ActionInvocationListResponse"];
