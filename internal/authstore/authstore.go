@@ -223,8 +223,21 @@ func ResolveProfile(name string) (*Profile, error) {
 	}
 }
 
-// PutProfile inserts or replaces a profile. If makeDefault is true, all other
-// profiles are marked non-default.
+// PutProfile inserts or replaces a profile. The profile's default flag is
+// decided in three steps:
+//
+//   - makeDefault: this profile becomes the default and every other profile is
+//     cleared, regardless of prior state.
+//   - updating an existing profile: its current default flag is preserved; a
+//     brand-new profile starts non-default.
+//   - finally, if no profile in the store holds the default — because this is
+//     the first profile, or because the previous default was removed — this
+//     profile adopts it.
+//
+// That last step keeps a freshly-saved credential immediately usable instead
+// of inert: an interactive `auth login` that lands alongside other profiles
+// becomes the default only when nothing else already claims it, so a
+// deliberately-selected default is never silently stolen.
 func PutProfile(name string, profile Profile, makeDefault bool) error {
 	name = strings.TrimSpace(name)
 	if name == "" {
@@ -239,19 +252,35 @@ func PutProfile(name string, profile Profile, makeDefault bool) error {
 	}
 	existing, exists := store.Profiles[name]
 	profile.Name = ""
-	if makeDefault {
+	switch {
+	case makeDefault:
 		for n, p := range store.Profiles {
 			p.Default = false
 			store.Profiles[n] = p
 		}
 		profile.Default = true
-	} else if exists {
+	case exists:
 		profile.Default = existing.Default
-	} else if len(store.Profiles) == 0 {
-		profile.Default = true
+	default:
+		profile.Default = false
 	}
 	store.Profiles[name] = profile
+	if !storeHasDefault(store) {
+		p := store.Profiles[name]
+		p.Default = true
+		store.Profiles[name] = p
+	}
 	return SaveStore(store)
+}
+
+// storeHasDefault reports whether any profile is currently flagged default.
+func storeHasDefault(store *Store) bool {
+	for _, p := range store.Profiles {
+		if p.Default {
+			return true
+		}
+	}
+	return false
 }
 
 // SetDefault marks one existing profile as the default.

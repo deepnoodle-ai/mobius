@@ -181,7 +181,33 @@ func runAuthLogin(ctx *cli.Context) error {
 
 	path, _ := authstore.Path()
 	ctx.Success("Logged in. Profile %q saved to %s", profileName, path)
+
+	// PutProfile adopts the default only when no other profile already claims
+	// it, so a login alongside an existing default is saved but inert. Say
+	// which profile commands will actually use, and how to switch, rather than
+	// leaving the user to discover it via `auth status` reporting "none".
+	if def := defaultProfileName(); def != "" && def != profileName {
+		ctx.Printf("Your default profile is still %q. Run `mobius auth use %s` to switch to this one.\n", def, profileName)
+	} else {
+		ctx.Printf("Profile %q is your default; commands use it unless you pass --profile or set MOBIUS_PROFILE.\n", profileName)
+	}
 	return nil
+}
+
+// defaultProfileName returns the name of the profile currently flagged
+// default, or "" if none is. It is best-effort: a load error reports no
+// default rather than failing the login that just succeeded.
+func defaultProfileName() string {
+	store, err := authstore.LoadStore()
+	if err != nil {
+		return ""
+	}
+	for name, p := range store.Profiles {
+		if p.Default {
+			return name
+		}
+	}
+	return ""
 }
 
 func addDeviceCodeClientInfo(form url.Values) {
