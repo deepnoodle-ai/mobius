@@ -17,11 +17,11 @@ import (
 
 // registerAutomationsCommands registers every generated subcommand in the "automations" group.
 func registerAutomationsCommands(app *cli.App) {
-	automationsGrp := app.Group("automations")
+	automationsGrp := app.Group("automations").Description("Automation definitions, versions, and runs")
 	automationsGrp.Alias("automation")
 	automationsGrp.Command("cancel-run").
 		Description("Cancel an in-flight run").
-		Args("id").
+		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
 		Flags(
 			cli.String("reason", "").Help("Human-readable cancellation reason recorded on the run."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
@@ -129,7 +129,7 @@ func registerAutomationsCommands(app *cli.App) {
 
 	automationsGrp.Command("create-version").
 		Description("Create a new draft version").
-		Args("handle").
+		AddArg(&cli.Arg{Name: "handle", Description: "Project-unique automation handle.", Required: true}).
 		Flags(
 			cli.String("compiled-plan", "").Help("Optional precompiled execution plan. The engine will recompile from `spec` if omitted. Accepts JSON, @file, or @-."),
 			cli.String("spec", "").Help("[required] Authoring representation of an automation. Accepts JSON, @file, or @-."),
@@ -174,7 +174,7 @@ func registerAutomationsCommands(app *cli.App) {
 
 	automationsGrp.Command("delete").
 		Description("Archive an automation").
-		Args("handle").
+		AddArg(&cli.Arg{Name: "handle", Description: "Project-unique automation handle.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -191,11 +191,12 @@ func registerAutomationsCommands(app *cli.App) {
 			return printResponse(ctx, "deleteAutomation", resp.StatusCode(), resp.Body)
 		})
 
-	automationsGrp.Command("deliver-webhook-trigger").
-		Description("Deliver a webhook payload to a trigger").
-		Args("webhook-handle").
+	automationsGrp.Command("deliver-http-trigger").
+		Description("Deliver an HTTP request payload to a trigger").
+		AddArg(&cli.Arg{Name: "http-handle", Description: "Globally unique identifier for the trigger. The endpoint carries no project context, so the handle …", Required: true}).
 		Flags(
-			cli.String("idempotency-key", "").Help("Optional idempotency key (also accepted via X-Idempotency-Key header)."),
+			cli.String("idempotency-key", "").Help("Optional idempotency key (also accepted via the X-Idempotency-Key header)."),
+			cli.String("x-idempotency-key", "").Help("Alternative to the `idempotency_key` query parameter. When both are present the query parameter win…"),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -207,12 +208,16 @@ func registerAutomationsCommands(app *cli.App) {
 			}
 			client := mc.RawClient()
 			p0 := ctx.Arg(0)
-			params := &api.DeliverWebhookTriggerParams{}
+			params := &api.DeliverHTTPTriggerParams{}
 			if ctx.IsSet("idempotency-key") {
 				v := ctx.String("idempotency-key")
 				params.IdempotencyKey = &v
 			}
-			var body api.DeliverWebhookTriggerJSONRequestBody
+			if ctx.IsSet("x-idempotency-key") {
+				v := ctx.String("x-idempotency-key")
+				params.XIdempotencyKey = &v
+			}
+			var body api.DeliverHTTPTriggerJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
 			}
@@ -222,16 +227,16 @@ func registerAutomationsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.DeliverWebhookTriggerWithResponse(ctx.Context(), p0, params, body)
+			resp, err := client.DeliverHTTPTriggerWithResponse(ctx.Context(), p0, params, body)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, "deliverWebhookTrigger", resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "deliverHTTPTrigger", resp.StatusCode(), resp.Body)
 		})
 
 	automationsGrp.Command("get").
 		Description("Get an automation").
-		Args("handle").
+		AddArg(&cli.Arg{Name: "handle", Description: "Project-unique automation handle.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -250,7 +255,7 @@ func registerAutomationsCommands(app *cli.App) {
 
 	automationsGrp.Command("get-run").
 		Description("Get an automation run").
-		Args("id").
+		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -270,7 +275,7 @@ func registerAutomationsCommands(app *cli.App) {
 	automationsGrp.Command("list").
 		Description("List automations in a project").
 		Flags(
-			cli.String("status", "").Help("Filter by lifecycle status."),
+			cli.String("status", "").Help("Filter by lifecycle status. Omit to return all non-archived automations (the default). Pass a singl…"),
 			cli.String("cursor", "").Help("Opaque pagination cursor from a prior response."),
 			cli.Int("limit", "").Help("Maximum number of items to return."),
 		).
@@ -284,7 +289,7 @@ func registerAutomationsCommands(app *cli.App) {
 			p0 := authFor(ctx).Project
 			params := &api.ListAutomationsParams{}
 			if ctx.IsSet("status") {
-				v := api.AutomationStatus(ctx.String("status"))
+				v := api.ListAutomationsParamsStatus(ctx.String("status"))
 				params.Status = &v
 			}
 			if ctx.IsSet("cursor") {
@@ -304,10 +309,10 @@ func registerAutomationsCommands(app *cli.App) {
 
 	automationsGrp.Command("list-run-events").
 		Description("List run events").
-		Args("id").
+		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
 		Flags(
 			cli.Int("since-sequence", "").Help("Return events with sequence > since_sequence."),
-			cli.Int("limit", "").Help("limit"),
+			cli.Int("limit", "").Help("Maximum number of items to return"),
 		).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -336,7 +341,7 @@ func registerAutomationsCommands(app *cli.App) {
 
 	automationsGrp.Command("list-run-steps").
 		Description("List the steps of an automation run").
-		Args("id").
+		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -358,6 +363,7 @@ func registerAutomationsCommands(app *cli.App) {
 		Flags(
 			cli.String("status", "").Help("Filter to one status."),
 			cli.String("automation-id", "").Help("Filter to one automation's runs."),
+			cli.String("source-event-id", "").Help("Filter to runs originating from a single source event. Pass the `source_event_id` returned by the H…"),
 			cli.String("cursor", "").Help("Opaque pagination cursor from a prior response."),
 			cli.Int("limit", "").Help("Maximum number of items to return."),
 		).
@@ -378,6 +384,10 @@ func registerAutomationsCommands(app *cli.App) {
 				v := ctx.String("automation-id")
 				params.AutomationId = &v
 			}
+			if ctx.IsSet("source-event-id") {
+				v := ctx.String("source-event-id")
+				params.SourceEventId = &v
+			}
 			if ctx.IsSet("cursor") {
 				v := ctx.String("cursor")
 				params.Cursor = &v
@@ -395,7 +405,7 @@ func registerAutomationsCommands(app *cli.App) {
 
 	automationsGrp.Command("list-versions").
 		Description("List versions for an automation").
-		Args("handle").
+		AddArg(&cli.Arg{Name: "handle", Description: "Project-unique automation handle.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -414,7 +424,8 @@ func registerAutomationsCommands(app *cli.App) {
 
 	automationsGrp.Command("publish-automation-version").
 		Description("Publish a version").
-		Args("handle", "version").
+		AddArg(&cli.Arg{Name: "handle", Description: "Project-unique automation handle.", Required: true}).
+		AddArg(&cli.Arg{Name: "version", Description: "Version number of the AutomationVersion to publish.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -437,7 +448,7 @@ func registerAutomationsCommands(app *cli.App) {
 
 	automationsGrp.Command("signal-automation-run").
 		Description("Deliver a signal to a suspended run").
-		Args("id").
+		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
 		Flags(
 			cli.String("result", "").Help("Free-form payload saved as the resumed step's output. Accepts JSON, @file, or @-."),
 			cli.String("step-key", "").Help("[required] Step key currently in `suspended` state that should resume. Must match a step declared in the run's…"),
@@ -480,10 +491,10 @@ func registerAutomationsCommands(app *cli.App) {
 
 	automationsGrp.Command("start-automation-run").
 		Description("Start a new automation run").
-		Args("handle").
+		AddArg(&cli.Arg{Name: "handle", Description: "Automation handle (unique per project).", Required: true}).
 		Flags(
 			cli.String("external-id", "").Help("Caller-supplied idempotency key, scoped to (org, project). Repeat calls with the same `external_id`…"),
-			cli.String("inputs", "").Help("Free-form input map passed to the run. Available to steps via `{{ inputs.<key> }}` templates. Accepts JSON, @file, or @-."),
+			cli.String("inputs", "").Help("Free-form input map passed to the run. Available to steps via `{{ .inputs.<key> }}` Go text/templat… Accepts JSON, @file, or @-."),
 			cli.String("source", "").Help("Optional attribution for the call that started this run. Triggers and webhooks populate `trigger_id… Accepts JSON, @file, or @-."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
@@ -530,7 +541,7 @@ func registerAutomationsCommands(app *cli.App) {
 
 	automationsGrp.Command("stream-automation-run-events").
 		Description("Stream run events over Server-Sent Events").
-		Args("id").
+		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
 		Flags(
 			cli.Int("since-sequence", "").Help("Stream events with sequence > since_sequence."),
 		).
@@ -557,7 +568,7 @@ func registerAutomationsCommands(app *cli.App) {
 
 	automationsGrp.Command("update").
 		Description("Update an automation").
-		Args("handle").
+		AddArg(&cli.Arg{Name: "handle", Description: "Project-unique automation handle.", Required: true}).
 		Flags(
 			cli.String("default-agent-id", "").Help("Agent used by `agent` steps that do not pin an agent explicitly."),
 			cli.String("default-inputs", "").Help("Default values merged into `inputs` when a run is started without overrides. Accepts JSON, @file, or @-."),

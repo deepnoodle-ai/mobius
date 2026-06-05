@@ -21,11 +21,11 @@ func registerTablesCommands(app *cli.App) {
 	tablesGrp.Alias("table")
 	tablesGrp.Command("bulk-insert-rows").
 		Description("Bulk insert rows").
-		Args("table-name").
+		AddArg(&cli.Arg{Name: "table-name", Description: "Table name, lowercase alphanumeric and underscores. Names are unique within the resolved scope. Omi…", Required: true}).
 		Flags(
-			cli.String("scope", "").Help("scope"),
-			cli.String("owned-by", "").Help("owned-by"),
-			cli.Bool("owned-by-me", "").Help("owned-by-me"),
+			cli.String("scope", "").Help("Scope used to resolve `table_name`. Omit for the project/default scope; use `owner` with `owned_by`…"),
+			cli.String("owned-by", "").Help("Canonical user owner ID. Used with `scope=owner` for lookups; for list filters, narrows to tables o…"),
+			cli.Bool("owned-by-me", "").Help("Resolve `table_name` in the authenticated user's owner scope, or filter lists to tables owned by th…"),
 			cli.String("rows", "").Help("[required] rows Accepts JSON, @file, or @-."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
@@ -78,8 +78,8 @@ func registerTablesCommands(app *cli.App) {
 		Description("Create a table").
 		Flags(
 			cli.String("access-mode", "").Help("Controls read/write access to the table. \"project\" allows anyone with project table permissions (de…"),
-			cli.String("description", "").Help("description"),
-			cli.String("name", "").Help("[required] name"),
+			cli.String("description", "").Help("Optional human-readable description of the table."),
+			cli.String("name", "").Help("[required] Table name (lowercase, snake_case); unique within the project scope."),
 			cli.String("owned-by", "").Help("Canonical user owner ID. Required when `scope` is `owner`; defaults to the authenticated user for o…"),
 			cli.String("schema", "").Help("[required] schema Accepts JSON, @file, or @-."),
 			cli.String("scope", "").Help("Optional namespace for named runtime resources. Omitted/null means the project/default scope; `owne…"),
@@ -140,11 +140,11 @@ func registerTablesCommands(app *cli.App) {
 
 	tablesGrp.Command("delete").
 		Description("Delete a table and all its rows").
-		Args("table-name").
+		AddArg(&cli.Arg{Name: "table-name", Description: "Table name, lowercase alphanumeric and underscores. Names are unique within the resolved scope. Omi…", Required: true}).
 		Flags(
-			cli.String("scope", "").Help("scope"),
-			cli.String("owned-by", "").Help("owned-by"),
-			cli.Bool("owned-by-me", "").Help("owned-by-me"),
+			cli.String("scope", "").Help("Scope used to resolve `table_name`. Omit for the project/default scope; use `owner` with `owned_by`…"),
+			cli.String("owned-by", "").Help("Canonical user owner ID. Used with `scope=owner` for lookups; for list filters, narrows to tables o…"),
+			cli.Bool("owned-by-me", "").Help("Resolve `table_name` in the authenticated user's owner scope, or filter lists to tables owned by th…"),
 		).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -177,11 +177,12 @@ func registerTablesCommands(app *cli.App) {
 
 	tablesGrp.Command("delete-row").
 		Description("Delete a row").
-		Args("table-name", "row-id").
+		AddArg(&cli.Arg{Name: "table-name", Description: "Table name, lowercase alphanumeric and underscores. Names are unique within the resolved scope. Omi…", Required: true}).
+		AddArg(&cli.Arg{Name: "row-id", Description: "Table row ID.", Required: true}).
 		Flags(
-			cli.String("scope", "").Help("scope"),
-			cli.String("owned-by", "").Help("owned-by"),
-			cli.Bool("owned-by-me", "").Help("owned-by-me"),
+			cli.String("scope", "").Help("Scope used to resolve `table_name`. Omit for the project/default scope; use `owner` with `owned_by`…"),
+			cli.String("owned-by", "").Help("Canonical user owner ID. Used with `scope=owner` for lookups; for list filters, narrows to tables o…"),
+			cli.Bool("owned-by-me", "").Help("Resolve `table_name` in the authenticated user's owner scope, or filter lists to tables owned by th…"),
 		).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -215,11 +216,11 @@ func registerTablesCommands(app *cli.App) {
 
 	tablesGrp.Command("get").
 		Description("Get a table").
-		Args("table-name").
+		AddArg(&cli.Arg{Name: "table-name", Description: "Table name, lowercase alphanumeric and underscores. Names are unique within the resolved scope. Omi…", Required: true}).
 		Flags(
-			cli.String("scope", "").Help("scope"),
-			cli.String("owned-by", "").Help("owned-by"),
-			cli.Bool("owned-by-me", "").Help("owned-by-me"),
+			cli.String("scope", "").Help("Scope used to resolve `table_name`. Omit for the project/default scope; use `owner` with `owned_by`…"),
+			cli.String("owned-by", "").Help("Canonical user owner ID. Used with `scope=owner` for lookups; for list filters, narrows to tables o…"),
+			cli.Bool("owned-by-me", "").Help("Resolve `table_name` in the authenticated user's owner scope, or filter lists to tables owned by th…"),
 		).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -252,11 +253,12 @@ func registerTablesCommands(app *cli.App) {
 
 	tablesGrp.Command("get-row").
 		Description("Get a row by ID").
-		Args("table-name", "row-id").
+		AddArg(&cli.Arg{Name: "table-name", Description: "Table name, lowercase alphanumeric and underscores. Names are unique within the resolved scope. Omi…", Required: true}).
+		AddArg(&cli.Arg{Name: "row-id", Description: "Table row ID.", Required: true}).
 		Flags(
-			cli.String("scope", "").Help("scope"),
-			cli.String("owned-by", "").Help("owned-by"),
-			cli.Bool("owned-by-me", "").Help("owned-by-me"),
+			cli.String("scope", "").Help("Scope used to resolve `table_name`. Omit for the project/default scope; use `owner` with `owned_by`…"),
+			cli.String("owned-by", "").Help("Canonical user owner ID. Used with `scope=owner` for lookups; for list filters, narrows to tables o…"),
+			cli.Bool("owned-by-me", "").Help("Resolve `table_name` in the authenticated user's owner scope, or filter lists to tables owned by th…"),
 		).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -290,11 +292,11 @@ func registerTablesCommands(app *cli.App) {
 
 	tablesGrp.Command("get-stats").
 		Description("Get table storage stats").
-		Args("table-name").
+		AddArg(&cli.Arg{Name: "table-name", Description: "Table name, lowercase alphanumeric and underscores. Names are unique within the resolved scope. Omi…", Required: true}).
 		Flags(
-			cli.String("scope", "").Help("scope"),
-			cli.String("owned-by", "").Help("owned-by"),
-			cli.Bool("owned-by-me", "").Help("owned-by-me"),
+			cli.String("scope", "").Help("Scope used to resolve `table_name`. Omit for the project/default scope; use `owner` with `owned_by`…"),
+			cli.String("owned-by", "").Help("Canonical user owner ID. Used with `scope=owner` for lookups; for list filters, narrows to tables o…"),
+			cli.Bool("owned-by-me", "").Help("Resolve `table_name` in the authenticated user's owner scope, or filter lists to tables owned by th…"),
 		).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -327,11 +329,11 @@ func registerTablesCommands(app *cli.App) {
 
 	tablesGrp.Command("insert-row").
 		Description("Insert a row").
-		Args("table-name").
+		AddArg(&cli.Arg{Name: "table-name", Description: "Table name, lowercase alphanumeric and underscores. Names are unique within the resolved scope. Omi…", Required: true}).
 		Flags(
-			cli.String("scope", "").Help("scope"),
-			cli.String("owned-by", "").Help("owned-by"),
-			cli.Bool("owned-by-me", "").Help("owned-by-me"),
+			cli.String("scope", "").Help("Scope used to resolve `table_name`. Omit for the project/default scope; use `owner` with `owned_by`…"),
+			cli.String("owned-by", "").Help("Canonical user owner ID. Used with `scope=owner` for lookups; for list filters, narrows to tables o…"),
+			cli.Bool("owned-by-me", "").Help("Resolve `table_name` in the authenticated user's owner scope, or filter lists to tables owned by th…"),
 			cli.String("data", "").Help("[required] data Accepts JSON, @file, or @-."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
@@ -383,11 +385,11 @@ func registerTablesCommands(app *cli.App) {
 	tablesGrp.Command("list").
 		Description("List tables").
 		Flags(
-			cli.String("cursor", "").Help("cursor"),
-			cli.Int("limit", "").Help("limit"),
-			cli.Bool("owned-by-me", "").Help("owned-by-me"),
-			cli.String("owned-by", "").Help("owned-by"),
-			cli.String("scope", "").Help("scope"),
+			cli.String("cursor", "").Help("Cursor for pagination (opaque string from previous response)"),
+			cli.Int("limit", "").Help("Maximum number of items to return"),
+			cli.Bool("owned-by-me", "").Help("Resolve `table_name` in the authenticated user's owner scope, or filter lists to tables owned by th…"),
+			cli.String("owned-by", "").Help("Canonical user owner ID. Used with `scope=owner` for lookups; for list filters, narrows to tables o…"),
+			cli.String("scope", "").Help("Scope used to resolve `table_name`. Omit for the project/default scope; use `owner` with `owned_by`…"),
 		).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -427,14 +429,14 @@ func registerTablesCommands(app *cli.App) {
 
 	tablesGrp.Command("query-rows").
 		Description("Query rows").
-		Args("table-name").
+		AddArg(&cli.Arg{Name: "table-name", Description: "Table name, lowercase alphanumeric and underscores. Names are unique within the resolved scope. Omi…", Required: true}).
 		Flags(
-			cli.String("scope", "").Help("scope"),
-			cli.String("owned-by", "").Help("owned-by"),
-			cli.Bool("owned-by-me", "").Help("owned-by-me"),
+			cli.String("scope", "").Help("Scope used to resolve `table_name`. Omit for the project/default scope; use `owner` with `owned_by`…"),
+			cli.String("owned-by", "").Help("Canonical user owner ID. Used with `scope=owner` for lookups; for list filters, narrows to tables o…"),
+			cli.Bool("owned-by-me", "").Help("Resolve `table_name` in the authenticated user's owner scope, or filter lists to tables owned by th…"),
 			cli.String("cursor", "").Help("Opaque cursor from a prior response."),
 			cli.String("filter", "").Help("Column equality or operator filter Accepts JSON, @file, or @-."),
-			cli.Int("limit", "").Help("limit"),
+			cli.Int("limit", "").Help("Maximum number of rows to return (1–1000, default 100)."),
 			cli.String("sort", "").Help("sort Accepts JSON, @file, or @-."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
@@ -498,14 +500,14 @@ func registerTablesCommands(app *cli.App) {
 
 	tablesGrp.Command("search-rows").
 		Description("Search rows").
-		Args("table-name").
+		AddArg(&cli.Arg{Name: "table-name", Description: "Table name, lowercase alphanumeric and underscores. Names are unique within the resolved scope. Omi…", Required: true}).
 		Flags(
-			cli.String("scope", "").Help("scope"),
-			cli.String("owned-by", "").Help("owned-by"),
-			cli.Bool("owned-by-me", "").Help("owned-by-me"),
+			cli.String("scope", "").Help("Scope used to resolve `table_name`. Omit for the project/default scope; use `owner` with `owned_by`…"),
+			cli.String("owned-by", "").Help("Canonical user owner ID. Used with `scope=owner` for lookups; for list filters, narrows to tables o…"),
+			cli.Bool("owned-by-me", "").Help("Resolve `table_name` in the authenticated user's owner scope, or filter lists to tables owned by th…"),
 			cli.String("cursor", "").Help("Opaque cursor from a prior search response."),
 			cli.String("filter", "").Help("Optional column equality or operator filter applied before text search. Accepts JSON, @file, or @-."),
-			cli.Int("limit", "").Help("limit"),
+			cli.Int("limit", "").Help("Maximum number of rows to return (1–1000, default 100)."),
 			cli.String("query", "").Help("[required] Keyword search query."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
@@ -567,13 +569,13 @@ func registerTablesCommands(app *cli.App) {
 
 	tablesGrp.Command("update").
 		Description("Update a table").
-		Args("table-name").
+		AddArg(&cli.Arg{Name: "table-name", Description: "Table name, lowercase alphanumeric and underscores. Names are unique within the resolved scope. Omi…", Required: true}).
 		Flags(
-			cli.String("scope", "").Help("scope"),
-			cli.String("owned-by", "").Help("owned-by"),
-			cli.Bool("owned-by-me", "").Help("owned-by-me"),
+			cli.String("scope", "").Help("Scope used to resolve `table_name`. Omit for the project/default scope; use `owner` with `owned_by`…"),
+			cli.String("owned-by", "").Help("Canonical user owner ID. Used with `scope=owner` for lookups; for list filters, narrows to tables o…"),
+			cli.Bool("owned-by-me", "").Help("Resolve `table_name` in the authenticated user's owner scope, or filter lists to tables owned by th…"),
 			cli.String("access-mode", "").Help("Controls read/write access to the table. \"project\" allows anyone with project table permissions (de…"),
-			cli.String("description", "").Help("description"),
+			cli.String("description", "").Help("Optional human-readable description of the table."),
 			cli.String("owned-by", "").Help("Canonical user owner ID. Send null to clear ownership."),
 			cli.String("schema", "").Help("schema Accepts JSON, @file, or @-."),
 			cli.String("scope", "").Help("Set to `owner` for owner-scoped names, or null to return to the project/default scope."),
@@ -642,11 +644,12 @@ func registerTablesCommands(app *cli.App) {
 
 	tablesGrp.Command("update-row").
 		Description("Update a row (PATCH — merges into existing data)").
-		Args("table-name", "row-id").
+		AddArg(&cli.Arg{Name: "table-name", Description: "Table name, lowercase alphanumeric and underscores. Names are unique within the resolved scope. Omi…", Required: true}).
+		AddArg(&cli.Arg{Name: "row-id", Description: "Table row ID.", Required: true}).
 		Flags(
-			cli.String("scope", "").Help("scope"),
-			cli.String("owned-by", "").Help("owned-by"),
-			cli.Bool("owned-by-me", "").Help("owned-by-me"),
+			cli.String("scope", "").Help("Scope used to resolve `table_name`. Omit for the project/default scope; use `owner` with `owned_by`…"),
+			cli.String("owned-by", "").Help("Canonical user owner ID. Used with `scope=owner` for lookups; for list filters, narrows to tables o…"),
+			cli.Bool("owned-by-me", "").Help("Resolve `table_name` in the authenticated user's owner scope, or filter lists to tables owned by th…"),
 			cli.String("data", "").Help("[required] data Accepts JSON, @file, or @-."),
 			cli.Int("version", "").Help("Expected version for optimistic locking. Omit or 0 to skip the check."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
@@ -703,11 +706,11 @@ func registerTablesCommands(app *cli.App) {
 
 	tablesGrp.Command("upsert-row").
 		Description("Upsert a row").
-		Args("table-name").
+		AddArg(&cli.Arg{Name: "table-name", Description: "Table name, lowercase alphanumeric and underscores. Names are unique within the resolved scope. Omi…", Required: true}).
 		Flags(
-			cli.String("scope", "").Help("scope"),
-			cli.String("owned-by", "").Help("owned-by"),
-			cli.Bool("owned-by-me", "").Help("owned-by-me"),
+			cli.String("scope", "").Help("Scope used to resolve `table_name`. Omit for the project/default scope; use `owner` with `owned_by`…"),
+			cli.String("owned-by", "").Help("Canonical user owner ID. Used with `scope=owner` for lookups; for list filters, narrows to tables o…"),
+			cli.Bool("owned-by-me", "").Help("Resolve `table_name` in the authenticated user's owner scope, or filter lists to tables owned by th…"),
 			cli.String("data", "").Help("[required] Full row data. Must include values for all key_columns. Accepts JSON, @file, or @-."),
 			cli.Strings("key-columns", "").Help("[required] Column names used to match an existing row."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),

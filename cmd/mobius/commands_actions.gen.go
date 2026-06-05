@@ -97,7 +97,7 @@ func registerActionsCommands(app *cli.App) {
 
 	actionsGrp.Command("delete").
 		Description("Delete an action").
-		Args("action-name").
+		AddArg(&cli.Arg{Name: "action-name", Description: "Project-scoped action name used in automation step definitions.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -114,28 +114,9 @@ func registerActionsCommands(app *cli.App) {
 			return printResponse(ctx, "deleteAction", resp.StatusCode(), resp.Body)
 		})
 
-	actionsGrp.Command("get-catalog").
-		Description("Get one catalog action by name").
-		Args("action-name").
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			resp, err := client.GetCatalogActionWithResponse(ctx.Context(), p0, p1)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "getCatalogAction", resp.StatusCode(), resp.Body)
-		})
-
 	actionsGrp.Command("invoke").
 		Description("Invoke an action").
-		Args("action-name").
+		AddArg(&cli.Arg{Name: "action-name", Description: "Project-scoped action name used in automation step definitions.", Required: true}).
 		Flags(
 			cli.String("input", "").Help("Input values matching the action's input_schema. Accepts JSON, @file, or @-."),
 			cli.Int("timeout-seconds", "").Help("How long (in seconds) to wait for synchronous completion. Default 30, max 120. HTTP-backed actions …"),
@@ -177,28 +158,11 @@ func registerActionsCommands(app *cli.App) {
 			return printResponse(ctx, "invokeAction", resp.StatusCode(), resp.Body)
 		})
 
-	actionsGrp.Command("list-catalog").
-		Description("List the action catalog").
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			resp, err := client.ListCatalogActionsWithResponse(ctx.Context(), p0)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "listCatalogActions", resp.StatusCode(), resp.Body)
-		})
-
 	actionsGrp.Command("list-invocations").
 		Description("List action invocation records").
 		Flags(
-			cli.String("cursor", "").Help("cursor"),
-			cli.Int("limit", "").Help("limit"),
+			cli.String("cursor", "").Help("Cursor for pagination (opaque string from previous response)"),
+			cli.Int("limit", "").Help("Maximum number of items to return"),
 			cli.String("run-id", "").Help("Filter to invocations from a specific automation run."),
 			cli.String("job-id", "").Help("Filter to invocations from a specific job."),
 			cli.String("action-name", "").Help("Filter to invocations of a specific action."),
@@ -246,7 +210,7 @@ func registerActionsCommands(app *cli.App) {
 
 	actionsGrp.Command("rotate-secret").
 		Description("Rotate an action signing secret").
-		Args("action-name").
+		AddArg(&cli.Arg{Name: "action-name", Description: "Project-scoped action name used in automation step definitions.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -265,7 +229,7 @@ func registerActionsCommands(app *cli.App) {
 
 	actionsGrp.Command("update").
 		Description("Update an action").
-		Args("action-name").
+		AddArg(&cli.Arg{Name: "action-name", Description: "Project-scoped action name used in automation step definitions.", Required: true}).
 		Flags(
 			cli.String("annotations", "").Help("Pass null to clear all annotation flags. Accepts JSON, @file, or @-."),
 			cli.String("description", "").Help("Replacement Markdown description."),

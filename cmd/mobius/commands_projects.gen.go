@@ -21,9 +21,9 @@ func registerProjectsCommands(app *cli.App) {
 	projectsGrp.Alias("project")
 	projectsGrp.Command("add-member").
 		Description("Add a project member").
-		Args("id").
+		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
 		Flags(
-			cli.String("user-id", "").Help("[required] User ID of the org member to add to this project."),
+			cli.String("principal-id", "").Help("[required] ID of the org member principal to add to this project."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -39,11 +39,11 @@ func registerProjectsCommands(app *cli.App) {
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
 			}
-			if ctx.IsSet("user-id") {
-				body.UserId = ctx.String("user-id")
+			if ctx.IsSet("principal-id") {
+				body.PrincipalId = ctx.String("principal-id")
 			}
-			if body.UserId == "" {
-				return fmt.Errorf("--user-id is required (or supply it via --file)")
+			if body.PrincipalId == "" {
+				return fmt.Errorf("--principal-id is required (or supply it via --file)")
 			}
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
@@ -57,7 +57,7 @@ func registerProjectsCommands(app *cli.App) {
 
 	projectsGrp.Command("archive").
 		Description("Archive a project").
-		Args("id").
+		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -131,7 +131,7 @@ func registerProjectsCommands(app *cli.App) {
 
 	projectsGrp.Command("delete").
 		Description("Delete a project").
-		Args("id").
+		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -149,7 +149,7 @@ func registerProjectsCommands(app *cli.App) {
 
 	projectsGrp.Command("get").
 		Description("Get a project").
-		Args("id").
+		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -167,7 +167,7 @@ func registerProjectsCommands(app *cli.App) {
 
 	projectsGrp.Command("get-config").
 		Description("Get project config").
-		Args("id").
+		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -231,10 +231,10 @@ func registerProjectsCommands(app *cli.App) {
 
 	projectsGrp.Command("list-members").
 		Description("List project members").
-		Args("id").
+		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
 		Flags(
-			cli.String("cursor", "").Help("cursor"),
-			cli.Int("limit", "").Help("limit"),
+			cli.String("cursor", "").Help("Cursor for pagination (opaque string from previous response)"),
+			cli.Int("limit", "").Help("Maximum number of items to return"),
 		).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -262,7 +262,8 @@ func registerProjectsCommands(app *cli.App) {
 
 	projectsGrp.Command("remove-member").
 		Description("Remove a project member").
-		Args("id", "user-id").
+		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
+		AddArg(&cli.Arg{Name: "principal-id", Description: "Principal ID.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -281,7 +282,7 @@ func registerProjectsCommands(app *cli.App) {
 
 	projectsGrp.Command("restore").
 		Description("Restore an archived project").
-		Args("id").
+		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -299,10 +300,10 @@ func registerProjectsCommands(app *cli.App) {
 
 	projectsGrp.Command("update").
 		Description("Update a project").
-		Args("id").
+		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
 		Flags(
 			cli.String("access-mode", "").Help("`org_open`: every org member can see and use the project, subject to role assignments. `restricted`…"),
-			cli.String("default-agent-role-id", "").Help("Replacement role assigned to the auto-created service account of any new agent in this project. `nu…"),
+			cli.String("default-agent-role-id", "").Help("Replacement role assigned to the auto-created agent principal of any new agent in this project. `nu…"),
 			cli.String("description", "").Help("Replacement description."),
 			cli.String("name", "").Help("Replacement human-readable name."),
 			cli.Bool("seed-existing-members", "").Help("When transitioning from `org_open` to `restricted`, set true to insert all current org members as p…"),
@@ -363,7 +364,7 @@ func registerProjectsCommands(app *cli.App) {
 
 	projectsGrp.Command("update-config").
 		Description("Replace project config").
-		Args("id").
+		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
 		Flags(
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),

@@ -72,7 +72,7 @@ func registerToolkitsCommands(app *cli.App) {
 
 	toolkitsGrp.Command("delete").
 		Description("Delete a toolkit").
-		Args("toolkit-id").
+		AddArg(&cli.Arg{Name: "toolkit-id", Description: "Toolkit ID (TypeID `kit_...`).", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -91,7 +91,7 @@ func registerToolkitsCommands(app *cli.App) {
 
 	toolkitsGrp.Command("get").
 		Description("Get a toolkit").
-		Args("toolkit-id").
+		AddArg(&cli.Arg{Name: "toolkit-id", Description: "Toolkit ID (TypeID `kit_...`).", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -112,6 +112,7 @@ func registerToolkitsCommands(app *cli.App) {
 		Description("List toolkits").
 		Flags(
 			cli.Bool("include-system", "").Help("Include read-only system templates."),
+			cli.String("status", "").Help("Filter by lifecycle status. Omit for active toolkits."),
 		).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -126,6 +127,10 @@ func registerToolkitsCommands(app *cli.App) {
 				v := ctx.Bool("include-system")
 				params.IncludeSystem = &v
 			}
+			if ctx.IsSet("status") {
+				v := api.ListToolkitsParamsStatus(ctx.String("status"))
+				params.Status = &v
+			}
 			resp, err := client.ListToolkitsWithResponse(ctx.Context(), p0, params)
 			if err != nil {
 				return err
@@ -135,7 +140,7 @@ func registerToolkitsCommands(app *cli.App) {
 
 	toolkitsGrp.Command("update").
 		Description("Update a toolkit").
-		Args("toolkit-id").
+		AddArg(&cli.Arg{Name: "toolkit-id", Description: "Toolkit ID (TypeID `kit_...`).", Required: true}).
 		Flags(
 			cli.String("action-grants", "").Help("Action selectors granted by this toolkit. Accepts JSON, @file, or @-."),
 			cli.String("description", "").Help("Markdown description of the toolkit's purpose."),

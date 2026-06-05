@@ -24,7 +24,7 @@ func registerApiKeysCommands(app *cli.App) {
 		Flags(
 			cli.String("expires-at", "").Help("Optional hard expiry. Omit for a non-expiring key. Accepts JSON, @file, or @-."),
 			cli.String("name", "").Help("[required] Human-readable label, unique within the project."),
-			cli.String("service-account-id", "").Help("[required] Service account this key authenticates as."),
+			cli.String("principal-id", "").Help("[required] Principal this key authenticates as."),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
@@ -49,8 +49,8 @@ func registerApiKeysCommands(app *cli.App) {
 			if ctx.IsSet("name") {
 				body.Name = ctx.String("name")
 			}
-			if ctx.IsSet("service-account-id") {
-				body.ServiceAccountId = ctx.String("service-account-id")
+			if ctx.IsSet("principal-id") {
+				body.PrincipalId = ctx.String("principal-id")
 			}
 			if tags, err := parseTagFlags(ctx); err != nil {
 				return err
@@ -61,8 +61,8 @@ func registerApiKeysCommands(app *cli.App) {
 			if body.Name == "" {
 				return fmt.Errorf("--name is required (or supply it via --file)")
 			}
-			if body.ServiceAccountId == "" {
-				return fmt.Errorf("--service-account-id is required (or supply it via --file)")
+			if body.PrincipalId == "" {
+				return fmt.Errorf("--principal-id is required (or supply it via --file)")
 			}
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
@@ -76,7 +76,7 @@ func registerApiKeysCommands(app *cli.App) {
 
 	apiKeysGrp.Command("get").
 		Description("Get an API key").
-		Args("id").
+		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -96,8 +96,8 @@ func registerApiKeysCommands(app *cli.App) {
 	apiKeysGrp.Command("list").
 		Description("List API keys").
 		Flags(
-			cli.Int("limit", "").Help("limit"),
-			cli.String("cursor", "").Help("cursor"),
+			cli.Int("limit", "").Help("Maximum number of items to return"),
+			cli.String("cursor", "").Help("Cursor for pagination (opaque string from previous response)"),
 		).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -125,7 +125,7 @@ func registerApiKeysCommands(app *cli.App) {
 
 	apiKeysGrp.Command("revoke").
 		Description("Revoke an API key").
-		Args("id").
+		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)

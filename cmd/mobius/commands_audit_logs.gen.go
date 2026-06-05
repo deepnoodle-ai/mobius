@@ -22,10 +22,10 @@ func registerAuditLogsCommands(app *cli.App) {
 		Flags(
 			cli.String("resource-type", "").Help("Filter by resource type"),
 			cli.String("resource-id", "").Help("Filter by resource ID"),
-			cli.String("user-id", "").Help("Filter by user ID"),
+			cli.String("principal-id", "").Help("Filter by principal ID"),
 			cli.String("action", "").Help("Filter by action (create, update, delete, archive, restore)"),
-			cli.String("cursor", "").Help("cursor"),
-			cli.Int("limit", "").Help("limit"),
+			cli.String("cursor", "").Help("Cursor for pagination (opaque string from previous response)"),
+			cli.Int("limit", "").Help("Maximum number of items to return"),
 		).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -44,9 +44,9 @@ func registerAuditLogsCommands(app *cli.App) {
 				v := ctx.String("resource-id")
 				params.ResourceId = &v
 			}
-			if ctx.IsSet("user-id") {
-				v := ctx.String("user-id")
-				params.UserId = &v
+			if ctx.IsSet("principal-id") {
+				v := ctx.String("principal-id")
+				params.PrincipalId = &v
 			}
 			if ctx.IsSet("action") {
 				v := ctx.String("action")
@@ -73,10 +73,10 @@ func registerAuditLogsCommands(app *cli.App) {
 			cli.String("resource-type", "").Help("Filter by resource type"),
 			cli.String("project-id", "").Help("Filter by project ID"),
 			cli.String("resource-id", "").Help("Filter by resource ID"),
-			cli.String("user-id", "").Help("Filter by user ID"),
+			cli.String("principal-id", "").Help("Filter by principal ID"),
 			cli.String("action", "").Help("Filter by action (create, update, delete, archive, restore)"),
-			cli.String("cursor", "").Help("cursor"),
-			cli.Int("limit", "").Help("limit"),
+			cli.String("cursor", "").Help("Cursor for pagination (opaque string from previous response)"),
+			cli.Int("limit", "").Help("Maximum number of items to return"),
 		).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -98,9 +98,9 @@ func registerAuditLogsCommands(app *cli.App) {
 				v := ctx.String("resource-id")
 				params.ResourceId = &v
 			}
-			if ctx.IsSet("user-id") {
-				v := ctx.String("user-id")
-				params.UserId = &v
+			if ctx.IsSet("principal-id") {
+				v := ctx.String("principal-id")
+				params.PrincipalId = &v
 			}
 			if ctx.IsSet("action") {
 				v := ctx.String("action")

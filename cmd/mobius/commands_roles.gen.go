@@ -74,11 +74,11 @@ func registerRolesCommands(app *cli.App) {
 		})
 
 	rolesGrp.Command("create-assignment").
-		Description("Assign a role to a principal user").
+		Description("Assign a role to a principal").
 		Flags(
+			cli.String("principal-id", "").Help("[required] Principal ID to assign the role to (human or machine)."),
 			cli.String("role-id", "").Help("Mutually exclusive with `role_name`."),
 			cli.String("role-name", "").Help("Resolved to a role ID server-side. Mutually exclusive with `role_id`."),
-			cli.String("user-id", "").Help("[required] Principal User ID to assign the role to."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -94,6 +94,9 @@ func registerRolesCommands(app *cli.App) {
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
 			}
+			if ctx.IsSet("principal-id") {
+				body.PrincipalId = ctx.String("principal-id")
+			}
 			if ctx.IsSet("role-id") {
 				v := ctx.String("role-id")
 				body.RoleId = &v
@@ -102,11 +105,8 @@ func registerRolesCommands(app *cli.App) {
 				v := ctx.String("role-name")
 				body.RoleName = &v
 			}
-			if ctx.IsSet("user-id") {
-				body.UserId = ctx.String("user-id")
-			}
-			if body.UserId == "" {
-				return fmt.Errorf("--user-id is required (or supply it via --file)")
+			if body.PrincipalId == "" {
+				return fmt.Errorf("--principal-id is required (or supply it via --file)")
 			}
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
@@ -120,7 +120,7 @@ func registerRolesCommands(app *cli.App) {
 
 	rolesGrp.Command("delete").
 		Description("Delete a role").
-		Args("id").
+		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -139,7 +139,7 @@ func registerRolesCommands(app *cli.App) {
 
 	rolesGrp.Command("delete-assignment").
 		Description("Remove a role assignment").
-		Args("id").
+		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -158,7 +158,7 @@ func registerRolesCommands(app *cli.App) {
 
 	rolesGrp.Command("get").
 		Description("Get a role").
-		Args("id").
+		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -178,8 +178,8 @@ func registerRolesCommands(app *cli.App) {
 	rolesGrp.Command("list").
 		Description("List roles").
 		Flags(
-			cli.Int("limit", "").Help("limit"),
-			cli.String("cursor", "").Help("cursor"),
+			cli.Int("limit", "").Help("Maximum number of items to return"),
+			cli.String("cursor", "").Help("Cursor for pagination (opaque string from previous response)"),
 		).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -208,7 +208,7 @@ func registerRolesCommands(app *cli.App) {
 	rolesGrp.Command("list-assignments").
 		Description("List role assignments").
 		Flags(
-			cli.String("user-id", "").Help("Filter to assignments for a specific user."),
+			cli.String("principal-id", "").Help("Filter to assignments for a specific principal."),
 			cli.String("role-id", "").Help("Filter to assignments for a specific role."),
 		).
 		Use(requireAuth()).
@@ -220,9 +220,9 @@ func registerRolesCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			params := &api.ListRoleAssignmentsParams{}
-			if ctx.IsSet("user-id") {
-				v := ctx.String("user-id")
-				params.UserId = &v
+			if ctx.IsSet("principal-id") {
+				v := ctx.String("principal-id")
+				params.PrincipalId = &v
 			}
 			if ctx.IsSet("role-id") {
 				v := ctx.String("role-id")
@@ -237,7 +237,7 @@ func registerRolesCommands(app *cli.App) {
 
 	rolesGrp.Command("update").
 		Description("Update a role").
-		Args("id").
+		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
 		Flags(
 			cli.String("description", "").Help("Replacement description."),
 			cli.Strings("permissions", "").Help("Replaces the existing permissions array entirely. Source allowed values from `GET /v1/projects/{pro…"),

@@ -94,7 +94,7 @@ func registerSkillsCommands(app *cli.App) {
 
 	skillsGrp.Command("delete").
 		Description("Delete a skill").
-		Args("skill-id").
+		AddArg(&cli.Arg{Name: "skill-id", Description: "Skill ID (TypeID `skill_...`).", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -113,7 +113,7 @@ func registerSkillsCommands(app *cli.App) {
 
 	skillsGrp.Command("get").
 		Description("Get a skill").
-		Args("skill-id").
+		AddArg(&cli.Arg{Name: "skill-id", Description: "Skill ID (TypeID `skill_...`).", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -174,6 +174,7 @@ func registerSkillsCommands(app *cli.App) {
 		Description("List skills").
 		Flags(
 			cli.Bool("include-system", "").Help("Include read-only system skill templates."),
+			cli.String("status", "").Help("Filter by lifecycle status. Omit for active skills."),
 		).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -188,6 +189,10 @@ func registerSkillsCommands(app *cli.App) {
 				v := ctx.Bool("include-system")
 				params.IncludeSystem = &v
 			}
+			if ctx.IsSet("status") {
+				v := api.ListSkillsParamsStatus(ctx.String("status"))
+				params.Status = &v
+			}
 			resp, err := client.ListSkillsWithResponse(ctx.Context(), p0, params)
 			if err != nil {
 				return err
@@ -197,7 +202,7 @@ func registerSkillsCommands(app *cli.App) {
 
 	skillsGrp.Command("update").
 		Description("Update a skill").
-		Args("skill-id").
+		AddArg(&cli.Arg{Name: "skill-id", Description: "Skill ID (TypeID `skill_...`).", Required: true}).
 		Flags(
 			cli.Strings("allowed-tools", "").Help("Tool selectors that narrow the agent's effective tool set while this skill is active."),
 			cli.String("description", "").Help("Markdown description of the skill's purpose."),

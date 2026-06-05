@@ -32,11 +32,12 @@ type PlannedCommand struct {
 // on the root app, so the command reads them via ctx.String instead of
 // consuming a positional slot.
 type PathArg struct {
-	GoName   string // signature argument name (e.g. "id")
-	FlagName string // kebab-case CLI flag name (e.g. "id")
-	GoType   string // e.g. "IDParam" or "string"
-	IsInt    bool
-	AsFlag   bool // read from a global flag rather than a positional arg
+	GoName      string // signature argument name (e.g. "id")
+	FlagName    string // kebab-case CLI flag name (e.g. "id")
+	GoType      string // e.g. "IDParam" or "string"
+	Description string // help text from the OpenAPI parameter description
+	IsInt       bool
+	AsFlag      bool // read from a global flag rather than a positional arg
 }
 
 // QueryBlock captures the *{OpId}Params query-params struct.
@@ -127,6 +128,15 @@ func buildPlan(client *ClientInfo, spec map[string]*SpecOp, overrides map[string
 				jsonName := strings.ReplaceAll(f.FlagName, "-", "_")
 				if desc, ok := op.ParamDescriptions[jsonName]; ok {
 					f.Description = desc
+				}
+			}
+		}
+		if op != nil {
+			for i := range pc.PathParams {
+				p := &pc.PathParams[i]
+				paramName := strings.ReplaceAll(p.FlagName, "-", "_")
+				if desc, ok := op.ParamDescriptions[paramName]; ok {
+					p.Description = desc
 				}
 			}
 		}
@@ -626,16 +636,37 @@ func renderCommand(b *bytes.Buffer, group string, c PlannedCommand) error {
 	fmt.Fprintf(b, "\t%s.Command(%q).\n", groupVar(group), c.Command)
 	fmt.Fprintf(b, "\t\tDescription(%q).\n", c.Description)
 
-	// Positional args (path params that aren't surfaced as flags).
-	var positional []string
+	// Positional args (path params that aren't surfaced as flags). When the
+	// spec gives a parameter a description, emit a full cli.Arg so the help
+	// text shows; otherwise fall back to the terser Args() form.
+	var positional []PathArg
+	hasDesc := false
 	for _, p := range c.PathParams {
 		if p.AsFlag {
 			continue
 		}
-		positional = append(positional, fmt.Sprintf("%q", p.FlagName))
+		positional = append(positional, p)
+		if summarizeHelp(p.Description) != "" {
+			hasDesc = true
+		}
 	}
-	if len(positional) > 0 {
-		fmt.Fprintf(b, "\t\tArgs(%s).\n", strings.Join(positional, ", "))
+	switch {
+	case len(positional) == 0:
+		// No positional arguments.
+	case !hasDesc:
+		names := make([]string, len(positional))
+		for i, p := range positional {
+			names[i] = fmt.Sprintf("%q", p.FlagName)
+		}
+		fmt.Fprintf(b, "\t\tArgs(%s).\n", strings.Join(names, ", "))
+	default:
+		for _, p := range positional {
+			if desc := summarizeHelp(p.Description); desc != "" {
+				fmt.Fprintf(b, "\t\tAddArg(&cli.Arg{Name: %q, Description: %q, Required: true}).\n", p.FlagName, desc)
+			} else {
+				fmt.Fprintf(b, "\t\tAddArg(&cli.Arg{Name: %q, Required: true}).\n", p.FlagName)
+			}
+		}
 	}
 
 	// Flags (query + body file). Flag-backed path params like --project are

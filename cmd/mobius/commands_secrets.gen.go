@@ -70,7 +70,7 @@ func registerSecretsCommands(app *cli.App) {
 
 	secretsGrp.Command("delete").
 		Description("Delete a secret").
-		Args("secret").
+		AddArg(&cli.Arg{Name: "secret", Description: "Secret ID or project-scoped secret name.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -89,7 +89,7 @@ func registerSecretsCommands(app *cli.App) {
 
 	secretsGrp.Command("get").
 		Description("Get a secret").
-		Args("secret").
+		AddArg(&cli.Arg{Name: "secret", Description: "Secret ID or project-scoped secret name.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -108,7 +108,8 @@ func registerSecretsCommands(app *cli.App) {
 
 	secretsGrp.Command("get-version").
 		Description("Get secret version metadata").
-		Args("secret", "version").
+		AddArg(&cli.Arg{Name: "secret", Description: "Secret ID or project-scoped secret name.", Required: true}).
+		AddArg(&cli.Arg{Name: "version", Description: "Secret version number or `latest`.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -129,8 +130,8 @@ func registerSecretsCommands(app *cli.App) {
 	secretsGrp.Command("list").
 		Description("List secrets").
 		Flags(
-			cli.String("cursor", "").Help("cursor"),
-			cli.Int("limit", "").Help("limit"),
+			cli.String("cursor", "").Help("Cursor for pagination (opaque string from previous response)"),
+			cli.Int("limit", "").Help("Maximum number of items to return"),
 		).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -158,7 +159,7 @@ func registerSecretsCommands(app *cli.App) {
 
 	secretsGrp.Command("list-versions").
 		Description("List secret versions").
-		Args("secret").
+		AddArg(&cli.Arg{Name: "secret", Description: "Secret ID or project-scoped secret name.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -177,7 +178,7 @@ func registerSecretsCommands(app *cli.App) {
 
 	secretsGrp.Command("update").
 		Description("Update a secret").
-		Args("secret").
+		AddArg(&cli.Arg{Name: "secret", Description: "Secret ID or project-scoped secret name.", Required: true}).
 		Flags(
 			cli.String("description", "").Help("Replacement description."),
 			cli.String("values", "").Help("JSON key/value payload encrypted as a SecretVersion. Accepts JSON, @file, or @-."),
