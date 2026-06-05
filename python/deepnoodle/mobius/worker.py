@@ -18,6 +18,7 @@ from ._api.models import (
     WorkerSocketRegisterFrame,
 )
 from .client import Client
+from .errors import AuthRevokedError, WorkerInstanceConflictError
 
 ActionFunc = Callable[..., Any]
 GenerationFunc = Callable[..., Any]
@@ -110,6 +111,14 @@ class Worker:
         while not self._stopping:
             try:
                 await self._run_socket()
+            except (AuthRevokedError, WorkerInstanceConflictError):
+                # Terminal protocol failures must not reconnect: a revoked
+                # credential needs a fresh process, and a duplicate
+                # worker_instance_id means another live process owns this
+                # identity. Re-raise so a supervisor restarts (rotated
+                # credential) or an operator fixes the duplicate instance ID,
+                # instead of spinning in a reconnect loop.
+                raise
             except Exception:
                 if self._stopping:
                     return
@@ -163,8 +172,33 @@ class Worker:
                 elif kind == "worker.drain":
                     self._stopping = True
                     await ws.send(json.dumps({"type": "worker.draining", "message_id": _msg_id()}))
+                elif kind == "error":
+                    terminal = self._terminal_protocol_error(frame.get("error") or {})
+                    if terminal is not None:
+                        raise terminal
+                    self.logger.error("worker socket protocol error: %s", frame.get("error"))
                 if self._stopping and not running:
                     return
+
+    def _terminal_protocol_error(self, error: dict[str, Any]) -> Exception | None:
+        """Map a worker-socket protocol error frame to a terminal error.
+
+        Returns an exception the worker must not reconnect through, or
+        ``None`` for protocol errors it can keep running past (logged by
+        the caller). ``invalid_actor`` means the credential was revoked;
+        ``worker_instance_conflict`` means another live process already
+        owns this ``worker_instance_id``.
+        """
+        code = error.get("code")
+        if code == "invalid_actor":
+            return AuthRevokedError()
+        if code == "worker_instance_conflict":
+            return WorkerInstanceConflictError(
+                worker_instance_id=self.config.worker_instance_id,
+                project_handle=self.client.project,
+                message=error.get("message"),
+            )
+        return None
 
     def _register_frame(self) -> WorkerSocketRegisterFrame:
         concurrency = max(1, self.config.concurrency)

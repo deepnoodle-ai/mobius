@@ -8,6 +8,7 @@ import pytest
 
 from deepnoodle.mobius import Client, ClientOptions
 from deepnoodle.mobius._api.models import WorkerSocketClaimedJob
+from deepnoodle.mobius.errors import AuthRevokedError, WorkerInstanceConflictError
 from deepnoodle.mobius.worker import (
     Worker,
     WorkerConfig,
@@ -119,6 +120,49 @@ async def test_worker_reports_cancelled_when_action_task_is_cancelled() -> None:
     reports = [frame for frame in ws.sent if frame["type"] == "job.report"]
     assert reports[-1]["status"] == "cancelled"
     assert reports[-1]["error_type"] == "Cancelled"
+
+
+def test_terminal_protocol_error_classifies_codes() -> None:
+    worker = Worker(_client(), WorkerConfig(worker_instance_id="dup"))
+
+    conflict = worker._terminal_protocol_error(
+        {"code": "worker_instance_conflict", "message": "already registered"}
+    )
+    assert isinstance(conflict, WorkerInstanceConflictError)
+    assert conflict.worker_instance_id == "dup"
+    assert conflict.project_handle == "test-project"
+    assert str(conflict) == "already registered"
+
+    assert isinstance(
+        worker._terminal_protocol_error({"code": "invalid_actor"}), AuthRevokedError
+    )
+    assert worker._terminal_protocol_error({"code": "register_failed"}) is None
+
+
+@pytest.mark.asyncio
+async def test_run_reraises_instance_conflict_without_reconnecting() -> None:
+    worker = Worker(
+        _client(), WorkerConfig(worker_instance_id="dup", reconnect_delay=0.01)
+    )
+    calls = 0
+
+    async def fake_run_socket() -> None:
+        nonlocal calls
+        calls += 1
+        if calls > 1:
+            # Regression guard: a reconnect means the fix is broken. Stop the
+            # loop so the test fails fast (run returns) instead of hanging.
+            worker._stopping = True
+            return
+        raise WorkerInstanceConflictError(
+            worker_instance_id="dup", project_handle="test-project"
+        )
+
+    worker._run_socket = fake_run_socket  # type: ignore[method-assign]
+
+    with pytest.raises(WorkerInstanceConflictError):
+        await worker.run()
+    assert calls == 1
 
 
 def test_worker_pool_config_drops_pool_only_fields() -> None:
