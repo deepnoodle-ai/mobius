@@ -4588,7 +4588,7 @@ type SessionStatus string
 // SessionVisibility Visibility of the session in project surfaces.
 type SessionVisibility string
 
-// SignalAutomationRunRequest Body for delivering a signal to a suspended run.
+// SignalAutomationRunRequest Body for resuming a suspended automation step.
 type SignalAutomationRunRequest struct {
 	// Result Free-form payload saved as the resumed step's output.
 	Result *map[string]interface{} `json:"result,omitempty"`
@@ -5658,6 +5658,7 @@ type WorkerSocketModelCapability struct {
 
 // WorkerSocketProtocolError defines model for WorkerSocketProtocolError.
 type WorkerSocketProtocolError struct {
+	// Code Stable protocol error code. `worker_instance_conflict` is emitted when a duplicate live `worker_instance_id` registers and should be treated as a terminal worker startup failure.
 	Code    string `json:"code"`
 	Message string `json:"message"`
 }

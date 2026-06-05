@@ -1288,7 +1288,7 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Deliver a signal to a suspended run
+         * Resume a suspended run step
          * @description Resumes a run that is suspended on a `wait_event` step matching the provided `step_key`. The `result` payload becomes the step's output and is available to downstream steps via `{{ .context.<save_as> }}`.
          */
         post: operations["signalRun"];
@@ -2787,6 +2787,7 @@ export interface components {
             requested_at?: string;
         };
         WorkerSocketProtocolError: {
+            /** @description Stable protocol error code. `worker_instance_conflict` is emitted when a duplicate live `worker_instance_id` registers and should be treated as a terminal worker startup failure. */
             code: string;
             message: string;
         };
@@ -4214,12 +4215,12 @@ export interface components {
             reason?: string;
         };
         /**
-         * @description Body for delivering a signal to a suspended run.
+         * @description Body for resuming a suspended automation step.
          * @example {
-         *       "step_key": "wait_for_approval",
+         *       "step_key": "wait_for_external_result",
          *       "result": {
-         *         "approved": true,
-         *         "approver_id": "user_2f9s3k4m5n6p7q8r9s0t1u2v3w"
+         *         "status": "complete",
+         *         "source": "ci"
          *       }
          *     }
          */

@@ -15,6 +15,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 
 ### Changed
 
+- Worker: a `worker_instance_conflict` protocol error received over
+  the worker WebSocket is now terminal. The worker (and worker pool)
+  exits non-zero instead of reconnecting, so a duplicate
+  `--instance-id` fails fast under a process supervisor rather than
+  losing the registration race on every reconnect. `invalid_actor` is
+  likewise treated as terminal if it arrives mid-session, not only at
+  registration. (MB-402, #96)
+- SDKs: re-synced from the mobius-cloud spec. The `signalRun` /
+  `SignalAutomationRunRequest` descriptions now frame the operation as
+  resuming a suspended step, and the worker-socket protocol-error
+  `code` field documents the terminal `worker_instance_conflict`. (#96)
 - SDKs: regenerated from the mobius-cloud spec. The generated
   automation-run operations were renamed (`*AutomationRun*` ->
   `*Run*`); the hand-written `mobius` client wrappers (`StartRun`,

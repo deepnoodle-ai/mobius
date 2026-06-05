@@ -121,7 +121,13 @@ func (w *Worker) Run(ctx context.Context) error {
 			if ctx.Err() != nil {
 				return ctx.Err()
 			}
-			if errors.Is(err, ErrAuthRevoked) {
+			// Terminal protocol failures must not reconnect: a revoked
+			// credential needs a fresh process, and a duplicate
+			// worker_instance_id means another live process owns this
+			// identity. Both bubble up as a non-zero exit so a supervisor
+			// can restart (rotated credential) or an operator can fix the
+			// duplicate instance ID, rather than spinning in a reconnect loop.
+			if errors.Is(err, ErrAuthRevoked) || errors.Is(err, ErrWorkerInstanceConflict) {
 				return err
 			}
 			w.config.Logger.Warn("worker socket disconnected; reconnecting", "error", err)
@@ -280,6 +286,10 @@ func (w *Worker) runSocket(ctx context.Context) error {
 				if err := json.Unmarshal(frame.Raw, &errFrame); err != nil {
 					return err
 				}
+				if terminal := w.terminalProtocolError(errFrame.Error); terminal != nil {
+					cancel()
+					return terminal
+				}
 				w.config.Logger.Error("worker socket protocol error",
 					"code", errFrame.Error.Code,
 					"message", errFrame.Error.Message,
@@ -287,6 +297,31 @@ func (w *Worker) runSocket(ctx context.Context) error {
 				)
 			}
 		}
+	}
+}
+
+// terminalProtocolError maps a worker-socket protocol error frame to a
+// terminal SDK error when its code denotes an unrecoverable condition the
+// worker must not reconnect through. It returns nil for protocol errors the
+// worker can keep running past (which the caller logs instead).
+//
+//   - invalid_actor: the credential was revoked; the process must restart
+//     under a fresh credential ([ErrAuthRevoked]).
+//   - worker_instance_conflict: another live process already owns this
+//     worker_instance_id; reconnecting would just lose the race again, so
+//     this is a hard startup failure ([ErrWorkerInstanceConflict]).
+func (w *Worker) terminalProtocolError(e api.WorkerSocketProtocolError) error {
+	switch e.Code {
+	case "invalid_actor":
+		return ErrAuthRevoked
+	case "worker_instance_conflict":
+		return &InstanceConflictError{
+			WorkerInstanceID: w.config.WorkerInstanceID,
+			ProjectHandle:    w.client.projectHandle,
+			Message:          e.Message,
+		}
+	default:
+		return nil
 	}
 }
 
@@ -338,8 +373,8 @@ func (w *Worker) register(ctx context.Context, socket *workerSocket) error {
 			if err := json.Unmarshal(env.Raw, &errFrame); err != nil {
 				return err
 			}
-			if errFrame.Error.Code == "invalid_actor" {
-				return ErrAuthRevoked
+			if terminal := w.terminalProtocolError(errFrame.Error); terminal != nil {
+				return terminal
 			}
 			return fmt.Errorf("mobius: worker register failed: %s: %s", errFrame.Error.Code, errFrame.Error.Message)
 		}
