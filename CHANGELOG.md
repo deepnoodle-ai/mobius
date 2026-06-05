@@ -6,15 +6,37 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 
 ## [Unreleased]
 
+## [0.0.23] - 2026-06-05
+
 ### Added
 
 - CLI / SDKs: automation runs are now a top-level `runs` group
   (`get` / `list` / `cancel` / `signal` / `start` /
   `stream` / `list-events` / `list-steps`), synced from the
   mobius-cloud spec. (#95)
+- CLI / SDKs: custom actions can now be worker-backed. A new
+  `ActionEndpointKind` (`http` | `worker`) selects the dispatch mode;
+  `endpoint_url` is required only for `http` actions, while `worker`
+  actions are routed through jobs to connected workers advertising the
+  registered name. `actions create` gains `--endpoint-kind` and no
+  longer hard-requires `--endpoint-url`. (#99)
+- SDKs: `invokeAction` is now job-backed — `ActionInvocationResult`
+  carries a `job_id`, the endpoint may return `409 Conflict`, and a
+  new `direct_action_invoke` timeline/job kind is emitted. (#99)
+- CLI: `tables update` gains `--name` to rename a table (alongside
+  ownership changes). (#99)
+- CLI: `environments start-worker ENV -- ...` now appends command
+  argv, including values that begin with `-`, and the
+  `--command=<value>` help clarifies how to pass dash-prefixed
+  argv. (#98)
 
 ### Changed
 
+- CLI: `mobius auth login` now adopts the default profile whenever no
+  profile currently holds it (first login, or after the former default
+  was removed), instead of only when the credential store is empty. A
+  deliberately-set default is never silently replaced, and login now
+  prints which profile is active and how to switch. (#94)
 - Worker: a `worker_instance_conflict` protocol error received over
   the worker WebSocket is now terminal. The worker (and worker pool)
   exits non-zero instead of reconnecting, so a duplicate
@@ -31,6 +53,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
   `*Run*`); the hand-written `mobius` client wrappers (`StartRun`,
   `ListRuns`, `GetRun`, `CancelRun`, `SignalRun`, `WatchRun`,
   `WaitRun`) keep their existing signatures. (#95)
+- SDKs: session message `content` is now an array of content blocks;
+  the separate `content_blocks` field is removed. This is a
+  wire-format change. (#99)
+- SDKs: table `searchRows` switched to token-prefix search
+  (punctuation and hyphens split terms); `CreateTableRequest.name`
+  now requires the pattern `^[a-z][a-z0-9_]*$` (max 64 chars); and
+  `create` / `update` / `searchRows` gained `409 Conflict`
+  responses. (#99)
+- Worker: the session staleness threshold dropped from 2 minutes to
+  90 seconds. (#99)
+- SDKs: `AutomationRetryPolicy.max_attempts` is now capped at 10, with
+  documented worker re-queue vs. in-process delay semantics. (#99)
 
 ### Removed
 
@@ -43,6 +77,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 - Python: the `INTERACTION_KIND_*` constants and the `InteractionKind`
   export were removed with the upstream interactions API. The generic
   `parse_interaction_callback` delivery helper is retained. (#95)
+- SDKs: `ArtifactStorageProvider` drops `s3`; `mobius` is now the only
+  provider. (#99)
 
 ### Fixed
 
