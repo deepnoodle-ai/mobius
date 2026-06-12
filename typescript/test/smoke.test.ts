@@ -66,7 +66,7 @@ test("client: defaults to the production API host", async () => {
   }
   assert.equal(
     requestedURL,
-    `${DEFAULT_BASE_URL}/v1/projects/test-project/automations`,
+    `${DEFAULT_BASE_URL}/v1/projects/test-project/loops`,
   );
 });
 
@@ -111,7 +111,7 @@ test("client: startAutomationRun posts the new request shape", async () => {
       baseURL: "https://api.example.invalid",
       project: "test-project",
     });
-    const run = await client.startAutomationRun("research", {
+    const run = await client.startAutomationRun("loop_1", {
       external_id: "external-1",
       inputs: { topic: "sdk" },
     });
@@ -121,9 +121,9 @@ test("client: startAutomationRun posts the new request shape", async () => {
   }
   assert.equal(
     requestedURL,
-    "https://api.example.invalid/v1/projects/test-project/automations/research/runs",
+    "https://api.example.invalid/v1/projects/test-project/loops/loop_1/runs",
   );
-  assert.match(requestBody, /"external_id":"external-1"/);
+  assert.match(requestBody, /"idempotency_key":"external-1"/);
 });
 
 test("client: run control helpers use automation run endpoints", async () => {
@@ -300,9 +300,9 @@ function automationRun(id: string, status: string) {
     id,
     org_id: "org_1",
     project_id: "proj_1",
-    automation_id: "aut_1",
-    automation_version_id: "autv_1",
-    automation_version: 1,
+    loop_id: "loop_1",
+    loop_version_id: "lver_1",
+    loop_version: 1,
     status,
     created_at: "2026-05-27T00:00:00Z",
     updated_at: "2026-05-27T00:00:00Z",

@@ -13,9 +13,9 @@ const sampleRun = `{
   "id": "run_abc",
   "org_id": "org_1",
   "project_id": "proj_1",
-  "automation_id": "aut_greeter",
-  "automation_version_id": "autv_1",
-  "automation_version": 3,
+  "loop_id": "loop_greeter",
+  "loop_version_id": "lver_1",
+  "loop_version": 3,
   "status": "running",
   "created_at": "2025-01-01T00:00:00Z",
   "updated_at": "2025-01-01T00:00:01Z"
@@ -51,7 +51,7 @@ func TestGetRunRendererFiresOnPretty(t *testing.T) {
 	if !result.Success() {
 		t.Fatalf("runs get failed: %v\nstderr: %s", result.Err, result.Stderr)
 	}
-	mustContain(t, result.Stdout, "aut_greeter")
+	mustContain(t, result.Stdout, "loop_greeter")
 	mustContain(t, result.Stdout, "run_abc")
 	// Status row picks up our visual cue glyphs.
 	mustContain(t, result.Stdout, "running")
@@ -90,36 +90,36 @@ func TestGetRunJSONOutputBypassesRenderer(t *testing.T) {
 // at runtime wins over the generic pretty path for that operationId only.
 func TestRegisterResponseRendererTakesPrecedence(t *testing.T) {
 	called := false
-	prev := responseRenderers["getAutomation"]
-	RegisterResponseRenderer("getAutomation", func(ctx *cli.Context, body []byte) error {
+	prev := responseRenderers["getLoop"]
+	RegisterResponseRenderer("getLoop", func(ctx *cli.Context, body []byte) error {
 		called = true
 		ctx.Println("CUSTOM RENDERER OUTPUT")
 		return nil
 	})
 	t.Cleanup(func() {
 		if prev == nil {
-			delete(responseRenderers, "getAutomation")
+			delete(responseRenderers, "getLoop")
 		} else {
-			responseRenderers["getAutomation"] = prev
+			responseRenderers["getLoop"] = prev
 		}
 	})
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"id":"aut_1","org_id":"org_1","project_id":"proj_1","handle":"x","name":"x","latest_version":1,"status":"active","triggers":[],"created_at":"2025-01-01T00:00:00Z","updated_at":"2025-01-01T00:00:00Z"}`))
+		_, _ = w.Write([]byte(`{"id":"loop_1","org_id":"org_1","project_id":"proj_1","handle":"x","name":"x","latest_version":1,"status":"active","triggers":[],"created_at":"2025-01-01T00:00:00Z","updated_at":"2025-01-01T00:00:00Z"}`))
 	}))
 	defer srv.Close()
 
 	result := newApp().Test(t,
 		cli.TestArgs(
-			"automations", "get", "x",
+			"loops", "get", "loop_1",
 			"--api-url", srv.URL,
 			"--api-key", "mbx_test",
 			"--output", "pretty",
 		),
 	)
 	if !result.Success() {
-		t.Fatalf("automations get failed: %v\nstderr: %s", result.Err, result.Stderr)
+		t.Fatalf("loops get failed: %v\nstderr: %s", result.Err, result.Stderr)
 	}
 	if !called {
 		t.Fatalf("custom renderer was not invoked")

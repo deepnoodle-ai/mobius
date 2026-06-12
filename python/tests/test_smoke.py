@@ -36,9 +36,9 @@ from deepnoodle.mobius.client import (
     UpdateAutomationOptions,
 )
 from deepnoodle.mobius._api.models import (
-    AutomationRunSource,
-    AutomationRunStatus,
-    AutomationStatus,
+    LoopRunSource as AutomationRunSource,
+    LoopRunStatus as AutomationRunStatus,
+    LoopStatus as AutomationStatus,
 )
 
 
@@ -86,13 +86,13 @@ def test_automation_helpers_use_project_scoped_routes() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         body = request.read().decode()
         requests.append((request.method, request.url.path, body))
-        if request.method == "POST" and request.url.path.endswith("/automations"):
+        if request.method == "POST" and request.url.path.endswith("/loops"):
             payload = json.loads(body)
             return httpx.Response(201, json=_automation_body(handle=payload["handle"], name=payload["name"]))
         if request.method == "PATCH":
             payload = json.loads(body)
             return httpx.Response(200, json=_automation_body(handle="research", name=payload["name"], status=payload["status"]))
-        if request.method == "GET" and request.url.path.endswith("/automations"):
+        if request.method == "GET" and request.url.path.endswith("/loops"):
             assert request.url.params["status"] == "active"
             return httpx.Response(200, json={"items": [_automation_body()], "has_more": False})
         if request.method == "DELETE":
@@ -108,17 +108,17 @@ def test_automation_helpers_use_project_scoped_routes() -> None:
         )
     )
     updated = client.update_automation(
-        "research",
+        "loop_1",
         UpdateAutomationOptions(name="Research v2", status=AutomationStatus.active),
     )
     listed = client.list_automations(ListAutomationsOptions(status=AutomationStatus.active))
-    client.delete_automation("research")
+    client.delete_automation("loop_1")
 
     assert created.handle == "research"
     assert updated.status is AutomationStatus.active
     assert len(listed.items) == 1
-    assert requests[0][0:2] == ("POST", "/v1/projects/test-project/automations")
-    assert any(req[0] == "DELETE" and req[1].endswith("/automations/research") for req in requests)
+    assert requests[0][0:2] == ("POST", "/v1/projects/test-project/loops")
+    assert any(req[0] == "DELETE" and req[1].endswith("/loops/loop_1") for req in requests)
 
 
 def test_automation_version_helpers_create_and_publish() -> None:
@@ -130,7 +130,6 @@ def test_automation_version_helpers_create_and_publish() -> None:
         if request.method == "POST" and request.url.path.endswith("/versions"):
             payload = json.loads(body)
             assert payload["spec"]["steps"] == []
-            assert payload["compiled_plan"]["steps"] == []
             return httpx.Response(201, json=_automation_version_body(version=2, status="draft"))
         if request.method == "POST" and request.url.path.endswith("/versions/2/publication"):
             return httpx.Response(200, json=_automation_body(published_version=2))
@@ -140,11 +139,11 @@ def test_automation_version_helpers_create_and_publish() -> None:
 
     client = _client_with(handler)
     version = client.create_automation_version(
-        "research",
+        "loop_1",
         {"steps": []},
         AutomationVersionOptions(compiled_plan={"steps": []}, publish=True),
     )
-    versions = client.list_automation_versions("research")
+    versions = client.list_automation_versions("loop_1")
 
     assert version.version == 2
     assert len(versions.items) == 1
@@ -161,7 +160,7 @@ def test_start_run_posts_to_automation_bound_route() -> None:
 
     client = _client_with(handler)
     run = client.start_automation_run(
-        "research",
+        "loop_1",
         StartRunOptions(
             external_id="external-1",
             inputs={"topic": "sdk"},
@@ -170,8 +169,8 @@ def test_start_run_posts_to_automation_bound_route() -> None:
     )
 
     assert run.id == "run_1"
-    assert seen["path"] == "/v1/projects/test-project/automations/research/runs"
-    assert '"external_id":"external-1"' in str(seen["body"])
+    assert seen["path"] == "/v1/projects/test-project/loops/loop_1/runs"
+    assert '"idempotency_key":"external-1"' in str(seen["body"])
     assert '"topic":"sdk"' in str(seen["body"])
 
 
@@ -330,7 +329,7 @@ def _automation_body(
     published_version: int | None = 1,
 ) -> dict[str, object]:
     return {
-        "id": "auto_1",
+        "id": "loop_1",
         "org_id": "org_1",
         "project_id": "test-project",
         "handle": handle,
@@ -346,10 +345,10 @@ def _automation_body(
 
 def _automation_version_body(*, version: int, status: str) -> dict[str, object]:
     return {
-        "id": f"autov_{version}",
+        "id": f"lver_{version}",
         "org_id": "org_1",
         "project_id": "test-project",
-        "automation_id": "auto_1",
+        "loop_id": "loop_1",
         "version": version,
         "status": status,
         "spec": {"steps": []},
@@ -362,9 +361,9 @@ def _run_body(run_id: str, status: str) -> dict[str, object]:
         "id": run_id,
         "org_id": "org_1",
         "project_id": "test-project",
-        "automation_id": "auto_1",
-        "automation_version_id": "autov_1",
-        "automation_version": 1,
+        "loop_id": "loop_1",
+        "loop_version_id": "lver_1",
+        "loop_version": 1,
         "status": status,
         "inputs": {"topic": "sdk"},
         "created_at": "2026-05-27T00:00:00Z",

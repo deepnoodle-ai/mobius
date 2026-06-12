@@ -82,14 +82,14 @@ export type {
 } from "./worker.js";
 
 export type {
-  AutomationStatus,
-  AutomationTrigger,
-  CancelAutomationRunRequest,
-  CreateAutomationRequest,
-  CreateAutomationVersionRequest,
-  SignalAutomationRunRequest,
-  StartAutomationRunRequest,
-  UpdateAutomationRequest,
+  LoopStatus as AutomationStatus,
+  LoopSpecTrigger as AutomationTrigger,
+  CancelLoopRunRequest as CancelAutomationRunRequest,
+  CreateLoopRequest as CreateAutomationRequest,
+  CreateLoopVersionRequest as CreateAutomationVersionRequest,
+  SignalLoopRunRequest as SignalAutomationRunRequest,
+  StartLoopRunRequest as StartAutomationRunRequest,
+  UpdateLoopRequest as UpdateAutomationRequest,
   WorkerSocketCancelDirective,
   WorkerSocketClaimedJob,
   WorkerSocketGenerationDeltaFrame,

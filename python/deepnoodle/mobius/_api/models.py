@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 from enum import StrEnum
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import AnyUrl, AwareDatetime, BaseModel, ConfigDict, Field, RootModel
 
@@ -153,7 +153,7 @@ class ProjectAccessMode(StrEnum):
 
 class Project(BaseModel):
     """
-    Workspace boundary for automations, actions, credentials, agents, and runtime activity. Most operational APIs are project-scoped, so this object tells clients which handle to use and who can see the project.
+    Workspace boundary for loops, actions, credentials, agents, and runtime activity. Most operational APIs are project-scoped, so this object tells clients which handle to use and who can see the project.
     """
 
     model_config = ConfigDict(
@@ -212,7 +212,7 @@ class AgentModelRouteMode(StrEnum):
 
 class AgentModelRoute(BaseModel):
     """
-    Default model route used by built-in messaging and by automation agent steps that do not override the route.
+    Default model route used by built-in messaging and by loop agent steps that do not override the route.
     """
 
     model_config = ConfigDict(
@@ -245,7 +245,7 @@ class AgentToolPresentation(StrEnum):
 
 class Agent(BaseModel):
     """
-    Project-scoped AI actor identity. An agent IS a principal (its permissions are role grants on that principal); agents are useful when automations need a named actor with instructions, capabilities, configuration, and session presence.
+    Project-scoped AI actor identity. An agent IS a principal (its permissions are role grants on that principal); agents are useful when loops need a named actor with instructions, capabilities, configuration, and session presence.
     """
 
     model_config = ConfigDict(
@@ -285,7 +285,7 @@ class Agent(BaseModel):
     model_route: AgentModelRoute | None = None
     tool_presentation: AgentToolPresentation | None = Field(
         None,
-        description='Default tool presentation used by automation agent steps and built-in channel-message replies for this agent.',
+        description='Default tool presentation used by loop agent steps and built-in channel-message replies for this agent.',
     )
     system_prompt: str | None = Field(
         None,
@@ -328,7 +328,7 @@ class AgentListResponse(BaseModel):
 
 class APIKey(BaseModel):
     """
-    Stored API credential metadata for automation and service access. The raw secret is never returned here; use this object to list, audit, expire, or identify keys by prefix without exposing tokens.
+    Stored API credential metadata for loop and service access. The raw secret is never returned here; use this object to list, audit, expire, or identify keys by prefix without exposing tokens.
     """
 
     model_config = ConfigDict(
@@ -490,7 +490,7 @@ class ActionEndpointKind(StrEnum):
 
 class CreateActionRequest(BaseModel):
     """
-    Registers a project-owned custom action callable from automations and agents.
+    Registers a project-owned custom action callable from loops and agents.
     """
 
     model_config = ConfigDict(
@@ -498,7 +498,7 @@ class CreateActionRequest(BaseModel):
     )
     name: str = Field(
         ...,
-        description='Project-scoped identifier used in automation step definitions. Lowercase alphanumeric + hyphens, e.g. "send-email". Must be unique within the project. Cannot start with "mobius." (reserved prefix).',
+        description='Project-scoped identifier used in loop step definitions. Lowercase alphanumeric + hyphens, e.g. "send-email". Must be unique within the project. Cannot start with "mobius." (reserved prefix).',
     )
     title: str | None = Field(
         None, description='Human-readable display name shown in the UI and catalog.'
@@ -562,7 +562,7 @@ class UpdateActionRequest(BaseModel):
 
 class Action(BaseModel):
     """
-    Project-owned custom action definition callable by automations and agents.
+    Project-owned custom action definition callable by loops and agents.
     """
 
     model_config = ConfigDict(
@@ -570,8 +570,7 @@ class Action(BaseModel):
     )
     id: str = Field(..., description='Unique identifier for this action.')
     name: str = Field(
-        ...,
-        description='Project-scoped stable identifier used in automation definitions.',
+        ..., description='Project-scoped stable identifier used in loop definitions.'
     )
     title: str | None = Field(
         None, description='Human-readable display title for the action.'
@@ -751,8 +750,7 @@ class ActionInvocationResult(BaseModel):
         None, description='Job created for this direct invocation.'
     )
     run_id: str | None = Field(
-        None,
-        description='Automation run ID. Present when an asynchronous run was created.',
+        None, description='Loop run ID. Present when an asynchronous run was created.'
     )
     output: dict[str, Any] | None = Field(
         None, description='Action output. Present when status is "completed".'
@@ -772,19 +770,16 @@ class ActionInvocationEntry(BaseModel):
     )
     id: str = Field(..., description='Unique identifier for this invocation record.')
     run_id: str | None = Field(
-        None,
-        description='Automation run that triggered this invocation, if run-backed.',
+        None, description='Loop run that triggered this invocation, if run-backed.'
     )
     job_id: str | None = Field(
         None, description='Job that triggered this invocation, if job-backed.'
     )
     step_name: str | None = Field(
-        None, description='Automation step name that triggered this invocation.'
+        None, description='Loop step name that triggered this invocation.'
     )
     action_name: str = Field(..., description='Name of the action that was invoked.')
-    source: str = Field(
-        ..., description='Invocation source ("automation", "direct", etc.).'
-    )
+    source: str = Field(..., description='Invocation source ("loop", "direct", etc.).')
     parameters: dict[str, Any] | None = Field(
         None, description='Input parameters passed to the action.'
     )
@@ -849,6 +844,14 @@ class EventCatalogEventType(BaseModel):
         description='Dotted event-type identifier (`table.row.inserted`, `github.pull_request.opened`).',
     )
     description: str | None = None
+    event_schema: dict[str, Any] | None = Field(
+        None,
+        description='JSON Schema for the normalized event data available to event-trigger runs at `{{ .inputs.event.* }}` and to event conditions/mappings at `event.*`. Absent only when the event payload is intentionally open-ended and the provider has not registered an authoring schema.',
+    )
+    meta_schema: dict[str, Any] | None = Field(
+        None,
+        description='JSON Schema for normalized routing metadata available to event-trigger runs at `{{ .inputs.meta.* }}` and to event conditions/mappings at `meta.*`.',
+    )
 
 
 class Kind2(StrEnum):
@@ -862,6 +865,15 @@ class EventCatalogReservedPrefix(BaseModel):
     )
     prefix: str
     kind: Kind2
+
+
+class Reason(StrEnum):
+    """
+    Present when `items` is empty because the request was denied rather than because no catalog exists. `platform_funding_denied` means Mobius-managed provider credentials are gated by billing or plan state; `credentials_unavailable` means no usable provider credentials were available.
+    """
+
+    platform_funding_denied = 'platform_funding_denied'
+    credentials_unavailable = 'credentials_unavailable'
 
 
 class Source1(StrEnum):
@@ -948,13 +960,13 @@ class EnvironmentPurpose(StrEnum):
 
 class EnvironmentMode(StrEnum):
     """
-    High-level ownership policy for how Mobius plans to use the environment. `run` is one-shot and auto-cleaned with a run; `agent` and `automation` are persistent environment policies; `manual` is operator controlled.
+    High-level ownership policy for how Mobius plans to use the environment. `run` is one-shot and auto-cleaned with a run; `agent` and `loop` are persistent environment policies; `manual` is operator controlled.
     """
 
     manual = 'manual'
     run = 'run'
     agent = 'agent'
-    automation = 'automation'
+    loop = 'loop'
 
 
 class EnvironmentBoundToType(StrEnum):
@@ -967,7 +979,7 @@ class EnvironmentBoundToType(StrEnum):
     worker_session = 'worker_session'
     service = 'service'
     agent = 'agent'
-    automation = 'automation'
+    loop = 'loop'
     manual = 'manual'
 
 
@@ -1368,8 +1380,8 @@ class WorkerSessionJobRef(BaseModel):
         extra='forbid',
     )
     id: str = Field(..., description='Job ID.')
-    run_id: str = Field(..., description='Automation run that owns the job.')
-    step_name: str = Field(..., description='Automation step name.')
+    run_id: str = Field(..., description='Loop run that owns the job.')
+    step_name: str = Field(..., description='Loop step name.')
     action: str = Field(..., description='Action executed by the worker.')
     status: Status1 = Field(..., description='Current job lifecycle state.')
     claimed_at: AwareDatetime | None = Field(
@@ -1553,7 +1565,7 @@ class Kind3(StrEnum):
 
 
 class Origin(StrEnum):
-    automation_action_step = 'automation_action_step'
+    loop_action_step = 'loop_action_step'
     agent_tool_call = 'agent_tool_call'
     agent_llm_call = 'agent_llm_call'
     conversation_tool_call = 'conversation_tool_call'
@@ -2168,7 +2180,7 @@ class SessionOrigin(StrEnum):
 
     manual = 'manual'
     api = 'api'
-    automation = 'automation'
+    loop = 'loop'
 
 
 class SessionScope(StrEnum):
@@ -2177,7 +2189,7 @@ class SessionScope(StrEnum):
     """
 
     agent = 'agent'
-    automation = 'automation'
+    loop = 'loop'
 
 
 class SessionVisibility(StrEnum):
@@ -2208,6 +2220,74 @@ class SessionMessageEntryType(StrEnum):
 
     message = 'message'
     compaction = 'compaction'
+
+
+class AgentTurnStatus(StrEnum):
+    """
+    Lifecycle status of one agent turn.
+    """
+
+    running = 'running'
+    waiting = 'waiting'
+    completed = 'completed'
+    failed = 'failed'
+    cancelled = 'cancelled'
+
+
+class AgentTurn(BaseModel):
+    """
+    One attempt of an agent running the agent loop — the unit that produces a transcript. A turn is triggered either by a loop step (run_id + step_id) or an inbound channel message (channel_exchange_id); the two are mutually exclusive. Its messages are read via the turn's transcript endpoint.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str = Field(..., description='Stable turn identifier.')
+    agent_id: str = Field(..., description='Agent that ran this turn.')
+    session_id: str = Field(
+        ..., description="Session this turn's transcript was appended to."
+    )
+    run_id: str | None = Field(
+        None,
+        description='Loop run that triggered this turn. Absent for messaging turns.',
+    )
+    step_key: str | None = Field(
+        None,
+        description='Step key (matches LoopRunStep.step_key, not its id) of the loop step that triggered this turn. Absent for messaging turns.',
+    )
+    channel_exchange_id: str | None = Field(
+        None,
+        description='Inbound channel exchange that triggered this turn. Absent for loop turns.',
+    )
+    attempt: int = Field(
+        ...,
+        description='1-based attempt number for this run-step; retries create new turns.',
+    )
+    status: AgentTurnStatus
+    seq: int | None = Field(
+        None,
+        description='Per-session ordering hint (cosmetic; turns are ordered by creation time).',
+    )
+    error_type: str | None = Field(
+        None, description='Machine-readable failure category when the turn failed.'
+    )
+    error_message: str | None = Field(
+        None, description='Human-readable failure detail when the turn failed.'
+    )
+    created_at: AwareDatetime
+    updated_at: AwareDatetime
+    completed_at: AwareDatetime | None = Field(
+        None, description='When the turn reached a terminal status.'
+    )
+
+
+class AgentTurnListResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    items: list[AgentTurn] = Field(
+        ..., description='Turns in this session, ordered by creation time.'
+    )
 
 
 class Session(BaseModel):
@@ -2304,6 +2384,10 @@ class SessionMessage(BaseModel):
         ...,
         description='Monotonic per-session sequence number assigned at append time.',
     )
+    turn_id: str | None = Field(
+        None,
+        description='AgentTurn that produced this message. Run, step, and channel identity for the message are read from this turn. Absent for compaction summaries and messages not tied to a turn.',
+    )
     metadata: dict[str, Any] | None = Field(
         None, description='Free-form caller metadata for this message.'
     )
@@ -2373,15 +2457,6 @@ class Source2(StrEnum):
     project = 'project'
 
 
-class Status3(StrEnum):
-    """
-    Lifecycle status of the toolkit.
-    """
-
-    active = 'active'
-    archived = 'archived'
-
-
 class Toolkit(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
@@ -2390,9 +2465,6 @@ class Toolkit(BaseModel):
     org_id: str = Field(..., description='Organization that owns this toolkit.')
     project_id: str = Field(..., description='Project that owns this toolkit.')
     name: str = Field(..., description='Human-readable toolkit name.')
-    slug: str | None = Field(
-        None, description='Stable slug used in API paths and references.'
-    )
     description: str | None = Field(
         None, description="Markdown description of the toolkit's purpose."
     )
@@ -2400,7 +2472,9 @@ class Toolkit(BaseModel):
         ...,
         description='Provenance of this toolkit. `system` toolkits are built-in; `project` toolkits are user-authored.',
     )
-    status: Status3 = Field(..., description='Lifecycle status of the toolkit.')
+    tags: TagMap | None = Field(
+        None, description='Resource tags applied to this toolkit.'
+    )
     action_grants: list[ToolkitActionGrant] = Field(
         ...,
         description='Action selectors granted by this toolkit. Each entry is matched against the unified action catalog at manifest-resolution time.',
@@ -2422,10 +2496,6 @@ class ToolkitRequest(BaseModel):
     name: str = Field(
         ..., description='Human-readable toolkit name.', max_length=80, min_length=1
     )
-    slug: str | None = Field(
-        None,
-        description='Optional stable slug. When omitted, the server derives one from `name`.',
-    )
     description: str | None = Field(
         None,
         description="Markdown description of the toolkit's purpose.",
@@ -2433,6 +2503,9 @@ class ToolkitRequest(BaseModel):
     )
     action_grants: list[ToolkitActionGrant] | None = Field(
         None, description='Action selectors granted by this toolkit.'
+    )
+    tags: TagMap | None = Field(
+        None, description='Resource tags to apply to this toolkit.'
     )
 
 
@@ -2543,15 +2616,6 @@ class Source3(StrEnum):
     imported = 'imported'
 
 
-class Status4(StrEnum):
-    """
-    Lifecycle status of the skill.
-    """
-
-    active = 'active'
-    archived = 'archived'
-
-
 class Skill(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
@@ -2570,7 +2634,6 @@ class Skill(BaseModel):
         ...,
         description='Provenance of this skill. `system` is built-in; `project` is user-authored; `imported` came from an external bundle.',
     )
-    status: Status4 = Field(..., description='Lifecycle status of the skill.')
     instructions: str = Field(
         ..., description='Markdown instructions loaded when the skill is active.'
     )
@@ -2587,6 +2650,9 @@ class Skill(BaseModel):
     )
     user_invocable: bool | None = Field(
         None, description='Whether users may directly request this skill by name.'
+    )
+    tags: TagMap | None = Field(
+        None, description='Resource tags applied to this skill.'
     )
     created_by: str | None = Field(
         None, description='User ID of the principal who created this skill.'
@@ -2632,6 +2698,9 @@ class SkillRequest(BaseModel):
     )
     user_invocable: bool | None = Field(
         None, description='Whether users may directly request this skill by name.'
+    )
+    tags: TagMap | None = Field(
+        None, description='Resource tags to apply to this skill.'
     )
 
 
@@ -2818,7 +2887,7 @@ class CreateAgentRequest(BaseModel):
     tags: TagMap | None = Field(None, description='Initial tag set.')
 
 
-class Status5(StrEnum):
+class Status3(StrEnum):
     """
     Replacement agent status: `active` or `inactive`. Use DELETE to soft-delete.
     """
@@ -2865,7 +2934,7 @@ class UpdateAgentRequest(BaseModel):
     system_prompt: str | None = Field(
         None, description='Replacement system prompt for platform agents.'
     )
-    status: Status5 | None = Field(
+    status: Status3 | None = Field(
         None,
         description='Replacement agent status: `active` or `inactive`. Use DELETE to soft-delete.',
     )
@@ -2875,9 +2944,9 @@ class UpdateAgentRequest(BaseModel):
     )
 
 
-class AutomationStatus(StrEnum):
+class LoopStatus(StrEnum):
     """
-    Lifecycle status of an automation.
+    Lifecycle status of a loop.
     """
 
     draft = 'draft'
@@ -2886,38 +2955,9 @@ class AutomationStatus(StrEnum):
     archived = 'archived'
 
 
-class CreateAutomationRequest(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    handle: str = Field(
-        ...,
-        description='Stable per-project automation handle. Immutable after creation.',
-    )
-    name: str = Field(..., description='Human-readable display name.')
-    description: str | None = Field(
-        None, description="Markdown description of the automation's purpose."
-    )
-    default_agent_id: str | None = Field(
-        None,
-        description='Agent used by `agent` steps that do not pin an agent explicitly.',
-    )
-    default_inputs: dict[str, Any] | None = Field(
-        None,
-        description='Default values merged into `inputs` when a run is started without overrides.',
-    )
-    settings: dict[str, Any] | None = Field(
-        None, description='Free-form automation-level settings consumed by the engine.'
-    )
-    tags: dict[str, str] | None = Field(
-        None,
-        description='Free-form label map used to organise automations in listings and search.',
-    )
-
-
-class UpdateAutomationRequest(BaseModel):
+class UpdateLoopRequest(BaseModel):
     """
-    Partial update of automation metadata. Desired triggers live in `AutomationSpec.triggers` and are materialized when a version is published.
+    Partial update of loop metadata. Desired triggers live in `LoopSpec.triggers` and are materialized when a version is published.
     """
 
     model_config = ConfigDict(
@@ -2925,9 +2965,9 @@ class UpdateAutomationRequest(BaseModel):
     )
     name: str | None = Field(None, description='Human-readable display name.')
     description: str | None = Field(
-        None, description="Markdown description of the automation's purpose."
+        None, description="Markdown description of the loop's purpose."
     )
-    status: AutomationStatus | None = None
+    status: LoopStatus | None = None
     default_agent_id: str | None = Field(
         None,
         description='Agent used by `agent` steps that do not pin an agent explicitly.',
@@ -2937,15 +2977,15 @@ class UpdateAutomationRequest(BaseModel):
         description='Default values merged into `inputs` when a run is started without overrides.',
     )
     settings: dict[str, Any] | None = Field(
-        None, description='Free-form automation-level settings consumed by the engine.'
+        None, description='Free-form loop-level settings consumed by the engine.'
     )
     tags: dict[str, str] | None = Field(
         None,
-        description='Free-form label map used to organise automations in listings and search.',
+        description='Free-form label map used to organise loops in listings and search.',
     )
 
 
-class Status6(StrEnum):
+class Status4(StrEnum):
     """
     Publication state. `draft` is editable but not runnable; `published` is the currently runnable version; `superseded` is a prior published version retained for historical runs.
     """
@@ -2957,7 +2997,7 @@ class Status6(StrEnum):
 
 class SchemaVersion(StrEnum):
     """
-    Automation spec schema version. Current value is `1`.
+    Loop spec schema version. Current value is `1`.
     """
 
     field_1 = '1'
@@ -2965,7 +3005,7 @@ class SchemaVersion(StrEnum):
 
 class Concurrency(StrEnum):
     """
-    Behavior when a run starts while another run of the same automation is active.
+    Behavior when a run starts while another run of the same loop is active.
     """
 
     allow = 'allow'
@@ -2982,9 +3022,9 @@ class Provider(StrEnum):
     github = 'github'
 
 
-class AutomationSpecRepository(BaseModel):
+class LoopSpecRepository(BaseModel):
     """
-    Source repository target attached to an automation spec.
+    Source repository target attached to a loop spec.
     """
 
     model_config = ConfigDict(
@@ -3003,7 +3043,7 @@ class AutomationSpecRepository(BaseModel):
     )
 
 
-class AutomationSpecInput(BaseModel):
+class LoopSpecInput(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
@@ -3030,34 +3070,138 @@ class ConcurrencyPolicy(StrEnum):
     replace = 'replace'
 
 
-class AutomationSpecTrigger(BaseModel):
+class HTTPTriggerConfig(BaseModel):
+    """
+    Configuration for `LoopSpec.triggers[]` entries with `kind` set to `http`.
+    """
+
     model_config = ConfigDict(
         extra='forbid',
     )
-    key: str | None = Field(
-        None, description='Stable user-authored trigger key within the spec.'
+    http_handle: str | None = Field(
+        None,
+        description='Optional public delivery handle for `POST /v1/triggers/http/{http_handle}`. Omit to let Mobius use the materialized trigger id as the unguessable handle.',
     )
-    name: str | None = Field(None, description='Human-readable trigger name.')
-    kind: Kind4
-    enabled: bool | None = None
-    config: dict[str, Any] | None = Field(
-        None, description='Kind-specific trigger configuration.'
+
+
+class ScheduleTriggerConfig(BaseModel):
+    """
+    Configuration for `LoopSpec.triggers[]` entries with `kind` set to `schedule`. Provide exactly one of `cron` or `interval`; the compiler rejects configs that omit both or set both.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
     )
-    concurrency_policy: ConcurrencyPolicy | None = None
-    max_concurrent_runs: int | None = Field(None, ge=1)
+    cron: str | None = Field(
+        None,
+        description='Standard five-field cron expression or descriptor such as `@hourly`.',
+    )
+    interval: str | None = Field(
+        None, description='Go duration string such as `5m`, `1h`, or `24h`.'
+    )
+    timezone: str | None = Field(
+        None,
+        description='IANA time zone for cron schedules, such as `America/New_York`.',
+    )
+
+
+class EventTriggerConfig(BaseModel):
+    """
+    Configuration for `LoopSpec.triggers[]` entries with `kind` set to `event`.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    event_type: str = Field(
+        ...,
+        description='Source-event type or catalog pattern this trigger subscribes to.',
+    )
+    source_id: str | None = Field(
+        None, description='Optional source identifier used to scope event matching.'
+    )
+    condition: str | None = Field(
+        None,
+        description='Optional expr predicate evaluated against the public `{ event, meta }` envelope.',
+    )
 
 
 class Kind5(StrEnum):
     agent = 'agent'
+
+
+class Kind6(StrEnum):
     action = 'action'
+
+
+class Kind7(StrEnum):
     sleep = 'sleep'
+
+
+class Kind8(StrEnum):
     wait_for_event = 'wait_for_event'
-    automation = 'automation'
 
 
-class AutomationEnvironmentPolicy(BaseModel):
+class Kind9(StrEnum):
+    loop = 'loop'
+
+
+class Kind10(StrEnum):
+    check = 'check'
+
+
+class LoopSpecLimits(BaseModel):
     """
-    Automatic managed-environment policy for automation execution. Omit to use the product default: each agent gets a persistent agent-bound environment, while direct environment actions get a run-bound environment. Set `disabled: true` to opt out.
+    Run guardrails. Lives at `spec.limits` in the JSON the engine compiles. Every limit is optional; absent or zero means unbounded (plan-level org caps still apply), with one exception — trial-plan runs default to a 100-credit ($1) budget when no budget is set here or on the start request. Paid plans default to unbounded.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    budget_usd: float | None = Field(
+        None,
+        description='Run budget in US dollars (1 credit = $0.01). The run halts with stop reason `budget_exceeded` at the next checkpoint (step boundary or agent tool iteration) once its metered spend reaches the ceiling; a `run.budget_warning` event fires once at 80%. Enforcement granularity is one model call or metered action — a run can overshoot by at most the call in flight. Mutually exclusive with `credit_budget`; values finer than $0.00001 (one milli-credit) are rejected at compile.',
+        ge=0.0,
+    )
+    credit_budget: int | None = Field(
+        None,
+        description='Run budget in whole credits (1 credit = $0.01). Same ceiling semantics as `budget_usd`; set exactly one.',
+        ge=1,
+    )
+    wall_clock_timeout: str | None = Field(
+        None,
+        description='Run wall-clock limit as a Go duration string (e.g. `30m`, `2h`, `90s`). When set, the engine stamps `wall_clock_deadline_at = run.started_at + wall_clock_timeout` and the reaper fails the run (stop reason `wall_clock_exceeded`) after that instant even if a step executor is still grinding. Omit or set to `0` to disable.',
+    )
+    max_agent_turns: int | None = Field(
+        None,
+        description="Run-wide cap on agent turns across all steps. Each agent step execution (including retries and resumed turns) consumes one turn. Breach halts the run with stop reason `turn_limit_reached`. Distinct from a step's `max_turns`, which bounds tool iterations within a single turn.",
+        ge=1,
+    )
+    daily_budget_usd: float | None = Field(
+        None,
+        description='Rolling-24h spend ceiling in US dollars across ALL runs of this loop (the fleet-level counterpart of `budget_usd`). Enforced at run start (new runs are refused while the window is exhausted) and at the platform funding gate (an in-flight run halts at its next platform-funded call with stop reason `budget_exceeded`). Counts platform-billed spend; mutually exclusive with `daily_credit_budget`.',
+        ge=0.0,
+    )
+    daily_credit_budget: int | None = Field(
+        None,
+        description='Rolling-24h loop spend ceiling in whole credits. Same semantics as `daily_budget_usd`; set exactly one.',
+        ge=1,
+    )
+    max_duplicate_tool_calls: int | None = Field(
+        None,
+        description="How many identical tool calls (same tool name and canonicalized arguments) one agent turn tolerates before the turn halts with a `progress_stalled` error — the duplicate-tool-call breaker. The step's retry policy applies; if the run fails from it the stop reason is `progress_stalled` and a `run.progress_stalled` event is emitted on each trip. Omit for the platform default (3).",
+        ge=1,
+    )
+    pause_after_consecutive_failures: int | None = Field(
+        None,
+        description='Loop circuit breaker. After this many consecutive failed runs the loop auto-pauses (status `paused`) and emits a `loop.auto_paused` event, so a bad deploy cannot burn all night at one run per trigger fire. Completed runs reset the streak; cancelled runs are neutral. Omit to disable.',
+        ge=1,
+    )
+
+
+class LoopEnvironmentPolicy(BaseModel):
+    """
+    Automatic managed-environment policy for loop execution. Omit to use the product default: each agent gets a persistent agent-bound environment, while direct environment actions get a run-bound environment. Set `disabled: true` to opt out.
     """
 
     model_config = ConfigDict(
@@ -3068,7 +3212,7 @@ class AutomationEnvironmentPolicy(BaseModel):
     )
     mode: EnvironmentMode | None = None
     environment_id: str | None = Field(
-        None, description='Existing dedicated environment to use for this automation.'
+        None, description='Existing dedicated environment to use for this loop.'
     )
     template_id: str | None = Field(
         None, description='Environment template to use when Mobius creates one.'
@@ -3087,11 +3231,11 @@ class AutomationEnvironmentPolicy(BaseModel):
 
 class Scope(StrEnum):
     """
-    Named-session boundary. `auto` and omitted use `automation`. `agent` intentionally shares the named session across automations using the same agent.
+    Named-session boundary. `auto` and omitted use `loop`. `agent` intentionally shares the named session across loops using the same agent.
     """
 
     auto = 'auto'
-    automation = 'automation'
+    loop = 'loop'
     agent = 'agent'
 
 
@@ -3126,9 +3270,9 @@ class CompactionPolicy(BaseModel):
     )
 
 
-class AutomationAgentSessionPolicy(BaseModel):
+class LoopAgentSessionPolicy(BaseModel):
     """
-    Durable conversation-session policy for automation agent steps. Omit to enable the product default: automation-scoped sessions keyed from the triggering conversation when Mobius can identify one, such as a Telegram chat ID.
+    Durable conversation-session policy for loop agent steps. Omit to enable the product default: loop-scoped sessions keyed from the triggering conversation when Mobius can identify one, such as a Telegram chat ID.
     """
 
     model_config = ConfigDict(
@@ -3140,11 +3284,11 @@ class AutomationAgentSessionPolicy(BaseModel):
     )
     scope: Scope | None = Field(
         None,
-        description='Named-session boundary. `auto` and omitted use `automation`. `agent` intentionally shares the named session across automations using the same agent.',
+        description='Named-session boundary. `auto` and omitted use `loop`. `agent` intentionally shares the named session across loops using the same agent.',
     )
     name: str | None = Field(
         None,
-        description='Optional Go-template string rendered against `inputs`, `context`, `agent`, `automation`, `run`, `source`, and `step`. When omitted, Mobius derives a stable name from the event payload, falling back to the trigger or `default`.',
+        description='Optional Go-template string rendered against `inputs`, `context`, `agent`, `loop`, `run`, `source`, and `step`. When omitted, Mobius derives a stable name from the event payload, falling back to the trigger or `default`.',
     )
     title: str | None = Field(
         None, description='Optional Go-template string for the session display title.'
@@ -3169,7 +3313,7 @@ class Mode(StrEnum):
     worker = 'worker'
 
 
-class AutomationModelRoute(BaseModel):
+class LoopModelRoute(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
@@ -3189,7 +3333,7 @@ class AccessMode(StrEnum):
     write = 'write'
 
 
-class AutomationAgentMemoryTableRef(BaseModel):
+class LoopAgentMemoryTableRef(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
@@ -3204,9 +3348,9 @@ class ExecutionLocation(StrEnum):
     environment = 'environment'
 
 
-class AutomationActionStep(BaseModel):
+class LoopActionStep(BaseModel):
     """
-    Action step configuration recognised inside `AutomationSpec.steps[].config`.
+    Action step configuration recognised inside `LoopSpec.steps[].config`.
     """
 
     model_config = ConfigDict(
@@ -3221,9 +3365,9 @@ class AutomationActionStep(BaseModel):
     parameters: dict[str, Any] | None = None
 
 
-class AutomationSleepStep(BaseModel):
+class LoopSleepStep(BaseModel):
     """
-    Sleep step configuration recognised inside `AutomationSpec.steps[].config`.
+    Sleep step configuration recognised inside `LoopSpec.steps[].config`.
     """
 
     model_config = ConfigDict(
@@ -3235,9 +3379,9 @@ class AutomationSleepStep(BaseModel):
     until: AwareDatetime | None = None
 
 
-class AutomationWaitForEventStep(BaseModel):
+class LoopWaitForEventStep(BaseModel):
     """
-    Wait-for-event step configuration recognised inside `AutomationSpec.steps[].config`.
+    Wait-for-event step configuration recognised inside `LoopSpec.steps[].config`.
     """
 
     model_config = ConfigDict(
@@ -3254,17 +3398,17 @@ class AutomationWaitForEventStep(BaseModel):
     )
 
 
-class AutomationSubAutomationStep(BaseModel):
+class LoopSubLoopStep(BaseModel):
     """
-    Automation-trigger step configuration recognised inside `AutomationSpec.steps[].config`. Triggers another automation in the same project as an independent child run (fire-and-forget). The child run records `parent_run_id`, `parent_automation_id`, and `parent_step_key` so the lineage is visible from the child.
+    Loop-trigger step configuration recognised inside `LoopSpec.steps[].config`. Triggers another loop in the same project as an independent child run (fire-and-forget). The child run records `parent_run_id`, `parent_loop_id`, and `parent_step_key` so the lineage is visible from the child.
     """
 
     model_config = ConfigDict(
         extra='forbid',
     )
-    automation_handle: str = Field(
+    loop_handle: str = Field(
         ...,
-        description='Stable handle of the automation to trigger, scoped to the same project as the parent automation.',
+        description='Stable handle of the loop to trigger, scoped to the same project as the parent loop.',
     )
     inputs: dict[str, Any] | None = Field(
         None,
@@ -3276,7 +3420,74 @@ class AutomationSubAutomationStep(BaseModel):
     )
 
 
-class AutomationRetryPolicy(BaseModel):
+class OnFail(StrEnum):
+    """
+    Routing when any assertion fails. `fail` stops the run with stop reason `check_failed`. `continue` proceeds with the red verdict recorded. `gate` opens a `request_approval` interaction carrying the failed assertions and evidence; approval resumes the run with the verdict recorded as overridden, rejection stops it with `gate_rejected`.
+    """
+
+    fail = 'fail'
+    continue_ = 'continue'
+    gate = 'gate'
+
+
+class Kind11(StrEnum):
+    """
+    `expr` evaluates a deterministic predicate with the same language as step conditions and event waits. `agent` runs a bounded judge turn returning a strict `{pass, reason}` verdict; its spend counts against the run budget and it consumes one run agent turn.
+    """
+
+    expr = 'expr'
+    agent = 'agent'
+
+
+class LoopCheckAssertion(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    name: str = Field(
+        ..., description='Unique assertion name shown on the timeline proof row.'
+    )
+    kind: Kind11 = Field(
+        ...,
+        description='`expr` evaluates a deterministic predicate with the same language as step conditions and event waits. `agent` runs a bounded judge turn returning a strict `{pass, reason}` verdict; its spend counts against the run budget and it consumes one run agent turn.',
+    )
+    expr: str | None = Field(
+        None,
+        description='Predicate for `kind: expr`, evaluated against the `{ inputs, context }` envelope. Required for expr assertions.',
+    )
+    agent: str | None = Field(
+        None,
+        description='Judge agent id for `kind: agent`. Omit to use the built-in platform reviewer `mobius-reviewer`. The judge should be a different agent than the one that produced the evidence; the compiler warns when a judge grades its own work.',
+    )
+    prompt: str | None = Field(
+        None,
+        description='Judge instruction for `kind: agent`, rendered with `{{ .inputs.* }}` / `{{ .context.* }}` template actions before the cited evidence is appended. Required for agent assertions.',
+    )
+    evidence: list[str] | None = Field(
+        None,
+        description='Step keys whose saved outputs this assertion judges. Each must reference an earlier step. Cited outputs are shown to agent judges and recorded on the verdict.',
+    )
+
+
+class LoopCheckGate(BaseModel):
+    """
+    Approval gate opened when `on_fail: gate` trips.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    targets: list[str] = Field(
+        ...,
+        description='Principals who must respond. String entries may contain template actions resolved against the run.',
+        min_length=1,
+    )
+    prompt: str | None = Field(
+        None,
+        description='Prompt shown to reviewers. Defaults to a generated summary of the failed assertions.',
+    )
+
+
+class LoopRetryPolicy(BaseModel):
     """
     Retry policy for a step. `max_attempts` is the total number of attempts (1 = no retry); it bounds both worker-reported failures and lease-loss recovery for worker-executed action steps. A worker that reports a failure with attempts remaining re-queues for another attempt rather than failing the run; the run fails once attempts are exhausted. The attempt count is visible on the run timeline (`action.retried`, `action.failed`) and on the executing job (`claim_attempt` / `max_attempts`). Cancellation is always terminal. Capped server-side at 10 attempts.
     """
@@ -3295,7 +3506,7 @@ class OnTimeout(StrEnum):
     fail = 'fail'
 
 
-class AutomationTimeoutPolicy(BaseModel):
+class LoopTimeoutPolicy(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
@@ -3307,7 +3518,7 @@ class AutomationTimeoutPolicy(BaseModel):
 
 class ConcurrencyPolicy1(StrEnum):
     """
-    Behavior when a fire arrives while prior runs of this automation are still active.
+    Behavior when a fire arrives while prior runs of this loop are still active.
     """
 
     allow = 'allow'
@@ -3316,14 +3527,14 @@ class ConcurrencyPolicy1(StrEnum):
     replace = 'replace'
 
 
-class AutomationTrigger(BaseModel):
+class LoopTrigger(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
     id: str = Field(..., description='Stable trigger identifier.')
     org_id: str = Field(..., description='Organization that owns this trigger.')
     project_id: str = Field(..., description='Project that owns this trigger.')
-    automation_id: str = Field(..., description='Automation this trigger belongs to.')
+    loop_id: str = Field(..., description='Loop this trigger belongs to.')
     name: str = Field(..., description='Human-readable trigger name.')
     kind: str = Field(..., description='One of: http, schedule, event.')
     enabled: bool = Field(
@@ -3335,14 +3546,14 @@ class AutomationTrigger(BaseModel):
     )
     concurrency_policy: ConcurrencyPolicy1 = Field(
         ...,
-        description='Behavior when a fire arrives while prior runs of this automation are still active.',
+        description='Behavior when a fire arrives while prior runs of this loop are still active.',
     )
     max_concurrent_runs: int = Field(
         ..., description='Cap on concurrent runs allowed from this trigger.', ge=1
     )
     http_handle: str | None = Field(
         None,
-        description='Public, project-scoped handle exposed in the HTTP-trigger delivery URL. Set only for http-kind triggers.',
+        description='Public, globally unique delivery handle exposed in `POST /v1/triggers/http/{http_handle}`. The delivery endpoint has no project path segment, so the handle is resolved globally. Set only for http-kind triggers.',
     )
     signing_secret_set: bool | None = Field(
         None,
@@ -3370,17 +3581,22 @@ class AutomationTrigger(BaseModel):
     updated_at: AwareDatetime = Field(..., description='Last update timestamp.')
 
 
-class Status7(StrEnum):
+class HTTPTriggerDeliveryRequest(BaseModel):
     """
-    Acceptance status of the source-event row:
-    * `accepted` — the row is durable; processing happens asynchronously.
-    * `skipped` — the trigger is disabled or has no live subscribers.
-    * `failed` — the row could not be enqueued (synchronous validation error).
+    Free-form JSON object delivered to the HTTP trigger. The payload is recorded on the source event and forwarded to the run as inputs.
+    """
+
+    model_config = ConfigDict(
+        extra='allow',
+    )
+
+
+class Status5(StrEnum):
+    """
+    Acceptance status of the source-event row. The only synchronous success value is `accepted`; processing happens asynchronously after the source event is durable.
     """
 
     accepted = 'accepted'
-    skipped = 'skipped'
-    failed = 'failed'
 
 
 class HTTPTriggerDeliveryResponse(BaseModel):
@@ -3395,9 +3611,9 @@ class HTTPTriggerDeliveryResponse(BaseModel):
         ...,
         description='Durable source-event id (also the `dedup_key` seed). Stable across retries with the same `Idempotency-Key`.',
     )
-    status: Status7 = Field(
+    status: Status5 = Field(
         ...,
-        description='Acceptance status of the source-event row:\n* `accepted` — the row is durable; processing happens asynchronously.\n* `skipped` — the trigger is disabled or has no live subscribers.\n* `failed` — the row could not be enqueued (synchronous validation error).',
+        description='Acceptance status of the source-event row. The only synchronous success value is `accepted`; processing happens asynchronously after the source event is durable.',
     )
     deduped: bool | None = Field(
         None,
@@ -3405,7 +3621,7 @@ class HTTPTriggerDeliveryResponse(BaseModel):
     )
 
 
-class CancelAutomationRunRequest(BaseModel):
+class CancelLoopRunRequest(BaseModel):
     """
     Body for the cancellation endpoint. All fields optional.
     """
@@ -3418,9 +3634,9 @@ class CancelAutomationRunRequest(BaseModel):
     )
 
 
-class SignalAutomationRunRequest(BaseModel):
+class SignalLoopRunRequest(BaseModel):
     """
-    Body for resuming a suspended automation step.
+    Body for resuming a suspended loop step.
     """
 
     model_config = ConfigDict(
@@ -3428,24 +3644,33 @@ class SignalAutomationRunRequest(BaseModel):
     )
     step_key: str = Field(
         ...,
-        description="Step key currently in `suspended` state that should resume. Must match a step declared in the run's automation version spec.",
+        description="Step key currently in `suspended` state that should resume. Must match a step declared in the run's loop version spec.",
     )
     result: dict[str, Any] | None = Field(
         None, description="Free-form payload saved as the resumed step's output."
     )
 
 
-class AutomationRunSource(BaseModel):
+class Type18(StrEnum):
     """
-    Optional attribution for the call that started this run. Triggers and webhooks populate `trigger_id` and `trigger_fire_id`; API callers usually only set `type` and `id`.
+    Source category for the run start.
+    """
+
+    api = 'api'
+    trigger = 'trigger'
+    manual = 'manual'
+    signal = 'signal'
+
+
+class LoopRunSource(BaseModel):
+    """
+    Optional attribution for the call that started this run. Triggers and HTTP trigger dispatch populate `trigger_id` and `trigger_fire_id`. API callers usually only set `type` and `id`.
     """
 
     model_config = ConfigDict(
         extra='forbid',
     )
-    type: str | None = Field(
-        None, description='One of `api`, `trigger`, `manual`, `signal`.'
-    )
+    type: Type18 | None = Field(None, description='Source category for the run start.')
     id: str | None = Field(
         None, description="Identifier within the source type's namespace."
     )
@@ -3455,13 +3680,13 @@ class AutomationRunSource(BaseModel):
     )
     trigger_fire_id: str | None = Field(
         None,
-        description='Idempotency key for trigger retries. When set, Engine.Start returns the existing run for this fire instead of creating a duplicate.',
+        description='Internal trigger-fire ledger id used to deduplicate trigger dispatch retries. Present only for trigger-started runs.',
     )
 
 
-class AutomationRunStatus(StrEnum):
+class LoopRunStatus(StrEnum):
     """
-    Lifecycle state of an automation run.
+    Lifecycle state of a loop run.
     """
 
     queued = 'queued'
@@ -3472,21 +3697,44 @@ class AutomationRunStatus(StrEnum):
     cancelled = 'cancelled'
 
 
-class AutomationRunStepKind(StrEnum):
+class LoopRunStopReason(StrEnum):
     """
-    The step type. `cleanup` is system-materialized — it appears in run step listings for terminal cleanup work but cannot be authored in an `AutomationSpec`.
+    Why a run stopped. Set exactly once when the run reaches a terminal status; absent on non-terminal runs. `status` carries the lifecycle state and `error_type` classifies the error when one occurred; `stop_reason` classifies the stop itself.
+
+    Grouping: `completed` is the success terminal. `step_failed`, `check_failed`, and `gate_rejected` mean the work failed (an error, a failed verification, or a human rejection at a gate). `budget_exceeded`, `turn_limit_reached`, `wall_clock_exceeded`, `step_limit_reached`, and `progress_stalled` mean a configured guardrail halted the run — the limit worked; the loop did not break. `cancelled` and `replaced` mean somebody (or a concurrency policy) chose to stop it.
+    """
+
+    completed = 'completed'
+    step_failed = 'step_failed'
+    check_failed = 'check_failed'
+    gate_rejected = 'gate_rejected'
+    cancelled = 'cancelled'
+    replaced = 'replaced'
+    wall_clock_exceeded = 'wall_clock_exceeded'
+    budget_exceeded = 'budget_exceeded'
+    turn_limit_reached = 'turn_limit_reached'
+    progress_stalled = 'progress_stalled'
+    step_limit_reached = 'step_limit_reached'
+
+
+class LoopRunStepKind(StrEnum):
+    """
+    The step type. `cleanup` is system-materialized — it appears in run step listings for terminal cleanup work but cannot be authored in an `LoopSpec`.
     """
 
     agent = 'agent'
     action = 'action'
     sleep = 'sleep'
     wait_for_event = 'wait_for_event'
+    interaction = 'interaction'
+    loop = 'loop'
+    check = 'check'
     cleanup = 'cleanup'
 
 
-class AutomationRunStepStatus(StrEnum):
+class LoopRunStepStatus(StrEnum):
     """
-    Lifecycle state of an automation run step.
+    Lifecycle state of a loop run step.
     """
 
     pending = 'pending'
@@ -3498,7 +3746,16 @@ class AutomationRunStepStatus(StrEnum):
     cancelled = 'cancelled'
 
 
-class AutomationRunStep(BaseModel):
+class Verdict(StrEnum):
+    """
+    Check outcome for `check`-kind steps; absent on every other kind. A failed check routed `on_fail: continue` completes the step with `verdict: fail` — status and verdict are separate axes (the step did its job: it checked).
+    """
+
+    pass_ = 'pass'
+    fail = 'fail'
+
+
+class LoopRunStep(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
@@ -3507,13 +3764,13 @@ class AutomationRunStep(BaseModel):
     project_id: str = Field(..., description='Project that owns the parent run.')
     run_id: str = Field(..., description='Run this step belongs to.')
     step_key: str = Field(
-        ..., description='Stable key for this step within its automation version.'
+        ..., description='Stable key for this step within its loop version.'
     )
     step_name: str | None = Field(
         None, description='Display name from the authored spec, when present.'
     )
-    kind: AutomationRunStepKind
-    status: AutomationRunStepStatus
+    kind: LoopRunStepKind
+    status: LoopRunStepStatus
     seq: int = Field(
         ..., description='Zero-indexed ordinal of this step within its run.'
     )
@@ -3543,6 +3800,14 @@ class AutomationRunStep(BaseModel):
     error_message: str | None = Field(
         None, description='Human-readable error message populated on failure.'
     )
+    verdict: Verdict | None = Field(
+        None,
+        description='Check outcome for `check`-kind steps; absent on every other kind. A failed check routed `on_fail: continue` completes the step with `verdict: fail` — status and verdict are separate axes (the step did its job: it checked).',
+    )
+    verdict_detail: dict[str, Any] | None = Field(
+        None,
+        description='Verdict document for `check`-kind steps: `verdict`, `on_fail`, `checks` (per-assertion results — name, kind, pass, expr or judge reason, judge identity, evidence refs), `failed` (red assertion names), and `overridden_by` / `gate` records when an approval gate resolved the verdict.',
+    )
     started_at: AwareDatetime | None = Field(
         None, description='Time the step entered `running`.'
     )
@@ -3553,16 +3818,16 @@ class AutomationRunStep(BaseModel):
     updated_at: AwareDatetime = Field(..., description='Last update timestamp.')
 
 
-class AutomationRunStepListResponse(BaseModel):
+class LoopRunStepListResponse(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    items: list[AutomationRunStep] = Field(
+    items: list[LoopRunStep] = Field(
         ..., description='Steps for this run in `seq` order.'
     )
 
 
-class AutomationRunEvent(BaseModel):
+class LoopRunEvent(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
@@ -3576,13 +3841,13 @@ class AutomationRunEvent(BaseModel):
     )
     event_type: str = Field(
         ...,
-        description='Event type from the run-stream taxonomy (e.g. `run.started`, `step.completed`, `wait.opened`, `action.called`, `action.completed`, `action.failed`, `artifact.created`, `limit.reached`, `usage.recorded`).',
+        description="Event type from the run-stream taxonomy (e.g. `run.started`, `step.completed`, `wait.opened`, `action.called`, `action.completed`, `action.failed`, `artifact.created`, `limit.reached`, `usage.recorded`).\n\nGuardrail events: `run.budget_warning` fires once when run spend first reaches 80% of the run budget (payload: `credit_budget_milli`, `credit_spent_milli`, `percent`); `run.budget_exceeded` fires when the budget halts the run at a checkpoint (same payload plus the `step` it halted before). `usage.recorded` payloads carry `step_key`, the event's `credit_cost_milli`, its `budget_cost_milli` (rate-card cost counted against the run budget, nonzero even for BYOK), and the cumulative `run_credit_spent_milli`.",
     )
     step_id: str | None = Field(
         None, description='ID of the step this event belongs to, when applicable.'
     )
     step_key: str | None = Field(
-        None, description='Automation step key this event belongs to, when applicable.'
+        None, description='Loop step key this event belongs to, when applicable.'
     )
     payload: dict[str, Any] | None = Field(
         None,
@@ -3593,11 +3858,11 @@ class AutomationRunEvent(BaseModel):
     )
 
 
-class AutomationRunEventListResponse(BaseModel):
+class LoopRunEventListResponse(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    items: list[AutomationRunEvent] = Field(
+    items: list[LoopRunEvent] = Field(
         ..., description='Run events in this page, ordered by `sequence` ascending.'
     )
     next_sequence: int | None = Field(
@@ -3950,11 +4215,11 @@ class Artifact(BaseModel):
     visibility: ArtifactVisibility
     run_id: str | None = Field(
         None,
-        description='Automation run that produced this artifact, derived from the active worker lease.',
+        description='Loop run that produced this artifact, derived from the active worker lease.',
     )
     step_id: str | None = Field(
         None,
-        description='Automation step that produced this artifact, derived from the active worker lease.',
+        description='Loop step that produced this artifact, derived from the active worker lease.',
     )
     name: str = Field(
         ...,
@@ -4048,7 +4313,7 @@ class ArtifactQuotaUsage(BaseModel):
 
 class ActionCatalogEntry(BaseModel):
     """
-    One built-in, integration, or custom-backed action available to agents and automation authors.
+    One built-in, integration, or custom-backed action available to agents and loop authors.
     """
 
     model_config = ConfigDict(
@@ -4104,7 +4369,7 @@ class ActionCatalogEntry(BaseModel):
     )
     execution: ActionExecutionMetadata | None = Field(
         None,
-        description='Execution locations and worker requirements available to automation authors.',
+        description='Execution locations and worker requirements available to loop authors.',
     )
 
 
@@ -4141,7 +4406,7 @@ class EventCatalogSource(BaseModel):
     description: str | None = None
     readiness: CapabilityReadiness = Field(
         ...,
-        description='Whether this source can start an automation now. `capability` sources are always `ready`. `integration` sources are `ready` only when the project has an active, usable connection for the provider.',
+        description='Whether this source can start a loop now. `capability` sources are always `ready`. `integration` sources are `ready` only when the project has an active, usable connection for the provider.',
     )
     readiness_reason: CapabilityReadinessReason | None = Field(
         None,
@@ -4356,7 +4621,7 @@ class AgentToolManifest(BaseModel):
     )
     tools: list[ActionCatalogEntry] = Field(
         ...,
-        description='Catalog entries the agent can invoke. Each entry surfaces to the LLM as its own named tool. Built-in, integration, automation, and custom-HTTP actions are intermingled here.',
+        description='Catalog entries the agent can invoke. Each entry surfaces to the LLM as its own named tool. Built-in, integration, loop, and custom-HTTP actions are intermingled here.',
     )
     groups_resolved: list[ResolvedActionGroup] | None = Field(
         None,
@@ -4374,28 +4639,28 @@ class AgentToolManifest(BaseModel):
     )
 
 
-class Automation(BaseModel):
+class Loop(BaseModel):
     """
-    An automation. The `triggers` array reports the currently materialized runnable triggers. Desired triggers are authored in `AutomationSpec.triggers` and reconciled when a version is published.
+    A loop. The `triggers` array reports the currently materialized runnable triggers. Desired triggers are authored in `LoopSpec.triggers` and reconciled when a version is published.
     """
 
     model_config = ConfigDict(
         extra='forbid',
     )
-    id: str = Field(..., description='Stable automation identifier.')
-    org_id: str = Field(..., description='Organization that owns this automation.')
-    project_id: str = Field(..., description='Project that owns this automation.')
+    id: str = Field(..., description='Stable loop identifier.')
+    org_id: str = Field(..., description='Organization that owns this loop.')
+    project_id: str = Field(..., description='Project that owns this loop.')
     handle: str = Field(
         ...,
-        description='Stable per-project automation handle. Immutable after creation.',
+        description='Stable per-project loop handle. Immutable after creation. Use it for authored references and `?handle=` resolution; address the loop resource by `id`.',
     )
     name: str = Field(..., description='Human-readable display name.')
     description: str | None = Field(
-        None, description="Markdown description of the automation's purpose."
+        None, description="Markdown description of the loop's purpose."
     )
-    status: AutomationStatus
+    status: LoopStatus
     owner: str | None = Field(
-        None, description='User who created or currently owns this automation.'
+        None, description='User who created or currently owns this loop.'
     )
     default_agent_id: str | None = Field(
         None,
@@ -4403,7 +4668,7 @@ class Automation(BaseModel):
     )
     latest_version: int = Field(
         ...,
-        description='Newest stored AutomationVersion number, regardless of publication status.',
+        description='Newest stored LoopVersion number, regardless of publication status.',
     )
     published_version: int | None = Field(
         None,
@@ -4414,32 +4679,30 @@ class Automation(BaseModel):
         description='Default values merged into `inputs` when a run is started without overrides.',
     )
     settings: dict[str, Any] | None = Field(
-        None, description='Free-form automation-level settings consumed by the engine.'
+        None, description='Free-form loop-level settings consumed by the engine.'
     )
     tags: dict[str, str] | None = Field(
         None,
-        description='Free-form label map used to organise automations in listings and search.',
+        description='Free-form label map used to organise loops in listings and search.',
     )
-    triggers: list[AutomationTrigger] = Field(
-        ..., description='Triggers that can start runs of this automation.'
+    triggers: list[LoopTrigger] = Field(
+        ..., description='Triggers that can start runs of this loop.'
     )
     last_run_at: AwareDatetime | None = Field(
         None, description='Timestamp of the most recent run start, if any.'
     )
     archived_at: AwareDatetime | None = Field(
-        None, description='Soft-archive timestamp; absent on active automations.'
+        None, description='Soft-archive timestamp; absent on active loops.'
     )
     created_at: AwareDatetime = Field(..., description='Record creation timestamp.')
     updated_at: AwareDatetime = Field(..., description='Last update timestamp.')
 
 
-class AutomationListResponse(BaseModel):
+class LoopListResponse(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    items: list[Automation] = Field(
-        ..., description='The list of results for this page.'
-    )
+    items: list[Loop] = Field(..., description='The list of results for this page.')
     next_cursor: str | None = Field(
         None,
         description='Opaque cursor for the next page; absent when no more results.',
@@ -4449,25 +4712,121 @@ class AutomationListResponse(BaseModel):
     )
 
 
-class AutomationSpecDefaults(BaseModel):
+class LoopSpecTrigger(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    key: str | None = Field(
+        None, description='Stable user-authored trigger key within the spec.'
+    )
+    name: str | None = Field(None, description='Human-readable trigger name.')
+    kind: Kind4
+    enabled: bool | None = None
+    config: HTTPTriggerConfig | ScheduleTriggerConfig | EventTriggerConfig | None = (
+        Field(
+            None,
+            description='Kind-specific trigger configuration. Use `HTTPTriggerConfig` for `kind: http`, `ScheduleTriggerConfig` for `kind: schedule`, and `EventTriggerConfig` for `kind: event`. Omit for manual triggers.',
+        )
+    )
+    concurrency_policy: ConcurrencyPolicy | None = None
+    max_concurrent_runs: int | None = Field(None, ge=1)
+
+
+class LoopActionStepSpec(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    key: str = Field(..., description='Stable step key within the spec.')
+    name: str | None = Field(None, description='Human-readable step name.')
+    kind: Literal['action']
+    config: LoopActionStep
+    input: dict[str, Any] | None = Field(
+        None,
+        description='Step-local input object resolved when the step starts. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions.',
+    )
+    retry: LoopRetryPolicy | None = None
+    timeout: LoopTimeoutPolicy | None = None
+    save_as: str | None = Field(
+        None,
+        description="Context key used to store this step's output. Defaults to `key`.",
+    )
+
+
+class LoopSleepStepSpec(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    key: str = Field(..., description='Stable step key within the spec.')
+    name: str | None = Field(None, description='Human-readable step name.')
+    kind: Literal['sleep']
+    config: LoopSleepStep
+    input: dict[str, Any] | None = Field(
+        None,
+        description='Step-local input object resolved when the step starts. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions.',
+    )
+    retry: LoopRetryPolicy | None = None
+    timeout: LoopTimeoutPolicy | None = None
+    save_as: str | None = Field(
+        None,
+        description="Context key used to store this step's output. Defaults to `key`.",
+    )
+
+
+class LoopWaitForEventStepSpec(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    key: str = Field(..., description='Stable step key within the spec.')
+    name: str | None = Field(None, description='Human-readable step name.')
+    kind: Literal['wait_for_event']
+    config: LoopWaitForEventStep
+    input: dict[str, Any] | None = Field(
+        None,
+        description='Step-local input object resolved when the step starts. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions.',
+    )
+    retry: LoopRetryPolicy | None = None
+    timeout: LoopTimeoutPolicy | None = None
+    save_as: str | None = Field(
+        None,
+        description="Context key used to store this step's output. Defaults to `key`.",
+    )
+
+
+class LoopSubLoopStepSpec(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    key: str = Field(..., description='Stable step key within the spec.')
+    name: str | None = Field(None, description='Human-readable step name.')
+    kind: Literal['loop']
+    config: LoopSubLoopStep
+    input: dict[str, Any] | None = Field(
+        None,
+        description='Step-local input object resolved when the step starts. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions.',
+    )
+    retry: LoopRetryPolicy | None = None
+    timeout: LoopTimeoutPolicy | None = None
+    save_as: str | None = Field(
+        None,
+        description="Context key used to store this step's output. Defaults to `key`.",
+    )
+
+
+class LoopSpecDefaults(BaseModel):
     """
-    Run-level defaults inside the automation spec. Lives at `spec.defaults` in the JSON the engine compiles.
+    Run-level defaults inside the loop spec. Lives at `spec.defaults` in the JSON the engine compiles. The run wall-clock limit moved to `limits.wall_clock_timeout`.
     """
 
     model_config = ConfigDict(
         extra='forbid',
     )
-    wall_clock_timeout: str | None = Field(
-        None,
-        description='Run wall-clock budget as a Go duration string (e.g. `30m`, `2h`, `90s`). When set, the engine stamps `wall_clock_deadline_at = run.started_at + wall_clock_timeout` and the reaper fails the run after that instant even if a step executor is still grinding. Omit or set to `0` to disable the guard.',
-    )
-    environment: AutomationEnvironmentPolicy | None = None
-    agent_session: AutomationAgentSessionPolicy | None = None
+    environment: LoopEnvironmentPolicy | None = None
+    agent_session: LoopAgentSessionPolicy | None = None
 
 
-class AutomationAgentStep(BaseModel):
+class LoopAgentStep(BaseModel):
     """
-    Agent step configuration recognised inside `AutomationSpec.steps[].config`.
+    Agent step configuration recognised inside `LoopSpec.steps[].config`.
     """
 
     model_config = ConfigDict(
@@ -4475,17 +4834,44 @@ class AutomationAgentStep(BaseModel):
     )
     agent_id: str
     instructions: str
-    tool_names: list[str] | None = None
+    tool_names: list[str] | None = Field(
+        None,
+        description="Optional per-step tool allow-list. When omitted, prompt-only managed agent steps default to no tools; set `disable_tools: false` to allow the agent's full granted tool set.",
+    )
+    disable_tools: bool | None = Field(
+        None,
+        description="Disable all tool calls for this agent step. When omitted, prompt-only managed agent steps (no `tool_names`, output schema, memory tables, or worker/BYOK model route) default to tool-less execution and skip managed environment allocation. Set `false` explicitly to opt back into the agent's granted tools.",
+    )
     output_schema: dict[str, Any] | None = None
     max_turns: int | None = Field(None, ge=1)
-    model_route: AutomationModelRoute | None = None
-    memory_tables: list[AutomationAgentMemoryTableRef] | None = None
-    session: AutomationAgentSessionPolicy | None = None
+    model_route: LoopModelRoute | None = None
+    memory_tables: list[LoopAgentMemoryTableRef] | None = None
+    session: LoopAgentSessionPolicy | None = None
 
 
-class StartAutomationRunRequest(BaseModel):
+class LoopCheckStep(BaseModel):
     """
-    Body for `POST /v1/projects/{project}/automations/{handle}/runs`. All fields are optional; an empty body starts a run with no inputs and no attribution.
+    Check step configuration recognised inside `LoopSpec.steps[].config`. A check step evaluates typed assertions over the run's `{ inputs, context }` envelope — deterministic `expr` predicates, or `agent` judges for everything that isn't deterministic — records a per-assertion verdict with cited evidence, and routes on failure: fail the run (stop reason `check_failed`), continue with the red verdict on the record, or open an approval gate carrying the evidence (rejection stops the run with `gate_rejected`). All assertions are evaluated; there is no short-circuit. An assertion that errors (bad expr, judge model failure, unparseable verdict) fails closed — never a silent pass.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    checks: list[LoopCheckAssertion] = Field(
+        ...,
+        description='Assertions evaluated in order; names must be unique.',
+        min_length=1,
+    )
+    on_fail: OnFail = Field(
+        'fail',
+        description='Routing when any assertion fails. `fail` stops the run with stop reason `check_failed`. `continue` proceeds with the red verdict recorded. `gate` opens a `request_approval` interaction carrying the failed assertions and evidence; approval resumes the run with the verdict recorded as overridden, rejection stops it with `gate_rejected`.',
+    )
+    gate: LoopCheckGate | None = None
+
+
+class StartLoopRunRequest(BaseModel):
+    """
+    Body for `POST /v1/projects/{project}/loops/{id}/runs`. All fields are optional; an empty body starts a run with no inputs and no attribution.
     """
 
     model_config = ConfigDict(
@@ -4495,16 +4881,26 @@ class StartAutomationRunRequest(BaseModel):
         None,
         description='Free-form input map passed to the run. Available to steps via `{{ .inputs.<key> }}` Go text/template actions.',
     )
-    source: AutomationRunSource | None = None
-    external_id: str | None = Field(
+    source: LoopRunSource | None = None
+    idempotency_key: str | None = Field(
         None,
-        description='Caller-supplied idempotency key, scoped to (org, project). Repeat calls with the same `external_id` while the prior run is still non-terminal return the existing run (same `id`). A repeat after the prior run terminated returns `409 Conflict` with code `external_id_conflict` and details containing the existing run id and its terminal status.',
+        description='Caller-supplied idempotency key, scoped to (org, project). Repeat calls with the same `idempotency_key` while the prior run is still non-terminal return the existing run (same `id`). A repeat after the prior run terminated returns `409 Conflict` with code `idempotency_key_conflict` and details containing the existing run id and its terminal status.',
+    )
+    budget_usd: float | None = Field(
+        None,
+        description="Per-run budget override in US dollars (1 credit = $0.01). Overrides the loop spec's `limits` budget for this run only. Mutually exclusive with `credit_budget` — setting both is a `400`. Values finer than $0.00001 (one milli-credit) are rejected. The run halts at the next checkpoint (step boundary or agent tool iteration) once spend reaches the budget; enforcement granularity is one model call or metered action.",
+        ge=0.0,
+    )
+    credit_budget: int | None = Field(
+        None,
+        description='Per-run budget override in whole credits (1 credit = $0.01). Same ceiling semantics as `budget_usd`; set exactly one.',
+        ge=1,
     )
 
 
-class AutomationRun(BaseModel):
+class LoopRun(BaseModel):
     """
-    One automation run record.
+    One loop run record.
     """
 
     model_config = ConfigDict(
@@ -4513,38 +4909,54 @@ class AutomationRun(BaseModel):
     id: str = Field(..., description='Stable run identifier.')
     org_id: str = Field(..., description='Organization that owns this run.')
     project_id: str = Field(..., description='Project that owns this run.')
-    automation_id: str = Field(..., description='Automation this run belongs to.')
-    automation_name: str | None = Field(
-        None, description='Human-readable name of the automation this run belongs to.'
+    loop_id: str = Field(..., description='Loop this run belongs to.')
+    loop_name: str | None = Field(
+        None, description='Human-readable name of the loop this run belongs to.'
     )
-    automation_version_id: str = Field(
-        ..., description='AutomationVersion record this run is executing.'
+    loop_version_id: str = Field(
+        ..., description='LoopVersion record this run is executing.'
     )
-    automation_version: int = Field(
-        ...,
-        description='Version number of the AutomationVersion this run is executing.',
+    loop_version: int = Field(
+        ..., description='Version number of the LoopVersion this run is executing.'
     )
-    status: AutomationRunStatus
+    status: LoopRunStatus
+    stop_reason: LoopRunStopReason | None = None
+    credit_budget_milli: int | None = Field(
+        None,
+        description="The run's budget ceiling in milli-credits (1 credit = 1,000 milli-credits = $0.01). Resolved at run start from the StartRun override, the loop spec's `limits` block, or the trial-plan default, in that order. Absent when the run is unbounded.",
+    )
+    credit_spent_milli: int | None = Field(
+        None,
+        description="Metered spend attributed to this run so far, in milli-credits. Incremented atomically with each usage-ledger insert that carries this run's id. Counts all metered work regardless of credential source (BYOK calls count at their rate-card equivalent even though they bill zero credits).",
+    )
+    max_agent_turns: int | None = Field(
+        None,
+        description="Run-wide cap on agent turns across all steps, from the loop spec's `limits.max_agent_turns`. Absent when unbounded.",
+    )
+    agent_turns_used: int | None = Field(
+        None,
+        description='Number of agent turns started for this run so far. Compared against `max_agent_turns` when that cap is set.',
+    )
     inputs: dict[str, Any] | None = Field(
         None,
-        description="Input map supplied when the run started, merged over the automation's `default_inputs`, and reachable in step templates at `{{ .inputs.<key> }}`. For event-kind trigger runs this is the normalized `{ event, meta }` envelope (`{{ .inputs.event.* }}`, `{{ .inputs.meta.* }}`) — see the automation templating guide.",
+        description="Input map supplied when the run started, merged over the loop's `default_inputs`, and reachable in step templates at `{{ .inputs.<key> }}`. For event-kind trigger runs this is the normalized `{ event, meta }` envelope (`{{ .inputs.event.* }}`, `{{ .inputs.meta.* }}`) — see the loop templating guide.",
     )
     result: dict[str, Any] | None = Field(
         None,
         description="Final result payload: the run's accumulated step outputs, keyed by each step's `save_as`. Absent until the run terminates successfully.",
     )
-    source: AutomationRunSource | None = None
+    source: LoopRunSource | None = None
     parent_run_id: str | None = Field(
         None,
-        description='Run that triggered this run via an `automation` step. Present only on child runs; absent for top-level runs.',
+        description='Run that triggered this run via an `loop` step. Present only on child runs; absent for top-level runs.',
     )
-    parent_automation_id: str | None = Field(
+    parent_loop_id: str | None = Field(
         None,
-        description='Automation that triggered this run via an `automation` step. Present only on child runs.',
+        description='Loop that triggered this run via an `loop` step. Present only on child runs.',
     )
     parent_step_key: str | None = Field(
         None,
-        description="Step key within the parent run's automation that triggered this run. Present only on child runs.",
+        description="Step key within the parent run's loop that triggered this run. Present only on child runs.",
     )
     error_message: str | None = Field(
         None, description='Human-readable failure summary; populated on `failed` runs.'
@@ -4556,7 +4968,7 @@ class AutomationRun(BaseModel):
         None, description='Scheduled wake time for a suspended run.'
     )
     wall_clock_deadline_at: AwareDatetime | None = Field(
-        None, description='Deadline after which the automation reaper fails the run.'
+        None, description='Deadline after which the loop reaper fails the run.'
     )
     started_at: AwareDatetime | None = Field(
         None, description='Time the engine moved the run to `running`.'
@@ -4568,13 +4980,11 @@ class AutomationRun(BaseModel):
     updated_at: AwareDatetime = Field(..., description='Last update timestamp.')
 
 
-class AutomationRunListResponse(BaseModel):
+class LoopRunListResponse(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    items: list[AutomationRun] = Field(
-        ..., description='The list of results for this page.'
-    )
+    items: list[LoopRun] = Field(..., description='The list of results for this page.')
     next_cursor: str | None = Field(
         None,
         description='Opaque cursor for the next page; absent when no more results.',
@@ -4614,99 +5024,170 @@ class ModelCatalogResponse(BaseModel):
         ...,
         description='Available providers in display order. Providers with no configured credentials are omitted.',
     )
+    reason: Reason | None = Field(
+        None,
+        description='Present when `items` is empty because the request was denied rather than because no catalog exists. `platform_funding_denied` means Mobius-managed provider credentials are gated by billing or plan state; `credentials_unavailable` means no usable provider credentials were available.',
+    )
 
 
-class AutomationStep(BaseModel):
+class LoopAgentStepSpec(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
     key: str = Field(..., description='Stable step key within the spec.')
     name: str | None = Field(None, description='Human-readable step name.')
-    kind: Kind5
-    config: (
-        AutomationAgentStep
-        | AutomationActionStep
-        | AutomationSleepStep
-        | AutomationWaitForEventStep
-        | AutomationSubAutomationStep
-    ) = Field(..., description='Kind-specific step configuration.')
+    kind: Literal['agent']
+    config: LoopAgentStep
     input: dict[str, Any] | None = Field(
         None,
         description='Step-local input object resolved when the step starts. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions.',
     )
-    retry: AutomationRetryPolicy | None = None
-    timeout: AutomationTimeoutPolicy | None = None
+    retry: LoopRetryPolicy | None = None
+    timeout: LoopTimeoutPolicy | None = None
     save_as: str | None = Field(
         None,
         description="Context key used to store this step's output. Defaults to `key`.",
     )
 
 
-class AutomationSpec(BaseModel):
+class LoopCheckStepSpec(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    key: str = Field(..., description='Stable step key within the spec.')
+    name: str | None = Field(None, description='Human-readable step name.')
+    kind: Literal['check']
+    config: LoopCheckStep
+    input: dict[str, Any] | None = Field(
+        None,
+        description='Step-local input object resolved when the step starts. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions.',
+    )
+    retry: LoopRetryPolicy | None = None
+    timeout: LoopTimeoutPolicy | None = None
+    save_as: str | None = Field(
+        None,
+        description="Context key used to store this step's output. Defaults to `key`.",
+    )
+
+
+class LoopStep(
+    RootModel[
+        LoopAgentStepSpec
+        | LoopActionStepSpec
+        | LoopSleepStepSpec
+        | LoopWaitForEventStepSpec
+        | LoopSubLoopStepSpec
+        | LoopCheckStepSpec
+    ]
+):
+    root: (
+        LoopAgentStepSpec
+        | LoopActionStepSpec
+        | LoopSleepStepSpec
+        | LoopWaitForEventStepSpec
+        | LoopSubLoopStepSpec
+        | LoopCheckStepSpec
+    ) = Field(
+        ...,
+        description='User-authored loop step, discriminated by `kind`.',
+        discriminator='kind',
+    )
+
+
+class LoopSpec(BaseModel):
     """
-    Authoring representation of an automation.
+    Authoring representation of a loop.
     """
 
     model_config = ConfigDict(
         extra='forbid',
     )
     schema_version: SchemaVersion = Field(
-        '1', description='Automation spec schema version. Current value is `1`.'
+        '1', description='Loop spec schema version. Current value is `1`.'
     )
     name: str | None = Field(None, description='Optional spec-local display name.')
     description: str | None = Field(
         None, description='Optional spec-local Markdown description.'
     )
-    inputs: dict[str, AutomationSpecInput] | None = None
+    inputs: dict[str, LoopSpecInput] | None = None
     concurrency: Concurrency | None = Field(
         None,
-        description='Behavior when a run starts while another run of the same automation is active.',
+        description='Behavior when a run starts while another run of the same loop is active.',
     )
-    triggers: list[AutomationSpecTrigger] | None = Field(
+    triggers: list[LoopSpecTrigger] | None = Field(
         None, description='Desired triggers materialized when a version is published.'
     )
-    repositories: list[AutomationSpecRepository] | None = Field(
+    repositories: list[LoopSpecRepository] | None = Field(
         None,
-        description='Source repositories the automation targets. When a shared managed environment is selected, the runtime prepares these repositories before user-authored steps run.',
+        description='Source repositories the loop targets. When a shared managed environment is selected, the runtime prepares these repositories before user-authored steps run.',
     )
-    steps: list[AutomationStep]
+    steps: list[LoopStep]
     cleanup: list[dict[str, Any]] | None = None
-    defaults: AutomationSpecDefaults | None = None
+    limits: LoopSpecLimits | None = None
+    defaults: LoopSpecDefaults | None = None
 
 
-class CreateAutomationVersionRequest(BaseModel):
+class CreateLoopVersionRequest(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    spec: AutomationSpec
-    compiled_plan: dict[str, Any] | None = Field(
+    spec: LoopSpec
+
+
+class CreateLoopRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    handle: str = Field(
+        ...,
+        description='Stable per-project loop handle. Must be lowercase alphanumeric with single hyphen separators. Immutable after creation.',
+        max_length=100,
+        min_length=1,
+        pattern='^[a-z0-9]+(-[a-z0-9]+)*$',
+    )
+    name: str = Field(..., description='Human-readable display name.')
+    description: str | None = Field(
+        None, description="Markdown description of the loop's purpose."
+    )
+    default_agent_id: str | None = Field(
         None,
-        description='Optional precompiled execution plan. The engine will recompile from `spec` if omitted.',
+        description='Agent used by `agent` steps that do not pin an agent explicitly.',
+    )
+    default_inputs: dict[str, Any] | None = Field(
+        None,
+        description='Default values merged into `inputs` when a run is started without overrides.',
+    )
+    settings: dict[str, Any] | None = Field(
+        None, description='Free-form loop-level settings consumed by the engine.'
+    )
+    tags: dict[str, str] | None = Field(
+        None,
+        description='Free-form label map used to organise loops in listings and search.',
+    )
+    spec: LoopSpec | None = Field(
+        None,
+        description='Optional initial loop spec to store as version 1 during creation.',
+    )
+    activate: bool = Field(
+        False,
+        description='When true, `spec` is required. Mobius stores it as version 1, publishes it, materializes its triggers, and sets the loop status to `active` before returning.',
     )
 
 
-class AutomationVersion(BaseModel):
+class LoopVersion(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    id: str = Field(
-        ..., description='Stable identifier for this AutomationVersion record.'
-    )
+    id: str = Field(..., description='Stable identifier for this LoopVersion record.')
     org_id: str = Field(..., description='Organization that owns this version.')
     project_id: str = Field(..., description='Project that owns this version.')
-    automation_id: str = Field(..., description='Automation this version belongs to.')
-    version: int = Field(
-        ..., description='Monotonic version number, unique per automation.'
-    )
-    status: Status6 = Field(
+    loop_id: str = Field(..., description='Loop this version belongs to.')
+    version: int = Field(..., description='Monotonic version number, unique per loop.')
+    status: Status4 = Field(
         ...,
         description='Publication state. `draft` is editable but not runnable; `published` is the currently runnable version; `superseded` is a prior published version retained for historical runs.',
     )
-    spec: AutomationSpec | None = None
-    compiled_plan: dict[str, Any] | None = Field(
-        None,
-        description='Internal compiled execution plan derived from `spec`. Not part of the public contract.',
-    )
+    spec: LoopSpec | None = None
     validation: dict[str, Any] | None = Field(
         None,
         description='Validation result for `spec` produced at version-creation time.',
@@ -4715,11 +5196,10 @@ class AutomationVersion(BaseModel):
     created_at: AwareDatetime = Field(..., description='Record creation timestamp.')
 
 
-class AutomationVersionListResponse(BaseModel):
+class LoopVersionListResponse(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    items: list[AutomationVersion] = Field(
-        ...,
-        description='AutomationVersions returned for this automation, newest version first.',
+    items: list[LoopVersion] = Field(
+        ..., description='LoopVersions returned for this loop, newest version first.'
     )

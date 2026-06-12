@@ -82,7 +82,7 @@ func TestWorkerRun_ExecutesActionJobOverWebSocket(t *testing.T) {
 		sendClaimed(t, conn, api.WorkerSocketClaimedJob{
 			Id:                      "job_1",
 			Kind:                    api.WorkerSocketClaimedJobKindActionExecution,
-			Origin:                  api.WorkerSocketClaimedJobOriginAutomationActionStep,
+			Origin:                  api.WorkerSocketClaimedJobOriginLoopActionStep,
 			ExecutorKind:            api.WorkerSocketClaimedJobExecutorKindCustomerWorker,
 			ActionName:              strPtr("echo"),
 			Queue:                   "default",
@@ -218,7 +218,7 @@ func TestWorkerRun_HeartbeatCancelDirectiveCancelsJob(t *testing.T) {
 		sendClaimed(t, conn, api.WorkerSocketClaimedJob{
 			Id:                      "job_cancel_1",
 			Kind:                    api.WorkerSocketClaimedJobKindActionExecution,
-			Origin:                  api.WorkerSocketClaimedJobOriginAutomationActionStep,
+			Origin:                  api.WorkerSocketClaimedJobOriginLoopActionStep,
 			ExecutorKind:            api.WorkerSocketClaimedJobExecutorKindCustomerWorker,
 			ActionName:              strPtr("block"),
 			Queue:                   "default",

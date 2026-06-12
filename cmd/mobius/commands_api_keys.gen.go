@@ -20,7 +20,7 @@ func registerApiKeysCommands(app *cli.App) {
 	apiKeysGrp := app.Group("api-keys").Description("Project and organization API keys")
 	apiKeysGrp.Alias("api-key")
 	apiKeysGrp.Command("create").
-		Description("Create an API key").
+		Description("Create API key").
 		Flags(
 			cli.String("expires-at", "").Help("Optional hard expiry. Omit for a non-expiring key. Accepts JSON, @file, or @-."),
 			cli.String("name", "").Help("[required] Human-readable label, unique within the project."),
@@ -75,7 +75,7 @@ func registerApiKeysCommands(app *cli.App) {
 		})
 
 	apiKeysGrp.Command("get").
-		Description("Get an API key").
+		Description("Get API key").
 		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -124,7 +124,7 @@ func registerApiKeysCommands(app *cli.App) {
 		})
 
 	apiKeysGrp.Command("revoke").
-		Description("Revoke an API key").
+		Description("Revoke API key").
 		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {

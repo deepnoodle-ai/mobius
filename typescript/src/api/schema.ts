@@ -18,7 +18,7 @@ export interface paths {
         get: operations["listAPIKeys"];
         put?: never;
         /**
-         * Create an API key
+         * Create API key
          * @description Creates an API key bound to a machine principal in this project. The key authenticates as that principal; associated permissions come from that principal's role assignments. The raw key value is returned in `key` and is never retrievable again after this response.
          */
         post: operations["createAPIKey"];
@@ -36,14 +36,14 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get an API key
+         * Get API key
          * @description Returns metadata for a single API key without exposing the raw secret.
          */
         get: operations["getAPIKey"];
         put?: never;
         post?: never;
         /**
-         * Revoke an API key
+         * Revoke API key
          * @description Permanently revokes the key. In-flight requests using this key will immediately start receiving 401.
          */
         delete: operations["revokeAPIKey"];
@@ -62,7 +62,7 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Create a custom action
+         * Create action
          * @description Registers a project-owned custom action definition. HTTP actions require `endpoint_url` and receive a signing secret. Worker-backed actions omit `endpoint_url`; compatible workers make the registered action ready by advertising its name when connected.
          */
         post: operations["createAction"];
@@ -83,14 +83,14 @@ export interface paths {
         put?: never;
         post?: never;
         /**
-         * Delete a custom action
-         * @description Deletes a project-owned custom action definition. Automations that still reference the action block deletion until the reference is removed.
+         * Delete action
+         * @description Deletes a project-owned custom action definition. Loops that still reference the action block deletion until the reference is removed.
          */
         delete: operations["deleteAction"];
         options?: never;
         head?: never;
         /**
-         * Update a custom action
+         * Update action
          * @description Updates action metadata, schemas, annotations, tags, or the HTTP endpoint URL. Worker-backed actions cannot set an endpoint URL.
          */
         patch: operations["updateAction"];
@@ -106,7 +106,7 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Rotate an HTTP action signing secret
+         * Rotate signing secret
          * @description Rotates the signing secret for an HTTP-backed custom action. Worker actions do not have signing secrets and return a validation error.
          */
         post: operations["rotateActionSecret"];
@@ -124,8 +124,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List action invocation records
-         * @description Lists recent action invocation audit records from automations, agents, direct invocations, and job-backed execution.
+         * List invocations
+         * @description Lists recent action invocation audit records from loops, agents, direct invocations, and job-backed execution.
          */
         get: operations["listActionInvocations"];
         put?: never;
@@ -146,8 +146,8 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Invoke an action directly
-         * @description Invokes a catalog action through the same job-backed execution surface used by automations. HTTP and managed platform actions are dispatched to Mobius server workers; worker-backed custom actions are dispatched to compatible customer workers.
+         * Invoke action
+         * @description Invokes a catalog action through the same job-backed execution surface used by loops. HTTP and managed platform actions are dispatched to Mobius server workers; worker-backed custom actions are dispatched to compatible customer workers.
          */
         post: operations["invokeAction"];
         delete?: never;
@@ -164,8 +164,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List the triggerable event catalog
-         * @description Returns every event source an automation trigger (or `wait_for_event` step) can subscribe to within this project: built-in platform sources (tables, email, runs, HTTP triggers, sessions, artifacts) and integration provider sources (with project connection state). `items` contains those sources; each source lists its concrete, currently-active event types.
+         * List events
+         * @description Returns every event source a loop trigger (or `wait_for_event` step) can subscribe to within this project: built-in platform sources (tables, email, runs, HTTP triggers, sessions, artifacts) and integration provider sources (with project connection state). `items` contains those sources; each source lists its concrete, currently-active event types.
          *
          *     `reserved_prefixes` enumerates platform namespaces that are recognized but not themselves triggerable event sources (for example `signal`, `schedule`), so authoring UIs can distinguish a recognized-but-unsupported matcher prefix from a wholly unknown one.
          *
@@ -188,7 +188,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List the action catalog
+         * List actions
          * @description Returns the full catalog of actions available to this project: project-owned HTTP actions and platform-provided integration actions (Slack, GitHub, etc.). The `available` flag indicates whether the action can currently be invoked. Custom HTTP actions are created and managed on the `/actions` resource.
          */
         get: operations["listCatalogActions"];
@@ -208,7 +208,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get one catalog action by name
+         * Get action
          * @description Returns availability status, schemas, and metadata for a single catalog entry.
          */
         get: operations["getCatalogAction"];
@@ -228,7 +228,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List the model catalog
+         * List models
          * @description Returns the models a platform agent in this project can be assigned, grouped by provider. Only providers the project can actually run are included: a provider appears when the project has an active BYOK integration for it, or when a platform-managed key is configured.
          *
          *     An agent's `model` field accepts any returned model id, optionally prefixed with `provider/` (e.g. `xai/grok-4`); bare known ids such as `claude-sonnet-4-6` are auto-detected to their provider.
@@ -256,7 +256,7 @@ export interface paths {
         get: operations["listEnvironments"];
         put?: never;
         /**
-         * Create an environment
+         * Create environment
          * @description Creates a durable execution environment record and provisions it with the selected provider. The server resolves scope and ownership before enforcing uniqueness for the environment name.
          */
         post: operations["createEnvironment"];
@@ -276,8 +276,8 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Create or attach a worker-provided environment
-         * @description Idempotently registers a worker-provided environment (a workspace hosted by a connected Mobius worker, e.g. a laptop). The control plane creates the record but never provisions or tears it down. Re-attaching the same name returns the existing environment. The `mobius worker` CLI calls this on startup, then registers its socket against the returned environment id.
+         * Attach environment
+         * @description Idempotently registers a worker-provided environment (a workspace hosted by a connected Mobius worker, e.g. a laptop). The control plane creates the record but never provisions or tears it down. Re-attaching the same name returns the existing environment. The `mobius worker` CLI calls this on startup, then registers its socket against the returned environment id. If the worker provider is not configured, the request returns `409` without creating an environment record.
          */
         post: operations["attachWorkerEnvironment"];
         delete?: never;
@@ -296,7 +296,7 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Acquire an environment lease
+         * Acquire lease
          * @description Collection-level acquire creates or claims an environment and creates a single active lease. There is intentionally no per-environment acquire endpoint.
          */
         post: operations["acquireEnvironment"];
@@ -316,7 +316,7 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Release an environment lease
+         * Release lease
          * @description Releases a previously acquired environment lease so the environment can be reused, retired, or reclaimed by another worker. The released lease snapshot is returned for audit and UI state updates.
          */
         post: operations["releaseEnvironmentLease"];
@@ -334,21 +334,21 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get an environment
+         * Get environment
          * @description Returns the current environment record, including provider status, lease metadata, ownership, binding, and retention settings.
          */
         get: operations["getEnvironment"];
         put?: never;
         post?: never;
         /**
-         * Destroy an environment
+         * Destroy environment
          * @description Requests provider teardown for the environment and records the destroyed state in Mobius. The response includes the final environment snapshot after the destroy request is accepted.
          */
         delete: operations["destroyEnvironment"];
         options?: never;
         head?: never;
         /**
-         * Update environment metadata
+         * Update environment
          * @description Only purpose, retention_policy, scope, owned_by, bound_to_type, bound_to_id, and tags are mutable.
          */
         patch: operations["updateEnvironment"];
@@ -364,7 +364,7 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Reconcile environment provider state
+         * Reconcile environment
          * @description Refreshes Mobius' environment record from the provider control plane. Use this when a UI or operator needs to resynchronize status after an out-of-band provider change.
          */
         post: operations["reconcileEnvironment"];
@@ -384,7 +384,7 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Execute a command inside an environment
+         * Execute command
          * @description Runs a command in the target environment and returns its captured output. The environment must be active and able to accept execution requests from the selected provider.
          */
         post: operations["execEnvironment"];
@@ -403,7 +403,7 @@ export interface paths {
         };
         get?: never;
         /**
-         * Write a file into an environment
+         * Write file
          * @description Writes file content into the environment filesystem. The request is intended for setup and repair flows that need to place source files, scripts, or configuration before executing work.
          */
         put: operations["writeEnvironmentFile"];
@@ -424,7 +424,7 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Start a Mobius worker in an environment
+         * Start worker
          * @description Starts or reuses a worker process inside the environment so it can claim Mobius jobs. The result reports the worker identity and provider execution details needed for follow-up diagnostics.
          */
         post: operations["startEnvironmentWorker"];
@@ -442,7 +442,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get worker logs for an environment
+         * Get worker logs
          * @description Tails the managed Mobius worker log files from inside the environment. The worker filesystem is sandbox-local and treated as diagnostic scratch; clients should not use this endpoint as durable artifact storage.
          */
         get: operations["getEnvironmentWorkerLogs"];
@@ -464,7 +464,7 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Mint short-lived Git credentials for an environment
+         * Mint Git credentials
          * @description Mints a repository-scoped GitHub App installation token for clone or push operations executed inside the environment. Mobius returns the token only in this response; the caller must inject it into the environment through a transient askpass/stdin flow and remove it before the command exits.
          */
         post: operations["createEnvironmentGitCredential"];
@@ -528,7 +528,7 @@ export interface paths {
         get: operations["listProjects"];
         put?: never;
         /**
-         * Create a project
+         * Create project
          * @description Creates a project within the authenticated org. If `handle` is omitted it is auto-derived from `name` (lowercased, spaces replaced with hyphens). Returns 409 if the handle already exists in the org.
          */
         post: operations["createProject"];
@@ -546,15 +546,15 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get a project
+         * Get project
          * @description Requires the `mobius.project.view` permission for the project.
          */
         get: operations["getProject"];
         put?: never;
         post?: never;
         /**
-         * Delete a project
-         * @description Permanently deletes the project and all child resources (automations, runs, jobs, triggers, webhooks, actions, agents, machine principals). This operation is irreversible.
+         * Delete project
+         * @description Permanently deletes the project and all child resources (loops, runs, jobs, triggers, webhooks, actions, agents, machine principals). This operation is irreversible.
          *
          *     The project must be archived first; calling delete on an active project returns `409 project_not_archived`. Archive via `POST /v1/projects/{project}/archive`.
          */
@@ -562,7 +562,7 @@ export interface paths {
         options?: never;
         head?: never;
         /**
-         * Update a project
+         * Update project
          * @description Updates `name`, `description`, and/or `access_mode`. The request also accepts `seed_existing_members` when flipping `access_mode` from `org_open` to `restricted`. The project handle is immutable and cannot be changed after creation.
          */
         patch: operations["updateProject"];
@@ -578,7 +578,7 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Archive a project
+         * Archive project
          * @description Soft-retires the project: triggers and scheduled runs stop firing, edits are blocked, and the project is hidden from the default listing. In-flight runs are allowed to drain. The project can be restored at any time. Idempotent — archiving an already-archived project returns the current state.
          */
         post: operations["archiveProject"];
@@ -598,7 +598,7 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Restore an archived project
+         * Restore project
          * @description Clears the archived state and returns the project to active operation. Triggers and scheduled runs resume on their next natural fire — there is no catch-up backfill of missed fires during the archive window. Idempotent — restoring an active project returns the current state.
          */
         post: operations["restoreProject"];
@@ -622,7 +622,7 @@ export interface paths {
         get: operations["listWebhooks"];
         put?: never;
         /**
-         * Create a webhook
+         * Create webhook
          * @description Creates a new outgoing webhook subscription. Webhook names must be unique within the project. Returns 409 if the name already exists.
          *
          *     A signing key is generated automatically and returned in the response; this is the only time the raw key is exposed. Rotate it with `POST /webhooks/{id}/secret/rotate` if compromised.
@@ -642,21 +642,21 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get a webhook
+         * Get webhook
          * @description Returns one outgoing webhook subscription and its event filters. The raw signing key is never returned after creation or rotation.
          */
         get: operations["getWebhook"];
         put?: never;
         post?: never;
         /**
-         * Delete a webhook
+         * Delete webhook
          * @description Deletes the webhook and its delivery history.
          */
         delete: operations["deleteWebhook"];
         options?: never;
         head?: never;
         /**
-         * Update a webhook
+         * Update webhook
          * @description Updates the webhook name, URL, event subscriptions, enabled state, or tags. Signing key rotation is handled by the dedicated rotate endpoint.
          */
         patch: operations["updateWebhook"];
@@ -672,7 +672,7 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Rotate a webhook signing secret
+         * Rotate webhook signing secret
          * @description Generates a new HMAC-SHA256 signing key version for the webhook. Store the returned key immediately — it cannot be retrieved again.
          */
         post: operations["rotateWebhookSecret"];
@@ -692,7 +692,7 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Test a webhook URL
+         * Test webhook URL
          * @description Sends a live test POST request to the webhook's saved URL, or to an override URL supplied in the request body, and returns the result. Because the webhook URL may be empty at creation time, the typical flow is: create the webhook without a URL, ping candidate URLs via the override until one succeeds, then persist the chosen URL with `PATCH`. The test payload has `type: "ping"` and is signed with the webhook's signing key.
          */
         post: operations["pingWebhook"];
@@ -736,7 +736,7 @@ export interface paths {
         get: operations["listAgents"];
         put?: never;
         /**
-         * Create an agent
+         * Create agent
          * @description Creates an agent. An agent IS a principal (principals.kind = agent): its backing identity row is created atomically with the agent and its permissions live as role grants on that principal — there is no separate machine-identity side record.
          *
          *     Optional `role_ids` sets the role assignments on the agent's principal. Assigning roles requires the caller to hold `mobius.access.manage`. When omitted, the agent inherits the project's `default_agent_role_id`, falling through to the system `Agent` role floor when unset.
@@ -756,21 +756,21 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get an agent
+         * Get agent
          * @description Returns one agent with its administrative status and computed presence. Presence is derived from recent presence records, so it may change without the agent record itself being updated.
          */
         get: operations["getAgent"];
         put?: never;
         post?: never;
         /**
-         * Delete an agent
+         * Delete agent
          * @description Soft-deletes the agent by setting `deleted_at`. The agent record is retained for audit and attribution history, but the agent is excluded from all listings and lookups. The agent's machine principal is disabled. In-flight jobs claiming this agent are not automatically cancelled.
          */
         delete: operations["deleteAgent"];
         options?: never;
         head?: never;
         /**
-         * Update an agent
+         * Update agent
          * @description Updates mutable agent fields. Setting `status` to `inactive` prevents the agent from claiming new jobs but does not terminate active presence records.
          */
         patch: operations["updateAgent"];
@@ -804,7 +804,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List conversation sessions for an agent
+         * List sessions
          * @description Returns durable conversation sessions for one agent, newest activity first. Remote workers use this to inspect their own remembered conversations.
          */
         get: operations["listAgentSessions"];
@@ -824,7 +824,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get a conversation session
+         * Get session
          * @description Returns one durable conversation session for an agent.
          */
         get: operations["getAgentSession"];
@@ -844,16 +844,56 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List conversation session messages
+         * List messages
          * @description Returns raw session messages in sequence order.
          */
         get: operations["listSessionMessages"];
         put?: never;
         /**
-         * Append conversation session messages
+         * Append messages
          * @description Appends one or more messages to a durable session and returns the updated session. The service assigns sequence numbers atomically and may append an additional compaction summary when the session crosses its compaction threshold.
          */
         post: operations["appendSessionMessages"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project}/agents/{id}/sessions/{session_id}/turns": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List turns
+         * @description Returns the session's AgentTurns in chronological order — the spine a turn-grouped transcript is built on. Each turn carries its run/step or channel-exchange linkage, attempt, and status; fetch a turn's messages from its transcript endpoint.
+         */
+        get: operations["listSessionTurns"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project}/turns/{id}/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List turn transcript
+         * @description Returns the messages produced by a single AgentTurn, in sequence order — an indexed read on the turn_id spine, with no metadata scan. This is the single-turn transcript read; group a whole session client-side by joining the session's messages on turn_id.
+         */
+        get: operations["listTurnMessages"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -868,12 +908,12 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List agent messaging bindings
+         * List bindings
          * @description Returns the provider accounts this agent can answer on.
          */
         get: operations["listAgentMessagingBindings"];
         /**
-         * Save an agent messaging binding
+         * Save binding
          * @description Upserts one provider-account binding for this agent.
          */
         put: operations["saveAgentMessagingBinding"];
@@ -895,7 +935,7 @@ export interface paths {
         put?: never;
         post?: never;
         /**
-         * Delete an agent messaging binding
+         * Delete binding
          * @description Removes one messaging binding from the agent.
          */
         delete: operations["deleteAgentMessagingBinding"];
@@ -912,7 +952,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Stream live conversation session events
+         * Stream session events
          * @description Streams live Server-Sent Events for a conversation session. This is a live transport for ephemeral events such as `generation.delta`; durable session transcript state remains available from the messages endpoint.
          */
         get: operations["streamSessionEvents"];
@@ -932,12 +972,12 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List assigned toolkits
+         * List toolkits
          * @description Returns the toolkits assigned to an agent in assignment order.
          */
         get: operations["listToolkitAssignments"];
         /**
-         * Replace assigned toolkits
+         * Replace toolkits
          * @description Replaces the agent's toolkit assignment set as a whole. The effective tool surface is the union of assigned toolkit grants intersected with the agent principal's permissions and any per-invocation narrowing.
          */
         put: operations["replaceToolkits"];
@@ -956,12 +996,12 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List agent table grants
+         * List table grants
          * @description Returns durable table memory grants assigned to one agent.
          */
         get: operations["listAgentTableGrants"];
         /**
-         * Replace agent table grants
+         * Replace table grants
          * @description Replaces the agent's durable table memory grant set as a whole.
          */
         put: operations["replaceAgentTableGrants"];
@@ -980,12 +1020,12 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List assigned skills
+         * List skills
          * @description Returns the skills assigned to an agent in assignment order.
          */
         get: operations["listSkillAssignments"];
         /**
-         * Replace assigned skills
+         * Replace skills
          * @description Replaces the agent's skill assignment set as a whole. Skills request tools and actions; the manifest enforces only the intersection with toolkit grants and the agent principal's permissions.
          */
         put: operations["replaceSkills"];
@@ -1004,7 +1044,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List an agent's resolved tools
+         * List tools
          * @description Resolves the effective set of tools an agent can invoke: the flat set of actions the agent can invoke, computed from toolkit grants, the agent principal's permissions, optional toolkit filters, optional per-invocation tool filters, and optional active skill narrowing.
          */
         get: operations["getAgentTools"];
@@ -1016,7 +1056,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project}/automations": {
+    "/v1/projects/{project}/loops": {
         parameters: {
             query?: never;
             header?: never;
@@ -1024,23 +1064,23 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List automations in a project
-         * @description Returns automations in the project, newest-first. Supports filtering by lifecycle status and cursor-based pagination. Archived automations are excluded by default; pass `status=archived` to list only archived, or `status=all` to include every status.
+         * List loops
+         * @description Returns loops in the project, newest-first. Supports filtering by lifecycle status and cursor-based pagination. Archived loops are excluded by default; pass `status=archived` to list only archived, or `status=all` to include every status.
          */
-        get: operations["listAutomations"];
+        get: operations["listLoops"];
         put?: never;
         /**
-         * Create an automation
-         * @description Creates a new automation in `draft` status. The `handle` must be unique within the project and is immutable.
+         * Create loop
+         * @description Creates a new loop. The `handle` must be unique within the project and is immutable. Include `spec` to create the first draft version inline; set `activate: true` with `spec` to publish that version and make the loop active in one request.
          */
-        post: operations["createAutomation"];
+        post: operations["createLoop"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project}/automations/{handle}": {
+    "/v1/projects/{project}/loops/{id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -1048,27 +1088,27 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get an automation
-         * @description Returns one automation by its project-unique handle.
+         * Get loop
+         * @description Returns one loop by ID.
          */
-        get: operations["getAutomation"];
+        get: operations["getLoop"];
         put?: never;
         post?: never;
         /**
-         * Archive an automation
-         * @description Soft-archives the automation. Existing runs remain queryable; new runs cannot be started.
+         * Archive loop
+         * @description Soft-archives the loop. Existing runs remain queryable; new runs cannot be started.
          */
-        delete: operations["deleteAutomation"];
+        delete: operations["deleteLoop"];
         options?: never;
         head?: never;
         /**
-         * Update an automation
-         * @description Updates mutable fields on the automation. The handle, org, and project remain immutable.
+         * Update loop
+         * @description Updates mutable fields on the loop. The handle, org, and project remain immutable.
          */
-        patch: operations["updateAutomation"];
+        patch: operations["updateLoop"];
         trace?: never;
     };
-    "/v1/projects/{project}/automations/{handle}/versions": {
+    "/v1/projects/{project}/loops/{id}/versions": {
         parameters: {
             query?: never;
             header?: never;
@@ -1076,23 +1116,23 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List versions for an automation
-         * @description Returns every stored version (draft, published, superseded) for one automation, newest version first.
+         * List versions
+         * @description Returns every stored version (draft, published, superseded) for one loop, newest version first.
          */
-        get: operations["listAutomationVersions"];
+        get: operations["listLoopVersions"];
         put?: never;
         /**
-         * Create a new draft version
-         * @description Stores a new draft `AutomationVersion` with the supplied spec. Returns the new version. Use `publishAutomationVersion` to make it runnable.
+         * Create version
+         * @description Stores a new draft `LoopVersion` with the supplied spec. Returns the new version. Use `publishLoopVersion` to make it runnable.
          */
-        post: operations["createAutomationVersion"];
+        post: operations["createLoopVersion"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project}/automations/{handle}/versions/{version}/publication": {
+    "/v1/projects/{project}/loops/{id}/versions/{version}/publication": {
         parameters: {
             query?: never;
             header?: never;
@@ -1102,10 +1142,10 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Publish a version
-         * @description Marks the supplied version `published` and updates the automation's `published_version`. Prior published versions become `superseded`.
+         * Publish version
+         * @description Marks the supplied version `published` and updates the loop's `published_version`. Prior published versions become `superseded`.
          */
-        post: operations["publishAutomationVersion"];
+        post: operations["publishLoopVersion"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1122,7 +1162,7 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Deliver an HTTP request payload to a trigger
+         * Deliver trigger
          * @description Public, unauthenticated endpoint that resolves the `http_handle` to a configured http-kind trigger and commits a durable source-event row; the run starts asynchronously. Idempotent on the `idempotency_key` query parameter or the standard `X-Idempotency-Key` header — repeats with the same key return the same `source_event_id` without enqueuing a duplicate. Resolve the resulting run via `GET /v1/projects/{project}/runs?source_event_id=<source_event_id>`.
          */
         post: operations["deliverHTTPTrigger"];
@@ -1132,7 +1172,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project}/automations/{handle}/runs": {
+    "/v1/projects/{project}/loops/{id}/runs": {
         parameters: {
             query?: never;
             header?: never;
@@ -1142,10 +1182,10 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Start a new automation run
-         * @description Resolves `{handle}` to the latest runnable version and starts a run. Returns the created run when accepted, or the existing run when the request carries a `trigger_fire_id` (or `external_id`) that matches a still-active prior run (idempotent retry).
+         * Start run
+         * @description Resolves `{id}` to the latest runnable version and starts a run. Returns the created run when accepted, or the existing run when the request carries an `idempotency_key` that matches a still-active prior run (idempotent retry).
          *
-         *     Idempotency conflicts on `external_id` against a terminal-prior run surface as `409 Conflict` with error code `external_id_conflict` and `details` populated with `existing_run_id`, `status`, and `external_id`.
+         *     Idempotency conflicts on `idempotency_key` against a terminal-prior run surface as `409 Conflict` with error code `idempotency_key_conflict` and `details` populated with `existing_run_id`, `status`, and `idempotency_key`.
          */
         post: operations["startRun"];
         delete?: never;
@@ -1162,8 +1202,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List automation runs
-         * @description Returns automation runs for the project, newest-first. Supports filters by status, automation_id, and source_event_id, plus cursor-based pagination.
+         * List loop runs
+         * @description Returns loop runs for the project, newest-first. Supports filters by status, loop_id, and source_event_id, plus cursor-based pagination.
          */
         get: operations["listRuns"];
         put?: never;
@@ -1182,8 +1222,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get an automation run
-         * @description Returns one automation run by ID with its current status, inputs, result, and source attribution.
+         * Get run
+         * @description Returns one loop run by ID with its current status, inputs, result, and source attribution.
          */
         get: operations["getRun"];
         put?: never;
@@ -1204,7 +1244,7 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Cancel an in-flight run
+         * Cancel run
          * @description Marks the run cancelled and closes any open waits. Safe to call on an already-terminal run (returns the current state, no error).
          */
         post: operations["cancelRun"];
@@ -1222,7 +1262,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List the steps of an automation run
+         * List run steps
          * @description Returns the durable step records for one run, ordered by step index. Each row carries the step's kind, status, attempt count, inputs, result, and any error metadata recorded by the engine.
          */
         get: operations["listRunSteps"];
@@ -1262,8 +1302,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Stream run events over Server-Sent Events
-         * @description Long-lived SSE stream of run events ordered by sequence number. Each `data:` frame is a JSON-encoded `AutomationRunEvent`. The stream terminates when the run reaches a terminal status. Clients that disconnect should reconnect using `?since_sequence=N` (or the SSE `Last-Event-ID` header set to the last sequence) to resume without gaps.
+         * Stream run events
+         * @description Long-lived SSE stream of run events ordered by sequence number. Each `data:` frame is a JSON-encoded `LoopRunEvent`. The stream terminates when the run reaches a terminal status. Clients that disconnect should reconnect using `?since_sequence=N` (or the SSE `Last-Event-ID` header set to the last sequence) to resume without gaps.
          */
         get: operations["streamRunEvents"];
         put?: never;
@@ -1284,7 +1324,7 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Resume a suspended run step
+         * Signal run
          * @description Resumes a run that is suspended on a `wait_event` step matching the provided `step_key`. The `result` payload becomes the step's output and is available to downstream steps via `{{ .context.<save_as> }}`.
          */
         post: operations["signalRun"];
@@ -1303,12 +1343,12 @@ export interface paths {
         };
         /**
          * List toolkits
-         * @description Returns active project-local and system toolkit templates visible to the project by default. Pass `status=archived` to list archived toolkits or `status=all` to include every lifecycle status.
+         * @description Returns project-local and system toolkit templates visible to the project by default.
          */
         get: operations["listToolkits"];
         put?: never;
         /**
-         * Create a toolkit
+         * Create toolkit
          * @description Creates a project-local toolkit with action selector grants.
          */
         post: operations["createToolkit"];
@@ -1326,19 +1366,19 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get a toolkit
+         * Get toolkit
          * @description Returns a single project-local or system toolkit template by ID.
          */
         get: operations["getToolkit"];
         /**
-         * Update a toolkit
+         * Update toolkit
          * @description Replaces mutable toolkit metadata and grant arrays when supplied.
          */
         put: operations["updateToolkit"];
         post?: never;
         /**
-         * Delete a toolkit
-         * @description Archives a project-local toolkit that is not assigned to any agent.
+         * Delete toolkit
+         * @description Deletes a project-local toolkit that is not assigned to any agent.
          */
         delete: operations["deleteToolkit"];
         options?: never;
@@ -1355,12 +1395,12 @@ export interface paths {
         };
         /**
          * List skills
-         * @description Returns active project-local and system skill templates visible to the project by default. Pass `status=archived` to list archived skills or `status=all` to include every lifecycle status.
+         * @description Returns project-local and system skill templates visible to the project by default.
          */
         get: operations["listSkills"];
         put?: never;
         /**
-         * Create a skill
+         * Create skill
          * @description Creates a project-local skill with instructions and requested tool filters.
          */
         post: operations["createSkill"];
@@ -1380,7 +1420,7 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Import a skill
+         * Import skill
          * @description Imports a Claude Code or Dive-style skill document into a project-local Mobius skill.
          */
         post: operations["importSkill"];
@@ -1398,19 +1438,19 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get a skill
+         * Get skill
          * @description Returns a single project-local or system skill template by ID.
          */
         get: operations["getSkill"];
         /**
-         * Update a skill
+         * Update skill
          * @description Replaces mutable skill metadata, instructions, and requested tool filters when supplied.
          */
         put: operations["updateSkill"];
         post?: never;
         /**
-         * Delete a skill
-         * @description Archives a project-local skill that is not assigned to any agent.
+         * Delete skill
+         * @description Deletes a project-local skill that is not assigned to any agent.
          */
         delete: operations["deleteSkill"];
         options?: never;
@@ -1432,7 +1472,7 @@ export interface paths {
         get: operations["listTables"];
         put?: never;
         /**
-         * Create a table
+         * Create table
          * @description Create a project-scoped table with a typed column schema.
          */
         post: operations["createTable"];
@@ -1450,18 +1490,18 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get a table
+         * Get table
          * @description Get table metadata and schema by table ID.
          */
         get: operations["getTable"];
         /**
-         * Update a table
+         * Update table
          * @description Update table name, description, ownership, or schema and resync declared indexes.
          */
         put: operations["updateTable"];
         post?: never;
         /**
-         * Delete a table and all its rows
+         * Delete table and all its rows
          * @description Delete one table and all rows stored under it.
          */
         delete: operations["deleteTable"];
@@ -1500,7 +1540,7 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Insert a row
+         * Insert row
          * @description Validate and insert one row into the table.
          */
         post: operations["insertTableRow"];
@@ -1560,7 +1600,7 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Upsert a row
+         * Upsert row
          * @description Insert or update a row identified by a set of key columns. If a row with matching key-column values exists it is updated (PATCH semantics — unspecified fields are preserved). If no matching row is found a new row is inserted.
          *
          *     Returns 201 Created when a new row was inserted, 200 OK when an existing row was updated.
@@ -1600,21 +1640,21 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get a row by ID
+         * Get row by ID
          * @description Get one table row by row ID.
          */
         get: operations["getTableRow"];
         put?: never;
         post?: never;
         /**
-         * Delete a row
+         * Delete row
          * @description Delete one row from the table.
          */
         delete: operations["deleteTableRow"];
         options?: never;
         head?: never;
         /**
-         * Update a row (PATCH — merges into existing data)
+         * Update row (PATCH — merges into existing data)
          * @description Validate and merge fields into an existing row, optionally checking the current row version.
          */
         patch: operations["updateTableRow"];
@@ -1628,13 +1668,13 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List artifacts in a project
+         * List artifacts
          * @description Returns artifacts in the project, ordered (created_at desc, id desc). Optional filters narrow by run, step, state, or mime prefix. Deleted artifacts are excluded by default; pass `state=deleted` to inspect tombstones. Results are scoped to the authenticated principal's User-owned artifact space.
          */
         get: operations["listArtifacts"];
         put?: never;
         /**
-         * Publish a worker-produced artifact
+         * Publish artifact
          * @description Accepts a multipart file upload from a worker that is currently executing a claimed job. The request must include `X-Mobius-Lease-Token`; Mobius resolves the active claim and derives run, step, job, worker session, attempt, and shared visibility from the lease. Caller-supplied lineage or visibility fields are rejected.
          */
         post: operations["createArtifact"];
@@ -1652,14 +1692,14 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get an artifact
+         * Get artifact
          * @description Returns artifact metadata after enforcing the caller's project and owner-user artifact scope.
          */
         get: operations["getArtifact"];
         put?: never;
         post?: never;
         /**
-         * Delete an artifact
+         * Delete artifact
          * @description Soft-delete the artifact row and delete the underlying Mobius-managed object before reporting success. The tombstone remains for audit and run-history views, while content and quota charging are removed.
          */
         delete: operations["deleteArtifact"];
@@ -1698,7 +1738,7 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Create a signed artifact URL
+         * Sign artifact URL
          * @description Generates a fresh, time-boxed Mobius-managed storage URL for the artifact after enforcing the caller's artifact access scope. Use `getArtifactContent` when bytes should flow through the Mobius API instead of a signed storage URL.
          */
         post: operations["createArtifactSignedUrl"];
@@ -1716,7 +1756,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get per-org Mobius-managed artifact storage quota usage
+         * Get storage usage
          * @description Returns Mobius-managed artifact quota usage for the current org.
          */
         get: operations["getArtifactStorageQuota"];
@@ -1820,7 +1860,7 @@ export interface components {
          * @enum {string}
          */
         ProjectAccessMode: "org_open" | "restricted";
-        /** @description Workspace boundary for automations, actions, credentials, agents, and runtime activity. Most operational APIs are project-scoped, so this object tells clients which handle to use and who can see the project. */
+        /** @description Workspace boundary for loops, actions, credentials, agents, and runtime activity. Most operational APIs are project-scoped, so this object tells clients which handle to use and who can see the project. */
         Project: {
             /** @description Unique identifier for this project. */
             id: string;
@@ -1863,7 +1903,7 @@ export interface components {
          * @enum {string}
          */
         AgentModelRouteMode: "managed" | "worker" | "byo_provider";
-        /** @description Default model route used by built-in messaging and by automation agent steps that do not override the route. */
+        /** @description Default model route used by built-in messaging and by loop agent steps that do not override the route. */
         AgentModelRoute: {
             mode: components["schemas"]["AgentModelRouteMode"];
             /** @description Environment to use for worker-backed model calls. */
@@ -1882,7 +1922,7 @@ export interface components {
          * @enum {string}
          */
         AgentToolPresentation: "flat" | "meta";
-        /** @description Project-scoped AI actor identity. An agent IS a principal (its permissions are role grants on that principal); agents are useful when automations need a named actor with instructions, capabilities, configuration, and session presence. */
+        /** @description Project-scoped AI actor identity. An agent IS a principal (its permissions are role grants on that principal); agents are useful when loops need a named actor with instructions, capabilities, configuration, and session presence. */
         Agent: {
             /** @description Unique identifier for this agent. */
             id: string;
@@ -1901,7 +1941,7 @@ export interface components {
             /** @description Model identifier for platform agents. Accepts any id returned by `GET /v1/projects/{project}/catalog/models`, optionally `provider/`-prefixed (e.g. `xai/grok-4`); bare known ids (e.g. `claude-sonnet-4-6`) are auto-detected to their provider. Empty string falls back to the platform default. */
             model?: string;
             model_route?: components["schemas"]["AgentModelRoute"];
-            /** @description Default tool presentation used by automation agent steps and built-in channel-message replies for this agent. */
+            /** @description Default tool presentation used by loop agent steps and built-in channel-message replies for this agent. */
             tool_presentation?: components["schemas"]["AgentToolPresentation"];
             /** @description Custom system prompt for platform agents. Empty string uses the generated default based on the agent name. */
             system_prompt?: string;
@@ -1935,7 +1975,7 @@ export interface components {
             /** @description The list of results for this page. */
             items: components["schemas"]["Agent"][];
         };
-        /** @description Stored API credential metadata for automation and service access. The raw secret is never returned here; use this object to list, audit, expire, or identify keys by prefix without exposing tokens. */
+        /** @description Stored API credential metadata for loop and service access. The raw secret is never returned here; use this object to list, audit, expire, or identify keys by prefix without exposing tokens. */
         APIKey: {
             /** @description Unique identifier for this API key. */
             id: string;
@@ -2054,9 +2094,9 @@ export interface components {
          * @enum {string}
          */
         ActionEndpointKind: "http" | "worker";
-        /** @description Registers a project-owned custom action callable from automations and agents. */
+        /** @description Registers a project-owned custom action callable from loops and agents. */
         CreateActionRequest: {
-            /** @description Project-scoped identifier used in automation step definitions. Lowercase alphanumeric + hyphens, e.g. "send-email". Must be unique within the project. Cannot start with "mobius." (reserved prefix). */
+            /** @description Project-scoped identifier used in loop step definitions. Lowercase alphanumeric + hyphens, e.g. "send-email". Must be unique within the project. Cannot start with "mobius." (reserved prefix). */
             name: string;
             /** @description Human-readable display name shown in the UI and catalog. */
             title?: string;
@@ -2113,11 +2153,11 @@ export interface components {
                 [key: string]: string;
             };
         };
-        /** @description Project-owned custom action definition callable by automations and agents. */
+        /** @description Project-owned custom action definition callable by loops and agents. */
         Action: {
             /** @description Unique identifier for this action. */
             id: string;
-            /** @description Project-scoped stable identifier used in automation definitions. */
+            /** @description Project-scoped stable identifier used in loop definitions. */
             name: string;
             /** @description Human-readable display title for the action. */
             title?: string;
@@ -2176,7 +2216,7 @@ export interface components {
             /** @description Base64-encoded 32-byte signing key. Store it immediately — this is the only time it is returned. */
             signing_secret: string;
         };
-        /** @description One built-in, integration, or custom-backed action available to agents and automation authors. */
+        /** @description One built-in, integration, or custom-backed action available to agents and loop authors. */
         ActionCatalogEntry: {
             /** @description Canonical dotted action name (e.g. `slack.post_message`). Translated to the provider-safe form (`slack_post_message`) only at the LLM boundary. */
             name: string;
@@ -2220,7 +2260,7 @@ export interface components {
              * @description Endpoint URL (populated for endpoint_kind: http actions only).
              */
             endpoint_url?: string;
-            /** @description Execution locations and worker requirements available to automation authors. */
+            /** @description Execution locations and worker requirements available to loop authors. */
             execution?: components["schemas"]["ActionExecutionMetadata"];
         };
         ActionExecutionMetadata: {
@@ -2261,7 +2301,7 @@ export interface components {
             status: "active" | "completed" | "failed";
             /** @description Job created for this direct invocation. */
             job_id?: string;
-            /** @description Automation run ID. Present when an asynchronous run was created. */
+            /** @description Loop run ID. Present when an asynchronous run was created. */
             run_id?: string;
             /** @description Action output. Present when status is "completed". */
             output?: {
@@ -2274,15 +2314,15 @@ export interface components {
         ActionInvocationEntry: {
             /** @description Unique identifier for this invocation record. */
             id: string;
-            /** @description Automation run that triggered this invocation, if run-backed. */
+            /** @description Loop run that triggered this invocation, if run-backed. */
             run_id?: string;
             /** @description Job that triggered this invocation, if job-backed. */
             job_id?: string;
-            /** @description Automation step name that triggered this invocation. */
+            /** @description Loop step name that triggered this invocation. */
             step_name?: string;
             /** @description Name of the action that was invoked. */
             action_name: string;
-            /** @description Invocation source ("automation", "direct", etc.). */
+            /** @description Invocation source ("loop", "direct", etc.). */
             source: string;
             /** @description Input parameters passed to the action. */
             parameters?: {
@@ -2337,7 +2377,7 @@ export interface components {
             kind: "integration" | "capability";
             display_name: string;
             description?: string;
-            /** @description Whether this source can start an automation now. `capability` sources are always `ready`. `integration` sources are `ready` only when the project has an active, usable connection for the provider. */
+            /** @description Whether this source can start a loop now. `capability` sources are always `ready`. `integration` sources are `ready` only when the project has an active, usable connection for the provider. */
             readiness: components["schemas"]["CapabilityReadiness"];
             /** @description Why an `integration` source is `needs_setup`. Omitted when `readiness` is `ready` and for `capability` sources. */
             readiness_reason?: components["schemas"]["CapabilityReadinessReason"];
@@ -2347,6 +2387,14 @@ export interface components {
             /** @description Dotted event-type identifier (`table.row.inserted`, `github.pull_request.opened`). */
             name: string;
             description?: string;
+            /** @description JSON Schema for the normalized event data available to event-trigger runs at `{{ .inputs.event.* }}` and to event conditions/mappings at `event.*`. Absent only when the event payload is intentionally open-ended and the provider has not registered an authoring schema. */
+            event_schema?: {
+                [key: string]: unknown;
+            };
+            /** @description JSON Schema for normalized routing metadata available to event-trigger runs at `{{ .inputs.meta.* }}` and to event conditions/mappings at `meta.*`. */
+            meta_schema?: {
+                [key: string]: unknown;
+            };
         };
         EventCatalogReservedPrefix: {
             prefix: string;
@@ -2359,6 +2407,11 @@ export interface components {
             default_model: string;
             /** @description Available providers in display order. Providers with no configured credentials are omitted. */
             items: components["schemas"]["ModelProviderGroup"][];
+            /**
+             * @description Present when `items` is empty because the request was denied rather than because no catalog exists. `platform_funding_denied` means Mobius-managed provider credentials are gated by billing or plan state; `credentials_unavailable` means no usable provider credentials were available.
+             * @enum {string}
+             */
+            reason?: "platform_funding_denied" | "credentials_unavailable";
         };
         ModelProviderGroup: {
             /** @description Canonical provider id (`anthropic`, `openai`, `gemini`, `xai`). */
@@ -2407,15 +2460,15 @@ export interface components {
          */
         EnvironmentPurpose: "implementation" | "review" | "verification" | "preview" | "debug" | "worker" | "custom";
         /**
-         * @description High-level ownership policy for how Mobius plans to use the environment. `run` is one-shot and auto-cleaned with a run; `agent` and `automation` are persistent environment policies; `manual` is operator controlled.
+         * @description High-level ownership policy for how Mobius plans to use the environment. `run` is one-shot and auto-cleaned with a run; `agent` and `loop` are persistent environment policies; `manual` is operator controlled.
          * @enum {string}
          */
-        EnvironmentMode: "manual" | "run" | "agent" | "automation";
+        EnvironmentMode: "manual" | "run" | "agent" | "loop";
         /**
          * @description Execution or lifecycle object this environment is bound to. Ownership remains in `owned_by`.
          * @enum {string}
          */
-        EnvironmentBoundToType: "none" | "run" | "worker_session" | "service" | "agent" | "automation" | "manual";
+        EnvironmentBoundToType: "none" | "run" | "worker_session" | "service" | "agent" | "loop" | "manual";
         /**
          * @description Whether a finished environment is retained or destroyed, and under what outcome.
          * @enum {string}
@@ -2725,9 +2778,9 @@ export interface components {
         WorkerSessionJobRef: {
             /** @description Job ID. */
             id: string;
-            /** @description Automation run that owns the job. */
+            /** @description Loop run that owns the job. */
             run_id: string;
-            /** @description Automation step name. */
+            /** @description Loop step name. */
             step_name: string;
             /** @description Action executed by the worker. */
             action: string;
@@ -2853,7 +2906,7 @@ export interface components {
             /** @enum {string} */
             kind: "action_execution" | "llm_generation";
             /** @enum {string} */
-            origin: "automation_action_step" | "agent_tool_call" | "agent_llm_call" | "conversation_tool_call" | "conversation_llm_call" | "direct_action_invoke" | "server_internal";
+            origin: "loop_action_step" | "agent_tool_call" | "agent_llm_call" | "conversation_tool_call" | "conversation_llm_call" | "direct_action_invoke" | "server_internal";
             /** @enum {string} */
             executor_kind: "customer_worker" | "server_worker";
             queue: string;
@@ -3228,12 +3281,12 @@ export interface components {
          * @description Surface that created the session.
          * @enum {string}
          */
-        SessionOrigin: "manual" | "api" | "automation";
+        SessionOrigin: "manual" | "api" | "loop";
         /**
          * @description Boundary used to resolve named sessions.
          * @enum {string}
          */
-        SessionScope: "agent" | "automation";
+        SessionScope: "agent" | "loop";
         /**
          * @description Visibility of the session in project surfaces.
          * @enum {string}
@@ -3249,6 +3302,48 @@ export interface components {
          * @enum {string}
          */
         SessionMessageEntryType: "message" | "compaction";
+        /**
+         * @description Lifecycle status of one agent turn.
+         * @enum {string}
+         */
+        AgentTurnStatus: "running" | "waiting" | "completed" | "failed" | "cancelled";
+        /** @description One attempt of an agent running the agent loop — the unit that produces a transcript. A turn is triggered either by a loop step (run_id + step_id) or an inbound channel message (channel_exchange_id); the two are mutually exclusive. Its messages are read via the turn's transcript endpoint. */
+        AgentTurn: {
+            /** @description Stable turn identifier. */
+            id: string;
+            /** @description Agent that ran this turn. */
+            agent_id: string;
+            /** @description Session this turn's transcript was appended to. */
+            session_id: string;
+            /** @description Loop run that triggered this turn. Absent for messaging turns. */
+            run_id?: string;
+            /** @description Step key (matches LoopRunStep.step_key, not its id) of the loop step that triggered this turn. Absent for messaging turns. */
+            step_key?: string;
+            /** @description Inbound channel exchange that triggered this turn. Absent for loop turns. */
+            channel_exchange_id?: string;
+            /** @description 1-based attempt number for this run-step; retries create new turns. */
+            attempt: number;
+            status: components["schemas"]["AgentTurnStatus"];
+            /** @description Per-session ordering hint (cosmetic; turns are ordered by creation time). */
+            seq?: number;
+            /** @description Machine-readable failure category when the turn failed. */
+            error_type?: string;
+            /** @description Human-readable failure detail when the turn failed. */
+            error_message?: string;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+            /**
+             * Format: date-time
+             * @description When the turn reached a terminal status.
+             */
+            completed_at?: string;
+        };
+        AgentTurnListResponse: {
+            /** @description Turns in this session, ordered by creation time. */
+            items: components["schemas"]["AgentTurn"][];
+        };
         Session: {
             /** @description Stable session identifier. */
             id: string;
@@ -3331,6 +3426,8 @@ export interface components {
             covers_through_sequence?: number;
             /** @description Monotonic per-session sequence number assigned at append time. */
             sequence: number;
+            /** @description AgentTurn that produced this message. Run, step, and channel identity for the message are read from this turn. Absent for compaction summaries and messages not tied to a turn. */
+            turn_id?: string;
             /** @description Free-form caller metadata for this message. */
             metadata?: {
                 [key: string]: unknown;
@@ -3391,8 +3488,6 @@ export interface components {
             project_id: string;
             /** @description Human-readable toolkit name. */
             name: string;
-            /** @description Stable slug used in API paths and references. */
-            slug?: string;
             /** @description Markdown description of the toolkit's purpose. */
             description?: string;
             /**
@@ -3400,11 +3495,8 @@ export interface components {
              * @enum {string}
              */
             source: "system" | "project";
-            /**
-             * @description Lifecycle status of the toolkit.
-             * @enum {string}
-             */
-            status: "active" | "archived";
+            /** @description Resource tags applied to this toolkit. */
+            tags?: components["schemas"]["TagMap"];
             /** @description Action selectors granted by this toolkit. Each entry is matched against the unified action catalog at manifest-resolution time. */
             action_grants: components["schemas"]["ToolkitActionGrant"][];
             /** @description User ID of the principal who created this toolkit. */
@@ -3425,12 +3517,12 @@ export interface components {
         ToolkitRequest: {
             /** @description Human-readable toolkit name. */
             name: string;
-            /** @description Optional stable slug. When omitted, the server derives one from `name`. */
-            slug?: string;
             /** @description Markdown description of the toolkit's purpose. */
             description?: string;
             /** @description Action selectors granted by this toolkit. */
             action_grants?: components["schemas"]["ToolkitActionGrant"][];
+            /** @description Resource tags to apply to this toolkit. */
+            tags?: components["schemas"]["TagMap"];
         };
         ToolkitListResponse: {
             /** @description The list of results for this page. */
@@ -3519,11 +3611,6 @@ export interface components {
              * @enum {string}
              */
             source: "system" | "project" | "imported";
-            /**
-             * @description Lifecycle status of the skill.
-             * @enum {string}
-             */
-            status: "active" | "archived";
             /** @description Markdown instructions loaded when the skill is active. */
             instructions: string;
             /** @description Canonical action names, wildcard selectors, or group references that narrow the agent's effective tool set while this skill is active. Uses the same selector vocabulary as toolkit grants. */
@@ -3536,6 +3623,8 @@ export interface components {
             model_hint?: string;
             /** @description Whether users may directly request this skill by name. */
             user_invocable?: boolean;
+            /** @description Resource tags applied to this skill. */
+            tags?: components["schemas"]["TagMap"];
             /** @description User ID of the principal who created this skill. */
             created_by?: string;
             /** @description User ID of the principal who last updated this skill. */
@@ -3570,6 +3659,8 @@ export interface components {
             model_hint?: string;
             /** @description Whether users may directly request this skill by name. */
             user_invocable?: boolean;
+            /** @description Resource tags to apply to this skill. */
+            tags?: components["schemas"]["TagMap"];
         };
         ImportSkillRequest: {
             /** @description Full skill document, optionally with YAML frontmatter. */
@@ -3665,7 +3756,7 @@ export interface components {
             policy_hash: string;
             /** @description Toolkit IDs that contributed to the resolved manifest. */
             toolkit_ids: string[];
-            /** @description Catalog entries the agent can invoke. Each entry surfaces to the LLM as its own named tool. Built-in, integration, automation, and custom-HTTP actions are intermingled here. */
+            /** @description Catalog entries the agent can invoke. Each entry surfaces to the LLM as its own named tool. Built-in, integration, loop, and custom-HTTP actions are intermingled here. */
             tools: components["schemas"]["ActionCatalogEntry"][];
             /** @description Audit trail of group selectors that contributed to the resolved tool set. Operators see groups; the LLM only sees the flat `tools` list. */
             groups_resolved?: components["schemas"]["ResolvedActionGroup"][];
@@ -3725,26 +3816,26 @@ export interface components {
             /** @description When supplied, replaces the user tag set on the agent. System tags (`mobius:*`) are preserved. */
             tags?: components["schemas"]["TagMap"];
         };
-        /** @description An automation. The `triggers` array reports the currently materialized runnable triggers. Desired triggers are authored in `AutomationSpec.triggers` and reconciled when a version is published. */
-        Automation: {
-            /** @description Stable automation identifier. */
+        /** @description A loop. The `triggers` array reports the currently materialized runnable triggers. Desired triggers are authored in `LoopSpec.triggers` and reconciled when a version is published. */
+        Loop: {
+            /** @description Stable loop identifier. */
             id: string;
-            /** @description Organization that owns this automation. */
+            /** @description Organization that owns this loop. */
             org_id: string;
-            /** @description Project that owns this automation. */
+            /** @description Project that owns this loop. */
             project_id: string;
-            /** @description Stable per-project automation handle. Immutable after creation. */
+            /** @description Stable per-project loop handle. Immutable after creation. Use it for authored references and `?handle=` resolution; address the loop resource by `id`. */
             handle: string;
             /** @description Human-readable display name. */
             name: string;
-            /** @description Markdown description of the automation's purpose. */
+            /** @description Markdown description of the loop's purpose. */
             description?: string;
-            status: components["schemas"]["AutomationStatus"];
-            /** @description User who created or currently owns this automation. */
+            status: components["schemas"]["LoopStatus"];
+            /** @description User who created or currently owns this loop. */
             owner?: string;
             /** @description Agent used by `agent` steps that do not pin an agent explicitly. */
             default_agent_id?: string;
-            /** @description Newest stored AutomationVersion number, regardless of publication status. */
+            /** @description Newest stored LoopVersion number, regardless of publication status. */
             latest_version: number;
             /** @description Currently runnable version. Absent until a version is published. */
             published_version?: number;
@@ -3752,16 +3843,16 @@ export interface components {
             default_inputs?: {
                 [key: string]: unknown;
             };
-            /** @description Free-form automation-level settings consumed by the engine. */
+            /** @description Free-form loop-level settings consumed by the engine. */
             settings?: {
                 [key: string]: unknown;
             };
-            /** @description Free-form label map used to organise automations in listings and search. */
+            /** @description Free-form label map used to organise loops in listings and search. */
             tags?: {
                 [key: string]: string;
             };
-            /** @description Triggers that can start runs of this automation. */
-            triggers: components["schemas"]["AutomationTrigger"][];
+            /** @description Triggers that can start runs of this loop. */
+            triggers: components["schemas"]["LoopTrigger"][];
             /**
              * Format: date-time
              * @description Timestamp of the most recent run start, if any.
@@ -3769,7 +3860,7 @@ export interface components {
             last_run_at?: string;
             /**
              * Format: date-time
-             * @description Soft-archive timestamp; absent on active automations.
+             * @description Soft-archive timestamp; absent on active loops.
              */
             archived_at?: string;
             /**
@@ -3784,24 +3875,24 @@ export interface components {
             updated_at: string;
         };
         /**
-         * @description Lifecycle status of an automation.
+         * @description Lifecycle status of a loop.
          * @enum {string}
          */
-        AutomationStatus: "draft" | "active" | "paused" | "archived";
-        AutomationListResponse: {
+        LoopStatus: "draft" | "active" | "paused" | "archived";
+        LoopListResponse: {
             /** @description The list of results for this page. */
-            items: components["schemas"]["Automation"][];
+            items: components["schemas"]["Loop"][];
             /** @description Opaque cursor for the next page; absent when no more results. */
             next_cursor?: string;
             /** @description True when more items exist after this page. */
             has_more?: boolean;
         };
-        CreateAutomationRequest: {
-            /** @description Stable per-project automation handle. Immutable after creation. */
+        CreateLoopRequest: {
+            /** @description Stable per-project loop handle. Must be lowercase alphanumeric with single hyphen separators. Immutable after creation. */
             handle: string;
             /** @description Human-readable display name. */
             name: string;
-            /** @description Markdown description of the automation's purpose. */
+            /** @description Markdown description of the loop's purpose. */
             description?: string;
             /** @description Agent used by `agent` steps that do not pin an agent explicitly. */
             default_agent_id?: string;
@@ -3809,58 +3900,61 @@ export interface components {
             default_inputs?: {
                 [key: string]: unknown;
             };
-            /** @description Free-form automation-level settings consumed by the engine. */
+            /** @description Free-form loop-level settings consumed by the engine. */
             settings?: {
                 [key: string]: unknown;
             };
-            /** @description Free-form label map used to organise automations in listings and search. */
+            /** @description Free-form label map used to organise loops in listings and search. */
             tags?: {
                 [key: string]: string;
             };
+            /** @description Optional initial loop spec to store as version 1 during creation. */
+            spec?: components["schemas"]["LoopSpec"];
+            /**
+             * @description When true, `spec` is required. Mobius stores it as version 1, publishes it, materializes its triggers, and sets the loop status to `active` before returning.
+             * @default false
+             */
+            activate: boolean;
         };
-        /** @description Partial update of automation metadata. Desired triggers live in `AutomationSpec.triggers` and are materialized when a version is published. */
-        UpdateAutomationRequest: {
+        /** @description Partial update of loop metadata. Desired triggers live in `LoopSpec.triggers` and are materialized when a version is published. */
+        UpdateLoopRequest: {
             /** @description Human-readable display name. */
             name?: string;
-            /** @description Markdown description of the automation's purpose. */
+            /** @description Markdown description of the loop's purpose. */
             description?: string;
-            status?: components["schemas"]["AutomationStatus"];
+            status?: components["schemas"]["LoopStatus"];
             /** @description Agent used by `agent` steps that do not pin an agent explicitly. */
             default_agent_id?: string;
             /** @description Default values merged into `inputs` when a run is started without overrides. */
             default_inputs?: {
                 [key: string]: unknown;
             };
-            /** @description Free-form automation-level settings consumed by the engine. */
+            /** @description Free-form loop-level settings consumed by the engine. */
             settings?: {
                 [key: string]: unknown;
             };
-            /** @description Free-form label map used to organise automations in listings and search. */
+            /** @description Free-form label map used to organise loops in listings and search. */
             tags?: {
                 [key: string]: string;
             };
         };
-        AutomationVersion: {
-            /** @description Stable identifier for this AutomationVersion record. */
+        LoopVersion: {
+            /** @description Stable identifier for this LoopVersion record. */
             id: string;
             /** @description Organization that owns this version. */
             org_id: string;
             /** @description Project that owns this version. */
             project_id: string;
-            /** @description Automation this version belongs to. */
-            automation_id: string;
-            /** @description Monotonic version number, unique per automation. */
+            /** @description Loop this version belongs to. */
+            loop_id: string;
+            /** @description Monotonic version number, unique per loop. */
             version: number;
             /**
              * @description Publication state. `draft` is editable but not runnable; `published` is the currently runnable version; `superseded` is a prior published version retained for historical runs.
              * @enum {string}
              */
             status: "draft" | "published" | "superseded";
-            spec?: components["schemas"]["AutomationSpec"];
-            /** @description Internal compiled execution plan derived from `spec`. Not part of the public contract. */
-            compiled_plan?: {
-                [key: string]: unknown;
-            };
+            spec?: components["schemas"]["LoopSpec"];
             /** @description Validation result for `spec` produced at version-creation time. */
             validation?: {
                 [key: string]: unknown;
@@ -3873,10 +3967,10 @@ export interface components {
              */
             created_at: string;
         };
-        /** @description Authoring representation of an automation. */
-        AutomationSpec: {
+        /** @description Authoring representation of a loop. */
+        LoopSpec: {
             /**
-             * @description Automation spec schema version. Current value is `1`.
+             * @description Loop spec schema version. Current value is `1`.
              * @default 1
              * @enum {string}
              */
@@ -3886,25 +3980,26 @@ export interface components {
             /** @description Optional spec-local Markdown description. */
             description?: string;
             inputs?: {
-                [key: string]: components["schemas"]["AutomationSpecInput"];
+                [key: string]: components["schemas"]["LoopSpecInput"];
             };
             /**
-             * @description Behavior when a run starts while another run of the same automation is active.
+             * @description Behavior when a run starts while another run of the same loop is active.
              * @enum {string}
              */
             concurrency?: "allow" | "queue" | "skip" | "replace";
             /** @description Desired triggers materialized when a version is published. */
-            triggers?: components["schemas"]["AutomationSpecTrigger"][];
-            /** @description Source repositories the automation targets. When a shared managed environment is selected, the runtime prepares these repositories before user-authored steps run. */
-            repositories?: components["schemas"]["AutomationSpecRepository"][];
-            steps: components["schemas"]["AutomationStep"][];
+            triggers?: components["schemas"]["LoopSpecTrigger"][];
+            /** @description Source repositories the loop targets. When a shared managed environment is selected, the runtime prepares these repositories before user-authored steps run. */
+            repositories?: components["schemas"]["LoopSpecRepository"][];
+            steps: components["schemas"]["LoopStep"][];
             cleanup?: {
                 [key: string]: unknown;
             }[];
-            defaults?: components["schemas"]["AutomationSpecDefaults"];
+            limits?: components["schemas"]["LoopSpecLimits"];
+            defaults?: components["schemas"]["LoopSpecDefaults"];
         };
-        /** @description Source repository target attached to an automation spec. */
-        AutomationSpecRepository: {
+        /** @description Source repository target attached to a loop spec. */
+        LoopSpecRepository: {
             /**
              * @description Repository provider. GitHub is the only supported provider today.
              * @default github
@@ -3918,14 +4013,14 @@ export interface components {
             /** @description Whether the provider reports this repository as private. */
             private?: boolean;
         };
-        AutomationSpecInput: {
+        LoopSpecInput: {
             type?: string;
             description?: string;
             required?: boolean;
             /** @description Optional default value for this input. May be any JSON value. */
             default?: unknown;
         };
-        AutomationSpecTrigger: {
+        LoopSpecTrigger: {
             /** @description Stable user-authored trigger key within the spec. */
             key?: string;
             /** @description Human-readable trigger name. */
@@ -3933,45 +4028,199 @@ export interface components {
             /** @enum {string} */
             kind: "http" | "schedule" | "event" | "manual";
             enabled?: boolean;
-            /** @description Kind-specific trigger configuration. */
-            config?: {
-                [key: string]: unknown;
-            };
+            /** @description Kind-specific trigger configuration. Use `HTTPTriggerConfig` for `kind: http`, `ScheduleTriggerConfig` for `kind: schedule`, and `EventTriggerConfig` for `kind: event`. Omit for manual triggers. */
+            config?: components["schemas"]["HTTPTriggerConfig"] | components["schemas"]["ScheduleTriggerConfig"] | components["schemas"]["EventTriggerConfig"];
             /** @enum {string} */
             concurrency_policy?: "allow" | "queue" | "skip" | "replace";
             max_concurrent_runs?: number;
         };
-        AutomationStep: {
+        /** @description Configuration for `LoopSpec.triggers[]` entries with `kind` set to `http`. */
+        HTTPTriggerConfig: {
+            /** @description Optional public delivery handle for `POST /v1/triggers/http/{http_handle}`. Omit to let Mobius use the materialized trigger id as the unguessable handle. */
+            http_handle?: string;
+        };
+        /** @description Configuration for `LoopSpec.triggers[]` entries with `kind` set to `schedule`. Provide exactly one of `cron` or `interval`; the compiler rejects configs that omit both or set both. */
+        ScheduleTriggerConfig: {
+            /** @description Standard five-field cron expression or descriptor such as `@hourly`. */
+            cron?: string;
+            /** @description Go duration string such as `5m`, `1h`, or `24h`. */
+            interval?: string;
+            /** @description IANA time zone for cron schedules, such as `America/New_York`. */
+            timezone?: string;
+        };
+        /** @description Configuration for `LoopSpec.triggers[]` entries with `kind` set to `event`. */
+        EventTriggerConfig: {
+            /** @description Source-event type or catalog pattern this trigger subscribes to. */
+            event_type: string;
+            /** @description Optional source identifier used to scope event matching. */
+            source_id?: string;
+            /** @description Optional expr predicate evaluated against the public `{ event, meta }` envelope. */
+            condition?: string;
+        };
+        /** @description User-authored loop step, discriminated by `kind`. */
+        LoopStep: components["schemas"]["LoopAgentStepSpec"] | components["schemas"]["LoopActionStepSpec"] | components["schemas"]["LoopSleepStepSpec"] | components["schemas"]["LoopWaitForEventStepSpec"] | components["schemas"]["LoopSubLoopStepSpec"] | components["schemas"]["LoopCheckStepSpec"];
+        LoopAgentStepSpec: {
             /** @description Stable step key within the spec. */
             key: string;
             /** @description Human-readable step name. */
             name?: string;
-            /** @enum {string} */
-            kind: "agent" | "action" | "sleep" | "wait_for_event" | "automation";
-            /** @description Kind-specific step configuration. */
-            config: components["schemas"]["AutomationAgentStep"] | components["schemas"]["AutomationActionStep"] | components["schemas"]["AutomationSleepStep"] | components["schemas"]["AutomationWaitForEventStep"] | components["schemas"]["AutomationSubAutomationStep"];
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "agent";
+            config: components["schemas"]["LoopAgentStep"];
             /** @description Step-local input object resolved when the step starts. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions. */
             input?: {
                 [key: string]: unknown;
             };
-            retry?: components["schemas"]["AutomationRetryPolicy"];
-            timeout?: components["schemas"]["AutomationTimeoutPolicy"];
+            retry?: components["schemas"]["LoopRetryPolicy"];
+            timeout?: components["schemas"]["LoopTimeoutPolicy"];
             /** @description Context key used to store this step's output. Defaults to `key`. */
             save_as?: string;
         };
-        /** @description Run-level defaults inside the automation spec. Lives at `spec.defaults` in the JSON the engine compiles. */
-        AutomationSpecDefaults: {
-            /** @description Run wall-clock budget as a Go duration string (e.g. `30m`, `2h`, `90s`). When set, the engine stamps `wall_clock_deadline_at = run.started_at + wall_clock_timeout` and the reaper fails the run after that instant even if a step executor is still grinding. Omit or set to `0` to disable the guard. */
-            wall_clock_timeout?: string;
-            environment?: components["schemas"]["AutomationEnvironmentPolicy"];
-            agent_session?: components["schemas"]["AutomationAgentSessionPolicy"];
+        LoopActionStepSpec: {
+            /** @description Stable step key within the spec. */
+            key: string;
+            /** @description Human-readable step name. */
+            name?: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "action";
+            config: components["schemas"]["LoopActionStep"];
+            /** @description Step-local input object resolved when the step starts. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions. */
+            input?: {
+                [key: string]: unknown;
+            };
+            retry?: components["schemas"]["LoopRetryPolicy"];
+            timeout?: components["schemas"]["LoopTimeoutPolicy"];
+            /** @description Context key used to store this step's output. Defaults to `key`. */
+            save_as?: string;
         };
-        /** @description Automatic managed-environment policy for automation execution. Omit to use the product default: each agent gets a persistent agent-bound environment, while direct environment actions get a run-bound environment. Set `disabled: true` to opt out. */
-        AutomationEnvironmentPolicy: {
+        LoopSleepStepSpec: {
+            /** @description Stable step key within the spec. */
+            key: string;
+            /** @description Human-readable step name. */
+            name?: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "sleep";
+            config: components["schemas"]["LoopSleepStep"];
+            /** @description Step-local input object resolved when the step starts. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions. */
+            input?: {
+                [key: string]: unknown;
+            };
+            retry?: components["schemas"]["LoopRetryPolicy"];
+            timeout?: components["schemas"]["LoopTimeoutPolicy"];
+            /** @description Context key used to store this step's output. Defaults to `key`. */
+            save_as?: string;
+        };
+        LoopWaitForEventStepSpec: {
+            /** @description Stable step key within the spec. */
+            key: string;
+            /** @description Human-readable step name. */
+            name?: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "wait_for_event";
+            config: components["schemas"]["LoopWaitForEventStep"];
+            /** @description Step-local input object resolved when the step starts. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions. */
+            input?: {
+                [key: string]: unknown;
+            };
+            retry?: components["schemas"]["LoopRetryPolicy"];
+            timeout?: components["schemas"]["LoopTimeoutPolicy"];
+            /** @description Context key used to store this step's output. Defaults to `key`. */
+            save_as?: string;
+        };
+        LoopSubLoopStepSpec: {
+            /** @description Stable step key within the spec. */
+            key: string;
+            /** @description Human-readable step name. */
+            name?: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "loop";
+            config: components["schemas"]["LoopSubLoopStep"];
+            /** @description Step-local input object resolved when the step starts. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions. */
+            input?: {
+                [key: string]: unknown;
+            };
+            retry?: components["schemas"]["LoopRetryPolicy"];
+            timeout?: components["schemas"]["LoopTimeoutPolicy"];
+            /** @description Context key used to store this step's output. Defaults to `key`. */
+            save_as?: string;
+        };
+        LoopCheckStepSpec: {
+            /** @description Stable step key within the spec. */
+            key: string;
+            /** @description Human-readable step name. */
+            name?: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "check";
+            config: components["schemas"]["LoopCheckStep"];
+            /** @description Step-local input object resolved when the step starts. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions. */
+            input?: {
+                [key: string]: unknown;
+            };
+            retry?: components["schemas"]["LoopRetryPolicy"];
+            timeout?: components["schemas"]["LoopTimeoutPolicy"];
+            /** @description Context key used to store this step's output. Defaults to `key`. */
+            save_as?: string;
+        };
+        /** @description Run guardrails. Lives at `spec.limits` in the JSON the engine compiles. Every limit is optional; absent or zero means unbounded (plan-level org caps still apply), with one exception — trial-plan runs default to a 100-credit ($1) budget when no budget is set here or on the start request. Paid plans default to unbounded. */
+        LoopSpecLimits: {
+            /**
+             * Format: double
+             * @description Run budget in US dollars (1 credit = $0.01). The run halts with stop reason `budget_exceeded` at the next checkpoint (step boundary or agent tool iteration) once its metered spend reaches the ceiling; a `run.budget_warning` event fires once at 80%. Enforcement granularity is one model call or metered action — a run can overshoot by at most the call in flight. Mutually exclusive with `credit_budget`; values finer than $0.00001 (one milli-credit) are rejected at compile.
+             */
+            budget_usd?: number;
+            /**
+             * Format: int64
+             * @description Run budget in whole credits (1 credit = $0.01). Same ceiling semantics as `budget_usd`; set exactly one.
+             */
+            credit_budget?: number;
+            /** @description Run wall-clock limit as a Go duration string (e.g. `30m`, `2h`, `90s`). When set, the engine stamps `wall_clock_deadline_at = run.started_at + wall_clock_timeout` and the reaper fails the run (stop reason `wall_clock_exceeded`) after that instant even if a step executor is still grinding. Omit or set to `0` to disable. */
+            wall_clock_timeout?: string;
+            /** @description Run-wide cap on agent turns across all steps. Each agent step execution (including retries and resumed turns) consumes one turn. Breach halts the run with stop reason `turn_limit_reached`. Distinct from a step's `max_turns`, which bounds tool iterations within a single turn. */
+            max_agent_turns?: number;
+            /**
+             * Format: double
+             * @description Rolling-24h spend ceiling in US dollars across ALL runs of this loop (the fleet-level counterpart of `budget_usd`). Enforced at run start (new runs are refused while the window is exhausted) and at the platform funding gate (an in-flight run halts at its next platform-funded call with stop reason `budget_exceeded`). Counts platform-billed spend; mutually exclusive with `daily_credit_budget`.
+             */
+            daily_budget_usd?: number;
+            /**
+             * Format: int64
+             * @description Rolling-24h loop spend ceiling in whole credits. Same semantics as `daily_budget_usd`; set exactly one.
+             */
+            daily_credit_budget?: number;
+            /** @description How many identical tool calls (same tool name and canonicalized arguments) one agent turn tolerates before the turn halts with a `progress_stalled` error — the duplicate-tool-call breaker. The step's retry policy applies; if the run fails from it the stop reason is `progress_stalled` and a `run.progress_stalled` event is emitted on each trip. Omit for the platform default (3). */
+            max_duplicate_tool_calls?: number;
+            /** @description Loop circuit breaker. After this many consecutive failed runs the loop auto-pauses (status `paused`) and emits a `loop.auto_paused` event, so a bad deploy cannot burn all night at one run per trigger fire. Completed runs reset the streak; cancelled runs are neutral. Omit to disable. */
+            pause_after_consecutive_failures?: number;
+        };
+        /** @description Run-level defaults inside the loop spec. Lives at `spec.defaults` in the JSON the engine compiles. The run wall-clock limit moved to `limits.wall_clock_timeout`. */
+        LoopSpecDefaults: {
+            environment?: components["schemas"]["LoopEnvironmentPolicy"];
+            agent_session?: components["schemas"]["LoopAgentSessionPolicy"];
+        };
+        /** @description Automatic managed-environment policy for loop execution. Omit to use the product default: each agent gets a persistent agent-bound environment, while direct environment actions get a run-bound environment. Set `disabled: true` to opt out. */
+        LoopEnvironmentPolicy: {
             /** @description Disable automatic environment allocation. */
             disabled?: boolean;
             mode?: components["schemas"]["EnvironmentMode"];
-            /** @description Existing dedicated environment to use for this automation. */
+            /** @description Existing dedicated environment to use for this loop. */
             environment_id?: string;
             /** @description Environment template to use when Mobius creates one. */
             template_id?: string;
@@ -3982,29 +4231,32 @@ export interface components {
             auto_start_worker?: boolean;
             retention_policy?: components["schemas"]["EnvironmentRetentionPolicy"];
         };
-        /** @description Agent step configuration recognised inside `AutomationSpec.steps[].config`. */
-        AutomationAgentStep: {
+        /** @description Agent step configuration recognised inside `LoopSpec.steps[].config`. */
+        LoopAgentStep: {
             agent_id: string;
             instructions: string;
+            /** @description Optional per-step tool allow-list. When omitted, prompt-only managed agent steps default to no tools; set `disable_tools: false` to allow the agent's full granted tool set. */
             tool_names?: string[];
+            /** @description Disable all tool calls for this agent step. When omitted, prompt-only managed agent steps (no `tool_names`, output schema, memory tables, or worker/BYOK model route) default to tool-less execution and skip managed environment allocation. Set `false` explicitly to opt back into the agent's granted tools. */
+            disable_tools?: boolean;
             output_schema?: {
                 [key: string]: unknown;
             };
             max_turns?: number;
-            model_route?: components["schemas"]["AutomationModelRoute"];
-            memory_tables?: components["schemas"]["AutomationAgentMemoryTableRef"][];
-            session?: components["schemas"]["AutomationAgentSessionPolicy"];
+            model_route?: components["schemas"]["LoopModelRoute"];
+            memory_tables?: components["schemas"]["LoopAgentMemoryTableRef"][];
+            session?: components["schemas"]["LoopAgentSessionPolicy"];
         };
-        /** @description Durable conversation-session policy for automation agent steps. Omit to enable the product default: automation-scoped sessions keyed from the triggering conversation when Mobius can identify one, such as a Telegram chat ID. */
-        AutomationAgentSessionPolicy: {
+        /** @description Durable conversation-session policy for loop agent steps. Omit to enable the product default: loop-scoped sessions keyed from the triggering conversation when Mobius can identify one, such as a Telegram chat ID. */
+        LoopAgentSessionPolicy: {
             /** @description Disable durable session context and transcript writes for the affected agent step(s). */
             disabled?: boolean;
             /**
-             * @description Named-session boundary. `auto` and omitted use `automation`. `agent` intentionally shares the named session across automations using the same agent.
+             * @description Named-session boundary. `auto` and omitted use `loop`. `agent` intentionally shares the named session across loops using the same agent.
              * @enum {string}
              */
-            scope?: "auto" | "automation" | "agent";
-            /** @description Optional Go-template string rendered against `inputs`, `context`, `agent`, `automation`, `run`, `source`, and `step`. When omitted, Mobius derives a stable name from the event payload, falling back to the trigger or `default`. */
+            scope?: "auto" | "loop" | "agent";
+            /** @description Optional Go-template string rendered against `inputs`, `context`, `agent`, `loop`, `run`, `source`, and `step`. When omitted, Mobius derives a stable name from the event payload, falling back to the trigger or `default`. */
             name?: string;
             /** @description Optional Go-template string for the session display title. */
             title?: string;
@@ -4029,7 +4281,7 @@ export interface components {
                 summary_model?: string;
             };
         };
-        AutomationModelRoute: {
+        LoopModelRoute: {
             /** @enum {string} */
             mode: "managed" | "byo_provider" | "worker";
             /** @description Managed environment to route worker-backed model calls to. */
@@ -4039,14 +4291,14 @@ export interface components {
             queue?: string;
             required_capabilities?: string[];
         };
-        AutomationAgentMemoryTableRef: {
+        LoopAgentMemoryTableRef: {
             table_id: string;
             /** @enum {string} */
             access_mode: "read" | "append" | "write";
             instructions?: string;
         };
-        /** @description Action step configuration recognised inside `AutomationSpec.steps[].config`. */
-        AutomationActionStep: {
+        /** @description Action step configuration recognised inside `LoopSpec.steps[].config`. */
+        LoopActionStep: {
             action_name: string;
             /** @enum {string} */
             execution_location?: "managed" | "worker" | "environment";
@@ -4056,15 +4308,15 @@ export interface components {
                 [key: string]: unknown;
             };
         };
-        /** @description Sleep step configuration recognised inside `AutomationSpec.steps[].config`. */
-        AutomationSleepStep: {
+        /** @description Sleep step configuration recognised inside `LoopSpec.steps[].config`. */
+        LoopSleepStep: {
             /** @description Go duration string such as `30s`, `5m`, or `2h`. */
             duration?: string;
             /** Format: date-time */
             until?: string;
         };
-        /** @description Wait-for-event step configuration recognised inside `AutomationSpec.steps[].config`. */
-        AutomationWaitForEventStep: {
+        /** @description Wait-for-event step configuration recognised inside `LoopSpec.steps[].config`. */
+        LoopWaitForEventStep: {
             event_type: string;
             source_id?: string;
             match?: {
@@ -4077,10 +4329,10 @@ export interface components {
                 [key: string]: string;
             };
         };
-        /** @description Automation-trigger step configuration recognised inside `AutomationSpec.steps[].config`. Triggers another automation in the same project as an independent child run (fire-and-forget). The child run records `parent_run_id`, `parent_automation_id`, and `parent_step_key` so the lineage is visible from the child. */
-        AutomationSubAutomationStep: {
-            /** @description Stable handle of the automation to trigger, scoped to the same project as the parent automation. */
-            automation_handle: string;
+        /** @description Loop-trigger step configuration recognised inside `LoopSpec.steps[].config`. Triggers another loop in the same project as an independent child run (fire-and-forget). The child run records `parent_run_id`, `parent_loop_id`, and `parent_step_key` so the lineage is visible from the child. */
+        LoopSubLoopStep: {
+            /** @description Stable handle of the loop to trigger, scoped to the same project as the parent loop. */
+            loop_handle: string;
             /** @description Input map handed to the child run. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions resolved against the parent run. When omitted the parent step's resolved input map is forwarded. */
             inputs?: {
                 [key: string]: unknown;
@@ -4088,38 +4340,70 @@ export interface components {
             /** @description Optional expr predicate evaluated against the `{ inputs, context }` envelope of the parent run before the child is triggered. It must evaluate to a bool; a false result skips the step and starts no child run. Same predicate language as `wait_for_event` and event trigger conditions. */
             condition?: string;
         };
+        /** @description Check step configuration recognised inside `LoopSpec.steps[].config`. A check step evaluates typed assertions over the run's `{ inputs, context }` envelope — deterministic `expr` predicates, or `agent` judges for everything that isn't deterministic — records a per-assertion verdict with cited evidence, and routes on failure: fail the run (stop reason `check_failed`), continue with the red verdict on the record, or open an approval gate carrying the evidence (rejection stops the run with `gate_rejected`). All assertions are evaluated; there is no short-circuit. An assertion that errors (bad expr, judge model failure, unparseable verdict) fails closed — never a silent pass. */
+        LoopCheckStep: {
+            /** @description Assertions evaluated in order; names must be unique. */
+            checks: components["schemas"]["LoopCheckAssertion"][];
+            /**
+             * @description Routing when any assertion fails. `fail` stops the run with stop reason `check_failed`. `continue` proceeds with the red verdict recorded. `gate` opens a `request_approval` interaction carrying the failed assertions and evidence; approval resumes the run with the verdict recorded as overridden, rejection stops it with `gate_rejected`.
+             * @default fail
+             * @enum {string}
+             */
+            on_fail: "fail" | "continue" | "gate";
+            gate?: components["schemas"]["LoopCheckGate"];
+        };
+        LoopCheckAssertion: {
+            /** @description Unique assertion name shown on the timeline proof row. */
+            name: string;
+            /**
+             * @description `expr` evaluates a deterministic predicate with the same language as step conditions and event waits. `agent` runs a bounded judge turn returning a strict `{pass, reason}` verdict; its spend counts against the run budget and it consumes one run agent turn.
+             * @enum {string}
+             */
+            kind: "expr" | "agent";
+            /** @description Predicate for `kind: expr`, evaluated against the `{ inputs, context }` envelope. Required for expr assertions. */
+            expr?: string;
+            /** @description Judge agent id for `kind: agent`. Omit to use the built-in platform reviewer `mobius-reviewer`. The judge should be a different agent than the one that produced the evidence; the compiler warns when a judge grades its own work. */
+            agent?: string;
+            /** @description Judge instruction for `kind: agent`, rendered with `{{ .inputs.* }}` / `{{ .context.* }}` template actions before the cited evidence is appended. Required for agent assertions. */
+            prompt?: string;
+            /** @description Step keys whose saved outputs this assertion judges. Each must reference an earlier step. Cited outputs are shown to agent judges and recorded on the verdict. */
+            evidence?: string[];
+        };
+        /** @description Approval gate opened when `on_fail: gate` trips. */
+        LoopCheckGate: {
+            /** @description Principals who must respond. String entries may contain template actions resolved against the run. */
+            targets: string[];
+            /** @description Prompt shown to reviewers. Defaults to a generated summary of the failed assertions. */
+            prompt?: string;
+        };
         /** @description Retry policy for a step. `max_attempts` is the total number of attempts (1 = no retry); it bounds both worker-reported failures and lease-loss recovery for worker-executed action steps. A worker that reports a failure with attempts remaining re-queues for another attempt rather than failing the run; the run fails once attempts are exhausted. The attempt count is visible on the run timeline (`action.retried`, `action.failed`) and on the executing job (`claim_attempt` / `max_attempts`). Cancellation is always terminal. Capped server-side at 10 attempts. */
-        AutomationRetryPolicy: {
+        LoopRetryPolicy: {
             max_attempts?: number;
             /** @description Go duration string such as `30s`, `5m`, or `2h`. Applied between attempts for in-process (synchronous) action retries; worker-executed actions re-queue immediately for the next attempt. */
             delay?: string;
         };
-        AutomationTimeoutPolicy: {
+        LoopTimeoutPolicy: {
             /** @description Go duration string such as `30s`, `5m`, or `2h`. */
             duration?: string;
             /** @enum {string} */
             on_timeout?: "fail";
         };
-        AutomationVersionListResponse: {
-            /** @description AutomationVersions returned for this automation, newest version first. */
-            items: components["schemas"]["AutomationVersion"][];
+        LoopVersionListResponse: {
+            /** @description LoopVersions returned for this loop, newest version first. */
+            items: components["schemas"]["LoopVersion"][];
         };
-        CreateAutomationVersionRequest: {
-            spec: components["schemas"]["AutomationSpec"];
-            /** @description Optional precompiled execution plan. The engine will recompile from `spec` if omitted. */
-            compiled_plan?: {
-                [key: string]: unknown;
-            };
+        CreateLoopVersionRequest: {
+            spec: components["schemas"]["LoopSpec"];
         };
-        AutomationTrigger: {
+        LoopTrigger: {
             /** @description Stable trigger identifier. */
             id: string;
             /** @description Organization that owns this trigger. */
             org_id: string;
             /** @description Project that owns this trigger. */
             project_id: string;
-            /** @description Automation this trigger belongs to. */
-            automation_id: string;
+            /** @description Loop this trigger belongs to. */
+            loop_id: string;
             /** @description Human-readable trigger name. */
             name: string;
             /** @description One of: http, schedule, event. */
@@ -4131,13 +4415,13 @@ export interface components {
                 [key: string]: unknown;
             };
             /**
-             * @description Behavior when a fire arrives while prior runs of this automation are still active.
+             * @description Behavior when a fire arrives while prior runs of this loop are still active.
              * @enum {string}
              */
             concurrency_policy: "allow" | "queue" | "skip" | "replace";
             /** @description Cap on concurrent runs allowed from this trigger. */
             max_concurrent_runs: number;
-            /** @description Public, project-scoped handle exposed in the HTTP-trigger delivery URL. Set only for http-kind triggers. */
+            /** @description Public, globally unique delivery handle exposed in `POST /v1/triggers/http/{http_handle}`. The delivery endpoint has no project path segment, so the handle is resolved globally. Set only for http-kind triggers. */
             http_handle?: string;
             /** @description Whether an HMAC signing secret is configured on this HTTP trigger. The secret value itself is never returned — rotate it via the signing-secret endpoint to reveal a new value once. Set only for http-kind triggers. */
             signing_secret_set?: boolean;
@@ -4168,23 +4452,24 @@ export interface components {
              */
             updated_at: string;
         };
+        /** @description Free-form JSON object delivered to the HTTP trigger. The payload is recorded on the source event and forwarded to the run as inputs. */
+        HTTPTriggerDeliveryRequest: {
+            [key: string]: unknown;
+        };
         /** @description Synchronous receipt for an inbound HTTP-trigger delivery. The trigger dispatch and run start happen asynchronously after this response. Clients can poll via `GET /v1/projects/{project}/runs?source_event_id=<source_event_id>` to discover the run once the source-event processor reserves it. */
         HTTPTriggerDeliveryResponse: {
             /** @description Durable source-event id (also the `dedup_key` seed). Stable across retries with the same `Idempotency-Key`. */
             source_event_id: string;
             /**
-             * @description Acceptance status of the source-event row:
-             *     * `accepted` — the row is durable; processing happens asynchronously.
-             *     * `skipped` — the trigger is disabled or has no live subscribers.
-             *     * `failed` — the row could not be enqueued (synchronous validation error).
+             * @description Acceptance status of the source-event row. The only synchronous success value is `accepted`; processing happens asynchronously after the source event is durable.
              * @enum {string}
              */
-            status: "accepted" | "skipped" | "failed";
+            status: "accepted";
             /** @description True when an existing source-event row was returned for the same idempotency key. */
             deduped?: boolean;
         };
         /**
-         * @description Body for `POST /v1/projects/{project}/automations/{handle}/runs`. All fields are optional; an empty body starts a run with no inputs and no attribution.
+         * @description Body for `POST /v1/projects/{project}/loops/{id}/runs`. All fields are optional; an empty body starts a run with no inputs and no attribution.
          * @example {
          *       "inputs": {
          *         "issue_id": "42"
@@ -4194,17 +4479,28 @@ export interface components {
          *         "id": "review-service",
          *         "label": "review-service"
          *       },
-         *       "external_id": "review-service:issue-42"
+         *       "idempotency_key": "review-service:issue-42",
+         *       "credit_budget": 1000
          *     }
          */
-        StartAutomationRunRequest: {
+        StartLoopRunRequest: {
             /** @description Free-form input map passed to the run. Available to steps via `{{ .inputs.<key> }}` Go text/template actions. */
             inputs?: {
                 [key: string]: unknown;
             };
-            source?: components["schemas"]["AutomationRunSource"];
-            /** @description Caller-supplied idempotency key, scoped to (org, project). Repeat calls with the same `external_id` while the prior run is still non-terminal return the existing run (same `id`). A repeat after the prior run terminated returns `409 Conflict` with code `external_id_conflict` and details containing the existing run id and its terminal status. */
-            external_id?: string;
+            source?: components["schemas"]["LoopRunSource"];
+            /** @description Caller-supplied idempotency key, scoped to (org, project). Repeat calls with the same `idempotency_key` while the prior run is still non-terminal return the existing run (same `id`). A repeat after the prior run terminated returns `409 Conflict` with code `idempotency_key_conflict` and details containing the existing run id and its terminal status. */
+            idempotency_key?: string;
+            /**
+             * Format: double
+             * @description Per-run budget override in US dollars (1 credit = $0.01). Overrides the loop spec's `limits` budget for this run only. Mutually exclusive with `credit_budget` — setting both is a `400`. Values finer than $0.00001 (one milli-credit) are rejected. The run halts at the next checkpoint (step boundary or agent tool iteration) once spend reaches the budget; enforcement granularity is one model call or metered action.
+             */
+            budget_usd?: number;
+            /**
+             * Format: int64
+             * @description Per-run budget override in whole credits (1 credit = $0.01). Same ceiling semantics as `budget_usd`; set exactly one.
+             */
+            credit_budget?: number;
         };
         /**
          * @description Body for the cancellation endpoint. All fields optional.
@@ -4212,12 +4508,12 @@ export interface components {
          *       "reason": "superseded by manual remediation"
          *     }
          */
-        CancelAutomationRunRequest: {
+        CancelLoopRunRequest: {
             /** @description Human-readable cancellation reason recorded on the run. */
             reason?: string;
         };
         /**
-         * @description Body for resuming a suspended automation step.
+         * @description Body for resuming a suspended loop step.
          * @example {
          *       "step_key": "wait_for_external_result",
          *       "result": {
@@ -4226,45 +4522,63 @@ export interface components {
          *       }
          *     }
          */
-        SignalAutomationRunRequest: {
-            /** @description Step key currently in `suspended` state that should resume. Must match a step declared in the run's automation version spec. */
+        SignalLoopRunRequest: {
+            /** @description Step key currently in `suspended` state that should resume. Must match a step declared in the run's loop version spec. */
             step_key: string;
             /** @description Free-form payload saved as the resumed step's output. */
             result?: {
                 [key: string]: unknown;
             };
         };
-        /** @description Optional attribution for the call that started this run. Triggers and webhooks populate `trigger_id` and `trigger_fire_id`; API callers usually only set `type` and `id`. */
-        AutomationRunSource: {
-            /** @description One of `api`, `trigger`, `manual`, `signal`. */
-            type?: string;
+        /** @description Optional attribution for the call that started this run. Triggers and HTTP trigger dispatch populate `trigger_id` and `trigger_fire_id`. API callers usually only set `type` and `id`. */
+        LoopRunSource: {
+            /**
+             * @description Source category for the run start.
+             * @enum {string}
+             */
+            type?: "api" | "trigger" | "manual" | "signal";
             /** @description Identifier within the source type's namespace. */
             id?: string;
             /** @description Display label. */
             label?: string;
             /** @description Trigger that fired this run, if any. */
-            trigger_id?: string;
-            /** @description Idempotency key for trigger retries. When set, Engine.Start returns the existing run for this fire instead of creating a duplicate. */
-            trigger_fire_id?: string;
+            readonly trigger_id?: string;
+            /** @description Internal trigger-fire ledger id used to deduplicate trigger dispatch retries. Present only for trigger-started runs. */
+            readonly trigger_fire_id?: string;
         };
-        /** @description One automation run record. */
-        AutomationRun: {
+        /** @description One loop run record. */
+        LoopRun: {
             /** @description Stable run identifier. */
             id: string;
             /** @description Organization that owns this run. */
             org_id: string;
             /** @description Project that owns this run. */
             project_id: string;
-            /** @description Automation this run belongs to. */
-            automation_id: string;
-            /** @description Human-readable name of the automation this run belongs to. */
-            automation_name?: string;
-            /** @description AutomationVersion record this run is executing. */
-            automation_version_id: string;
-            /** @description Version number of the AutomationVersion this run is executing. */
-            automation_version: number;
-            status: components["schemas"]["AutomationRunStatus"];
-            /** @description Input map supplied when the run started, merged over the automation's `default_inputs`, and reachable in step templates at `{{ .inputs.<key> }}`. For event-kind trigger runs this is the normalized `{ event, meta }` envelope (`{{ .inputs.event.* }}`, `{{ .inputs.meta.* }}`) — see the automation templating guide. */
+            /** @description Loop this run belongs to. */
+            loop_id: string;
+            /** @description Human-readable name of the loop this run belongs to. */
+            loop_name?: string;
+            /** @description LoopVersion record this run is executing. */
+            loop_version_id: string;
+            /** @description Version number of the LoopVersion this run is executing. */
+            loop_version: number;
+            status: components["schemas"]["LoopRunStatus"];
+            stop_reason?: components["schemas"]["LoopRunStopReason"];
+            /**
+             * Format: int64
+             * @description The run's budget ceiling in milli-credits (1 credit = 1,000 milli-credits = $0.01). Resolved at run start from the StartRun override, the loop spec's `limits` block, or the trial-plan default, in that order. Absent when the run is unbounded.
+             */
+            credit_budget_milli?: number;
+            /**
+             * Format: int64
+             * @description Metered spend attributed to this run so far, in milli-credits. Incremented atomically with each usage-ledger insert that carries this run's id. Counts all metered work regardless of credential source (BYOK calls count at their rate-card equivalent even though they bill zero credits).
+             */
+            credit_spent_milli?: number;
+            /** @description Run-wide cap on agent turns across all steps, from the loop spec's `limits.max_agent_turns`. Absent when unbounded. */
+            max_agent_turns?: number;
+            /** @description Number of agent turns started for this run so far. Compared against `max_agent_turns` when that cap is set. */
+            agent_turns_used?: number;
+            /** @description Input map supplied when the run started, merged over the loop's `default_inputs`, and reachable in step templates at `{{ .inputs.<key> }}`. For event-kind trigger runs this is the normalized `{ event, meta }` envelope (`{{ .inputs.event.* }}`, `{{ .inputs.meta.* }}`) — see the loop templating guide. */
             inputs?: {
                 [key: string]: unknown;
             };
@@ -4272,12 +4586,12 @@ export interface components {
             result?: {
                 [key: string]: unknown;
             };
-            source?: components["schemas"]["AutomationRunSource"];
-            /** @description Run that triggered this run via an `automation` step. Present only on child runs; absent for top-level runs. */
+            source?: components["schemas"]["LoopRunSource"];
+            /** @description Run that triggered this run via an `loop` step. Present only on child runs; absent for top-level runs. */
             parent_run_id?: string;
-            /** @description Automation that triggered this run via an `automation` step. Present only on child runs. */
-            parent_automation_id?: string;
-            /** @description Step key within the parent run's automation that triggered this run. Present only on child runs. */
+            /** @description Loop that triggered this run via an `loop` step. Present only on child runs. */
+            parent_loop_id?: string;
+            /** @description Step key within the parent run's loop that triggered this run. Present only on child runs. */
             parent_step_key?: string;
             /** @description Human-readable failure summary; populated on `failed` runs. */
             error_message?: string;
@@ -4290,7 +4604,7 @@ export interface components {
             wake_at?: string;
             /**
              * Format: date-time
-             * @description Deadline after which the automation reaper fails the run.
+             * @description Deadline after which the loop reaper fails the run.
              */
             wall_clock_deadline_at?: string;
             /**
@@ -4315,29 +4629,36 @@ export interface components {
             updated_at: string;
         };
         /**
-         * @description Lifecycle state of an automation run.
+         * @description Lifecycle state of a loop run.
          * @enum {string}
          */
-        AutomationRunStatus: "queued" | "running" | "suspended" | "completed" | "failed" | "cancelled";
-        AutomationRunListResponse: {
+        LoopRunStatus: "queued" | "running" | "suspended" | "completed" | "failed" | "cancelled";
+        /**
+         * @description Why a run stopped. Set exactly once when the run reaches a terminal status; absent on non-terminal runs. `status` carries the lifecycle state and `error_type` classifies the error when one occurred; `stop_reason` classifies the stop itself.
+         *
+         *     Grouping: `completed` is the success terminal. `step_failed`, `check_failed`, and `gate_rejected` mean the work failed (an error, a failed verification, or a human rejection at a gate). `budget_exceeded`, `turn_limit_reached`, `wall_clock_exceeded`, `step_limit_reached`, and `progress_stalled` mean a configured guardrail halted the run — the limit worked; the loop did not break. `cancelled` and `replaced` mean somebody (or a concurrency policy) chose to stop it.
+         * @enum {string}
+         */
+        LoopRunStopReason: "completed" | "step_failed" | "check_failed" | "gate_rejected" | "cancelled" | "replaced" | "wall_clock_exceeded" | "budget_exceeded" | "turn_limit_reached" | "progress_stalled" | "step_limit_reached";
+        LoopRunListResponse: {
             /** @description The list of results for this page. */
-            items: components["schemas"]["AutomationRun"][];
+            items: components["schemas"]["LoopRun"][];
             /** @description Opaque cursor for the next page; absent when no more results. */
             next_cursor?: string;
             /** @description True when more items exist after this page. */
             has_more?: boolean;
         };
         /**
-         * @description The step type. `cleanup` is system-materialized — it appears in run step listings for terminal cleanup work but cannot be authored in an `AutomationSpec`.
+         * @description The step type. `cleanup` is system-materialized — it appears in run step listings for terminal cleanup work but cannot be authored in an `LoopSpec`.
          * @enum {string}
          */
-        AutomationRunStepKind: "agent" | "action" | "sleep" | "wait_for_event" | "cleanup";
+        LoopRunStepKind: "agent" | "action" | "sleep" | "wait_for_event" | "interaction" | "loop" | "check" | "cleanup";
         /**
-         * @description Lifecycle state of an automation run step.
+         * @description Lifecycle state of a loop run step.
          * @enum {string}
          */
-        AutomationRunStepStatus: "pending" | "running" | "suspended" | "completed" | "failed" | "skipped" | "cancelled";
-        AutomationRunStep: {
+        LoopRunStepStatus: "pending" | "running" | "suspended" | "completed" | "failed" | "skipped" | "cancelled";
+        LoopRunStep: {
             /** @description Stable step identifier. */
             id: string;
             /** @description Organization that owns the parent run. */
@@ -4346,12 +4667,12 @@ export interface components {
             project_id: string;
             /** @description Run this step belongs to. */
             run_id: string;
-            /** @description Stable key for this step within its automation version. */
+            /** @description Stable key for this step within its loop version. */
             step_key: string;
             /** @description Display name from the authored spec, when present. */
             step_name?: string;
-            kind: components["schemas"]["AutomationRunStepKind"];
-            status: components["schemas"]["AutomationRunStepStatus"];
+            kind: components["schemas"]["LoopRunStepKind"];
+            status: components["schemas"]["LoopRunStepStatus"];
             /**
              * Format: int64
              * @description Zero-indexed ordinal of this step within its run.
@@ -4378,6 +4699,15 @@ export interface components {
             /** @description Human-readable error message populated on failure. */
             error_message?: string;
             /**
+             * @description Check outcome for `check`-kind steps; absent on every other kind. A failed check routed `on_fail: continue` completes the step with `verdict: fail` — status and verdict are separate axes (the step did its job: it checked).
+             * @enum {string}
+             */
+            verdict?: "pass" | "fail";
+            /** @description Verdict document for `check`-kind steps: `verdict`, `on_fail`, `checks` (per-assertion results — name, kind, pass, expr or judge reason, judge identity, evidence refs), `failed` (red assertion names), and `overridden_by` / `gate` records when an approval gate resolved the verdict. */
+            verdict_detail?: {
+                [key: string]: unknown;
+            };
+            /**
              * Format: date-time
              * @description Time the step entered `running`.
              */
@@ -4398,11 +4728,11 @@ export interface components {
              */
             updated_at: string;
         };
-        AutomationRunStepListResponse: {
+        LoopRunStepListResponse: {
             /** @description Steps for this run in `seq` order. */
-            items: components["schemas"]["AutomationRunStep"][];
+            items: components["schemas"]["LoopRunStep"][];
         };
-        AutomationRunEvent: {
+        LoopRunEvent: {
             /** @description Stable event identifier. */
             id: string;
             /** @description Organization that owns the parent run. */
@@ -4416,11 +4746,15 @@ export interface components {
              * @description Monotonic per-run sequence number used for ordering and resume.
              */
             sequence: number;
-            /** @description Event type from the run-stream taxonomy (e.g. `run.started`, `step.completed`, `wait.opened`, `action.called`, `action.completed`, `action.failed`, `artifact.created`, `limit.reached`, `usage.recorded`). */
+            /**
+             * @description Event type from the run-stream taxonomy (e.g. `run.started`, `step.completed`, `wait.opened`, `action.called`, `action.completed`, `action.failed`, `artifact.created`, `limit.reached`, `usage.recorded`).
+             *
+             *     Guardrail events: `run.budget_warning` fires once when run spend first reaches 80% of the run budget (payload: `credit_budget_milli`, `credit_spent_milli`, `percent`); `run.budget_exceeded` fires when the budget halts the run at a checkpoint (same payload plus the `step` it halted before). `usage.recorded` payloads carry `step_key`, the event's `credit_cost_milli`, its `budget_cost_milli` (rate-card cost counted against the run budget, nonzero even for BYOK), and the cumulative `run_credit_spent_milli`.
+             */
             event_type: string;
             /** @description ID of the step this event belongs to, when applicable. */
             step_id?: string | null;
-            /** @description Automation step key this event belongs to, when applicable. */
+            /** @description Loop step key this event belongs to, when applicable. */
             step_key?: string | null;
             /** @description Event-type-specific payload. See the run-event taxonomy for shapes. */
             payload?: {
@@ -4432,9 +4766,9 @@ export interface components {
              */
             created_at: string;
         };
-        AutomationRunEventListResponse: {
+        LoopRunEventListResponse: {
             /** @description Run events in this page, ordered by `sequence` ascending. */
-            items: components["schemas"]["AutomationRunEvent"][];
+            items: components["schemas"]["LoopRunEvent"][];
             /**
              * Format: int64
              * @description Sequence number of the most recent event in `items`; clients can pass this back as `since_sequence` on the next poll.
@@ -4658,9 +4992,9 @@ export interface components {
             /** @description User-keyed private artifact-space owner. Empty for project-shared artifacts. */
             owner_id: string;
             visibility: components["schemas"]["ArtifactVisibility"];
-            /** @description Automation run that produced this artifact, derived from the active worker lease. */
+            /** @description Loop run that produced this artifact, derived from the active worker lease. */
             run_id?: string;
-            /** @description Automation step that produced this artifact, derived from the active worker lease. */
+            /** @description Loop step that produced this artifact, derived from the active worker lease. */
             step_id?: string;
             /** @description Display name or relative virtual path. Forward slash may be used to organize artifacts inside private or shared project space. */
             name: string;
@@ -4838,7 +5172,7 @@ export interface components {
         ProjectHandleParam: string;
         /** @description Resource ID. */
         IDParam: string;
-        /** @description Project-scoped action name used in automation step definitions. */
+        /** @description Project-scoped action name used in loop step definitions. */
         ActionNameParam: string;
         /** @description Principal ID. */
         principal_id: string;
@@ -4882,7 +5216,7 @@ export interface components {
         TableOwnedByMeParam: boolean;
         /** @description TypeID of the artifact (`art_...`) */
         ArtifactIdParam: string;
-        /** @description Automation run ID */
+        /** @description Loop run ID */
         RunIdParam: string;
     };
     requestBodies: never;
@@ -5053,7 +5387,7 @@ export interface operations {
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
-                /** @description Project-scoped action name used in automation step definitions. */
+                /** @description Project-scoped action name used in loop step definitions. */
                 action_name: components["parameters"]["ActionNameParam"];
             };
             cookie?: never;
@@ -5074,7 +5408,7 @@ export interface operations {
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
-                /** @description Project-scoped action name used in automation step definitions. */
+                /** @description Project-scoped action name used in loop step definitions. */
                 action_name: components["parameters"]["ActionNameParam"];
             };
             cookie?: never;
@@ -5107,7 +5441,7 @@ export interface operations {
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
-                /** @description Project-scoped action name used in automation step definitions. */
+                /** @description Project-scoped action name used in loop step definitions. */
                 action_name: components["parameters"]["ActionNameParam"];
             };
             cookie?: never;
@@ -5135,7 +5469,7 @@ export interface operations {
                 cursor?: components["parameters"]["CursorParam"];
                 /** @description Maximum number of items to return */
                 limit?: components["parameters"]["LimitParam"];
-                /** @description Filter to invocations from a specific automation run. */
+                /** @description Filter to invocations from a specific loop run. */
                 run_id?: string;
                 /** @description Filter to invocations from a specific job. */
                 job_id?: string;
@@ -5173,7 +5507,7 @@ export interface operations {
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
-                /** @description Project-scoped action name used in automation step definitions. */
+                /** @description Project-scoped action name used in loop step definitions. */
                 action_name: components["parameters"]["ActionNameParam"];
             };
             cookie?: never;
@@ -5266,7 +5600,7 @@ export interface operations {
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
-                /** @description Project-scoped action name used in automation step definitions. */
+                /** @description Project-scoped action name used in loop step definitions. */
                 action_name: components["parameters"]["ActionNameParam"];
             };
             cookie?: never;
@@ -6659,6 +6993,67 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
+    listSessionTurns: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
+                id: components["parameters"]["IDParam"];
+                /** @description Session identifier. */
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentTurnListResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listTurnMessages: {
+        parameters: {
+            query?: {
+                /** @description Only include messages with sequence greater than this value. */
+                after_sequence?: number;
+                /** @description Maximum number of items to return */
+                limit?: components["parameters"]["LimitParam"];
+            };
+            header?: never;
+            path: {
+                /** @description Project handle (unique per organization) */
+                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
+                id: components["parameters"]["IDParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionMessageListResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
     listAgentMessagingBindings: {
         parameters: {
             query?: never;
@@ -6997,11 +7392,13 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
-    listAutomations: {
+    listLoops: {
         parameters: {
             query?: {
-                /** @description Filter by lifecycle status. Omit to return all non-archived automations (the default). Pass a single status to filter to it exactly, or `all` to include archived automations too. */
+                /** @description Filter by lifecycle status. Omit to return all non-archived loops (the default). Pass a single status to filter to it exactly, or `all` to include archived loops too. */
                 status?: "draft" | "active" | "paused" | "archived" | "all";
+                /** @description Exact loop handle filter for resolving a handle to its loop ID in one request. */
+                handle?: string;
                 /** @description Opaque pagination cursor from a prior response. */
                 cursor?: string;
                 /** @description Maximum number of items to return. */
@@ -7022,14 +7419,14 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AutomationListResponse"];
+                    "application/json": components["schemas"]["LoopListResponse"];
                 };
             };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
         };
     };
-    createAutomation: {
+    createLoop: {
         parameters: {
             query?: never;
             header?: never;
@@ -7041,7 +7438,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["CreateAutomationRequest"];
+                "application/json": components["schemas"]["CreateLoopRequest"];
             };
         };
         responses: {
@@ -7051,7 +7448,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Automation"];
+                    "application/json": components["schemas"]["Loop"];
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -7060,15 +7457,15 @@ export interface operations {
             409: components["responses"]["Conflict"];
         };
     };
-    getAutomation: {
+    getLoop: {
         parameters: {
             query?: never;
             header?: never;
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
-                /** @description Project-unique automation handle. */
-                handle: string;
+                /** @description Resource ID. */
+                id: components["parameters"]["IDParam"];
             };
             cookie?: never;
         };
@@ -7080,7 +7477,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Automation"];
+                    "application/json": components["schemas"]["Loop"];
                 };
             };
             401: components["responses"]["Unauthorized"];
@@ -7088,15 +7485,15 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
-    deleteAutomation: {
+    deleteLoop: {
         parameters: {
             query?: never;
             header?: never;
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
-                /** @description Project-unique automation handle. */
-                handle: string;
+                /** @description Resource ID. */
+                id: components["parameters"]["IDParam"];
             };
             cookie?: never;
         };
@@ -7114,21 +7511,21 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
-    updateAutomation: {
+    updateLoop: {
         parameters: {
             query?: never;
             header?: never;
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
-                /** @description Project-unique automation handle. */
-                handle: string;
+                /** @description Resource ID. */
+                id: components["parameters"]["IDParam"];
             };
             cookie?: never;
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["UpdateAutomationRequest"];
+                "application/json": components["schemas"]["UpdateLoopRequest"];
             };
         };
         responses: {
@@ -7138,7 +7535,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Automation"];
+                    "application/json": components["schemas"]["Loop"];
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -7147,15 +7544,15 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
-    listAutomationVersions: {
+    listLoopVersions: {
         parameters: {
             query?: never;
             header?: never;
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
-                /** @description Project-unique automation handle. */
-                handle: string;
+                /** @description Resource ID. */
+                id: components["parameters"]["IDParam"];
             };
             cookie?: never;
         };
@@ -7167,7 +7564,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AutomationVersionListResponse"];
+                    "application/json": components["schemas"]["LoopVersionListResponse"];
                 };
             };
             401: components["responses"]["Unauthorized"];
@@ -7175,21 +7572,21 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
-    createAutomationVersion: {
+    createLoopVersion: {
         parameters: {
             query?: never;
             header?: never;
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
-                /** @description Project-unique automation handle. */
-                handle: string;
+                /** @description Resource ID. */
+                id: components["parameters"]["IDParam"];
             };
             cookie?: never;
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["CreateAutomationVersionRequest"];
+                "application/json": components["schemas"]["CreateLoopVersionRequest"];
             };
         };
         responses: {
@@ -7199,7 +7596,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AutomationVersion"];
+                    "application/json": components["schemas"]["LoopVersion"];
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -7208,16 +7605,16 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
-    publishAutomationVersion: {
+    publishLoopVersion: {
         parameters: {
             query?: never;
             header?: never;
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
-                /** @description Project-unique automation handle. */
-                handle: string;
-                /** @description Version number of the AutomationVersion to publish. */
+                /** @description Resource ID. */
+                id: components["parameters"]["IDParam"];
+                /** @description Version number of the LoopVersion to publish. */
                 version: number;
             };
             cookie?: never;
@@ -7230,7 +7627,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Automation"];
+                    "application/json": components["schemas"]["Loop"];
                 };
             };
             401: components["responses"]["Unauthorized"];
@@ -7248,6 +7645,8 @@ export interface operations {
             header?: {
                 /** @description Alternative to the `idempotency_key` query parameter. When both are present the query parameter wins. Repeats with the same key return the same `source_event_id` (resolve the run via `source_event_id`) without enqueuing a duplicate. */
                 "X-Idempotency-Key"?: string;
+                /** @description HMAC-SHA256 signature of the raw request body under the trigger's signing secret, formatted as `sha256=<hex>`. Required only when the HTTP trigger has a signing secret configured; unsigned deliveries are accepted for triggers without one. */
+                "X-Mobius-Signature"?: string;
             };
             path: {
                 /** @description Globally unique identifier for the trigger. The endpoint carries no project context, so the handle is resolved on its own; it defaults to the trigger's globally unique id and is treated as an unguessable delivery token. */
@@ -7257,9 +7656,14 @@ export interface operations {
         };
         requestBody?: {
             content: {
-                "application/json": {
-                    [key: string]: unknown;
-                };
+                /**
+                 * @example {
+                 *       "customer_id": "cus_123",
+                 *       "event_type": "invoice.paid",
+                 *       "amount_cents": 4200
+                 *     }
+                 */
+                "application/json": components["schemas"]["HTTPTriggerDeliveryRequest"];
             };
         };
         responses: {
@@ -7269,12 +7673,53 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "source_event_id": "sevt_01HHTTPTRIGGER",
+                     *       "status": "accepted",
+                     *       "deduped": false
+                     *     }
+                     */
                     "application/json": components["schemas"]["HTTPTriggerDeliveryResponse"];
                 };
             };
             400: components["responses"]["BadRequest"];
+            /** @description Invalid signature */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "error": {
+                     *         "code": "invalid_signature",
+                     *         "message": "missing or invalid request signature"
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+            /** @description Payload too large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "error": {
+                     *         "code": "payload_too_large",
+                     *         "message": "request body exceeds the maximum allowed size"
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
         };
     };
     startRun: {
@@ -7284,14 +7729,28 @@ export interface operations {
             path: {
                 /** @description Project handle (unique per organization) */
                 project: components["parameters"]["ProjectHandleParam"];
-                /** @description Automation handle (unique per project). */
-                handle: string;
+                /** @description Resource ID. */
+                id: components["parameters"]["IDParam"];
             };
             cookie?: never;
         };
         requestBody?: {
             content: {
-                "application/json": components["schemas"]["StartAutomationRunRequest"];
+                /**
+                 * @example {
+                 *       "inputs": {
+                 *         "issue_id": "42"
+                 *       },
+                 *       "source": {
+                 *         "type": "api",
+                 *         "id": "review-service",
+                 *         "label": "review-service"
+                 *       },
+                 *       "idempotency_key": "review-service:issue-42",
+                 *       "credit_budget": 1000
+                 *     }
+                 */
+                "application/json": components["schemas"]["StartLoopRunRequest"];
             };
         };
         responses: {
@@ -7301,7 +7760,29 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AutomationRun"];
+                    /**
+                     * @example {
+                     *       "id": "run_01JZ0000000000000000000000",
+                     *       "org_id": "org_01JZ0000000000000000000000",
+                     *       "project_id": "prj_01JZ0000000000000000000000",
+                     *       "loop_id": "loop_01JZ0000000000000000000000",
+                     *       "loop_name": "Review Pull Request",
+                     *       "loop_version_id": "lver_01JZ0000000000000000000000",
+                     *       "loop_version": 3,
+                     *       "status": "queued",
+                     *       "inputs": {
+                     *         "issue_id": "42"
+                     *       },
+                     *       "source": {
+                     *         "type": "api",
+                     *         "id": "review-service",
+                     *         "label": "review-service"
+                     *       },
+                     *       "created_at": "2026-06-12T14:00:00Z",
+                     *       "updated_at": "2026-06-12T14:00:00Z"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["LoopRun"];
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -7315,9 +7796,9 @@ export interface operations {
         parameters: {
             query?: {
                 /** @description Filter to one status. */
-                status?: components["schemas"]["AutomationRunStatus"];
-                /** @description Filter to one automation's runs. */
-                automation_id?: string;
+                status?: components["schemas"]["LoopRunStatus"];
+                /** @description Filter to one loop's runs. */
+                loop_id?: string;
                 /** @description Filter to runs originating from a single source event. Pass the `source_event_id` returned by the HTTP-trigger delivery endpoint to discover the run it started. */
                 source_event_id?: string;
                 /** @description Opaque pagination cursor from a prior response. */
@@ -7340,7 +7821,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AutomationRunListResponse"];
+                    "application/json": components["schemas"]["LoopRunListResponse"];
                 };
             };
             401: components["responses"]["Unauthorized"];
@@ -7367,7 +7848,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AutomationRun"];
+                    "application/json": components["schemas"]["LoopRun"];
                 };
             };
             401: components["responses"]["Unauthorized"];
@@ -7389,7 +7870,7 @@ export interface operations {
         };
         requestBody?: {
             content: {
-                "application/json": components["schemas"]["CancelAutomationRunRequest"];
+                "application/json": components["schemas"]["CancelLoopRunRequest"];
             };
         };
         responses: {
@@ -7399,7 +7880,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AutomationRun"];
+                    "application/json": components["schemas"]["LoopRun"];
                 };
             };
             401: components["responses"]["Unauthorized"];
@@ -7427,7 +7908,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AutomationRunStepListResponse"];
+                    "application/json": components["schemas"]["LoopRunStepListResponse"];
                 };
             };
             401: components["responses"]["Unauthorized"];
@@ -7460,7 +7941,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AutomationRunEventListResponse"];
+                    "application/json": components["schemas"]["LoopRunEventListResponse"];
                 };
             };
             401: components["responses"]["Unauthorized"];
@@ -7513,7 +7994,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["SignalAutomationRunRequest"];
+                "application/json": components["schemas"]["SignalLoopRunRequest"];
             };
         };
         responses: {
@@ -7523,7 +8004,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AutomationRun"];
+                    "application/json": components["schemas"]["LoopRun"];
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -7537,8 +8018,14 @@ export interface operations {
             query?: {
                 /** @description Include read-only system templates. */
                 include_system?: boolean;
-                /** @description Filter by lifecycle status. Omit for active toolkits. */
-                status?: "active" | "archived" | "all";
+                /**
+                 * @description Filter results by tag. Repeatable; multiple values combine with AND. Format: `Key:Value`, `Key:*` for any value, `Key:a,b,c` for IN.
+                 *
+                 *     Tag values containing `:` or `,` cannot be filtered with this grammar — the parser splits on those literally. Constrain values to plain identifiers when you intend to filter on them.
+                 *
+                 *     Some high-cardinality resources may ignore ad-hoc tag filtering.
+                 */
+                tag?: components["parameters"]["TagFilterParam"];
             };
             header?: never;
             path: {
@@ -7689,8 +8176,14 @@ export interface operations {
             query?: {
                 /** @description Include read-only system skill templates. */
                 include_system?: boolean;
-                /** @description Filter by lifecycle status. Omit for active skills. */
-                status?: "active" | "archived" | "all";
+                /**
+                 * @description Filter results by tag. Repeatable; multiple values combine with AND. Format: `Key:Value`, `Key:*` for any value, `Key:a,b,c` for IN.
+                 *
+                 *     Tag values containing `:` or `,` cannot be filtered with this grammar — the parser splits on those literally. Constrain values to plain identifiers when you intend to filter on them.
+                 *
+                 *     Some high-cardinality resources may ignore ad-hoc tag filtering.
+                 */
+                tag?: components["parameters"]["TagFilterParam"];
             };
             header?: never;
             path: {
@@ -8325,7 +8818,7 @@ export interface operations {
     listArtifacts: {
         parameters: {
             query?: {
-                /** @description Filter to artifacts produced by this automation run. */
+                /** @description Filter to artifacts produced by this loop run. */
                 run_id?: string;
                 /** @description Filter to artifacts produced by this run step. */
                 step_id?: string;

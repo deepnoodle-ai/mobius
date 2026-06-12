@@ -12,7 +12,7 @@ import (
 )
 
 // RunEvent is a decoded event from an automation run stream.
-type RunEvent = api.AutomationRunEvent
+type RunEvent = api.LoopRunEvent
 
 // sseReadBufferSize bounds a single SSE line. Run events can embed step I/O,
 // so the bufio default (64KB) is too tight.
@@ -76,7 +76,7 @@ func (c *Client) readSSEStream(ctx context.Context, body io.ReadCloser, ch chan<
 			return
 		}
 
-		var event api.AutomationRunEvent
+		var event api.LoopRunEvent
 		if err := evt.JSON(&event); err != nil {
 			c.config.Logger.Error("failed to parse SSE event", "error", err)
 			continue

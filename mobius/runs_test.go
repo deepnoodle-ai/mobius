@@ -18,13 +18,19 @@ import (
 func TestStartAutomationRun_HighLevelClient(t *testing.T) {
 	var body map[string]interface{}
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		assert.Equal(t, r.Method, http.MethodPost)
-		assert.Equal(t, r.URL.Path, "/v1/projects/test-project/automations/research/runs")
-		b, _ := io.ReadAll(r.Body)
-		assert.NoError(t, json.Unmarshal(b, &body))
 		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusAccepted)
-		_, _ = io.WriteString(w, automationRunJSON("run_1", "running"))
+		switch {
+		case r.Method == http.MethodGet && r.URL.Path == "/v1/projects/test-project/loops":
+			assert.Equal(t, r.URL.Query().Get("handle"), "research")
+			_, _ = io.WriteString(w, fmt.Sprintf(`{"items":[%s],"has_more":false}`, automationJSON("loop_1", "research", "research", 1)))
+		case r.Method == http.MethodPost && r.URL.Path == "/v1/projects/test-project/loops/loop_1/runs":
+			b, _ := io.ReadAll(r.Body)
+			assert.NoError(t, json.Unmarshal(b, &body))
+			w.WriteHeader(http.StatusAccepted)
+			_, _ = io.WriteString(w, automationRunJSON("run_1", "running"))
+		default:
+			http.NotFound(w, r)
+		}
 	})
 	c, srv := newTestClient(t, h)
 	defer srv.Close()
@@ -36,7 +42,7 @@ func TestStartAutomationRun_HighLevelClient(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Equal(t, run.Id, "run_1")
-	assert.Equal(t, body["external_id"], "external-1")
+	assert.Equal(t, body["idempotency_key"], "external-1")
 	assert.Equal(t, body["inputs"].(map[string]any)["topic"], "sdk")
 }
 
@@ -69,22 +75,22 @@ func TestRunControl_HighLevelClient(t *testing.T) {
 
 	run, err := c.GetRun(context.Background(), "run_1")
 	assert.NoError(t, err)
-	assert.Equal(t, run.Status, api.AutomationRunStatusCompleted)
+	assert.Equal(t, run.Status, api.LoopRunStatusCompleted)
 
 	list, err := c.ListRuns(context.Background(), &ListRunsOptions{
-		Status:       api.AutomationRunStatusCompleted,
-		AutomationID: "aut_1",
-		Limit:        10,
+		Status: api.LoopRunStatusCompleted,
+		LoopID: "loop_1",
+		Limit:  10,
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, len(list.Items), 1)
 	assert.True(t, strings.Contains(seenQuery, "status=completed"))
-	assert.True(t, strings.Contains(seenQuery, "automation_id=aut_1"))
+	assert.True(t, strings.Contains(seenQuery, "loop_id=loop_1"))
 	assert.True(t, strings.Contains(seenQuery, "limit=10"))
 
 	cancelled, err := c.CancelRun(context.Background(), "run_1", "user requested")
 	assert.NoError(t, err)
-	assert.Equal(t, cancelled.Status, api.AutomationRunStatusCancelled)
+	assert.Equal(t, cancelled.Status, api.LoopRunStatusCancelled)
 	assert.Equal(t, cancelBody["reason"], "user requested")
 
 	signalled, err := c.SignalRun(context.Background(), "run_1", "approval", map[string]interface{}{"ok": true})
@@ -121,7 +127,7 @@ data: {"id":"evt_1","org_id":"org_1","project_id":"proj_1","run_id":"run_1","eve
 
 	run, err := c.WaitRun(context.Background(), "run_1", &WaitRunOptions{ReconnectDelay: time.Millisecond})
 	assert.NoError(t, err)
-	assert.Equal(t, run.Status, api.AutomationRunStatusCompleted)
+	assert.Equal(t, run.Status, api.LoopRunStatusCompleted)
 	assert.Equal(t, int(getCalls.Load()), 2)
 }
 
@@ -130,9 +136,9 @@ func automationRunJSON(id, status string) string {
 		"id":%q,
 		"org_id":"org_1",
 		"project_id":"proj_1",
-		"automation_id":"aut_1",
-		"automation_version_id":"autv_1",
-		"automation_version":1,
+			"loop_id":"loop_1",
+			"loop_version_id":"lver_1",
+			"loop_version":1,
 		"status":%q,
 		"created_at":"2026-05-27T00:00:00Z",
 		"updated_at":"2026-05-27T00:00:00Z"

@@ -41,7 +41,7 @@ def _job(job_id: str = "job_1", action_name: str = "demo.action") -> WorkerSocke
     return WorkerSocketClaimedJob(
         id=job_id,
         kind="action_execution",
-        origin="automation_action_step",
+        origin="loop_action_step",
         executor_kind="customer_worker",
         queue="default",
         action_name=action_name,

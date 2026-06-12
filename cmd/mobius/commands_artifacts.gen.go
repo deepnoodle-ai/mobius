@@ -18,7 +18,7 @@ func registerArtifactsCommands(app *cli.App) {
 	artifactsGrp := app.Group("artifacts").Description("Run output artifacts and storage quota")
 	artifactsGrp.Alias("artifact")
 	artifactsGrp.Command("create-signed-url").
-		Description("Create a signed artifact URL").
+		Description("Sign artifact URL").
 		AddArg(&cli.Arg{Name: "id", Description: "TypeID of the artifact (`art_...`)", Required: true}).
 		Flags(
 			cli.Int("ttl-seconds", "").Help("Requested signed URL TTL. The server caps this at the maximum supported artifact download TTL."),
@@ -45,7 +45,7 @@ func registerArtifactsCommands(app *cli.App) {
 		})
 
 	artifactsGrp.Command("delete").
-		Description("Delete an artifact").
+		Description("Delete artifact").
 		AddArg(&cli.Arg{Name: "id", Description: "TypeID of the artifact (`art_...`)", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -64,7 +64,7 @@ func registerArtifactsCommands(app *cli.App) {
 		})
 
 	artifactsGrp.Command("get").
-		Description("Get an artifact").
+		Description("Get artifact").
 		AddArg(&cli.Arg{Name: "id", Description: "TypeID of the artifact (`art_...`)", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -102,7 +102,7 @@ func registerArtifactsCommands(app *cli.App) {
 		})
 
 	artifactsGrp.Command("get-storage-quota").
-		Description("Get per-org Mobius-managed artifact storage quota usage").
+		Description("Get storage usage").
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -119,9 +119,9 @@ func registerArtifactsCommands(app *cli.App) {
 		})
 
 	artifactsGrp.Command("list").
-		Description("List artifacts in a project").
+		Description("List artifacts").
 		Flags(
-			cli.String("run-id", "").Help("Filter to artifacts produced by this automation run."),
+			cli.String("run-id", "").Help("Filter to artifacts produced by this loop run."),
 			cli.String("step-id", "").Help("Filter to artifacts produced by this run step."),
 			cli.String("mime", "").Help("Mime prefix filter (e.g. `image/`)"),
 			cli.String("state", "").Help("Filter by artifact lifecycle state."),

@@ -59,10 +59,10 @@ func renderRunDetail(ctx *cli.Context, body []byte) error {
 	}
 
 	header := tui.Stack(
-		tui.KeyValue("automation", asString(run["automation_id"])),
+		tui.KeyValue("loop", asString(run["loop_id"])),
 		tui.KeyValue("run id", asString(run["id"])),
 		tui.KeyValue("status", colorizeRunStatus(status)),
-		tui.KeyValue("version", asString(run["automation_version"])),
+		tui.KeyValue("version", asString(run["loop_version"])),
 	)
 
 	views := []tui.View{header}

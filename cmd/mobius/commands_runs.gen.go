@@ -20,7 +20,7 @@ func registerRunsCommands(app *cli.App) {
 	runsGrp := app.Group("runs").Description("Automation runs")
 	runsGrp.Alias("run")
 	runsGrp.Command("cancel").
-		Description("Cancel an in-flight run").
+		Description("Cancel run").
 		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
 		Flags(
 			cli.String("reason", "").Help("Human-readable cancellation reason recorded on the run."),
@@ -58,7 +58,7 @@ func registerRunsCommands(app *cli.App) {
 		})
 
 	runsGrp.Command("get").
-		Description("Get an automation run").
+		Description("Get run").
 		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -77,10 +77,10 @@ func registerRunsCommands(app *cli.App) {
 		})
 
 	runsGrp.Command("list").
-		Description("List automation runs").
+		Description("List loop runs").
 		Flags(
 			cli.String("status", "").Help("Filter to one status."),
-			cli.String("automation-id", "").Help("Filter to one automation's runs."),
+			cli.String("loop-id", "").Help("Filter to one loop's runs."),
 			cli.String("source-event-id", "").Help("Filter to runs originating from a single source event. Pass the `source_event_id` returned by the H…"),
 			cli.String("cursor", "").Help("Opaque pagination cursor from a prior response."),
 			cli.Int("limit", "").Help("Maximum number of items to return."),
@@ -95,12 +95,12 @@ func registerRunsCommands(app *cli.App) {
 			p0 := authFor(ctx).Project
 			params := &api.ListRunsParams{}
 			if ctx.IsSet("status") {
-				v := api.AutomationRunStatus(ctx.String("status"))
+				v := api.LoopRunStatus(ctx.String("status"))
 				params.Status = &v
 			}
-			if ctx.IsSet("automation-id") {
-				v := ctx.String("automation-id")
-				params.AutomationId = &v
+			if ctx.IsSet("loop-id") {
+				v := ctx.String("loop-id")
+				params.LoopId = &v
 			}
 			if ctx.IsSet("source-event-id") {
 				v := ctx.String("source-event-id")
@@ -154,7 +154,7 @@ func registerRunsCommands(app *cli.App) {
 		})
 
 	runsGrp.Command("list-steps").
-		Description("List the steps of an automation run").
+		Description("List run steps").
 		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -173,7 +173,7 @@ func registerRunsCommands(app *cli.App) {
 		})
 
 	runsGrp.Command("signal").
-		Description("Resume a suspended run step").
+		Description("Signal run").
 		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
 		Flags(
 			cli.String("result", "").Help("Free-form payload saved as the resumed step's output. Accepts JSON, @file, or @-."),
@@ -216,12 +216,14 @@ func registerRunsCommands(app *cli.App) {
 		})
 
 	runsGrp.Command("start").
-		Description("Start a new automation run").
-		AddArg(&cli.Arg{Name: "handle", Description: "Automation handle (unique per project).", Required: true}).
+		Description("Start run").
+		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
 		Flags(
-			cli.String("external-id", "").Help("Caller-supplied idempotency key, scoped to (org, project). Repeat calls with the same `external_id`…"),
+			cli.String("budget-usd", "").Help("Per-run budget override in US dollars (1 credit = $0.01). Overrides the loop spec's `limits` budget… Accepts JSON, @file, or @-."),
+			cli.Int("credit-budget", "").Help("Per-run budget override in whole credits (1 credit = $0.01). Same ceiling semantics as `budget_usd`…"),
+			cli.String("idempotency-key", "").Help("Caller-supplied idempotency key, scoped to (org, project). Repeat calls with the same `idempotency_…"),
 			cli.String("inputs", "").Help("Free-form input map passed to the run. Available to steps via `{{ .inputs.<key> }}` Go text/templat… Accepts JSON, @file, or @-."),
-			cli.String("source", "").Help("Optional attribution for the call that started this run. Triggers and webhooks populate `trigger_id… Accepts JSON, @file, or @-."),
+			cli.String("source", "").Help("Optional attribution for the call that started this run. Triggers and HTTP trigger dispatch populat… Accepts JSON, @file, or @-."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -238,9 +240,18 @@ func registerRunsCommands(app *cli.App) {
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
 			}
-			if ctx.IsSet("external-id") {
-				v := ctx.String("external-id")
-				body.ExternalId = &v
+			if ctx.IsSet("budget-usd") {
+				if err := decodeFlagJSON(ctx, "budget-usd", ctx.String("budget-usd"), &body.BudgetUsd); err != nil {
+					return err
+				}
+			}
+			if ctx.IsSet("credit-budget") {
+				v := int64(ctx.Int("credit-budget"))
+				body.CreditBudget = &v
+			}
+			if ctx.IsSet("idempotency-key") {
+				v := ctx.String("idempotency-key")
+				body.IdempotencyKey = &v
 			}
 			if ctx.IsSet("inputs") {
 				if err := decodeFlagJSON(ctx, "inputs", ctx.String("inputs"), &body.Inputs); err != nil {
@@ -252,7 +263,7 @@ func registerRunsCommands(app *cli.App) {
 					return err
 				}
 			}
-			if ctx.String("file") == "" && !ctx.IsSet("external-id") && !ctx.IsSet("inputs") && !ctx.IsSet("source") {
+			if ctx.String("file") == "" && !ctx.IsSet("budget-usd") && !ctx.IsSet("credit-budget") && !ctx.IsSet("idempotency-key") && !ctx.IsSet("inputs") && !ctx.IsSet("source") {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
 			if ctx.Bool("dry-run") {
@@ -266,7 +277,7 @@ func registerRunsCommands(app *cli.App) {
 		})
 
 	runsGrp.Command("stream").
-		Description("Stream run events over Server-Sent Events").
+		Description("Stream run events").
 		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
 		Flags(
 			cli.Int("since-sequence", "").Help("Stream events with sequence > since_sequence."),

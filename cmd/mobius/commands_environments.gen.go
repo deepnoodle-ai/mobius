@@ -20,7 +20,7 @@ func registerEnvironmentsCommands(app *cli.App) {
 	environmentsGrp := app.Group("environments").Description("Managed execution environments")
 	environmentsGrp.Alias("environment")
 	environmentsGrp.Command("acquire").
-		Description("Acquire an environment lease").
+		Description("Acquire lease").
 		Flags(
 			cli.String("bound-to-id", "").Help("ID of the object the environment is bound to (paired with `bound_to_type`)."),
 			cli.String("bound-to-type", "").Help("Execution or lifecycle object this environment is bound to. Ownership remains in `owned_by`."),
@@ -134,7 +134,7 @@ func registerEnvironmentsCommands(app *cli.App) {
 		})
 
 	environmentsGrp.Command("attach-worker").
-		Description("Create or attach a worker-provided environment").
+		Description("Attach environment").
 		Flags(
 			cli.String("bound-to-id", "").Help("ID of the object the environment is bound to (paired with `bound_to_type`)."),
 			cli.String("bound-to-type", "").Help("Execution or lifecycle object this environment is bound to. Ownership remains in `owned_by`."),
@@ -196,7 +196,7 @@ func registerEnvironmentsCommands(app *cli.App) {
 		})
 
 	environmentsGrp.Command("create").
-		Description("Create an environment").
+		Description("Create environment").
 		Flags(
 			cli.String("bound-to-id", "").Help("ID of the object the environment is bound to (paired with `bound_to_type`)."),
 			cli.String("bound-to-type", "").Help("Execution or lifecycle object this environment is bound to. Ownership remains in `owned_by`."),
@@ -295,7 +295,7 @@ func registerEnvironmentsCommands(app *cli.App) {
 		})
 
 	environmentsGrp.Command("create-git-credential").
-		Description("Mint short-lived Git credentials for an environment").
+		Description("Mint Git credentials").
 		AddArg(&cli.Arg{Name: "environment-id", Description: "Environment ID.", Required: true}).
 		Flags(
 			cli.String("operation", "").Help("Git operation the minted credential will authorize."),
@@ -337,7 +337,7 @@ func registerEnvironmentsCommands(app *cli.App) {
 		})
 
 	environmentsGrp.Command("destroy").
-		Description("Destroy an environment").
+		Description("Destroy environment").
 		AddArg(&cli.Arg{Name: "environment-id", Description: "Environment ID.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -356,7 +356,7 @@ func registerEnvironmentsCommands(app *cli.App) {
 		})
 
 	environmentsGrp.Command("exec").
-		Description("Execute a command inside an environment").
+		Description("Execute command").
 		AddArg(&cli.Arg{Name: "environment-id", Description: "Environment ID.", Required: true}).
 		Flags(
 			cli.Strings("command", "").Help("[required] Command and arguments to run, as an argv array."),
@@ -408,7 +408,7 @@ func registerEnvironmentsCommands(app *cli.App) {
 		})
 
 	environmentsGrp.Command("get").
-		Description("Get an environment").
+		Description("Get environment").
 		AddArg(&cli.Arg{Name: "environment-id", Description: "Environment ID.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -427,7 +427,7 @@ func registerEnvironmentsCommands(app *cli.App) {
 		})
 
 	environmentsGrp.Command("get-worker-logs").
-		Description("Get worker logs for an environment").
+		Description("Get worker logs").
 		AddArg(&cli.Arg{Name: "environment-id", Description: "Environment ID.", Required: true}).
 		Flags(
 			cli.String("log-name", "").Help("Named log stream to read. Defaults to stdout."),
@@ -539,7 +539,7 @@ func registerEnvironmentsCommands(app *cli.App) {
 		})
 
 	environmentsGrp.Command("reconcile").
-		Description("Reconcile environment provider state").
+		Description("Reconcile environment").
 		AddArg(&cli.Arg{Name: "environment-id", Description: "Environment ID.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -558,7 +558,7 @@ func registerEnvironmentsCommands(app *cli.App) {
 		})
 
 	environmentsGrp.Command("release-lease").
-		Description("Release an environment lease").
+		Description("Release lease").
 		AddArg(&cli.Arg{Name: "lease-id", Description: "Environment lease ID.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -577,7 +577,7 @@ func registerEnvironmentsCommands(app *cli.App) {
 		})
 
 	environmentsGrp.Command("start-worker").
-		Description("Start a Mobius worker in an environment").
+		Description("Start worker").
 		AddArg(&cli.Arg{Name: "environment-id", Description: "Environment ID.", Required: true}).
 		AddArg(&cli.Arg{Name: "command", Description: "Command argv after --. Use this for values beginning with '-' (for example: -- sh -lc 'echo hi').", Required: false, Variadic: true}).
 		Flags(
@@ -659,7 +659,7 @@ func registerEnvironmentsCommands(app *cli.App) {
 		})
 
 	environmentsGrp.Command("update").
-		Description("Update environment metadata").
+		Description("Update environment").
 		AddArg(&cli.Arg{Name: "environment-id", Description: "Environment ID.", Required: true}).
 		Flags(
 			cli.String("bound-to-id", "").Help("ID of the object the environment is bound to; send null to clear."),
@@ -729,7 +729,7 @@ func registerEnvironmentsCommands(app *cli.App) {
 		})
 
 	environmentsGrp.Command("write-file").
-		Description("Write a file into an environment").
+		Description("Write file").
 		AddArg(&cli.Arg{Name: "environment-id", Description: "Environment ID.", Required: true}).
 		Flags(
 			cli.String("content", "").Help("[required] File content to write."),

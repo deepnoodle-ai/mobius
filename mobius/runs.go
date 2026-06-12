@@ -14,14 +14,15 @@ const defaultWaitRunReconnectDelay = time.Second
 // ExternalID is a caller-supplied correlation and idempotency key.
 type StartRunOptions struct {
 	Inputs     map[string]interface{}
-	Source     *api.AutomationRunSource
+	Source     *api.LoopRunSource
 	ExternalID string
 }
 
 // ListRunsOptions filters and paginates project automation runs.
 type ListRunsOptions struct {
-	Status       api.AutomationRunStatus
+	Status       api.LoopRunStatus
 	AutomationID string
+	LoopID       string
 	Cursor       string
 	Limit        int
 }
@@ -35,15 +36,19 @@ type WaitRunOptions struct {
 	ReconnectDelay time.Duration
 }
 
-// StartRun starts a published automation by handle.
-func (c *Client) StartRun(ctx context.Context, automationHandle string, opts *StartRunOptions) (*api.AutomationRun, error) {
-	return c.StartAutomationRun(ctx, automationHandle, opts)
+// StartRun starts a published automation by handle or loop ID.
+func (c *Client) StartRun(ctx context.Context, automationRef string, opts *StartRunOptions) (*api.LoopRun, error) {
+	return c.StartAutomationRun(ctx, automationRef, opts)
 }
 
-// StartAutomationRun starts a published automation by handle.
-func (c *Client) StartAutomationRun(ctx context.Context, automationHandle string, opts *StartRunOptions) (*api.AutomationRun, error) {
+// StartAutomationRun starts a published automation by handle or loop ID.
+func (c *Client) StartAutomationRun(ctx context.Context, automationRef string, opts *StartRunOptions) (*api.LoopRun, error) {
+	loopID, err := c.resolveAutomationID(ctx, automationRef)
+	if err != nil {
+		return nil, err
+	}
 	req := startAutomationRunRequest(opts)
-	resp, err := c.ac.StartRunWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), automationHandle, req)
+	resp, err := c.ac.StartRunWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.IDParam(loopID), req)
 	if err != nil {
 		return nil, fmt.Errorf("mobius: start automation run: %w", err)
 	}
@@ -54,7 +59,7 @@ func (c *Client) StartAutomationRun(ctx context.Context, automationHandle string
 }
 
 // ListRuns returns project automation runs matching opts.
-func (c *Client) ListRuns(ctx context.Context, opts *ListRunsOptions) (*api.AutomationRunListResponse, error) {
+func (c *Client) ListRuns(ctx context.Context, opts *ListRunsOptions) (*api.LoopRunListResponse, error) {
 	resp, err := c.ac.ListRunsWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), listRunsParams(opts))
 	if err != nil {
 		return nil, fmt.Errorf("mobius: list runs: %w", err)
@@ -66,7 +71,7 @@ func (c *Client) ListRuns(ctx context.Context, opts *ListRunsOptions) (*api.Auto
 }
 
 // GetRun returns the current automation run detail.
-func (c *Client) GetRun(ctx context.Context, runID string) (*api.AutomationRun, error) {
+func (c *Client) GetRun(ctx context.Context, runID string) (*api.LoopRun, error) {
 	resp, err := c.ac.GetRunWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.IDParam(runID))
 	if err != nil {
 		return nil, fmt.Errorf("mobius: get run: %w", err)
@@ -78,8 +83,8 @@ func (c *Client) GetRun(ctx context.Context, runID string) (*api.AutomationRun, 
 }
 
 // CancelRun requests cancellation of an in-flight automation run.
-func (c *Client) CancelRun(ctx context.Context, runID string, reason string) (*api.AutomationRun, error) {
-	req := api.CancelAutomationRunRequest{}
+func (c *Client) CancelRun(ctx context.Context, runID string, reason string) (*api.LoopRun, error) {
+	req := api.CancelLoopRunRequest{}
 	if reason != "" {
 		req.Reason = &reason
 	}
@@ -94,8 +99,8 @@ func (c *Client) CancelRun(ctx context.Context, runID string, reason string) (*a
 }
 
 // SignalRun durably resumes a suspended automation step.
-func (c *Client) SignalRun(ctx context.Context, runID, stepKey string, result map[string]interface{}) (*api.AutomationRun, error) {
-	req := api.SignalAutomationRunRequest{StepKey: stepKey}
+func (c *Client) SignalRun(ctx context.Context, runID, stepKey string, result map[string]interface{}) (*api.LoopRun, error) {
+	req := api.SignalLoopRunRequest{StepKey: stepKey}
 	if result != nil {
 		req.Result = &result
 	}
@@ -111,14 +116,14 @@ func (c *Client) SignalRun(ctx context.Context, runID, stepKey string, result ma
 
 // SendRunSignal is retained as a source-compatible alias for SignalRun. The
 // name argument is interpreted as the suspended step key.
-func (c *Client) SendRunSignal(ctx context.Context, runID, name string, payload map[string]interface{}) (*api.AutomationRun, error) {
+func (c *Client) SendRunSignal(ctx context.Context, runID, name string, payload map[string]interface{}) (*api.LoopRun, error) {
 	return c.SignalRun(ctx, runID, name, payload)
 }
 
 // WaitRun waits until runID reaches a terminal state and returns a fresh run
 // detail. It combines the run SSE stream with GetRun fallback so callers can
 // recover when a stream closes before the terminal event is observed.
-func (c *Client) WaitRun(ctx context.Context, runID string, opts *WaitRunOptions) (*api.AutomationRun, error) {
+func (c *Client) WaitRun(ctx context.Context, runID string, opts *WaitRunOptions) (*api.LoopRun, error) {
 	since := int64(0)
 	reconnectDelay := defaultWaitRunReconnectDelay
 	if opts != nil {
@@ -166,14 +171,14 @@ func (c *Client) WaitRun(ctx context.Context, runID string, opts *WaitRunOptions
 
 // IsTerminalRunStatus reports whether status is completed, failed, or
 // cancelled.
-func IsTerminalRunStatus(status api.AutomationRunStatus) bool {
-	return status == api.AutomationRunStatusCompleted ||
-		status == api.AutomationRunStatusFailed ||
-		status == api.AutomationRunStatusCancelled
+func IsTerminalRunStatus(status api.LoopRunStatus) bool {
+	return status == api.LoopRunStatusCompleted ||
+		status == api.LoopRunStatusFailed ||
+		status == api.LoopRunStatusCancelled
 }
 
-func startAutomationRunRequest(opts *StartRunOptions) api.StartAutomationRunRequest {
-	req := api.StartAutomationRunRequest{}
+func startAutomationRunRequest(opts *StartRunOptions) api.StartLoopRunRequest {
+	req := api.StartLoopRunRequest{}
 	if opts == nil {
 		return req
 	}
@@ -184,7 +189,7 @@ func startAutomationRunRequest(opts *StartRunOptions) api.StartAutomationRunRequ
 		req.Source = opts.Source
 	}
 	if opts.ExternalID != "" {
-		req.ExternalId = &opts.ExternalID
+		req.IdempotencyKey = &opts.ExternalID
 	}
 	return req
 }
@@ -197,8 +202,10 @@ func listRunsParams(opts *ListRunsOptions) *api.ListRunsParams {
 	if opts.Status != "" {
 		params.Status = &opts.Status
 	}
-	if opts.AutomationID != "" {
-		params.AutomationId = &opts.AutomationID
+	if opts.LoopID != "" {
+		params.LoopId = &opts.LoopID
+	} else if opts.AutomationID != "" {
+		params.LoopId = &opts.AutomationID
 	}
 	if opts.Cursor != "" {
 		params.Cursor = &opts.Cursor
@@ -217,9 +224,9 @@ func unexpectedRunStatus(op, status string, body []byte) error {
 }
 
 func isTerminalStatusString(status string) bool {
-	return status == string(api.AutomationRunStatusCompleted) ||
-		status == string(api.AutomationRunStatusFailed) ||
-		status == string(api.AutomationRunStatusCancelled)
+	return status == string(api.LoopRunStatusCompleted) ||
+		status == string(api.LoopRunStatusFailed) ||
+		status == string(api.LoopRunStatusCancelled)
 }
 
 func sleepContext(ctx context.Context, d time.Duration) error {

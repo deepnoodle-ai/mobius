@@ -15,20 +15,22 @@ import (
 	"github.com/deepnoodle-ai/mobius/mobius/api"
 )
 
-// registerAutomationsCommands registers every generated subcommand in the "automations" group.
-func registerAutomationsCommands(app *cli.App) {
-	automationsGrp := app.Group("automations").Description("Automation definitions, versions, and runs")
-	automationsGrp.Alias("automation")
-	automationsGrp.Command("create").
-		Description("Create an automation").
+// registerLoopsCommands registers every generated subcommand in the "loops" group.
+func registerLoopsCommands(app *cli.App) {
+	loopsGrp := app.Group("loops")
+	loopsGrp.Alias("loop")
+	loopsGrp.Command("create").
+		Description("Create loop").
 		Flags(
+			cli.Bool("activate", "").Help("When true, `spec` is required. Mobius stores it as version 1, publishes it, materializes its trigge…"),
 			cli.String("default-agent-id", "").Help("Agent used by `agent` steps that do not pin an agent explicitly."),
 			cli.String("default-inputs", "").Help("Default values merged into `inputs` when a run is started without overrides. Accepts JSON, @file, or @-."),
-			cli.String("description", "").Help("Markdown description of the automation's purpose."),
-			cli.String("handle", "").Help("[required] Stable per-project automation handle. Immutable after creation."),
+			cli.String("description", "").Help("Markdown description of the loop's purpose."),
+			cli.String("handle", "").Help("[required] Stable per-project loop handle. Must be lowercase alphanumeric with single hyphen separators. Immut…"),
 			cli.String("name", "").Help("[required] Human-readable display name."),
-			cli.String("settings", "").Help("Free-form automation-level settings consumed by the engine. Accepts JSON, @file, or @-."),
-			cli.String("tags", "").Help("Free-form label map used to organise automations in listings and search. Accepts JSON, @file, or @-."),
+			cli.String("settings", "").Help("Free-form loop-level settings consumed by the engine. Accepts JSON, @file, or @-."),
+			cli.String("spec", "").Help("Authoring representation of a loop. Accepts JSON, @file, or @-."),
+			cli.String("tags", "").Help("Free-form label map used to organise loops in listings and search. Accepts JSON, @file, or @-."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -40,9 +42,13 @@ func registerAutomationsCommands(app *cli.App) {
 			}
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
-			var body api.CreateAutomationJSONRequestBody
+			var body api.CreateLoopJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
+			}
+			if ctx.IsSet("activate") {
+				v := ctx.Bool("activate")
+				body.Activate = &v
 			}
 			if ctx.IsSet("default-agent-id") {
 				v := ctx.String("default-agent-id")
@@ -68,6 +74,11 @@ func registerAutomationsCommands(app *cli.App) {
 					return err
 				}
 			}
+			if ctx.IsSet("spec") {
+				if err := decodeFlagJSON(ctx, "spec", ctx.String("spec"), &body.Spec); err != nil {
+					return err
+				}
+			}
 			if ctx.IsSet("tags") {
 				if err := decodeFlagJSON(ctx, "tags", ctx.String("tags"), &body.Tags); err != nil {
 					return err
@@ -82,19 +93,18 @@ func registerAutomationsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.CreateAutomationWithResponse(ctx.Context(), p0, body)
+			resp, err := client.CreateLoopWithResponse(ctx.Context(), p0, body)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, "createAutomation", resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "createLoop", resp.StatusCode(), resp.Body)
 		})
 
-	automationsGrp.Command("create-version").
-		Description("Create a new draft version").
-		AddArg(&cli.Arg{Name: "handle", Description: "Project-unique automation handle.", Required: true}).
+	loopsGrp.Command("create-version").
+		Description("Create version").
+		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
 		Flags(
-			cli.String("compiled-plan", "").Help("Optional precompiled execution plan. The engine will recompile from `spec` if omitted. Accepts JSON, @file, or @-."),
-			cli.String("spec", "").Help("[required] Authoring representation of an automation. Accepts JSON, @file, or @-."),
+			cli.String("spec", "").Help("[required] Authoring representation of a loop. Accepts JSON, @file, or @-."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -107,14 +117,9 @@ func registerAutomationsCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			var body api.CreateAutomationVersionJSONRequestBody
+			var body api.CreateLoopVersionJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
-			}
-			if ctx.IsSet("compiled-plan") {
-				if err := decodeFlagJSON(ctx, "compiled-plan", ctx.String("compiled-plan"), &body.CompiledPlan); err != nil {
-					return err
-				}
 			}
 			if ctx.IsSet("spec") {
 				if err := decodeFlagJSON(ctx, "spec", ctx.String("spec"), &body.Spec); err != nil {
@@ -127,16 +132,16 @@ func registerAutomationsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.CreateAutomationVersionWithResponse(ctx.Context(), p0, p1, body)
+			resp, err := client.CreateLoopVersionWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, "createAutomationVersion", resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "createLoopVersion", resp.StatusCode(), resp.Body)
 		})
 
-	automationsGrp.Command("delete").
-		Description("Archive an automation").
-		AddArg(&cli.Arg{Name: "handle", Description: "Project-unique automation handle.", Required: true}).
+	loopsGrp.Command("delete").
+		Description("Archive loop").
+		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -146,19 +151,20 @@ func registerAutomationsCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			resp, err := client.DeleteAutomationWithResponse(ctx.Context(), p0, p1)
+			resp, err := client.DeleteLoopWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, "deleteAutomation", resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "deleteLoop", resp.StatusCode(), resp.Body)
 		})
 
-	automationsGrp.Command("deliver-http-trigger").
-		Description("Deliver an HTTP request payload to a trigger").
+	loopsGrp.Command("deliver-http-trigger").
+		Description("Deliver trigger").
 		AddArg(&cli.Arg{Name: "http-handle", Description: "Globally unique identifier for the trigger. The endpoint carries no project context, so the handle …", Required: true}).
 		Flags(
 			cli.String("idempotency-key", "").Help("Optional idempotency key (also accepted via the X-Idempotency-Key header)."),
 			cli.String("x-idempotency-key", "").Help("Alternative to the `idempotency_key` query parameter. When both are present the query parameter win…"),
+			cli.String("x-mobius-signature", "").Help("HMAC-SHA256 signature of the raw request body under the trigger's signing secret, formatted as `sha…"),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -179,6 +185,10 @@ func registerAutomationsCommands(app *cli.App) {
 				v := ctx.String("x-idempotency-key")
 				params.XIdempotencyKey = &v
 			}
+			if ctx.IsSet("x-mobius-signature") {
+				v := ctx.String("x-mobius-signature")
+				params.XMobiusSignature = &v
+			}
 			var body api.DeliverHTTPTriggerJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -196,9 +206,9 @@ func registerAutomationsCommands(app *cli.App) {
 			return printResponse(ctx, "deliverHTTPTrigger", resp.StatusCode(), resp.Body)
 		})
 
-	automationsGrp.Command("get").
-		Description("Get an automation").
-		AddArg(&cli.Arg{Name: "handle", Description: "Project-unique automation handle.", Required: true}).
+	loopsGrp.Command("get").
+		Description("Get loop").
+		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -208,17 +218,18 @@ func registerAutomationsCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			resp, err := client.GetAutomationWithResponse(ctx.Context(), p0, p1)
+			resp, err := client.GetLoopWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, "getAutomation", resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "getLoop", resp.StatusCode(), resp.Body)
 		})
 
-	automationsGrp.Command("list").
-		Description("List automations in a project").
+	loopsGrp.Command("list").
+		Description("List loops").
 		Flags(
-			cli.String("status", "").Help("Filter by lifecycle status. Omit to return all non-archived automations (the default). Pass a singl…"),
+			cli.String("status", "").Help("Filter by lifecycle status. Omit to return all non-archived loops (the default). Pass a single stat…"),
+			cli.String("handle", "").Help("Exact loop handle filter for resolving a handle to its loop ID in one request."),
 			cli.String("cursor", "").Help("Opaque pagination cursor from a prior response."),
 			cli.Int("limit", "").Help("Maximum number of items to return."),
 		).
@@ -230,10 +241,14 @@ func registerAutomationsCommands(app *cli.App) {
 			}
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
-			params := &api.ListAutomationsParams{}
+			params := &api.ListLoopsParams{}
 			if ctx.IsSet("status") {
-				v := api.ListAutomationsParamsStatus(ctx.String("status"))
+				v := api.ListLoopsParamsStatus(ctx.String("status"))
 				params.Status = &v
+			}
+			if ctx.IsSet("handle") {
+				v := ctx.String("handle")
+				params.Handle = &v
 			}
 			if ctx.IsSet("cursor") {
 				v := ctx.String("cursor")
@@ -243,16 +258,16 @@ func registerAutomationsCommands(app *cli.App) {
 				v := ctx.Int("limit")
 				params.Limit = &v
 			}
-			resp, err := client.ListAutomationsWithResponse(ctx.Context(), p0, params)
+			resp, err := client.ListLoopsWithResponse(ctx.Context(), p0, params)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, "listAutomations", resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "listLoops", resp.StatusCode(), resp.Body)
 		})
 
-	automationsGrp.Command("list-versions").
-		Description("List versions for an automation").
-		AddArg(&cli.Arg{Name: "handle", Description: "Project-unique automation handle.", Required: true}).
+	loopsGrp.Command("list-versions").
+		Description("List versions").
+		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -262,17 +277,17 @@ func registerAutomationsCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			resp, err := client.ListAutomationVersionsWithResponse(ctx.Context(), p0, p1)
+			resp, err := client.ListLoopVersionsWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, "listAutomationVersions", resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "listLoopVersions", resp.StatusCode(), resp.Body)
 		})
 
-	automationsGrp.Command("publish-automation-version").
-		Description("Publish a version").
-		AddArg(&cli.Arg{Name: "handle", Description: "Project-unique automation handle.", Required: true}).
-		AddArg(&cli.Arg{Name: "version", Description: "Version number of the AutomationVersion to publish.", Required: true}).
+	loopsGrp.Command("publish-loop-version").
+		Description("Publish version").
+		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
+		AddArg(&cli.Arg{Name: "version", Description: "Version number of the LoopVersion to publish.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -286,24 +301,24 @@ func registerAutomationsCommands(app *cli.App) {
 			if err != nil {
 				return err
 			}
-			resp, err := client.PublishAutomationVersionWithResponse(ctx.Context(), p0, p1, p2)
+			resp, err := client.PublishLoopVersionWithResponse(ctx.Context(), p0, p1, p2)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, "publishAutomationVersion", resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "publishLoopVersion", resp.StatusCode(), resp.Body)
 		})
 
-	automationsGrp.Command("update").
-		Description("Update an automation").
-		AddArg(&cli.Arg{Name: "handle", Description: "Project-unique automation handle.", Required: true}).
+	loopsGrp.Command("update").
+		Description("Update loop").
+		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
 		Flags(
 			cli.String("default-agent-id", "").Help("Agent used by `agent` steps that do not pin an agent explicitly."),
 			cli.String("default-inputs", "").Help("Default values merged into `inputs` when a run is started without overrides. Accepts JSON, @file, or @-."),
-			cli.String("description", "").Help("Markdown description of the automation's purpose."),
+			cli.String("description", "").Help("Markdown description of the loop's purpose."),
 			cli.String("name", "").Help("Human-readable display name."),
-			cli.String("settings", "").Help("Free-form automation-level settings consumed by the engine. Accepts JSON, @file, or @-."),
-			cli.String("status", "").Help("Lifecycle status of an automation."),
-			cli.String("tags", "").Help("Free-form label map used to organise automations in listings and search. Accepts JSON, @file, or @-."),
+			cli.String("settings", "").Help("Free-form loop-level settings consumed by the engine. Accepts JSON, @file, or @-."),
+			cli.String("status", "").Help("Lifecycle status of a loop."),
+			cli.String("tags", "").Help("Free-form label map used to organise loops in listings and search. Accepts JSON, @file, or @-."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -316,7 +331,7 @@ func registerAutomationsCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			var body api.UpdateAutomationJSONRequestBody
+			var body api.UpdateLoopJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
 			}
@@ -343,7 +358,7 @@ func registerAutomationsCommands(app *cli.App) {
 				}
 			}
 			if ctx.IsSet("status") {
-				v := api.AutomationStatus(ctx.String("status"))
+				v := api.LoopStatus(ctx.String("status"))
 				body.Status = &v
 			}
 			if ctx.IsSet("tags") {
@@ -357,11 +372,11 @@ func registerAutomationsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.UpdateAutomationWithResponse(ctx.Context(), p0, p1, body)
+			resp, err := client.UpdateLoopWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, "updateAutomation", resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "updateLoop", resp.StatusCode(), resp.Body)
 		})
 
 }
