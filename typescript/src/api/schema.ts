@@ -3970,15 +3970,16 @@ export interface components {
         /** @description Authoring representation of a loop. */
         LoopSpec: {
             /**
-             * @description Loop spec schema version. Current value is `1`.
+             * @description Loop spec schema version. `"1"` renders strings with Go text/template `{{ .inputs.x }}` / `{{ .context.x }}` actions. `"2"` uses expr `${{ ... }}` templates and bare expr predicates over the `inputs`, `event`, `meta`, and `steps.<key>.output` namespace.
              * @default 1
              * @enum {string}
              */
-            schema_version: "1";
+            schema_version: "1" | "2";
             /** @description Optional spec-local display name. */
             name?: string;
             /** @description Optional spec-local Markdown description. */
             description?: string;
+            /** @description Declared run inputs. In schema_version 2 these form the run-input contract — undeclared keys are dropped and required inputs without defaults fail the start. */
             inputs?: {
                 [key: string]: components["schemas"]["LoopSpecInput"];
             };
@@ -3992,6 +3993,10 @@ export interface components {
             /** @description Source repositories the loop targets. When a shared managed environment is selected, the runtime prepares these repositories before user-authored steps run. */
             repositories?: components["schemas"]["LoopSpecRepository"][];
             steps: components["schemas"]["LoopStep"][];
+            /** @description Declared run result. When present, string leaves are rendered against the run inputs and saved step outputs at completion and the rendered map is the run's result — the contract for API consumers, `run.completed` subscribers, and parent loops. When absent, the result is the full accumulated context map. In schema_version 2 string leaves use `${{ ... }}` interpolation. */
+            output?: {
+                [key: string]: unknown;
+            };
             cleanup?: {
                 [key: string]: unknown;
             }[];
@@ -4064,19 +4069,21 @@ export interface components {
             key: string;
             /** @description Human-readable step name. */
             name?: string;
+            /** @description Bare expr predicate evaluated before the step runs; false skips the step. Requires schema_version "2". */
+            if?: string;
             /**
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
             kind: "agent";
             config: components["schemas"]["LoopAgentStep"];
-            /** @description Step-local input object resolved when the step starts. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions. */
+            /** @description Step-local input object resolved when the step starts. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions. schema_version 1 only; removed in 2 (reference inputs/event/meta/steps directly in config fields). */
             input?: {
                 [key: string]: unknown;
             };
             retry?: components["schemas"]["LoopRetryPolicy"];
             timeout?: components["schemas"]["LoopTimeoutPolicy"];
-            /** @description Context key used to store this step's output. Defaults to `key`. */
+            /** @description Context key used to store this step's output. Defaults to `key`. schema_version 1 only; removed in 2 (outputs are always at steps.<key>.output). */
             save_as?: string;
         };
         LoopActionStepSpec: {
@@ -4084,19 +4091,21 @@ export interface components {
             key: string;
             /** @description Human-readable step name. */
             name?: string;
+            /** @description Bare expr predicate evaluated before the step runs; false skips the step. Requires schema_version "2". */
+            if?: string;
             /**
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
             kind: "action";
             config: components["schemas"]["LoopActionStep"];
-            /** @description Step-local input object resolved when the step starts. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions. */
+            /** @description Step-local input object resolved when the step starts. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions. schema_version 1 only; removed in 2 (reference inputs/event/meta/steps directly in config fields). */
             input?: {
                 [key: string]: unknown;
             };
             retry?: components["schemas"]["LoopRetryPolicy"];
             timeout?: components["schemas"]["LoopTimeoutPolicy"];
-            /** @description Context key used to store this step's output. Defaults to `key`. */
+            /** @description Context key used to store this step's output. Defaults to `key`. schema_version 1 only; removed in 2 (outputs are always at steps.<key>.output). */
             save_as?: string;
         };
         LoopSleepStepSpec: {
@@ -4104,19 +4113,21 @@ export interface components {
             key: string;
             /** @description Human-readable step name. */
             name?: string;
+            /** @description Bare expr predicate evaluated before the step runs; false skips the step. Requires schema_version "2". */
+            if?: string;
             /**
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
             kind: "sleep";
             config: components["schemas"]["LoopSleepStep"];
-            /** @description Step-local input object resolved when the step starts. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions. */
+            /** @description Step-local input object resolved when the step starts. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions. schema_version 1 only; removed in 2 (reference inputs/event/meta/steps directly in config fields). */
             input?: {
                 [key: string]: unknown;
             };
             retry?: components["schemas"]["LoopRetryPolicy"];
             timeout?: components["schemas"]["LoopTimeoutPolicy"];
-            /** @description Context key used to store this step's output. Defaults to `key`. */
+            /** @description Context key used to store this step's output. Defaults to `key`. schema_version 1 only; removed in 2 (outputs are always at steps.<key>.output). */
             save_as?: string;
         };
         LoopWaitForEventStepSpec: {
@@ -4124,19 +4135,21 @@ export interface components {
             key: string;
             /** @description Human-readable step name. */
             name?: string;
+            /** @description Bare expr predicate evaluated before the step runs; false skips the step. Requires schema_version "2". */
+            if?: string;
             /**
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
             kind: "wait_for_event";
             config: components["schemas"]["LoopWaitForEventStep"];
-            /** @description Step-local input object resolved when the step starts. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions. */
+            /** @description Step-local input object resolved when the step starts. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions. schema_version 1 only; removed in 2 (reference inputs/event/meta/steps directly in config fields). */
             input?: {
                 [key: string]: unknown;
             };
             retry?: components["schemas"]["LoopRetryPolicy"];
             timeout?: components["schemas"]["LoopTimeoutPolicy"];
-            /** @description Context key used to store this step's output. Defaults to `key`. */
+            /** @description Context key used to store this step's output. Defaults to `key`. schema_version 1 only; removed in 2 (outputs are always at steps.<key>.output). */
             save_as?: string;
         };
         LoopSubLoopStepSpec: {
@@ -4144,19 +4157,21 @@ export interface components {
             key: string;
             /** @description Human-readable step name. */
             name?: string;
+            /** @description Bare expr predicate evaluated before the step runs; false skips the step. Requires schema_version "2". */
+            if?: string;
             /**
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
             kind: "loop";
             config: components["schemas"]["LoopSubLoopStep"];
-            /** @description Step-local input object resolved when the step starts. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions. */
+            /** @description Step-local input object resolved when the step starts. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions. schema_version 1 only; removed in 2 (reference inputs/event/meta/steps directly in config fields). */
             input?: {
                 [key: string]: unknown;
             };
             retry?: components["schemas"]["LoopRetryPolicy"];
             timeout?: components["schemas"]["LoopTimeoutPolicy"];
-            /** @description Context key used to store this step's output. Defaults to `key`. */
+            /** @description Context key used to store this step's output. Defaults to `key`. schema_version 1 only; removed in 2 (outputs are always at steps.<key>.output). */
             save_as?: string;
         };
         LoopCheckStepSpec: {
@@ -4164,19 +4179,21 @@ export interface components {
             key: string;
             /** @description Human-readable step name. */
             name?: string;
+            /** @description Bare expr predicate evaluated before the step runs; false skips the step. Requires schema_version "2". */
+            if?: string;
             /**
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
              */
             kind: "check";
             config: components["schemas"]["LoopCheckStep"];
-            /** @description Step-local input object resolved when the step starts. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions. */
+            /** @description Step-local input object resolved when the step starts. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions. schema_version 1 only; removed in 2 (reference inputs/event/meta/steps directly in config fields). */
             input?: {
                 [key: string]: unknown;
             };
             retry?: components["schemas"]["LoopRetryPolicy"];
             timeout?: components["schemas"]["LoopTimeoutPolicy"];
-            /** @description Context key used to store this step's output. Defaults to `key`. */
+            /** @description Context key used to store this step's output. Defaults to `key`. schema_version 1 only; removed in 2 (outputs are always at steps.<key>.output). */
             save_as?: string;
         };
         /** @description Run guardrails. Lives at `spec.limits` in the JSON the engine compiles. Every limit is optional; absent or zero means unbounded (plan-level org caps still apply), with one exception — trial-plan runs default to a 100-credit ($1) budget when no budget is set here or on the start request. Paid plans default to unbounded. */

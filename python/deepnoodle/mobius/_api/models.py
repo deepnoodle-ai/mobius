@@ -2997,10 +2997,11 @@ class Status4(StrEnum):
 
 class SchemaVersion(StrEnum):
     """
-    Loop spec schema version. Current value is `1`.
+    Loop spec schema version. `"1"` renders strings with Go text/template `{{ .inputs.x }}` / `{{ .context.x }}` actions. `"2"` uses expr `${{ ... }}` templates and bare expr predicates over the `inputs`, `event`, `meta`, and `steps.<key>.output` namespace.
     """
 
     field_1 = '1'
+    field_2 = '2'
 
 
 class Concurrency(StrEnum):
@@ -4738,17 +4739,22 @@ class LoopActionStepSpec(BaseModel):
     )
     key: str = Field(..., description='Stable step key within the spec.')
     name: str | None = Field(None, description='Human-readable step name.')
+    if_: str | None = Field(
+        None,
+        alias='if',
+        description='Bare expr predicate evaluated before the step runs; false skips the step. Requires schema_version "2".',
+    )
     kind: Literal['action']
     config: LoopActionStep
     input: dict[str, Any] | None = Field(
         None,
-        description='Step-local input object resolved when the step starts. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions.',
+        description='Step-local input object resolved when the step starts. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions. schema_version 1 only; removed in 2 (reference inputs/event/meta/steps directly in config fields).',
     )
     retry: LoopRetryPolicy | None = None
     timeout: LoopTimeoutPolicy | None = None
     save_as: str | None = Field(
         None,
-        description="Context key used to store this step's output. Defaults to `key`.",
+        description="Context key used to store this step's output. Defaults to `key`. schema_version 1 only; removed in 2 (outputs are always at steps.<key>.output).",
     )
 
 
@@ -4758,17 +4764,22 @@ class LoopSleepStepSpec(BaseModel):
     )
     key: str = Field(..., description='Stable step key within the spec.')
     name: str | None = Field(None, description='Human-readable step name.')
+    if_: str | None = Field(
+        None,
+        alias='if',
+        description='Bare expr predicate evaluated before the step runs; false skips the step. Requires schema_version "2".',
+    )
     kind: Literal['sleep']
     config: LoopSleepStep
     input: dict[str, Any] | None = Field(
         None,
-        description='Step-local input object resolved when the step starts. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions.',
+        description='Step-local input object resolved when the step starts. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions. schema_version 1 only; removed in 2 (reference inputs/event/meta/steps directly in config fields).',
     )
     retry: LoopRetryPolicy | None = None
     timeout: LoopTimeoutPolicy | None = None
     save_as: str | None = Field(
         None,
-        description="Context key used to store this step's output. Defaults to `key`.",
+        description="Context key used to store this step's output. Defaults to `key`. schema_version 1 only; removed in 2 (outputs are always at steps.<key>.output).",
     )
 
 
@@ -4778,17 +4789,22 @@ class LoopWaitForEventStepSpec(BaseModel):
     )
     key: str = Field(..., description='Stable step key within the spec.')
     name: str | None = Field(None, description='Human-readable step name.')
+    if_: str | None = Field(
+        None,
+        alias='if',
+        description='Bare expr predicate evaluated before the step runs; false skips the step. Requires schema_version "2".',
+    )
     kind: Literal['wait_for_event']
     config: LoopWaitForEventStep
     input: dict[str, Any] | None = Field(
         None,
-        description='Step-local input object resolved when the step starts. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions.',
+        description='Step-local input object resolved when the step starts. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions. schema_version 1 only; removed in 2 (reference inputs/event/meta/steps directly in config fields).',
     )
     retry: LoopRetryPolicy | None = None
     timeout: LoopTimeoutPolicy | None = None
     save_as: str | None = Field(
         None,
-        description="Context key used to store this step's output. Defaults to `key`.",
+        description="Context key used to store this step's output. Defaults to `key`. schema_version 1 only; removed in 2 (outputs are always at steps.<key>.output).",
     )
 
 
@@ -4798,17 +4814,22 @@ class LoopSubLoopStepSpec(BaseModel):
     )
     key: str = Field(..., description='Stable step key within the spec.')
     name: str | None = Field(None, description='Human-readable step name.')
+    if_: str | None = Field(
+        None,
+        alias='if',
+        description='Bare expr predicate evaluated before the step runs; false skips the step. Requires schema_version "2".',
+    )
     kind: Literal['loop']
     config: LoopSubLoopStep
     input: dict[str, Any] | None = Field(
         None,
-        description='Step-local input object resolved when the step starts. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions.',
+        description='Step-local input object resolved when the step starts. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions. schema_version 1 only; removed in 2 (reference inputs/event/meta/steps directly in config fields).',
     )
     retry: LoopRetryPolicy | None = None
     timeout: LoopTimeoutPolicy | None = None
     save_as: str | None = Field(
         None,
-        description="Context key used to store this step's output. Defaults to `key`.",
+        description="Context key used to store this step's output. Defaults to `key`. schema_version 1 only; removed in 2 (outputs are always at steps.<key>.output).",
     )
 
 
@@ -5036,17 +5057,22 @@ class LoopAgentStepSpec(BaseModel):
     )
     key: str = Field(..., description='Stable step key within the spec.')
     name: str | None = Field(None, description='Human-readable step name.')
+    if_: str | None = Field(
+        None,
+        alias='if',
+        description='Bare expr predicate evaluated before the step runs; false skips the step. Requires schema_version "2".',
+    )
     kind: Literal['agent']
     config: LoopAgentStep
     input: dict[str, Any] | None = Field(
         None,
-        description='Step-local input object resolved when the step starts. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions.',
+        description='Step-local input object resolved when the step starts. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions. schema_version 1 only; removed in 2 (reference inputs/event/meta/steps directly in config fields).',
     )
     retry: LoopRetryPolicy | None = None
     timeout: LoopTimeoutPolicy | None = None
     save_as: str | None = Field(
         None,
-        description="Context key used to store this step's output. Defaults to `key`.",
+        description="Context key used to store this step's output. Defaults to `key`. schema_version 1 only; removed in 2 (outputs are always at steps.<key>.output).",
     )
 
 
@@ -5056,17 +5082,22 @@ class LoopCheckStepSpec(BaseModel):
     )
     key: str = Field(..., description='Stable step key within the spec.')
     name: str | None = Field(None, description='Human-readable step name.')
+    if_: str | None = Field(
+        None,
+        alias='if',
+        description='Bare expr predicate evaluated before the step runs; false skips the step. Requires schema_version "2".',
+    )
     kind: Literal['check']
     config: LoopCheckStep
     input: dict[str, Any] | None = Field(
         None,
-        description='Step-local input object resolved when the step starts. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions.',
+        description='Step-local input object resolved when the step starts. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions. schema_version 1 only; removed in 2 (reference inputs/event/meta/steps directly in config fields).',
     )
     retry: LoopRetryPolicy | None = None
     timeout: LoopTimeoutPolicy | None = None
     save_as: str | None = Field(
         None,
-        description="Context key used to store this step's output. Defaults to `key`.",
+        description="Context key used to store this step's output. Defaults to `key`. schema_version 1 only; removed in 2 (outputs are always at steps.<key>.output).",
     )
 
 
@@ -5103,13 +5134,17 @@ class LoopSpec(BaseModel):
         extra='forbid',
     )
     schema_version: SchemaVersion = Field(
-        '1', description='Loop spec schema version. Current value is `1`.'
+        '1',
+        description='Loop spec schema version. `"1"` renders strings with Go text/template `{{ .inputs.x }}` / `{{ .context.x }}` actions. `"2"` uses expr `${{ ... }}` templates and bare expr predicates over the `inputs`, `event`, `meta`, and `steps.<key>.output` namespace.',
     )
     name: str | None = Field(None, description='Optional spec-local display name.')
     description: str | None = Field(
         None, description='Optional spec-local Markdown description.'
     )
-    inputs: dict[str, LoopSpecInput] | None = None
+    inputs: dict[str, LoopSpecInput] | None = Field(
+        None,
+        description='Declared run inputs. In schema_version 2 these form the run-input contract — undeclared keys are dropped and required inputs without defaults fail the start.',
+    )
     concurrency: Concurrency | None = Field(
         None,
         description='Behavior when a run starts while another run of the same loop is active.',
@@ -5122,6 +5157,10 @@ class LoopSpec(BaseModel):
         description='Source repositories the loop targets. When a shared managed environment is selected, the runtime prepares these repositories before user-authored steps run.',
     )
     steps: list[LoopStep]
+    output: dict[str, Any] | None = Field(
+        None,
+        description="Declared run result. When present, string leaves are rendered against the run inputs and saved step outputs at completion and the rendered map is the run's result — the contract for API consumers, `run.completed` subscribers, and parent loops. When absent, the result is the full accumulated context map. In schema_version 2 string leaves use `${{ ... }}` interpolation.",
+    )
     cleanup: list[dict[str, Any]] | None = None
     limits: LoopSpecLimits | None = None
     defaults: LoopSpecDefaults | None = None
