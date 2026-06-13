@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 
 ## [Unreleased]
 
+## [0.0.24] - 2026-06-12
+
 ### Added
 
 - SDKs: loop spec `schema_version: "2"`, synced from the mobius-cloud
@@ -16,7 +18,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
   `output` block that declares the run result. `save_as` and step-level
   `input` are schema_version 1 only (v2 outputs are always at
   `steps.<key>.output`; reference namespaces directly in config
-  fields). v1 specs keep working unchanged.
+  fields). v1 specs keep working unchanged. (#102)
+
+### Changed
+
+- CLI / SDKs: the generated `automations` command group and resources
+  are now `loops`, synced from the mobius-cloud spec. Operations route
+  through loop ID endpoints with handle lookup; the high-level
+  `Automation*` SDK APIs are preserved as compatibility aliases so
+  existing callers keep working. (MB-455, #101)
+
+### Fixed
+
+- Worker: in-flight jobs now survive WebSocket reconnects. Each claimed
+  job previously ran under a per-connection context and reported over
+  the captured socket, so any disconnect aborted the job and dropped its
+  terminal report, leaving it `claimed` until the reaper requeued it —
+  most visibly wedging `environment.artifacts.publish`. Job lifecycle is
+  now decoupled from the socket: jobs run under the worker lifetime,
+  heartbeats and generation deltas are best-effort while disconnected,
+  and the terminal report is parked and delivered idempotently over the
+  reconnected connection. (MB-459, #103)
 
 ## [0.0.23] - 2026-06-05
 
