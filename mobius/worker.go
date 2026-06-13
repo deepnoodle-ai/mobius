@@ -58,6 +58,13 @@ type WorkerConfig struct {
 
 // Worker connects to Mobius Cloud over the worker WebSocket, claims jobs,
 // executes registered local actions or model generations, and reports results.
+//
+// Job execution is decoupled from the socket lifetime. A claimed job runs
+// under the worker's lifetime context (not the connection's), keeps a slot
+// reserved, and sends its heartbeat and terminal report through whatever
+// socket is currently live. So when the connection blips, in-flight jobs keep
+// running, heartbeats resume on reconnect, and the terminal report is
+// delivered over the new socket — rather than being abandoned in `claimed`.
 type Worker struct {
 	client     *Client
 	config     WorkerConfig
@@ -66,6 +73,16 @@ type Worker struct {
 
 	sessionToken string
 	authRevoked  atomic.Bool
+
+	// Job lifecycle state that survives socket reconnects.
+	slots     chan struct{} // capacity = Concurrency; one token per in-flight job
+	slotFreed chan struct{} // nudges the run loop to claim after a job finishes
+	wg        sync.WaitGroup
+
+	mu            sync.Mutex
+	currentSocket *workerSocket     // the live socket, or nil while disconnected
+	socketChanged chan struct{}     // closed+replaced whenever currentSocket changes
+	inflight      map[string]func() // jobID -> cancel for in-flight jobs
 }
 
 func (c *Client) NewWorker(cfg WorkerConfig) *Worker {
@@ -85,10 +102,14 @@ func (c *Client) NewWorker(cfg WorkerConfig) *Worker {
 		cfg.ReconnectDelay = defaultWorkerReconnectDelay
 	}
 	return &Worker{
-		client:     c,
-		config:     cfg,
-		registry:   NewActionRegistry(),
-		generators: map[string]GenerationFunc{},
+		client:        c,
+		config:        cfg,
+		registry:      NewActionRegistry(),
+		generators:    map[string]GenerationFunc{},
+		slots:         make(chan struct{}, cfg.Concurrency),
+		slotFreed:     make(chan struct{}, cfg.Concurrency),
+		socketChanged: make(chan struct{}),
+		inflight:      map[string]func(){},
 	}
 }
 
@@ -113,6 +134,9 @@ func (w *Worker) RegisterGenerator(provider, model string, fn GenerationFunc) {
 // revoked. WebSocket reconnects are routine; job liveness is controlled by
 // per-job heartbeat frames, not by socket lifetime alone.
 func (w *Worker) Run(ctx context.Context) error {
+	// In-flight jobs run under ctx (not the socket), so cancelling ctx aborts
+	// them; wait for those goroutines to unwind before Run returns.
+	defer w.wg.Wait()
 	for {
 		if w.authRevoked.Load() {
 			return ErrAuthRevoked
@@ -152,6 +176,12 @@ func (w *Worker) runSocket(ctx context.Context) error {
 		return err
 	}
 
+	// Bind this socket as the worker's current one. In-flight jobs that
+	// survived a previous disconnect immediately resume heartbeating and flush
+	// any pending terminal report over it (see deliverReport / heartbeatLoop).
+	w.setSocket(socket)
+	defer w.setSocket(nil)
+
 	socketCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
@@ -159,29 +189,13 @@ func (w *Worker) runSocket(ctx context.Context) error {
 	readErr := make(chan error, 1)
 	go readSocketFrame(socketCtx, socket, frames, readErr)
 
-	slots := make(chan struct{}, w.config.Concurrency)
-	done := make(chan string, w.config.Concurrency)
-	cancels := map[string]context.CancelFunc{}
-	var cancelMu sync.Mutex
-	var wg sync.WaitGroup
-	defer wg.Wait()
-
-	cancelJob := func(jobID string) {
-		cancelMu.Lock()
-		cancelJob := cancels[jobID]
-		cancelMu.Unlock()
-		if cancelJob != nil {
-			cancelJob()
-		}
-	}
-
 	claimOutstanding := false
 	draining := false
 	claim := func() error {
 		if claimOutstanding || draining {
 			return nil
 		}
-		available := cap(slots) - len(slots)
+		available := cap(w.slots) - len(w.slots)
 		if available <= 0 {
 			return nil
 		}
@@ -198,25 +212,22 @@ func (w *Worker) runSocket(ctx context.Context) error {
 	for {
 		select {
 		case <-ctx.Done():
+			// Worker shutdown: cancel in-flight jobs so they unwind. (A plain
+			// socket read error does NOT reach here — those jobs survive to be
+			// resumed on the next connection.)
 			cancel()
-			cancelMu.Lock()
-			for _, cancelJob := range cancels {
-				cancelJob()
-			}
-			cancelMu.Unlock()
+			w.cancelAllInflight()
 			return ctx.Err()
 		case err := <-readErr:
+			// Disconnect. Leave in-flight jobs running; the deferred
+			// setSocket(nil) unblocks them to wait for the next connection.
 			cancel()
 			return err
 		case <-ticker.C:
 			if err := claim(); err != nil {
 				return err
 			}
-		case jobID := <-done:
-			<-slots
-			cancelMu.Lock()
-			delete(cancels, jobID)
-			cancelMu.Unlock()
+		case <-w.slotFreed:
 			if err := claim(); err != nil {
 				return err
 			}
@@ -232,21 +243,21 @@ func (w *Worker) runSocket(ctx context.Context) error {
 					return err
 				}
 				for _, j := range claimed.Jobs {
-					if len(slots) >= cap(slots) {
+					select {
+					case w.slots <- struct{}{}:
+					default:
 						w.config.Logger.Warn("server returned more jobs than available worker slots", "job_id", j.Id)
 						continue
 					}
-					slots <- struct{}{}
 					job := claimedRuntimeJob(w.client.projectHandle, w.config.WorkerInstanceID, w.config.EnvironmentID, j)
-					jobCtx, cancelJob := context.WithCancel(socketCtx)
-					cancelMu.Lock()
-					cancels[j.Id] = cancelJob
-					cancelMu.Unlock()
-					wg.Add(1)
+					jobCtx, cancelJob := context.WithCancel(ctx)
+					w.mu.Lock()
+					w.inflight[job.JobID] = cancelJob
+					w.mu.Unlock()
+					w.wg.Add(1)
 					go func() {
-						defer wg.Done()
-						defer func() { done <- job.JobID }()
-						w.executeJob(jobCtx, socket, job)
+						defer w.wg.Done()
+						w.runJob(ctx, jobCtx, job)
 					}()
 				}
 				if err := claim(); err != nil {
@@ -261,14 +272,14 @@ func (w *Worker) runSocket(ctx context.Context) error {
 				if err := json.Unmarshal(frame.Raw, &cancelFrame); err != nil {
 					return err
 				}
-				cancelJob(cancelFrame.JobId)
+				w.cancelInflight(cancelFrame.JobId)
 			case "job.heartbeat.ack":
 				var ack api.WorkerSocketJobHeartbeatAckFrame
 				if err := json.Unmarshal(frame.Raw, &ack); err != nil {
 					return err
 				}
 				if ack.Cancel != nil {
-					cancelJob(ack.JobId)
+					w.cancelInflight(ack.JobId)
 				}
 			case "worker.drain":
 				draining = true
@@ -399,7 +410,98 @@ func (w *Worker) actionNames() []string {
 	return w.registry.Names()
 }
 
-func (w *Worker) executeJob(ctx context.Context, socket *workerSocket, job *runtimeJob) {
+// setSocket binds (or clears, with nil) the worker's current socket and wakes
+// anything waiting to send through it (terminal reports parked during a
+// disconnect). Run calls runSocket sequentially, so there is only ever one
+// socket at a time.
+func (w *Worker) setSocket(s *workerSocket) {
+	w.mu.Lock()
+	w.currentSocket = s
+	close(w.socketChanged)
+	w.socketChanged = make(chan struct{})
+	w.mu.Unlock()
+}
+
+// sendFrame writes a frame over the current socket if one is live. It reports
+// whether the write happened; callers of best-effort frames (heartbeats,
+// generation deltas) simply skip when disconnected.
+func (w *Worker) sendFrame(v any) bool {
+	w.mu.Lock()
+	s := w.currentSocket
+	w.mu.Unlock()
+	if s == nil {
+		return false
+	}
+	return s.writeJSON(v) == nil
+}
+
+// deliverReport sends a job's terminal report over the current socket, waiting
+// across reconnects until it lands. It gives up only when ctx (the worker
+// lifetime) is done. Terminal reports are idempotent server-side, so a report
+// that races a socket teardown is safe to re-send on the next connection.
+func (w *Worker) deliverReport(ctx context.Context, log *slog.Logger, jobID string, frame api.WorkerSocketJobReportFrame) {
+	for {
+		w.mu.Lock()
+		s := w.currentSocket
+		changed := w.socketChanged
+		w.mu.Unlock()
+		if s != nil {
+			if err := s.writeJSON(frame); err == nil {
+				return
+			}
+			log.Warn("job report write failed; waiting for reconnect", "job_id", jobID)
+		}
+		select {
+		case <-ctx.Done():
+			log.Warn("worker stopping; dropping job report", "job_id", jobID)
+			return
+		case <-changed:
+		}
+	}
+}
+
+func (w *Worker) cancelInflight(jobID string) {
+	w.mu.Lock()
+	cancel := w.inflight[jobID]
+	w.mu.Unlock()
+	if cancel != nil {
+		cancel()
+	}
+}
+
+func (w *Worker) cancelAllInflight() {
+	w.mu.Lock()
+	cancels := make([]func(), 0, len(w.inflight))
+	for _, cancel := range w.inflight {
+		cancels = append(cancels, cancel)
+	}
+	w.mu.Unlock()
+	for _, cancel := range cancels {
+		cancel()
+	}
+}
+
+// finishJob releases the job's slot and nudges the run loop to claim again.
+func (w *Worker) finishJob(jobID string) {
+	w.mu.Lock()
+	delete(w.inflight, jobID)
+	w.mu.Unlock()
+	select {
+	case <-w.slots:
+	default:
+	}
+	select {
+	case w.slotFreed <- struct{}{}:
+	default:
+	}
+}
+
+// runJob executes one claimed job and delivers its terminal report. lifeCtx is
+// the worker lifetime (used to park the report across reconnects); jobCtx is
+// per-job and cancellable (server cancel directive or worker shutdown). The
+// job is intentionally not tied to the socket it was claimed on.
+func (w *Worker) runJob(lifeCtx, jobCtx context.Context, job *runtimeJob) {
+	defer w.finishJob(job.JobID)
 	log := w.config.Logger.With(
 		"job_id", job.JobID,
 		"run_id", job.RunID,
@@ -413,8 +515,8 @@ func (w *Worker) executeJob(ctx context.Context, socket *workerSocket, job *runt
 	log.Info("job claimed")
 
 	hbDone := make(chan struct{})
-	execCtx, cancel := context.WithCancel(ctx)
-	go w.heartbeatLoop(execCtx, socket, job, hbDone)
+	execCtx, cancel := context.WithCancel(jobCtx)
+	go w.heartbeatLoop(execCtx, job, hbDone)
 
 	ctxVal := newContext(execCtx, w.client, job, log, nil)
 	var result any
@@ -423,24 +525,20 @@ func (w *Worker) executeJob(ctx context.Context, socket *workerSocket, job *runt
 	case api.WorkerSocketClaimedJobKindActionExecution:
 		result, err = w.executeAction(ctxVal, job)
 	case api.WorkerSocketClaimedJobKindLlmGeneration:
-		result, err = w.executeGeneration(ctxVal, socket, job)
+		result, err = w.executeGeneration(ctxVal, job)
 	default:
 		err = fmt.Errorf("unsupported job kind %q", job.Kind)
 	}
 
 	cancel()
 	<-hbDone
+
 	if err != nil {
 		log.Error("job failed", "error", err)
-		if reportErr := socketReportFailure(socket, job, classifyError(err), err.Error()); reportErr != nil {
-			log.Error("failed to report job failure", "error", reportErr)
-		}
+		w.deliverReport(lifeCtx, log, job.JobID, failureReportFrame(job, classifyError(err), err.Error()))
 		return
 	}
-	if reportErr := socketReportSuccess(socket, job, result); reportErr != nil {
-		log.Error("failed to report job success", "error", reportErr)
-		return
-	}
+	w.deliverReport(lifeCtx, log, job.JobID, successReportFrame(job, result))
 	log.Info("job complete")
 }
 
@@ -455,7 +553,7 @@ func (w *Worker) executeAction(ctx Context, job *runtimeJob) (any, error) {
 	return safeExecute(action, ctx, job.Parameters)
 }
 
-func (w *Worker) executeGeneration(ctx Context, socket *workerSocket, job *runtimeJob) (any, error) {
+func (w *Worker) executeGeneration(ctx Context, job *runtimeJob) (any, error) {
 	fn := w.generator(job.Provider, job.Model)
 	if fn == nil {
 		return nil, fmt.Errorf("generation provider/model %s/%s not registered on this worker", job.Provider, job.Model)
@@ -463,7 +561,10 @@ func (w *Worker) executeGeneration(ctx Context, socket *workerSocket, job *runti
 	var seq int64
 	emit := func(delta map[string]any) error {
 		seq++
-		return socketGenerationDelta(socket, job, seq, delta)
+		// Deltas are live-only and best-effort; if disconnected, drop this one
+		// and let the terminal report reconcile the final response.
+		w.sendFrame(generationDeltaFrame(job, seq, delta))
+		return nil
 	}
 	return fn(ctx, GenerationJob{
 		JobID:       job.JobID,
@@ -484,7 +585,7 @@ func (w *Worker) generator(provider, model string) GenerationFunc {
 	return w.generators[generationKey(provider, "*")]
 }
 
-func (w *Worker) heartbeatLoop(ctx context.Context, socket *workerSocket, job *runtimeJob, done chan<- struct{}) {
+func (w *Worker) heartbeatLoop(ctx context.Context, job *runtimeJob, done chan<- struct{}) {
 	defer close(done)
 	interval := w.config.HeartbeatInterval
 	if interval <= 0 {
@@ -500,9 +601,11 @@ func (w *Worker) heartbeatLoop(ctx context.Context, socket *workerSocket, job *r
 		case <-ctx.Done():
 			return
 		case <-t.C:
-			if err := socketHeartbeat(socket, job); err != nil {
-				w.config.Logger.Warn("heartbeat write failed", "job_id", job.JobID, "error", err)
-				return
+			// Best-effort: while disconnected there is no live socket, so the
+			// tick is skipped and heartbeats resume on the next connection. The
+			// loop keeps running until execution finishes (ctx cancelled).
+			if !w.sendFrame(heartbeatFrame(job)) {
+				w.config.Logger.Debug("heartbeat skipped; no live socket", "job_id", job.JobID)
 			}
 		}
 	}
