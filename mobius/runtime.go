@@ -172,25 +172,32 @@ func claimedRuntimeJob(projectHandle, workerID, environmentID string, j api.Work
 	}
 }
 
-func socketReportSuccess(s *workerSocket, job *runtimeJob, result any) error {
+// The terminal report, heartbeat, and generation-delta frames are built here
+// but sent by the Worker through whatever socket is currently live, not a
+// captured connection. A job survives socket reconnects (see worker.go), so
+// its lease-fenced frames must target the worker's current socket rather than
+// the one it was claimed on. Terminal reports are idempotent server-side, so
+// re-delivering after a reconnect is safe.
+
+func successReportFrame(job *runtimeJob, result any) api.WorkerSocketJobReportFrame {
 	status := api.WorkerSocketJobReportFrameStatusCompleted
 	body := map[string]any{"output": result}
 	if m, ok := result.(map[string]any); ok {
 		body = m
 	}
-	return s.writeJSON(api.WorkerSocketJobReportFrame{
+	return api.WorkerSocketJobReportFrame{
 		Type:       api.WorkerSocketJobReportFrameTypeJobReport,
 		MessageId:  messageIDPtr(),
 		JobId:      job.JobID,
 		LeaseToken: job.LeaseToken,
 		Status:     &status,
 		Result:     &body,
-	})
+	}
 }
 
-func socketReportFailure(s *workerSocket, job *runtimeJob, errorType, message string) error {
+func failureReportFrame(job *runtimeJob, errorType, message string) api.WorkerSocketJobReportFrame {
 	status := api.WorkerSocketJobReportFrameStatusFailed
-	return s.writeJSON(api.WorkerSocketJobReportFrame{
+	return api.WorkerSocketJobReportFrame{
 		Type:         api.WorkerSocketJobReportFrameTypeJobReport,
 		MessageId:    messageIDPtr(),
 		JobId:        job.JobID,
@@ -198,30 +205,30 @@ func socketReportFailure(s *workerSocket, job *runtimeJob, errorType, message st
 		Status:       &status,
 		ErrorType:    strPtr(errorType),
 		ErrorMessage: strPtr(message),
-	})
+	}
 }
 
-func socketHeartbeat(s *workerSocket, job *runtimeJob) error {
-	return s.writeJSON(api.WorkerSocketJobHeartbeatFrame{
+func heartbeatFrame(job *runtimeJob) api.WorkerSocketJobHeartbeatFrame {
+	return api.WorkerSocketJobHeartbeatFrame{
 		Type:       api.WorkerSocketJobHeartbeatFrameTypeJobHeartbeat,
 		MessageId:  messageIDPtr(),
 		JobId:      job.JobID,
 		LeaseToken: job.LeaseToken,
-	})
+	}
 }
 
-func socketGenerationDelta(s *workerSocket, job *runtimeJob, sequence int64, delta map[string]any) error {
+func generationDeltaFrame(job *runtimeJob, sequence int64, delta map[string]any) api.WorkerSocketGenerationDeltaFrame {
 	if delta == nil {
 		delta = map[string]any{}
 	}
-	return s.writeJSON(api.WorkerSocketGenerationDeltaFrame{
+	return api.WorkerSocketGenerationDeltaFrame{
 		Type:       api.WorkerSocketGenerationDeltaFrameTypeGenerationDelta,
 		MessageId:  messageIDPtr(),
 		JobId:      job.JobID,
 		LeaseToken: job.LeaseToken,
 		Sequence:   sequence,
 		Delta:      delta,
-	})
+	}
 }
 
 func strPtr(s string) *string {

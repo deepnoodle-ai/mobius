@@ -273,6 +273,112 @@ func TestWorkerRun_HeartbeatCancelDirectiveCancelsJob(t *testing.T) {
 	<-done
 }
 
+func TestWorkerRun_ResumesInFlightJobAfterReconnect(t *testing.T) {
+	var conns atomic.Int32
+	release := make(chan struct{})
+	reported := make(chan api.WorkerSocketJobReportFrame, 1)
+	reregisterToken := make(chan string, 1)
+
+	c, _ := newWorkerSocketTestClient(t, func(t *testing.T, conn *websocket.Conn) {
+		switch conns.Add(1) {
+		case 1:
+			// First connection: register, hand out one job, then drop the
+			// socket while the action is still running.
+			expectRegister(t, conn, "block-resume", nil)
+			expectClaim(t, conn)
+			sendClaimed(t, conn, api.WorkerSocketClaimedJob{
+				Id:                      "job_resume_1",
+				Kind:                    api.WorkerSocketClaimedJobKindActionExecution,
+				Origin:                  api.WorkerSocketClaimedJobOriginLoopActionStep,
+				ExecutorKind:            api.WorkerSocketClaimedJobExecutorKindCustomerWorker,
+				ActionName:              strPtr("block-resume"),
+				Queue:                   "default",
+				RunId:                   strPtr("run_1"),
+				StepId:                  strPtr("step_1"),
+				ClaimAttempt:            1,
+				LeaseToken:              "lease-resume-1",
+				HeartbeatCadenceSeconds: 60,
+				LeaseDurationSeconds:    180,
+				Spec:                    map[string]any{"parameters": map[string]any{}},
+			})
+			// Wait until the job is actually running (its first heartbeat),
+			// then return so the connection closes mid-job.
+			for readTestFrame(t, conn).Type != "job.heartbeat" {
+			}
+			return
+		default:
+			// Reconnect: the worker must re-register with the SAME session
+			// token, then deliver the still-running job's terminal report over
+			// this new connection.
+			env := readTestFrame(t, conn)
+			assert.Equal(t, env.Type, "worker.register")
+			var register api.WorkerSocketRegisterFrame
+			assert.NoError(t, json.Unmarshal(env.Raw, &register))
+			reregisterToken <- stringPtrValue(register.WorkerSessionToken)
+			_ = conn.WriteJSON(api.WorkerSocketRegisteredFrame{
+				Type: api.WorkerSocketRegisteredFrameTypeWorkerRegistered,
+				Lease: api.WorkerSocketLeaseConfig{
+					HeartbeatCadenceSeconds: 60,
+					LeaseDurationSeconds:    180,
+				},
+				WorkerSessionToken: "session-1",
+				MessageId:          register.MessageId,
+			})
+			// Now let the in-flight action finish; its report must arrive here.
+			close(release)
+			for {
+				env := readTestFrame(t, conn)
+				if env.Type != "job.report" {
+					continue
+				}
+				var report api.WorkerSocketJobReportFrame
+				assert.NoError(t, json.Unmarshal(env.Raw, &report))
+				reported <- report
+				return
+			}
+		}
+	})
+
+	worker := c.NewWorker(WorkerConfig{
+		WorkerInstanceID:  "w-resume",
+		ReconnectDelay:    10 * time.Millisecond,
+		HeartbeatInterval: 10 * time.Millisecond,
+	})
+	worker.Register(ActionFunc("block-resume", func(ctx Context, params map[string]any) (any, error) {
+		select {
+		case <-release:
+			return map[string]any{"resumed": true}, nil
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		}
+	}))
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	done := make(chan error, 1)
+	go func() { done <- worker.Run(ctx) }()
+
+	select {
+	case tok := <-reregisterToken:
+		assert.Equal(t, tok, "session-1")
+	case <-time.After(2 * time.Second):
+		t.Fatal("worker did not re-register after disconnect")
+	}
+	select {
+	case report := <-reported:
+		assert.Equal(t, report.JobId, "job_resume_1")
+		assert.Equal(t, report.LeaseToken, "lease-resume-1")
+		assert.NotNil(t, report.Status)
+		assert.Equal(t, *report.Status, api.WorkerSocketJobReportFrameStatusCompleted)
+		assert.NotNil(t, report.Result)
+		assert.Equal(t, (*report.Result)["resumed"], true)
+	case <-time.After(2 * time.Second):
+		t.Fatal("worker did not deliver in-flight job report after reconnect")
+	}
+	cancel()
+	<-done
+}
+
 func TestWorkerRun_InstanceConflictIsTerminal(t *testing.T) {
 	var connections atomic.Int32
 	c, _ := newWorkerSocketTestClient(t, func(t *testing.T, conn *websocket.Conn) {
