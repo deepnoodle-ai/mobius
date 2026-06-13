@@ -1262,12 +1262,15 @@ func (e LoopSpecConcurrency) Valid() bool {
 // Defines values for LoopSpecSchemaVersion.
 const (
 	LoopSpecSchemaVersionN1 LoopSpecSchemaVersion = "1"
+	LoopSpecSchemaVersionN2 LoopSpecSchemaVersion = "2"
 )
 
 // Valid indicates whether the value is a known member of the LoopSpecSchemaVersion enum.
 func (e LoopSpecSchemaVersion) Valid() bool {
 	switch e {
 	case LoopSpecSchemaVersionN1:
+		return true
+	case LoopSpecSchemaVersionN2:
 		return true
 	default:
 		return false
@@ -3851,7 +3854,10 @@ type LoopActionStepSpec struct {
 	// Config Action step configuration recognised inside `LoopSpec.steps[].config`.
 	Config LoopActionStep `json:"config"`
 
-	// Input Step-local input object resolved when the step starts. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions.
+	// If Bare expr predicate evaluated before the step runs; false skips the step. Requires schema_version "2".
+	If *string `json:"if,omitempty"`
+
+	// Input Step-local input object resolved when the step starts. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions. schema_version 1 only; removed in 2 (reference inputs/event/meta/steps directly in config fields).
 	Input *map[string]interface{} `json:"input,omitempty"`
 
 	// Key Stable step key within the spec.
@@ -3864,7 +3870,7 @@ type LoopActionStepSpec struct {
 	// Retry Retry policy for a step. `max_attempts` is the total number of attempts (1 = no retry); it bounds both worker-reported failures and lease-loss recovery for worker-executed action steps. A worker that reports a failure with attempts remaining re-queues for another attempt rather than failing the run; the run fails once attempts are exhausted. The attempt count is visible on the run timeline (`action.retried`, `action.failed`) and on the executing job (`claim_attempt` / `max_attempts`). Cancellation is always terminal. Capped server-side at 10 attempts.
 	Retry *LoopRetryPolicy `json:"retry,omitempty"`
 
-	// SaveAs Context key used to store this step's output. Defaults to `key`.
+	// SaveAs Context key used to store this step's output. Defaults to `key`. schema_version 1 only; removed in 2 (outputs are always at steps.<key>.output).
 	SaveAs  *string            `json:"save_as,omitempty"`
 	Timeout *LoopTimeoutPolicy `json:"timeout,omitempty"`
 }
@@ -3942,7 +3948,10 @@ type LoopAgentStepSpec struct {
 	// Config Agent step configuration recognised inside `LoopSpec.steps[].config`.
 	Config LoopAgentStep `json:"config"`
 
-	// Input Step-local input object resolved when the step starts. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions.
+	// If Bare expr predicate evaluated before the step runs; false skips the step. Requires schema_version "2".
+	If *string `json:"if,omitempty"`
+
+	// Input Step-local input object resolved when the step starts. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions. schema_version 1 only; removed in 2 (reference inputs/event/meta/steps directly in config fields).
 	Input *map[string]interface{} `json:"input,omitempty"`
 
 	// Key Stable step key within the spec.
@@ -3955,7 +3964,7 @@ type LoopAgentStepSpec struct {
 	// Retry Retry policy for a step. `max_attempts` is the total number of attempts (1 = no retry); it bounds both worker-reported failures and lease-loss recovery for worker-executed action steps. A worker that reports a failure with attempts remaining re-queues for another attempt rather than failing the run; the run fails once attempts are exhausted. The attempt count is visible on the run timeline (`action.retried`, `action.failed`) and on the executing job (`claim_attempt` / `max_attempts`). Cancellation is always terminal. Capped server-side at 10 attempts.
 	Retry *LoopRetryPolicy `json:"retry,omitempty"`
 
-	// SaveAs Context key used to store this step's output. Defaults to `key`.
+	// SaveAs Context key used to store this step's output. Defaults to `key`. schema_version 1 only; removed in 2 (outputs are always at steps.<key>.output).
 	SaveAs  *string            `json:"save_as,omitempty"`
 	Timeout *LoopTimeoutPolicy `json:"timeout,omitempty"`
 }
@@ -4016,7 +4025,10 @@ type LoopCheckStepSpec struct {
 	// Config Check step configuration recognised inside `LoopSpec.steps[].config`. A check step evaluates typed assertions over the run's `{ inputs, context }` envelope — deterministic `expr` predicates, or `agent` judges for everything that isn't deterministic — records a per-assertion verdict with cited evidence, and routes on failure: fail the run (stop reason `check_failed`), continue with the red verdict on the record, or open an approval gate carrying the evidence (rejection stops the run with `gate_rejected`). All assertions are evaluated; there is no short-circuit. An assertion that errors (bad expr, judge model failure, unparseable verdict) fails closed — never a silent pass.
 	Config LoopCheckStep `json:"config"`
 
-	// Input Step-local input object resolved when the step starts. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions.
+	// If Bare expr predicate evaluated before the step runs; false skips the step. Requires schema_version "2".
+	If *string `json:"if,omitempty"`
+
+	// Input Step-local input object resolved when the step starts. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions. schema_version 1 only; removed in 2 (reference inputs/event/meta/steps directly in config fields).
 	Input *map[string]interface{} `json:"input,omitempty"`
 
 	// Key Stable step key within the spec.
@@ -4029,7 +4041,7 @@ type LoopCheckStepSpec struct {
 	// Retry Retry policy for a step. `max_attempts` is the total number of attempts (1 = no retry); it bounds both worker-reported failures and lease-loss recovery for worker-executed action steps. A worker that reports a failure with attempts remaining re-queues for another attempt rather than failing the run; the run fails once attempts are exhausted. The attempt count is visible on the run timeline (`action.retried`, `action.failed`) and on the executing job (`claim_attempt` / `max_attempts`). Cancellation is always terminal. Capped server-side at 10 attempts.
 	Retry *LoopRetryPolicy `json:"retry,omitempty"`
 
-	// SaveAs Context key used to store this step's output. Defaults to `key`.
+	// SaveAs Context key used to store this step's output. Defaults to `key`. schema_version 1 only; removed in 2 (outputs are always at steps.<key>.output).
 	SaveAs  *string            `json:"save_as,omitempty"`
 	Timeout *LoopTimeoutPolicy `json:"timeout,omitempty"`
 }
@@ -4368,7 +4380,10 @@ type LoopSleepStepSpec struct {
 	// Config Sleep step configuration recognised inside `LoopSpec.steps[].config`.
 	Config LoopSleepStep `json:"config"`
 
-	// Input Step-local input object resolved when the step starts. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions.
+	// If Bare expr predicate evaluated before the step runs; false skips the step. Requires schema_version "2".
+	If *string `json:"if,omitempty"`
+
+	// Input Step-local input object resolved when the step starts. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions. schema_version 1 only; removed in 2 (reference inputs/event/meta/steps directly in config fields).
 	Input *map[string]interface{} `json:"input,omitempty"`
 
 	// Key Stable step key within the spec.
@@ -4381,7 +4396,7 @@ type LoopSleepStepSpec struct {
 	// Retry Retry policy for a step. `max_attempts` is the total number of attempts (1 = no retry); it bounds both worker-reported failures and lease-loss recovery for worker-executed action steps. A worker that reports a failure with attempts remaining re-queues for another attempt rather than failing the run; the run fails once attempts are exhausted. The attempt count is visible on the run timeline (`action.retried`, `action.failed`) and on the executing job (`claim_attempt` / `max_attempts`). Cancellation is always terminal. Capped server-side at 10 attempts.
 	Retry *LoopRetryPolicy `json:"retry,omitempty"`
 
-	// SaveAs Context key used to store this step's output. Defaults to `key`.
+	// SaveAs Context key used to store this step's output. Defaults to `key`. schema_version 1 only; removed in 2 (outputs are always at steps.<key>.output).
 	SaveAs  *string            `json:"save_as,omitempty"`
 	Timeout *LoopTimeoutPolicy `json:"timeout,omitempty"`
 }
@@ -4400,8 +4415,10 @@ type LoopSpec struct {
 	Defaults *LoopSpecDefaults `json:"defaults,omitempty"`
 
 	// Description Optional spec-local Markdown description.
-	Description *string                   `json:"description,omitempty"`
-	Inputs      *map[string]LoopSpecInput `json:"inputs,omitempty"`
+	Description *string `json:"description,omitempty"`
+
+	// Inputs Declared run inputs. In schema_version 2 these form the run-input contract — undeclared keys are dropped and required inputs without defaults fail the start.
+	Inputs *map[string]LoopSpecInput `json:"inputs,omitempty"`
 
 	// Limits Run guardrails. Lives at `spec.limits` in the JSON the engine compiles. Every limit is optional; absent or zero means unbounded (plan-level org caps still apply), with one exception — trial-plan runs default to a 100-credit ($1) budget when no budget is set here or on the start request. Paid plans default to unbounded.
 	Limits *LoopSpecLimits `json:"limits,omitempty"`
@@ -4409,10 +4426,13 @@ type LoopSpec struct {
 	// Name Optional spec-local display name.
 	Name *string `json:"name,omitempty"`
 
+	// Output Declared run result. When present, string leaves are rendered against the run inputs and saved step outputs at completion and the rendered map is the run's result — the contract for API consumers, `run.completed` subscribers, and parent loops. When absent, the result is the full accumulated context map. In schema_version 2 string leaves use `${{ ... }}` interpolation.
+	Output *map[string]interface{} `json:"output,omitempty"`
+
 	// Repositories Source repositories the loop targets. When a shared managed environment is selected, the runtime prepares these repositories before user-authored steps run.
 	Repositories *[]LoopSpecRepository `json:"repositories,omitempty"`
 
-	// SchemaVersion Loop spec schema version. Current value is `1`.
+	// SchemaVersion Loop spec schema version. `"1"` renders strings with Go text/template `{{ .inputs.x }}` / `{{ .context.x }}` actions. `"2"` uses expr `${{ ... }}` templates and bare expr predicates over the `inputs`, `event`, `meta`, and `steps.<key>.output` namespace.
 	SchemaVersion *LoopSpecSchemaVersion `json:"schema_version,omitempty"`
 	Steps         []LoopStep             `json:"steps"`
 
@@ -4423,7 +4443,7 @@ type LoopSpec struct {
 // LoopSpecConcurrency Behavior when a run starts while another run of the same loop is active.
 type LoopSpecConcurrency string
 
-// LoopSpecSchemaVersion Loop spec schema version. Current value is `1`.
+// LoopSpecSchemaVersion Loop spec schema version. `"1"` renders strings with Go text/template `{{ .inputs.x }}` / `{{ .context.x }}` actions. `"2"` uses expr `${{ ... }}` templates and bare expr predicates over the `inputs`, `event`, `meta`, and `steps.<key>.output` namespace.
 type LoopSpecSchemaVersion string
 
 // LoopSpecDefaults Run-level defaults inside the loop spec. Lives at `spec.defaults` in the JSON the engine compiles. The run wall-clock limit moved to `limits.wall_clock_timeout`.
@@ -4553,7 +4573,10 @@ type LoopSubLoopStepSpec struct {
 	// Config Loop-trigger step configuration recognised inside `LoopSpec.steps[].config`. Triggers another loop in the same project as an independent child run (fire-and-forget). The child run records `parent_run_id`, `parent_loop_id`, and `parent_step_key` so the lineage is visible from the child.
 	Config LoopSubLoopStep `json:"config"`
 
-	// Input Step-local input object resolved when the step starts. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions.
+	// If Bare expr predicate evaluated before the step runs; false skips the step. Requires schema_version "2".
+	If *string `json:"if,omitempty"`
+
+	// Input Step-local input object resolved when the step starts. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions. schema_version 1 only; removed in 2 (reference inputs/event/meta/steps directly in config fields).
 	Input *map[string]interface{} `json:"input,omitempty"`
 
 	// Key Stable step key within the spec.
@@ -4566,7 +4589,7 @@ type LoopSubLoopStepSpec struct {
 	// Retry Retry policy for a step. `max_attempts` is the total number of attempts (1 = no retry); it bounds both worker-reported failures and lease-loss recovery for worker-executed action steps. A worker that reports a failure with attempts remaining re-queues for another attempt rather than failing the run; the run fails once attempts are exhausted. The attempt count is visible on the run timeline (`action.retried`, `action.failed`) and on the executing job (`claim_attempt` / `max_attempts`). Cancellation is always terminal. Capped server-side at 10 attempts.
 	Retry *LoopRetryPolicy `json:"retry,omitempty"`
 
-	// SaveAs Context key used to store this step's output. Defaults to `key`.
+	// SaveAs Context key used to store this step's output. Defaults to `key`. schema_version 1 only; removed in 2 (outputs are always at steps.<key>.output).
 	SaveAs  *string            `json:"save_as,omitempty"`
 	Timeout *LoopTimeoutPolicy `json:"timeout,omitempty"`
 }
@@ -4706,7 +4729,10 @@ type LoopWaitForEventStepSpec struct {
 	// Config Wait-for-event step configuration recognised inside `LoopSpec.steps[].config`.
 	Config LoopWaitForEventStep `json:"config"`
 
-	// Input Step-local input object resolved when the step starts. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions.
+	// If Bare expr predicate evaluated before the step runs; false skips the step. Requires schema_version "2".
+	If *string `json:"if,omitempty"`
+
+	// Input Step-local input object resolved when the step starts. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions. schema_version 1 only; removed in 2 (reference inputs/event/meta/steps directly in config fields).
 	Input *map[string]interface{} `json:"input,omitempty"`
 
 	// Key Stable step key within the spec.
@@ -4719,7 +4745,7 @@ type LoopWaitForEventStepSpec struct {
 	// Retry Retry policy for a step. `max_attempts` is the total number of attempts (1 = no retry); it bounds both worker-reported failures and lease-loss recovery for worker-executed action steps. A worker that reports a failure with attempts remaining re-queues for another attempt rather than failing the run; the run fails once attempts are exhausted. The attempt count is visible on the run timeline (`action.retried`, `action.failed`) and on the executing job (`claim_attempt` / `max_attempts`). Cancellation is always terminal. Capped server-side at 10 attempts.
 	Retry *LoopRetryPolicy `json:"retry,omitempty"`
 
-	// SaveAs Context key used to store this step's output. Defaults to `key`.
+	// SaveAs Context key used to store this step's output. Defaults to `key`. schema_version 1 only; removed in 2 (outputs are always at steps.<key>.output).
 	SaveAs  *string            `json:"save_as,omitempty"`
 	Timeout *LoopTimeoutPolicy `json:"timeout,omitempty"`
 }

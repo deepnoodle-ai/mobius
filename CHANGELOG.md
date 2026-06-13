@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 
 ## [Unreleased]
 
+### Added
+
+- SDKs: loop spec `schema_version: "2"`, synced from the mobius-cloud
+  spec. v2 specs use one expression language everywhere — expr
+  `${{ ... }}` templates and bare expr predicates — over one namespace
+  (`inputs`, `event`, `meta`, `steps.<key>.output`). Every step variant
+  gains an `if` predicate field, and the loop spec gains a top-level
+  `output` block that declares the run result. `save_as` and step-level
+  `input` are schema_version 1 only (v2 outputs are always at
+  `steps.<key>.output`; reference namespaces directly in config
+  fields). v1 specs keep working unchanged.
+
 ## [0.0.23] - 2026-06-05
 
 ### Added
