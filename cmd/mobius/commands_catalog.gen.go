@@ -15,8 +15,8 @@ import (
 func registerCatalogCommands(app *cli.App) {
 	catalogGrp := app.Group("catalog").Description("Available actions and triggerable events")
 	catalogGrp.Command("get-action").
-		Description("Get one catalog action by name").
-		AddArg(&cli.Arg{Name: "action-name", Description: "Project-scoped action name used in automation step definitions.", Required: true}).
+		Description("Get action").
+		AddArg(&cli.Arg{Name: "action-name", Description: "Project-scoped action name used in loop step definitions.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -34,7 +34,7 @@ func registerCatalogCommands(app *cli.App) {
 		})
 
 	catalogGrp.Command("list-actions").
-		Description("List the action catalog").
+		Description("List actions").
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -51,7 +51,7 @@ func registerCatalogCommands(app *cli.App) {
 		})
 
 	catalogGrp.Command("list-events").
-		Description("List the triggerable event catalog").
+		Description("List events").
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -68,7 +68,7 @@ func registerCatalogCommands(app *cli.App) {
 		})
 
 	catalogGrp.Command("list-models").
-		Description("List the model catalog").
+		Description("List models").
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)

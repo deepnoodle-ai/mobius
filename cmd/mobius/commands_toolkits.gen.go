@@ -20,12 +20,12 @@ func registerToolkitsCommands(app *cli.App) {
 	toolkitsGrp := app.Group("toolkits").Description("Sets of tools agents can use to take action")
 	toolkitsGrp.Alias("toolkit")
 	toolkitsGrp.Command("create").
-		Description("Create a toolkit").
+		Description("Create toolkit").
 		Flags(
 			cli.String("action-grants", "").Help("Action selectors granted by this toolkit. Accepts JSON, @file, or @-."),
 			cli.String("description", "").Help("Markdown description of the toolkit's purpose."),
 			cli.String("name", "").Help("[required] Human-readable toolkit name."),
-			cli.String("slug", "").Help("Optional stable slug. When omitted, the server derives one from `name`."),
+			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -53,9 +53,11 @@ func registerToolkitsCommands(app *cli.App) {
 			if ctx.IsSet("name") {
 				body.Name = ctx.String("name")
 			}
-			if ctx.IsSet("slug") {
-				v := ctx.String("slug")
-				body.Slug = &v
+			if tags, err := parseTagFlags(ctx); err != nil {
+				return err
+			} else if tags != nil {
+				v := api.TagMap(tags)
+				body.Tags = &v
 			}
 			if body.Name == "" {
 				return fmt.Errorf("--name is required (or supply it via --file)")
@@ -71,7 +73,7 @@ func registerToolkitsCommands(app *cli.App) {
 		})
 
 	toolkitsGrp.Command("delete").
-		Description("Delete a toolkit").
+		Description("Delete toolkit").
 		AddArg(&cli.Arg{Name: "toolkit-id", Description: "Toolkit ID (TypeID `kit_...`).", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -90,7 +92,7 @@ func registerToolkitsCommands(app *cli.App) {
 		})
 
 	toolkitsGrp.Command("get").
-		Description("Get a toolkit").
+		Description("Get toolkit").
 		AddArg(&cli.Arg{Name: "toolkit-id", Description: "Toolkit ID (TypeID `kit_...`).", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -112,7 +114,6 @@ func registerToolkitsCommands(app *cli.App) {
 		Description("List toolkits").
 		Flags(
 			cli.Bool("include-system", "").Help("Include read-only system templates."),
-			cli.String("status", "").Help("Filter by lifecycle status. Omit for active toolkits."),
 		).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -127,10 +128,6 @@ func registerToolkitsCommands(app *cli.App) {
 				v := ctx.Bool("include-system")
 				params.IncludeSystem = &v
 			}
-			if ctx.IsSet("status") {
-				v := api.ListToolkitsParamsStatus(ctx.String("status"))
-				params.Status = &v
-			}
 			resp, err := client.ListToolkitsWithResponse(ctx.Context(), p0, params)
 			if err != nil {
 				return err
@@ -139,13 +136,13 @@ func registerToolkitsCommands(app *cli.App) {
 		})
 
 	toolkitsGrp.Command("update").
-		Description("Update a toolkit").
+		Description("Update toolkit").
 		AddArg(&cli.Arg{Name: "toolkit-id", Description: "Toolkit ID (TypeID `kit_...`).", Required: true}).
 		Flags(
 			cli.String("action-grants", "").Help("Action selectors granted by this toolkit. Accepts JSON, @file, or @-."),
 			cli.String("description", "").Help("Markdown description of the toolkit's purpose."),
 			cli.String("name", "").Help("[required] Human-readable toolkit name."),
-			cli.String("slug", "").Help("Optional stable slug. When omitted, the server derives one from `name`."),
+			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -174,9 +171,11 @@ func registerToolkitsCommands(app *cli.App) {
 			if ctx.IsSet("name") {
 				body.Name = ctx.String("name")
 			}
-			if ctx.IsSet("slug") {
-				v := ctx.String("slug")
-				body.Slug = &v
+			if tags, err := parseTagFlags(ctx); err != nil {
+				return err
+			} else if tags != nil {
+				v := api.TagMap(tags)
+				body.Tags = &v
 			}
 			if body.Name == "" {
 				return fmt.Errorf("--name is required (or supply it via --file)")

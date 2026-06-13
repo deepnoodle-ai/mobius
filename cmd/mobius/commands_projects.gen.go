@@ -20,7 +20,7 @@ func registerProjectsCommands(app *cli.App) {
 	projectsGrp := app.Group("projects").Description("Projects within the organization")
 	projectsGrp.Alias("project")
 	projectsGrp.Command("archive").
-		Description("Archive a project").
+		Description("Archive project").
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -37,7 +37,7 @@ func registerProjectsCommands(app *cli.App) {
 		})
 
 	projectsGrp.Command("create").
-		Description("Create a project").
+		Description("Create project").
 		Flags(
 			cli.String("access-mode", "").Help("`org_open`: every org member can see and use the project, subject to role assignments. `restricted`…"),
 			cli.String("description", "").Help("Optional human-readable description."),
@@ -93,7 +93,7 @@ func registerProjectsCommands(app *cli.App) {
 		})
 
 	projectsGrp.Command("delete").
-		Description("Delete a project").
+		Description("Delete project").
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -110,7 +110,7 @@ func registerProjectsCommands(app *cli.App) {
 		})
 
 	projectsGrp.Command("get").
-		Description("Get a project").
+		Description("Get project").
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -156,7 +156,7 @@ func registerProjectsCommands(app *cli.App) {
 		})
 
 	projectsGrp.Command("restore").
-		Description("Restore an archived project").
+		Description("Restore project").
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -173,7 +173,7 @@ func registerProjectsCommands(app *cli.App) {
 		})
 
 	projectsGrp.Command("update").
-		Description("Update a project").
+		Description("Update project").
 		Flags(
 			cli.String("access-mode", "").Help("`org_open`: every org member can see and use the project, subject to role assignments. `restricted`…"),
 			cli.String("default-agent-role-id", "").Help("Replacement role assigned to the auto-created agent principal of any new agent in this project. `nu…"),

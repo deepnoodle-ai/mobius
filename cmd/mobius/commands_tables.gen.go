@@ -59,7 +59,7 @@ func registerTablesCommands(app *cli.App) {
 		})
 
 	tablesGrp.Command("create").
-		Description("Create a table").
+		Description("Create table").
 		Flags(
 			cli.String("access-mode", "").Help("Controls read/write access to the table. \"project\" allows anyone with project table permissions (de…"),
 			cli.String("description", "").Help("Optional human-readable description of the table."),
@@ -123,7 +123,7 @@ func registerTablesCommands(app *cli.App) {
 		})
 
 	tablesGrp.Command("delete").
-		Description("Delete a table and all its rows").
+		Description("Delete table and all its rows").
 		AddArg(&cli.Arg{Name: "table-id", Description: "Table ID.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -142,7 +142,7 @@ func registerTablesCommands(app *cli.App) {
 		})
 
 	tablesGrp.Command("delete-row").
-		Description("Delete a row").
+		Description("Delete row").
 		AddArg(&cli.Arg{Name: "table-id", Description: "Table ID.", Required: true}).
 		AddArg(&cli.Arg{Name: "row-id", Description: "Table row ID.", Required: true}).
 		Use(requireAuth()).
@@ -163,7 +163,7 @@ func registerTablesCommands(app *cli.App) {
 		})
 
 	tablesGrp.Command("get").
-		Description("Get a table").
+		Description("Get table").
 		AddArg(&cli.Arg{Name: "table-id", Description: "Table ID.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -182,7 +182,7 @@ func registerTablesCommands(app *cli.App) {
 		})
 
 	tablesGrp.Command("get-row").
-		Description("Get a row by ID").
+		Description("Get row by ID").
 		AddArg(&cli.Arg{Name: "table-id", Description: "Table ID.", Required: true}).
 		AddArg(&cli.Arg{Name: "row-id", Description: "Table row ID.", Required: true}).
 		Use(requireAuth()).
@@ -222,7 +222,7 @@ func registerTablesCommands(app *cli.App) {
 		})
 
 	tablesGrp.Command("insert-row").
-		Description("Insert a row").
+		Description("Insert row").
 		AddArg(&cli.Arg{Name: "table-id", Description: "Table ID.", Required: true}).
 		Flags(
 			cli.String("data", "").Help("[required] data Accepts JSON, @file, or @-."),
@@ -419,7 +419,7 @@ func registerTablesCommands(app *cli.App) {
 		})
 
 	tablesGrp.Command("update").
-		Description("Update a table").
+		Description("Update table").
 		AddArg(&cli.Arg{Name: "table-id", Description: "Table ID.", Required: true}).
 		Flags(
 			cli.String("access-mode", "").Help("Controls read/write access to the table. \"project\" allows anyone with project table permissions (de…"),
@@ -483,7 +483,7 @@ func registerTablesCommands(app *cli.App) {
 		})
 
 	tablesGrp.Command("update-row").
-		Description("Update a row (PATCH — merges into existing data)").
+		Description("Update row (PATCH — merges into existing data)").
 		AddArg(&cli.Arg{Name: "table-id", Description: "Table ID.", Required: true}).
 		AddArg(&cli.Arg{Name: "row-id", Description: "Table row ID.", Required: true}).
 		Flags(
@@ -529,7 +529,7 @@ func registerTablesCommands(app *cli.App) {
 		})
 
 	tablesGrp.Command("upsert-row").
-		Description("Upsert a row").
+		Description("Upsert row").
 		AddArg(&cli.Arg{Name: "table-id", Description: "Table ID.", Required: true}).
 		Flags(
 			cli.String("data", "").Help("[required] Full row data. Must include values for all key_columns. Accepts JSON, @file, or @-."),

@@ -20,14 +20,14 @@ func registerActionsCommands(app *cli.App) {
 	actionsGrp := app.Group("actions").Description("Actions available to automations and agents")
 	actionsGrp.Alias("action")
 	actionsGrp.Command("create").
-		Description("Create a custom action").
+		Description("Create action").
 		Flags(
 			cli.String("annotations", "").Help("Request hints that describe the safe-use properties of the action. Used by the engine and tooling t… Accepts JSON, @file, or @-."),
 			cli.String("description", "").Help("Markdown-safe description of what the action does."),
 			cli.String("endpoint-kind", "").Help("Backing kind for the action. `http` actions POST to `endpoint_url` with a Mobius signature. `worker…"),
 			cli.String("endpoint-url", "").Help("Required when endpoint_kind is `http`; omitted for worker actions."),
 			cli.String("input-schema", "").Help("JSON Schema describing the expected input parameters. Accepts JSON, @file, or @-."),
-			cli.String("name", "").Help("[required] Project-scoped identifier used in automation step definitions. Lowercase alphanumeric + hyphens, e.…"),
+			cli.String("name", "").Help("[required] Project-scoped identifier used in loop step definitions. Lowercase alphanumeric + hyphens, e.g. \"se…"),
 			cli.String("output-schema", "").Help("JSON Schema describing the expected output shape. Accepts JSON, @file, or @-."),
 			cli.String("tags", "").Help("Arbitrary key-value string tags for filtering and organization. Accepts JSON, @file, or @-."),
 			cli.String("title", "").Help("Human-readable display name shown in the UI and catalog."),
@@ -99,8 +99,8 @@ func registerActionsCommands(app *cli.App) {
 		})
 
 	actionsGrp.Command("delete").
-		Description("Delete a custom action").
-		AddArg(&cli.Arg{Name: "action-name", Description: "Project-scoped action name used in automation step definitions.", Required: true}).
+		Description("Delete action").
+		AddArg(&cli.Arg{Name: "action-name", Description: "Project-scoped action name used in loop step definitions.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -118,8 +118,8 @@ func registerActionsCommands(app *cli.App) {
 		})
 
 	actionsGrp.Command("invoke").
-		Description("Invoke an action directly").
-		AddArg(&cli.Arg{Name: "action-name", Description: "Project-scoped action name used in automation step definitions.", Required: true}).
+		Description("Invoke action").
+		AddArg(&cli.Arg{Name: "action-name", Description: "Project-scoped action name used in loop step definitions.", Required: true}).
 		Flags(
 			cli.String("input", "").Help("Input values matching the action's input_schema. Accepts JSON, @file, or @-."),
 			cli.Int("timeout-seconds", "").Help("How long (in seconds) to wait for synchronous completion. Default 30, max 120."),
@@ -162,11 +162,11 @@ func registerActionsCommands(app *cli.App) {
 		})
 
 	actionsGrp.Command("list-invocations").
-		Description("List action invocation records").
+		Description("List invocations").
 		Flags(
 			cli.String("cursor", "").Help("Cursor for pagination (opaque string from previous response)"),
 			cli.Int("limit", "").Help("Maximum number of items to return"),
-			cli.String("run-id", "").Help("Filter to invocations from a specific automation run."),
+			cli.String("run-id", "").Help("Filter to invocations from a specific loop run."),
 			cli.String("job-id", "").Help("Filter to invocations from a specific job."),
 			cli.String("action-name", "").Help("Filter to invocations of a specific action."),
 			cli.String("status", "").Help("Filter by terminal status (e.g. \"success\", \"failed\")."),
@@ -212,8 +212,8 @@ func registerActionsCommands(app *cli.App) {
 		})
 
 	actionsGrp.Command("rotate-secret").
-		Description("Rotate an HTTP action signing secret").
-		AddArg(&cli.Arg{Name: "action-name", Description: "Project-scoped action name used in automation step definitions.", Required: true}).
+		Description("Rotate signing secret").
+		AddArg(&cli.Arg{Name: "action-name", Description: "Project-scoped action name used in loop step definitions.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -231,8 +231,8 @@ func registerActionsCommands(app *cli.App) {
 		})
 
 	actionsGrp.Command("update").
-		Description("Update a custom action").
-		AddArg(&cli.Arg{Name: "action-name", Description: "Project-scoped action name used in automation step definitions.", Required: true}).
+		Description("Update action").
+		AddArg(&cli.Arg{Name: "action-name", Description: "Project-scoped action name used in loop step definitions.", Required: true}).
 		Flags(
 			cli.String("annotations", "").Help("Pass null to clear all annotation flags. Accepts JSON, @file, or @-."),
 			cli.String("description", "").Help("Replacement Markdown description."),

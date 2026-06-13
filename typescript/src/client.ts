@@ -1,22 +1,22 @@
 import type {
-  Automation,
-  AutomationListResponse,
-  AutomationRun,
-  AutomationRunEvent,
-  AutomationRunListResponse,
-  AutomationRunSource,
-  AutomationRunStatus,
-  AutomationStatus,
-  AutomationTrigger,
-  AutomationVersion,
-  AutomationVersionListResponse,
-  CancelAutomationRunRequest,
-  CreateAutomationRequest,
-  CreateAutomationVersionRequest,
-  SignalAutomationRunRequest,
-  StartAutomationRunRequest,
+  CancelLoopRunRequest,
+  CreateLoopRequest,
+  CreateLoopVersionRequest,
+  Loop,
+  LoopListResponse,
+  LoopRun,
+  LoopRunEvent,
+  LoopRunListResponse,
+  LoopRunSource,
+  LoopRunStatus,
+  LoopSpecTrigger,
+  LoopStatus,
+  LoopVersion,
+  LoopVersionListResponse,
+  SignalLoopRunRequest,
+  StartLoopRunRequest,
   TagMap,
-  UpdateAutomationRequest,
+  UpdateLoopRequest,
 } from "./api/index.js";
 import {
   DEFAULT_MAX_RETRIES,
@@ -25,6 +25,24 @@ import {
 } from "./retry.js";
 
 export { RateLimitError } from "./retry.js";
+
+type Automation = Loop;
+type AutomationListResponse = LoopListResponse;
+type AutomationRun = LoopRun;
+type AutomationRunEvent = LoopRunEvent;
+type AutomationRunListResponse = LoopRunListResponse;
+type AutomationRunSource = LoopRunSource;
+type AutomationRunStatus = LoopRunStatus;
+type AutomationStatus = LoopStatus;
+type AutomationTrigger = LoopSpecTrigger;
+type AutomationVersion = LoopVersion;
+type AutomationVersionListResponse = LoopVersionListResponse;
+type CancelAutomationRunRequest = CancelLoopRunRequest;
+type CreateAutomationRequest = CreateLoopRequest;
+type CreateAutomationVersionRequest = CreateLoopVersionRequest;
+type SignalAutomationRunRequest = SignalLoopRunRequest;
+type StartAutomationRunRequest = StartLoopRunRequest;
+type UpdateAutomationRequest = UpdateLoopRequest;
 
 export interface ClientOptions {
   apiKey: string;
@@ -141,12 +159,14 @@ export interface UpdateAutomationOptions {
 }
 
 export interface AutomationVersionOptions {
+  /** Retained for source compatibility. The public API compiles server-side. */
   compiled_plan?: Record<string, unknown>;
   publish?: boolean;
 }
 
 export interface ListAutomationsOptions {
   status?: AutomationStatus;
+  handle?: string;
   cursor?: string;
   limit?: number;
 }
@@ -159,6 +179,7 @@ export interface StartRunOptions {
 
 export interface ListRunsOptions {
   status?: AutomationRunStatus;
+  loop_id?: string;
   automation_id?: string;
   cursor?: string;
   limit?: number;
@@ -223,15 +244,37 @@ export class Client {
   async listAutomations(
     opts: ListAutomationsOptions = {},
   ): Promise<AutomationListResponse> {
-    const resp = await this.request(withQuery("/v1/projects/:project/automations", opts), {
+    const resp = await this.request(withQuery("/v1/projects/:project/loops", opts), {
       method: "GET",
     });
     return (await resp.json()) as AutomationListResponse;
   }
 
-  async getAutomation(handle: string): Promise<Automation> {
+  async getAutomation(ref: string): Promise<Automation> {
+    if (looksLikeLoopID(ref)) {
+      const resp = await this.request(
+        `/v1/projects/:project/loops/${encodeURIComponent(ref)}`,
+        { method: "GET" },
+      );
+      return (await resp.json()) as Automation;
+    }
+    const page = await this.listAutomations({ handle: ref, limit: 1 });
+    if (page.items.length === 0) {
+      throw new Error("mobius: get automation: not found");
+    }
+    return page.items[0];
+  }
+
+  private async resolveAutomationID(ref: string): Promise<string> {
+    if (!ref.trim()) throw new Error("mobius: automation handle or id is required");
+    if (looksLikeLoopID(ref)) return ref;
+    const automation = await this.getAutomation(ref);
+    return automation.id;
+  }
+
+  async getLoop(id: string): Promise<Automation> {
     const resp = await this.request(
-      `/v1/projects/:project/automations/${encodeURIComponent(handle)}`,
+      `/v1/projects/:project/loops/${encodeURIComponent(id)}`,
       { method: "GET" },
     );
     return (await resp.json()) as Automation;
@@ -241,6 +284,7 @@ export class Client {
     const body: CreateAutomationRequest = removeUndefined({
       name: opts.name,
       handle: opts.handle,
+      activate: false,
       description: opts.description,
       default_agent_id: opts.default_agent_id,
       default_inputs: opts.default_inputs,
@@ -248,7 +292,7 @@ export class Client {
       tags: opts.tags,
       triggers: opts.triggers,
     });
-    const resp = await this.request("/v1/projects/:project/automations", {
+    const resp = await this.request("/v1/projects/:project/loops", {
       method: "POST",
       body,
     });
@@ -256,92 +300,102 @@ export class Client {
   }
 
   async updateAutomation(
-    handle: string,
+    ref: string,
     opts: UpdateAutomationOptions,
   ): Promise<Automation> {
+    const loopID = await this.resolveAutomationID(ref);
     const body: UpdateAutomationRequest = removeUndefined(opts);
     const resp = await this.request(
-      `/v1/projects/:project/automations/${encodeURIComponent(handle)}`,
+      `/v1/projects/:project/loops/${encodeURIComponent(loopID)}`,
       { method: "PATCH", body },
     );
     return (await resp.json()) as Automation;
   }
 
-  async deleteAutomation(handle: string): Promise<void> {
+  async deleteAutomation(ref: string): Promise<void> {
+    const loopID = await this.resolveAutomationID(ref);
     await this.request(
-      `/v1/projects/:project/automations/${encodeURIComponent(handle)}`,
+      `/v1/projects/:project/loops/${encodeURIComponent(loopID)}`,
       { method: "DELETE" },
     );
   }
 
   async listAutomationVersions(
-    handle: string,
+    ref: string,
   ): Promise<AutomationVersionListResponse> {
+    const loopID = await this.resolveAutomationID(ref);
     const resp = await this.request(
-      `/v1/projects/:project/automations/${encodeURIComponent(handle)}/versions`,
+      `/v1/projects/:project/loops/${encodeURIComponent(loopID)}/versions`,
       { method: "GET" },
     );
     return (await resp.json()) as AutomationVersionListResponse;
   }
 
   async createAutomationVersion(
-    handle: string,
+    ref: string,
     spec: Record<string, unknown>,
     opts: AutomationVersionOptions = {},
   ): Promise<AutomationVersion> {
+    const loopID = await this.resolveAutomationID(ref);
     const body: CreateAutomationVersionRequest = removeUndefined({
       spec: spec as CreateAutomationVersionRequest["spec"],
-      compiled_plan: opts.compiled_plan,
     });
     const resp = await this.request(
-      `/v1/projects/:project/automations/${encodeURIComponent(handle)}/versions`,
+      `/v1/projects/:project/loops/${encodeURIComponent(loopID)}/versions`,
       { method: "POST", body },
     );
     const version = (await resp.json()) as AutomationVersion;
     if (opts.publish) {
-      await this.publishAutomationVersion(handle, version.version);
+      await this.publishAutomationVersion(loopID, version.version);
     }
     return version;
   }
 
   async publishAutomationVersion(
-    handle: string,
+    ref: string,
     version: number,
   ): Promise<Automation> {
+    const loopID = await this.resolveAutomationID(ref);
     const resp = await this.request(
-      `/v1/projects/:project/automations/${encodeURIComponent(handle)}/versions/${version}/publication`,
+      `/v1/projects/:project/loops/${encodeURIComponent(loopID)}/versions/${version}/publication`,
       { method: "POST" },
     );
     return (await resp.json()) as Automation;
   }
 
   async startRun(
-    automationHandle: string,
+    automationRef: string,
     opts: StartRunOptions = {},
   ): Promise<AutomationRun> {
-    return this.startAutomationRun(automationHandle, opts);
+    return this.startAutomationRun(automationRef, opts);
   }
 
   async startAutomationRun(
-    automationHandle: string,
+    automationRef: string,
     opts: StartRunOptions = {},
   ): Promise<AutomationRun> {
+    const loopID = await this.resolveAutomationID(automationRef);
     const body: StartAutomationRunRequest = removeUndefined({
       inputs: opts.inputs,
       source: opts.source,
-      external_id: opts.external_id,
+      idempotency_key: opts.external_id,
     });
     const resp = await this.request(
-      `/v1/projects/:project/automations/${encodeURIComponent(automationHandle)}/runs`,
+      `/v1/projects/:project/loops/${encodeURIComponent(loopID)}/runs`,
       { method: "POST", body },
     );
     return (await resp.json()) as AutomationRun;
   }
 
   async listRuns(opts: ListRunsOptions = {}): Promise<AutomationRunListResponse> {
-    const resp = await this.request(withQuery("/v1/projects/:project/runs", opts), {
-      method: "GET",
-    });
+    const { automation_id, loop_id, ...rest } = opts;
+    const resp = await this.request(
+      withQuery("/v1/projects/:project/runs", {
+        ...rest,
+        loop_id: loop_id ?? automation_id,
+      }),
+      { method: "GET" },
+    );
     return (await resp.json()) as AutomationRunListResponse;
   }
 
@@ -498,6 +552,10 @@ function removeUndefined<T extends object>(obj: T): T {
   return Object.fromEntries(
     Object.entries(obj).filter(([, v]) => v !== undefined),
   ) as T;
+}
+
+function looksLikeLoopID(ref: string): boolean {
+  return ref.startsWith("loop_") || ref.startsWith("aut_");
 }
 
 async function delay(ms: number, signal?: AbortSignal): Promise<void> {

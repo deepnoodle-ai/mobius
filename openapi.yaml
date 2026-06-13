@@ -2,8 +2,8 @@ openapi: 3.0.3
 info:
   title: mobius API
   version: 0.1.0
-  description: Mobius is an agent automation platform for mixed teams of humans, systems,
-    and AI agents
+  description: Mobius is an agent loop platform for mixed teams of humans, systems, and AI
+    agents
 servers:
 - url: https://api.mobiusops.ai
   description: Production
@@ -17,13 +17,13 @@ tags:
   description: Organization and project API keys used for programmatic authentication.
 - name: actions
   x-displayName: Actions
-  description: Project and catalog actions invoked by agents and automation steps.
+  description: Project and catalog actions invoked by agents and loop steps.
 - name: catalog
   x-displayName: Catalog
   description: Catalog API operations.
 - name: environments
   x-displayName: Environments
-  description: Provider-backed isolated workspaces allocated to agents and automation runs.
+  description: Provider-backed isolated workspaces allocated to agents and loop runs.
 - name: worker-sessions
   x-displayName: Worker Sessions
   description: Worker sessions opened by long-running customer-side worker processes.
@@ -39,13 +39,12 @@ tags:
 - name: agents
   x-displayName: Agents
   description: Agent identities, sessions, presence, and lifecycle administration.
-- name: automations
-  x-displayName: Automations
-  description: Automation definitions, versions, publication, and the triggers that start
-    runs.
+- name: loops
+  x-displayName: Loops
+  description: Loop definitions, versions, publication, and the triggers that start runs.
 - name: runs
   x-displayName: Runs
-  description: Durable automation run executions with their steps and event streams.
+  description: Durable loop run executions with their steps and event streams.
 - name: toolkits
   x-displayName: Toolkits
   description: Project-local and system toolkit templates that grant agents access to action
@@ -59,14 +58,14 @@ tags:
   description: Agent-readable and -writable project tables.
 - name: artifacts
   x-displayName: Artifacts
-  description: Files produced by agents during automation runs and stored for later inspection.
+  description: Files produced by agents during loop runs and stored for later inspection.
 paths:
   /v1/projects/{project}/api-keys:
     post:
       operationId: createAPIKey
       tags:
       - api-keys
-      summary: Create an API key
+      summary: Create API key
       description: Creates an API key bound to a machine principal in this project. The key
         authenticates as that principal; associated permissions come from that principal's
         role assignments. The raw key value is returned in `key` and is never retrievable
@@ -123,7 +122,7 @@ paths:
       operationId: getAPIKey
       tags:
       - api-keys
-      summary: Get an API key
+      summary: Get API key
       description: Returns metadata for a single API key without exposing the raw secret.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
@@ -145,7 +144,7 @@ paths:
       operationId: revokeAPIKey
       tags:
       - api-keys
-      summary: Revoke an API key
+      summary: Revoke API key
       description: Permanently revokes the key. In-flight requests using this key will immediately
         start receiving 401.
       parameters:
@@ -165,7 +164,7 @@ paths:
       operationId: createAction
       tags:
       - actions
-      summary: Create a custom action
+      summary: Create action
       description: Registers a project-owned custom action definition. HTTP actions require
         `endpoint_url` and receive a signing secret. Worker-backed actions omit `endpoint_url`;
         compatible workers make the registered action ready by advertising its name when connected.
@@ -197,7 +196,7 @@ paths:
       operationId: updateAction
       tags:
       - actions
-      summary: Update a custom action
+      summary: Update action
       description: Updates action metadata, schemas, annotations, tags, or the HTTP endpoint
         URL. Worker-backed actions cannot set an endpoint URL.
       parameters:
@@ -228,9 +227,9 @@ paths:
       operationId: deleteAction
       tags:
       - actions
-      summary: Delete a custom action
-      description: Deletes a project-owned custom action definition. Automations that still
-        reference the action block deletion until the reference is removed.
+      summary: Delete action
+      description: Deletes a project-owned custom action definition. Loops that still reference
+        the action block deletion until the reference is removed.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/ActionNameParam'
@@ -250,7 +249,7 @@ paths:
       operationId: rotateActionSecret
       tags:
       - actions
-      summary: Rotate an HTTP action signing secret
+      summary: Rotate signing secret
       description: Rotates the signing secret for an HTTP-backed custom action. Worker actions
         do not have signing secrets and return a validation error.
       parameters:
@@ -274,16 +273,16 @@ paths:
       operationId: listActionInvocations
       tags:
       - actions
-      summary: List action invocation records
-      description: Lists recent action invocation audit records from automations, agents,
-        direct invocations, and job-backed execution.
+      summary: List invocations
+      description: Lists recent action invocation audit records from loops, agents, direct
+        invocations, and job-backed execution.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/CursorParam'
       - $ref: '#/components/parameters/LimitParam'
       - name: run_id
         in: query
-        description: Filter to invocations from a specific automation run.
+        description: Filter to invocations from a specific loop run.
         schema:
           type: string
       - name: job_id
@@ -317,10 +316,10 @@ paths:
       operationId: invokeAction
       tags:
       - actions
-      summary: Invoke an action directly
+      summary: Invoke action
       description: Invokes a catalog action through the same job-backed execution surface
-        used by automations. HTTP and managed platform actions are dispatched to Mobius server
-        workers; worker-backed custom actions are dispatched to compatible customer workers.
+        used by loops. HTTP and managed platform actions are dispatched to Mobius server workers;
+        worker-backed custom actions are dispatched to compatible customer workers.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/ActionNameParam'
@@ -358,9 +357,9 @@ paths:
       operationId: listCatalogEvents
       tags:
       - catalog
-      summary: List the triggerable event catalog
+      summary: List events
       description: |-
-        Returns every event source an automation trigger (or `wait_for_event` step) can subscribe to within this project: built-in platform sources (tables, email, runs, HTTP triggers, sessions, artifacts) and integration provider sources (with project connection state). `items` contains those sources; each source lists its concrete, currently-active event types.
+        Returns every event source a loop trigger (or `wait_for_event` step) can subscribe to within this project: built-in platform sources (tables, email, runs, HTTP triggers, sessions, artifacts) and integration provider sources (with project connection state). `items` contains those sources; each source lists its concrete, currently-active event types.
 
         `reserved_prefixes` enumerates platform namespaces that are recognized but not themselves triggerable event sources (for example `signal`, `schedule`), so authoring UIs can distinguish a recognized-but-unsupported matcher prefix from a wholly unknown one.
 
@@ -383,7 +382,7 @@ paths:
       operationId: listCatalogActions
       tags:
       - catalog
-      summary: List the action catalog
+      summary: List actions
       description: 'Returns the full catalog of actions available to this project: project-owned
         HTTP actions and platform-provided integration actions (Slack, GitHub, etc.). The
         `available` flag indicates whether the action can currently be invoked. Custom HTTP
@@ -406,7 +405,7 @@ paths:
       operationId: getCatalogAction
       tags:
       - catalog
-      summary: Get one catalog action by name
+      summary: Get action
       description: Returns availability status, schemas, and metadata for a single catalog
         entry.
       parameters:
@@ -430,7 +429,7 @@ paths:
       operationId: listCatalogModels
       tags:
       - catalog
-      summary: List the model catalog
+      summary: List models
       description: |-
         Returns the models a platform agent in this project can be assigned, grouped by provider. Only providers the project can actually run are included: a provider appears when the project has an active BYOK integration for it, or when a platform-managed key is configured.
 
@@ -540,7 +539,7 @@ paths:
       operationId: createEnvironment
       tags:
       - environments
-      summary: Create an environment
+      summary: Create environment
       description: Creates a durable execution environment record and provisions it with the
         selected provider. The server resolves scope and ownership before enforcing uniqueness
         for the environment name.
@@ -572,12 +571,13 @@ paths:
       operationId: attachWorkerEnvironment
       tags:
       - environments
-      summary: Create or attach a worker-provided environment
+      summary: Attach environment
       description: Idempotently registers a worker-provided environment (a workspace hosted
         by a connected Mobius worker, e.g. a laptop). The control plane creates the record
         but never provisions or tears it down. Re-attaching the same name returns the existing
         environment. The `mobius worker` CLI calls this on startup, then registers its socket
-        against the returned environment id.
+        against the returned environment id. If the worker provider is not configured, the
+        request returns `409` without creating an environment record.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       requestBody:
@@ -606,7 +606,7 @@ paths:
       operationId: acquireEnvironment
       tags:
       - environments
-      summary: Acquire an environment lease
+      summary: Acquire lease
       description: Collection-level acquire creates or claims an environment and creates a
         single active lease. There is intentionally no per-environment acquire endpoint.
       parameters:
@@ -637,7 +637,7 @@ paths:
       operationId: releaseEnvironmentLease
       tags:
       - environments
-      summary: Release an environment lease
+      summary: Release lease
       description: Releases a previously acquired environment lease so the environment can
         be reused, retired, or reclaimed by another worker. The released lease snapshot is
         returned for audit and UI state updates.
@@ -667,7 +667,7 @@ paths:
       operationId: getEnvironment
       tags:
       - environments
-      summary: Get an environment
+      summary: Get environment
       description: Returns the current environment record, including provider status, lease
         metadata, ownership, binding, and retention settings.
       parameters:
@@ -690,7 +690,7 @@ paths:
       operationId: updateEnvironment
       tags:
       - environments
-      summary: Update environment metadata
+      summary: Update environment
       description: Only purpose, retention_policy, scope, owned_by, bound_to_type, bound_to_id,
         and tags are mutable.
       parameters:
@@ -721,7 +721,7 @@ paths:
       operationId: destroyEnvironment
       tags:
       - environments
-      summary: Destroy an environment
+      summary: Destroy environment
       description: Requests provider teardown for the environment and records the destroyed
         state in Mobius. The response includes the final environment snapshot after the destroy
         request is accepted.
@@ -746,7 +746,7 @@ paths:
       operationId: reconcileEnvironment
       tags:
       - environments
-      summary: Reconcile environment provider state
+      summary: Reconcile environment
       description: Refreshes Mobius' environment record from the provider control plane. Use
         this when a UI or operator needs to resynchronize status after an out-of-band provider
         change.
@@ -771,7 +771,7 @@ paths:
       operationId: execEnvironment
       tags:
       - environments
-      summary: Execute a command inside an environment
+      summary: Execute command
       description: Runs a command in the target environment and returns its captured output.
         The environment must be active and able to accept execution requests from the selected
         provider.
@@ -806,7 +806,7 @@ paths:
       operationId: writeEnvironmentFile
       tags:
       - environments
-      summary: Write a file into an environment
+      summary: Write file
       description: Writes file content into the environment filesystem. The request is intended
         for setup and repair flows that need to place source files, scripts, or configuration
         before executing work.
@@ -837,7 +837,7 @@ paths:
       operationId: startEnvironmentWorker
       tags:
       - environments
-      summary: Start a Mobius worker in an environment
+      summary: Start worker
       description: Starts or reuses a worker process inside the environment so it can claim
         Mobius jobs. The result reports the worker identity and provider execution details
         needed for follow-up diagnostics.
@@ -872,7 +872,7 @@ paths:
       operationId: getEnvironmentWorkerLogs
       tags:
       - environments
-      summary: Get worker logs for an environment
+      summary: Get worker logs
       description: Tails the managed Mobius worker log files from inside the environment.
         The worker filesystem is sandbox-local and treated as diagnostic scratch; clients
         should not use this endpoint as durable artifact storage.
@@ -921,7 +921,7 @@ paths:
       operationId: createEnvironmentGitCredential
       tags:
       - environments
-      summary: Mint short-lived Git credentials for an environment
+      summary: Mint Git credentials
       description: Mints a repository-scoped GitHub App installation token for clone or push
         operations executed inside the environment. Mobius returns the token only in this
         response; the caller must inject it into the environment through a transient askpass/stdin
@@ -1047,7 +1047,7 @@ paths:
       operationId: createProject
       tags:
       - projects
-      summary: Create a project
+      summary: Create project
       description: Creates a project within the authenticated org. If `handle` is omitted
         it is auto-derived from `name` (lowercased, spaces replaced with hyphens). Returns
         409 if the handle already exists in the org.
@@ -1077,7 +1077,7 @@ paths:
       operationId: getProject
       tags:
       - projects
-      summary: Get a project
+      summary: Get project
       description: Requires the `mobius.project.view` permission for the project.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
@@ -1098,7 +1098,7 @@ paths:
       operationId: updateProject
       tags:
       - projects
-      summary: Update a project
+      summary: Update project
       description: Updates `name`, `description`, and/or `access_mode`. The request also accepts
         `seed_existing_members` when flipping `access_mode` from `org_open` to `restricted`.
         The project handle is immutable and cannot be changed after creation.
@@ -1131,9 +1131,9 @@ paths:
       operationId: deleteProject
       tags:
       - projects
-      summary: Delete a project
+      summary: Delete project
       description: |-
-        Permanently deletes the project and all child resources (automations, runs, jobs, triggers, webhooks, actions, agents, machine principals). This operation is irreversible.
+        Permanently deletes the project and all child resources (loops, runs, jobs, triggers, webhooks, actions, agents, machine principals). This operation is irreversible.
 
         The project must be archived first; calling delete on an active project returns `409 project_not_archived`. Archive via `POST /v1/projects/{project}/archive`.
       parameters:
@@ -1154,7 +1154,7 @@ paths:
       operationId: archiveProject
       tags:
       - projects
-      summary: Archive a project
+      summary: Archive project
       description: 'Soft-retires the project: triggers and scheduled runs stop firing, edits
         are blocked, and the project is hidden from the default listing. In-flight runs are
         allowed to drain. The project can be restored at any time. Idempotent — archiving
@@ -1179,7 +1179,7 @@ paths:
       operationId: restoreProject
       tags:
       - projects
-      summary: Restore an archived project
+      summary: Restore project
       description: Clears the archived state and returns the project to active operation.
         Triggers and scheduled runs resume on their next natural fire — there is no catch-up
         backfill of missed fires during the archive window. Idempotent — restoring an active
@@ -1243,7 +1243,7 @@ paths:
       operationId: createWebhook
       tags:
       - webhooks
-      summary: Create a webhook
+      summary: Create webhook
       description: |-
         Creates a new outgoing webhook subscription. Webhook names must be unique within the project. Returns 409 if the name already exists.
 
@@ -1299,7 +1299,7 @@ paths:
       operationId: getWebhook
       tags:
       - webhooks
-      summary: Get a webhook
+      summary: Get webhook
       description: Returns one outgoing webhook subscription and its event filters. The raw
         signing key is never returned after creation or rotation.
       parameters:
@@ -1322,7 +1322,7 @@ paths:
       operationId: updateWebhook
       tags:
       - webhooks
-      summary: Update a webhook
+      summary: Update webhook
       description: Updates the webhook name, URL, event subscriptions, enabled state, or tags.
         Signing key rotation is handled by the dedicated rotate endpoint.
       parameters:
@@ -1355,7 +1355,7 @@ paths:
       operationId: deleteWebhook
       tags:
       - webhooks
-      summary: Delete a webhook
+      summary: Delete webhook
       description: Deletes the webhook and its delivery history.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
@@ -1374,7 +1374,7 @@ paths:
       operationId: rotateWebhookSecret
       tags:
       - webhooks
-      summary: Rotate a webhook signing secret
+      summary: Rotate webhook signing secret
       description: Generates a new HMAC-SHA256 signing key version for the webhook. Store
         the returned key immediately — it cannot be retrieved again.
       parameters:
@@ -1398,7 +1398,7 @@ paths:
       operationId: pingWebhook
       tags:
       - webhooks
-      summary: Test a webhook URL
+      summary: Test webhook URL
       description: 'Sends a live test POST request to the webhook''s saved URL, or to an override
         URL supplied in the request body, and returns the result. Because the webhook URL
         may be empty at creation time, the typical flow is: create the webhook without a URL,
@@ -1489,7 +1489,7 @@ paths:
       operationId: createAgent
       tags:
       - agents
-      summary: Create an agent
+      summary: Create agent
       description: |-
         Creates an agent. An agent IS a principal (principals.kind = agent): its backing identity row is created atomically with the agent and its permissions live as role grants on that principal — there is no separate machine-identity side record.
 
@@ -1559,7 +1559,7 @@ paths:
       operationId: getAgent
       tags:
       - agents
-      summary: Get an agent
+      summary: Get agent
       description: Returns one agent with its administrative status and computed presence.
         Presence is derived from recent presence records, so it may change without the agent
         record itself being updated.
@@ -1581,7 +1581,7 @@ paths:
       operationId: updateAgent
       tags:
       - agents
-      summary: Update an agent
+      summary: Update agent
       description: Updates mutable agent fields. Setting `status` to `inactive` prevents the
         agent from claiming new jobs but does not terminate active presence records.
       parameters:
@@ -1614,7 +1614,7 @@ paths:
       operationId: deleteAgent
       tags:
       - agents
-      summary: Delete an agent
+      summary: Delete agent
       description: Soft-deletes the agent by setting `deleted_at`. The agent record is retained
         for audit and attribution history, but the agent is excluded from all listings and
         lookups. The agent's machine principal is disabled. In-flight jobs claiming this agent
@@ -1661,7 +1661,7 @@ paths:
       operationId: listAgentSessions
       tags:
       - agents
-      summary: List conversation sessions for an agent
+      summary: List sessions
       description: Returns durable conversation sessions for one agent, newest activity first.
         Remote workers use this to inspect their own remembered conversations.
       parameters:
@@ -1705,7 +1705,7 @@ paths:
       operationId: getAgentSession
       tags:
       - agents
-      summary: Get a conversation session
+      summary: Get session
       description: Returns one durable conversation session for an agent.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
@@ -1732,7 +1732,7 @@ paths:
       operationId: listSessionMessages
       tags:
       - agents
-      summary: List conversation session messages
+      summary: List messages
       description: Returns raw session messages in sequence order.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
@@ -1765,7 +1765,7 @@ paths:
       operationId: appendSessionMessages
       tags:
       - agents
-      summary: Append conversation session messages
+      summary: Append messages
       description: Appends one or more messages to a durable session and returns the updated
         session. The service assigns sequence numbers atomically and may append an additional
         compaction summary when the session crosses its compaction threshold.
@@ -1797,12 +1797,72 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
+  /v1/projects/{project}/agents/{id}/sessions/{session_id}/turns:
+    get:
+      operationId: listSessionTurns
+      tags:
+      - agents
+      summary: List turns
+      description: Returns the session's AgentTurns in chronological order — the spine a turn-grouped
+        transcript is built on. Each turn carries its run/step or channel-exchange linkage,
+        attempt, and status; fetch a turn's messages from its transcript endpoint.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/IDParam'
+      - name: session_id
+        in: path
+        required: true
+        description: Session identifier.
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentTurnListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/projects/{project}/turns/{id}/messages:
+    get:
+      operationId: listTurnMessages
+      tags:
+      - agents
+      summary: List turn transcript
+      description: Returns the messages produced by a single AgentTurn, in sequence order
+        — an indexed read on the turn_id spine, with no metadata scan. This is the single-turn
+        transcript read; group a whole session client-side by joining the session's messages
+        on turn_id.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/IDParam'
+      - name: after_sequence
+        in: query
+        description: Only include messages with sequence greater than this value.
+        schema:
+          type: integer
+          minimum: 0
+      - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionMessageListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /v1/projects/{project}/agents/{id}/messaging-bindings:
     get:
       operationId: listAgentMessagingBindings
       tags:
       - agents
-      summary: List agent messaging bindings
+      summary: List bindings
       description: Returns the provider accounts this agent can answer on.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
@@ -1824,7 +1884,7 @@ paths:
       operationId: saveAgentMessagingBinding
       tags:
       - agents
-      summary: Save an agent messaging binding
+      summary: Save binding
       description: Upserts one provider-account binding for this agent.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
@@ -1857,7 +1917,7 @@ paths:
       operationId: deleteAgentMessagingBinding
       tags:
       - agents
-      summary: Delete an agent messaging binding
+      summary: Delete binding
       description: Removes one messaging binding from the agent.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
@@ -1882,7 +1942,7 @@ paths:
       operationId: streamSessionEvents
       tags:
       - agents
-      summary: Stream live conversation session events
+      summary: Stream session events
       description: Streams live Server-Sent Events for a conversation session. This is a live
         transport for ephemeral events such as `generation.delta`; durable session transcript
         state remains available from the messages endpoint.
@@ -1911,7 +1971,7 @@ paths:
       operationId: listToolkitAssignments
       tags:
       - agents
-      summary: List assigned toolkits
+      summary: List toolkits
       description: Returns the toolkits assigned to an agent in assignment order.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
@@ -1933,7 +1993,7 @@ paths:
       operationId: replaceToolkits
       tags:
       - agents
-      summary: Replace assigned toolkits
+      summary: Replace toolkits
       description: Replaces the agent's toolkit assignment set as a whole. The effective tool
         surface is the union of assigned toolkit grants intersected with the agent principal's
         permissions and any per-invocation narrowing.
@@ -1966,7 +2026,7 @@ paths:
       operationId: listAgentTableGrants
       tags:
       - agents
-      summary: List agent table grants
+      summary: List table grants
       description: Returns durable table memory grants assigned to one agent.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
@@ -1988,7 +2048,7 @@ paths:
       operationId: replaceAgentTableGrants
       tags:
       - agents
-      summary: Replace agent table grants
+      summary: Replace table grants
       description: Replaces the agent's durable table memory grant set as a whole.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
@@ -2019,7 +2079,7 @@ paths:
       operationId: listSkillAssignments
       tags:
       - agents
-      summary: List assigned skills
+      summary: List skills
       description: Returns the skills assigned to an agent in assignment order.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
@@ -2041,7 +2101,7 @@ paths:
       operationId: replaceSkills
       tags:
       - agents
-      summary: Replace assigned skills
+      summary: Replace skills
       description: Replaces the agent's skill assignment set as a whole. Skills request tools
         and actions; the manifest enforces only the intersection with toolkit grants and the
         agent principal's permissions.
@@ -2074,7 +2134,7 @@ paths:
       operationId: getAgentTools
       tags:
       - agents
-      summary: List an agent's resolved tools
+      summary: List tools
       description: 'Resolves the effective set of tools an agent can invoke: the flat set
         of actions the agent can invoke, computed from toolkit grants, the agent principal''s
         permissions, optional toolkit filters, optional per-invocation tool filters, and optional
@@ -2114,23 +2174,22 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-  /v1/projects/{project}/automations:
+  /v1/projects/{project}/loops:
     get:
-      operationId: listAutomations
+      operationId: listLoops
       tags:
-      - automations
-      summary: List automations in a project
-      description: Returns automations in the project, newest-first. Supports filtering by
-        lifecycle status and cursor-based pagination. Archived automations are excluded by
-        default; pass `status=archived` to list only archived, or `status=all` to include
-        every status.
+      - loops
+      summary: List loops
+      description: Returns loops in the project, newest-first. Supports filtering by lifecycle
+        status and cursor-based pagination. Archived loops are excluded by default; pass `status=archived`
+        to list only archived, or `status=all` to include every status.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - name: status
         in: query
-        description: Filter by lifecycle status. Omit to return all non-archived automations
-          (the default). Pass a single status to filter to it exactly, or `all` to include
-          archived automations too.
+        description: Filter by lifecycle status. Omit to return all non-archived loops (the
+          default). Pass a single status to filter to it exactly, or `all` to include archived
+          loops too.
         schema:
           type: string
           enum:
@@ -2139,6 +2198,12 @@ paths:
           - paused
           - archived
           - all
+      - name: handle
+        in: query
+        description: Exact loop handle filter for resolving a handle to its loop ID in one
+          request.
+        schema:
+          type: string
       - name: cursor
         in: query
         description: Opaque pagination cursor from a prior response.
@@ -2158,18 +2223,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AutomationListResponse'
+                $ref: '#/components/schemas/LoopListResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
     post:
-      operationId: createAutomation
+      operationId: createLoop
       tags:
-      - automations
-      summary: Create an automation
-      description: Creates a new automation in `draft` status. The `handle` must be unique
-        within the project and is immutable.
+      - loops
+      summary: Create loop
+      description: 'Creates a new loop. The `handle` must be unique within the project and
+        is immutable. Include `spec` to create the first draft version inline; set `activate:
+        true` with `spec` to publish that version and make the loop active in one request.'
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       requestBody:
@@ -2177,14 +2243,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateAutomationRequest'
+              $ref: '#/components/schemas/CreateLoopRequest'
       responses:
         '201':
           description: Created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Automation'
+                $ref: '#/components/schemas/Loop'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -2193,28 +2259,23 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '409':
           $ref: '#/components/responses/Conflict'
-  /v1/projects/{project}/automations/{handle}:
+  /v1/projects/{project}/loops/{id}:
     get:
-      operationId: getAutomation
+      operationId: getLoop
       tags:
-      - automations
-      summary: Get an automation
-      description: Returns one automation by its project-unique handle.
+      - loops
+      summary: Get loop
+      description: Returns one loop by ID.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
-      - name: handle
-        in: path
-        required: true
-        description: Project-unique automation handle.
-        schema:
-          type: string
+      - $ref: '#/components/parameters/IDParam'
       responses:
         '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Automation'
+                $ref: '#/components/schemas/Loop'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -2222,33 +2283,28 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
     patch:
-      operationId: updateAutomation
+      operationId: updateLoop
       tags:
-      - automations
-      summary: Update an automation
-      description: Updates mutable fields on the automation. The handle, org, and project
-        remain immutable.
+      - loops
+      summary: Update loop
+      description: Updates mutable fields on the loop. The handle, org, and project remain
+        immutable.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
-      - name: handle
-        in: path
-        required: true
-        description: Project-unique automation handle.
-        schema:
-          type: string
+      - $ref: '#/components/parameters/IDParam'
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateAutomationRequest'
+              $ref: '#/components/schemas/UpdateLoopRequest'
       responses:
         '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Automation'
+                $ref: '#/components/schemas/Loop'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -2258,20 +2314,15 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
     delete:
-      operationId: deleteAutomation
+      operationId: deleteLoop
       tags:
-      - automations
-      summary: Archive an automation
-      description: Soft-archives the automation. Existing runs remain queryable; new runs
-        cannot be started.
+      - loops
+      summary: Archive loop
+      description: Soft-archives the loop. Existing runs remain queryable; new runs cannot
+        be started.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
-      - name: handle
-        in: path
-        required: true
-        description: Project-unique automation handle.
-        schema:
-          type: string
+      - $ref: '#/components/parameters/IDParam'
       responses:
         '204':
           description: No Content
@@ -2281,29 +2332,24 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-  /v1/projects/{project}/automations/{handle}/versions:
+  /v1/projects/{project}/loops/{id}/versions:
     get:
-      operationId: listAutomationVersions
+      operationId: listLoopVersions
       tags:
-      - automations
-      summary: List versions for an automation
-      description: Returns every stored version (draft, published, superseded) for one automation,
+      - loops
+      summary: List versions
+      description: Returns every stored version (draft, published, superseded) for one loop,
         newest version first.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
-      - name: handle
-        in: path
-        required: true
-        description: Project-unique automation handle.
-        schema:
-          type: string
+      - $ref: '#/components/parameters/IDParam'
       responses:
         '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AutomationVersionListResponse'
+                $ref: '#/components/schemas/LoopVersionListResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -2311,33 +2357,28 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
     post:
-      operationId: createAutomationVersion
+      operationId: createLoopVersion
       tags:
-      - automations
-      summary: Create a new draft version
-      description: Stores a new draft `AutomationVersion` with the supplied spec. Returns
-        the new version. Use `publishAutomationVersion` to make it runnable.
+      - loops
+      summary: Create version
+      description: Stores a new draft `LoopVersion` with the supplied spec. Returns the new
+        version. Use `publishLoopVersion` to make it runnable.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
-      - name: handle
-        in: path
-        required: true
-        description: Project-unique automation handle.
-        schema:
-          type: string
+      - $ref: '#/components/parameters/IDParam'
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateAutomationVersionRequest'
+              $ref: '#/components/schemas/CreateLoopVersionRequest'
       responses:
         '201':
           description: Created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AutomationVersion'
+                $ref: '#/components/schemas/LoopVersion'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -2346,26 +2387,21 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-  /v1/projects/{project}/automations/{handle}/versions/{version}/publication:
+  /v1/projects/{project}/loops/{id}/versions/{version}/publication:
     post:
-      operationId: publishAutomationVersion
+      operationId: publishLoopVersion
       tags:
-      - automations
-      summary: Publish a version
-      description: Marks the supplied version `published` and updates the automation's `published_version`.
+      - loops
+      summary: Publish version
+      description: Marks the supplied version `published` and updates the loop's `published_version`.
         Prior published versions become `superseded`.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
-      - name: handle
-        in: path
-        required: true
-        description: Project-unique automation handle.
-        schema:
-          type: string
+      - $ref: '#/components/parameters/IDParam'
       - name: version
         in: path
         required: true
-        description: Version number of the AutomationVersion to publish.
+        description: Version number of the LoopVersion to publish.
         schema:
           type: integer
       responses:
@@ -2374,7 +2410,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Automation'
+                $ref: '#/components/schemas/Loop'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -2387,8 +2423,8 @@ paths:
     post:
       operationId: deliverHTTPTrigger
       tags:
-      - automations
-      summary: Deliver an HTTP request payload to a trigger
+      - loops
+      summary: Deliver trigger
       description: Public, unauthenticated endpoint that resolves the `http_handle` to a configured
         http-kind trigger and commits a durable source-event row; the run starts asynchronously.
         Idempotent on the `idempotency_key` query parameter or the standard `X-Idempotency-Key`
@@ -2418,14 +2454,24 @@ paths:
         description: Alternative to the `idempotency_key` query parameter. When both are present
           the query parameter wins. Repeats with the same key return the same `source_event_id`
           (resolve the run via `source_event_id`) without enqueuing a duplicate.
+      - name: X-Mobius-Signature
+        in: header
+        required: false
+        schema:
+          type: string
+        description: HMAC-SHA256 signature of the raw request body under the trigger's signing
+          secret, formatted as `sha256=<hex>`. Required only when the HTTP trigger has a signing
+          secret configured; unsigned deliveries are accepted for triggers without one.
       requestBody:
         required: false
         content:
           application/json:
             schema:
-              type: object
-              additionalProperties: true
-              description: Free-form payload forwarded to the run as inputs.
+              $ref: '#/components/schemas/HTTPTriggerDeliveryRequest'
+            example:
+              customer_id: cus_123
+              event_type: invoice.paid
+              amount_cents: 4200
       responses:
         '202':
           description: Accepted
@@ -2433,43 +2479,88 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPTriggerDeliveryResponse'
+              example:
+                source_event_id: sevt_01HHTTPTRIGGER
+                status: accepted
+                deduped: false
         '400':
           $ref: '#/components/responses/BadRequest'
+        '401':
+          description: Invalid signature
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error:
+                  code: invalid_signature
+                  message: missing or invalid request signature
         '404':
           $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
-  /v1/projects/{project}/automations/{handle}/runs:
+        '413':
+          description: Payload too large
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error:
+                  code: payload_too_large
+                  message: request body exceeds the maximum allowed size
+  /v1/projects/{project}/loops/{id}/runs:
     post:
       operationId: startRun
       tags:
       - runs
-      summary: Start a new automation run
+      summary: Start run
       description: |-
-        Resolves `{handle}` to the latest runnable version and starts a run. Returns the created run when accepted, or the existing run when the request carries a `trigger_fire_id` (or `external_id`) that matches a still-active prior run (idempotent retry).
+        Resolves `{id}` to the latest runnable version and starts a run. Returns the created run when accepted, or the existing run when the request carries an `idempotency_key` that matches a still-active prior run (idempotent retry).
 
-        Idempotency conflicts on `external_id` against a terminal-prior run surface as `409 Conflict` with error code `external_id_conflict` and `details` populated with `existing_run_id`, `status`, and `external_id`.
+        Idempotency conflicts on `idempotency_key` against a terminal-prior run surface as `409 Conflict` with error code `idempotency_key_conflict` and `details` populated with `existing_run_id`, `status`, and `idempotency_key`.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
-      - name: handle
-        in: path
-        required: true
-        description: Automation handle (unique per project).
-        schema:
-          type: string
+      - $ref: '#/components/parameters/IDParam'
       requestBody:
         required: false
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/StartAutomationRunRequest'
+              $ref: '#/components/schemas/StartLoopRunRequest'
+            example:
+              inputs:
+                issue_id: '42'
+              source:
+                type: api
+                id: review-service
+                label: review-service
+              idempotency_key: review-service:issue-42
+              credit_budget: 1000
       responses:
         '202':
           description: Accepted. Returns the run.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AutomationRun'
+                $ref: '#/components/schemas/LoopRun'
+              example:
+                id: run_01JZ0000000000000000000000
+                org_id: org_01JZ0000000000000000000000
+                project_id: prj_01JZ0000000000000000000000
+                loop_id: loop_01JZ0000000000000000000000
+                loop_name: Review Pull Request
+                loop_version_id: lver_01JZ0000000000000000000000
+                loop_version: 3
+                status: queued
+                inputs:
+                  issue_id: '42'
+                source:
+                  type: api
+                  id: review-service
+                  label: review-service
+                created_at: '2026-06-12T14:00:00Z'
+                updated_at: '2026-06-12T14:00:00Z'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -2485,21 +2576,21 @@ paths:
       operationId: listRuns
       tags:
       - runs
-      summary: List automation runs
-      description: Returns automation runs for the project, newest-first. Supports filters
-        by status, automation_id, and source_event_id, plus cursor-based pagination.
+      summary: List loop runs
+      description: Returns loop runs for the project, newest-first. Supports filters by status,
+        loop_id, and source_event_id, plus cursor-based pagination.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - name: status
         in: query
         schema:
-          $ref: '#/components/schemas/AutomationRunStatus'
+          $ref: '#/components/schemas/LoopRunStatus'
         description: Filter to one status.
-      - name: automation_id
+      - name: loop_id
         in: query
         schema:
           type: string
-        description: Filter to one automation's runs.
+        description: Filter to one loop's runs.
       - name: source_event_id
         in: query
         schema:
@@ -2525,7 +2616,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AutomationRunListResponse'
+                $ref: '#/components/schemas/LoopRunListResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -2535,9 +2626,9 @@ paths:
       operationId: getRun
       tags:
       - runs
-      summary: Get an automation run
-      description: Returns one automation run by ID with its current status, inputs, result,
-        and source attribution.
+      summary: Get run
+      description: Returns one loop run by ID with its current status, inputs, result, and
+        source attribution.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/IDParam'
@@ -2547,7 +2638,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AutomationRun'
+                $ref: '#/components/schemas/LoopRun'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -2559,7 +2650,7 @@ paths:
       operationId: cancelRun
       tags:
       - runs
-      summary: Cancel an in-flight run
+      summary: Cancel run
       description: Marks the run cancelled and closes any open waits. Safe to call on an already-terminal
         run (returns the current state, no error).
       parameters:
@@ -2570,14 +2661,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CancelAutomationRunRequest'
+              $ref: '#/components/schemas/CancelLoopRunRequest'
       responses:
         '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AutomationRun'
+                $ref: '#/components/schemas/LoopRun'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -2589,7 +2680,7 @@ paths:
       operationId: listRunSteps
       tags:
       - runs
-      summary: List the steps of an automation run
+      summary: List run steps
       description: Returns the durable step records for one run, ordered by step index. Each
         row carries the step's kind, status, attempt count, inputs, result, and any error
         metadata recorded by the engine.
@@ -2602,7 +2693,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AutomationRunStepListResponse'
+                $ref: '#/components/schemas/LoopRunStepListResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -2638,7 +2729,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AutomationRunEventListResponse'
+                $ref: '#/components/schemas/LoopRunEventListResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -2650,9 +2741,9 @@ paths:
       operationId: streamRunEvents
       tags:
       - runs
-      summary: Stream run events over Server-Sent Events
+      summary: Stream run events
       description: Long-lived SSE stream of run events ordered by sequence number. Each `data:`
-        frame is a JSON-encoded `AutomationRunEvent`. The stream terminates when the run reaches
+        frame is a JSON-encoded `LoopRunEvent`. The stream terminates when the run reaches
         a terminal status. Clients that disconnect should reconnect using `?since_sequence=N`
         (or the SSE `Last-Event-ID` header set to the last sequence) to resume without gaps.
       parameters:
@@ -2684,7 +2775,7 @@ paths:
       operationId: signalRun
       tags:
       - runs
-      summary: Resume a suspended run step
+      summary: Signal run
       description: Resumes a run that is suspended on a `wait_event` step matching the provided
         `step_key`. The `result` payload becomes the step's output and is available to downstream
         steps via `{{ .context.<save_as> }}`.
@@ -2696,14 +2787,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SignalAutomationRunRequest'
+              $ref: '#/components/schemas/SignalLoopRunRequest'
       responses:
         '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AutomationRun'
+                $ref: '#/components/schemas/LoopRun'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -2718,9 +2809,8 @@ paths:
       tags:
       - toolkits
       summary: List toolkits
-      description: Returns active project-local and system toolkit templates visible to the
-        project by default. Pass `status=archived` to list archived toolkits or `status=all`
-        to include every lifecycle status.
+      description: Returns project-local and system toolkit templates visible to the project
+        by default.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - name: include_system
@@ -2729,15 +2819,7 @@ paths:
         schema:
           type: boolean
           default: true
-      - name: status
-        in: query
-        description: Filter by lifecycle status. Omit for active toolkits.
-        schema:
-          type: string
-          enum:
-          - active
-          - archived
-          - all
+      - $ref: '#/components/parameters/TagFilterParam'
       responses:
         '200':
           description: OK
@@ -2755,7 +2837,7 @@ paths:
       operationId: createToolkit
       tags:
       - toolkits
-      summary: Create a toolkit
+      summary: Create toolkit
       description: Creates a project-local toolkit with action selector grants.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
@@ -2787,7 +2869,7 @@ paths:
       operationId: getToolkit
       tags:
       - toolkits
-      summary: Get a toolkit
+      summary: Get toolkit
       description: Returns a single project-local or system toolkit template by ID.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
@@ -2814,7 +2896,7 @@ paths:
       operationId: updateToolkit
       tags:
       - toolkits
-      summary: Update a toolkit
+      summary: Update toolkit
       description: Replaces mutable toolkit metadata and grant arrays when supplied.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
@@ -2851,8 +2933,8 @@ paths:
       operationId: deleteToolkit
       tags:
       - toolkits
-      summary: Delete a toolkit
-      description: Archives a project-local toolkit that is not assigned to any agent.
+      summary: Delete toolkit
+      description: Deletes a project-local toolkit that is not assigned to any agent.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - name: toolkit_id
@@ -2878,9 +2960,8 @@ paths:
       tags:
       - skills
       summary: List skills
-      description: Returns active project-local and system skill templates visible to the
-        project by default. Pass `status=archived` to list archived skills or `status=all`
-        to include every lifecycle status.
+      description: Returns project-local and system skill templates visible to the project
+        by default.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - name: include_system
@@ -2889,15 +2970,7 @@ paths:
         schema:
           type: boolean
           default: true
-      - name: status
-        in: query
-        description: Filter by lifecycle status. Omit for active skills.
-        schema:
-          type: string
-          enum:
-          - active
-          - archived
-          - all
+      - $ref: '#/components/parameters/TagFilterParam'
       responses:
         '200':
           description: OK
@@ -2915,7 +2988,7 @@ paths:
       operationId: createSkill
       tags:
       - skills
-      summary: Create a skill
+      summary: Create skill
       description: Creates a project-local skill with instructions and requested tool filters.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
@@ -2947,7 +3020,7 @@ paths:
       operationId: importSkill
       tags:
       - skills
-      summary: Import a skill
+      summary: Import skill
       description: Imports a Claude Code or Dive-style skill document into a project-local
         Mobius skill.
       parameters:
@@ -2980,7 +3053,7 @@ paths:
       operationId: getSkill
       tags:
       - skills
-      summary: Get a skill
+      summary: Get skill
       description: Returns a single project-local or system skill template by ID.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
@@ -3007,7 +3080,7 @@ paths:
       operationId: updateSkill
       tags:
       - skills
-      summary: Update a skill
+      summary: Update skill
       description: Replaces mutable skill metadata, instructions, and requested tool filters
         when supplied.
       parameters:
@@ -3045,8 +3118,8 @@ paths:
       operationId: deleteSkill
       tags:
       - skills
-      summary: Delete a skill
-      description: Archives a project-local skill that is not assigned to any agent.
+      summary: Delete skill
+      description: Deletes a project-local skill that is not assigned to any agent.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - name: skill_id
@@ -3096,7 +3169,7 @@ paths:
       operationId: createTable
       tags:
       - tables
-      summary: Create a table
+      summary: Create table
       description: Create a project-scoped table with a typed column schema.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
@@ -3126,7 +3199,7 @@ paths:
       operationId: getTable
       tags:
       - tables
-      summary: Get a table
+      summary: Get table
       description: Get table metadata and schema by table ID.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
@@ -3148,7 +3221,7 @@ paths:
       operationId: updateTable
       tags:
       - tables
-      summary: Update a table
+      summary: Update table
       description: Update table name, description, ownership, or schema and resync declared
         indexes.
       parameters:
@@ -3181,7 +3254,7 @@ paths:
       operationId: deleteTable
       tags:
       - tables
-      summary: Delete a table and all its rows
+      summary: Delete table and all its rows
       description: Delete one table and all rows stored under it.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
@@ -3226,7 +3299,7 @@ paths:
       operationId: insertTableRow
       tags:
       - tables
-      summary: Insert a row
+      summary: Insert row
       description: Validate and insert one row into the table.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
@@ -3325,7 +3398,7 @@ paths:
       operationId: upsertTableRow
       tags:
       - tables
-      summary: Upsert a row
+      summary: Upsert row
       description: |-
         Insert or update a row identified by a set of key columns. If a row with matching key-column values exists it is updated (PATCH semantics — unspecified fields are preserved). If no matching row is found a new row is inserted.
 
@@ -3398,7 +3471,7 @@ paths:
       operationId: getTableRow
       tags:
       - tables
-      summary: Get a row by ID
+      summary: Get row by ID
       description: Get one table row by row ID.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
@@ -3426,7 +3499,7 @@ paths:
       operationId: updateTableRow
       tags:
       - tables
-      summary: Update a row (PATCH — merges into existing data)
+      summary: Update row (PATCH — merges into existing data)
       description: Validate and merge fields into an existing row, optionally checking the
         current row version.
       parameters:
@@ -3465,7 +3538,7 @@ paths:
       operationId: deleteTableRow
       tags:
       - tables
-      summary: Delete a row
+      summary: Delete row
       description: Delete one row from the table.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
@@ -3490,7 +3563,7 @@ paths:
       operationId: listArtifacts
       tags:
       - artifacts
-      summary: List artifacts in a project
+      summary: List artifacts
       description: Returns artifacts in the project, ordered (created_at desc, id desc). Optional
         filters narrow by run, step, state, or mime prefix. Deleted artifacts are excluded
         by default; pass `state=deleted` to inspect tombstones. Results are scoped to the
@@ -3500,7 +3573,7 @@ paths:
       - name: run_id
         in: query
         required: false
-        description: Filter to artifacts produced by this automation run.
+        description: Filter to artifacts produced by this loop run.
         schema:
           type: string
       - name: step_id
@@ -3538,7 +3611,7 @@ paths:
       operationId: createArtifact
       tags:
       - artifacts
-      summary: Publish a worker-produced artifact
+      summary: Publish artifact
       description: Accepts a multipart file upload from a worker that is currently executing
         a claimed job. The request must include `X-Mobius-Lease-Token`; Mobius resolves the
         active claim and derives run, step, job, worker session, attempt, and shared visibility
@@ -3580,7 +3653,7 @@ paths:
       operationId: getArtifact
       tags:
       - artifacts
-      summary: Get an artifact
+      summary: Get artifact
       description: Returns artifact metadata after enforcing the caller's project and owner-user
         artifact scope.
       parameters:
@@ -3603,7 +3676,7 @@ paths:
       operationId: deleteArtifact
       tags:
       - artifacts
-      summary: Delete an artifact
+      summary: Delete artifact
       description: Soft-delete the artifact row and delete the underlying Mobius-managed object
         before reporting success. The tombstone remains for audit and run-history views, while
         content and quota charging are removed.
@@ -3654,7 +3727,7 @@ paths:
       operationId: createArtifactSignedUrl
       tags:
       - artifacts
-      summary: Create a signed artifact URL
+      summary: Sign artifact URL
       description: Generates a fresh, time-boxed Mobius-managed storage URL for the artifact
         after enforcing the caller's artifact access scope. Use `getArtifactContent` when
         bytes should flow through the Mobius API instead of a signed storage URL.
@@ -3690,7 +3763,7 @@ paths:
       operationId: getArtifactStorageQuota
       tags:
       - artifacts
-      summary: Get per-org Mobius-managed artifact storage quota usage
+      summary: Get storage usage
       description: Returns Mobius-managed artifact quota usage for the current org.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
@@ -3749,7 +3822,7 @@ components:
       name: action_name
       in: path
       required: true
-      description: Project-scoped action name used in automation step definitions.
+      description: Project-scoped action name used in loop step definitions.
       schema:
         type: string
     principal_id:
@@ -3899,7 +3972,7 @@ components:
       required: true
       schema:
         type: string
-      description: Automation run ID
+      description: Loop run ID
   responses:
     BadRequest:
       description: Bad Request
@@ -4132,7 +4205,7 @@ components:
     Project:
       type: object
       additionalProperties: false
-      description: Workspace boundary for automations, actions, credentials, agents, and runtime
+      description: Workspace boundary for loops, actions, credentials, agents, and runtime
         activity. Most operational APIs are project-scoped, so this object tells clients which
         handle to use and who can see the project.
       required:
@@ -4206,8 +4279,8 @@ components:
     AgentModelRoute:
       type: object
       additionalProperties: false
-      description: Default model route used by built-in messaging and by automation agent
-        steps that do not override the route.
+      description: Default model route used by built-in messaging and by loop agent steps
+        that do not override the route.
       required:
       - mode
       properties:
@@ -4242,8 +4315,8 @@ components:
       type: object
       additionalProperties: false
       description: Project-scoped AI actor identity. An agent IS a principal (its permissions
-        are role grants on that principal); agents are useful when automations need a named
-        actor with instructions, capabilities, configuration, and session presence.
+        are role grants on that principal); agents are useful when loops need a named actor
+        with instructions, capabilities, configuration, and session presence.
       required:
       - id
       - principal_id
@@ -4295,8 +4368,8 @@ components:
           $ref: '#/components/schemas/AgentModelRoute'
         tool_presentation:
           $ref: '#/components/schemas/AgentToolPresentation'
-          description: Default tool presentation used by automation agent steps and built-in
-            channel-message replies for this agent.
+          description: Default tool presentation used by loop agent steps and built-in channel-message
+            replies for this agent.
         system_prompt:
           type: string
           description: Custom system prompt for platform agents. Empty string uses the generated
@@ -4349,9 +4422,9 @@ components:
     APIKey:
       type: object
       additionalProperties: false
-      description: Stored API credential metadata for automation and service access. The raw
-        secret is never returned here; use this object to list, audit, expire, or identify
-        keys by prefix without exposing tokens.
+      description: Stored API credential metadata for loop and service access. The raw secret
+        is never returned here; use this object to list, audit, expire, or identify keys by
+        prefix without exposing tokens.
       required:
       - id
       - name
@@ -4538,13 +4611,13 @@ components:
     CreateActionRequest:
       type: object
       additionalProperties: false
-      description: Registers a project-owned custom action callable from automations and agents.
+      description: Registers a project-owned custom action callable from loops and agents.
       required:
       - name
       properties:
         name:
           type: string
-          description: Project-scoped identifier used in automation step definitions. Lowercase
+          description: Project-scoped identifier used in loop step definitions. Lowercase
             alphanumeric + hyphens, e.g. "send-email". Must be unique within the project.
             Cannot start with "mobius." (reserved prefix).
         title:
@@ -4617,7 +4690,7 @@ components:
     Action:
       type: object
       additionalProperties: false
-      description: Project-owned custom action definition callable by automations and agents.
+      description: Project-owned custom action definition callable by loops and agents.
       required:
       - id
       - name
@@ -4630,7 +4703,7 @@ components:
           description: Unique identifier for this action.
         name:
           type: string
-          description: Project-scoped stable identifier used in automation definitions.
+          description: Project-scoped stable identifier used in loop definitions.
         title:
           type: string
           description: Human-readable display title for the action.
@@ -4710,7 +4783,7 @@ components:
       type: object
       additionalProperties: false
       description: One built-in, integration, or custom-backed action available to agents
-        and automation authors.
+        and loop authors.
       required:
       - name
       - source
@@ -4785,8 +4858,7 @@ components:
           description: 'Endpoint URL (populated for endpoint_kind: http actions only).'
         execution:
           $ref: '#/components/schemas/ActionExecutionMetadata'
-          description: Execution locations and worker requirements available to automation
-            authors.
+          description: Execution locations and worker requirements available to loop authors.
     ActionExecutionMetadata:
       type: object
       additionalProperties: false
@@ -4871,7 +4943,7 @@ components:
           description: Job created for this direct invocation.
         run_id:
           type: string
-          description: Automation run ID. Present when an asynchronous run was created.
+          description: Loop run ID. Present when an asynchronous run was created.
         output:
           type: object
           additionalProperties: true
@@ -4897,19 +4969,19 @@ components:
           description: Unique identifier for this invocation record.
         run_id:
           type: string
-          description: Automation run that triggered this invocation, if run-backed.
+          description: Loop run that triggered this invocation, if run-backed.
         job_id:
           type: string
           description: Job that triggered this invocation, if job-backed.
         step_name:
           type: string
-          description: Automation step name that triggered this invocation.
+          description: Loop step name that triggered this invocation.
         action_name:
           type: string
           description: Name of the action that was invoked.
         source:
           type: string
-          description: Invocation source ("automation", "direct", etc.).
+          description: Invocation source ("loop", "direct", etc.).
         parameters:
           type: object
           additionalProperties: true
@@ -5006,9 +5078,9 @@ components:
           type: string
         readiness:
           $ref: '#/components/schemas/CapabilityReadiness'
-          description: Whether this source can start an automation now. `capability` sources
-            are always `ready`. `integration` sources are `ready` only when the project has
-            an active, usable connection for the provider.
+          description: Whether this source can start a loop now. `capability` sources are
+            always `ready`. `integration` sources are `ready` only when the project has an
+            active, usable connection for the provider.
         readiness_reason:
           $ref: '#/components/schemas/CapabilityReadinessReason'
           description: Why an `integration` source is `needs_setup`. Omitted when `readiness`
@@ -5028,6 +5100,18 @@ components:
           description: Dotted event-type identifier (`table.row.inserted`, `github.pull_request.opened`).
         description:
           type: string
+        event_schema:
+          type: object
+          additionalProperties: true
+          description: JSON Schema for the normalized event data available to event-trigger
+            runs at `{{ .inputs.event.* }}` and to event conditions/mappings at `event.*`.
+            Absent only when the event payload is intentionally open-ended and the provider
+            has not registered an authoring schema.
+        meta_schema:
+          type: object
+          additionalProperties: true
+          description: JSON Schema for normalized routing metadata available to event-trigger
+            runs at `{{ .inputs.meta.* }}` and to event conditions/mappings at `meta.*`.
     EventCatalogReservedPrefix:
       type: object
       additionalProperties: false
@@ -5060,6 +5144,15 @@ components:
             credentials are omitted.
           items:
             $ref: '#/components/schemas/ModelProviderGroup'
+        reason:
+          type: string
+          enum:
+          - platform_funding_denied
+          - credentials_unavailable
+          description: Present when `items` is empty because the request was denied rather
+            than because no catalog exists. `platform_funding_denied` means Mobius-managed
+            provider credentials are gated by billing or plan state; `credentials_unavailable`
+            means no usable provider credentials were available.
     ModelProviderGroup:
       type: object
       additionalProperties: false
@@ -5161,10 +5254,10 @@ components:
       - manual
       - run
       - agent
-      - automation
+      - loop
       description: High-level ownership policy for how Mobius plans to use the environment.
-        `run` is one-shot and auto-cleaned with a run; `agent` and `automation` are persistent
-        environment policies; `manual` is operator controlled.
+        `run` is one-shot and auto-cleaned with a run; `agent` and `loop` are persistent environment
+        policies; `manual` is operator controlled.
     EnvironmentBoundToType:
       type: string
       enum:
@@ -5173,7 +5266,7 @@ components:
       - worker_session
       - service
       - agent
-      - automation
+      - loop
       - manual
       description: Execution or lifecycle object this environment is bound to. Ownership remains
         in `owned_by`.
@@ -5833,10 +5926,10 @@ components:
           description: Job ID.
         run_id:
           type: string
-          description: Automation run that owns the job.
+          description: Loop run that owns the job.
         step_name:
           type: string
-          description: Automation step name.
+          description: Loop step name.
         action:
           type: string
           description: Action executed by the worker.
@@ -6143,7 +6236,7 @@ components:
         origin:
           type: string
           enum:
-          - automation_action_step
+          - loop_action_step
           - agent_tool_call
           - agent_llm_call
           - conversation_tool_call
@@ -6869,13 +6962,13 @@ components:
       enum:
       - manual
       - api
-      - automation
+      - loop
       description: Surface that created the session.
     SessionScope:
       type: string
       enum:
       - agent
-      - automation
+      - loop
       description: Boundary used to resolve named sessions.
     SessionVisibility:
       type: string
@@ -6898,6 +6991,87 @@ components:
       - message
       - compaction
       description: Row type for a persisted transcript entry.
+    AgentTurnStatus:
+      type: string
+      enum:
+      - running
+      - waiting
+      - completed
+      - failed
+      - cancelled
+      description: Lifecycle status of one agent turn.
+    AgentTurn:
+      type: object
+      additionalProperties: false
+      description: One attempt of an agent running the agent loop — the unit that produces
+        a transcript. A turn is triggered either by a loop step (run_id + step_id) or an inbound
+        channel message (channel_exchange_id); the two are mutually exclusive. Its messages
+        are read via the turn's transcript endpoint.
+      required:
+      - id
+      - agent_id
+      - session_id
+      - attempt
+      - status
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+          description: Stable turn identifier.
+        agent_id:
+          type: string
+          description: Agent that ran this turn.
+        session_id:
+          type: string
+          description: Session this turn's transcript was appended to.
+        run_id:
+          type: string
+          description: Loop run that triggered this turn. Absent for messaging turns.
+        step_key:
+          type: string
+          description: Step key (matches LoopRunStep.step_key, not its id) of the loop step
+            that triggered this turn. Absent for messaging turns.
+        channel_exchange_id:
+          type: string
+          description: Inbound channel exchange that triggered this turn. Absent for loop
+            turns.
+        attempt:
+          type: integer
+          description: 1-based attempt number for this run-step; retries create new turns.
+        status:
+          $ref: '#/components/schemas/AgentTurnStatus'
+        seq:
+          type: integer
+          description: Per-session ordering hint (cosmetic; turns are ordered by creation
+            time).
+        error_type:
+          type: string
+          description: Machine-readable failure category when the turn failed.
+        error_message:
+          type: string
+          description: Human-readable failure detail when the turn failed.
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+          description: When the turn reached a terminal status.
+    AgentTurnListResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      properties:
+        items:
+          type: array
+          description: Turns in this session, ordered by creation time.
+          items:
+            $ref: '#/components/schemas/AgentTurn'
     Session:
       type: object
       additionalProperties: false
@@ -7050,6 +7224,11 @@ components:
         sequence:
           type: integer
           description: Monotonic per-session sequence number assigned at append time.
+        turn_id:
+          type: string
+          description: AgentTurn that produced this message. Run, step, and channel identity
+            for the message are read from this turn. Absent for compaction summaries and messages
+            not tied to a turn.
         metadata:
           type: object
           additionalProperties: true
@@ -7147,7 +7326,6 @@ components:
       - project_id
       - name
       - source
-      - status
       - action_grants
       - created_at
       - updated_at
@@ -7164,9 +7342,6 @@ components:
         name:
           type: string
           description: Human-readable toolkit name.
-        slug:
-          type: string
-          description: Stable slug used in API paths and references.
         description:
           type: string
           description: Markdown description of the toolkit's purpose.
@@ -7177,12 +7352,9 @@ components:
           - project
           description: Provenance of this toolkit. `system` toolkits are built-in; `project`
             toolkits are user-authored.
-        status:
-          type: string
-          enum:
-          - active
-          - archived
-          description: Lifecycle status of the toolkit.
+        tags:
+          $ref: '#/components/schemas/TagMap'
+          description: Resource tags applied to this toolkit.
         action_grants:
           type: array
           description: Action selectors granted by this toolkit. Each entry is matched against
@@ -7214,9 +7386,6 @@ components:
           minLength: 1
           maxLength: 80
           description: Human-readable toolkit name.
-        slug:
-          type: string
-          description: Optional stable slug. When omitted, the server derives one from `name`.
         description:
           type: string
           maxLength: 1000
@@ -7226,6 +7395,9 @@ components:
           description: Action selectors granted by this toolkit.
           items:
             $ref: '#/components/schemas/ToolkitActionGrant'
+        tags:
+          $ref: '#/components/schemas/TagMap'
+          description: Resource tags to apply to this toolkit.
     ToolkitListResponse:
       type: object
       additionalProperties: false
@@ -7373,7 +7545,6 @@ components:
       - project_id
       - name
       - source
-      - status
       - instructions
       - allowed_tools
       - created_at
@@ -7405,12 +7576,6 @@ components:
           - imported
           description: Provenance of this skill. `system` is built-in; `project` is user-authored;
             `imported` came from an external bundle.
-        status:
-          type: string
-          enum:
-          - active
-          - archived
-          description: Lifecycle status of the skill.
         instructions:
           type: string
           description: Markdown instructions loaded when the skill is active.
@@ -7432,6 +7597,9 @@ components:
         user_invocable:
           type: boolean
           description: Whether users may directly request this skill by name.
+        tags:
+          $ref: '#/components/schemas/TagMap'
+          description: Resource tags applied to this skill.
         created_by:
           type: string
           description: User ID of the principal who created this skill.
@@ -7485,6 +7653,9 @@ components:
         user_invocable:
           type: boolean
           description: Whether users may directly request this skill by name.
+        tags:
+          $ref: '#/components/schemas/TagMap'
+          description: Resource tags to apply to this skill.
     ImportSkillRequest:
       type: object
       additionalProperties: false
@@ -7697,8 +7868,8 @@ components:
         tools:
           type: array
           description: Catalog entries the agent can invoke. Each entry surfaces to the LLM
-            as its own named tool. Built-in, integration, automation, and custom-HTTP actions
-            are intermingled here.
+            as its own named tool. Built-in, integration, loop, and custom-HTTP actions are
+            intermingled here.
           items:
             $ref: '#/components/schemas/ActionCatalogEntry'
         groups_resolved:
@@ -7829,12 +8000,12 @@ components:
           $ref: '#/components/schemas/TagMap'
           description: When supplied, replaces the user tag set on the agent. System tags
             (`mobius:*`) are preserved.
-    Automation:
+    Loop:
       type: object
       additionalProperties: false
-      description: An automation. The `triggers` array reports the currently materialized
-        runnable triggers. Desired triggers are authored in `AutomationSpec.triggers` and
-        reconciled when a version is published.
+      description: A loop. The `triggers` array reports the currently materialized runnable
+        triggers. Desired triggers are authored in `LoopSpec.triggers` and reconciled when
+        a version is published.
       required:
       - id
       - org_id
@@ -7849,33 +8020,34 @@ components:
       properties:
         id:
           type: string
-          description: Stable automation identifier.
+          description: Stable loop identifier.
         org_id:
           type: string
-          description: Organization that owns this automation.
+          description: Organization that owns this loop.
         project_id:
           type: string
-          description: Project that owns this automation.
+          description: Project that owns this loop.
         handle:
           type: string
-          description: Stable per-project automation handle. Immutable after creation.
+          description: Stable per-project loop handle. Immutable after creation. Use it for
+            authored references and `?handle=` resolution; address the loop resource by `id`.
         name:
           type: string
           description: Human-readable display name.
         description:
           type: string
-          description: Markdown description of the automation's purpose.
+          description: Markdown description of the loop's purpose.
         status:
-          $ref: '#/components/schemas/AutomationStatus'
+          $ref: '#/components/schemas/LoopStatus'
         owner:
           type: string
-          description: User who created or currently owns this automation.
+          description: User who created or currently owns this loop.
         default_agent_id:
           type: string
           description: Agent used by `agent` steps that do not pin an agent explicitly.
         latest_version:
           type: integer
-          description: Newest stored AutomationVersion number, regardless of publication status.
+          description: Newest stored LoopVersion number, regardless of publication status.
         published_version:
           type: integer
           description: Currently runnable version. Absent until a version is published.
@@ -7886,17 +8058,17 @@ components:
         settings:
           type: object
           additionalProperties: true
-          description: Free-form automation-level settings consumed by the engine.
+          description: Free-form loop-level settings consumed by the engine.
         tags:
           type: object
           additionalProperties:
             type: string
-          description: Free-form label map used to organise automations in listings and search.
+          description: Free-form label map used to organise loops in listings and search.
         triggers:
           type: array
-          description: Triggers that can start runs of this automation.
+          description: Triggers that can start runs of this loop.
           items:
-            $ref: '#/components/schemas/AutomationTrigger'
+            $ref: '#/components/schemas/LoopTrigger'
         last_run_at:
           type: string
           format: date-time
@@ -7904,7 +8076,7 @@ components:
         archived_at:
           type: string
           format: date-time
-          description: Soft-archive timestamp; absent on active automations.
+          description: Soft-archive timestamp; absent on active loops.
         created_at:
           type: string
           format: date-time
@@ -7913,15 +8085,15 @@ components:
           type: string
           format: date-time
           description: Last update timestamp.
-    AutomationStatus:
+    LoopStatus:
       type: string
       enum:
       - draft
       - active
       - paused
       - archived
-      description: Lifecycle status of an automation.
-    AutomationListResponse:
+      description: Lifecycle status of a loop.
+    LoopListResponse:
       type: object
       additionalProperties: false
       required:
@@ -7931,14 +8103,14 @@ components:
           type: array
           description: The list of results for this page.
           items:
-            $ref: '#/components/schemas/Automation'
+            $ref: '#/components/schemas/Loop'
         next_cursor:
           type: string
           description: Opaque cursor for the next page; absent when no more results.
         has_more:
           type: boolean
           description: True when more items exist after this page.
-    CreateAutomationRequest:
+    CreateLoopRequest:
       type: object
       additionalProperties: false
       required:
@@ -7947,13 +8119,17 @@ components:
       properties:
         handle:
           type: string
-          description: Stable per-project automation handle. Immutable after creation.
+          pattern: ^[a-z0-9]+(-[a-z0-9]+)*$
+          minLength: 1
+          maxLength: 100
+          description: Stable per-project loop handle. Must be lowercase alphanumeric with
+            single hyphen separators. Immutable after creation.
         name:
           type: string
           description: Human-readable display name.
         description:
           type: string
-          description: Markdown description of the automation's purpose.
+          description: Markdown description of the loop's purpose.
         default_agent_id:
           type: string
           description: Agent used by `agent` steps that do not pin an agent explicitly.
@@ -7964,16 +8140,24 @@ components:
         settings:
           type: object
           additionalProperties: true
-          description: Free-form automation-level settings consumed by the engine.
+          description: Free-form loop-level settings consumed by the engine.
         tags:
           type: object
           additionalProperties:
             type: string
-          description: Free-form label map used to organise automations in listings and search.
-    UpdateAutomationRequest:
+          description: Free-form label map used to organise loops in listings and search.
+        spec:
+          $ref: '#/components/schemas/LoopSpec'
+          description: Optional initial loop spec to store as version 1 during creation.
+        activate:
+          type: boolean
+          default: false
+          description: When true, `spec` is required. Mobius stores it as version 1, publishes
+            it, materializes its triggers, and sets the loop status to `active` before returning.
+    UpdateLoopRequest:
       type: object
       additionalProperties: false
-      description: Partial update of automation metadata. Desired triggers live in `AutomationSpec.triggers`
+      description: Partial update of loop metadata. Desired triggers live in `LoopSpec.triggers`
         and are materialized when a version is published.
       properties:
         name:
@@ -7981,9 +8165,9 @@ components:
           description: Human-readable display name.
         description:
           type: string
-          description: Markdown description of the automation's purpose.
+          description: Markdown description of the loop's purpose.
         status:
-          $ref: '#/components/schemas/AutomationStatus'
+          $ref: '#/components/schemas/LoopStatus'
         default_agent_id:
           type: string
           description: Agent used by `agent` steps that do not pin an agent explicitly.
@@ -7994,39 +8178,39 @@ components:
         settings:
           type: object
           additionalProperties: true
-          description: Free-form automation-level settings consumed by the engine.
+          description: Free-form loop-level settings consumed by the engine.
         tags:
           type: object
           additionalProperties:
             type: string
-          description: Free-form label map used to organise automations in listings and search.
-    AutomationVersion:
+          description: Free-form label map used to organise loops in listings and search.
+    LoopVersion:
       type: object
       additionalProperties: false
       required:
       - id
       - org_id
       - project_id
-      - automation_id
+      - loop_id
       - version
       - status
       - created_at
       properties:
         id:
           type: string
-          description: Stable identifier for this AutomationVersion record.
+          description: Stable identifier for this LoopVersion record.
         org_id:
           type: string
           description: Organization that owns this version.
         project_id:
           type: string
           description: Project that owns this version.
-        automation_id:
+        loop_id:
           type: string
-          description: Automation this version belongs to.
+          description: Loop this version belongs to.
         version:
           type: integer
-          description: Monotonic version number, unique per automation.
+          description: Monotonic version number, unique per loop.
         status:
           type: string
           enum:
@@ -8037,12 +8221,7 @@ components:
             is the currently runnable version; `superseded` is a prior published version retained
             for historical runs.
         spec:
-          $ref: '#/components/schemas/AutomationSpec'
-        compiled_plan:
-          type: object
-          additionalProperties: true
-          description: Internal compiled execution plan derived from `spec`. Not part of the
-            public contract.
+          $ref: '#/components/schemas/LoopSpec'
         validation:
           type: object
           additionalProperties: true
@@ -8054,10 +8233,10 @@ components:
           type: string
           format: date-time
           description: Record creation timestamp.
-    AutomationSpec:
+    LoopSpec:
       type: object
       additionalProperties: false
-      description: Authoring representation of an automation.
+      description: Authoring representation of a loop.
       required:
       - steps
       properties:
@@ -8066,7 +8245,7 @@ components:
           enum:
           - '1'
           default: '1'
-          description: Automation spec schema version. Current value is `1`.
+          description: Loop spec schema version. Current value is `1`.
         name:
           type: string
           description: Optional spec-local display name.
@@ -8076,7 +8255,7 @@ components:
         inputs:
           type: object
           additionalProperties:
-            $ref: '#/components/schemas/AutomationSpecInput'
+            $ref: '#/components/schemas/LoopSpecInput'
         concurrency:
           type: string
           enum:
@@ -8084,35 +8263,36 @@ components:
           - queue
           - skip
           - replace
-          description: Behavior when a run starts while another run of the same automation
-            is active.
+          description: Behavior when a run starts while another run of the same loop is active.
         triggers:
           type: array
           description: Desired triggers materialized when a version is published.
           items:
-            $ref: '#/components/schemas/AutomationSpecTrigger'
+            $ref: '#/components/schemas/LoopSpecTrigger'
         repositories:
           type: array
-          description: Source repositories the automation targets. When a shared managed environment
+          description: Source repositories the loop targets. When a shared managed environment
             is selected, the runtime prepares these repositories before user-authored steps
             run.
           items:
-            $ref: '#/components/schemas/AutomationSpecRepository'
+            $ref: '#/components/schemas/LoopSpecRepository'
         steps:
           type: array
           items:
-            $ref: '#/components/schemas/AutomationStep'
+            $ref: '#/components/schemas/LoopStep'
         cleanup:
           type: array
           items:
             type: object
             additionalProperties: true
+        limits:
+          $ref: '#/components/schemas/LoopSpecLimits'
         defaults:
-          $ref: '#/components/schemas/AutomationSpecDefaults'
-    AutomationSpecRepository:
+          $ref: '#/components/schemas/LoopSpecDefaults'
+    LoopSpecRepository:
       type: object
       additionalProperties: false
-      description: Source repository target attached to an automation spec.
+      description: Source repository target attached to a loop spec.
       required:
       - full_name
       properties:
@@ -8134,7 +8314,7 @@ components:
         private:
           type: boolean
           description: Whether the provider reports this repository as private.
-    AutomationSpecInput:
+    LoopSpecInput:
       type: object
       additionalProperties: false
       properties:
@@ -8146,7 +8326,7 @@ components:
           type: boolean
         default:
           description: Optional default value for this input. May be any JSON value.
-    AutomationSpecTrigger:
+    LoopSpecTrigger:
       type: object
       additionalProperties: false
       required:
@@ -8168,9 +8348,13 @@ components:
         enabled:
           type: boolean
         config:
-          type: object
-          additionalProperties: true
-          description: Kind-specific trigger configuration.
+          oneOf:
+          - $ref: '#/components/schemas/HTTPTriggerConfig'
+          - $ref: '#/components/schemas/ScheduleTriggerConfig'
+          - $ref: '#/components/schemas/EventTriggerConfig'
+          description: 'Kind-specific trigger configuration. Use `HTTPTriggerConfig` for `kind:
+            http`, `ScheduleTriggerConfig` for `kind: schedule`, and `EventTriggerConfig`
+            for `kind: event`. Omit for manual triggers.'
         concurrency_policy:
           type: string
           enum:
@@ -8181,7 +8365,67 @@ components:
         max_concurrent_runs:
           type: integer
           minimum: 1
-    AutomationStep:
+    HTTPTriggerConfig:
+      type: object
+      additionalProperties: false
+      description: Configuration for `LoopSpec.triggers[]` entries with `kind` set to `http`.
+      properties:
+        http_handle:
+          type: string
+          description: Optional public delivery handle for `POST /v1/triggers/http/{http_handle}`.
+            Omit to let Mobius use the materialized trigger id as the unguessable handle.
+    ScheduleTriggerConfig:
+      type: object
+      additionalProperties: false
+      description: Configuration for `LoopSpec.triggers[]` entries with `kind` set to `schedule`.
+        Provide exactly one of `cron` or `interval`; the compiler rejects configs that omit
+        both or set both.
+      properties:
+        cron:
+          type: string
+          description: Standard five-field cron expression or descriptor such as `@hourly`.
+        interval:
+          type: string
+          description: Go duration string such as `5m`, `1h`, or `24h`.
+        timezone:
+          type: string
+          description: IANA time zone for cron schedules, such as `America/New_York`.
+    EventTriggerConfig:
+      type: object
+      additionalProperties: false
+      description: Configuration for `LoopSpec.triggers[]` entries with `kind` set to `event`.
+      required:
+      - event_type
+      properties:
+        event_type:
+          type: string
+          description: Source-event type or catalog pattern this trigger subscribes to.
+        source_id:
+          type: string
+          description: Optional source identifier used to scope event matching.
+        condition:
+          type: string
+          description: Optional expr predicate evaluated against the public `{ event, meta
+            }` envelope.
+    LoopStep:
+      oneOf:
+      - $ref: '#/components/schemas/LoopAgentStepSpec'
+      - $ref: '#/components/schemas/LoopActionStepSpec'
+      - $ref: '#/components/schemas/LoopSleepStepSpec'
+      - $ref: '#/components/schemas/LoopWaitForEventStepSpec'
+      - $ref: '#/components/schemas/LoopSubLoopStepSpec'
+      - $ref: '#/components/schemas/LoopCheckStepSpec'
+      discriminator:
+        propertyName: kind
+        mapping:
+          agent: '#/components/schemas/LoopAgentStepSpec'
+          action: '#/components/schemas/LoopActionStepSpec'
+          sleep: '#/components/schemas/LoopSleepStepSpec'
+          wait_for_event: '#/components/schemas/LoopWaitForEventStepSpec'
+          loop: '#/components/schemas/LoopSubLoopStepSpec'
+          check: '#/components/schemas/LoopCheckStepSpec'
+      description: User-authored loop step, discriminated by `kind`.
+    LoopAgentStepSpec:
       type: object
       additionalProperties: false
       required:
@@ -8199,53 +8443,263 @@ components:
           type: string
           enum:
           - agent
-          - action
-          - sleep
-          - wait_for_event
-          - automation
         config:
-          oneOf:
-          - $ref: '#/components/schemas/AutomationAgentStep'
-          - $ref: '#/components/schemas/AutomationActionStep'
-          - $ref: '#/components/schemas/AutomationSleepStep'
-          - $ref: '#/components/schemas/AutomationWaitForEventStep'
-          - $ref: '#/components/schemas/AutomationSubAutomationStep'
-          description: Kind-specific step configuration.
+          $ref: '#/components/schemas/LoopAgentStep'
         input:
           type: object
           additionalProperties: true
           description: Step-local input object resolved when the step starts. String leaves
             may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions.
         retry:
-          $ref: '#/components/schemas/AutomationRetryPolicy'
+          $ref: '#/components/schemas/LoopRetryPolicy'
         timeout:
-          $ref: '#/components/schemas/AutomationTimeoutPolicy'
+          $ref: '#/components/schemas/LoopTimeoutPolicy'
         save_as:
           type: string
           description: Context key used to store this step's output. Defaults to `key`.
-    AutomationSpecDefaults:
+    LoopActionStepSpec:
       type: object
       additionalProperties: false
-      description: Run-level defaults inside the automation spec. Lives at `spec.defaults`
-        in the JSON the engine compiles.
+      required:
+      - key
+      - kind
+      - config
       properties:
+        key:
+          type: string
+          description: Stable step key within the spec.
+        name:
+          type: string
+          description: Human-readable step name.
+        kind:
+          type: string
+          enum:
+          - action
+        config:
+          $ref: '#/components/schemas/LoopActionStep'
+        input:
+          type: object
+          additionalProperties: true
+          description: Step-local input object resolved when the step starts. String leaves
+            may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions.
+        retry:
+          $ref: '#/components/schemas/LoopRetryPolicy'
+        timeout:
+          $ref: '#/components/schemas/LoopTimeoutPolicy'
+        save_as:
+          type: string
+          description: Context key used to store this step's output. Defaults to `key`.
+    LoopSleepStepSpec:
+      type: object
+      additionalProperties: false
+      required:
+      - key
+      - kind
+      - config
+      properties:
+        key:
+          type: string
+          description: Stable step key within the spec.
+        name:
+          type: string
+          description: Human-readable step name.
+        kind:
+          type: string
+          enum:
+          - sleep
+        config:
+          $ref: '#/components/schemas/LoopSleepStep'
+        input:
+          type: object
+          additionalProperties: true
+          description: Step-local input object resolved when the step starts. String leaves
+            may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions.
+        retry:
+          $ref: '#/components/schemas/LoopRetryPolicy'
+        timeout:
+          $ref: '#/components/schemas/LoopTimeoutPolicy'
+        save_as:
+          type: string
+          description: Context key used to store this step's output. Defaults to `key`.
+    LoopWaitForEventStepSpec:
+      type: object
+      additionalProperties: false
+      required:
+      - key
+      - kind
+      - config
+      properties:
+        key:
+          type: string
+          description: Stable step key within the spec.
+        name:
+          type: string
+          description: Human-readable step name.
+        kind:
+          type: string
+          enum:
+          - wait_for_event
+        config:
+          $ref: '#/components/schemas/LoopWaitForEventStep'
+        input:
+          type: object
+          additionalProperties: true
+          description: Step-local input object resolved when the step starts. String leaves
+            may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions.
+        retry:
+          $ref: '#/components/schemas/LoopRetryPolicy'
+        timeout:
+          $ref: '#/components/schemas/LoopTimeoutPolicy'
+        save_as:
+          type: string
+          description: Context key used to store this step's output. Defaults to `key`.
+    LoopSubLoopStepSpec:
+      type: object
+      additionalProperties: false
+      required:
+      - key
+      - kind
+      - config
+      properties:
+        key:
+          type: string
+          description: Stable step key within the spec.
+        name:
+          type: string
+          description: Human-readable step name.
+        kind:
+          type: string
+          enum:
+          - loop
+        config:
+          $ref: '#/components/schemas/LoopSubLoopStep'
+        input:
+          type: object
+          additionalProperties: true
+          description: Step-local input object resolved when the step starts. String leaves
+            may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions.
+        retry:
+          $ref: '#/components/schemas/LoopRetryPolicy'
+        timeout:
+          $ref: '#/components/schemas/LoopTimeoutPolicy'
+        save_as:
+          type: string
+          description: Context key used to store this step's output. Defaults to `key`.
+    LoopCheckStepSpec:
+      type: object
+      additionalProperties: false
+      required:
+      - key
+      - kind
+      - config
+      properties:
+        key:
+          type: string
+          description: Stable step key within the spec.
+        name:
+          type: string
+          description: Human-readable step name.
+        kind:
+          type: string
+          enum:
+          - check
+        config:
+          $ref: '#/components/schemas/LoopCheckStep'
+        input:
+          type: object
+          additionalProperties: true
+          description: Step-local input object resolved when the step starts. String leaves
+            may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions.
+        retry:
+          $ref: '#/components/schemas/LoopRetryPolicy'
+        timeout:
+          $ref: '#/components/schemas/LoopTimeoutPolicy'
+        save_as:
+          type: string
+          description: Context key used to store this step's output. Defaults to `key`.
+    LoopSpecLimits:
+      type: object
+      additionalProperties: false
+      description: Run guardrails. Lives at `spec.limits` in the JSON the engine compiles.
+        Every limit is optional; absent or zero means unbounded (plan-level org caps still
+        apply), with one exception — trial-plan runs default to a 100-credit ($1) budget when
+        no budget is set here or on the start request. Paid plans default to unbounded.
+      properties:
+        budget_usd:
+          type: number
+          format: double
+          minimum: 0
+          description: Run budget in US dollars (1 credit = $0.01). The run halts with stop
+            reason `budget_exceeded` at the next checkpoint (step boundary or agent tool iteration)
+            once its metered spend reaches the ceiling; a `run.budget_warning` event fires
+            once at 80%. Enforcement granularity is one model call or metered action — a run
+            can overshoot by at most the call in flight. Mutually exclusive with `credit_budget`;
+            values finer than $0.00001 (one milli-credit) are rejected at compile.
+        credit_budget:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Run budget in whole credits (1 credit = $0.01). Same ceiling semantics
+            as `budget_usd`; set exactly one.
         wall_clock_timeout:
           type: string
-          description: Run wall-clock budget as a Go duration string (e.g. `30m`, `2h`, `90s`).
+          description: Run wall-clock limit as a Go duration string (e.g. `30m`, `2h`, `90s`).
             When set, the engine stamps `wall_clock_deadline_at = run.started_at + wall_clock_timeout`
-            and the reaper fails the run after that instant even if a step executor is still
-            grinding. Omit or set to `0` to disable the guard.
-        environment:
-          $ref: '#/components/schemas/AutomationEnvironmentPolicy'
-        agent_session:
-          $ref: '#/components/schemas/AutomationAgentSessionPolicy'
-    AutomationEnvironmentPolicy:
+            and the reaper fails the run (stop reason `wall_clock_exceeded`) after that instant
+            even if a step executor is still grinding. Omit or set to `0` to disable.
+        max_agent_turns:
+          type: integer
+          minimum: 1
+          description: Run-wide cap on agent turns across all steps. Each agent step execution
+            (including retries and resumed turns) consumes one turn. Breach halts the run
+            with stop reason `turn_limit_reached`. Distinct from a step's `max_turns`, which
+            bounds tool iterations within a single turn.
+        daily_budget_usd:
+          type: number
+          format: double
+          minimum: 0
+          description: Rolling-24h spend ceiling in US dollars across ALL runs of this loop
+            (the fleet-level counterpart of `budget_usd`). Enforced at run start (new runs
+            are refused while the window is exhausted) and at the platform funding gate (an
+            in-flight run halts at its next platform-funded call with stop reason `budget_exceeded`).
+            Counts platform-billed spend; mutually exclusive with `daily_credit_budget`.
+        daily_credit_budget:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Rolling-24h loop spend ceiling in whole credits. Same semantics as
+            `daily_budget_usd`; set exactly one.
+        max_duplicate_tool_calls:
+          type: integer
+          minimum: 1
+          description: How many identical tool calls (same tool name and canonicalized arguments)
+            one agent turn tolerates before the turn halts with a `progress_stalled` error
+            — the duplicate-tool-call breaker. The step's retry policy applies; if the run
+            fails from it the stop reason is `progress_stalled` and a `run.progress_stalled`
+            event is emitted on each trip. Omit for the platform default (3).
+        pause_after_consecutive_failures:
+          type: integer
+          minimum: 1
+          description: Loop circuit breaker. After this many consecutive failed runs the loop
+            auto-pauses (status `paused`) and emits a `loop.auto_paused` event, so a bad deploy
+            cannot burn all night at one run per trigger fire. Completed runs reset the streak;
+            cancelled runs are neutral. Omit to disable.
+    LoopSpecDefaults:
       type: object
       additionalProperties: false
-      description: 'Automatic managed-environment policy for automation execution. Omit to
-        use the product default: each agent gets a persistent agent-bound environment, while
-        direct environment actions get a run-bound environment. Set `disabled: true` to opt
-        out.'
+      description: Run-level defaults inside the loop spec. Lives at `spec.defaults` in the
+        JSON the engine compiles. The run wall-clock limit moved to `limits.wall_clock_timeout`.
+      properties:
+        environment:
+          $ref: '#/components/schemas/LoopEnvironmentPolicy'
+        agent_session:
+          $ref: '#/components/schemas/LoopAgentSessionPolicy'
+    LoopEnvironmentPolicy:
+      type: object
+      additionalProperties: false
+      description: 'Automatic managed-environment policy for loop execution. Omit to use the
+        product default: each agent gets a persistent agent-bound environment, while direct
+        environment actions get a run-bound environment. Set `disabled: true` to opt out.'
       properties:
         disabled:
           type: boolean
@@ -8254,7 +8708,7 @@ components:
           $ref: '#/components/schemas/EnvironmentMode'
         environment_id:
           type: string
-          description: Existing dedicated environment to use for this automation.
+          description: Existing dedicated environment to use for this loop.
         template_id:
           type: string
           description: Environment template to use when Mobius creates one.
@@ -8268,10 +8722,10 @@ components:
           description: Whether Mobius should start the managed worker automatically.
         retention_policy:
           $ref: '#/components/schemas/EnvironmentRetentionPolicy'
-    AutomationAgentStep:
+    LoopAgentStep:
       type: object
       additionalProperties: false
-      description: Agent step configuration recognised inside `AutomationSpec.steps[].config`.
+      description: Agent step configuration recognised inside `LoopSpec.steps[].config`.
       required:
       - agent_id
       - instructions
@@ -8284,6 +8738,15 @@ components:
           type: array
           items:
             type: string
+          description: 'Optional per-step tool allow-list. When omitted, prompt-only managed
+            agent steps default to no tools; set `disable_tools: false` to allow the agent''s
+            full granted tool set.'
+        disable_tools:
+          type: boolean
+          description: Disable all tool calls for this agent step. When omitted, prompt-only
+            managed agent steps (no `tool_names`, output schema, memory tables, or worker/BYOK
+            model route) default to tool-less execution and skip managed environment allocation.
+            Set `false` explicitly to opt back into the agent's granted tools.
         output_schema:
           type: object
           additionalProperties: true
@@ -8291,19 +8754,19 @@ components:
           type: integer
           minimum: 1
         model_route:
-          $ref: '#/components/schemas/AutomationModelRoute'
+          $ref: '#/components/schemas/LoopModelRoute'
         memory_tables:
           type: array
           items:
-            $ref: '#/components/schemas/AutomationAgentMemoryTableRef'
+            $ref: '#/components/schemas/LoopAgentMemoryTableRef'
         session:
-          $ref: '#/components/schemas/AutomationAgentSessionPolicy'
-    AutomationAgentSessionPolicy:
+          $ref: '#/components/schemas/LoopAgentSessionPolicy'
+    LoopAgentSessionPolicy:
       type: object
       additionalProperties: false
-      description: 'Durable conversation-session policy for automation agent steps. Omit to
-        enable the product default: automation-scoped sessions keyed from the triggering conversation
-        when Mobius can identify one, such as a Telegram chat ID.'
+      description: 'Durable conversation-session policy for loop agent steps. Omit to enable
+        the product default: loop-scoped sessions keyed from the triggering conversation when
+        Mobius can identify one, such as a Telegram chat ID.'
       properties:
         disabled:
           type: boolean
@@ -8313,15 +8776,15 @@ components:
           type: string
           enum:
           - auto
-          - automation
+          - loop
           - agent
-          description: Named-session boundary. `auto` and omitted use `automation`. `agent`
-            intentionally shares the named session across automations using the same agent.
+          description: Named-session boundary. `auto` and omitted use `loop`. `agent` intentionally
+            shares the named session across loops using the same agent.
         name:
           type: string
           description: Optional Go-template string rendered against `inputs`, `context`, `agent`,
-            `automation`, `run`, `source`, and `step`. When omitted, Mobius derives a stable
-            name from the event payload, falling back to the trigger or `default`.
+            `loop`, `run`, `source`, and `step`. When omitted, Mobius derives a stable name
+            from the event payload, falling back to the trigger or `default`.
         title:
           type: string
           description: Optional Go-template string for the session display title.
@@ -8354,7 +8817,7 @@ components:
             strategy: auto
             threshold_tokens: 8000
             summary_model: claude-haiku-4-5-20251001
-    AutomationModelRoute:
+    LoopModelRoute:
       type: object
       additionalProperties: false
       required:
@@ -8379,7 +8842,7 @@ components:
           type: array
           items:
             type: string
-    AutomationAgentMemoryTableRef:
+    LoopAgentMemoryTableRef:
       type: object
       additionalProperties: false
       required:
@@ -8396,10 +8859,10 @@ components:
           - write
         instructions:
           type: string
-    AutomationActionStep:
+    LoopActionStep:
       type: object
       additionalProperties: false
-      description: Action step configuration recognised inside `AutomationSpec.steps[].config`.
+      description: Action step configuration recognised inside `LoopSpec.steps[].config`.
       required:
       - action_name
       properties:
@@ -8418,10 +8881,10 @@ components:
         parameters:
           type: object
           additionalProperties: true
-    AutomationSleepStep:
+    LoopSleepStep:
       type: object
       additionalProperties: false
-      description: Sleep step configuration recognised inside `AutomationSpec.steps[].config`.
+      description: Sleep step configuration recognised inside `LoopSpec.steps[].config`.
       properties:
         duration:
           type: string
@@ -8429,10 +8892,10 @@ components:
         until:
           type: string
           format: date-time
-    AutomationWaitForEventStep:
+    LoopWaitForEventStep:
       type: object
       additionalProperties: false
-      description: Wait-for-event step configuration recognised inside `AutomationSpec.steps[].config`.
+      description: Wait-for-event step configuration recognised inside `LoopSpec.steps[].config`.
       required:
       - event_type
       properties:
@@ -8451,20 +8914,20 @@ components:
           additionalProperties:
             type: string
           description: Optional output mapping evaluated against `{ event, meta }`.
-    AutomationSubAutomationStep:
+    LoopSubLoopStep:
       type: object
       additionalProperties: false
-      description: Automation-trigger step configuration recognised inside `AutomationSpec.steps[].config`.
-        Triggers another automation in the same project as an independent child run (fire-and-forget).
-        The child run records `parent_run_id`, `parent_automation_id`, and `parent_step_key`
-        so the lineage is visible from the child.
+      description: Loop-trigger step configuration recognised inside `LoopSpec.steps[].config`.
+        Triggers another loop in the same project as an independent child run (fire-and-forget).
+        The child run records `parent_run_id`, `parent_loop_id`, and `parent_step_key` so
+        the lineage is visible from the child.
       required:
-      - automation_handle
+      - loop_handle
       properties:
-        automation_handle:
+        loop_handle:
           type: string
-          description: Stable handle of the automation to trigger, scoped to the same project
-            as the parent automation.
+          description: Stable handle of the loop to trigger, scoped to the same project as
+            the parent loop.
         inputs:
           type: object
           additionalProperties: true
@@ -8477,7 +8940,99 @@ components:
             envelope of the parent run before the child is triggered. It must evaluate to
             a bool; a false result skips the step and starts no child run. Same predicate
             language as `wait_for_event` and event trigger conditions.
-    AutomationRetryPolicy:
+    LoopCheckStep:
+      type: object
+      additionalProperties: false
+      description: 'Check step configuration recognised inside `LoopSpec.steps[].config`.
+        A check step evaluates typed assertions over the run''s `{ inputs, context }` envelope
+        — deterministic `expr` predicates, or `agent` judges for everything that isn''t deterministic
+        — records a per-assertion verdict with cited evidence, and routes on failure: fail
+        the run (stop reason `check_failed`), continue with the red verdict on the record,
+        or open an approval gate carrying the evidence (rejection stops the run with `gate_rejected`).
+        All assertions are evaluated; there is no short-circuit. An assertion that errors
+        (bad expr, judge model failure, unparseable verdict) fails closed — never a silent
+        pass.'
+      required:
+      - checks
+      properties:
+        checks:
+          type: array
+          minItems: 1
+          description: Assertions evaluated in order; names must be unique.
+          items:
+            $ref: '#/components/schemas/LoopCheckAssertion'
+        on_fail:
+          type: string
+          enum:
+          - fail
+          - continue
+          - gate
+          default: fail
+          description: Routing when any assertion fails. `fail` stops the run with stop reason
+            `check_failed`. `continue` proceeds with the red verdict recorded. `gate` opens
+            a `request_approval` interaction carrying the failed assertions and evidence;
+            approval resumes the run with the verdict recorded as overridden, rejection stops
+            it with `gate_rejected`.
+        gate:
+          $ref: '#/components/schemas/LoopCheckGate'
+    LoopCheckAssertion:
+      type: object
+      additionalProperties: false
+      required:
+      - name
+      - kind
+      properties:
+        name:
+          type: string
+          description: Unique assertion name shown on the timeline proof row.
+        kind:
+          type: string
+          enum:
+          - expr
+          - agent
+          description: '`expr` evaluates a deterministic predicate with the same language
+            as step conditions and event waits. `agent` runs a bounded judge turn returning
+            a strict `{pass, reason}` verdict; its spend counts against the run budget and
+            it consumes one run agent turn.'
+        expr:
+          type: string
+          description: 'Predicate for `kind: expr`, evaluated against the `{ inputs, context
+            }` envelope. Required for expr assertions.'
+        agent:
+          type: string
+          description: 'Judge agent id for `kind: agent`. Omit to use the built-in platform
+            reviewer `mobius-reviewer`. The judge should be a different agent than the one
+            that produced the evidence; the compiler warns when a judge grades its own work.'
+        prompt:
+          type: string
+          description: 'Judge instruction for `kind: agent`, rendered with `{{ .inputs.* }}`
+            / `{{ .context.* }}` template actions before the cited evidence is appended. Required
+            for agent assertions.'
+        evidence:
+          type: array
+          items:
+            type: string
+          description: Step keys whose saved outputs this assertion judges. Each must reference
+            an earlier step. Cited outputs are shown to agent judges and recorded on the verdict.
+    LoopCheckGate:
+      type: object
+      additionalProperties: false
+      description: 'Approval gate opened when `on_fail: gate` trips.'
+      required:
+      - targets
+      properties:
+        targets:
+          type: array
+          minItems: 1
+          items:
+            type: string
+          description: Principals who must respond. String entries may contain template actions
+            resolved against the run.
+        prompt:
+          type: string
+          description: Prompt shown to reviewers. Defaults to a generated summary of the failed
+            assertions.
+    LoopRetryPolicy:
       type: object
       additionalProperties: false
       description: Retry policy for a step. `max_attempts` is the total number of attempts
@@ -8497,7 +9052,7 @@ components:
           description: Go duration string such as `30s`, `5m`, or `2h`. Applied between attempts
             for in-process (synchronous) action retries; worker-executed actions re-queue
             immediately for the next attempt.
-    AutomationTimeoutPolicy:
+    LoopTimeoutPolicy:
       type: object
       additionalProperties: false
       properties:
@@ -8508,7 +9063,7 @@ components:
           type: string
           enum:
           - fail
-    AutomationVersionListResponse:
+    LoopVersionListResponse:
       type: object
       additionalProperties: false
       required:
@@ -8516,30 +9071,25 @@ components:
       properties:
         items:
           type: array
-          description: AutomationVersions returned for this automation, newest version first.
+          description: LoopVersions returned for this loop, newest version first.
           items:
-            $ref: '#/components/schemas/AutomationVersion'
-    CreateAutomationVersionRequest:
+            $ref: '#/components/schemas/LoopVersion'
+    CreateLoopVersionRequest:
       type: object
       additionalProperties: false
       required:
       - spec
       properties:
         spec:
-          $ref: '#/components/schemas/AutomationSpec'
-        compiled_plan:
-          type: object
-          additionalProperties: true
-          description: Optional precompiled execution plan. The engine will recompile from
-            `spec` if omitted.
-    AutomationTrigger:
+          $ref: '#/components/schemas/LoopSpec'
+    LoopTrigger:
       type: object
       additionalProperties: false
       required:
       - id
       - org_id
       - project_id
-      - automation_id
+      - loop_id
       - name
       - kind
       - enabled
@@ -8557,9 +9107,9 @@ components:
         project_id:
           type: string
           description: Project that owns this trigger.
-        automation_id:
+        loop_id:
           type: string
-          description: Automation this trigger belongs to.
+          description: Loop this trigger belongs to.
         name:
           type: string
           description: Human-readable trigger name.
@@ -8581,16 +9131,17 @@ components:
           - queue
           - skip
           - replace
-          description: Behavior when a fire arrives while prior runs of this automation are
-            still active.
+          description: Behavior when a fire arrives while prior runs of this loop are still
+            active.
         max_concurrent_runs:
           type: integer
           minimum: 1
           description: Cap on concurrent runs allowed from this trigger.
         http_handle:
           type: string
-          description: Public, project-scoped handle exposed in the HTTP-trigger delivery
-            URL. Set only for http-kind triggers.
+          description: Public, globally unique delivery handle exposed in `POST /v1/triggers/http/{http_handle}`.
+            The delivery endpoint has no project path segment, so the handle is resolved globally.
+            Set only for http-kind triggers.
         signing_secret_set:
           type: boolean
           description: Whether an HMAC signing secret is configured on this HTTP trigger.
@@ -8623,6 +9174,11 @@ components:
           type: string
           format: date-time
           description: Last update timestamp.
+    HTTPTriggerDeliveryRequest:
+      type: object
+      additionalProperties: true
+      description: Free-form JSON object delivered to the HTTP trigger. The payload is recorded
+        on the source event and forwarded to the run as inputs.
     HTTPTriggerDeliveryResponse:
       type: object
       additionalProperties: false
@@ -8642,22 +9198,18 @@ components:
           type: string
           enum:
           - accepted
-          - skipped
-          - failed
-          description: |-
-            Acceptance status of the source-event row:
-            * `accepted` — the row is durable; processing happens asynchronously.
-            * `skipped` — the trigger is disabled or has no live subscribers.
-            * `failed` — the row could not be enqueued (synchronous validation error).
+          description: Acceptance status of the source-event row. The only synchronous success
+            value is `accepted`; processing happens asynchronously after the source event
+            is durable.
         deduped:
           type: boolean
           description: True when an existing source-event row was returned for the same idempotency
             key.
-    StartAutomationRunRequest:
+    StartLoopRunRequest:
       type: object
       additionalProperties: false
-      description: Body for `POST /v1/projects/{project}/automations/{handle}/runs`. All fields
-        are optional; an empty body starts a run with no inputs and no attribution.
+      description: Body for `POST /v1/projects/{project}/loops/{id}/runs`. All fields are
+        optional; an empty body starts a run with no inputs and no attribution.
       properties:
         inputs:
           type: object
@@ -8665,14 +9217,30 @@ components:
           description: Free-form input map passed to the run. Available to steps via `{{ .inputs.<key>
             }}` Go text/template actions.
         source:
-          $ref: '#/components/schemas/AutomationRunSource'
-        external_id:
+          $ref: '#/components/schemas/LoopRunSource'
+        idempotency_key:
           type: string
           description: Caller-supplied idempotency key, scoped to (org, project). Repeat calls
-            with the same `external_id` while the prior run is still non-terminal return the
-            existing run (same `id`). A repeat after the prior run terminated returns `409
-            Conflict` with code `external_id_conflict` and details containing the existing
-            run id and its terminal status.
+            with the same `idempotency_key` while the prior run is still non-terminal return
+            the existing run (same `id`). A repeat after the prior run terminated returns
+            `409 Conflict` with code `idempotency_key_conflict` and details containing the
+            existing run id and its terminal status.
+        budget_usd:
+          type: number
+          format: double
+          minimum: 0
+          description: Per-run budget override in US dollars (1 credit = $0.01). Overrides
+            the loop spec's `limits` budget for this run only. Mutually exclusive with `credit_budget`
+            — setting both is a `400`. Values finer than $0.00001 (one milli-credit) are rejected.
+            The run halts at the next checkpoint (step boundary or agent tool iteration) once
+            spend reaches the budget; enforcement granularity is one model call or metered
+            action.
+        credit_budget:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Per-run budget override in whole credits (1 credit = $0.01). Same ceiling
+            semantics as `budget_usd`; set exactly one.
       example:
         inputs:
           issue_id: '42'
@@ -8680,8 +9248,9 @@ components:
           type: api
           id: review-service
           label: review-service
-        external_id: review-service:issue-42
-    CancelAutomationRunRequest:
+        idempotency_key: review-service:issue-42
+        credit_budget: 1000
+    CancelLoopRunRequest:
       type: object
       additionalProperties: false
       description: Body for the cancellation endpoint. All fields optional.
@@ -8691,17 +9260,17 @@ components:
           description: Human-readable cancellation reason recorded on the run.
       example:
         reason: superseded by manual remediation
-    SignalAutomationRunRequest:
+    SignalLoopRunRequest:
       type: object
       additionalProperties: false
-      description: Body for resuming a suspended automation step.
+      description: Body for resuming a suspended loop step.
       required:
       - step_key
       properties:
         step_key:
           type: string
           description: Step key currently in `suspended` state that should resume. Must match
-            a step declared in the run's automation version spec.
+            a step declared in the run's loop version spec.
         result:
           type: object
           additionalProperties: true
@@ -8711,16 +9280,21 @@ components:
         result:
           status: complete
           source: ci
-    AutomationRunSource:
+    LoopRunSource:
       type: object
       additionalProperties: false
-      description: Optional attribution for the call that started this run. Triggers and webhooks
-        populate `trigger_id` and `trigger_fire_id`; API callers usually only set `type` and
-        `id`.
+      description: Optional attribution for the call that started this run. Triggers and HTTP
+        trigger dispatch populate `trigger_id` and `trigger_fire_id`. API callers usually
+        only set `type` and `id`.
       properties:
         type:
           type: string
-          description: One of `api`, `trigger`, `manual`, `signal`.
+          enum:
+          - api
+          - trigger
+          - manual
+          - signal
+          description: Source category for the run start.
         id:
           type: string
           description: Identifier within the source type's namespace.
@@ -8729,22 +9303,24 @@ components:
           description: Display label.
         trigger_id:
           type: string
+          readOnly: true
           description: Trigger that fired this run, if any.
         trigger_fire_id:
           type: string
-          description: Idempotency key for trigger retries. When set, Engine.Start returns
-            the existing run for this fire instead of creating a duplicate.
-    AutomationRun:
+          readOnly: true
+          description: Internal trigger-fire ledger id used to deduplicate trigger dispatch
+            retries. Present only for trigger-started runs.
+    LoopRun:
       type: object
       additionalProperties: false
-      description: One automation run record.
+      description: One loop run record.
       required:
       - id
       - org_id
       - project_id
-      - automation_id
-      - automation_version_id
-      - automation_version
+      - loop_id
+      - loop_version_id
+      - loop_version
       - status
       - created_at
       - updated_at
@@ -8758,46 +9334,69 @@ components:
         project_id:
           type: string
           description: Project that owns this run.
-        automation_id:
+        loop_id:
           type: string
-          description: Automation this run belongs to.
-        automation_name:
+          description: Loop this run belongs to.
+        loop_name:
           type: string
-          description: Human-readable name of the automation this run belongs to.
-        automation_version_id:
+          description: Human-readable name of the loop this run belongs to.
+        loop_version_id:
           type: string
-          description: AutomationVersion record this run is executing.
-        automation_version:
+          description: LoopVersion record this run is executing.
+        loop_version:
           type: integer
-          description: Version number of the AutomationVersion this run is executing.
+          description: Version number of the LoopVersion this run is executing.
         status:
-          $ref: '#/components/schemas/AutomationRunStatus'
+          $ref: '#/components/schemas/LoopRunStatus'
+        stop_reason:
+          $ref: '#/components/schemas/LoopRunStopReason'
+        credit_budget_milli:
+          type: integer
+          format: int64
+          description: The run's budget ceiling in milli-credits (1 credit = 1,000 milli-credits
+            = $0.01). Resolved at run start from the StartRun override, the loop spec's `limits`
+            block, or the trial-plan default, in that order. Absent when the run is unbounded.
+        credit_spent_milli:
+          type: integer
+          format: int64
+          description: Metered spend attributed to this run so far, in milli-credits. Incremented
+            atomically with each usage-ledger insert that carries this run's id. Counts all
+            metered work regardless of credential source (BYOK calls count at their rate-card
+            equivalent even though they bill zero credits).
+        max_agent_turns:
+          type: integer
+          description: Run-wide cap on agent turns across all steps, from the loop spec's
+            `limits.max_agent_turns`. Absent when unbounded.
+        agent_turns_used:
+          type: integer
+          description: Number of agent turns started for this run so far. Compared against
+            `max_agent_turns` when that cap is set.
         inputs:
           type: object
           additionalProperties: true
-          description: Input map supplied when the run started, merged over the automation's
-            `default_inputs`, and reachable in step templates at `{{ .inputs.<key> }}`. For
-            event-kind trigger runs this is the normalized `{ event, meta }` envelope (`{{
-            .inputs.event.* }}`, `{{ .inputs.meta.* }}`) — see the automation templating guide.
+          description: Input map supplied when the run started, merged over the loop's `default_inputs`,
+            and reachable in step templates at `{{ .inputs.<key> }}`. For event-kind trigger
+            runs this is the normalized `{ event, meta }` envelope (`{{ .inputs.event.* }}`,
+            `{{ .inputs.meta.* }}`) — see the loop templating guide.
         result:
           type: object
           additionalProperties: true
           description: 'Final result payload: the run''s accumulated step outputs, keyed by
             each step''s `save_as`. Absent until the run terminates successfully.'
         source:
-          $ref: '#/components/schemas/AutomationRunSource'
+          $ref: '#/components/schemas/LoopRunSource'
         parent_run_id:
           type: string
-          description: Run that triggered this run via an `automation` step. Present only
-            on child runs; absent for top-level runs.
-        parent_automation_id:
+          description: Run that triggered this run via an `loop` step. Present only on child
+            runs; absent for top-level runs.
+        parent_loop_id:
           type: string
-          description: Automation that triggered this run via an `automation` step. Present
-            only on child runs.
+          description: Loop that triggered this run via an `loop` step. Present only on child
+            runs.
         parent_step_key:
           type: string
-          description: Step key within the parent run's automation that triggered this run.
-            Present only on child runs.
+          description: Step key within the parent run's loop that triggered this run. Present
+            only on child runs.
         error_message:
           type: string
           description: Human-readable failure summary; populated on `failed` runs.
@@ -8811,7 +9410,7 @@ components:
         wall_clock_deadline_at:
           type: string
           format: date-time
-          description: Deadline after which the automation reaper fails the run.
+          description: Deadline after which the loop reaper fails the run.
         started_at:
           type: string
           format: date-time
@@ -8828,7 +9427,7 @@ components:
           type: string
           format: date-time
           description: Last update timestamp.
-    AutomationRunStatus:
+    LoopRunStatus:
       type: string
       enum:
       - queued
@@ -8837,8 +9436,26 @@ components:
       - completed
       - failed
       - cancelled
-      description: Lifecycle state of an automation run.
-    AutomationRunListResponse:
+      description: Lifecycle state of a loop run.
+    LoopRunStopReason:
+      type: string
+      enum:
+      - completed
+      - step_failed
+      - check_failed
+      - gate_rejected
+      - cancelled
+      - replaced
+      - wall_clock_exceeded
+      - budget_exceeded
+      - turn_limit_reached
+      - progress_stalled
+      - step_limit_reached
+      description: |-
+        Why a run stopped. Set exactly once when the run reaches a terminal status; absent on non-terminal runs. `status` carries the lifecycle state and `error_type` classifies the error when one occurred; `stop_reason` classifies the stop itself.
+
+        Grouping: `completed` is the success terminal. `step_failed`, `check_failed`, and `gate_rejected` mean the work failed (an error, a failed verification, or a human rejection at a gate). `budget_exceeded`, `turn_limit_reached`, `wall_clock_exceeded`, `step_limit_reached`, and `progress_stalled` mean a configured guardrail halted the run — the limit worked; the loop did not break. `cancelled` and `replaced` mean somebody (or a concurrency policy) chose to stop it.
+    LoopRunListResponse:
       type: object
       additionalProperties: false
       required:
@@ -8848,24 +9465,27 @@ components:
           type: array
           description: The list of results for this page.
           items:
-            $ref: '#/components/schemas/AutomationRun'
+            $ref: '#/components/schemas/LoopRun'
         next_cursor:
           type: string
           description: Opaque cursor for the next page; absent when no more results.
         has_more:
           type: boolean
           description: True when more items exist after this page.
-    AutomationRunStepKind:
+    LoopRunStepKind:
       type: string
       enum:
       - agent
       - action
       - sleep
       - wait_for_event
+      - interaction
+      - loop
+      - check
       - cleanup
       description: The step type. `cleanup` is system-materialized — it appears in run step
-        listings for terminal cleanup work but cannot be authored in an `AutomationSpec`.
-    AutomationRunStepStatus:
+        listings for terminal cleanup work but cannot be authored in an `LoopSpec`.
+    LoopRunStepStatus:
       type: string
       enum:
       - pending
@@ -8875,8 +9495,8 @@ components:
       - failed
       - skipped
       - cancelled
-      description: Lifecycle state of an automation run step.
-    AutomationRunStep:
+      description: Lifecycle state of a loop run step.
+    LoopRunStep:
       type: object
       additionalProperties: false
       required:
@@ -8906,14 +9526,14 @@ components:
           description: Run this step belongs to.
         step_key:
           type: string
-          description: Stable key for this step within its automation version.
+          description: Stable key for this step within its loop version.
         step_name:
           type: string
           description: Display name from the authored spec, when present.
         kind:
-          $ref: '#/components/schemas/AutomationRunStepKind'
+          $ref: '#/components/schemas/LoopRunStepKind'
         status:
-          $ref: '#/components/schemas/AutomationRunStepStatus'
+          $ref: '#/components/schemas/LoopRunStepStatus'
         seq:
           type: integer
           format: int64
@@ -8947,6 +9567,21 @@ components:
         error_message:
           type: string
           description: Human-readable error message populated on failure.
+        verdict:
+          type: string
+          enum:
+          - pass
+          - fail
+          description: 'Check outcome for `check`-kind steps; absent on every other kind.
+            A failed check routed `on_fail: continue` completes the step with `verdict: fail`
+            — status and verdict are separate axes (the step did its job: it checked).'
+        verdict_detail:
+          type: object
+          additionalProperties: true
+          description: 'Verdict document for `check`-kind steps: `verdict`, `on_fail`, `checks`
+            (per-assertion results — name, kind, pass, expr or judge reason, judge identity,
+            evidence refs), `failed` (red assertion names), and `overridden_by` / `gate` records
+            when an approval gate resolved the verdict.'
         started_at:
           type: string
           format: date-time
@@ -8965,7 +9600,7 @@ components:
           type: string
           format: date-time
           description: Last update timestamp.
-    AutomationRunStepListResponse:
+    LoopRunStepListResponse:
       type: object
       additionalProperties: false
       required:
@@ -8975,8 +9610,8 @@ components:
           type: array
           description: Steps for this run in `seq` order.
           items:
-            $ref: '#/components/schemas/AutomationRunStep'
-    AutomationRunEvent:
+            $ref: '#/components/schemas/LoopRunStep'
+    LoopRunEvent:
       type: object
       additionalProperties: false
       required:
@@ -9006,9 +9641,10 @@ components:
           description: Monotonic per-run sequence number used for ordering and resume.
         event_type:
           type: string
-          description: Event type from the run-stream taxonomy (e.g. `run.started`, `step.completed`,
-            `wait.opened`, `action.called`, `action.completed`, `action.failed`, `artifact.created`,
-            `limit.reached`, `usage.recorded`).
+          description: |-
+            Event type from the run-stream taxonomy (e.g. `run.started`, `step.completed`, `wait.opened`, `action.called`, `action.completed`, `action.failed`, `artifact.created`, `limit.reached`, `usage.recorded`).
+
+            Guardrail events: `run.budget_warning` fires once when run spend first reaches 80% of the run budget (payload: `credit_budget_milli`, `credit_spent_milli`, `percent`); `run.budget_exceeded` fires when the budget halts the run at a checkpoint (same payload plus the `step` it halted before). `usage.recorded` payloads carry `step_key`, the event's `credit_cost_milli`, its `budget_cost_milli` (rate-card cost counted against the run budget, nonzero even for BYOK), and the cumulative `run_credit_spent_milli`.
         step_id:
           type: string
           nullable: true
@@ -9016,7 +9652,7 @@ components:
         step_key:
           type: string
           nullable: true
-          description: Automation step key this event belongs to, when applicable.
+          description: Loop step key this event belongs to, when applicable.
         payload:
           type: object
           additionalProperties: true
@@ -9025,7 +9661,7 @@ components:
           type: string
           format: date-time
           description: Server timestamp when the event was recorded.
-    AutomationRunEventListResponse:
+    LoopRunEventListResponse:
       type: object
       additionalProperties: false
       required:
@@ -9035,7 +9671,7 @@ components:
           type: array
           description: Run events in this page, ordered by `sequence` ascending.
           items:
-            $ref: '#/components/schemas/AutomationRunEvent'
+            $ref: '#/components/schemas/LoopRunEvent'
         next_sequence:
           type: integer
           format: int64
@@ -9530,12 +10166,12 @@ components:
           $ref: '#/components/schemas/ArtifactVisibility'
         run_id:
           type: string
-          description: Automation run that produced this artifact, derived from the active
-            worker lease.
+          description: Loop run that produced this artifact, derived from the active worker
+            lease.
         step_id:
           type: string
-          description: Automation step that produced this artifact, derived from the active
-            worker lease.
+          description: Loop step that produced this artifact, derived from the active worker
+            lease.
         name:
           type: string
           description: Display name or relative virtual path. Forward slash may be used to
@@ -9707,9 +10343,9 @@ x-tagGroups:
 - name: Agents
   tags:
   - agents
-- name: Automations
+- name: Loops
   tags:
-  - automations
+  - loops
 - name: Runs
   tags:
   - runs

@@ -20,7 +20,7 @@ func registerWebhooksCommands(app *cli.App) {
 	webhooksGrp := app.Group("webhooks").Description("Outgoing webhook subscriptions")
 	webhooksGrp.Alias("webhook")
 	webhooksGrp.Command("create").
-		Description("Create a webhook").
+		Description("Create webhook").
 		Flags(
 			cli.Bool("enabled", "").Help("Whether the webhook starts enabled. Defaults to true when omitted."),
 			cli.Strings("events", "").Help("[required] Event types to subscribe to. Use wildcards for broad subscriptions, e.g. `[\"run.*\"]` for all run ev…"),
@@ -79,7 +79,7 @@ func registerWebhooksCommands(app *cli.App) {
 		})
 
 	webhooksGrp.Command("delete").
-		Description("Delete a webhook").
+		Description("Delete webhook").
 		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -98,7 +98,7 @@ func registerWebhooksCommands(app *cli.App) {
 		})
 
 	webhooksGrp.Command("get").
-		Description("Get a webhook").
+		Description("Get webhook").
 		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -184,7 +184,7 @@ func registerWebhooksCommands(app *cli.App) {
 		})
 
 	webhooksGrp.Command("ping").
-		Description("Test a webhook URL").
+		Description("Test webhook URL").
 		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
 		Flags(
 			cli.String("url", "").Help("URL to test. When supplied, the ping is sent to this URL instead of the webhook's saved URL — use…"),
@@ -222,7 +222,7 @@ func registerWebhooksCommands(app *cli.App) {
 		})
 
 	webhooksGrp.Command("rotate-secret").
-		Description("Rotate a webhook signing secret").
+		Description("Rotate webhook signing secret").
 		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -241,7 +241,7 @@ func registerWebhooksCommands(app *cli.App) {
 		})
 
 	webhooksGrp.Command("update").
-		Description("Update a webhook").
+		Description("Update webhook").
 		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
 		Flags(
 			cli.Bool("enabled", "").Help("Set to false to disable delivery without deleting the webhook."),

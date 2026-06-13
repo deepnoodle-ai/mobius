@@ -11,24 +11,24 @@ from urllib.parse import quote, urlencode, urlparse, urlunparse
 import httpx
 
 from ._api.models import (
-    Automation,
-    AutomationListResponse,
-    AutomationRun,
-    AutomationRunEvent,
-    AutomationRunListResponse,
-    AutomationRunSource,
-    AutomationRunStatus,
-    AutomationStatus,
-    AutomationTrigger,
-    AutomationVersion,
-    AutomationVersionListResponse,
-    CancelAutomationRunRequest,
-    CreateAutomationRequest,
-    CreateAutomationVersionRequest,
-    SignalAutomationRunRequest,
-    StartAutomationRunRequest,
+    CancelLoopRunRequest as CancelAutomationRunRequest,
+    CreateLoopRequest as CreateAutomationRequest,
+    CreateLoopVersionRequest as CreateAutomationVersionRequest,
+    Loop as Automation,
+    LoopListResponse as AutomationListResponse,
+    LoopRun as AutomationRun,
+    LoopRunEvent as AutomationRunEvent,
+    LoopRunListResponse as AutomationRunListResponse,
+    LoopRunSource as AutomationRunSource,
+    LoopRunStatus as AutomationRunStatus,
+    LoopSpecTrigger as AutomationTrigger,
+    LoopStatus as AutomationStatus,
+    LoopVersion as AutomationVersion,
+    LoopVersionListResponse as AutomationVersionListResponse,
+    SignalLoopRunRequest as SignalAutomationRunRequest,
+    StartLoopRunRequest as StartAutomationRunRequest,
     TagMap,
-    UpdateAutomationRequest,
+    UpdateLoopRequest as UpdateAutomationRequest,
 )
 from .errors import AuthRevokedError, RateLimitError
 from .retry import DEFAULT_MAX_RETRIES, RetryingTransport
@@ -78,6 +78,7 @@ class UpdateAutomationOptions:
 
 @dataclass
 class AutomationVersionOptions:
+    # Retained for source compatibility. The public API compiles server-side.
     compiled_plan: dict[str, Any] | None = None
     publish: bool = False
 
@@ -85,6 +86,7 @@ class AutomationVersionOptions:
 @dataclass
 class ListAutomationsOptions:
     status: AutomationStatus | None = None
+    handle: str | None = None
     cursor: str | None = None
     limit: int | None = None
 
@@ -99,6 +101,7 @@ class StartRunOptions:
 @dataclass
 class ListRunsOptions:
     status: AutomationRunStatus | None = None
+    loop_id: str | None = None
     automation_id: str | None = None
     cursor: str | None = None
     limit: int | None = None
@@ -206,62 +209,84 @@ class Client:
         return urlunparse((scheme, parsed.netloc, path, "", "", ""))
 
     def list_automations(self, opts: ListAutomationsOptions | None = None) -> AutomationListResponse:
-        resp = self._request("GET", "/v1/projects/{project}/automations", params=_params(opts))
+        resp = self._request("GET", "/v1/projects/{project}/loops", params=_params(opts))
         return AutomationListResponse.model_validate(resp.json())
 
-    def get_automation(self, handle: str) -> Automation:
-        resp = self._request("GET", f"/v1/projects/{{project}}/automations/{quote(handle, safe='')}")
+    def get_automation(self, ref: str) -> Automation:
+        if _looks_like_loop_id(ref):
+            resp = self._request("GET", f"/v1/projects/{{project}}/loops/{quote(ref, safe='')}")
+            return Automation.model_validate(resp.json())
+        page = self.list_automations(ListAutomationsOptions(handle=ref, limit=1))
+        if not page.items:
+            raise ValueError("mobius: get automation: not found")
+        return page.items[0]
+
+    def get_loop(self, loop_id: str) -> Automation:
+        resp = self._request("GET", f"/v1/projects/{{project}}/loops/{quote(loop_id, safe='')}")
         return Automation.model_validate(resp.json())
 
     def create_automation(self, opts: AutomationOptions) -> Automation:
         body = CreateAutomationRequest(**_drop_none(opts.__dict__))
-        resp = self._request("POST", "/v1/projects/{project}/automations", json=body)
+        resp = self._request("POST", "/v1/projects/{project}/loops", json=body)
         return Automation.model_validate(resp.json())
 
-    def update_automation(self, handle: str, opts: UpdateAutomationOptions) -> Automation:
+    def update_automation(self, ref: str, opts: UpdateAutomationOptions) -> Automation:
+        loop_id = self._resolve_automation_id(ref)
         body = UpdateAutomationRequest(**_drop_none(opts.__dict__))
-        resp = self._request("PATCH", f"/v1/projects/{{project}}/automations/{quote(handle, safe='')}", json=body)
+        resp = self._request("PATCH", f"/v1/projects/{{project}}/loops/{quote(loop_id, safe='')}", json=body)
         return Automation.model_validate(resp.json())
 
-    def delete_automation(self, handle: str) -> None:
-        self._request("DELETE", f"/v1/projects/{{project}}/automations/{quote(handle, safe='')}")
+    def delete_automation(self, ref: str) -> None:
+        loop_id = self._resolve_automation_id(ref)
+        self._request("DELETE", f"/v1/projects/{{project}}/loops/{quote(loop_id, safe='')}")
 
-    def list_automation_versions(self, handle: str) -> AutomationVersionListResponse:
-        resp = self._request("GET", f"/v1/projects/{{project}}/automations/{quote(handle, safe='')}/versions")
+    def list_automation_versions(self, ref: str) -> AutomationVersionListResponse:
+        loop_id = self._resolve_automation_id(ref)
+        resp = self._request("GET", f"/v1/projects/{{project}}/loops/{quote(loop_id, safe='')}/versions")
         return AutomationVersionListResponse.model_validate(resp.json())
 
     def create_automation_version(
         self,
-        handle: str,
+        ref: str,
         spec: dict[str, Any],
         opts: AutomationVersionOptions | None = None,
     ) -> AutomationVersion:
         opts = opts or AutomationVersionOptions()
+        loop_id = self._resolve_automation_id(ref)
         body = CreateAutomationVersionRequest(
             spec=spec,
-            compiled_plan=opts.compiled_plan,
         )
-        resp = self._request("POST", f"/v1/projects/{{project}}/automations/{quote(handle, safe='')}/versions", json=body)
+        resp = self._request("POST", f"/v1/projects/{{project}}/loops/{quote(loop_id, safe='')}/versions", json=body)
         version = AutomationVersion.model_validate(resp.json())
         if opts.publish:
-            self.publish_automation_version(handle, version.version)
+            self.publish_automation_version(loop_id, version.version)
         return version
 
-    def publish_automation_version(self, handle: str, version: int) -> Automation:
-        resp = self._request("POST", f"/v1/projects/{{project}}/automations/{quote(handle, safe='')}/versions/{version}/publication")
+    def publish_automation_version(self, ref: str, version: int) -> Automation:
+        loop_id = self._resolve_automation_id(ref)
+        resp = self._request("POST", f"/v1/projects/{{project}}/loops/{quote(loop_id, safe='')}/versions/{version}/publication")
         return Automation.model_validate(resp.json())
 
-    def start_run(self, automation_handle: str, opts: StartRunOptions | None = None) -> AutomationRun:
-        return self.start_automation_run(automation_handle, opts)
+    def start_run(self, automation_ref: str, opts: StartRunOptions | None = None) -> AutomationRun:
+        return self.start_automation_run(automation_ref, opts)
 
-    def start_automation_run(self, automation_handle: str, opts: StartRunOptions | None = None) -> AutomationRun:
+    def start_automation_run(self, automation_ref: str, opts: StartRunOptions | None = None) -> AutomationRun:
         opts = opts or StartRunOptions()
-        body = StartAutomationRunRequest(**_drop_none(opts.__dict__))
-        resp = self._request("POST", f"/v1/projects/{{project}}/automations/{quote(automation_handle, safe='')}/runs", json=body)
+        loop_id = self._resolve_automation_id(automation_ref)
+        values = _drop_none(opts.__dict__)
+        if "external_id" in values:
+            values["idempotency_key"] = values.pop("external_id")
+        body = StartAutomationRunRequest(**values)
+        resp = self._request("POST", f"/v1/projects/{{project}}/loops/{quote(loop_id, safe='')}/runs", json=body)
         return AutomationRun.model_validate(resp.json())
 
     def list_runs(self, opts: ListRunsOptions | None = None) -> AutomationRunListResponse:
-        resp = self._request("GET", "/v1/projects/{project}/runs", params=_params(opts))
+        params = _params(opts)
+        if params:
+            loop_id = params.pop("loop_id", None) or params.pop("automation_id", None)
+            if loop_id:
+                params["loop_id"] = loop_id
+        resp = self._request("GET", "/v1/projects/{project}/runs", params=params)
         return AutomationRunListResponse.model_validate(resp.json())
 
     def get_run(self, run_id: str) -> AutomationRun:
@@ -351,6 +376,13 @@ class Client:
                 out = f"{out}?{urlencode(clean)}"
         return out
 
+    def _resolve_automation_id(self, ref: str) -> str:
+        if not ref.strip():
+            raise ValueError("mobius: automation handle or id is required")
+        if _looks_like_loop_id(ref):
+            return ref
+        return self.get_automation(ref).id
+
 
 def _extract_handle_from_api_key(api_key: str) -> str | None:
     if not (api_key.startswith("mbx_") or api_key.startswith("mbc_")):
@@ -373,6 +405,10 @@ def _model_dump(value: Any) -> Any:
     if isinstance(value, list):
         return [_model_dump(v) for v in value]
     return value
+
+
+def _looks_like_loop_id(ref: str) -> bool:
+    return ref.startswith(("loop_", "aut_"))
 
 
 def _drop_none(values: dict[str, Any]) -> dict[str, Any]:

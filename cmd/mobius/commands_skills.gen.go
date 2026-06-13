@@ -20,7 +20,7 @@ func registerSkillsCommands(app *cli.App) {
 	skillsGrp := app.Group("skills").Description("Skill templates that shape agent behavior and tool access")
 	skillsGrp.Alias("skill")
 	skillsGrp.Command("create").
-		Description("Create a skill").
+		Description("Create skill").
 		Flags(
 			cli.Strings("allowed-tools", "").Help("Tool selectors that narrow the agent's effective tool set while this skill is active."),
 			cli.String("description", "").Help("Markdown description of the skill's purpose."),
@@ -29,6 +29,7 @@ func registerSkillsCommands(app *cli.App) {
 			cli.String("model-hint", "").Help("Advisory model preference; does not override the agent's default model."),
 			cli.String("name", "").Help("[required] Human-readable skill name."),
 			cli.String("slug", "").Help("Optional stable slug. When omitted, the server derives one from `name`."),
+			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
 			cli.Bool("user-invocable", "").Help("Whether users may directly request this skill by name."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
@@ -72,6 +73,12 @@ func registerSkillsCommands(app *cli.App) {
 				v := ctx.String("slug")
 				body.Slug = &v
 			}
+			if tags, err := parseTagFlags(ctx); err != nil {
+				return err
+			} else if tags != nil {
+				v := api.TagMap(tags)
+				body.Tags = &v
+			}
 			if ctx.IsSet("user-invocable") {
 				v := ctx.Bool("user-invocable")
 				body.UserInvocable = &v
@@ -93,7 +100,7 @@ func registerSkillsCommands(app *cli.App) {
 		})
 
 	skillsGrp.Command("delete").
-		Description("Delete a skill").
+		Description("Delete skill").
 		AddArg(&cli.Arg{Name: "skill-id", Description: "Skill ID (TypeID `skill_...`).", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -112,7 +119,7 @@ func registerSkillsCommands(app *cli.App) {
 		})
 
 	skillsGrp.Command("get").
-		Description("Get a skill").
+		Description("Get skill").
 		AddArg(&cli.Arg{Name: "skill-id", Description: "Skill ID (TypeID `skill_...`).", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -131,7 +138,7 @@ func registerSkillsCommands(app *cli.App) {
 		})
 
 	skillsGrp.Command("import").
-		Description("Import a skill").
+		Description("Import skill").
 		Flags(
 			cli.String("content", "").Help("[required] Full skill document, optionally with YAML frontmatter."),
 			cli.String("name", "").Help("Optional name override."),
@@ -174,7 +181,6 @@ func registerSkillsCommands(app *cli.App) {
 		Description("List skills").
 		Flags(
 			cli.Bool("include-system", "").Help("Include read-only system skill templates."),
-			cli.String("status", "").Help("Filter by lifecycle status. Omit for active skills."),
 		).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -189,10 +195,6 @@ func registerSkillsCommands(app *cli.App) {
 				v := ctx.Bool("include-system")
 				params.IncludeSystem = &v
 			}
-			if ctx.IsSet("status") {
-				v := api.ListSkillsParamsStatus(ctx.String("status"))
-				params.Status = &v
-			}
 			resp, err := client.ListSkillsWithResponse(ctx.Context(), p0, params)
 			if err != nil {
 				return err
@@ -201,7 +203,7 @@ func registerSkillsCommands(app *cli.App) {
 		})
 
 	skillsGrp.Command("update").
-		Description("Update a skill").
+		Description("Update skill").
 		AddArg(&cli.Arg{Name: "skill-id", Description: "Skill ID (TypeID `skill_...`).", Required: true}).
 		Flags(
 			cli.Strings("allowed-tools", "").Help("Tool selectors that narrow the agent's effective tool set while this skill is active."),
@@ -211,6 +213,7 @@ func registerSkillsCommands(app *cli.App) {
 			cli.String("model-hint", "").Help("Advisory model preference; does not override the agent's default model."),
 			cli.String("name", "").Help("[required] Human-readable skill name."),
 			cli.String("slug", "").Help("Optional stable slug. When omitted, the server derives one from `name`."),
+			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
 			cli.Bool("user-invocable", "").Help("Whether users may directly request this skill by name."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
@@ -254,6 +257,12 @@ func registerSkillsCommands(app *cli.App) {
 			if ctx.IsSet("slug") {
 				v := ctx.String("slug")
 				body.Slug = &v
+			}
+			if tags, err := parseTagFlags(ctx); err != nil {
+				return err
+			} else if tags != nil {
+				v := api.TagMap(tags)
+				body.Tags = &v
 			}
 			if ctx.IsSet("user-invocable") {
 				v := ctx.Bool("user-invocable")
