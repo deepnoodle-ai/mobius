@@ -22,7 +22,7 @@ func registerToolkitsCommands(app *cli.App) {
 	toolkitsGrp.Command("create").
 		Description("Create toolkit").
 		Flags(
-			cli.String("action-grants", "").Help("Action selectors granted by this toolkit. Accepts JSON, @file, or @-."),
+			cli.String("actions", "").Help("Action selectors provided by this toolkit. Accepts JSON, @file, or @-."),
 			cli.String("description", "").Help("Markdown description of the toolkit's purpose."),
 			cli.String("name", "").Help("[required] Human-readable toolkit name."),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
@@ -41,8 +41,8 @@ func registerToolkitsCommands(app *cli.App) {
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
 			}
-			if ctx.IsSet("action-grants") {
-				if err := decodeFlagJSON(ctx, "action-grants", ctx.String("action-grants"), &body.ActionGrants); err != nil {
+			if ctx.IsSet("actions") {
+				if err := decodeFlagJSON(ctx, "actions", ctx.String("actions"), &body.Actions); err != nil {
 					return err
 				}
 			}
@@ -74,7 +74,7 @@ func registerToolkitsCommands(app *cli.App) {
 
 	toolkitsGrp.Command("delete").
 		Description("Delete toolkit").
-		AddArg(&cli.Arg{Name: "toolkit-id", Description: "Toolkit ID (TypeID `kit_...`).", Required: true}).
+		AddArg(&cli.Arg{Name: "toolkit-id", Description: "Toolkit ID.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -93,7 +93,7 @@ func registerToolkitsCommands(app *cli.App) {
 
 	toolkitsGrp.Command("get").
 		Description("Get toolkit").
-		AddArg(&cli.Arg{Name: "toolkit-id", Description: "Toolkit ID (TypeID `kit_...`).", Required: true}).
+		AddArg(&cli.Arg{Name: "toolkit-id", Description: "Toolkit ID.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -137,9 +137,9 @@ func registerToolkitsCommands(app *cli.App) {
 
 	toolkitsGrp.Command("update").
 		Description("Update toolkit").
-		AddArg(&cli.Arg{Name: "toolkit-id", Description: "Toolkit ID (TypeID `kit_...`).", Required: true}).
+		AddArg(&cli.Arg{Name: "toolkit-id", Description: "Toolkit ID.", Required: true}).
 		Flags(
-			cli.String("action-grants", "").Help("Action selectors granted by this toolkit. Accepts JSON, @file, or @-."),
+			cli.String("actions", "").Help("Action selectors provided by this toolkit. Accepts JSON, @file, or @-."),
 			cli.String("description", "").Help("Markdown description of the toolkit's purpose."),
 			cli.String("name", "").Help("[required] Human-readable toolkit name."),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
@@ -159,8 +159,8 @@ func registerToolkitsCommands(app *cli.App) {
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
 			}
-			if ctx.IsSet("action-grants") {
-				if err := decodeFlagJSON(ctx, "action-grants", ctx.String("action-grants"), &body.ActionGrants); err != nil {
+			if ctx.IsSet("actions") {
+				if err := decodeFlagJSON(ctx, "actions", ctx.String("actions"), &body.Actions); err != nil {
 					return err
 				}
 			}

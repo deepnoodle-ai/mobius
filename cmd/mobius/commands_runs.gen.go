@@ -21,7 +21,7 @@ func registerRunsCommands(app *cli.App) {
 	runsGrp.Alias("run")
 	runsGrp.Command("cancel").
 		Description("Cancel run").
-		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
+		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		Flags(
 			cli.String("reason", "").Help("Human-readable cancellation reason recorded on the run."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
@@ -59,7 +59,7 @@ func registerRunsCommands(app *cli.App) {
 
 	runsGrp.Command("get").
 		Description("Get run").
-		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
+		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -123,9 +123,9 @@ func registerRunsCommands(app *cli.App) {
 
 	runsGrp.Command("list-events").
 		Description("List run events").
-		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
+		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		Flags(
-			cli.Int("since-sequence", "").Help("Return events with sequence > since_sequence."),
+			cli.Int("after-sequence", "").Help("Return events with sequence > after_sequence."),
 			cli.Int("limit", "").Help("Maximum number of items to return"),
 		).
 		Use(requireAuth()).
@@ -138,9 +138,9 @@ func registerRunsCommands(app *cli.App) {
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			params := &api.ListRunEventsParams{}
-			if ctx.IsSet("since-sequence") {
-				v := int64(ctx.Int("since-sequence"))
-				params.SinceSequence = &v
+			if ctx.IsSet("after-sequence") {
+				v := int64(ctx.Int("after-sequence"))
+				params.AfterSequence = &v
 			}
 			if ctx.IsSet("limit") {
 				v := api.LimitParam(ctx.Int("limit"))
@@ -155,7 +155,7 @@ func registerRunsCommands(app *cli.App) {
 
 	runsGrp.Command("list-steps").
 		Description("List run steps").
-		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
+		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -174,7 +174,7 @@ func registerRunsCommands(app *cli.App) {
 
 	runsGrp.Command("signal").
 		Description("Signal run").
-		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
+		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		Flags(
 			cli.String("result", "").Help("Free-form payload saved as the resumed step's output. Accepts JSON, @file, or @-."),
 			cli.String("step-key", "").Help("[required] Step key currently in `suspended` state that should resume. Must match a step declared in the run's…"),
@@ -217,12 +217,12 @@ func registerRunsCommands(app *cli.App) {
 
 	runsGrp.Command("start").
 		Description("Start run").
-		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
+		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		Flags(
 			cli.String("budget-usd", "").Help("Per-run budget override in US dollars (1 credit = $0.01). Overrides the loop spec's `limits` budget… Accepts JSON, @file, or @-."),
 			cli.Int("credit-budget", "").Help("Per-run budget override in whole credits (1 credit = $0.01). Same ceiling semantics as `budget_usd`…"),
 			cli.String("idempotency-key", "").Help("Caller-supplied idempotency key, scoped to (org, project). Repeat calls with the same `idempotency_…"),
-			cli.String("inputs", "").Help("Free-form input map passed to the run. Available to steps via `{{ .inputs.<key> }}` Go text/templat… Accepts JSON, @file, or @-."),
+			cli.String("inputs", "").Help("Input map passed to the run. schema_version 1 loops receive it as-is and reference it via `{{ .inpu… Accepts JSON, @file, or @-."),
 			cli.String("source", "").Help("Optional attribution for the call that started this run. Triggers and HTTP trigger dispatch populat… Accepts JSON, @file, or @-."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
@@ -278,9 +278,9 @@ func registerRunsCommands(app *cli.App) {
 
 	runsGrp.Command("stream").
 		Description("Stream run events").
-		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
+		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		Flags(
-			cli.Int("since-sequence", "").Help("Stream events with sequence > since_sequence."),
+			cli.Int("after-sequence", "").Help("Stream events with sequence > after_sequence."),
 		).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -292,9 +292,9 @@ func registerRunsCommands(app *cli.App) {
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
 			params := &api.StreamRunEventsParams{}
-			if ctx.IsSet("since-sequence") {
-				v := int64(ctx.Int("since-sequence"))
-				params.SinceSequence = &v
+			if ctx.IsSet("after-sequence") {
+				v := int64(ctx.Int("after-sequence"))
+				params.AfterSequence = &v
 			}
 			resp, err := client.StreamRunEventsWithResponse(ctx.Context(), p0, p1, params)
 			if err != nil {

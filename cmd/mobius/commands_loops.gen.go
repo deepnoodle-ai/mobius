@@ -26,11 +26,10 @@ func registerLoopsCommands(app *cli.App) {
 			cli.String("default-agent-id", "").Help("Agent used by `agent` steps that do not pin an agent explicitly."),
 			cli.String("default-inputs", "").Help("Default values merged into `inputs` when a run is started without overrides. Accepts JSON, @file, or @-."),
 			cli.String("description", "").Help("Markdown description of the loop's purpose."),
-			cli.String("handle", "").Help("[required] Stable per-project loop handle. Must be lowercase alphanumeric with single hyphen separators. Immut…"),
 			cli.String("name", "").Help("[required] Human-readable display name."),
 			cli.String("settings", "").Help("Free-form loop-level settings consumed by the engine. Accepts JSON, @file, or @-."),
 			cli.String("spec", "").Help("Authoring representation of a loop. Accepts JSON, @file, or @-."),
-			cli.String("tags", "").Help("Free-form label map used to organise loops in listings and search. Accepts JSON, @file, or @-."),
+			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -63,9 +62,6 @@ func registerLoopsCommands(app *cli.App) {
 				v := ctx.String("description")
 				body.Description = &v
 			}
-			if ctx.IsSet("handle") {
-				body.Handle = ctx.String("handle")
-			}
 			if ctx.IsSet("name") {
 				body.Name = ctx.String("name")
 			}
@@ -79,13 +75,11 @@ func registerLoopsCommands(app *cli.App) {
 					return err
 				}
 			}
-			if ctx.IsSet("tags") {
-				if err := decodeFlagJSON(ctx, "tags", ctx.String("tags"), &body.Tags); err != nil {
-					return err
-				}
-			}
-			if body.Handle == "" {
-				return fmt.Errorf("--handle is required (or supply it via --file)")
+			if tags, err := parseTagFlags(ctx); err != nil {
+				return err
+			} else if tags != nil {
+				v := api.TagMap(tags)
+				body.Tags = &v
 			}
 			if body.Name == "" {
 				return fmt.Errorf("--name is required (or supply it via --file)")
@@ -102,7 +96,7 @@ func registerLoopsCommands(app *cli.App) {
 
 	loopsGrp.Command("create-version").
 		Description("Create version").
-		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
+		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		Flags(
 			cli.String("spec", "").Help("[required] Authoring representation of a loop. Accepts JSON, @file, or @-."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
@@ -140,8 +134,8 @@ func registerLoopsCommands(app *cli.App) {
 		})
 
 	loopsGrp.Command("delete").
-		Description("Archive loop").
-		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
+		Description("Delete loop").
+		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -208,7 +202,7 @@ func registerLoopsCommands(app *cli.App) {
 
 	loopsGrp.Command("get").
 		Description("Get loop").
-		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
+		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -228,8 +222,7 @@ func registerLoopsCommands(app *cli.App) {
 	loopsGrp.Command("list").
 		Description("List loops").
 		Flags(
-			cli.String("status", "").Help("Filter by lifecycle status. Omit to return all non-archived loops (the default). Pass a single stat…"),
-			cli.String("handle", "").Help("Exact loop handle filter for resolving a handle to its loop ID in one request."),
+			cli.String("status", "").Help("Filter by lifecycle status. Omit to return the normal loop list, or pass a visible status to filter…"),
 			cli.String("cursor", "").Help("Opaque pagination cursor from a prior response."),
 			cli.Int("limit", "").Help("Maximum number of items to return."),
 		).
@@ -245,10 +238,6 @@ func registerLoopsCommands(app *cli.App) {
 			if ctx.IsSet("status") {
 				v := api.ListLoopsParamsStatus(ctx.String("status"))
 				params.Status = &v
-			}
-			if ctx.IsSet("handle") {
-				v := ctx.String("handle")
-				params.Handle = &v
 			}
 			if ctx.IsSet("cursor") {
 				v := ctx.String("cursor")
@@ -267,7 +256,7 @@ func registerLoopsCommands(app *cli.App) {
 
 	loopsGrp.Command("list-versions").
 		Description("List versions").
-		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
+		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -286,7 +275,7 @@ func registerLoopsCommands(app *cli.App) {
 
 	loopsGrp.Command("publish-loop-version").
 		Description("Publish version").
-		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
+		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		AddArg(&cli.Arg{Name: "version", Description: "Version number of the LoopVersion to publish.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -310,15 +299,15 @@ func registerLoopsCommands(app *cli.App) {
 
 	loopsGrp.Command("update").
 		Description("Update loop").
-		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
+		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		Flags(
 			cli.String("default-agent-id", "").Help("Agent used by `agent` steps that do not pin an agent explicitly."),
 			cli.String("default-inputs", "").Help("Default values merged into `inputs` when a run is started without overrides. Accepts JSON, @file, or @-."),
 			cli.String("description", "").Help("Markdown description of the loop's purpose."),
 			cli.String("name", "").Help("Human-readable display name."),
 			cli.String("settings", "").Help("Free-form loop-level settings consumed by the engine. Accepts JSON, @file, or @-."),
-			cli.String("status", "").Help("Lifecycle status of a loop."),
-			cli.String("tags", "").Help("Free-form label map used to organise loops in listings and search. Accepts JSON, @file, or @-."),
+			cli.String("status", "").Help("Loop lifecycle status: `draft`, `active`, `paused`, or `deleted`."),
+			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -361,12 +350,13 @@ func registerLoopsCommands(app *cli.App) {
 				v := api.LoopStatus(ctx.String("status"))
 				body.Status = &v
 			}
-			if ctx.IsSet("tags") {
-				if err := decodeFlagJSON(ctx, "tags", ctx.String("tags"), &body.Tags); err != nil {
-					return err
-				}
+			if tags, err := parseTagFlags(ctx); err != nil {
+				return err
+			} else if tags != nil {
+				v := api.TagMap(tags)
+				body.Tags = &v
 			}
-			if ctx.String("file") == "" && !ctx.IsSet("default-agent-id") && !ctx.IsSet("default-inputs") && !ctx.IsSet("description") && !ctx.IsSet("name") && !ctx.IsSet("settings") && !ctx.IsSet("status") && !ctx.IsSet("tags") {
+			if ctx.String("file") == "" && !ctx.IsSet("default-agent-id") && !ctx.IsSet("default-inputs") && !ctx.IsSet("description") && !ctx.IsSet("name") && !ctx.IsSet("settings") && !ctx.IsSet("status") && !ctx.IsSet("tag") {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
 			if ctx.Bool("dry-run") {

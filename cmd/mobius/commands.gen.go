@@ -39,7 +39,6 @@ func registerGeneratedCommands(app *cli.App) {
 	registerTablesCommands(app)
 	registerToolkitsCommands(app)
 	registerWebhooksCommands(app)
-	registerWorkerSessionsCommands(app)
 }
 
 // readJSONBody reads a request body from --file (path or '-' for stdin) and

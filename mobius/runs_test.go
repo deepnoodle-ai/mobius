@@ -20,9 +20,6 @@ func TestStartAutomationRun_HighLevelClient(t *testing.T) {
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		switch {
-		case r.Method == http.MethodGet && r.URL.Path == "/v1/projects/test-project/loops":
-			assert.Equal(t, r.URL.Query().Get("handle"), "research")
-			_, _ = io.WriteString(w, fmt.Sprintf(`{"items":[%s],"has_more":false}`, automationJSON("loop_1", "research", "research", 1)))
 		case r.Method == http.MethodPost && r.URL.Path == "/v1/projects/test-project/loops/loop_1/runs":
 			b, _ := io.ReadAll(r.Body)
 			assert.NoError(t, json.Unmarshal(b, &body))
@@ -35,7 +32,7 @@ func TestStartAutomationRun_HighLevelClient(t *testing.T) {
 	c, srv := newTestClient(t, h)
 	defer srv.Close()
 
-	run, err := c.StartAutomationRun(context.Background(), "research", &StartRunOptions{
+	run, err := c.StartAutomationRun(context.Background(), "loop_1", &StartRunOptions{
 		ExternalID: "external-1",
 		Inputs:     map[string]interface{}{"topic": "sdk"},
 	})
@@ -58,7 +55,7 @@ func TestRunControl_HighLevelClient(t *testing.T) {
 		case r.Method == http.MethodGet && r.URL.Path == "/v1/projects/test-project/runs":
 			seenQuery = r.URL.RawQuery
 			_, _ = io.WriteString(w, fmt.Sprintf(`{"items":[%s],"has_more":false}`, automationRunJSON("run_1", "completed")))
-		case r.Method == http.MethodPost && r.URL.Path == "/v1/projects/test-project/runs/run_1/cancellations":
+		case r.Method == http.MethodPost && r.URL.Path == "/v1/projects/test-project/runs/run_1/cancel":
 			b, _ := io.ReadAll(r.Body)
 			assert.NoError(t, json.Unmarshal(b, &cancelBody))
 			_, _ = io.WriteString(w, automationRunJSON("run_1", "cancelled"))

@@ -183,8 +183,13 @@ func classifyParams(m *Method, client *ClientInfo, pc *PlannedCommand) (bool, st
 				GoType:   p.Type,
 				IsInt:    kind == "int",
 			}
-			if p.Name == "project" && kind == "string" {
+			if (p.Name == "projectHandle" || p.Name == "project") && kind == "string" {
 				arg.AsFlag = true
+				// Bind to the global --project flag regardless of the spec's
+				// path-param name (oapi-codegen renamed the param "project" ->
+				// "projectHandle") so a saved profile's project handle still
+				// flows through (see the authFor read in the run body).
+				arg.FlagName = "project"
 			}
 			pc.PathParams = append(pc.PathParams, arg)
 		default:

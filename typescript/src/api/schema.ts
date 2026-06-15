@@ -4,7 +4,7 @@
  */
 
 export interface paths {
-    "/v1/projects/{project}/api-keys": {
+    "/v1/projects/{project_handle}/api-keys": {
         parameters: {
             query?: never;
             header?: never;
@@ -13,7 +13,7 @@ export interface paths {
         };
         /**
          * List API keys
-         * @description Returns API keys for this project.
+         * @description Returns API keys for this project, including pagination metadata.
          */
         get: operations["listAPIKeys"];
         put?: never;
@@ -28,7 +28,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project}/api-keys/{id}": {
+    "/v1/projects/{project_handle}/api-keys/{resource_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -43,16 +43,16 @@ export interface paths {
         put?: never;
         post?: never;
         /**
-         * Revoke API key
-         * @description Permanently revokes the key. In-flight requests using this key will immediately start receiving 401.
+         * Delete API key
+         * @description Permanently deletes the key. In-flight requests using this key will immediately start receiving 401.
          */
-        delete: operations["revokeAPIKey"];
+        delete: operations["deleteAPIKey"];
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project}/actions": {
+    "/v1/projects/{project_handle}/actions": {
         parameters: {
             query?: never;
             header?: never;
@@ -72,7 +72,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project}/actions/{action_name}": {
+    "/v1/projects/{project_handle}/actions/{action_name}": {
         parameters: {
             query?: never;
             header?: never;
@@ -96,7 +96,7 @@ export interface paths {
         patch: operations["updateAction"];
         trace?: never;
     };
-    "/v1/projects/{project}/actions/{action_name}/secret/rotate": {
+    "/v1/projects/{project_handle}/actions/{action_name}/secret/rotate": {
         parameters: {
             query?: never;
             header?: never;
@@ -116,7 +116,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project}/action-invocations": {
+    "/v1/projects/{project_handle}/action-invocations": {
         parameters: {
             query?: never;
             header?: never;
@@ -136,7 +136,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project}/actions/{action_name}/invocations": {
+    "/v1/projects/{project_handle}/actions/{action_name}/invoke": {
         parameters: {
             query?: never;
             header?: never;
@@ -156,7 +156,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project}/catalog/events": {
+    "/v1/projects/{project_handle}/catalog/events": {
         parameters: {
             query?: never;
             header?: never;
@@ -165,11 +165,7 @@ export interface paths {
         };
         /**
          * List events
-         * @description Returns every event source a loop trigger (or `wait_for_event` step) can subscribe to within this project: built-in platform sources (tables, email, runs, HTTP triggers, sessions, artifacts) and integration provider sources (with project connection state). `items` contains those sources; each source lists its concrete, currently-active event types.
-         *
-         *     `reserved_prefixes` enumerates platform namespaces that are recognized but not themselves triggerable event sources (for example `signal`, `schedule`), so authoring UIs can distinguish a recognized-but-unsupported matcher prefix from a wholly unknown one.
-         *
-         *     Matcher grammar: an `event_type` is a dotted name of segments matching `[A-Za-z_][A-Za-z0-9_]*`, optionally ending in `.*` for prefix matching (e.g. `github.*`, `github.pull_request.opened`, `table.row.inserted`).
+         * @description Returns triggerable event sources for this project, including built-in platform sources and connected integration providers. Each source lists its active event types, readiness, and any reserved matcher prefixes the authoring UI should recognize.
          */
         get: operations["listCatalogEvents"];
         put?: never;
@@ -180,7 +176,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project}/catalog/actions": {
+    "/v1/projects/{project_handle}/catalog/actions": {
         parameters: {
             query?: never;
             header?: never;
@@ -200,7 +196,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project}/catalog/actions/{action_name}": {
+    "/v1/projects/{project_handle}/catalog/actions/{action_name}": {
         parameters: {
             query?: never;
             header?: never;
@@ -220,7 +216,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project}/catalog/models": {
+    "/v1/projects/{project_handle}/catalog/models": {
         parameters: {
             query?: never;
             header?: never;
@@ -229,9 +225,7 @@ export interface paths {
         };
         /**
          * List models
-         * @description Returns the models a platform agent in this project can be assigned, grouped by provider. Only providers the project can actually run are included: a provider appears when the project has an active BYOK integration for it, or when a platform-managed key is configured.
-         *
-         *     An agent's `model` field accepts any returned model id, optionally prefixed with `provider/` (e.g. `xai/grok-4`); bare known ids such as `claude-sonnet-4-6` are auto-detected to their provider.
+         * @description Returns assignable agent models grouped by provider. Providers appear only when the project has usable credentials, either from BYOK integration state or platform-managed configuration.
          */
         get: operations["listCatalogModels"];
         put?: never;
@@ -242,7 +236,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project}/environments": {
+    "/v1/projects/{project_handle}/environments": {
         parameters: {
             query?: never;
             header?: never;
@@ -251,7 +245,7 @@ export interface paths {
         };
         /**
          * List environments
-         * @description Returns project environments visible to the caller, newest-first. Filters let clients narrow by provider, lifecycle status, purpose, binding, owner scope, and recently destroyed tombstones.
+         * @description Returns project environments visible to the caller, newest-first. Filters let clients narrow by provider, lifecycle status, run, owner scope, and recently destroyed tombstones.
          */
         get: operations["listEnvironments"];
         put?: never;
@@ -266,67 +260,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project}/environments/attach": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Attach environment
-         * @description Idempotently registers a worker-provided environment (a workspace hosted by a connected Mobius worker, e.g. a laptop). The control plane creates the record but never provisions or tears it down. Re-attaching the same name returns the existing environment. The `mobius worker` CLI calls this on startup, then registers its socket against the returned environment id. If the worker provider is not configured, the request returns `409` without creating an environment record.
-         */
-        post: operations["attachWorkerEnvironment"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/projects/{project}/environments/acquire": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Acquire lease
-         * @description Collection-level acquire creates or claims an environment and creates a single active lease. There is intentionally no per-environment acquire endpoint.
-         */
-        post: operations["acquireEnvironment"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/projects/{project}/environments/leases/{lease_id}/release": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Release lease
-         * @description Releases a previously acquired environment lease so the environment can be reused, retired, or reclaimed by another worker. The released lease snapshot is returned for audit and UI state updates.
-         */
-        post: operations["releaseEnvironmentLease"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/projects/{project}/environments/{environment_id}": {
+    "/v1/projects/{project_handle}/environments/{environment_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -349,152 +283,12 @@ export interface paths {
         head?: never;
         /**
          * Update environment
-         * @description Only purpose, retention_policy, scope, owned_by, bound_to_type, bound_to_id, and tags are mutable.
+         * @description Only scope, owned_by, and tags are mutable from the public API.
          */
         patch: operations["updateEnvironment"];
         trace?: never;
     };
-    "/v1/projects/{project}/environments/{environment_id}/reconcile": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Reconcile environment
-         * @description Refreshes Mobius' environment record from the provider control plane. Use this when a UI or operator needs to resynchronize status after an out-of-band provider change.
-         */
-        post: operations["reconcileEnvironment"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/projects/{project}/environments/{environment_id}/exec": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Execute command
-         * @description Runs a command in the target environment and returns its captured output. The environment must be active and able to accept execution requests from the selected provider.
-         */
-        post: operations["execEnvironment"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/projects/{project}/environments/{environment_id}/files": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /**
-         * Write file
-         * @description Writes file content into the environment filesystem. The request is intended for setup and repair flows that need to place source files, scripts, or configuration before executing work.
-         */
-        put: operations["writeEnvironmentFile"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/projects/{project}/environments/{environment_id}/workers/start": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Start worker
-         * @description Starts or reuses a worker process inside the environment so it can claim Mobius jobs. The result reports the worker identity and provider execution details needed for follow-up diagnostics.
-         */
-        post: operations["startEnvironmentWorker"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/projects/{project}/environments/{environment_id}/worker/logs": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get worker logs
-         * @description Tails the managed Mobius worker log files from inside the environment. The worker filesystem is sandbox-local and treated as diagnostic scratch; clients should not use this endpoint as durable artifact storage.
-         */
-        get: operations["getEnvironmentWorkerLogs"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/projects/{project}/environments/{environment_id}/git/credentials": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Mint Git credentials
-         * @description Mints a repository-scoped GitHub App installation token for clone or push operations executed inside the environment. Mobius returns the token only in this response; the caller must inject it into the environment through a transient askpass/stdin flow and remove it before the command exits.
-         */
-        post: operations["createEnvironmentGitCredential"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/projects/{project}/worker-sessions": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List worker sessions
-         * @description Returns worker sessions registered against the project. Each session's `stale` flag is computed at read time: if `last_seen_at` is older than 90 seconds (or absent), the session is considered stale. Stale sessions are retained for display until the 30-day retention floor; rows older than that are hard-deleted by a background sweeper.
-         */
-        get: operations["listWorkerSessions"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/projects/{project}/workers/socket": {
+    "/v1/projects/{project_handle}/workers/socket": {
         parameters: {
             query?: never;
             header?: never;
@@ -503,7 +297,7 @@ export interface paths {
         };
         /**
          * Open worker WebSocket
-         * @description Upgrades to the worker WebSocket protocol. Workers authenticate with the normal project-scoped credentials, send `worker.register`, then exchange typed JSON frames for claim, heartbeat, report, cancellation, and generation streaming.
+         * @description Upgrades to the worker WebSocket protocol. Workers authenticate with normal project credentials, send `worker.register`, then exchange typed JSON frames for claim, heartbeat, report, cancellation, and generation streaming.
          */
         get: operations["openWorkerSocket"];
         put?: never;
@@ -523,7 +317,7 @@ export interface paths {
         };
         /**
          * List projects
-         * @description Returns up to 100 projects. Use `search` for prefix-match filtering by name or handle. By default returns active (non-archived) projects; pass `status=archived` to see archived projects, or `status=all` to see both.
+         * @description Returns up to 100 projects. Use `search` for prefix-match filtering by name or handle. Deleted projects are omitted from normal list responses.
          */
         get: operations["listProjects"];
         put?: never;
@@ -538,7 +332,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project}": {
+    "/v1/projects/{project_handle}": {
         parameters: {
             query?: never;
             header?: never;
@@ -554,9 +348,7 @@ export interface paths {
         post?: never;
         /**
          * Delete project
-         * @description Permanently deletes the project and all child resources (loops, runs, jobs, triggers, webhooks, actions, agents, machine principals). This operation is irreversible.
-         *
-         *     The project must be archived first; calling delete on an active project returns `409 project_not_archived`. Archive via `POST /v1/projects/{project}/archive`.
+         * @description Deletes the project from active use. New trigger fires, scheduled runs, manual starts, and edits are blocked; in-flight runs are allowed to drain. The project is hidden from project listings, but historical runs remain readable while the retained record exists.
          */
         delete: operations["deleteProject"];
         options?: never;
@@ -568,47 +360,7 @@ export interface paths {
         patch: operations["updateProject"];
         trace?: never;
     };
-    "/v1/projects/{project}/archive": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Archive project
-         * @description Soft-retires the project: triggers and scheduled runs stop firing, edits are blocked, and the project is hidden from the default listing. In-flight runs are allowed to drain. The project can be restored at any time. Idempotent — archiving an already-archived project returns the current state.
-         */
-        post: operations["archiveProject"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/projects/{project}/restore": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Restore project
-         * @description Clears the archived state and returns the project to active operation. Triggers and scheduled runs resume on their next natural fire — there is no catch-up backfill of missed fires during the archive window. Idempotent — restoring an active project returns the current state.
-         */
-        post: operations["restoreProject"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/projects/{project}/webhooks": {
+    "/v1/projects/{project_handle}/webhooks": {
         parameters: {
             query?: never;
             header?: never;
@@ -625,7 +377,7 @@ export interface paths {
          * Create webhook
          * @description Creates a new outgoing webhook subscription. Webhook names must be unique within the project. Returns 409 if the name already exists.
          *
-         *     A signing key is generated automatically and returned in the response; this is the only time the raw key is exposed. Rotate it with `POST /webhooks/{id}/secret/rotate` if compromised.
+         *     A signing key is generated automatically and returned in the response; this is the only time the raw key is exposed. Rotate it with `POST /webhooks/{resource_id}/secret/rotate` if compromised.
          */
         post: operations["createWebhook"];
         delete?: never;
@@ -634,7 +386,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project}/webhooks/{id}": {
+    "/v1/projects/{project_handle}/webhooks/{resource_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -650,7 +402,7 @@ export interface paths {
         post?: never;
         /**
          * Delete webhook
-         * @description Deletes the webhook and its delivery history.
+         * @description Deletes the webhook and stops future deliveries for its subscribed events.
          */
         delete: operations["deleteWebhook"];
         options?: never;
@@ -662,7 +414,7 @@ export interface paths {
         patch: operations["updateWebhook"];
         trace?: never;
     };
-    "/v1/projects/{project}/webhooks/{id}/secret/rotate": {
+    "/v1/projects/{project_handle}/webhooks/{resource_id}/secret/rotate": {
         parameters: {
             query?: never;
             header?: never;
@@ -673,7 +425,7 @@ export interface paths {
         put?: never;
         /**
          * Rotate webhook signing secret
-         * @description Generates a new HMAC-SHA256 signing key version for the webhook. Store the returned key immediately — it cannot be retrieved again.
+         * @description Generates a new HMAC-SHA256 signing key version for the webhook. Store the returned key immediately; it cannot be retrieved again.
          */
         post: operations["rotateWebhookSecret"];
         delete?: never;
@@ -682,7 +434,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project}/webhooks/{id}/ping": {
+    "/v1/projects/{project_handle}/webhooks/{resource_id}/ping": {
         parameters: {
             query?: never;
             header?: never;
@@ -693,7 +445,7 @@ export interface paths {
         put?: never;
         /**
          * Test webhook URL
-         * @description Sends a live test POST request to the webhook's saved URL, or to an override URL supplied in the request body, and returns the result. Because the webhook URL may be empty at creation time, the typical flow is: create the webhook without a URL, ping candidate URLs via the override until one succeeds, then persist the chosen URL with `PATCH`. The test payload has `type: "ping"` and is signed with the webhook's signing key.
+         * @description Sends a signed test POST to the saved webhook URL or a request-body override URL. Use this before saving a new endpoint; the payload has `type: "ping"` and the response reports delivery status and latency.
          */
         post: operations["pingWebhook"];
         delete?: never;
@@ -702,7 +454,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project}/webhooks/{id}/deliveries": {
+    "/v1/projects/{project_handle}/webhooks/{resource_id}/deliveries": {
         parameters: {
             query?: never;
             header?: never;
@@ -722,7 +474,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project}/agents": {
+    "/v1/projects/{project_handle}/agents": {
         parameters: {
             query?: never;
             header?: never;
@@ -731,15 +483,13 @@ export interface paths {
         };
         /**
          * List agents
-         * @description Returns active and inactive agents with computed presence. Soft-deleted agents are excluded. Filter by principal_id to find the agent backed by a specific identity.
+         * @description Returns active and inactive agents with computed presence. Deleted agents are excluded. Filter by principal_id to find the agent backed by a specific identity.
          */
         get: operations["listAgents"];
         put?: never;
         /**
          * Create agent
-         * @description Creates an agent. An agent IS a principal (principals.kind = agent): its backing identity row is created atomically with the agent and its permissions live as role grants on that principal — there is no separate machine-identity side record.
-         *
-         *     Optional `role_ids` sets the role assignments on the agent's principal. Assigning roles requires the caller to hold `mobius.access.manage`. When omitted, the agent inherits the project's `default_agent_role_id`, falling through to the system `Agent` role floor when unset.
+         * @description Creates an agent. An agent IS a principal (principals.kind = agent): its backing identity row is created atomically with the agent — there is no separate machine-identity side record. The agent principal is for identity, ownership, and attribution; an agent's tools come from its assigned toolkits, not from roles.
          */
         post: operations["createAgent"];
         delete?: never;
@@ -748,7 +498,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project}/agents/{id}": {
+    "/v1/projects/{project_handle}/agents/{resource_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -764,7 +514,7 @@ export interface paths {
         post?: never;
         /**
          * Delete agent
-         * @description Soft-deletes the agent by setting `deleted_at`. The agent record is retained for audit and attribution history, but the agent is excluded from all listings and lookups. The agent's machine principal is disabled. In-flight jobs claiming this agent are not automatically cancelled.
+         * @description Deletes the agent from normal use. The agent record is retained for audit and attribution history, but the agent is excluded from all listings and lookups. The agent's machine principal is disabled. In-flight jobs claiming this agent are not automatically cancelled.
          */
         delete: operations["deleteAgent"];
         options?: never;
@@ -776,7 +526,7 @@ export interface paths {
         patch: operations["updateAgent"];
         trace?: never;
     };
-    "/v1/projects/{project}/agents/{id}/inbox": {
+    "/v1/projects/{project_handle}/agents/{resource_id}/inbox": {
         parameters: {
             query?: never;
             header?: never;
@@ -796,7 +546,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project}/agents/{id}/sessions": {
+    "/v1/projects/{project_handle}/agents/{resource_id}/sessions": {
         parameters: {
             query?: never;
             header?: never;
@@ -816,7 +566,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project}/agents/{id}/sessions/{session_id}": {
+    "/v1/projects/{project_handle}/agents/{resource_id}/sessions/{session_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -836,7 +586,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project}/agents/{id}/sessions/{session_id}/messages": {
+    "/v1/projects/{project_handle}/agents/{resource_id}/sessions/{session_id}/messages": {
         parameters: {
             query?: never;
             header?: never;
@@ -845,7 +595,7 @@ export interface paths {
         };
         /**
          * List messages
-         * @description Returns raw session messages in sequence order.
+         * @description Returns raw session messages in sequence order for replay.
          */
         get: operations["listSessionMessages"];
         put?: never;
@@ -860,7 +610,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project}/agents/{id}/sessions/{session_id}/turns": {
+    "/v1/projects/{project_handle}/agents/{resource_id}/sessions/{session_id}/turns": {
         parameters: {
             query?: never;
             header?: never;
@@ -880,7 +630,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project}/turns/{id}/messages": {
+    "/v1/projects/{project_handle}/turns/{resource_id}/messages": {
         parameters: {
             query?: never;
             header?: never;
@@ -888,7 +638,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List turn transcript
+         * List turn messages
          * @description Returns the messages produced by a single AgentTurn, in sequence order — an indexed read on the turn_id spine, with no metadata scan. This is the single-turn transcript read; group a whole session client-side by joining the session's messages on turn_id.
          */
         get: operations["listTurnMessages"];
@@ -900,7 +650,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project}/agents/{id}/messaging-bindings": {
+    "/v1/projects/{project_handle}/agents/{resource_id}/messaging-bindings": {
         parameters: {
             query?: never;
             header?: never;
@@ -914,7 +664,7 @@ export interface paths {
         get: operations["listAgentMessagingBindings"];
         /**
          * Save binding
-         * @description Upserts one provider-account binding for this agent.
+         * @description Upserts one provider-account binding used to route messages to this agent.
          */
         put: operations["saveAgentMessagingBinding"];
         post?: never;
@@ -924,7 +674,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project}/agents/{id}/messaging-bindings/{binding_id}": {
+    "/v1/projects/{project_handle}/agents/{resource_id}/messaging-bindings/{binding_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -936,7 +686,7 @@ export interface paths {
         post?: never;
         /**
          * Delete binding
-         * @description Removes one messaging binding from the agent.
+         * @description Removes one messaging binding from the agent and provider account.
          */
         delete: operations["deleteAgentMessagingBinding"];
         options?: never;
@@ -944,7 +694,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project}/agents/{id}/sessions/{session_id}/events.stream": {
+    "/v1/projects/{project_handle}/agents/{resource_id}/sessions/{session_id}/events.stream": {
         parameters: {
             query?: never;
             header?: never;
@@ -964,7 +714,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project}/agents/{id}/toolkits": {
+    "/v1/projects/{project_handle}/agents/{resource_id}/toolkit-assignments": {
         parameters: {
             query?: never;
             header?: never;
@@ -972,15 +722,15 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List toolkits
+         * List assigned toolkits
          * @description Returns the toolkits assigned to an agent in assignment order.
          */
-        get: operations["listToolkitAssignments"];
+        get: operations["listAgentToolkits"];
         /**
-         * Replace toolkits
-         * @description Replaces the agent's toolkit assignment set as a whole. The effective tool surface is the union of assigned toolkit grants intersected with the agent principal's permissions and any per-invocation narrowing.
+         * Replace assigned toolkits
+         * @description Replaces the agent's toolkit assignment set as a whole. The effective tool surface is the union of the assigned toolkits' actions, narrowed by any active skills and per-invocation filters.
          */
-        put: operations["replaceToolkits"];
+        put: operations["replaceAgentToolkits"];
         post?: never;
         delete?: never;
         options?: never;
@@ -988,7 +738,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project}/agents/{id}/table-grants": {
+    "/v1/projects/{project_handle}/agents/{resource_id}/skill-assignments": {
         parameters: {
             query?: never;
             header?: never;
@@ -996,39 +746,15 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List table grants
-         * @description Returns durable table memory grants assigned to one agent.
-         */
-        get: operations["listAgentTableGrants"];
-        /**
-         * Replace table grants
-         * @description Replaces the agent's durable table memory grant set as a whole.
-         */
-        put: operations["replaceAgentTableGrants"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/projects/{project}/agents/{id}/skills": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List skills
+         * List assigned skills
          * @description Returns the skills assigned to an agent in assignment order.
          */
-        get: operations["listSkillAssignments"];
+        get: operations["listAgentSkills"];
         /**
-         * Replace skills
-         * @description Replaces the agent's skill assignment set as a whole. Skills request tools and actions; the manifest enforces only the intersection with toolkit grants and the agent principal's permissions.
+         * Replace assigned skills
+         * @description Replaces the agent's skill assignment set as a whole. A skill can narrow the agent's tools while active via its `allowed_tools` filter; it never widens the set beyond the assigned toolkits' actions.
          */
-        put: operations["replaceSkills"];
+        put: operations["replaceAgentSkills"];
         post?: never;
         delete?: never;
         options?: never;
@@ -1036,7 +762,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project}/agents/{id}/tools": {
+    "/v1/projects/{project_handle}/agents/{resource_id}/tools": {
         parameters: {
             query?: never;
             header?: never;
@@ -1044,8 +770,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List tools
-         * @description Resolves the effective set of tools an agent can invoke: the flat set of actions the agent can invoke, computed from toolkit grants, the agent principal's permissions, optional toolkit filters, optional per-invocation tool filters, and optional active skill narrowing.
+         * Get resolved tools
+         * @description Resolves the effective set of tools an agent can invoke: the flat union of the assigned toolkits' actions, optionally restricted by a toolkit subset, per-invocation tool filters, and active skill narrowing.
          */
         get: operations["getAgentTools"];
         put?: never;
@@ -1056,7 +782,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project}/loops": {
+    "/v1/projects/{project_handle}/loops": {
         parameters: {
             query?: never;
             header?: never;
@@ -1065,13 +791,13 @@ export interface paths {
         };
         /**
          * List loops
-         * @description Returns loops in the project, newest-first. Supports filtering by lifecycle status and cursor-based pagination. Archived loops are excluded by default; pass `status=archived` to list only archived, or `status=all` to include every status.
+         * @description Returns loops in the project, newest-first. Supports filtering by lifecycle status and cursor-based pagination. Deleted loops are omitted from normal list responses.
          */
         get: operations["listLoops"];
         put?: never;
         /**
          * Create loop
-         * @description Creates a new loop. The `handle` must be unique within the project and is immutable. Include `spec` to create the first draft version inline; set `activate: true` with `spec` to publish that version and make the loop active in one request.
+         * @description Creates a new loop, addressed thereafter by its generated `id`. Include `spec` to create the first draft version inline; set `activate: true` with `spec` to publish that version and make the loop active in one request.
          */
         post: operations["createLoop"];
         delete?: never;
@@ -1080,7 +806,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project}/loops/{id}": {
+    "/v1/projects/{project_handle}/loops/{resource_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -1089,26 +815,26 @@ export interface paths {
         };
         /**
          * Get loop
-         * @description Returns one loop by ID.
+         * @description Returns one loop by ID, including status, owner metadata, and the published spec when available.
          */
         get: operations["getLoop"];
         put?: never;
         post?: never;
         /**
-         * Archive loop
-         * @description Soft-archives the loop. Existing runs remain queryable; new runs cannot be started.
+         * Delete loop
+         * @description Deletes the loop from active use. Existing runs remain queryable, but new runs cannot be started.
          */
         delete: operations["deleteLoop"];
         options?: never;
         head?: never;
         /**
          * Update loop
-         * @description Updates mutable fields on the loop. The handle, org, and project remain immutable.
+         * @description Updates mutable fields on the loop. The id, org, and project remain immutable.
          */
         patch: operations["updateLoop"];
         trace?: never;
     };
-    "/v1/projects/{project}/loops/{id}/versions": {
+    "/v1/projects/{project_handle}/loops/{resource_id}/versions": {
         parameters: {
             query?: never;
             header?: never;
@@ -1132,7 +858,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project}/loops/{id}/versions/{version}/publication": {
+    "/v1/projects/{project_handle}/loops/{resource_id}/versions/{version}/publication": {
         parameters: {
             query?: never;
             header?: never;
@@ -1163,7 +889,7 @@ export interface paths {
         put?: never;
         /**
          * Deliver trigger
-         * @description Public, unauthenticated endpoint that resolves the `http_handle` to a configured http-kind trigger and commits a durable source-event row; the run starts asynchronously. Idempotent on the `idempotency_key` query parameter or the standard `X-Idempotency-Key` header — repeats with the same key return the same `source_event_id` without enqueuing a duplicate. Resolve the resulting run via `GET /v1/projects/{project}/runs?source_event_id=<source_event_id>`.
+         * @description Public endpoint for delivering an HTTP-trigger event. It resolves `http_handle`, commits a durable source-event row, and starts the run asynchronously. Reusing the same idempotency key returns the same `source_event_id`.
          */
         post: operations["deliverHTTPTrigger"];
         delete?: never;
@@ -1172,7 +898,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project}/loops/{id}/runs": {
+    "/v1/projects/{project_handle}/loops/{resource_id}/runs": {
         parameters: {
             query?: never;
             header?: never;
@@ -1183,9 +909,7 @@ export interface paths {
         put?: never;
         /**
          * Start run
-         * @description Resolves `{id}` to the latest runnable version and starts a run. Returns the created run when accepted, or the existing run when the request carries an `idempotency_key` that matches a still-active prior run (idempotent retry).
-         *
-         *     Idempotency conflicts on `idempotency_key` against a terminal-prior run surface as `409 Conflict` with error code `idempotency_key_conflict` and `details` populated with `existing_run_id`, `status`, and `idempotency_key`.
+         * @description Resolves `{resource_id}` to the latest runnable version and starts a run. Returns the created run when accepted, or the existing run when the request carries an `idempotency_key` that matches a still-active prior run. Reusing the key after the prior run is terminal returns `409 Conflict`.
          */
         post: operations["startRun"];
         delete?: never;
@@ -1194,7 +918,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project}/runs": {
+    "/v1/projects/{project_handle}/runs": {
         parameters: {
             query?: never;
             header?: never;
@@ -1214,7 +938,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project}/runs/{id}": {
+    "/v1/projects/{project_handle}/runs/{resource_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -1234,7 +958,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project}/runs/{id}/cancellations": {
+    "/v1/projects/{project_handle}/runs/{resource_id}/cancel": {
         parameters: {
             query?: never;
             header?: never;
@@ -1254,7 +978,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project}/runs/{id}/steps": {
+    "/v1/projects/{project_handle}/runs/{resource_id}/steps": {
         parameters: {
             query?: never;
             header?: never;
@@ -1274,7 +998,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project}/runs/{id}/events": {
+    "/v1/projects/{project_handle}/runs/{resource_id}/events": {
         parameters: {
             query?: never;
             header?: never;
@@ -1283,7 +1007,7 @@ export interface paths {
         };
         /**
          * List run events
-         * @description Returns the durable run-event log used by clients (UI, SDK, integrations) to observe a run as it progresses. Events are ordered by sequence number and cover run, step, turn, tool, action, artifact, and cleanup lifecycle. Use `since_sequence` to fetch only events strictly after a previously observed sequence number, which is the standard polling pattern paired with the SSE stream.
+         * @description Returns the durable event log for one run, ordered by sequence number. Use `after_sequence` to poll only events recorded after the last sequence the client has observed.
          */
         get: operations["listRunEvents"];
         put?: never;
@@ -1294,7 +1018,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project}/runs/{id}/events.stream": {
+    "/v1/projects/{project_handle}/runs/{resource_id}/events.stream": {
         parameters: {
             query?: never;
             header?: never;
@@ -1303,7 +1027,7 @@ export interface paths {
         };
         /**
          * Stream run events
-         * @description Long-lived SSE stream of run events ordered by sequence number. Each `data:` frame is a JSON-encoded `LoopRunEvent`. The stream terminates when the run reaches a terminal status. Clients that disconnect should reconnect using `?since_sequence=N` (or the SSE `Last-Event-ID` header set to the last sequence) to resume without gaps.
+         * @description Long-lived SSE stream of run events ordered by sequence number. Each `data:` frame is a JSON-encoded `LoopRunEvent`. The stream terminates when the run reaches a terminal status. Clients that disconnect should reconnect using `?after_sequence=N` (or the SSE `Last-Event-ID` header set to the last sequence) to resume without gaps.
          */
         get: operations["streamRunEvents"];
         put?: never;
@@ -1314,7 +1038,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project}/runs/{id}/signals": {
+    "/v1/projects/{project_handle}/runs/{resource_id}/signals": {
         parameters: {
             query?: never;
             header?: never;
@@ -1325,7 +1049,7 @@ export interface paths {
         put?: never;
         /**
          * Signal run
-         * @description Resumes a run that is suspended on a `wait_event` step matching the provided `step_key`. The `result` payload becomes the step's output and is available to downstream steps via `{{ .context.<save_as> }}`.
+         * @description Resumes a run that is suspended on a `wait_event` step matching the provided `step_key`. The `result` payload becomes the step's output, available to downstream steps at `steps.<key>.output` (schema_version 2) or `{{ .context.<save_as> }}` (schema_version 1).
          */
         post: operations["signalRun"];
         delete?: never;
@@ -1334,7 +1058,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project}/toolkits": {
+    "/v1/projects/{project_handle}/toolkits": {
         parameters: {
             query?: never;
             header?: never;
@@ -1349,7 +1073,7 @@ export interface paths {
         put?: never;
         /**
          * Create toolkit
-         * @description Creates a project-local toolkit with action selector grants.
+         * @description Creates a project-local toolkit with named action selectors.
          */
         post: operations["createToolkit"];
         delete?: never;
@@ -1358,7 +1082,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project}/toolkits/{toolkit_id}": {
+    "/v1/projects/{project_handle}/toolkits/{toolkit_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -1372,7 +1096,7 @@ export interface paths {
         get: operations["getToolkit"];
         /**
          * Update toolkit
-         * @description Replaces mutable toolkit metadata and grant arrays when supplied.
+         * @description Updates the mutable toolkit representation. Send the full request body, including required field `name`; partial payloads are rejected.
          */
         put: operations["updateToolkit"];
         post?: never;
@@ -1386,7 +1110,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project}/skills": {
+    "/v1/projects/{project_handle}/skills": {
         parameters: {
             query?: never;
             header?: never;
@@ -1410,7 +1134,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project}/skills/import": {
+    "/v1/projects/{project_handle}/skills/import": {
         parameters: {
             query?: never;
             header?: never;
@@ -1430,7 +1154,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project}/skills/{skill_id}": {
+    "/v1/projects/{project_handle}/skills/{skill_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -1444,7 +1168,7 @@ export interface paths {
         get: operations["getSkill"];
         /**
          * Update skill
-         * @description Replaces mutable skill metadata, instructions, and requested tool filters when supplied.
+         * @description Updates the mutable skill representation. Send the full request body, including required fields `name` and `instructions`; partial payloads are rejected.
          */
         put: operations["updateSkill"];
         post?: never;
@@ -1458,7 +1182,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project}/tables": {
+    "/v1/projects/{project_handle}/tables": {
         parameters: {
             query?: never;
             header?: never;
@@ -1467,13 +1191,13 @@ export interface paths {
         };
         /**
          * List tables
-         * @description List project-scoped tables visible to the caller.
+         * @description Lists the project's tables, optionally filtered by name.
          */
         get: operations["listTables"];
         put?: never;
         /**
          * Create table
-         * @description Create a project-scoped table with a typed column schema.
+         * @description Creates a project table with a typed column schema.
          */
         post: operations["createTable"];
         delete?: never;
@@ -1482,7 +1206,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project}/tables/{table_id}": {
+    "/v1/projects/{project_handle}/tables/{table_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -1491,26 +1215,26 @@ export interface paths {
         };
         /**
          * Get table
-         * @description Get table metadata and schema by table ID.
+         * @description Gets table metadata and column schema by table ID.
          */
         get: operations["getTable"];
-        /**
-         * Update table
-         * @description Update table name, description, ownership, or schema and resync declared indexes.
-         */
-        put: operations["updateTable"];
+        put?: never;
         post?: never;
         /**
          * Delete table and all its rows
-         * @description Delete one table and all rows stored under it.
+         * @description Deletes one table and all rows stored under it; the operation cannot be undone.
          */
         delete: operations["deleteTable"];
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * Update table
+         * @description Updates table metadata or schema and resyncs declared indexes.
+         */
+        patch: operations["updateTable"];
         trace?: never;
     };
-    "/v1/projects/{project}/tables/{table_id}/stats": {
+    "/v1/projects/{project_handle}/tables/{table_id}/stats": {
         parameters: {
             query?: never;
             header?: never;
@@ -1530,7 +1254,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project}/tables/{table_id}/rows": {
+    "/v1/projects/{project_handle}/tables/{table_id}/rows": {
         parameters: {
             query?: never;
             header?: never;
@@ -1540,17 +1264,17 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Insert row
-         * @description Validate and insert one row into the table.
+         * Create row
+         * @description Validates row data against the table schema and inserts one new row.
          */
-        post: operations["insertTableRow"];
+        post: operations["createTableRow"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project}/tables/{table_id}/query": {
+    "/v1/projects/{project_handle}/tables/{table_id}/query": {
         parameters: {
             query?: never;
             header?: never;
@@ -1570,7 +1294,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project}/tables/{table_id}/search": {
+    "/v1/projects/{project_handle}/tables/{table_id}/search": {
         parameters: {
             query?: never;
             header?: never;
@@ -1590,7 +1314,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project}/tables/{table_id}/upsert": {
+    "/v1/projects/{project_handle}/tables/{table_id}/upsert": {
         parameters: {
             query?: never;
             header?: never;
@@ -1601,9 +1325,7 @@ export interface paths {
         put?: never;
         /**
          * Upsert row
-         * @description Insert or update a row identified by a set of key columns. If a row with matching key-column values exists it is updated (PATCH semantics — unspecified fields are preserved). If no matching row is found a new row is inserted.
-         *
-         *     Returns 201 Created when a new row was inserted, 200 OK when an existing row was updated.
+         * @description Inserts or updates a row identified by key columns. Existing rows are patched with supplied fields; missing matches create a new row.
          */
         post: operations["upsertTableRow"];
         delete?: never;
@@ -1612,7 +1334,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project}/tables/{table_id}/bulk": {
+    "/v1/projects/{project_handle}/tables/{table_id}/bulk": {
         parameters: {
             query?: never;
             header?: never;
@@ -1622,17 +1344,17 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Bulk insert rows
-         * @description Validate and insert up to 1,000 rows into the table.
+         * Bulk create rows
+         * @description Validates and inserts up to 1,000 rows in one request, preserving input order.
          */
-        post: operations["bulkInsertTableRows"];
+        post: operations["bulkCreateTableRows"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project}/tables/{table_id}/rows/{row_id}": {
+    "/v1/projects/{project_handle}/tables/{table_id}/rows/{row_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -1641,26 +1363,26 @@ export interface paths {
         };
         /**
          * Get row by ID
-         * @description Get one table row by row ID.
+         * @description Gets one table row by ID, including its JSON data and version.
          */
         get: operations["getTableRow"];
         put?: never;
         post?: never;
         /**
          * Delete row
-         * @description Delete one row from the table.
+         * @description Deletes one row from the table by row ID.
          */
         delete: operations["deleteTableRow"];
         options?: never;
         head?: never;
         /**
-         * Update row (PATCH — merges into existing data)
-         * @description Validate and merge fields into an existing row, optionally checking the current row version.
+         * Update row
+         * @description Update one row by validating the supplied fields and preserving fields not included in the request. If `version` is provided, it must match the current row version.
          */
         patch: operations["updateTableRow"];
         trace?: never;
     };
-    "/v1/projects/{project}/artifacts": {
+    "/v1/projects/{project_handle}/artifacts": {
         parameters: {
             query?: never;
             header?: never;
@@ -1669,22 +1391,18 @@ export interface paths {
         };
         /**
          * List artifacts
-         * @description Returns artifacts in the project, ordered (created_at desc, id desc). Optional filters narrow by run, step, state, or mime prefix. Deleted artifacts are excluded by default; pass `state=deleted` to inspect tombstones. Results are scoped to the authenticated principal's User-owned artifact space.
+         * @description Returns artifacts in the project, ordered (created_at desc, id desc). Optional filters narrow by run, step, state, or mime prefix. Deleted artifacts are excluded from API reads.
          */
         get: operations["listArtifacts"];
         put?: never;
-        /**
-         * Publish artifact
-         * @description Accepts a multipart file upload from a worker that is currently executing a claimed job. The request must include `X-Mobius-Lease-Token`; Mobius resolves the active claim and derives run, step, job, worker session, attempt, and shared visibility from the lease. Caller-supplied lineage or visibility fields are rejected.
-         */
-        post: operations["createArtifact"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project}/artifacts/{id}": {
+    "/v1/projects/{project_handle}/artifacts/{artifact_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -1700,7 +1418,7 @@ export interface paths {
         post?: never;
         /**
          * Delete artifact
-         * @description Soft-delete the artifact row and delete the underlying Mobius-managed object before reporting success. The tombstone remains for audit and run-history views, while content and quota charging are removed.
+         * @description Deletes the artifact and removes any Mobius-managed content before reporting success. Deleted artifacts are removed from public API visibility, and their content no longer counts toward artifact quota.
          */
         delete: operations["deleteArtifact"];
         options?: never;
@@ -1708,7 +1426,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project}/artifacts/{id}/content": {
+    "/v1/projects/{project_handle}/artifacts/{artifact_id}/content": {
         parameters: {
             query?: never;
             header?: never;
@@ -1716,7 +1434,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Fetch artifact bytes
+         * Get artifact content
          * @description Streams artifact bytes through the Mobius API after enforcing the caller's artifact access scope. Safe preview mime types are returned inline; all other content is served as an attachment with `X-Content-Type-Options: nosniff`.
          */
         get: operations["getArtifactContent"];
@@ -1728,7 +1446,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project}/artifacts/{id}/signed-url": {
+    "/v1/projects/{project_handle}/artifacts/{artifact_id}/signed-url": {
         parameters: {
             query?: never;
             header?: never;
@@ -1738,7 +1456,7 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Sign artifact URL
+         * Create signed artifact URL
          * @description Generates a fresh, time-boxed Mobius-managed storage URL for the artifact after enforcing the caller's artifact access scope. Use `getArtifactContent` when bytes should flow through the Mobius API instead of a signed storage URL.
          */
         post: operations["createArtifactSignedUrl"];
@@ -1748,7 +1466,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project}/settings/artifact-storage/quota": {
+    "/v1/projects/{project_handle}/settings/artifact-storage/quota": {
         parameters: {
             query?: never;
             header?: never;
@@ -1756,7 +1474,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get storage usage
+         * Get artifact storage quota
          * @description Returns Mobius-managed artifact quota usage for the current org.
          */
         get: operations["getArtifactStorageQuota"];
@@ -1776,7 +1494,7 @@ export interface components {
         ErrorResponse: {
             /** @description Error detail. */
             error: {
-                /** @description Machine-readable error code */
+                /** @description Stable, machine-readable error code in lower_snake_case. The cross-cutting codes clients can rely on across endpoints are: `bad_request` (malformed input / failed validation), `unauthorized`, `forbidden`, `not_found`, `conflict` / `already_exists`, `rate_limit_exceeded`, and `service_unavailable`. Endpoint-specific codes (e.g. `loop_paused`, `invalid_signature`) extend this set; an unrecognized code should be handled by its HTTP status family. */
                 code: string;
                 /** @description Human-readable error message */
                 message: string;
@@ -1786,8 +1504,6 @@ export interface components {
                 };
             };
         };
-        /** @description Project ID. */
-        ProjectID: string;
         /**
          * @description Optional namespace for named runtime resources. Omitted/null means the project/default scope; `owner` means names are unique within `(project, owned_by)`.
          * @enum {string}
@@ -1804,54 +1520,16 @@ export interface components {
          */
         CapabilityReadinessReason: "not_configured" | "inactive" | "expired" | "provider_unavailable" | "permission_missing" | "not_implemented";
         /**
-         * @description Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints.
+         * @description Key/value tags for organizing and filtering resources. Up to 8 per resource; keys 1–128 characters, values up to 256. Keys prefixed `mobius:` are system-managed and cannot be set by callers.
          * @example {
-         *       "Environment": "Production",
-         *       "Department": "Finance"
+         *       "owner": "product"
          *     }
          */
         TagMap: {
             [key: string]: string;
         };
-        /** @description User or principal identity known to the organization. User records are useful for membership lists, role assignment UIs, attribution, and displaying profile information next to actions. */
-        User: {
-            /** @description Clerk user ID. Stable and globally unique across all orgs. */
-            id: string;
-            /** @description Primary email address from Clerk. */
-            email: string;
-            /**
-             * @description The principal type represented by this user record.
-             * @enum {string}
-             */
-            kind: "human" | "agent" | "service" | "system";
-            /** @description Authoritative single-line label for this user, regardless of kind. Humans get "First Last"; agents and other machine principals get their configured display name. Renderers should prefer this over first_name/last_name. */
-            display_name?: string;
-            /** @description Optional Mantine palette key (e.g. "indigo") used by avatar surfaces when no avatar_url is set. Populated for agent-kind users; empty otherwise. */
-            color?: string;
-            /** @description User's first name from their Clerk profile. */
-            first_name?: string;
-            /** @description User's last name from their Clerk profile. */
-            last_name?: string;
-            /** @description Profile avatar URL from Clerk (may be a Gravatar or uploaded image). */
-            avatar_url?: string;
-            /**
-             * Format: date-time
-             * @description When the user record was first mirrored into Mobius.
-             */
-            created_at: string;
-            /**
-             * Format: date-time
-             * @description Timestamp when this user record was last synced from Clerk.
-             */
-            updated_at: string;
-            /**
-             * Format: date-time
-             * @description When this user principal was soft-deleted, if applicable.
-             */
-            deleted_at?: string;
-        };
         /**
-         * @description Administrative status. Inactive agents cannot claim new jobs. Soft-deleted agents are represented by `deleted_at` and excluded from normal reads.
+         * @description Administrative status. Inactive agents cannot claim new jobs. Deleted agents are excluded from normal reads.
          * @enum {string}
          */
         AgentStatus: "active" | "inactive";
@@ -1860,13 +1538,28 @@ export interface components {
          * @enum {string}
          */
         ProjectAccessMode: "org_open" | "restricted";
-        /** @description Workspace boundary for loops, actions, credentials, agents, and runtime activity. Most operational APIs are project-scoped, so this object tells clients which handle to use and who can see the project. */
+        /**
+         * @description Workspace boundary for loops, actions, credentials, agents, and runtime activity. Most operational APIs live under a project, so this object tells clients which handle to use and who can see the project.
+         * @example {
+         *       "id": "prj_3q7m9x2v5n8p4r6t",
+         *       "name": "Product Ops",
+         *       "handle": "product-ops",
+         *       "description": "Product operations workflows",
+         *       "access_mode": "restricted",
+         *       "created_by": "user_2f9s3k4m5n6p7q8r",
+         *       "tags": {
+         *         "owner": "product"
+         *       },
+         *       "created_at": "2026-06-15T14:30:00Z",
+         *       "updated_at": "2026-06-15T14:30:00Z"
+         *     }
+         */
         Project: {
             /** @description Unique identifier for this project. */
             id: string;
             /** @description Human-readable project name. */
             name: string;
-            /** @description URL-safe slug used as a path segment in all project-scoped API routes. Unique within the org. Immutable after creation. */
+            /** @description URL-safe slug used as a path segment in project API routes. Unique within the org. Immutable after creation. */
             handle: string;
             /** @description Optional human-readable description. */
             description?: string;
@@ -1874,14 +1567,7 @@ export interface components {
             access_mode: components["schemas"]["ProjectAccessMode"];
             /** @description Principal ID of whoever created this project. */
             created_by?: string;
-            /**
-             * Format: date-time
-             * @description Timestamp when this project was archived. `null` for active projects. Archived projects are read-only and excluded from the default project listing.
-             */
-            archived_at?: string | null;
-            /** @description Role assigned to the auto-created agent principal of any new agent in this project, when no per-call `role_ids` are supplied on `createAgent`. `null` falls through to the system `Agent` role floor. */
-            default_agent_role_id?: string | null;
-            /** @description Resource tags applied to this project. */
+            /** @description Free-form labels used for filtering, ownership, or automation. */
             tags?: components["schemas"]["TagMap"];
             /**
              * Format: date-time
@@ -1899,12 +1585,13 @@ export interface components {
             items: components["schemas"]["Project"][];
         };
         /**
-         * @description Where the agent's default model call should run.
+         * @description Model-call route mode: `managed` or `worker`.
          * @enum {string}
          */
-        AgentModelRouteMode: "managed" | "worker" | "byo_provider";
+        AgentModelRouteMode: "managed" | "worker";
         /** @description Default model route used by built-in messaging and by loop agent steps that do not override the route. */
         AgentModelRoute: {
+            /** @description Where this model call should run. */
             mode: components["schemas"]["AgentModelRouteMode"];
             /** @description Environment to use for worker-backed model calls. */
             environment_id?: string;
@@ -1914,15 +1601,33 @@ export interface components {
             model?: string;
             /** @description Worker queue for customer-worker model calls. */
             queue?: string;
-            /** @description Worker capabilities required for this route. */
-            required_capabilities?: string[];
         };
         /**
          * @description Controls how granted actions are surfaced to the model in Mobius-hosted agent turns. `flat` exposes one tool per action, while `meta` groups related actions behind compact command routers.
          * @enum {string}
          */
         AgentToolPresentation: "flat" | "meta";
-        /** @description Project-scoped AI actor identity. An agent IS a principal (its permissions are role grants on that principal); agents are useful when loops need a named actor with instructions, capabilities, configuration, and session presence. */
+        /**
+         * @description AI actor identity. An agent IS a principal (its permissions are role grants on that principal); agents are useful when loops need a named actor with instructions, configuration, and session presence.
+         * @example {
+         *       "id": "agent_5n8p2q7m4x9r3v6t",
+         *       "principal_id": "agent_5n8p2q7m4x9r3v6t",
+         *       "name": "PR reviewer",
+         *       "description": "Reviews pull requests for risky changes.",
+         *       "kind": "llm",
+         *       "color": "teal",
+         *       "model": "claude-sonnet-4-6",
+         *       "tool_presentation": "flat",
+         *       "status": "active",
+         *       "tags": {
+         *         "owner": "product"
+         *       },
+         *       "created_by": "user_2f9s3k4m5n6p7q8r",
+         *       "updated_by": "user_2f9s3k4m5n6p7q8r",
+         *       "created_at": "2026-06-15T14:30:00Z",
+         *       "updated_at": "2026-06-15T14:30:00Z"
+         *     }
+         */
         Agent: {
             /** @description Unique identifier for this agent. */
             id: string;
@@ -1936,10 +1641,9 @@ export interface components {
             kind?: string;
             /** @description Display color for this agent in UI surfaces. One of the Mantine color palette keys (e.g. `indigo`, `teal`, `grape`); empty string falls back to a hash-derived color. */
             color?: string;
-            /** @description Capability names used by orchestrators to select suitable agents. */
-            capabilities?: string[];
-            /** @description Model identifier for platform agents. Accepts any id returned by `GET /v1/projects/{project}/catalog/models`, optionally `provider/`-prefixed (e.g. `xai/grok-4`); bare known ids (e.g. `claude-sonnet-4-6`) are auto-detected to their provider. Empty string falls back to the platform default. */
+            /** @description Model identifier for platform agents. Accepts any id returned by `GET /v1/projects/{project_handle}/catalog/models`, optionally `provider/`-prefixed (e.g. `xai/grok-4`); bare known ids (e.g. `claude-sonnet-4-6`) are auto-detected to their provider. Empty string falls back to the platform default. */
             model?: string;
+            /** @description Default route for model calls made by this agent. */
             model_route?: components["schemas"]["AgentModelRoute"];
             /** @description Default tool presentation used by loop agent steps and built-in channel-message replies for this agent. */
             tool_presentation?: components["schemas"]["AgentToolPresentation"];
@@ -1947,13 +1651,13 @@ export interface components {
             system_prompt?: string;
             /** @description Current agent status: `active` or `inactive`. */
             status: components["schemas"]["AgentStatus"];
-            /** @description Inbox address provisioned via POST /v1/projects/{project}/agents/{id}/inbox (opt-in; not created automatically at agent creation). The field is populated only after a successful provisioning call. Use this address to add the agent as a member on external platforms (Linear, GitHub, Slack, etc.) so the platform can deliver notifications to the agent. */
+            /** @description Inbox address provisioned via POST /v1/projects/{project_handle}/agents/{resource_id}/inbox (opt-in; not created automatically at agent creation). The field is populated only after a successful provisioning call. Use this address to add the agent as a member on external platforms (Linear, GitHub, Slack, etc.) so the platform can deliver notifications to the agent. */
             email_address?: string;
-            /** @description Resource tags applied to this agent. */
+            /** @description Free-form labels used for filtering, ownership, or automation. */
             tags?: components["schemas"]["TagMap"];
-            /** @description User ID of the principal who created this agent. */
+            /** @description ID of the principal who created this agent. */
             created_by?: string;
-            /** @description User ID of the principal who last updated this agent. */
+            /** @description ID of the principal who last updated this agent. */
             updated_by?: string;
             /**
              * Format: date-time
@@ -1965,17 +1669,25 @@ export interface components {
              * @description Timestamp when this agent was last updated.
              */
             updated_at: string;
-            /**
-             * Format: date-time
-             * @description Set when the agent has been soft-deleted. Soft-deleted agents are excluded from normal listing and lookups but their records are retained so historical chat messages can resolve the sender name.
-             */
-            deleted_at?: string | null;
         };
         AgentListResponse: {
             /** @description The list of results for this page. */
             items: components["schemas"]["Agent"][];
         };
-        /** @description Stored API credential metadata for loop and service access. The raw secret is never returned here; use this object to list, audit, expire, or identify keys by prefix without exposing tokens. */
+        /**
+         * @description Stored API credential metadata for loop and service access. The raw secret is never returned here; use this object to list, audit, expire, or identify keys by prefix without exposing tokens.
+         * @example {
+         *       "id": "cred_1jz8q2m7xp9vn4kt",
+         *       "name": "CI worker",
+         *       "key_prefix": "mbx_7q2v",
+         *       "principal_id": "svc_7q2v9x6m3n8p5r4t",
+         *       "tags": {
+         *         "owner": "product"
+         *       },
+         *       "created_at": "2026-06-15T14:30:00Z",
+         *       "updated_at": "2026-06-15T14:30:00Z"
+         *     }
+         */
         APIKey: {
             /** @description Unique identifier for this API key. */
             id: string;
@@ -1983,8 +1695,6 @@ export interface components {
             name: string;
             /** @description First 8 characters of the key, used to identify it without exposing the secret. */
             key_prefix: string;
-            /** @description Project that owns the principal this key authenticates as. */
-            project_id: components["schemas"]["ProjectID"];
             /** @description Principal this key authenticates as. */
             principal_id: string;
             /**
@@ -1997,7 +1707,7 @@ export interface components {
              * @description Timestamp of the most recent authenticated request using this key.
              */
             last_used_at?: string;
-            /** @description Resource tags applied to this API key. */
+            /** @description Free-form labels used for filtering, ownership, or rotation policy. */
             tags?: components["schemas"]["TagMap"];
             /**
              * Format: date-time
@@ -2010,7 +1720,21 @@ export interface components {
              */
             updated_at: string;
         };
-        /** @description Returned only on key creation. Contains the raw `key` value which is not retrievable after this response. */
+        /**
+         * @description Returned only on key creation. Contains the raw `key` value which is not retrievable after this response.
+         * @example {
+         *       "id": "cred_1jz8q2m7xp9vn4kt",
+         *       "name": "CI worker",
+         *       "key_prefix": "mbx_7q2v",
+         *       "principal_id": "svc_7q2v9x6m3n8p5r4t",
+         *       "tags": {
+         *         "owner": "product"
+         *       },
+         *       "created_at": "2026-06-15T14:30:00Z",
+         *       "updated_at": "2026-06-15T14:30:00Z",
+         *       "key": "mbx_7q2v9k1m_redacted"
+         *     }
+         */
         APIKeyCreateResult: {
             /** @description Unique identifier for the created API key. */
             id: string;
@@ -2018,8 +1742,6 @@ export interface components {
             name: string;
             /** @description First 8 characters of the key for identification. */
             key_prefix: string;
-            /** @description Project that owns the principal this key authenticates as. */
-            project_id: components["schemas"]["ProjectID"];
             /** @description Principal this key authenticates as. */
             principal_id: string;
             /**
@@ -2032,7 +1754,7 @@ export interface components {
              * @description Timestamp of the most recent authenticated request using this key.
              */
             last_used_at?: string;
-            /** @description Resource tags applied to this API key. */
+            /** @description Labels applied to the newly created key. */
             tags?: components["schemas"]["TagMap"];
             /**
              * Format: date-time
@@ -2047,6 +1769,24 @@ export interface components {
             /** @description The raw API key. Returned only once at creation — store it securely immediately. */
             key: string;
         };
+        /**
+         * @example {
+         *       "items": [
+         *         {
+         *           "id": "cred_1jz8q2m7xp9vn4kt",
+         *           "name": "CI worker",
+         *           "key_prefix": "mbx_7q2v",
+         *           "principal_id": "svc_7q2v9x6m3n8p5r4t",
+         *           "tags": {
+         *             "owner": "product"
+         *           },
+         *           "created_at": "2026-06-15T14:30:00Z",
+         *           "updated_at": "2026-06-15T14:30:00Z"
+         *         }
+         *       ],
+         *       "has_more": false
+         *     }
+         */
         APIKeyListResponse: {
             /** @description The list of results for this page. */
             items: components["schemas"]["APIKey"][];
@@ -2055,7 +1795,16 @@ export interface components {
             /** @description Whether additional pages are available. */
             has_more: boolean;
         };
-        /** @description Request shape for creating a project API key bound to a machine principal. The key authenticates as that principal; permissions are managed by assigning roles to the principal, not by granting permissions to the key. */
+        /**
+         * @description Request shape for creating a project API key bound to a machine principal. The key authenticates as that principal; permissions are managed by assigning roles to the principal, not by granting permissions to the key.
+         * @example {
+         *       "name": "CI worker",
+         *       "principal_id": "svc_7q2v9x6m3n8p5r4t",
+         *       "tags": {
+         *         "owner": "product"
+         *       }
+         *     }
+         */
         CreateAPIKeyRequest: {
             /** @description Human-readable label, unique within the project. */
             name: string;
@@ -2066,7 +1815,7 @@ export interface components {
              * @description Optional hard expiry. Omit for a non-expiring key.
              */
             expires_at?: string;
-            /** @description Initial tag set. */
+            /** @description Labels to apply to the new API key. */
             tags?: components["schemas"]["TagMap"];
         };
         /** @description Request hints that describe the safe-use properties of the action. Used by the engine and tooling to decide retry behavior, dry-run eligibility, etc. Unknown request properties are rejected. */
@@ -2079,7 +1828,7 @@ export interface components {
             read_only?: boolean;
         };
         /** @description Response hints that describe the safe-use properties of the action. Response annotations are forward-compatible so the server can add response-only hints without breaking strict clients. */
-        ActionAnnotationsResponse: {
+        ActionAnnotations: {
             /** @description The action produces the same result when called with the same inputs; safe to retry automatically. */
             idempotent?: boolean;
             /** @description The action has irreversible side effects (deletion, financial transactions, etc.). Surfaced as a warning in UI. */
@@ -2094,9 +1843,48 @@ export interface components {
          * @enum {string}
          */
         ActionEndpointKind: "http" | "worker";
-        /** @description Registers a project-owned custom action callable from loops and agents. */
+        /**
+         * @description Registers a project-owned custom action callable from loops and agents.
+         * @example {
+         *       "name": "review-pr",
+         *       "title": "Review PR",
+         *       "description": "Review a pull request and return findings.",
+         *       "endpoint_kind": "http",
+         *       "endpoint_url": "https://hooks.example.com/mobius/review-pr",
+         *       "input_schema": {
+         *         "type": "object",
+         *         "required": [
+         *           "pull_request_url"
+         *         ],
+         *         "properties": {
+         *           "pull_request_url": {
+         *             "type": "string"
+         *           }
+         *         }
+         *       },
+         *       "output_schema": {
+         *         "type": "object",
+         *         "properties": {
+         *           "findings": {
+         *             "type": "array",
+         *             "items": {
+         *               "type": "string"
+         *             }
+         *           }
+         *         }
+         *       },
+         *       "annotations": {
+         *         "idempotent": true,
+         *         "destructive": false,
+         *         "read_only": true
+         *       },
+         *       "tags": {
+         *         "owner": "product"
+         *       }
+         *     }
+         */
         CreateActionRequest: {
-            /** @description Project-scoped identifier used in loop step definitions. Lowercase alphanumeric + hyphens, e.g. "send-email". Must be unique within the project. Cannot start with "mobius." (reserved prefix). */
+            /** @description Identifier used in loop step definitions. Lowercase alphanumeric + hyphens, e.g. "send-email". Must be unique within the project. Cannot start with "mobius." (reserved prefix). */
             name: string;
             /** @description Human-readable display name shown in the UI and catalog. */
             title?: string;
@@ -2106,7 +1894,7 @@ export interface components {
              * @description Backing kind for the action. `http` actions POST to `endpoint_url` with a Mobius signature. `worker` actions are dispatched through jobs to connected workers that advertise this registered name.
              * @default http
              */
-            endpoint_kind: components["schemas"]["ActionEndpointKind"];
+            endpoint_kind: string & components["schemas"]["ActionEndpointKind"];
             /**
              * Format: uri
              * @description Required when endpoint_kind is `http`; omitted for worker actions.
@@ -2122,10 +1910,8 @@ export interface components {
             };
             /** @description Safe-use hints used by execution and authoring tools. */
             annotations?: components["schemas"]["ActionAnnotationsRequest"];
-            /** @description Arbitrary key-value string tags for filtering and organization. */
-            tags?: {
-                [key: string]: string;
-            };
+            /** @description Free-form labels used for filtering, ownership, or lifecycle policy. */
+            tags?: components["schemas"]["TagMap"];
         };
         /** @description Updates action metadata, endpoint, schemas, or safe-use hints. */
         UpdateActionRequest: {
@@ -2148,23 +1934,63 @@ export interface components {
             };
             /** @description Pass null to clear all annotation flags. */
             annotations?: components["schemas"]["ActionAnnotationsRequest"] | null;
-            /** @description Replacement tag map. Replaces the existing tags entirely. */
-            tags?: {
-                [key: string]: string;
-            };
+            /** @description Replacement labels; send an empty object to clear all tags. */
+            tags?: components["schemas"]["TagMap"];
         };
-        /** @description Project-owned custom action definition callable by loops and agents. */
+        /**
+         * @description Project-owned custom action definition callable by loops and agents.
+         * @example {
+         *       "id": "act_8m4x9q2v7p5n3r6t",
+         *       "name": "review-pr",
+         *       "title": "Review PR",
+         *       "description": "Review a pull request and return findings.",
+         *       "endpoint_kind": "http",
+         *       "endpoint_url": "https://hooks.example.com/mobius/review-pr",
+         *       "input_schema": {
+         *         "type": "object",
+         *         "required": [
+         *           "pull_request_url"
+         *         ],
+         *         "properties": {
+         *           "pull_request_url": {
+         *             "type": "string"
+         *           }
+         *         }
+         *       },
+         *       "output_schema": {
+         *         "type": "object",
+         *         "properties": {
+         *           "findings": {
+         *             "type": "array",
+         *             "items": {
+         *               "type": "string"
+         *             }
+         *           }
+         *         }
+         *       },
+         *       "annotations": {
+         *         "idempotent": true,
+         *         "destructive": false,
+         *         "read_only": true
+         *       },
+         *       "tags": {
+         *         "owner": "product"
+         *       },
+         *       "created_at": "2026-06-15T14:30:00Z",
+         *       "updated_at": "2026-06-15T14:30:00Z"
+         *     }
+         */
         Action: {
             /** @description Unique identifier for this action. */
             id: string;
-            /** @description Project-scoped stable identifier used in loop definitions. */
+            /** @description Stable identifier used in loop definitions. */
             name: string;
             /** @description Human-readable display title for the action. */
             title?: string;
             /** @description Markdown description of what the action does. */
             description?: string;
             /** @description Backing kind of this project-owned action. `http` actions POST to an endpoint URL. `worker` actions are dispatched through jobs to connected workers that advertise this registered name. */
-            endpoint_kind: components["schemas"]["ActionEndpointKind"];
+            endpoint_kind: string & components["schemas"]["ActionEndpointKind"];
             /**
              * Format: uri
              * @description HTTP/HTTPS URL Mobius POSTs to when invoking this action. Populated for endpoint_kind: http only.
@@ -2179,11 +2005,9 @@ export interface components {
                 [key: string]: unknown;
             };
             /** @description Safe-use hints returned for this action. */
-            annotations?: components["schemas"]["ActionAnnotationsResponse"];
-            /** @description Arbitrary key-value string tags. */
-            tags?: {
-                [key: string]: string;
-            };
+            annotations?: components["schemas"]["ActionAnnotations"];
+            /** @description Free-form labels attached to this action. */
+            tags?: components["schemas"]["TagMap"];
             /** @description Project secret reference that stores this action's signing key. Present for HTTP-backed actions. */
             secret_ref?: string;
             /**
@@ -2241,12 +2065,12 @@ export interface components {
             /** @description Why the action is `needs_setup`. Omitted when `readiness` is `ready`. */
             readiness_reason?: components["schemas"]["CapabilityReadinessReason"];
             /**
-             * @description Author-declared risk classification. Used by toolkit-author UIs to surface warnings and by audit views to prioritize attention.
+             * @description Author-declared risk classification: `low`, `medium`, `high`, or `critical`. Used by toolkit-author UIs to surface warnings and by audit views to prioritize attention.
              * @enum {string}
              */
             risk: "low" | "medium" | "high" | "critical";
             /** @description Safe-use hints returned for this catalog action. Always present; flags default to false. */
-            annotations: components["schemas"]["ActionAnnotationsResponse"];
+            annotations: components["schemas"]["ActionAnnotations"];
             /** @description JSON Schema describing expected input parameters. */
             input_schema?: {
                 [key: string]: unknown;
@@ -2263,11 +2087,12 @@ export interface components {
             /** @description Execution locations and worker requirements available to loop authors. */
             execution?: components["schemas"]["ActionExecutionMetadata"];
         };
+        /** @description Execution-location metadata surfaced to loop authors and action pickers. */
         ActionExecutionMetadata: {
-            /** @description Execution locations supported by this action. */
+            /** @description Supported execution locations: `managed`, `worker`, or `environment`. */
             supported_locations: ("managed" | "worker" | "environment")[];
             /**
-             * @description Location selected by default in authoring UIs.
+             * @description Default execution location: `managed`, `worker`, or `environment`.
              * @enum {string}
              */
             default_location: "managed" | "worker" | "environment";
@@ -2295,7 +2120,7 @@ export interface components {
         /** @description Unified invocation result for any action kind. */
         ActionInvocationResult: {
             /**
-             * @description Terminal or in-progress status of the invocation.
+             * @description Invocation status: `active`, `completed`, or `failed`.
              * @enum {string}
              */
             status: "active" | "completed" | "failed";
@@ -2362,6 +2187,7 @@ export interface components {
         };
         /** @description The triggerable event catalog available to a project. */
         EventCatalogResponse: {
+            /** @description Event sources available for authoring triggers. */
             items: components["schemas"]["EventCatalogSource"][];
             /** @description Platform namespaces that are recognized but are not triggerable event sources. Authoring UIs use these to distinguish a recognized-but-unsupported matcher prefix from a wholly unknown one. */
             reserved_prefixes: components["schemas"]["EventCatalogReservedPrefix"][];
@@ -2375,30 +2201,40 @@ export interface components {
              * @enum {string}
              */
             kind: "integration" | "capability";
+            /** @description Human-readable source name for UI pickers. */
             display_name: string;
+            /** @description Short explanation of what emits events under this prefix. */
             description?: string;
             /** @description Whether this source can start a loop now. `capability` sources are always `ready`. `integration` sources are `ready` only when the project has an active, usable connection for the provider. */
             readiness: components["schemas"]["CapabilityReadiness"];
             /** @description Why an `integration` source is `needs_setup`. Omitted when `readiness` is `ready` and for `capability` sources. */
             readiness_reason?: components["schemas"]["CapabilityReadinessReason"];
+            /** @description Concrete event types currently documented for this source. */
             event_types: components["schemas"]["EventCatalogEventType"][];
         };
+        /** @description One concrete event type exposed by an event catalog source. */
         EventCatalogEventType: {
             /** @description Dotted event-type identifier (`table.row.inserted`, `github.pull_request.opened`). */
             name: string;
+            /** @description Human-readable explanation of when this event fires. */
             description?: string;
-            /** @description JSON Schema for the normalized event data available to event-trigger runs at `{{ .inputs.event.* }}` and to event conditions/mappings at `event.*`. Absent only when the event payload is intentionally open-ended and the provider has not registered an authoring schema. */
+            /** @description JSON Schema for the normalized event data available to event-trigger runs (`${{ event.* }}` in schema_version 2 loops, `{{ .inputs.event.* }}` in schema_version 1) and to event conditions/mappings at `event.*`. Absent only when the event payload is intentionally open-ended and the provider has not registered an authoring schema. */
             event_schema?: {
                 [key: string]: unknown;
             };
-            /** @description JSON Schema for normalized routing metadata available to event-trigger runs at `{{ .inputs.meta.* }}` and to event conditions/mappings at `meta.*`. */
+            /** @description JSON Schema for normalized routing metadata available to event-trigger runs (`${{ meta.* }}` in schema_version 2 loops, `{{ .inputs.meta.* }}` in schema_version 1) and to event conditions/mappings at `meta.*`. */
             meta_schema?: {
                 [key: string]: unknown;
             };
         };
+        /** @description A recognized event namespace that is not itself triggerable. */
         EventCatalogReservedPrefix: {
+            /** @description Reserved top-level event prefix. */
             prefix: string;
-            /** @enum {string} */
+            /**
+             * @description Whether the prefix names a platform capability or an authoring utility namespace.
+             * @enum {string}
+             */
             kind: "capability" | "utility";
         };
         /** @description Models a platform agent can be assigned in this project, grouped by available provider. */
@@ -2413,6 +2249,7 @@ export interface components {
              */
             reason?: "platform_funding_denied" | "credentials_unavailable";
         };
+        /** @description Available model choices for one provider. */
         ModelProviderGroup: {
             /** @description Canonical provider id (`anthropic`, `openai`, `gemini`, `xai`). */
             provider: string;
@@ -2423,8 +2260,10 @@ export interface components {
              * @enum {string}
              */
             source: "byok" | "platform";
+            /** @description Models offered by this provider in display order. */
             models: components["schemas"]["ModelOption"][];
         };
+        /** @description One selectable LLM model in the project model catalog. */
         ModelOption: {
             /** @description Bare model id assigned to an agent's `model` field. */
             id: string;
@@ -2437,15 +2276,18 @@ export interface components {
             /** @description Whether this is the suggested default for its provider. */
             recommended?: boolean;
         };
-        /** @enum {string} */
+        /**
+         * @description Backing provider: `sprites`, `cloudflare_containers`, or `worker`.
+         * @enum {string}
+         */
         EnvironmentProvider: "sprites" | "cloudflare_containers" | "worker";
         /**
-         * @description Providers the control plane can provision on demand. Excludes `worker`: worker-provided environments are registered out-of-band via the attach endpoint and are never provisioned through create/acquire.
+         * @description Providers the control plane can provision on demand: `sprites` or `cloudflare_containers`. Excludes `worker`: worker-provided environments are registered out-of-band via the attach endpoint and are never provisioned through create/acquire.
          * @enum {string}
          */
         ProvisionEnvironmentProvider: "sprites" | "cloudflare_containers";
         /**
-         * @description Lifecycle status of an environment.
+         * @description Lifecycle status: `provisioning`, `ready`, `running`, `retained`, `destroying`, `destroyed`, `failed`, or `orphaned`.
          * @enum {string}
          */
         EnvironmentStatus: "provisioning" | "ready" | "running" | "retained" | "destroying" | "destroyed" | "failed" | "orphaned";
@@ -2455,57 +2297,64 @@ export interface components {
          */
         EnvironmentLifetime: "run" | "lease" | "explicit";
         /**
-         * @description Declared purpose for an environment; used for routing and cleanup defaults.
-         * @enum {string}
-         */
-        EnvironmentPurpose: "implementation" | "review" | "verification" | "preview" | "debug" | "worker" | "custom";
-        /**
          * @description High-level ownership policy for how Mobius plans to use the environment. `run` is one-shot and auto-cleaned with a run; `agent` and `loop` are persistent environment policies; `manual` is operator controlled.
          * @enum {string}
          */
         EnvironmentMode: "manual" | "run" | "agent" | "loop";
         /**
-         * @description Execution or lifecycle object this environment is bound to. Ownership remains in `owned_by`.
-         * @enum {string}
-         */
-        EnvironmentBoundToType: "none" | "run" | "worker_session" | "service" | "agent" | "loop" | "manual";
-        /**
-         * @description Whether a finished environment is retained or destroyed, and under what outcome.
+         * @description Retention behavior: `manual`, `destroy_on_success`, `retain_on_failure`, or `retain_always`.
          * @enum {string}
          */
         EnvironmentRetentionPolicy: "manual" | "destroy_on_success" | "retain_on_failure" | "retain_always";
-        /** @enum {string} */
+        /**
+         * @description Cleanup outcome: `none`, `pending`, `succeeded`, `failed`, or `skipped`.
+         * @enum {string}
+         */
         EnvironmentCleanupStatus: "none" | "pending" | "succeeded" | "failed" | "skipped";
-        /** @enum {string} */
-        EnvironmentLeaseStatus: "active" | "released" | "expired" | "revoked";
+        /** @description Durable execution environment record and provider state. */
         Environment: {
+            /** @description Unique environment identifier. */
             id: string;
+            /** @description Human-readable environment name. */
             name: string;
+            /** @description Naming scope for this environment. */
             scope?: components["schemas"]["ResourceScope"];
+            /** @description Backing environment provider. */
             provider: components["schemas"]["EnvironmentProvider"];
+            /** @description Provider-side resource identifier, when known. */
             provider_resource_id?: string;
+            /** @description Provider-side display name, when known. */
             provider_resource_name?: string;
+            /** @description Current provisioning and lifecycle status. */
             status: components["schemas"]["EnvironmentStatus"];
+            /** @description Reuse policy Mobius derived for the environment. */
             environment_mode: components["schemas"]["EnvironmentMode"];
+            /** @description How long the environment is expected to live. */
             lifetime: components["schemas"]["EnvironmentLifetime"];
-            purpose?: components["schemas"]["EnvironmentPurpose"];
             /** @description Principal owner ID. For agent-started work, this is the agent's principal ID. */
             owned_by?: string;
-            bound_to_type?: components["schemas"]["EnvironmentBoundToType"];
-            /** @description ID of the run, worker session, service, or manual association named by `bound_to_type`. */
-            bound_to_id?: string;
             /** @description User ID of the principal who created this environment. */
             created_by?: string;
             /** @description User ID of the principal who last updated this environment. */
             updated_by?: string;
+            /** @description Associated run ID, when bound to a run. */
             run_id?: string;
+            /** @description Associated job ID, when a worker job is active. */
             job_id?: string;
+            /** @description Worker session currently attached to this environment, when any. */
             current_worker_session_id?: string;
+            /** @description Associated agent ID, when bound to an agent. */
             agent_id?: string;
-            /** @enum {string} */
+            /**
+             * @description Environment template used to initialize the workspace; currently `coding-default`.
+             * @enum {string}
+             */
             template_id?: "coding-default";
+            /** @description Capability strings the environment can provide. */
             capabilities: string[];
+            /** @description Version of the environment spec format. */
             spec_version: number;
+            /** @description Provider-specific desired state. */
             spec?: {
                 [key: string]: unknown;
             };
@@ -2513,314 +2362,85 @@ export interface components {
             runtime: {
                 [key: string]: unknown;
             };
+            /** @description Optional labels for filtering and organization. */
             tags?: components["schemas"]["TagMap"];
+            /** @description Whether the spec or runtime metadata references secret material. */
             contains_secrets: boolean;
+            /** @description Last cleanup outcome. */
             cleanup_status: components["schemas"]["EnvironmentCleanupStatus"];
+            /** @description Retention behavior after work completes. */
             retention_policy: components["schemas"]["EnvironmentRetentionPolicy"];
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Expiration time for the active lease, when leased.
+             */
             lease_expires_at?: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Last time the provider or worker reported the environment.
+             */
             last_seen_at?: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Last reconciliation attempt time.
+             */
             last_reconciled_at?: string;
+            /** @description Latest provider or worker error, when present. */
             last_error?: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Time the environment record was created.
+             */
             created_at: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Time the environment record was last updated.
+             */
             updated_at: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Time the environment was destroyed, when terminal.
+             */
             destroyed_at?: string;
         };
-        EnvironmentLease: {
-            id: string;
-            environment_id: string;
-            holder_type?: components["schemas"]["EnvironmentBoundToType"];
-            holder_id?: string;
-            purpose?: components["schemas"]["EnvironmentPurpose"];
-            status: components["schemas"]["EnvironmentLeaseStatus"];
-            /** Format: date-time */
-            acquired_at: string;
-            /** Format: date-time */
-            expires_at?: string;
-            /** Format: date-time */
-            released_at?: string;
-        };
+        /** @description Cursor-paginated list of environments. */
         EnvironmentListResponse: {
+            /** @description Environments in the current page. */
             items: components["schemas"]["Environment"][];
+            /** @description Whether another page is available. */
             has_more: boolean;
+            /** @description Cursor to pass on the next request when `has_more` is true. */
             next_cursor?: string;
         };
+        /** @description Request body for creating a managed environment. */
         CreateEnvironmentRequest: {
             /** @description Human-readable environment name. */
             name?: string;
+            /** @description Optional naming scope for the environment. */
             scope?: components["schemas"]["ResourceScope"];
+            /** @description Provider to provision: `sprites` or `cloudflare_containers`. */
             provider?: components["schemas"]["ProvisionEnvironmentProvider"];
-            environment_mode?: components["schemas"]["EnvironmentMode"];
-            purpose?: components["schemas"]["EnvironmentPurpose"];
             /** @description Canonical user owner ID. Defaults to the authenticated user. */
             owned_by?: string;
-            bound_to_type?: components["schemas"]["EnvironmentBoundToType"];
-            /** @description ID of the object the environment is bound to (paired with `bound_to_type`). */
-            bound_to_id?: string;
-            lifetime?: components["schemas"]["EnvironmentLifetime"];
             /**
              * @description V1 supports only coding-default.
              * @enum {string}
              */
             template_id?: "coding-default";
+            /** @description Provider-specific desired state. */
             spec?: {
                 [key: string]: unknown;
             };
-            tags?: components["schemas"]["TagMap"];
-            retention_policy?: components["schemas"]["EnvironmentRetentionPolicy"];
-        };
-        AttachWorkerEnvironmentRequest: {
-            /** @description Stable per-workspace environment name; the idempotency key. */
-            name: string;
-            environment_mode?: components["schemas"]["EnvironmentMode"];
-            bound_to_type?: components["schemas"]["EnvironmentBoundToType"];
-            /** @description ID of the object the environment is bound to (paired with `bound_to_type`). */
-            bound_to_id?: string;
-            /** @description Worker-host path backing the environment (informational). */
-            workspace_path?: string;
+            /** @description Labels used for filtering, ownership, or cleanup policy. */
             tags?: components["schemas"]["TagMap"];
         };
         UpdateEnvironmentRequest: {
-            purpose?: components["schemas"]["EnvironmentPurpose"];
-            retention_policy?: components["schemas"]["EnvironmentRetentionPolicy"];
             /** @description Resource scope; send null to return to the project/default scope. */
             scope?: (string & components["schemas"]["ResourceScope"]) | null;
             /** @description Canonical user owner ID. Send null to clear ownership. */
             owned_by?: string | null;
-            bound_to_type?: components["schemas"]["EnvironmentBoundToType"];
-            /** @description ID of the object the environment is bound to; send null to clear. */
-            bound_to_id?: string | null;
+            /** @description Replacement labels; send an empty object to clear all tags. */
             tags?: components["schemas"]["TagMap"];
-        };
-        AcquireEnvironmentRequest: {
-            /** @description Existing environment ID to claim; omit to create a new environment. */
-            environment_id?: string;
-            /**
-             * @description V1 supports only coding-default.
-             * @enum {string}
-             */
-            template_id?: "coding-default";
-            /** @description Human-readable environment name (used when creating). */
-            name?: string;
-            scope?: components["schemas"]["ResourceScope"];
-            provider?: components["schemas"]["ProvisionEnvironmentProvider"];
-            environment_mode?: components["schemas"]["EnvironmentMode"];
-            purpose?: components["schemas"]["EnvironmentPurpose"];
-            holder_type?: components["schemas"]["EnvironmentBoundToType"];
-            /** @description ID of the lease holder (paired with `holder_type`). */
-            holder_id?: string;
-            /** @description Canonical user owner ID. Defaults to the authenticated user. */
-            owned_by?: string;
-            bound_to_type?: components["schemas"]["EnvironmentBoundToType"];
-            /** @description ID of the object the environment is bound to (paired with `bound_to_type`). */
-            bound_to_id?: string;
-            lifetime?: components["schemas"]["EnvironmentLifetime"];
-            spec?: {
-                [key: string]: unknown;
-            };
-            tags?: components["schemas"]["TagMap"];
-            /** @description Go duration string, for example 30m or 2h. */
-            lease_ttl?: string;
-        };
-        EnvironmentAcquireResult: {
-            environment: components["schemas"]["Environment"];
-            lease: components["schemas"]["EnvironmentLease"];
-        };
-        ExecEnvironmentRequest: {
-            /** @description Command and arguments to run, as an argv array. */
-            command: string[];
-            /** @description Working directory for the command (defaults to the workspace root). */
-            dir?: string;
-            /** @description Extra environment variables as `KEY=VALUE` strings. */
-            env?: string[];
-            /** @description Standard input to pipe to the command. */
-            stdin?: string;
-        };
-        EnvironmentExecResult: {
-            stdout: string;
-            stderr: string;
-            exit_code: number;
-        };
-        WriteEnvironmentFileRequest: {
-            /** @description Destination file path inside the environment. */
-            path: string;
-            /** @description File content to write. */
-            content: string;
-        };
-        StartEnvironmentWorkerRequest: {
-            api_url?: string;
-            /** @description Install/refresh the managed Mobius runtime bundle before starting the worker. Defaults to true unless `command` is supplied. */
-            managed_runtime?: boolean;
-            /** @description Runtime bundle version to install. Defaults to the server-configured runtime version. */
-            runtime_version?: string;
-            /** @description Friendly worker session name. Defaults to the environment name. */
-            worker_name?: string;
-            /** @description Job queues the worker should claim from (defaults to all). */
-            queues?: string[];
-            /** @description Restrict the worker to these action names. */
-            action_names?: string[];
-            /** @description Maximum number of jobs to run concurrently. */
-            concurrency?: number;
-            /** @description Override the worker command and arguments, as an argv array. */
-            command?: string[];
-            /** @description Working directory for the worker process. */
-            dir?: string;
-        };
-        EnvironmentStartWorkerResult: {
-            environment: components["schemas"]["Environment"];
-            api_key_id: string;
-            /** Format: date-time */
-            key_expires_at: string;
-            managed_runtime: boolean;
-            runtime_version: string;
-            /** Format: date-time */
-            runtime_installed_at?: string;
-            worker_log_path: string;
-            worker_session_id?: string;
-            stdout: string;
-            stderr: string;
-            exit_code: number;
-        };
-        EnvironmentWorkerLogsResponse: {
-            environment_id: string;
-            log_name: string;
-            log_path: string;
-            tail: number;
-            content: string;
-            stderr?: string;
-            exit_code: number;
-        };
-        CreateEnvironmentGitCredentialRequest: {
-            /** @description GitHub `owner/name` repository full name. */
-            repo_full_name: string;
-            /**
-             * @description Git operation the minted credential will authorize.
-             * @default clone
-             * @enum {string}
-             */
-            operation: "clone" | "fetch" | "push";
-        };
-        EnvironmentGitCredentialResult: {
-            host: string;
-            username: string;
-            /** @description One-time GitHub installation token. Do not log or persist. */
-            token: string;
-            /** Format: date-time */
-            expires_at: string;
-            repo_full_name: string;
-        };
-        /** @description Recently observed worker process for a project. Use sessions to see which machines, users, API clients, or agents are polling for work, what their configured concurrency is, and whether they appear stale. */
-        WorkerSession: {
-            /** @description Server-assigned session row ID (`wsess_…`). Generated by the control plane on first registration; opaque to workers and stable across refreshes for a given live row. */
-            id: string;
-            /** @description Caller-configured stable identifier for the worker process. The SDK auto-detects this from the runtime platform (Cloud Run revision, Kubernetes pod, Fly machine, Railway replica, Render instance) and falls back to a UUID. Unique within `(org_id, project_id)`. */
-            worker_instance_id: string;
-            /** @description Configured maximum number of jobs this worker process will hold in flight simultaneously. Reported by the SDK on register; rendered as a saturation bar in the admin UI (`busy_job_count / concurrency_limit`). */
-            concurrency_limit: number;
-            /** @description Optional human-readable name supplied in the claim request. */
-            name?: string;
-            /** @description Optional version string supplied in the claim request. */
-            version?: string;
-            /**
-             * Format: date-time
-             * @description Timestamp of this session's most recent register, claim, or job heartbeat activity. Used to compute `stale`.
-             */
-            last_seen_at?: string;
-            /**
-             * Format: date-time
-             * @description Most recent observed activity for this session, derived from `last_seen_at`, currently claimed job heartbeats, and the latest terminal job update.
-             */
-            last_activity_at?: string;
-            /** @description Coarse capability labels advertised by the worker for routing and builder eligibility. */
-            capabilities?: string[];
-            /** @description Queue names this worker can claim. Empty or absent means the default project queue set. */
-            queues?: string[];
-            /** @description Action names this worker can execute. Empty or absent means the worker has not advertised a narrowed action set. */
-            action_names?: string[];
-            /** @description Provider/model pairs this worker can generate with. */
-            models?: components["schemas"]["WorkerSocketModelCapability"][];
-            /** @description Principal this session authenticated as on register/heartbeat. A machine principal (kind `system`/`service`/`agent`) for deployed workers, or a human's principal when polling via the CLI. Inspect the embedded `principal.kind` to distinguish. */
-            principal_id?: string;
-            /** @description Embedded profile for `principal_id` — the authenticating principal, human or machine. Absent only when the principal record is unavailable. */
-            principal?: components["schemas"]["User"];
-            /** @description ID of the specific API key this session presented on its most recent register/heartbeat. Only set for API-key (machine principal) sessions; changes across credential rotations. Use together with `principal_id` to see rotation progress across a fleet. */
-            api_key_id?: string;
-            /** @description Agent this session represents, when the polling process declared itself as a registered agent (via `agent_id` on the claim request or via inference from its machine principal). Absent for ad-hoc worker processes that are not tied to a declared agent. */
-            agent_id?: string;
-            /** @description Managed environment this worker is running inside, when Mobius started it in a Sprite or another managed execution environment. */
-            environment_id?: string;
-            /**
-             * @description High-level lifecycle indicator for the row.
-             *     * `active` — recent heartbeat, healthy.
-             *     * `stale` — no heartbeat within the staleness window; row
-             *     retained for display until the 30-day delete floor.
-             *     * `draining` — explicit graceful-shutdown signal from the
-             *     SDK (reserved for future SDK releases).
-             *
-             *     Conflicts (a different process tried to register this `worker_instance_id` within the takeover window and was rejected) are surfaced inline as a 409 from the worker protocol; the previous registration's row remains `active` and never appears as a separate "conflicting" entry.
-             * @enum {string}
-             */
-            instance_status: "active" | "stale" | "draining";
-            /** @description True when `last_seen_at` is older than 90 seconds or absent. Computed at read time, not stored. Equivalent to `instance_status == "stale"`; both are returned for backward compatibility while clients update. */
-            stale: boolean;
-            /** @description Number of jobs this worker session is currently holding. */
-            busy_job_count: number;
-            /** @description Currently claimed jobs held by this worker session. */
-            current_jobs: components["schemas"]["WorkerSessionJobRef"][];
-            /** @description Most recent completed or failed job this worker session handled. */
-            last_job?: components["schemas"]["WorkerSessionJobRef"];
-        };
-        WorkerSessionJobRef: {
-            /** @description Job ID. */
-            id: string;
-            /** @description Loop run that owns the job. */
-            run_id: string;
-            /** @description Loop step name. */
-            step_name: string;
-            /** @description Action executed by the worker. */
-            action: string;
-            /**
-             * @description Current job lifecycle state.
-             * @enum {string}
-             */
-            status: "pending" | "claimed" | "completed" | "failed" | "cancelled";
-            /**
-             * Format: date-time
-             * @description Timestamp when the worker claimed the job.
-             */
-            claimed_at?: string;
-            /**
-             * Format: date-time
-             * @description Most recent heartbeat timestamp while the job is claimed.
-             */
-            heartbeat_at?: string;
-            /**
-             * Format: date-time
-             * @description Last job update timestamp.
-             */
-            updated_at: string;
-        };
-        WorkerSessionListResponse: {
-            /** @description The list of recently seen worker sessions. */
-            items: components["schemas"]["WorkerSession"][];
-            /** @description Aggregate counts across `items`, computed by the server so UIs do not need to re-derive them on every render. */
-            totals: components["schemas"]["WorkerSessionTotals"];
-        };
-        /** @description Project-wide rollup of the rendered worker sessions. Useful for the page header — "3 active instances · 18 slots · 7 busy · 1 stale" — without iterating items client-side. */
-        WorkerSessionTotals: {
-            /** @description Count of `instance_status == "active"` rows. */
-            active_instances: number;
-            /** @description Sum of `concurrency_limit` across active rows. */
-            slots: number;
-            /** @description Sum of `busy_job_count` across active rows. */
-            busy: number;
-            /** @description Count of `instance_status == "stale"` rows. */
-            stale: number;
         };
         WorkerSocketModelCapability: {
             /** @description LLM provider identifier, such as `ollama`. */
@@ -3044,6 +2664,17 @@ export interface components {
             message_id?: components["schemas"]["WorkerSocketMessageID"];
             error: components["schemas"]["WorkerSocketProtocolError"];
         };
+        /**
+         * @example {
+         *       "name": "Product Ops",
+         *       "handle": "product-ops",
+         *       "description": "Product operations workflows",
+         *       "access_mode": "restricted",
+         *       "tags": {
+         *         "owner": "product"
+         *       }
+         *     }
+         */
         CreateProjectRequest: {
             /** @description Human-readable project name. */
             name: string;
@@ -3053,7 +2684,7 @@ export interface components {
             description?: string;
             /** @description Initial project access policy: `org_open` or `restricted`. */
             access_mode?: components["schemas"]["ProjectAccessMode"];
-            /** @description Initial tag set. */
+            /** @description Initial labels used for filtering, ownership, or automation. */
             tags?: components["schemas"]["TagMap"];
         };
         UpdateProjectRequest: {
@@ -3065,9 +2696,7 @@ export interface components {
             access_mode?: components["schemas"]["ProjectAccessMode"];
             /** @description When transitioning from `org_open` to `restricted`, set true to insert all current org members as project members so nobody loses visibility on the flip. Ignored on other transitions. */
             seed_existing_members?: boolean;
-            /** @description Replacement role assigned to the auto-created agent principal of any new agent in this project. `null` clears the override and falls through to the system `Agent` role floor. Must resolve to a system-defined role or a role scoped to this project. */
-            default_agent_role_id?: string | null;
-            /** @description When supplied, replaces the user tag set on the project. */
+            /** @description Replacement labels; send an empty object to clear all tags. */
             tags?: components["schemas"]["TagMap"];
         };
         /**
@@ -3075,7 +2704,27 @@ export interface components {
          * @enum {string}
          */
         WebhookDeliveryStatus: "pending" | "processing" | "delivered" | "failed";
-        /** @description A project-level outgoing webhook subscription. When a subscribed event fires, Mobius POSTs the event payload to `url`. */
+        /**
+         * @description A project-level outgoing webhook subscription. When a subscribed event fires, Mobius POSTs the event payload to `url`.
+         * @example {
+         *       "id": "wbh_7x3m9q2v5p8n4r6t",
+         *       "name": "Run status sink",
+         *       "url": "https://hooks.example.com/mobius/run-status",
+         *       "events": [
+         *         "run.completed",
+         *         "run.failed"
+         *       ],
+         *       "enabled": true,
+         *       "created_by": "user_2f9s3k4m5n6p7q8r",
+         *       "tags": {
+         *         "owner": "product"
+         *       },
+         *       "secret_ref": "mobius/webhook/wbh_7x3m9q2v5p8n4r6t",
+         *       "secret_version": 1,
+         *       "created_at": "2026-06-15T14:30:00Z",
+         *       "updated_at": "2026-06-15T14:30:00Z"
+         *     }
+         */
         Webhook: {
             /** @description Unique identifier for this webhook. */
             id: string;
@@ -3091,7 +2740,7 @@ export interface components {
             created_by?: string;
             /** @description User ID of the principal who last updated this webhook. */
             updated_by?: string;
-            /** @description Resource tags applied to this webhook. */
+            /** @description Free-form labels used for filtering, ownership, or delivery policy. */
             tags?: components["schemas"]["TagMap"];
             /** @description Project secret reference that stores this webhook's signing key. */
             secret_ref?: string;
@@ -3113,6 +2762,25 @@ export interface components {
              */
             updated_at: string;
         };
+        /**
+         * @example {
+         *       "items": [
+         *         {
+         *           "id": "wbh_7x3m9q2v5p8n4r6t",
+         *           "name": "Run status sink",
+         *           "url": "https://hooks.example.com/mobius/run-status",
+         *           "events": [
+         *             "run.completed",
+         *             "run.failed"
+         *           ],
+         *           "enabled": true,
+         *           "created_at": "2026-06-15T14:30:00Z",
+         *           "updated_at": "2026-06-15T14:30:00Z"
+         *         }
+         *       ],
+         *       "has_more": false
+         *     }
+         */
         WebhookListResponse: {
             /** @description The list of results for this page. */
             items?: components["schemas"]["Webhook"][];
@@ -3121,7 +2789,19 @@ export interface components {
             /** @description Whether additional pages are available. */
             has_more: boolean;
         };
-        /** @description One delivery record for a webhook event. The daemon claims pending rows, POSTs the payload, and transitions to `delivered` or retries on failure. A delivery reaches `failed` only after exhausting all 10 retry attempts. */
+        /**
+         * @description One delivery record for a webhook event. The daemon claims pending rows, POSTs the payload, and transitions to `delivered` or retries on failure. A delivery reaches `failed` only after exhausting all 10 retry attempts.
+         * @example {
+         *       "id": "whd_4q8m2x7v5p9n3r6t",
+         *       "webhook_id": "wbh_7x3m9q2v5p8n4r6t",
+         *       "run_id": "run_8q5m2x9v7p3n4r6t",
+         *       "event_type": "run.completed",
+         *       "status": "delivered",
+         *       "attempts": 1,
+         *       "created_at": "2026-06-15T14:44:00Z",
+         *       "delivered_at": "2026-06-15T14:44:01Z"
+         *     }
+         */
         WebhookDeliveryRecord: {
             /** @description Unique identifier for this delivery record. */
             id: string;
@@ -3156,6 +2836,20 @@ export interface components {
             /** @description Whether additional pages are available. */
             has_more: boolean;
         };
+        /**
+         * @example {
+         *       "name": "Run status sink",
+         *       "url": "https://hooks.example.com/mobius/run-status",
+         *       "events": [
+         *         "run.completed",
+         *         "run.failed"
+         *       ],
+         *       "enabled": true,
+         *       "tags": {
+         *         "owner": "product"
+         *       }
+         *     }
+         */
         CreateWebhookRequest: {
             /** @description Human-readable name, unique within the project. */
             name: string;
@@ -3165,7 +2859,7 @@ export interface components {
             events: string[];
             /** @description Whether the webhook starts enabled. Defaults to true when omitted. */
             enabled?: boolean;
-            /** @description Initial tag set. */
+            /** @description Initial labels to apply to the webhook. */
             tags?: components["schemas"]["TagMap"];
         };
         UpdateWebhookRequest: {
@@ -3177,7 +2871,7 @@ export interface components {
             events?: string[];
             /** @description Set to false to disable delivery without deleting the webhook. */
             enabled?: boolean;
-            /** @description When supplied, replaces the user tag set on the webhook. System tags (`mobius:*`) are preserved. */
+            /** @description Replacement labels; send an empty object to clear all tags. */
             tags?: components["schemas"]["TagMap"];
         };
         PingWebhookRequest: {
@@ -3195,25 +2889,27 @@ export interface components {
             latency_ms?: number;
         };
         /**
-         * @description Direct-message access policy for the binding.
+         * @description Direct-message access policy: `open`, `allowlist`, or `disabled`.
          * @enum {string}
          */
         AgentMessagingDMPolicy: "open" | "allowlist" | "disabled";
         /**
-         * @description Reply mode for built-in messaging.
+         * @description Reply mode for built-in messaging; currently `auto`.
          * @enum {string}
          */
         AgentMessagingReplyMode: "auto";
         /**
-         * @description Provider supported by built-in agent messaging.
+         * @description Provider supported by built-in agent messaging: `slack` or `telegram`.
          * @enum {string}
          */
         AgentMessagingProvider: "slack" | "telegram";
+        /** @description Messaging provider account that an agent can answer from. */
         AgentMessagingBinding: {
             /** @description Messaging binding identifier. */
             id: string;
             /** @description Agent this binding belongs to. */
             agent_id: string;
+            /** @description Messaging provider for this binding: `slack` or `telegram`. */
             provider: components["schemas"]["AgentMessagingProvider"];
             /** @description Connected integration account this binding applies to. */
             integration_id: string;
@@ -3227,17 +2923,27 @@ export interface components {
             all_messages: boolean;
             /** @description Optional provider conversation allowlist. Empty means any conversation on the integration. */
             channels: string[];
+            /** @description Who may direct-message this agent: `open`, `allowlist`, or `disabled`. */
             dm_policy: components["schemas"]["AgentMessagingDMPolicy"];
             /** @description Optional provider sender allowlist. Empty means any sender. */
             sender_allow: string[];
+            /** @description How the agent replies to inbound provider messages. */
             reply_mode: components["schemas"]["AgentMessagingReplyMode"];
+            /** @description Optional model route override used for replies through this binding. */
             model_route?: components["schemas"]["AgentModelRoute"];
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Time the binding was created.
+             */
             created_at: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Time the binding was last updated.
+             */
             updated_at: string;
         };
         AgentMessagingBindingRequest: {
+            /** @description Messaging provider for this binding: `slack` or `telegram`. */
             provider: components["schemas"]["AgentMessagingProvider"];
             /** @description ID of the connected integration that backs this binding. */
             integration_id: string;
@@ -3246,6 +2952,11 @@ export interface components {
              * @default false
              */
             enabled: boolean;
+            /**
+             * @description When enabling this binding, disable any other active agent binding for the same provider account.
+             * @default false
+             */
+            replace_existing: boolean;
             /**
              * @description Respond to direct messages.
              * @default true
@@ -3263,47 +2974,51 @@ export interface components {
             all_messages: boolean;
             /** @description Channel IDs the binding is scoped to (empty means all channels). */
             channels?: string[];
+            /** @description Who may direct-message this agent: `open`, `allowlist`, or `disabled`. */
             dm_policy?: components["schemas"]["AgentMessagingDMPolicy"];
             /** @description Sender IDs allowed to trigger the agent (empty means no allowlist). */
             sender_allow?: string[];
+            /** @description Reply behavior for provider messages; currently `auto`. */
             reply_mode?: components["schemas"]["AgentMessagingReplyMode"];
+            /** @description Optional model route override used for replies through this binding. */
             model_route?: components["schemas"]["AgentModelRoute"];
         };
         AgentMessagingBindingListResponse: {
+            /** @description Messaging bindings configured for this agent. */
             items: components["schemas"]["AgentMessagingBinding"][];
         };
         /**
-         * @description Durable conversation session status.
+         * @description Durable conversation session status: `active`, `archived`, or `deleted`.
          * @enum {string}
          */
         SessionStatus: "active" | "archived" | "deleted";
         /**
-         * @description Surface that created the session.
+         * @description Surface that created the session: `manual`, `api`, or `loop`.
          * @enum {string}
          */
         SessionOrigin: "manual" | "api" | "loop";
         /**
-         * @description Boundary used to resolve named sessions.
+         * @description Boundary used to resolve named sessions: `agent` or `loop`.
          * @enum {string}
          */
         SessionScope: "agent" | "loop";
         /**
-         * @description Visibility of the session in project surfaces.
+         * @description Visibility of the session in project surfaces: `project` or `private`.
          * @enum {string}
          */
         SessionVisibility: "project" | "private";
         /**
-         * @description Role of one message in a session transcript.
+         * @description Message role: `system`, `user`, `assistant`, `tool`, or `compaction`.
          * @enum {string}
          */
         SessionMessageRole: "system" | "user" | "assistant" | "tool" | "compaction";
         /**
-         * @description Row type for a persisted transcript entry.
+         * @description Transcript entry type: `message` or `compaction`.
          * @enum {string}
          */
         SessionMessageEntryType: "message" | "compaction";
         /**
-         * @description Lifecycle status of one agent turn.
+         * @description Agent turn lifecycle status: `running`, `waiting`, `completed`, `failed`, or `cancelled`.
          * @enum {string}
          */
         AgentTurnStatus: "running" | "waiting" | "completed" | "failed" | "cancelled";
@@ -3323,6 +3038,7 @@ export interface components {
             channel_exchange_id?: string;
             /** @description 1-based attempt number for this run-step; retries create new turns. */
             attempt: number;
+            /** @description Current lifecycle status of the agent turn. */
             status: components["schemas"]["AgentTurnStatus"];
             /** @description Per-session ordering hint (cosmetic; turns are ordered by creation time). */
             seq?: number;
@@ -3330,9 +3046,15 @@ export interface components {
             error_type?: string;
             /** @description Human-readable failure detail when the turn failed. */
             error_message?: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Time the turn was created.
+             */
             created_at: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Time the turn was last updated.
+             */
             updated_at: string;
             /**
              * Format: date-time
@@ -3344,17 +3066,19 @@ export interface components {
             /** @description Turns in this session, ordered by creation time. */
             items: components["schemas"]["AgentTurn"][];
         };
+        /** @description Durable conversation transcript owned by an agent. */
         Session: {
             /** @description Stable session identifier. */
             id: string;
-            /** @description Project that owns this session. */
-            project_id: string;
             /** @description Agent that owns this session. */
             agent_id: string;
             /** @description Human-readable session title. */
             title: string;
+            /** @description Lifecycle status of the session. */
             status: components["schemas"]["SessionStatus"];
+            /** @description Surface that created the session. */
             origin: components["schemas"]["SessionOrigin"];
+            /** @description Boundary used to resolve the session key. */
             scope: components["schemas"]["SessionScope"];
             /** @description Identifier of the resource the session is scoped to (e.g. the agent for agent-scoped sessions). */
             scope_ref_id: string;
@@ -3362,6 +3086,7 @@ export interface components {
             scope_name: string;
             /** @description Stable session routing key used to look up a scoped conversation (mirrors `scope_name`). */
             session_key: string;
+            /** @description Where the session appears in project UI surfaces. */
             visibility: components["schemas"]["SessionVisibility"];
             /** @description Model the session most recently exchanged tokens with. */
             model?: string;
@@ -3381,7 +3106,7 @@ export interface components {
             version: number;
             /**
              * Format: date-time
-             * @description Timestamp of the most recent message append, if any.
+             * @description Timestamp of the most recent message append; null before any messages are stored.
              */
             last_message_at?: string | null;
             /** @description Source session this one was forked from, if any. */
@@ -3409,6 +3134,14 @@ export interface components {
             /** @description The list of results for this page. */
             items: components["schemas"]["Session"][];
         };
+        /** @description JSON payload of a single `data:` line on the session event stream. The SSE `event:` field carries the event type (e.g. `generation.delta`); this object carries the event-specific fields. Additional fields beyond `session_id` vary by event type. */
+        SessionStreamEvent: {
+            /** @description The session this event belongs to. */
+            session_id: string;
+        } & {
+            [key: string]: unknown;
+        };
+        /** @description One persisted message or compaction entry in a session transcript. */
         SessionMessage: {
             /** @description Stable message identifier. */
             id: string;
@@ -3416,11 +3149,13 @@ export interface components {
             session_id: string;
             /** @description Agent that owns the parent session. */
             agent_id: string;
+            /** @description Role of this message in the transcript. */
             role: components["schemas"]["SessionMessageRole"];
             /** @description Ordered content blocks (text, tool calls, tool results, images). */
             content: {
                 [key: string]: unknown;
             }[];
+            /** @description Whether this row is a normal message or a compaction summary. */
             entry_type: components["schemas"]["SessionMessageEntryType"];
             /** @description For `compaction` messages, the highest sequence number this summary covers. */
             covers_through_sequence?: number;
@@ -3454,7 +3189,9 @@ export interface components {
             /** @description Provider for the supplied `model`. */
             model_provider?: string;
         };
+        /** @description Message payload to append to an existing durable session. */
         AppendSessionMessage: {
+            /** @description Role to store for this appended message. */
             role: components["schemas"]["SessionMessageRole"];
             /** @description Ordered content blocks (text, tool calls, tool results, images). */
             content: {
@@ -3470,69 +3207,13 @@ export interface components {
              */
             created_at?: string;
         };
-        ToolkitActionGrant: {
-            /**
-             * @description How to match action catalog names.
-             * @enum {string}
-             */
-            selector_type: "exact" | "group" | "platform" | "custom" | "wildcard";
-            /** @description Selector value. Examples: `github.list_issues`, `github.*`, `platform.github.*`, `custom.*`, or `*`. */
-            selector: string;
-        };
-        Toolkit: {
-            /** @description Toolkit ID (TypeID `kit_...`). */
-            id: string;
-            /** @description Organization that owns this toolkit. */
-            org_id: string;
-            /** @description Project that owns this toolkit. */
-            project_id: string;
-            /** @description Human-readable toolkit name. */
-            name: string;
-            /** @description Markdown description of the toolkit's purpose. */
-            description?: string;
-            /**
-             * @description Provenance of this toolkit. `system` toolkits are built-in; `project` toolkits are user-authored.
-             * @enum {string}
-             */
-            source: "system" | "project";
-            /** @description Resource tags applied to this toolkit. */
-            tags?: components["schemas"]["TagMap"];
-            /** @description Action selectors granted by this toolkit. Each entry is matched against the unified action catalog at manifest-resolution time. */
-            action_grants: components["schemas"]["ToolkitActionGrant"][];
-            /** @description User ID of the principal who created this toolkit. */
-            created_by?: string;
-            /** @description User ID of the principal who last updated this toolkit. */
-            updated_by?: string;
-            /**
-             * Format: date-time
-             * @description Record creation timestamp.
-             */
-            created_at: string;
-            /**
-             * Format: date-time
-             * @description Last update timestamp.
-             */
-            updated_at: string;
-        };
-        ToolkitRequest: {
-            /** @description Human-readable toolkit name. */
-            name: string;
-            /** @description Markdown description of the toolkit's purpose. */
-            description?: string;
-            /** @description Action selectors granted by this toolkit. */
-            action_grants?: components["schemas"]["ToolkitActionGrant"][];
-            /** @description Resource tags to apply to this toolkit. */
-            tags?: components["schemas"]["TagMap"];
-        };
-        ToolkitListResponse: {
-            /** @description The list of results for this page. */
-            items: components["schemas"]["Toolkit"][];
-        };
+        /** @description Assignment linking a toolkit to an agent. */
         ToolkitAssignment: {
             /** @description Agent the toolkit is assigned to. */
             agent_id: string;
             /** @description Toolkit assigned to the agent. */
             toolkit_id: string;
+            /** @description Expanded toolkit metadata for this assignment. */
             toolkit?: components["schemas"]["Toolkit"];
             /** @description Ordering position of this assignment in the agent's toolkit list. */
             position: number;
@@ -3550,133 +3231,13 @@ export interface components {
             /** @description Toolkit assignments for this agent, in position order. */
             items: components["schemas"]["ToolkitAssignment"][];
         };
-        /**
-         * @description Table operations the agent may perform through memory bindings.
-         * @enum {string}
-         */
-        AgentTableAccessMode: "read" | "append" | "write";
-        AgentTableGrant: {
-            /** @description Grant ID. */
-            id: string;
-            /** @description Agent receiving access. */
-            agent_id: string;
-            /** @description Stable table ID granted to the agent. */
-            table_id: string;
-            access_mode: components["schemas"]["AgentTableAccessMode"];
-            /** @description Author instructions for how the agent should use this table. */
-            instructions?: string;
-            /** @description User ID of the principal who last replaced the grant set. */
-            created_by?: string;
-            /**
-             * Format: date-time
-             * @description Record creation timestamp.
-             */
-            created_at: string;
-            /**
-             * Format: date-time
-             * @description Last update timestamp.
-             */
-            updated_at: string;
-        };
-        AgentTableGrantInput: {
-            /** @description Stable table ID to grant. */
-            table_id: string;
-            access_mode: components["schemas"]["AgentTableAccessMode"];
-            /** @description Author instructions for how the agent should use this table. */
-            instructions?: string;
-        };
-        ReplaceAgentTableGrantsRequest: {
-            /** @description Full replacement set of table grants for the agent. */
-            grants: components["schemas"]["AgentTableGrantInput"][];
-        };
-        AgentTableGrantListResponse: {
-            /** @description Durable table memory grants for this agent. */
-            items: components["schemas"]["AgentTableGrant"][];
-        };
-        Skill: {
-            /** @description Skill ID (TypeID `skill_...`). */
-            id: string;
-            /** @description Organization that owns this skill. */
-            org_id: string;
-            /** @description Project that owns this skill. */
-            project_id: string;
-            /** @description Human-readable skill name. */
-            name: string;
-            /** @description Stable slug used in API paths and references. */
-            slug?: string;
-            /** @description Markdown description of the skill's purpose. */
-            description?: string;
-            /**
-             * @description Provenance of this skill. `system` is built-in; `project` is user-authored; `imported` came from an external bundle.
-             * @enum {string}
-             */
-            source: "system" | "project" | "imported";
-            /** @description Markdown instructions loaded when the skill is active. */
-            instructions: string;
-            /** @description Canonical action names, wildcard selectors, or group references that narrow the agent's effective tool set while this skill is active. Uses the same selector vocabulary as toolkit grants. */
-            allowed_tools: string[];
-            /** @description Original imported frontmatter preserved for round-tripping. */
-            frontmatter?: {
-                [key: string]: unknown;
-            };
-            /** @description Advisory model preference; it does not override the agent model in v1. */
-            model_hint?: string;
-            /** @description Whether users may directly request this skill by name. */
-            user_invocable?: boolean;
-            /** @description Resource tags applied to this skill. */
-            tags?: components["schemas"]["TagMap"];
-            /** @description User ID of the principal who created this skill. */
-            created_by?: string;
-            /** @description User ID of the principal who last updated this skill. */
-            updated_by?: string;
-            /**
-             * Format: date-time
-             * @description Record creation timestamp.
-             */
-            created_at: string;
-            /**
-             * Format: date-time
-             * @description Last update timestamp.
-             */
-            updated_at: string;
-        };
-        SkillRequest: {
-            /** @description Human-readable skill name. */
-            name: string;
-            /** @description Optional stable slug. When omitted, the server derives one from `name`. */
-            slug?: string;
-            /** @description Markdown description of the skill's purpose. */
-            description?: string;
-            /** @description Markdown instructions loaded when the skill is active. */
-            instructions: string;
-            /** @description Tool selectors that narrow the agent's effective tool set while this skill is active. */
-            allowed_tools?: string[];
-            /** @description Original imported frontmatter preserved for round-tripping. */
-            frontmatter?: {
-                [key: string]: unknown;
-            };
-            /** @description Advisory model preference; does not override the agent's default model. */
-            model_hint?: string;
-            /** @description Whether users may directly request this skill by name. */
-            user_invocable?: boolean;
-            /** @description Resource tags to apply to this skill. */
-            tags?: components["schemas"]["TagMap"];
-        };
-        ImportSkillRequest: {
-            /** @description Full skill document, optionally with YAML frontmatter. */
-            content: string;
-            /** @description Optional name override. */
-            name?: string;
-        };
-        SkillListResponse: {
-            /** @description The list of results for this page. */
-            items: components["schemas"]["Skill"][];
-        };
+        /** @description Assignment linking a skill to an agent. */
         SkillAssignment: {
             /** @description Agent the skill is assigned to. */
             agent_id: string;
             /** @description Skill assigned to the agent. */
             skill_id: string;
+            /** @description Expanded skill metadata for this assignment. */
             skill?: components["schemas"]["Skill"];
             /** @description Whether the assignment is currently active. */
             enabled: boolean;
@@ -3696,6 +3257,7 @@ export interface components {
             /** @description Skill assignments for this agent, in position order. */
             items: components["schemas"]["SkillAssignment"][];
         };
+        /** @description Skill entry included in a resolved agent tool manifest. */
         SkillManifestEntry: {
             /** @description Skill ID this manifest entry resolved to. */
             id: string;
@@ -3705,15 +3267,12 @@ export interface components {
             instructions: string;
             /** @description Whether this skill is currently active in the resolved manifest. */
             active: boolean;
-            /** @description Advisory model preference for this skill. */
-            model_hint?: string;
-            /** @description Whether users may directly request this skill by name. */
-            user_invocable?: boolean;
             /** @description Tool selectors the skill requires but that are not available to the agent. */
             missing_required?: string[];
             /** @description Tool selectors the skill recommends but that are not available to the agent. */
             missing_recommended?: string[];
         };
+        /** @description Non-fatal warning produced while resolving an agent tool manifest. */
         AgentManifestWarning: {
             /** @description Machine-readable warning code. */
             code: string;
@@ -3728,18 +3287,7 @@ export interface components {
             /** @description Action name the warning relates to, when applicable. */
             action?: string;
         };
-        AgentBlockedGrant: {
-            /** @description Selector kind (e.g. `action`, `wildcard`, `group`). */
-            selector_type: string;
-            /** @description Selector value as authored on the toolkit grant. */
-            selector: string;
-            /** @description Canonical action name the selector resolved to, when the grant matched a real catalog entry that the agent principal is not permitted to invoke. */
-            action_name?: string;
-            /** @description Why the grant is currently blocked (e.g. missing permission, archived action). */
-            reason: string;
-            /** @description ID of the missing permission, when the block was caused by an authorization gap. */
-            permission_id?: string;
-        };
+        /** @description Action group expanded during manifest resolution. */
         ResolvedActionGroup: {
             /** @description Canonical group name (e.g. `mobius.table.read`). */
             name: string;
@@ -3750,9 +3298,7 @@ export interface components {
         AgentToolManifest: {
             /** @description Agent this manifest was resolved for. */
             agent_id: string;
-            /** @description Project the manifest is scoped to. */
-            project_id: string;
-            /** @description Stable hash over the resolved tool + skill set; bumps when grants or permissions change. */
+            /** @description Stable hash over the resolved tool + skill set; bumps when assigned toolkits or skills change. */
             policy_hash: string;
             /** @description Toolkit IDs that contributed to the resolved manifest. */
             toolkit_ids: string[];
@@ -3764,13 +3310,22 @@ export interface components {
             skills: components["schemas"]["SkillManifestEntry"][];
             /** @description Non-fatal issues encountered while resolving the manifest. */
             warnings: components["schemas"]["AgentManifestWarning"][];
-            /** @description Grants that resolved to a catalog entry the agent cannot currently invoke. */
-            blocked_grants: components["schemas"]["AgentBlockedGrant"][];
         };
+        /**
+         * @example {
+         *       "name": "PR reviewer",
+         *       "description": "Reviews pull requests for risky changes.",
+         *       "kind": "llm",
+         *       "color": "teal",
+         *       "model": "claude-sonnet-4-6",
+         *       "tool_presentation": "flat",
+         *       "tags": {
+         *         "owner": "product"
+         *       }
+         *     }
+         */
         CreateAgentRequest: {
-            /** @description Roles to assign to the agent's principal. When omitted, the agent inherits the project's `default_agent_role_id`, falling through to the system `Agent` role floor when unset. */
-            role_ids?: string[];
-            /** @description Project-scoped unique name for this agent. Free-form human-readable label, 1-63 characters. */
+            /** @description Unique name for this agent. Free-form human-readable label, 1-63 characters. */
             name: string;
             /** @description Optional human-readable description. */
             description?: string;
@@ -3778,16 +3333,15 @@ export interface components {
             kind?: string;
             /** @description Display color for this agent (Mantine palette key, e.g. `indigo`). Optional; empty falls back to a hash-derived color. */
             color?: string;
-            /** @description Capability names used by orchestrators to select suitable agents. */
-            capabilities?: string[];
-            /** @description Model identifier for platform agents. Any id from `GET /v1/projects/{project}/catalog/models`, optionally `provider/`-prefixed (e.g. `xai/grok-4`); bare known ids (e.g. `claude-sonnet-4-6`) are auto-detected. Empty falls back to the platform default. */
+            /** @description Model identifier for platform agents. Any id from `GET /v1/projects/{project_handle}/catalog/models`, optionally `provider/`-prefixed (e.g. `xai/grok-4`); bare known ids (e.g. `claude-sonnet-4-6`) are auto-detected. Empty falls back to the platform default. */
             model?: string;
+            /** @description Default route for model calls made by this agent. */
             model_route?: components["schemas"]["AgentModelRoute"];
             /** @description Omit to use the create-time default, `flat`. */
             tool_presentation?: components["schemas"]["AgentToolPresentation"];
             /** @description Custom system prompt for platform agents. Empty uses the generated default. */
             system_prompt?: string;
-            /** @description Initial tag set. */
+            /** @description Initial labels used for filtering, ownership, or automation. */
             tags?: components["schemas"]["TagMap"];
         };
         /** @description Mutable agent fields. The agent's backing identity (`principal_id`, the machine principal created atomically with the agent) is intentionally absent: it is immutable. Reassigning identity is delete-and-recreate. */
@@ -3800,36 +3354,192 @@ export interface components {
             kind?: string;
             /** @description Replacement display color (Mantine palette key, e.g. `indigo`). Pass empty string to clear and fall back to a hash-derived color. */
             color?: string;
-            /** @description Replacement capability names. */
-            capabilities?: string[];
-            /** @description Replacement model identifier for platform agents (any id from `GET /v1/projects/{project}/catalog/models`, optionally `provider/`-prefixed). */
+            /** @description Replacement model identifier for platform agents (any id from `GET /v1/projects/{project_handle}/catalog/models`, optionally `provider/`-prefixed). */
             model?: string;
+            /** @description Replacement default route for model calls made by this agent. */
             model_route?: components["schemas"]["AgentModelRoute"];
+            /** @description Replacement tool presentation used by loop agent steps and channel replies. */
             tool_presentation?: components["schemas"]["AgentToolPresentation"];
             /** @description Replacement system prompt for platform agents. */
             system_prompt?: string;
             /**
-             * @description Replacement agent status: `active` or `inactive`. Use DELETE to soft-delete.
+             * @description Replacement agent status: `active` or `inactive`. Use DELETE to delete the agent.
              * @enum {string}
              */
             status?: "active" | "inactive";
-            /** @description When supplied, replaces the user tag set on the agent. System tags (`mobius:*`) are preserved. */
+            /** @description Replacement labels; send an empty object to clear all tags. */
             tags?: components["schemas"]["TagMap"];
         };
-        /** @description A loop. The `triggers` array reports the currently materialized runnable triggers. Desired triggers are authored in `LoopSpec.triggers` and reconciled when a version is published. */
+        /**
+         * @description Action selector included in a toolkit.
+         * @example {
+         *       "selector_type": "exact",
+         *       "selector": "github.create_review_comment"
+         *     }
+         */
+        ToolkitAction: {
+            /**
+             * @description Selector type: `exact`, `group`, `platform`, `custom`, or `wildcard`.
+             * @enum {string}
+             */
+            selector_type: "exact" | "group" | "platform" | "custom" | "wildcard";
+            /** @description Selector value. Examples: `github.list_issues`, `github.*`, `platform.github.*`, `custom.*`, or `*`. */
+            selector: string;
+        };
+        /**
+         * @description Reusable bundle of action selectors assignable to agents.
+         * @example {
+         *       "id": "kit_4r8q2m7x9p5v3n6t",
+         *       "name": "GitHub review",
+         *       "description": "GitHub actions needed for pull-request review.",
+         *       "source": "project",
+         *       "tags": {
+         *         "owner": "product"
+         *       },
+         *       "actions": [
+         *         {
+         *           "selector_type": "exact",
+         *           "selector": "github.create_review_comment"
+         *         }
+         *       ],
+         *       "created_by": "user_2f9s3k4m5n6p7q8r",
+         *       "updated_by": "user_2f9s3k4m5n6p7q8r",
+         *       "created_at": "2026-06-15T14:30:00Z",
+         *       "updated_at": "2026-06-15T14:30:00Z"
+         *     }
+         */
+        Toolkit: {
+            /** @description Toolkit ID. */
+            id: string;
+            /** @description Human-readable toolkit name. */
+            name: string;
+            /** @description Markdown description of the toolkit's purpose. */
+            description?: string;
+            /**
+             * @description Provenance of this toolkit. `system` toolkits are built-in; `project` toolkits are user-authored.
+             * @enum {string}
+             */
+            source: "system" | "project";
+            /** @description Labels to apply to the toolkit. */
+            tags?: components["schemas"]["TagMap"];
+            /** @description Action selectors provided by this toolkit. Each entry is matched against the unified action catalog at manifest-resolution time. */
+            actions: components["schemas"]["ToolkitAction"][];
+            /** @description ID of the principal who created this toolkit. */
+            created_by?: string;
+            /** @description ID of the principal who last updated this toolkit. */
+            updated_by?: string;
+            /**
+             * Format: date-time
+             * @description Record creation timestamp.
+             */
+            created_at: string;
+            /**
+             * Format: date-time
+             * @description Last update timestamp.
+             */
+            updated_at: string;
+        };
+        /**
+         * @description Reusable instruction bundle assignable to agents.
+         * @example {
+         *       "id": "skill_7n4q8x2m9p5v3r6t",
+         *       "name": "Pull request review",
+         *       "description": "Review pull requests for correctness and risk.",
+         *       "source": "project",
+         *       "instructions": "Check the diff and leave concise findings.",
+         *       "allowed_tools": [
+         *         "github.create_review_comment"
+         *       ],
+         *       "tags": {
+         *         "owner": "product"
+         *       },
+         *       "created_by": "user_2f9s3k4m5n6p7q8r",
+         *       "updated_by": "user_2f9s3k4m5n6p7q8r",
+         *       "created_at": "2026-06-15T14:30:00Z",
+         *       "updated_at": "2026-06-15T14:30:00Z"
+         *     }
+         */
+        Skill: {
+            /** @description Skill ID. */
+            id: string;
+            /** @description Human-readable skill name. */
+            name: string;
+            /** @description Markdown description of the skill's purpose. */
+            description?: string;
+            /**
+             * @description Provenance of this skill. `system` is built-in; `project` is project-local.
+             * @enum {string}
+             */
+            source: "system" | "project";
+            /** @description Markdown instructions loaded when the skill is active. */
+            instructions: string;
+            /** @description Canonical action names, wildcard selectors, or group references that narrow the agent's effective tool set while this skill is active. Uses the same selector vocabulary as toolkit grants. */
+            allowed_tools?: string[];
+            /** @description Labels to apply to the skill. */
+            tags?: components["schemas"]["TagMap"];
+            /** @description ID of the principal who created this skill. */
+            created_by?: string;
+            /** @description ID of the principal who last updated this skill. */
+            updated_by?: string;
+            /**
+             * Format: date-time
+             * @description Record creation timestamp.
+             */
+            created_at: string;
+            /**
+             * Format: date-time
+             * @description Last update timestamp.
+             */
+            updated_at: string;
+        };
+        /**
+         * @description A loop. The `triggers` array reports the currently materialized runnable triggers. Desired triggers are authored in `LoopSpec.triggers` and reconciled when a version is published.
+         * @example {
+         *       "id": "loop_9q2m7x5v3p8n4r6t",
+         *       "name": "Daily security check",
+         *       "description": "Review open pull requests each morning.",
+         *       "status": "active",
+         *       "owner": "user_2f9s3k4m5n6p7q8r",
+         *       "default_agent_id": "agent_5n8p2q7m4x9r3v6t",
+         *       "latest_version": 3,
+         *       "published_version": 3,
+         *       "default_inputs": {
+         *         "repository": "deepnoodle-ai/mobius-cloud"
+         *       },
+         *       "tags": {
+         *         "owner": "product"
+         *       },
+         *       "triggers": [
+         *         {
+         *           "id": "atrg_3m8p5q9x2v7n4r6t",
+         *           "loop_id": "loop_9q2m7x5v3p8n4r6t",
+         *           "name": "Weekday morning",
+         *           "kind": "schedule",
+         *           "enabled": true,
+         *           "config": {
+         *             "cron": "0 9 * * 1-5",
+         *             "timezone": "America/New_York"
+         *           },
+         *           "concurrency_policy": "skip",
+         *           "max_concurrent_runs": 1,
+         *           "next_fire_at": "2026-06-16T13:00:00Z",
+         *           "created_at": "2026-06-15T14:30:00Z",
+         *           "updated_at": "2026-06-15T14:30:00Z"
+         *         }
+         *       ],
+         *       "last_run_at": "2026-06-15T13:00:00Z",
+         *       "created_at": "2026-06-15T14:30:00Z",
+         *       "updated_at": "2026-06-15T14:30:00Z"
+         *     }
+         */
         Loop: {
             /** @description Stable loop identifier. */
             id: string;
-            /** @description Organization that owns this loop. */
-            org_id: string;
-            /** @description Project that owns this loop. */
-            project_id: string;
-            /** @description Stable per-project loop handle. Immutable after creation. Use it for authored references and `?handle=` resolution; address the loop resource by `id`. */
-            handle: string;
             /** @description Human-readable display name. */
             name: string;
             /** @description Markdown description of the loop's purpose. */
             description?: string;
+            /** @description Current loop lifecycle status: `draft`, `active`, `paused`, or `deleted`. */
             status: components["schemas"]["LoopStatus"];
             /** @description User who created or currently owns this loop. */
             owner?: string;
@@ -3847,10 +3557,8 @@ export interface components {
             settings?: {
                 [key: string]: unknown;
             };
-            /** @description Free-form label map used to organise loops in listings and search. */
-            tags?: {
-                [key: string]: string;
-            };
+            /** @description Free-form labels used for filtering, ownership, or automation. */
+            tags?: components["schemas"]["TagMap"];
             /** @description Triggers that can start runs of this loop. */
             triggers: components["schemas"]["LoopTrigger"][];
             /**
@@ -3860,9 +3568,9 @@ export interface components {
             last_run_at?: string;
             /**
              * Format: date-time
-             * @description Soft-archive timestamp; absent on active loops.
+             * @description Timestamp when this loop was deleted; absent on active loops.
              */
-            archived_at?: string;
+            deleted_at?: string;
             /**
              * Format: date-time
              * @description Record creation timestamp.
@@ -3875,10 +3583,27 @@ export interface components {
             updated_at: string;
         };
         /**
-         * @description Lifecycle status of a loop.
+         * @description Loop lifecycle status: `draft`, `active`, `paused`, or `deleted`.
          * @enum {string}
          */
-        LoopStatus: "draft" | "active" | "paused" | "archived";
+        LoopStatus: "draft" | "active" | "paused" | "deleted";
+        /**
+         * @example {
+         *       "items": [
+         *         {
+         *           "id": "loop_9q2m7x5v3p8n4r6t",
+         *           "name": "Daily security check",
+         *           "status": "active",
+         *           "latest_version": 3,
+         *           "published_version": 3,
+         *           "triggers": [],
+         *           "created_at": "2026-06-15T14:30:00Z",
+         *           "updated_at": "2026-06-15T14:30:00Z"
+         *         }
+         *       ],
+         *       "has_more": false
+         *     }
+         */
         LoopListResponse: {
             /** @description The list of results for this page. */
             items: components["schemas"]["Loop"][];
@@ -3887,9 +3612,21 @@ export interface components {
             /** @description True when more items exist after this page. */
             has_more?: boolean;
         };
+        /**
+         * @example {
+         *       "name": "Daily security check",
+         *       "description": "Review open pull requests each morning.",
+         *       "default_agent_id": "agent_5n8p2q7m4x9r3v6t",
+         *       "default_inputs": {
+         *         "repository": "deepnoodle-ai/mobius-cloud"
+         *       },
+         *       "tags": {
+         *         "owner": "product"
+         *       },
+         *       "activate": false
+         *     }
+         */
         CreateLoopRequest: {
-            /** @description Stable per-project loop handle. Must be lowercase alphanumeric with single hyphen separators. Immutable after creation. */
-            handle: string;
             /** @description Human-readable display name. */
             name: string;
             /** @description Markdown description of the loop's purpose. */
@@ -3904,10 +3641,8 @@ export interface components {
             settings?: {
                 [key: string]: unknown;
             };
-            /** @description Free-form label map used to organise loops in listings and search. */
-            tags?: {
-                [key: string]: string;
-            };
+            /** @description Free-form labels used for filtering, ownership, or automation. */
+            tags?: components["schemas"]["TagMap"];
             /** @description Optional initial loop spec to store as version 1 during creation. */
             spec?: components["schemas"]["LoopSpec"];
             /**
@@ -3922,6 +3657,7 @@ export interface components {
             name?: string;
             /** @description Markdown description of the loop's purpose. */
             description?: string;
+            /** @description Replacement lifecycle status for the loop. */
             status?: components["schemas"]["LoopStatus"];
             /** @description Agent used by `agent` steps that do not pin an agent explicitly. */
             default_agent_id?: string;
@@ -3933,18 +3669,13 @@ export interface components {
             settings?: {
                 [key: string]: unknown;
             };
-            /** @description Free-form label map used to organise loops in listings and search. */
-            tags?: {
-                [key: string]: string;
-            };
+            /** @description Replacement labels; send an empty object to clear all tags. */
+            tags?: components["schemas"]["TagMap"];
         };
+        /** @description Stored immutable loop spec version. */
         LoopVersion: {
             /** @description Stable identifier for this LoopVersion record. */
             id: string;
-            /** @description Organization that owns this version. */
-            org_id: string;
-            /** @description Project that owns this version. */
-            project_id: string;
             /** @description Loop this version belongs to. */
             loop_id: string;
             /** @description Monotonic version number, unique per loop. */
@@ -3954,6 +3685,7 @@ export interface components {
              * @enum {string}
              */
             status: "draft" | "published" | "superseded";
+            /** @description Authored loop spec captured by this version. */
             spec?: components["schemas"]["LoopSpec"];
             /** @description Validation result for `spec` produced at version-creation time. */
             validation?: {
@@ -3984,7 +3716,7 @@ export interface components {
                 [key: string]: components["schemas"]["LoopSpecInput"];
             };
             /**
-             * @description Behavior when a run starts while another run of the same loop is active.
+             * @description Concurrency behavior: `allow`, `queue`, `skip`, or `replace`.
              * @enum {string}
              */
             concurrency?: "allow" | "queue" | "skip" | "replace";
@@ -3992,15 +3724,19 @@ export interface components {
             triggers?: components["schemas"]["LoopSpecTrigger"][];
             /** @description Source repositories the loop targets. When a shared managed environment is selected, the runtime prepares these repositories before user-authored steps run. */
             repositories?: components["schemas"]["LoopSpecRepository"][];
+            /** @description Ordered user-authored steps to execute for each run. */
             steps: components["schemas"]["LoopStep"][];
             /** @description Declared run result. When present, string leaves are rendered against the run inputs and saved step outputs at completion and the rendered map is the run's result — the contract for API consumers, `run.completed` subscribers, and parent loops. When absent, the result is the full accumulated context map. In schema_version 2 string leaves use `${{ ... }}` interpolation. */
             output?: {
                 [key: string]: unknown;
             };
+            /** @description Cleanup steps or policies evaluated after normal step execution. */
             cleanup?: {
                 [key: string]: unknown;
             }[];
+            /** @description Run guardrails such as budget, timeout, and turn limits. */
             limits?: components["schemas"]["LoopSpecLimits"];
+            /** @description Run-level defaults applied when individual steps omit a policy. */
             defaults?: components["schemas"]["LoopSpecDefaults"];
         };
         /** @description Source repository target attached to a loop spec. */
@@ -4018,25 +3754,38 @@ export interface components {
             /** @description Whether the provider reports this repository as private. */
             private?: boolean;
         };
+        /** @description One named input accepted by a loop spec. */
         LoopSpecInput: {
+            /** @description JSON-compatible input type expected by authoring tools. */
             type?: string;
+            /** @description Human guidance shown when collecting the input value. */
             description?: string;
+            /** @description Whether callers must provide this input when starting the loop. */
             required?: boolean;
             /** @description Optional default value for this input. May be any JSON value. */
             default?: unknown;
         };
+        /** @description One trigger declaration inside a loop spec. */
         LoopSpecTrigger: {
             /** @description Stable user-authored trigger key within the spec. */
             key?: string;
             /** @description Human-readable trigger name. */
             name?: string;
-            /** @enum {string} */
+            /**
+             * @description Trigger mechanism: `http`, `schedule`, `event`, or `manual`.
+             * @enum {string}
+             */
             kind: "http" | "schedule" | "event" | "manual";
+            /** @description Whether this trigger should be materialized when the loop version is published. */
             enabled?: boolean;
             /** @description Kind-specific trigger configuration. Use `HTTPTriggerConfig` for `kind: http`, `ScheduleTriggerConfig` for `kind: schedule`, and `EventTriggerConfig` for `kind: event`. Omit for manual triggers. */
             config?: components["schemas"]["HTTPTriggerConfig"] | components["schemas"]["ScheduleTriggerConfig"] | components["schemas"]["EventTriggerConfig"];
-            /** @enum {string} */
+            /**
+             * @description Trigger concurrency behavior: `allow`, `queue`, `skip`, or `replace`.
+             * @enum {string}
+             */
             concurrency_policy?: "allow" | "queue" | "skip" | "replace";
+            /** @description Maximum number of concurrently active runs for this trigger. */
             max_concurrent_runs?: number;
         };
         /** @description Configuration for `LoopSpec.triggers[]` entries with `kind` set to `http`. */
@@ -4064,6 +3813,7 @@ export interface components {
         };
         /** @description User-authored loop step, discriminated by `kind`. */
         LoopStep: components["schemas"]["LoopAgentStepSpec"] | components["schemas"]["LoopActionStepSpec"] | components["schemas"]["LoopSleepStepSpec"] | components["schemas"]["LoopWaitForEventStepSpec"] | components["schemas"]["LoopSubLoopStepSpec"] | components["schemas"]["LoopCheckStepSpec"];
+        /** @description Agent step entry inside `LoopSpec.steps`. */
         LoopAgentStepSpec: {
             /** @description Stable step key within the spec. */
             key: string;
@@ -4072,20 +3822,24 @@ export interface components {
             /** @description Bare expr predicate evaluated before the step runs; false skips the step. Requires schema_version "2". */
             if?: string;
             /**
-             * @description discriminator enum property added by openapi-typescript
+             * @description Step discriminator value; always `agent`. (enum property replaced by openapi-typescript)
              * @enum {string}
              */
             kind: "agent";
+            /** @description Agent-step configuration. */
             config: components["schemas"]["LoopAgentStep"];
             /** @description Step-local input object resolved when the step starts. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions. schema_version 1 only; removed in 2 (reference inputs/event/meta/steps directly in config fields). */
             input?: {
                 [key: string]: unknown;
             };
+            /** @description Retry policy for this step. */
             retry?: components["schemas"]["LoopRetryPolicy"];
+            /** @description Timeout policy for this step. */
             timeout?: components["schemas"]["LoopTimeoutPolicy"];
             /** @description Context key used to store this step's output. Defaults to `key`. schema_version 1 only; removed in 2 (outputs are always at steps.<key>.output). */
             save_as?: string;
         };
+        /** @description Action step entry inside `LoopSpec.steps`. */
         LoopActionStepSpec: {
             /** @description Stable step key within the spec. */
             key: string;
@@ -4094,20 +3848,24 @@ export interface components {
             /** @description Bare expr predicate evaluated before the step runs; false skips the step. Requires schema_version "2". */
             if?: string;
             /**
-             * @description discriminator enum property added by openapi-typescript
+             * @description Step discriminator value; always `action`. (enum property replaced by openapi-typescript)
              * @enum {string}
              */
             kind: "action";
+            /** @description Action-step configuration. */
             config: components["schemas"]["LoopActionStep"];
             /** @description Step-local input object resolved when the step starts. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions. schema_version 1 only; removed in 2 (reference inputs/event/meta/steps directly in config fields). */
             input?: {
                 [key: string]: unknown;
             };
+            /** @description Retry policy for this step. */
             retry?: components["schemas"]["LoopRetryPolicy"];
+            /** @description Timeout policy for this step. */
             timeout?: components["schemas"]["LoopTimeoutPolicy"];
             /** @description Context key used to store this step's output. Defaults to `key`. schema_version 1 only; removed in 2 (outputs are always at steps.<key>.output). */
             save_as?: string;
         };
+        /** @description Sleep step entry inside `LoopSpec.steps`. */
         LoopSleepStepSpec: {
             /** @description Stable step key within the spec. */
             key: string;
@@ -4116,20 +3874,24 @@ export interface components {
             /** @description Bare expr predicate evaluated before the step runs; false skips the step. Requires schema_version "2". */
             if?: string;
             /**
-             * @description discriminator enum property added by openapi-typescript
+             * @description Step discriminator value; always `sleep`. (enum property replaced by openapi-typescript)
              * @enum {string}
              */
             kind: "sleep";
+            /** @description Sleep-step configuration. */
             config: components["schemas"]["LoopSleepStep"];
             /** @description Step-local input object resolved when the step starts. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions. schema_version 1 only; removed in 2 (reference inputs/event/meta/steps directly in config fields). */
             input?: {
                 [key: string]: unknown;
             };
+            /** @description Retry policy for this step. */
             retry?: components["schemas"]["LoopRetryPolicy"];
+            /** @description Timeout policy for this step. */
             timeout?: components["schemas"]["LoopTimeoutPolicy"];
             /** @description Context key used to store this step's output. Defaults to `key`. schema_version 1 only; removed in 2 (outputs are always at steps.<key>.output). */
             save_as?: string;
         };
+        /** @description Wait-for-event step entry inside `LoopSpec.steps`. */
         LoopWaitForEventStepSpec: {
             /** @description Stable step key within the spec. */
             key: string;
@@ -4138,20 +3900,24 @@ export interface components {
             /** @description Bare expr predicate evaluated before the step runs; false skips the step. Requires schema_version "2". */
             if?: string;
             /**
-             * @description discriminator enum property added by openapi-typescript
+             * @description Step discriminator value; always `wait_for_event`. (enum property replaced by openapi-typescript)
              * @enum {string}
              */
             kind: "wait_for_event";
+            /** @description Wait-for-event step configuration. */
             config: components["schemas"]["LoopWaitForEventStep"];
             /** @description Step-local input object resolved when the step starts. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions. schema_version 1 only; removed in 2 (reference inputs/event/meta/steps directly in config fields). */
             input?: {
                 [key: string]: unknown;
             };
+            /** @description Retry policy for this step. */
             retry?: components["schemas"]["LoopRetryPolicy"];
+            /** @description Timeout policy for this step. */
             timeout?: components["schemas"]["LoopTimeoutPolicy"];
             /** @description Context key used to store this step's output. Defaults to `key`. schema_version 1 only; removed in 2 (outputs are always at steps.<key>.output). */
             save_as?: string;
         };
+        /** @description Child-loop step entry inside `LoopSpec.steps`. */
         LoopSubLoopStepSpec: {
             /** @description Stable step key within the spec. */
             key: string;
@@ -4160,20 +3926,24 @@ export interface components {
             /** @description Bare expr predicate evaluated before the step runs; false skips the step. Requires schema_version "2". */
             if?: string;
             /**
-             * @description discriminator enum property added by openapi-typescript
+             * @description Step discriminator value; always `loop`. (enum property replaced by openapi-typescript)
              * @enum {string}
              */
             kind: "loop";
+            /** @description Child-loop step configuration. */
             config: components["schemas"]["LoopSubLoopStep"];
             /** @description Step-local input object resolved when the step starts. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions. schema_version 1 only; removed in 2 (reference inputs/event/meta/steps directly in config fields). */
             input?: {
                 [key: string]: unknown;
             };
+            /** @description Retry policy for this step. */
             retry?: components["schemas"]["LoopRetryPolicy"];
+            /** @description Timeout policy for this step. */
             timeout?: components["schemas"]["LoopTimeoutPolicy"];
             /** @description Context key used to store this step's output. Defaults to `key`. schema_version 1 only; removed in 2 (outputs are always at steps.<key>.output). */
             save_as?: string;
         };
+        /** @description Check step entry inside `LoopSpec.steps`. */
         LoopCheckStepSpec: {
             /** @description Stable step key within the spec. */
             key: string;
@@ -4182,16 +3952,19 @@ export interface components {
             /** @description Bare expr predicate evaluated before the step runs; false skips the step. Requires schema_version "2". */
             if?: string;
             /**
-             * @description discriminator enum property added by openapi-typescript
+             * @description Step discriminator value; always `check`. (enum property replaced by openapi-typescript)
              * @enum {string}
              */
             kind: "check";
+            /** @description Check-step configuration. */
             config: components["schemas"]["LoopCheckStep"];
             /** @description Step-local input object resolved when the step starts. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions. schema_version 1 only; removed in 2 (reference inputs/event/meta/steps directly in config fields). */
             input?: {
                 [key: string]: unknown;
             };
+            /** @description Retry policy for this step. */
             retry?: components["schemas"]["LoopRetryPolicy"];
+            /** @description Timeout policy for this step. */
             timeout?: components["schemas"]["LoopTimeoutPolicy"];
             /** @description Context key used to store this step's output. Defaults to `key`. schema_version 1 only; removed in 2 (outputs are always at steps.<key>.output). */
             save_as?: string;
@@ -4200,7 +3973,7 @@ export interface components {
         LoopSpecLimits: {
             /**
              * Format: double
-             * @description Run budget in US dollars (1 credit = $0.01). The run halts with stop reason `budget_exceeded` at the next checkpoint (step boundary or agent tool iteration) once its metered spend reaches the ceiling; a `run.budget_warning` event fires once at 80%. Enforcement granularity is one model call or metered action — a run can overshoot by at most the call in flight. Mutually exclusive with `credit_budget`; values finer than $0.00001 (one milli-credit) are rejected at compile.
+             * @description Run budget in US dollars (1 credit = $0.01). The run halts with stop reason `budget_exceeded` at the next checkpoint (step boundary or agent tool iteration) once its metered spend reaches the ceiling; a `run.budget_warning` event fires once at 80%. Enforcement granularity is one model call or metered action — a run can overshoot by at most the call in flight. Mutually exclusive with `credit_budget`; values finer than 0.001 credit ($0.00001) are rejected at compile.
              */
             budget_usd?: number;
             /**
@@ -4229,39 +4002,49 @@ export interface components {
         };
         /** @description Run-level defaults inside the loop spec. Lives at `spec.defaults` in the JSON the engine compiles. The run wall-clock limit moved to `limits.wall_clock_timeout`. */
         LoopSpecDefaults: {
+            /** @description Default managed-environment policy for steps that need one. */
             environment?: components["schemas"]["LoopEnvironmentPolicy"];
+            /** @description Default durable session policy for agent steps. */
             agent_session?: components["schemas"]["LoopAgentSessionPolicy"];
         };
         /** @description Automatic managed-environment policy for loop execution. Omit to use the product default: each agent gets a persistent agent-bound environment, while direct environment actions get a run-bound environment. Set `disabled: true` to opt out. */
         LoopEnvironmentPolicy: {
             /** @description Disable automatic environment allocation. */
             disabled?: boolean;
+            /** @description Environment ownership mode to request. */
             mode?: components["schemas"]["EnvironmentMode"];
             /** @description Existing dedicated environment to use for this loop. */
             environment_id?: string;
             /** @description Environment template to use when Mobius creates one. */
             template_id?: string;
+            /** @description Provider to use when Mobius creates an environment. */
             provider?: components["schemas"]["EnvironmentProvider"];
             /** @description Mobius worker runtime version to install when starting the worker. */
             runtime_version?: string;
             /** @description Whether Mobius should start the managed worker automatically. */
             auto_start_worker?: boolean;
+            /** @description Cleanup behavior after the run or lease ends. */
             retention_policy?: components["schemas"]["EnvironmentRetentionPolicy"];
         };
         /** @description Agent step configuration recognised inside `LoopSpec.steps[].config`. */
         LoopAgentStep: {
+            /** @description Agent to run for this step. */
             agent_id: string;
+            /** @description Prompt or task instructions rendered before the agent turn starts. */
             instructions: string;
             /** @description Optional per-step tool allow-list. When omitted, prompt-only managed agent steps default to no tools; set `disable_tools: false` to allow the agent's full granted tool set. */
             tool_names?: string[];
-            /** @description Disable all tool calls for this agent step. When omitted, prompt-only managed agent steps (no `tool_names`, output schema, memory tables, or worker/BYOK model route) default to tool-less execution and skip managed environment allocation. Set `false` explicitly to opt back into the agent's granted tools. */
+            /** @description Disable all tool calls for this agent step. When omitted, prompt-only managed agent steps (no `tool_names`, output schema, or worker model route) default to tool-less execution and skip managed environment allocation. Set `false` explicitly to opt back into the agent's granted tools. */
             disable_tools?: boolean;
+            /** @description JSON Schema the agent should satisfy when returning structured output. */
             output_schema?: {
                 [key: string]: unknown;
             };
+            /** @description Maximum tool iterations allowed within this agent turn. */
             max_turns?: number;
+            /** @description Optional model route override for this agent step. */
             model_route?: components["schemas"]["LoopModelRoute"];
-            memory_tables?: components["schemas"]["LoopAgentMemoryTableRef"][];
+            /** @description Optional durable session policy override for this agent step. */
             session?: components["schemas"]["LoopAgentSessionPolicy"];
         };
         /** @description Durable conversation-session policy for loop agent steps. Omit to enable the product default: loop-scoped sessions keyed from the triggering conversation when Mobius can identify one, such as a Telegram chat ID. */
@@ -4277,18 +4060,19 @@ export interface components {
             name?: string;
             /** @description Optional Go-template string for the session display title. */
             title?: string;
+            /** @description Visibility for durable sessions created from this policy. */
             visibility?: components["schemas"]["SessionVisibility"];
             /**
              * @description Optional per-session compaction policy merged with server defaults when the session is first created. Existing sessions keep their current compaction policy unless edited through a session-specific operation.
              * @example {
              *       "strategy": "auto",
-             *       "threshold_tokens": 8000,
+             *       "threshold_tokens": 25000,
              *       "summary_model": "claude-haiku-4-5-20251001"
              *     }
              */
             compaction_policy?: {
                 /**
-                 * @description Compaction strategy. `auto` compacts when the token threshold is exceeded.
+                 * @description Compaction strategy: `auto`, `manual`, `disabled`, or `none`.
                  * @enum {string}
                  */
                 strategy?: "auto" | "manual" | "disabled" | "none";
@@ -4298,29 +4082,34 @@ export interface components {
                 summary_model?: string;
             };
         };
+        /** @description Model-routing override for an agent step. */
         LoopModelRoute: {
-            /** @enum {string} */
-            mode: "managed" | "byo_provider" | "worker";
+            /**
+             * @description Model route mode: `managed` or `worker`.
+             * @enum {string}
+             */
+            mode: "managed" | "worker";
             /** @description Managed environment to route worker-backed model calls to. */
             environment_id?: string;
+            /** @description Provider or worker route name. */
             provider?: string;
+            /** @description Model identifier for this route. */
             model?: string;
+            /** @description Worker queue for customer-worker model calls. */
             queue?: string;
-            required_capabilities?: string[];
-        };
-        LoopAgentMemoryTableRef: {
-            table_id: string;
-            /** @enum {string} */
-            access_mode: "read" | "append" | "write";
-            instructions?: string;
         };
         /** @description Action step configuration recognised inside `LoopSpec.steps[].config`. */
         LoopActionStep: {
+            /** @description Catalog action name to invoke. */
             action_name: string;
-            /** @enum {string} */
+            /**
+             * @description Execution location: `managed`, `worker`, or `environment`.
+             * @enum {string}
+             */
             execution_location?: "managed" | "worker" | "environment";
             /** @description Managed environment to route this worker-backed action to. When omitted for `execution_location: environment`, Mobius resolves one from `spec.defaults.environment`. */
             environment_id?: string;
+            /** @description Action parameters, after template rendering. */
             parameters?: {
                 [key: string]: unknown;
             };
@@ -4329,13 +4118,19 @@ export interface components {
         LoopSleepStep: {
             /** @description Go duration string such as `30s`, `5m`, or `2h`. */
             duration?: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Absolute time to resume the run.
+             */
             until?: string;
         };
         /** @description Wait-for-event step configuration recognised inside `LoopSpec.steps[].config`. */
         LoopWaitForEventStep: {
+            /** @description Event type or pattern that resumes the waiting step. */
             event_type: string;
+            /** @description Optional source identifier used to scope event matching. */
             source_id?: string;
+            /** @description Structured field match applied to incoming event payloads. */
             match?: {
                 [key: string]: unknown;
             };
@@ -4348,16 +4143,16 @@ export interface components {
         };
         /** @description Loop-trigger step configuration recognised inside `LoopSpec.steps[].config`. Triggers another loop in the same project as an independent child run (fire-and-forget). The child run records `parent_run_id`, `parent_loop_id`, and `parent_step_key` so the lineage is visible from the child. */
         LoopSubLoopStep: {
-            /** @description Stable handle of the loop to trigger, scoped to the same project as the parent loop. */
-            loop_handle: string;
-            /** @description Input map handed to the child run. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions resolved against the parent run. When omitted the parent step's resolved input map is forwarded. */
+            /** @description ID of the loop to trigger, scoped to the same project as the parent loop. */
+            loop_id: string;
+            /** @description Input map handed to the child run. String leaves render against the parent run before the child starts: `{{ .inputs.* }}` / `{{ .context.* }}` Go text/template actions in schema_version 1, `${{ ... }}` expr interpolations over `inputs`, `event`, `meta`, and `steps.<key>.output` in schema_version 2. When omitted the parent's run inputs are forwarded. */
             inputs?: {
                 [key: string]: unknown;
             };
-            /** @description Optional expr predicate evaluated against the `{ inputs, context }` envelope of the parent run before the child is triggered. It must evaluate to a bool; a false result skips the step and starts no child run. Same predicate language as `wait_for_event` and event trigger conditions. */
+            /** @description Optional expr predicate evaluated against the `{ inputs, context }` envelope of the parent run before the child is triggered. It must evaluate to a bool; a false result skips the step and starts no child run. schema_version 1 only; replaced in 2 by the step-level `if` field. */
             condition?: string;
         };
-        /** @description Check step configuration recognised inside `LoopSpec.steps[].config`. A check step evaluates typed assertions over the run's `{ inputs, context }` envelope — deterministic `expr` predicates, or `agent` judges for everything that isn't deterministic — records a per-assertion verdict with cited evidence, and routes on failure: fail the run (stop reason `check_failed`), continue with the red verdict on the record, or open an approval gate carrying the evidence (rejection stops the run with `gate_rejected`). All assertions are evaluated; there is no short-circuit. An assertion that errors (bad expr, judge model failure, unparseable verdict) fails closed — never a silent pass. */
+        /** @description Check step configuration recognised inside `LoopSpec.steps[].config`. A check step evaluates typed assertions over the run's template environment (`{ inputs, context }` in schema_version 1; `inputs`, `event`, `meta`, and `steps.<key>.output` in schema_version 2) — deterministic `expr` predicates, or `agent` judges for everything that isn't deterministic — records a per-assertion verdict with cited evidence, and routes on failure: fail the run (stop reason `check_failed`), continue with the red verdict on the record, or open an approval gate carrying the evidence (rejection stops the run with `gate_rejected`). All assertions are evaluated; there is no short-circuit. An assertion that errors (bad expr, judge model failure, unparseable verdict) fails closed — never a silent pass. */
         LoopCheckStep: {
             /** @description Assertions evaluated in order; names must be unique. */
             checks: components["schemas"]["LoopCheckAssertion"][];
@@ -4367,8 +4162,10 @@ export interface components {
              * @enum {string}
              */
             on_fail: "fail" | "continue" | "gate";
+            /** @description Approval gate configuration used when `on_fail` is `gate`. */
             gate?: components["schemas"]["LoopCheckGate"];
         };
+        /** @description One assertion evaluated by a check step. */
         LoopCheckAssertion: {
             /** @description Unique assertion name shown on the timeline proof row. */
             name: string;
@@ -4377,11 +4174,11 @@ export interface components {
              * @enum {string}
              */
             kind: "expr" | "agent";
-            /** @description Predicate for `kind: expr`, evaluated against the `{ inputs, context }` envelope. Required for expr assertions. */
+            /** @description Predicate for `kind: expr`, evaluated against the run's template environment (`{ inputs, context }` in schema_version 1; `inputs`, `event`, `meta`, and `steps.<key>.output` in schema_version 2). Required for expr assertions. */
             expr?: string;
             /** @description Judge agent id for `kind: agent`. Omit to use the built-in platform reviewer `mobius-reviewer`. The judge should be a different agent than the one that produced the evidence; the compiler warns when a judge grades its own work. */
             agent?: string;
-            /** @description Judge instruction for `kind: agent`, rendered with `{{ .inputs.* }}` / `{{ .context.* }}` template actions before the cited evidence is appended. Required for agent assertions. */
+            /** @description Judge instruction for `kind: agent`, rendered like every other templated string (`{{ .inputs.* }}` / `{{ .context.* }}` in schema_version 1, `${{ ... }}` expr interpolation in 2) before the cited evidence is appended. Required for agent assertions. */
             prompt?: string;
             /** @description Step keys whose saved outputs this assertion judges. Each must reference an earlier step. Cited outputs are shown to agent judges and recorded on the verdict. */
             evidence?: string[];
@@ -4395,14 +4192,19 @@ export interface components {
         };
         /** @description Retry policy for a step. `max_attempts` is the total number of attempts (1 = no retry); it bounds both worker-reported failures and lease-loss recovery for worker-executed action steps. A worker that reports a failure with attempts remaining re-queues for another attempt rather than failing the run; the run fails once attempts are exhausted. The attempt count is visible on the run timeline (`action.retried`, `action.failed`) and on the executing job (`claim_attempt` / `max_attempts`). Cancellation is always terminal. Capped server-side at 10 attempts. */
         LoopRetryPolicy: {
+            /** @description Total attempts allowed for the step, including the first attempt. */
             max_attempts?: number;
             /** @description Go duration string such as `30s`, `5m`, or `2h`. Applied between attempts for in-process (synchronous) action retries; worker-executed actions re-queue immediately for the next attempt. */
             delay?: string;
         };
+        /** @description Timeout behavior for one loop step. */
         LoopTimeoutPolicy: {
             /** @description Go duration string such as `30s`, `5m`, or `2h`. */
             duration?: string;
-            /** @enum {string} */
+            /**
+             * @description Timeout behavior; currently only `fail`.
+             * @enum {string}
+             */
             on_timeout?: "fail";
         };
         LoopVersionListResponse: {
@@ -4410,15 +4212,31 @@ export interface components {
             items: components["schemas"]["LoopVersion"][];
         };
         CreateLoopVersionRequest: {
+            /** @description Loop spec to store as a new draft version. */
             spec: components["schemas"]["LoopSpec"];
         };
+        /**
+         * @description Materialized trigger created from a published loop version.
+         * @example {
+         *       "id": "atrg_3m8p5q9x2v7n4r6t",
+         *       "loop_id": "loop_9q2m7x5v3p8n4r6t",
+         *       "name": "Weekday morning",
+         *       "kind": "schedule",
+         *       "enabled": true,
+         *       "config": {
+         *         "cron": "0 9 * * 1-5",
+         *         "timezone": "America/New_York"
+         *       },
+         *       "concurrency_policy": "skip",
+         *       "max_concurrent_runs": 1,
+         *       "next_fire_at": "2026-06-16T13:00:00Z",
+         *       "created_at": "2026-06-15T14:30:00Z",
+         *       "updated_at": "2026-06-15T14:30:00Z"
+         *     }
+         */
         LoopTrigger: {
             /** @description Stable trigger identifier. */
             id: string;
-            /** @description Organization that owns this trigger. */
-            org_id: string;
-            /** @description Project that owns this trigger. */
-            project_id: string;
             /** @description Loop this trigger belongs to. */
             loop_id: string;
             /** @description Human-readable trigger name. */
@@ -4432,7 +4250,7 @@ export interface components {
                 [key: string]: unknown;
             };
             /**
-             * @description Behavior when a fire arrives while prior runs of this loop are still active.
+             * @description Trigger concurrency behavior: `allow`, `queue`, `skip`, or `replace`.
              * @enum {string}
              */
             concurrency_policy: "allow" | "queue" | "skip" | "replace";
@@ -4473,8 +4291,8 @@ export interface components {
         HTTPTriggerDeliveryRequest: {
             [key: string]: unknown;
         };
-        /** @description Synchronous receipt for an inbound HTTP-trigger delivery. The trigger dispatch and run start happen asynchronously after this response. Clients can poll via `GET /v1/projects/{project}/runs?source_event_id=<source_event_id>` to discover the run once the source-event processor reserves it. */
-        HTTPTriggerDeliveryResponse: {
+        /** @description Synchronous receipt for an inbound HTTP-trigger delivery. The trigger dispatch and run start happen asynchronously after this response. Clients can poll via `GET /v1/projects/{project_handle}/runs?source_event_id=<source_event_id>` to discover the run once the source-event processor reserves it. */
+        HTTPTriggerDeliveryResult: {
             /** @description Durable source-event id (also the `dedup_key` seed). Stable across retries with the same `Idempotency-Key`. */
             source_event_id: string;
             /**
@@ -4486,10 +4304,11 @@ export interface components {
             deduped?: boolean;
         };
         /**
-         * @description Body for `POST /v1/projects/{project}/loops/{id}/runs`. All fields are optional; an empty body starts a run with no inputs and no attribution.
+         * @description Body for `POST /v1/projects/{project_handle}/loops/{resource_id}/runs`. All fields are optional; an empty body starts a run with no inputs and no attribution.
          * @example {
          *       "inputs": {
-         *         "issue_id": "42"
+         *         "issue_id": "42",
+         *         "repository": "deepnoodle-ai/mobius-cloud"
          *       },
          *       "source": {
          *         "type": "api",
@@ -4501,16 +4320,17 @@ export interface components {
          *     }
          */
         StartLoopRunRequest: {
-            /** @description Free-form input map passed to the run. Available to steps via `{{ .inputs.<key> }}` Go text/template actions. */
+            /** @description Input map passed to the run. schema_version 1 loops receive it as-is and reference it via `{{ .inputs.<key> }}` Go text/template actions. schema_version 2 loops resolve it against the declared `inputs:` contract — undeclared keys are dropped, defaults fill, required inputs must resolve — and reference it via `${{ inputs.<key> }}`. */
             inputs?: {
                 [key: string]: unknown;
             };
+            /** @description Attribution for the call that starts the run. */
             source?: components["schemas"]["LoopRunSource"];
             /** @description Caller-supplied idempotency key, scoped to (org, project). Repeat calls with the same `idempotency_key` while the prior run is still non-terminal return the existing run (same `id`). A repeat after the prior run terminated returns `409 Conflict` with code `idempotency_key_conflict` and details containing the existing run id and its terminal status. */
             idempotency_key?: string;
             /**
              * Format: double
-             * @description Per-run budget override in US dollars (1 credit = $0.01). Overrides the loop spec's `limits` budget for this run only. Mutually exclusive with `credit_budget` — setting both is a `400`. Values finer than $0.00001 (one milli-credit) are rejected. The run halts at the next checkpoint (step boundary or agent tool iteration) once spend reaches the budget; enforcement granularity is one model call or metered action.
+             * @description Per-run budget override in US dollars (1 credit = $0.01). Overrides the loop spec's `limits` budget for this run only. Mutually exclusive with `credit_budget` — setting both is a `400`. Values finer than 0.001 credit ($0.00001) are rejected. The run halts at the next checkpoint (step boundary or agent tool iteration) once spend reaches the budget; enforcement granularity is one model call or metered action.
              */
             budget_usd?: number;
             /**
@@ -4550,7 +4370,7 @@ export interface components {
         /** @description Optional attribution for the call that started this run. Triggers and HTTP trigger dispatch populate `trigger_id` and `trigger_fire_id`. API callers usually only set `type` and `id`. */
         LoopRunSource: {
             /**
-             * @description Source category for the run start.
+             * @description Source category for the run start: `api`, `trigger`, `manual`, or `signal`.
              * @enum {string}
              */
             type?: "api" | "trigger" | "manual" | "signal";
@@ -4563,14 +4383,32 @@ export interface components {
             /** @description Internal trigger-fire ledger id used to deduplicate trigger dispatch retries. Present only for trigger-started runs. */
             readonly trigger_fire_id?: string;
         };
-        /** @description One loop run record. */
+        /**
+         * @description One loop run record.
+         * @example {
+         *       "id": "run_8q5m2x9v7p3n4r6t",
+         *       "loop_id": "loop_9q2m7x5v3p8n4r6t",
+         *       "loop_name": "Daily security check",
+         *       "loop_version_id": "lver_4v9n2q7m5x8p3r6t",
+         *       "loop_version": 3,
+         *       "status": "running",
+         *       "credit_budget": 1000,
+         *       "credit_spent": 12.5,
+         *       "inputs": {
+         *         "repository": "deepnoodle-ai/mobius-cloud"
+         *       },
+         *       "source": {
+         *         "type": "api",
+         *         "id": "review-service",
+         *         "label": "review-service"
+         *       },
+         *       "created_at": "2026-06-15T14:30:00Z",
+         *       "updated_at": "2026-06-15T14:31:00Z"
+         *     }
+         */
         LoopRun: {
             /** @description Stable run identifier. */
             id: string;
-            /** @description Organization that owns this run. */
-            org_id: string;
-            /** @description Project that owns this run. */
-            project_id: string;
             /** @description Loop this run belongs to. */
             loop_id: string;
             /** @description Human-readable name of the loop this run belongs to. */
@@ -4579,30 +4417,41 @@ export interface components {
             loop_version_id: string;
             /** @description Version number of the LoopVersion this run is executing. */
             loop_version: number;
+            /** @description Current lifecycle state of this run. */
             status: components["schemas"]["LoopRunStatus"];
+            /** @description Terminal reason recorded when the run stops. */
             stop_reason?: components["schemas"]["LoopRunStopReason"];
             /**
-             * Format: int64
-             * @description The run's budget ceiling in milli-credits (1 credit = 1,000 milli-credits = $0.01). Resolved at run start from the StartRun override, the loop spec's `limits` block, or the trial-plan default, in that order. Absent when the run is unbounded.
+             * Format: double
+             * @description The run's budget ceiling in credits (1 credit = $0.01), with up to 3 decimal places. Resolved at run start from the StartRun override, the loop spec's `limits` block, or the trial-plan default, in that order. Absent when the run is unbounded.
              */
-            credit_budget_milli?: number;
+            credit_budget?: number;
             /**
-             * Format: int64
-             * @description Metered spend attributed to this run so far, in milli-credits. Incremented atomically with each usage-ledger insert that carries this run's id. Counts all metered work regardless of credential source (BYOK calls count at their rate-card equivalent even though they bill zero credits).
+             * Format: double
+             * @description Metered spend attributed to this run so far, in credits (up to 3 decimal places). Incremented atomically with each usage-ledger insert that carries this run's id. Counts all metered work regardless of credential source (BYOK calls count at their rate-card equivalent even though they bill zero credits).
              */
-            credit_spent_milli?: number;
+            credit_spent?: number;
             /** @description Run-wide cap on agent turns across all steps, from the loop spec's `limits.max_agent_turns`. Absent when unbounded. */
             max_agent_turns?: number;
             /** @description Number of agent turns started for this run so far. Compared against `max_agent_turns` when that cap is set. */
             agent_turns_used?: number;
-            /** @description Input map supplied when the run started, merged over the loop's `default_inputs`, and reachable in step templates at `{{ .inputs.<key> }}`. For event-kind trigger runs this is the normalized `{ event, meta }` envelope (`{{ .inputs.event.* }}`, `{{ .inputs.meta.* }}`) — see the loop templating guide. */
+            /** @description Input map resolved when the run started, reachable in step templates at `{{ .inputs.<key> }}` (schema_version 1) or `${{ inputs.<key> }}` (schema_version 2). In schema_version 1 event-trigger runs this is the normalized `{ event, meta }` envelope (`{{ .inputs.event.* }}`, `{{ .inputs.meta.* }}`); in schema_version 2 the trigger envelope lives in the run's `event` and `meta` fields instead and inputs hold only declared keys. */
             inputs?: {
                 [key: string]: unknown;
             };
-            /** @description Final result payload: the run's accumulated step outputs, keyed by each step's `save_as`. Absent until the run terminates successfully. */
+            /** @description Normalized payload of the event that started the run, reachable in schema_version 2 templates at `${{ event.* }}`: the webhook body for event triggers, the request body for HTTP triggers. Empty for manual and schedule runs. */
+            event?: {
+                [key: string]: unknown;
+            };
+            /** @description Run and trigger metadata envelope, reachable in schema_version 2 templates at `${{ meta.* }}`: `run_id`, `loop_id`, `source`, `trigger`, plus trigger-supplied facts such as `event_type`, `source_event_id`, and `scheduled_at`. */
+            meta?: {
+                [key: string]: unknown;
+            };
+            /** @description Final result payload. When the loop declares an `output:` block (schema_version 2) this is that block rendered at completion; otherwise it is the run's accumulated step outputs, keyed by step key (`save_as` in schema_version 1). Absent until the run terminates successfully. */
             result?: {
                 [key: string]: unknown;
             };
+            /** @description Source that started this run. */
             source?: components["schemas"]["LoopRunSource"];
             /** @description Run that triggered this run via an `loop` step. Present only on child runs; absent for top-level runs. */
             parent_run_id?: string;
@@ -4646,7 +4495,7 @@ export interface components {
             updated_at: string;
         };
         /**
-         * @description Lifecycle state of a loop run.
+         * @description Run lifecycle state: `queued`, `running`, `suspended`, `completed`, `failed`, or `cancelled`.
          * @enum {string}
          */
         LoopRunStatus: "queued" | "running" | "suspended" | "completed" | "failed" | "cancelled";
@@ -4657,6 +4506,22 @@ export interface components {
          * @enum {string}
          */
         LoopRunStopReason: "completed" | "step_failed" | "check_failed" | "gate_rejected" | "cancelled" | "replaced" | "wall_clock_exceeded" | "budget_exceeded" | "turn_limit_reached" | "progress_stalled" | "step_limit_reached";
+        /**
+         * @example {
+         *       "items": [
+         *         {
+         *           "id": "run_8q5m2x9v7p3n4r6t",
+         *           "loop_id": "loop_9q2m7x5v3p8n4r6t",
+         *           "loop_version_id": "lver_4v9n2q7m5x8p3r6t",
+         *           "loop_version": 3,
+         *           "status": "running",
+         *           "created_at": "2026-06-15T14:30:00Z",
+         *           "updated_at": "2026-06-15T14:31:00Z"
+         *         }
+         *       ],
+         *       "has_more": false
+         *     }
+         */
         LoopRunListResponse: {
             /** @description The list of results for this page. */
             items: components["schemas"]["LoopRun"][];
@@ -4666,29 +4531,45 @@ export interface components {
             has_more?: boolean;
         };
         /**
-         * @description The step type. `cleanup` is system-materialized — it appears in run step listings for terminal cleanup work but cannot be authored in an `LoopSpec`.
+         * @description Step type: `agent`, `action`, `sleep`, `wait_for_event`, `interaction`, `loop`, `check`, or system-materialized `cleanup`. `cleanup` appears in run step listings for terminal cleanup work but cannot be authored in a `LoopSpec`.
          * @enum {string}
          */
         LoopRunStepKind: "agent" | "action" | "sleep" | "wait_for_event" | "interaction" | "loop" | "check" | "cleanup";
         /**
-         * @description Lifecycle state of a loop run step.
+         * @description Step lifecycle state: `pending`, `running`, `suspended`, `completed`, `failed`, `skipped`, or `cancelled`.
          * @enum {string}
          */
         LoopRunStepStatus: "pending" | "running" | "suspended" | "completed" | "failed" | "skipped" | "cancelled";
+        /**
+         * @description One execution step inside a loop run.
+         * @example {
+         *       "id": "run_8q5m2x9v7p3n4r6t:review",
+         *       "run_id": "run_8q5m2x9v7p3n4r6t",
+         *       "step_key": "review",
+         *       "step_name": "Review pull requests",
+         *       "kind": "agent",
+         *       "status": "running",
+         *       "seq": 0,
+         *       "attempt": 1,
+         *       "inputs": {
+         *         "repository": "deepnoodle-ai/mobius-cloud"
+         *       },
+         *       "created_at": "2026-06-15T14:30:00Z",
+         *       "updated_at": "2026-06-15T14:31:00Z"
+         *     }
+         */
         LoopRunStep: {
             /** @description Stable step identifier. */
             id: string;
-            /** @description Organization that owns the parent run. */
-            org_id: string;
-            /** @description Project that owns the parent run. */
-            project_id: string;
             /** @description Run this step belongs to. */
             run_id: string;
             /** @description Stable key for this step within its loop version. */
             step_key: string;
             /** @description Display name from the authored spec, when present. */
             step_name?: string;
+            /** @description Step kind copied from the authored spec or system cleanup step. */
             kind: components["schemas"]["LoopRunStepKind"];
+            /** @description Current lifecycle state of this run step. */
             status: components["schemas"]["LoopRunStepStatus"];
             /**
              * Format: int64
@@ -4705,7 +4586,7 @@ export interface components {
             parameters?: {
                 [key: string]: unknown;
             };
-            /** @description Step output (shape varies by kind); absent until completion. When the step sets `save_as`, this value is also reachable in downstream step templates at `{{ .context.<save_as> }}`. */
+            /** @description Step output (shape varies by kind); absent until completion. Downstream step templates reach this value at `${{ steps.<key>.output }}` (schema_version 2) or `{{ .context.<save_as> }}` (schema_version 1). */
             result?: unknown;
             /** @description Worker job that executed this step, when applicable. */
             job_id?: string | null;
@@ -4716,7 +4597,7 @@ export interface components {
             /** @description Human-readable error message populated on failure. */
             error_message?: string;
             /**
-             * @description Check outcome for `check`-kind steps; absent on every other kind. A failed check routed `on_fail: continue` completes the step with `verdict: fail` — status and verdict are separate axes (the step did its job: it checked).
+             * @description Check outcome for `check`-kind steps: `pass` or `fail`; absent on every other kind. A failed check routed `on_fail: continue` completes the step with `verdict: fail` — status and verdict are separate axes (the step did its job: it checked).
              * @enum {string}
              */
             verdict?: "pass" | "fail";
@@ -4726,12 +4607,12 @@ export interface components {
             };
             /**
              * Format: date-time
-             * @description Time the step entered `running`.
+             * @description Time the step entered `running`; null until the step starts.
              */
             started_at?: string | null;
             /**
              * Format: date-time
-             * @description Time the step reached a terminal status.
+             * @description Time the step reached a terminal status; null until the step completes.
              */
             completed_at?: string | null;
             /**
@@ -4749,13 +4630,24 @@ export interface components {
             /** @description Steps for this run in `seq` order. */
             items: components["schemas"]["LoopRunStep"][];
         };
+        /**
+         * @description One durable event emitted while a loop run progresses.
+         * @example {
+         *       "id": "run_8q5m2x9v7p3n4r6t:evt:000001",
+         *       "run_id": "run_8q5m2x9v7p3n4r6t",
+         *       "sequence": 1,
+         *       "event_type": "step.started",
+         *       "step_id": "run_8q5m2x9v7p3n4r6t:review",
+         *       "step_key": "review",
+         *       "payload": {
+         *         "agent_id": "agent_5n8p2q7m4x9r3v6t"
+         *       },
+         *       "created_at": "2026-06-15T14:30:10Z"
+         *     }
+         */
         LoopRunEvent: {
             /** @description Stable event identifier. */
             id: string;
-            /** @description Organization that owns the parent run. */
-            org_id: string;
-            /** @description Project that owns the parent run. */
-            project_id: string;
             /** @description Run this event belongs to. */
             run_id: string;
             /**
@@ -4766,7 +4658,7 @@ export interface components {
             /**
              * @description Event type from the run-stream taxonomy (e.g. `run.started`, `step.completed`, `wait.opened`, `action.called`, `action.completed`, `action.failed`, `artifact.created`, `limit.reached`, `usage.recorded`).
              *
-             *     Guardrail events: `run.budget_warning` fires once when run spend first reaches 80% of the run budget (payload: `credit_budget_milli`, `credit_spent_milli`, `percent`); `run.budget_exceeded` fires when the budget halts the run at a checkpoint (same payload plus the `step` it halted before). `usage.recorded` payloads carry `step_key`, the event's `credit_cost_milli`, its `budget_cost_milli` (rate-card cost counted against the run budget, nonzero even for BYOK), and the cumulative `run_credit_spent_milli`.
+             *     Guardrail events: `run.budget_warning` fires once when run spend first reaches 80% of the run budget (payload: `credit_budget`, `credit_spent`, `percent`); `run.budget_exceeded` fires when the budget halts the run at a checkpoint (same payload plus the `step` it halted before). `usage.recorded` payloads carry `step_key`, the event's `credit_cost`, its `budget_cost` (rate-card cost counted against the run budget, nonzero even for BYOK), and the cumulative `run_credit_spent`.
              */
             event_type: string;
             /** @description ID of the step this event belongs to, when applicable. */
@@ -4788,20 +4680,99 @@ export interface components {
             items: components["schemas"]["LoopRunEvent"][];
             /**
              * Format: int64
-             * @description Sequence number of the most recent event in `items`; clients can pass this back as `since_sequence` on the next poll.
+             * @description Sequence number of the most recent event in `items`; clients can pass this back as `after_sequence` on the next poll.
              */
             next_sequence?: number;
             /** @description True when more events exist after the returned page. */
             has_more?: boolean;
         };
-        /** @enum {string} */
-        ColumnType: "string" | "number" | "boolean" | "date" | "object" | "array" | "any";
-        ColumnDef: {
+        /**
+         * @example {
+         *       "name": "GitHub review",
+         *       "description": "GitHub actions needed for pull-request review.",
+         *       "actions": [
+         *         {
+         *           "selector_type": "exact",
+         *           "selector": "github.create_review_comment"
+         *         }
+         *       ],
+         *       "tags": {
+         *         "owner": "product"
+         *       }
+         *     }
+         */
+        ToolkitRequest: {
+            /** @description Human-readable toolkit name. */
             name: string;
+            /** @description Markdown description of the toolkit's purpose. */
+            description?: string;
+            /** @description Action selectors provided by this toolkit. */
+            actions?: components["schemas"]["ToolkitAction"][];
+            /** @description Labels to apply to the toolkit. */
+            tags?: components["schemas"]["TagMap"];
+        };
+        ToolkitListResponse: {
+            /** @description The list of results for this page. */
+            items: components["schemas"]["Toolkit"][];
+        };
+        /**
+         * @example {
+         *       "name": "Pull request review",
+         *       "description": "Review pull requests for correctness and risk.",
+         *       "instructions": "Check the diff and leave concise findings.",
+         *       "allowed_tools": [
+         *         "github.create_review_comment"
+         *       ],
+         *       "tags": {
+         *         "owner": "product"
+         *       }
+         *     }
+         */
+        SkillRequest: {
+            /** @description Human-readable skill name. */
+            name: string;
+            /** @description Markdown description of the skill's purpose. */
+            description?: string;
+            /** @description Markdown instructions loaded when the skill is active. */
+            instructions: string;
+            /**
+             * @description Tool selectors that narrow the agent's effective tool set while this skill is active.
+             * @default []
+             */
+            allowed_tools: string[];
+            /** @description Labels to apply to the skill. */
+            tags?: components["schemas"]["TagMap"];
+        };
+        ImportSkillRequest: {
+            /** @description Full skill document, optionally with YAML frontmatter. */
+            content: string;
+            /** @description Optional name override. */
+            name?: string;
+        };
+        SkillListResponse: {
+            /** @description The list of results for this page. */
+            items: components["schemas"]["Skill"][];
+        };
+        /**
+         * @description Column value type: `string`, `number`, `boolean`, `date`, `object`, `array`, or `any`.
+         * @enum {string}
+         */
+        ColumnType: "string" | "number" | "boolean" | "date" | "object" | "array" | "any";
+        /** @description One typed column in a table schema. */
+        ColumnDef: {
+            /** @description Column name used as the key inside row `data`. */
+            name: string;
+            /** @description JSON-compatible value type accepted for this column. */
             type: components["schemas"]["ColumnType"];
-            /** @default false */
+            /**
+             * @description Whether inserts must include a non-null value for this column.
+             * @default false
+             */
             required: boolean;
-            /** @default false */
+            /**
+             * @description Whether the column value must be unique within the table.
+             * @default false
+             */
             unique: boolean;
             /**
              * @description Marks the column as an expected filter/sort field so backends can maintain efficient indexes.
@@ -4810,113 +4781,259 @@ export interface components {
             indexed: boolean;
             /** @description Default value applied when column is absent on insert */
             default?: unknown;
+            /** @description Human-readable explanation of the column's purpose. */
             description?: string;
-            /** @default false */
+            /**
+             * @description Whether authors should avoid using this column in new rows.
+             * @default false
+             */
             deprecated: boolean;
         };
+        /** @description Declared index over one or more table columns. */
         IndexDef: {
+            /** @description Stable index name unique within the table schema. */
             name: string;
+            /** @description Column names included in the index, in order. */
             columns: string[];
-            /** @default false */
+            /**
+             * @description Whether the index enforces uniqueness across its columns.
+             * @default false
+             */
             unique: boolean;
         };
+        /** @description Column and index definition for a table. */
         TableSchema: {
+            /** @description Ordered list of columns accepted in row data. */
             columns: components["schemas"]["ColumnDef"][];
+            /** @description Optional declared indexes maintained by the backend. */
             indexes?: components["schemas"]["IndexDef"][];
         };
         /**
-         * @description Controls read/write access to the table. "project" allows anyone with project table permissions (default for unowned tables). "private" restricts access to the owner only (default when an owner is set).
-         * @enum {string}
+         * @description Project table metadata and schema.
+         * @example {
+         *       "id": "table_2x7q5m9v3p8r4n6t",
+         *       "name": "review_findings",
+         *       "description": "Pull-request review findings.",
+         *       "schema": {
+         *         "columns": [
+         *           {
+         *             "name": "pull_request_url",
+         *             "type": "string"
+         *           },
+         *           {
+         *             "name": "severity",
+         *             "type": "string"
+         *           },
+         *           {
+         *             "name": "summary",
+         *             "type": "string"
+         *           }
+         *         ]
+         *       },
+         *       "tags": {
+         *         "team": "product"
+         *       },
+         *       "created_by": "user_2f9s3k4m5n6p7q8r",
+         *       "updated_by": "user_2f9s3k4m5n6p7q8r",
+         *       "created_at": "2026-06-15T14:30:00Z",
+         *       "updated_at": "2026-06-15T14:30:00Z"
+         *     }
          */
-        TableAccessMode: "project" | "private";
         Table: {
+            /** @description Unique table identifier. */
             id: string;
-            org_id: string;
-            project_id: string;
+            /** @description Lowercase snake_case table name, unique within the project. */
             name: string;
-            scope?: components["schemas"]["ResourceScope"];
+            /** @description Human-readable table description. */
             description?: string;
+            /** @description Optional author guidance for how this table should be used (e.g. surfaced to agents). */
+            instructions?: string;
+            /** @description Column and index schema enforced for table rows. */
             schema: components["schemas"]["TableSchema"];
-            tags?: {
-                [key: string]: string;
-            };
-            /** @description Principal owner ID. AI-agent owners use their agent principal ID. */
-            owned_by?: string;
-            /** @description Controls read/write access. When access_mode is "private", owned_by MUST be present; the server enforces this invariant. If access_mode is omitted on create, the server defaults to "private" when an owner is set and "project" when no owner is provided. */
-            access_mode: components["schemas"]["TableAccessMode"];
+            /** @description Free-form labels used for filtering, ownership, or automation. */
+            tags?: components["schemas"]["TagMap"];
             /** @description User ID of the principal who created this table. */
             created_by?: string;
             /** @description User ID of the principal who last updated this table. */
             updated_by?: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Time the table was created.
+             */
             created_at: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Time the table metadata or schema was last updated.
+             */
             updated_at: string;
         };
+        /**
+         * @description Cursor-paginated list of tables.
+         * @example {
+         *       "items": [
+         *         {
+         *           "id": "table_2x7q5m9v3p8r4n6t",
+         *           "name": "review_findings",
+         *           "schema": {
+         *             "columns": [
+         *               {
+         *                 "name": "pull_request_url",
+         *                 "type": "string"
+         *               }
+         *             ]
+         *           },
+         *           "created_at": "2026-06-15T14:30:00Z",
+         *           "updated_at": "2026-06-15T14:30:00Z"
+         *         }
+         *       ],
+         *       "has_more": false
+         *     }
+         */
         TableListResponse: {
+            /** @description Tables in the current page. */
             items: components["schemas"]["Table"][];
+            /** @description Whether another page is available. */
             has_more: boolean;
+            /** @description Cursor to pass on the next request when `has_more` is true. */
             next_cursor?: string;
         };
+        /** @description Point-in-time storage and indexing statistics for one table. */
         TableStats: {
+            /** @description Table these statistics describe. */
             table_id: string;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Approximate number of rows in the table.
+             */
             row_count: number;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Approximate bytes used by table data.
+             */
             approx_data_bytes: number;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Approximate bytes used by table indexes.
+             */
             approx_index_bytes: number;
+            /** @description Number of columns with backend-maintained indexes. */
             indexed_column_count: number;
+            /** @description Number of indexes declared in the table schema. */
             declared_index_count: number;
+            /** @description Whether a full-text search index is present for the table. */
             search_index_present: boolean;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Time this statistics snapshot was generated.
+             */
             generated_at: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Creation time of the oldest row, when the table has rows.
+             */
             oldest_row_created_at?: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Update time of the newest changed row, when the table has rows.
+             */
             newest_row_updated_at?: string;
         };
+        /**
+         * @example {
+         *       "name": "review_findings",
+         *       "description": "Pull-request review findings.",
+         *       "schema": {
+         *         "columns": [
+         *           {
+         *             "name": "pull_request_url",
+         *             "type": "string"
+         *           },
+         *           {
+         *             "name": "severity",
+         *             "type": "string"
+         *           },
+         *           {
+         *             "name": "summary",
+         *             "type": "string"
+         *           }
+         *         ]
+         *       }
+         *     }
+         */
         CreateTableRequest: {
-            /** @description Table name (lowercase, snake_case); unique within the project scope. */
+            /** @description Table name (lowercase, snake_case); unique within the project. */
             name: string;
             /** @description Optional human-readable description of the table. */
             description?: string;
+            /** @description Optional author guidance for how this table should be used (e.g. surfaced to agents). */
+            instructions?: string;
+            /** @description Column and index definition for the new table. */
             schema: components["schemas"]["TableSchema"];
-            scope?: components["schemas"]["ResourceScope"];
-            /** @description Canonical user owner ID. Required when `scope` is `owner`; defaults to the authenticated user for owned table creates. */
-            owned_by?: string;
-            access_mode?: components["schemas"]["TableAccessMode"];
         };
         UpdateTableRequest: {
-            /** @description Table name (lowercase, snake_case); unique within the project scope. */
+            /** @description Table name (lowercase, snake_case); unique within the project. */
             name?: string;
             /** @description Optional human-readable description of the table. */
             description?: string;
+            /** @description Optional author guidance for how this table should be used (e.g. surfaced to agents). */
+            instructions?: string;
+            /** @description Replacement column and index definition. */
             schema?: components["schemas"]["TableSchema"];
-            /** @description Set to `owner` for owner-scoped names, or null to return to the project/default scope. */
-            scope?: (string & components["schemas"]["ResourceScope"]) | null;
-            /** @description Canonical user owner ID. Send null to clear ownership. */
-            owned_by?: string | null;
-            access_mode?: components["schemas"]["TableAccessMode"];
         };
+        /**
+         * @description One stored row in a project table.
+         * @example {
+         *       "id": "tablerow_5p9x2q7m4n8v3r6t",
+         *       "table_id": "table_2x7q5m9v3p8r4n6t",
+         *       "data": {
+         *         "pull_request_url": "https://github.com/deepnoodle-ai/mobius-cloud/pull/123",
+         *         "severity": "medium",
+         *         "summary": "Add a regression test for the error path."
+         *       },
+         *       "version": 1,
+         *       "created_at": "2026-06-15T14:30:00Z",
+         *       "updated_at": "2026-06-15T14:30:00Z"
+         *     }
+         */
         TableRow: {
+            /** @description Unique row identifier. */
             id: string;
+            /** @description Table this row belongs to. */
             table_id: string;
+            /** @description JSON object keyed by table column name. */
             data: {
                 [key: string]: unknown;
             };
+            /** @description Optimistic-lock version incremented on each update. */
             version: number;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Time the row was inserted.
+             */
             created_at: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Time the row was last updated.
+             */
             updated_at: string;
         };
+        /**
+         * @example {
+         *       "data": {
+         *         "pull_request_url": "https://github.com/deepnoodle-ai/mobius-cloud/pull/123",
+         *         "severity": "medium",
+         *         "summary": "Add a regression test for the error path."
+         *       }
+         *     }
+         */
         InsertRowRequest: {
+            /** @description JSON object keyed by table column name. */
             data: {
                 [key: string]: unknown;
             };
         };
         UpdateRowRequest: {
+            /** @description Replacement row data keyed by table column name. */
             data: {
                 [key: string]: unknown;
             };
@@ -4928,26 +5045,34 @@ export interface components {
             filter?: {
                 [key: string]: unknown;
             };
+            /** @description Sort clauses applied after filtering. */
             sort?: {
+                /** @description Column name to sort by. */
                 field: string;
                 /**
+                 * @description Sort direction for this field: `asc` or `desc`.
                  * @default asc
                  * @enum {string}
                  */
                 order: "asc" | "desc";
             }[];
             /**
-             * @description Maximum number of rows to return (1–1000, default 100).
-             * @default 100
+             * @description Maximum number of rows to return (1–100, default 20).
+             * @default 20
              */
             limit: number;
             /** @description Opaque cursor from a prior response. */
             cursor?: string;
         };
-        QueryRowsResponse: {
+        /** @description Cursor-paginated table row query result. */
+        TableRowQueryListResponse: {
+            /** @description Rows in the current page. */
             items: components["schemas"]["TableRow"][];
+            /** @description Whether another result page is available. */
             has_more: boolean;
+            /** @description Page size used for this response. */
             limit?: number;
+            /** @description Cursor to pass on the next query when `has_more` is true. */
             next_cursor?: string;
         };
         SearchRowsRequest: {
@@ -4958,26 +5083,35 @@ export interface components {
                 [key: string]: unknown;
             };
             /**
-             * @description Maximum number of rows to return (1–1000, default 100).
-             * @default 100
+             * @description Maximum number of rows to return (1–100, default 20).
+             * @default 20
              */
             limit: number;
             /** @description Opaque cursor from a prior search response. */
             cursor?: string;
         };
-        SearchRowsResponse: {
+        /** @description Cursor-paginated table row search result. */
+        TableRowSearchListResponse: {
+            /** @description Rows matching the search query and filters. */
             items: components["schemas"]["TableRow"][];
+            /** @description Whether another result page is available. */
             has_more: boolean;
+            /** @description Page size used for this response. */
             limit?: number;
+            /** @description Cursor to pass on the next search when `has_more` is true. */
             next_cursor?: string;
         };
         BulkInsertRowsRequest: {
+            /** @description Row data objects to validate and insert. */
             rows: {
                 [key: string]: unknown;
             }[];
         };
-        BulkInsertRowsResponse: {
+        /** @description Result of a successful bulk row insert. */
+        BulkInsertRowsResult: {
+            /** @description Number of rows inserted. */
             inserted: number;
+            /** @description Inserted rows in request order. */
             items: components["schemas"]["TableRow"][];
         };
         UpsertRowRequest: {
@@ -4988,26 +5122,44 @@ export interface components {
                 [key: string]: unknown;
             };
         };
-        UpsertRowResponse: {
+        /** @description Result of inserting or updating a row by key columns. */
+        UpsertRowResult: {
+            /** @description Row after insert or update. */
             row: components["schemas"]["TableRow"];
             /** @description True when a new row was inserted; false when an existing row was updated. */
             created: boolean;
         };
-        /** @enum {string} */
-        ArtifactState: "pending_upload" | "available" | "expired" | "deleted" | "failed";
-        /** @enum {string} */
-        ArtifactStorageBackend: "mobius";
+        /**
+         * @description Artifact lifecycle state: `pending_upload`, `available`, or `failed`.
+         * @enum {string}
+         */
+        ArtifactState: "pending_upload" | "available" | "failed";
         /**
          * @description Private artifacts are visible only to their owner user. Shared artifacts are visible to the project.
          * @enum {string}
          */
         ArtifactVisibility: "private" | "shared";
+        /**
+         * @description Stored file or generated artifact metadata.
+         * @example {
+         *       "id": "art_2m7q9x5v3p8n4r6t",
+         *       "visibility": "shared",
+         *       "run_id": "run_8q5m2x9v7p3n4r6t",
+         *       "step_id": "run_8q5m2x9v7p3n4r6t:review",
+         *       "name": "reports/review-findings.md",
+         *       "mime_type": "text/markdown",
+         *       "size_bytes": 1842,
+         *       "sha256": "8f4c2b9d0e6a1f3c5b7d9e0a2c4f6b8d9e1a3c5f7b9d0e2a4c6f8b0d2e4a6c8",
+         *       "state": "available",
+         *       "created_at": "2026-06-15T14:30:00Z",
+         *       "created_by": "agent_5n8p2q7m4x9r3v6t",
+         *       "committed_at": "2026-06-15T14:31:00Z"
+         *     }
+         */
         Artifact: {
+            /** @description Unique artifact identifier. */
             id: string;
-            org_id: string;
-            project_id: string;
-            /** @description User-keyed private artifact-space owner. Empty for project-shared artifacts. */
-            owner_id: string;
+            /** @description Visibility policy for the artifact. */
             visibility: components["schemas"]["ArtifactVisibility"];
             /** @description Loop run that produced this artifact, derived from the active worker lease. */
             run_id?: string;
@@ -5015,79 +5167,102 @@ export interface components {
             step_id?: string;
             /** @description Display name or relative virtual path. Forward slash may be used to organize artifacts inside private or shared project space. */
             name: string;
+            /** @description MIME type recorded for the artifact content. */
             mime_type: string;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Artifact content size in bytes.
+             */
             size_bytes: number;
+            /** @description SHA-256 digest of the artifact content, when available. */
             sha256?: string;
-            storage: components["schemas"]["ArtifactStorageBackend"];
-            tags?: {
-                [key: string]: string;
-            };
+            /** @description Current artifact lifecycle state. */
             state: components["schemas"]["ArtifactState"];
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Time the artifact metadata was created.
+             */
             created_at: string;
             /** @description Principal ID of the actor who created this artifact. Empty for system-initiated writes. */
             created_by?: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Time the artifact metadata was last updated.
+             */
             updated_at?: string;
             /** @description Principal ID of the actor who last updated this artifact. Empty for system-initiated writes. */
             updated_by?: string;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Time the artifact content became available.
+             */
             committed_at?: string;
-            /** Format: date-time */
-            expires_at?: string;
-            /** Format: date-time */
-            deleted_at?: string;
         };
+        /**
+         * @example {
+         *       "items": [
+         *         {
+         *           "id": "art_2m7q9x5v3p8n4r6t",
+         *           "visibility": "shared",
+         *           "name": "reports/review-findings.md",
+         *           "mime_type": "text/markdown",
+         *           "size_bytes": 1842,
+         *           "state": "available",
+         *           "created_at": "2026-06-15T14:30:00Z"
+         *         }
+         *       ],
+         *       "has_more": false
+         *     }
+         */
         ArtifactListResponse: {
+            /** @description Artifacts in the current page. */
             items: components["schemas"]["Artifact"][];
+            /** @description Whether another page is available. */
             has_more: boolean;
+            /** @description Cursor to pass on the next request when `has_more` is true. */
             next_cursor?: string;
         };
-        CreateArtifactRequest: {
-            /**
-             * Format: binary
-             * @description File bytes to upload into artifact storage. Multipart parts may be sent in any order; Mobius reads metadata fields and temporarily spools the file part when needed before streaming bytes to artifact storage.
-             */
-            file: string;
-            /** @description Display name or relative virtual path. Forward slash may be used to organize artifacts inside private or shared project space. */
-            name: string;
-            /** @description Optional MIME type override. Defaults to the uploaded file part content type, then `application/octet-stream`. */
-            mime?: string;
-            /**
-             * Format: int64
-             * @description Optional declared file size. When supplied, Mobius verifies the streamed byte count exactly matches this value.
-             */
-            size_bytes?: number;
-            tags?: {
-                [key: string]: string;
-            };
-            /**
-             * Format: int64
-             * @description Set an artifact-specific expiry relative to upload time. Omit to keep the artifact indefinitely unless project settings configure a default TTL.
-             */
-            retain_for_seconds?: number;
-            /** Format: date-time */
-            retain_until?: string;
-        };
+        /** @description Short-lived URL for downloading artifact content. */
         ArtifactSignedUrl: {
+            /** @description Signed URL to call before `expires_at`. */
             url: string;
-            /** @enum {string} */
+            /**
+             * @description HTTP method to use with `url`; currently `GET`.
+             * @enum {string}
+             */
             method: "GET";
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Time when the signed URL expires.
+             */
             expires_at: string;
         };
+        /** @description Current artifact storage usage and quota snapshot. */
         ArtifactQuotaUsage: {
-            org_id: string;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Bytes currently counted toward the artifact quota.
+             */
             used_bytes: number;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Maximum bytes allowed for artifacts.
+             */
             limit_bytes: number;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Number of artifacts currently counted.
+             */
             artifact_count: number;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Number of artifacts waiting for content upload.
+             */
             pending_count: number;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description Time this quota snapshot was generated.
+             */
             generated_at: string;
         };
     };
@@ -5185,33 +5360,23 @@ export interface components {
         };
     };
     parameters: {
-        /** @description Project handle (unique per organization) */
+        /** @description Project handle */
         ProjectHandleParam: string;
         /** @description Resource ID. */
         IDParam: string;
-        /** @description Project-scoped action name used in loop step definitions. */
+        /** @description Action name used in loop step definitions. */
         ActionNameParam: string;
         /** @description Principal ID. */
         principal_id: string;
-        /** @description ID of the agent presence record. */
-        presence_id: string;
         /** @description Cursor for pagination (opaque string from previous response) */
         CursorParam: string;
         /** @description Maximum number of items to return */
         LimitParam: number;
-        /**
-         * @description Filter results by tag. Repeatable; multiple values combine with AND. Format: `Key:Value`, `Key:*` for any value, `Key:a,b,c` for IN.
-         *
-         *     Tag values containing `:` or `,` cannot be filtered with this grammar — the parser splits on those literally. Constrain values to plain identifiers when you intend to filter on them.
-         *
-         *     Some high-cardinality resources may ignore ad-hoc tag filtering.
-         */
-        TagFilterParam: string[];
         /** @description ID of the target organization for the admin operation. */
         AdminOrgIDParam: string;
         /** @description Environment ID. */
         EnvironmentIDParam: string;
-        /** @description Secret ID or project-scoped secret name. */
+        /** @description Secret ID or secret name. */
         SecretParam: string;
         /** @description Secret version number or `latest`. */
         SecretVersionParam: string;
@@ -5223,18 +5388,10 @@ export interface components {
         IntegrationEventIDParam: string;
         /** @description Table ID. */
         TableIDParam: string;
-        /** @description Filter tables by name. Names are unique within a scope, but are not globally unique across owner-scoped tables; use this as a discovery filter and use the returned table `id` for follow-up operations. */
+        /** @description Filter tables by name. Table names are unique within a project; use this as a discovery filter and use the returned table `id` for follow-up operations. */
         TableNameQueryParam: string;
-        /** @description Filter tables by scope. Omit to include project/default and owner scopes; use `owner` with `owned_by` or `owned_by_me=true` for per-user memory tables. */
-        TableScopeParam: components["schemas"]["ResourceScope"];
-        /** @description Canonical user owner ID. Used with `scope=owner` for lookups; for list filters, narrows to tables owned by this user. Ignored when `owned_by_me=true` is present. */
-        TableOwnedByParam: string;
-        /** @description Filter lists to tables owned by the authenticated user. */
-        TableOwnedByMeParam: boolean;
-        /** @description TypeID of the artifact (`art_...`) */
+        /** @description ID of the artifact */
         ArtifactIdParam: string;
-        /** @description Loop run ID */
-        RunIdParam: string;
     };
     requestBodies: never;
     headers: never;
@@ -5249,19 +5406,11 @@ export interface operations {
                 limit?: components["parameters"]["LimitParam"];
                 /** @description Cursor for pagination (opaque string from previous response) */
                 cursor?: components["parameters"]["CursorParam"];
-                /**
-                 * @description Filter results by tag. Repeatable; multiple values combine with AND. Format: `Key:Value`, `Key:*` for any value, `Key:a,b,c` for IN.
-                 *
-                 *     Tag values containing `:` or `,` cannot be filtered with this grammar — the parser splits on those literally. Constrain values to plain identifiers when you intend to filter on them.
-                 *
-                 *     Some high-cardinality resources may ignore ad-hoc tag filtering.
-                 */
-                tag?: components["parameters"]["TagFilterParam"];
             };
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
             };
             cookie?: never;
         };
@@ -5286,13 +5435,23 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
             };
             cookie?: never;
         };
         requestBody: {
             content: {
+                /**
+                 * @example {
+                 *       "name": "CI worker",
+                 *       "principal_id": "svc_7q2v9x6m3n8p5r4t",
+                 *       "expires_at": "2026-09-15T14:30:00Z",
+                 *       "tags": {
+                 *         "owner": "product"
+                 *       }
+                 *     }
+                 */
                 "application/json": components["schemas"]["CreateAPIKeyRequest"];
             };
         };
@@ -5303,6 +5462,21 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "id": "cred_1jz8q2m7xp9vn4kt",
+                     *       "name": "CI worker",
+                     *       "key_prefix": "mbx_7q2v",
+                     *       "principal_id": "svc_7q2v9x6m3n8p5r4t",
+                     *       "expires_at": "2026-09-15T14:30:00Z",
+                     *       "tags": {
+                     *         "owner": "product"
+                     *       },
+                     *       "created_at": "2026-06-15T14:30:00Z",
+                     *       "updated_at": "2026-06-15T14:30:00Z",
+                     *       "key": "mbx_7q2v9k1m_redacted"
+                     *     }
+                     */
                     "application/json": components["schemas"]["APIKeyCreateResult"];
                 };
             };
@@ -5310,6 +5484,8 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     getAPIKey: {
@@ -5317,10 +5493,10 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
                 /** @description Resource ID. */
-                id: components["parameters"]["IDParam"];
+                resource_id: components["parameters"]["IDParam"];
             };
             cookie?: never;
         };
@@ -5340,15 +5516,15 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
-    revokeAPIKey: {
+    deleteAPIKey: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
                 /** @description Resource ID. */
-                id: components["parameters"]["IDParam"];
+                resource_id: components["parameters"]["IDParam"];
             };
             cookie?: never;
         };
@@ -5364,6 +5540,7 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     createAction: {
@@ -5371,13 +5548,37 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
             };
             cookie?: never;
         };
         requestBody: {
             content: {
+                /**
+                 * @example {
+                 *       "name": "review-pr",
+                 *       "title": "Review PR",
+                 *       "description": "Review a pull request and return findings.",
+                 *       "endpoint_kind": "http",
+                 *       "endpoint_url": "https://hooks.example.com/mobius/review-pr",
+                 *       "input_schema": {
+                 *         "type": "object",
+                 *         "required": [
+                 *           "pull_request_url"
+                 *         ],
+                 *         "properties": {
+                 *           "pull_request_url": {
+                 *             "type": "string"
+                 *           }
+                 *         }
+                 *       },
+                 *       "annotations": {
+                 *         "idempotent": true,
+                 *         "read_only": true
+                 *       }
+                 *     }
+                 */
                 "application/json": components["schemas"]["CreateActionRequest"];
             };
         };
@@ -5388,6 +5589,39 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "id": "act_8m4x9q2v7p5n3r6t",
+                     *       "name": "review-pr",
+                     *       "title": "Review PR",
+                     *       "description": "Review a pull request and return findings.",
+                     *       "endpoint_kind": "http",
+                     *       "endpoint_url": "https://hooks.example.com/mobius/review-pr",
+                     *       "input_schema": {
+                     *         "type": "object",
+                     *         "required": [
+                     *           "pull_request_url"
+                     *         ],
+                     *         "properties": {
+                     *           "pull_request_url": {
+                     *             "type": "string"
+                     *           }
+                     *         }
+                     *       },
+                     *       "annotations": {
+                     *         "idempotent": true,
+                     *         "destructive": false,
+                     *         "read_only": true
+                     *       },
+                     *       "tags": {
+                     *         "owner": "product"
+                     *       },
+                     *       "secret_ref": "mobius/action/act_8m4x9q2v7p5n3r6t",
+                     *       "secret_version": 1,
+                     *       "created_at": "2026-06-15T14:30:00Z",
+                     *       "updated_at": "2026-06-15T14:30:00Z"
+                     *     }
+                     */
                     "application/json": components["schemas"]["Action"];
                 };
             };
@@ -5395,6 +5629,7 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     deleteAction: {
@@ -5402,9 +5637,9 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
-                /** @description Project-scoped action name used in loop step definitions. */
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
+                /** @description Action name used in loop step definitions. */
                 action_name: components["parameters"]["ActionNameParam"];
             };
             cookie?: never;
@@ -5416,6 +5651,7 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     updateAction: {
@@ -5423,15 +5659,24 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
-                /** @description Project-scoped action name used in loop step definitions. */
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
+                /** @description Action name used in loop step definitions. */
                 action_name: components["parameters"]["ActionNameParam"];
             };
             cookie?: never;
         };
         requestBody: {
             content: {
+                /**
+                 * @example {
+                 *       "title": "Review PR",
+                 *       "description": "Review a pull request and return prioritized findings.",
+                 *       "tags": {
+                 *         "owner": "product"
+                 *       }
+                 *     }
+                 */
                 "application/json": components["schemas"]["UpdateActionRequest"];
             };
         };
@@ -5449,6 +5694,7 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     rotateActionSecret: {
@@ -5456,9 +5702,9 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
-                /** @description Project-scoped action name used in loop step definitions. */
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
+                /** @description Action name used in loop step definitions. */
                 action_name: components["parameters"]["ActionNameParam"];
             };
             cookie?: never;
@@ -5471,12 +5717,20 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "secret_ref": "mobius/action/deploy_preview",
+                     *       "secret_version": 2,
+                     *       "signing_secret": "redacted_base64_signing_secret"
+                     *     }
+                     */
                     "application/json": components["schemas"]["RotateSecretResult"];
                 };
             };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     listActionInvocations: {
@@ -5497,8 +5751,8 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
             };
             cookie?: never;
         };
@@ -5522,15 +5776,25 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
-                /** @description Project-scoped action name used in loop step definitions. */
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
+                /** @description Action name used in loop step definitions. */
                 action_name: components["parameters"]["ActionNameParam"];
             };
             cookie?: never;
         };
         requestBody: {
             content: {
+                /**
+                 * @example {
+                 *       "input": {
+                 *         "channel": "#product",
+                 *         "text": "Deployment finished."
+                 *       },
+                 *       "timeout_seconds": 30,
+                 *       "dry_run": false
+                 *     }
+                 */
                 "application/json": components["schemas"]["InvokeActionRequest"];
             };
         };
@@ -5541,6 +5805,15 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "status": "completed",
+                     *       "job_id": "job_2m7x9q5v8p3n4r6t",
+                     *       "output": {
+                     *         "message_ts": "1718461800.000100"
+                     *       }
+                     *     }
+                     */
                     "application/json": components["schemas"]["ActionInvocationResult"];
                 };
             };
@@ -5550,6 +5823,12 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "status": "active",
+                     *       "job_id": "job_2m7x9q5v8p3n4r6t"
+                     *     }
+                     */
                     "application/json": components["schemas"]["ActionInvocationResult"];
                 };
             };
@@ -5558,6 +5837,7 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     listCatalogEvents: {
@@ -5565,8 +5845,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
             };
             cookie?: never;
         };
@@ -5590,8 +5870,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
             };
             cookie?: never;
         };
@@ -5615,9 +5895,9 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
-                /** @description Project-scoped action name used in loop step definitions. */
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
+                /** @description Action name used in loop step definitions. */
                 action_name: components["parameters"]["ActionNameParam"];
             };
             cookie?: never;
@@ -5643,8 +5923,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
             };
             cookie?: never;
         };
@@ -5675,20 +5955,12 @@ export interface operations {
                 provider?: components["schemas"]["EnvironmentProvider"];
                 /** @description Filter by environment lifecycle status. */
                 status?: components["schemas"]["EnvironmentStatus"];
-                /** @description Filter by cleanup-lifetime owner (`run`, `lease`, or `explicit`). */
-                lifetime?: components["schemas"]["EnvironmentLifetime"];
-                /** @description Filter by environment ownership mode. */
-                environment_mode?: components["schemas"]["EnvironmentMode"];
-                /** @description Filter by declared environment purpose. */
-                purpose?: components["schemas"]["EnvironmentPurpose"];
                 /** @description Omit for all/default-scoped environments; use `owner` with `owned_by` to list owner-scoped environments. */
                 scope?: components["schemas"]["ResourceScope"];
                 /** @description Canonical user owner ID for the environment. */
                 owned_by?: string;
-                /** @description Filter by the kind of object the environment is bound to. */
-                bound_to_type?: components["schemas"]["EnvironmentBoundToType"];
-                /** @description Filter to environments bound to this object ID. */
-                bound_to_id?: string;
+                /** @description Filter to environments created for the given run. */
+                run_id?: string;
                 /** @description Include destroyed environments in the result. By default destroyed rows are excluded; set this to true (or pass status=destroyed) to see them. */
                 include_destroyed?: boolean;
                 /** @description Narrow destroyed rows to those torn down at or after this timestamp. Composes with `status=destroyed` to fetch a "recently destroyed" tombstone window (e.g. last hour). Non-destroyed rows are unaffected when this is combined with the default (no-status) view. */
@@ -5696,8 +5968,8 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
             };
             cookie?: never;
         };
@@ -5721,13 +5993,23 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
             };
             cookie?: never;
         };
         requestBody: {
             content: {
+                /**
+                 * @example {
+                 *       "name": "review-workspace",
+                 *       "provider": "sprites",
+                 *       "template_id": "coding-default",
+                 *       "tags": {
+                 *         "owner": "product"
+                 *       }
+                 *     }
+                 */
                 "application/json": components["schemas"]["CreateEnvironmentRequest"];
             };
         };
@@ -5738,6 +6020,29 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "id": "env_8q5m2x9v7p3n4r6t",
+                     *       "name": "review-workspace",
+                     *       "provider": "sprites",
+                     *       "status": "provisioning",
+                     *       "environment_mode": "manual",
+                     *       "lifetime": "explicit",
+                     *       "template_id": "coding-default",
+                     *       "capabilities": [],
+                     *       "spec_version": 1,
+                     *       "spec": {},
+                     *       "runtime": {},
+                     *       "tags": {
+                     *         "owner": "product"
+                     *       },
+                     *       "contains_secrets": false,
+                     *       "cleanup_status": "none",
+                     *       "retention_policy": "manual",
+                     *       "created_at": "2026-06-15T14:30:00Z",
+                     *       "updated_at": "2026-06-15T14:30:00Z"
+                     *     }
+                     */
                     "application/json": components["schemas"]["Environment"];
                 };
             };
@@ -5745,96 +6050,7 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             409: components["responses"]["Conflict"];
-        };
-    };
-    attachWorkerEnvironment: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AttachWorkerEnvironmentRequest"];
-            };
-        };
-        responses: {
-            /** @description Attached */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Environment"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            409: components["responses"]["Conflict"];
-        };
-    };
-    acquireEnvironment: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AcquireEnvironmentRequest"];
-            };
-        };
-        responses: {
-            /** @description Acquired */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["EnvironmentAcquireResult"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            409: components["responses"]["Conflict"];
-        };
-    };
-    releaseEnvironmentLease: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
-                /** @description Environment lease ID. */
-                lease_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Released */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["EnvironmentLease"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     getEnvironment: {
@@ -5842,8 +6058,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
                 /** @description Environment ID. */
                 environment_id: components["parameters"]["EnvironmentIDParam"];
             };
@@ -5870,8 +6086,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
                 /** @description Environment ID. */
                 environment_id: components["parameters"]["EnvironmentIDParam"];
             };
@@ -5891,6 +6107,7 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     updateEnvironment: {
@@ -5898,8 +6115,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
                 /** @description Environment ID. */
                 environment_id: components["parameters"]["EnvironmentIDParam"];
             };
@@ -5907,6 +6124,13 @@ export interface operations {
         };
         requestBody: {
             content: {
+                /**
+                 * @example {
+                 *       "tags": {
+                 *         "owner": "product"
+                 *       }
+                 *     }
+                 */
                 "application/json": components["schemas"]["UpdateEnvironmentRequest"];
             };
         };
@@ -5924,223 +6148,7 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
-        };
-    };
-    reconcileEnvironment: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
-                /** @description Environment ID. */
-                environment_id: components["parameters"]["EnvironmentIDParam"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Environment"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    execEnvironment: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
-                /** @description Environment ID. */
-                environment_id: components["parameters"]["EnvironmentIDParam"];
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ExecEnvironmentRequest"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["EnvironmentExecResult"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            409: components["responses"]["Conflict"];
-        };
-    };
-    writeEnvironmentFile: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
-                /** @description Environment ID. */
-                environment_id: components["parameters"]["EnvironmentIDParam"];
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["WriteEnvironmentFileRequest"];
-            };
-        };
-        responses: {
-            204: components["responses"]["NoContent"];
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            409: components["responses"]["Conflict"];
-        };
-    };
-    startEnvironmentWorker: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
-                /** @description Environment ID. */
-                environment_id: components["parameters"]["EnvironmentIDParam"];
-            };
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": components["schemas"]["StartEnvironmentWorkerRequest"];
-            };
-        };
-        responses: {
-            /** @description Started */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["EnvironmentStartWorkerResult"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            409: components["responses"]["Conflict"];
-        };
-    };
-    getEnvironmentWorkerLogs: {
-        parameters: {
-            query?: {
-                /** @description Named log stream to read. Defaults to stdout. */
-                log_name?: "stdout" | "stderr" | "bootstrap" | "worker" | "all";
-                /** @description Maximum number of lines to return from each selected log. */
-                tail?: number;
-            };
-            header?: never;
-            path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
-                /** @description Environment ID. */
-                environment_id: components["parameters"]["EnvironmentIDParam"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["EnvironmentWorkerLogsResponse"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            409: components["responses"]["Conflict"];
-        };
-    };
-    createEnvironmentGitCredential: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
-                /** @description Environment ID. */
-                environment_id: components["parameters"]["EnvironmentIDParam"];
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateEnvironmentGitCredentialRequest"];
-            };
-        };
-        responses: {
-            /** @description Minted */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["EnvironmentGitCredentialResult"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            409: components["responses"]["Conflict"];
-        };
-    };
-    listWorkerSessions: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["WorkerSessionListResponse"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     openWorkerSocket: {
@@ -6148,8 +6156,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
             };
             cookie?: never;
         };
@@ -6181,16 +6189,6 @@ export interface operations {
             query?: {
                 /** @description Prefix-match filter applied to project name and handle. */
                 search?: string;
-                /** @description Lifecycle filter. `active` (default) returns non-archived projects; `archived` returns archived projects only; `all` returns both. */
-                status?: "active" | "archived" | "all";
-                /**
-                 * @description Filter results by tag. Repeatable; multiple values combine with AND. Format: `Key:Value`, `Key:*` for any value, `Key:a,b,c` for IN.
-                 *
-                 *     Tag values containing `:` or `,` cannot be filtered with this grammar — the parser splits on those literally. Constrain values to plain identifiers when you intend to filter on them.
-                 *
-                 *     Some high-cardinality resources may ignore ad-hoc tag filtering.
-                 */
-                tag?: components["parameters"]["TagFilterParam"];
             };
             header?: never;
             path?: never;
@@ -6220,6 +6218,17 @@ export interface operations {
         };
         requestBody: {
             content: {
+                /**
+                 * @example {
+                 *       "name": "Product Ops",
+                 *       "handle": "product-ops",
+                 *       "description": "Product operations workflows",
+                 *       "access_mode": "restricted",
+                 *       "tags": {
+                 *         "owner": "product"
+                 *       }
+                 *     }
+                 */
                 "application/json": components["schemas"]["CreateProjectRequest"];
             };
         };
@@ -6230,6 +6239,21 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "id": "prj_3q7m9x2v5n8p4r6t",
+                     *       "name": "Product Ops",
+                     *       "handle": "product-ops",
+                     *       "description": "Product operations workflows",
+                     *       "access_mode": "restricted",
+                     *       "created_by": "user_2f9s3k4m5n6p7q8r",
+                     *       "tags": {
+                     *         "owner": "product"
+                     *       },
+                     *       "created_at": "2026-06-15T14:30:00Z",
+                     *       "updated_at": "2026-06-15T14:30:00Z"
+                     *     }
+                     */
                     "application/json": components["schemas"]["Project"];
                 };
             };
@@ -6237,6 +6261,7 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     getProject: {
@@ -6244,8 +6269,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
             };
             cookie?: never;
         };
@@ -6270,8 +6295,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
             };
             cookie?: never;
         };
@@ -6288,6 +6313,7 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     updateProject: {
@@ -6295,13 +6321,23 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
             };
             cookie?: never;
         };
         requestBody: {
             content: {
+                /**
+                 * @example {
+                 *       "name": "Product Operations",
+                 *       "access_mode": "restricted",
+                 *       "seed_existing_members": true,
+                 *       "tags": {
+                 *         "owner": "product"
+                 *       }
+                 *     }
+                 */
                 "application/json": components["schemas"]["UpdateProjectRequest"];
             };
         };
@@ -6320,58 +6356,7 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
-        };
-    };
-    archiveProject: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Project"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    restoreProject: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Project"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     listWebhooks: {
@@ -6379,14 +6364,6 @@ export interface operations {
             query?: {
                 /** @description Filter by enabled/disabled state. */
                 enabled?: boolean;
-                /**
-                 * @description Filter results by tag. Repeatable; multiple values combine with AND. Format: `Key:Value`, `Key:*` for any value, `Key:a,b,c` for IN.
-                 *
-                 *     Tag values containing `:` or `,` cannot be filtered with this grammar — the parser splits on those literally. Constrain values to plain identifiers when you intend to filter on them.
-                 *
-                 *     Some high-cardinality resources may ignore ad-hoc tag filtering.
-                 */
-                tag?: components["parameters"]["TagFilterParam"];
                 /** @description Opaque pagination cursor returned from the previous response. */
                 cursor?: string;
                 /** @description Maximum number of results to return per page. */
@@ -6394,8 +6371,8 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
             };
             cookie?: never;
         };
@@ -6420,8 +6397,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
             };
             cookie?: never;
         };
@@ -6430,7 +6407,7 @@ export interface operations {
                 /**
                  * @example {
                  *       "name": "Run status sink",
-                 *       "url": "https://hooks.example.test/mobius/run-status",
+                 *       "url": "https://hooks.example.com/mobius/run-status",
                  *       "events": [
                  *         "run.completed",
                  *         "run.failed"
@@ -6450,20 +6427,20 @@ export interface operations {
                 content: {
                     /**
                      * @example {
-                     *       "id": "wbh_01hw1t2u3v4w5x6y7z8a9b0c1d",
+                     *       "id": "wbh_7x3m9q2v5p8n4r6t",
                      *       "name": "Run status sink",
-                     *       "url": "https://hooks.example.test/mobius/run-status",
+                     *       "url": "https://hooks.example.com/mobius/run-status",
                      *       "events": [
                      *         "run.completed",
                      *         "run.failed"
                      *       ],
                      *       "enabled": true,
-                     *       "secret_ref": "mobius/webhook/wbh_01hw1t2u3v4w5x6y7z8a9b0c1d",
+                     *       "secret_ref": "mobius/webhook/wbh_7x3m9q2v5p8n4r6t",
                      *       "secret_version": 1,
-                     *       "signing_secret": "base64-encoded-32-byte-key",
-                     *       "created_by": "user_2f9s3k4m5n6p7q8r9s0t1u2v3w",
-                     *       "created_at": "2026-04-24T14:38:00Z",
-                     *       "updated_at": "2026-04-24T14:38:00Z"
+                     *       "signing_secret": "redacted_base64_signing_secret",
+                     *       "created_by": "user_2f9s3k4m5n6p7q8r",
+                     *       "created_at": "2026-06-15T14:30:00Z",
+                     *       "updated_at": "2026-06-15T14:30:00Z"
                      *     }
                      */
                     "application/json": components["schemas"]["Webhook"];
@@ -6474,6 +6451,7 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     getWebhook: {
@@ -6481,10 +6459,10 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
                 /** @description Resource ID. */
-                id: components["parameters"]["IDParam"];
+                resource_id: components["parameters"]["IDParam"];
             };
             cookie?: never;
         };
@@ -6509,10 +6487,10 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
                 /** @description Resource ID. */
-                id: components["parameters"]["IDParam"];
+                resource_id: components["parameters"]["IDParam"];
             };
             cookie?: never;
         };
@@ -6528,6 +6506,7 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     updateWebhook: {
@@ -6535,15 +6514,28 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
                 /** @description Resource ID. */
-                id: components["parameters"]["IDParam"];
+                resource_id: components["parameters"]["IDParam"];
             };
             cookie?: never;
         };
         requestBody: {
             content: {
+                /**
+                 * @example {
+                 *       "name": "Run status sink",
+                 *       "events": [
+                 *         "run.completed",
+                 *         "run.failed"
+                 *       ],
+                 *       "enabled": true,
+                 *       "tags": {
+                 *         "owner": "product"
+                 *       }
+                 *     }
+                 */
                 "application/json": components["schemas"]["UpdateWebhookRequest"];
             };
         };
@@ -6562,6 +6554,7 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     rotateWebhookSecret: {
@@ -6569,10 +6562,10 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
                 /** @description Resource ID. */
-                id: components["parameters"]["IDParam"];
+                resource_id: components["parameters"]["IDParam"];
             };
             cookie?: never;
         };
@@ -6584,12 +6577,20 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "secret_ref": "mobius/webhook/wbh_7x3m9q2v5p8n4r6t",
+                     *       "secret_version": 2,
+                     *       "signing_secret": "redacted_base64_signing_secret"
+                     *     }
+                     */
                     "application/json": components["schemas"]["RotateSecretResult"];
                 };
             };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     pingWebhook: {
@@ -6597,10 +6598,10 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
                 /** @description Resource ID. */
-                id: components["parameters"]["IDParam"];
+                resource_id: components["parameters"]["IDParam"];
             };
             cookie?: never;
         };
@@ -6635,6 +6636,7 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     listWebhookDeliveries: {
@@ -6647,10 +6649,10 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
                 /** @description Resource ID. */
-                id: components["parameters"]["IDParam"];
+                resource_id: components["parameters"]["IDParam"];
             };
             cookie?: never;
         };
@@ -6666,14 +6668,14 @@ export interface operations {
                      * @example {
                      *       "items": [
                      *         {
-                     *           "id": "whdel_01hw1u2v3w4x5y6z7a8b9c0d1e",
-                     *           "webhook_id": "wbh_01hw1t2u3v4w5x6y7z8a9b0c1d",
-                     *           "run_id": "run_01hw1n1a2b3c4d5e6f7g8h9j0k",
+                     *           "id": "whd_4q8m2x7v5p9n3r6t",
+                     *           "webhook_id": "wbh_7x3m9q2v5p8n4r6t",
+                     *           "run_id": "run_8q5m2x9v7p3n4r6t",
                      *           "event_type": "run.completed",
                      *           "status": "delivered",
                      *           "attempts": 1,
-                     *           "created_at": "2026-04-24T14:44:00Z",
-                     *           "delivered_at": "2026-04-24T14:44:01Z"
+                     *           "created_at": "2026-06-15T14:44:00Z",
+                     *           "delivered_at": "2026-06-15T14:44:01Z"
                      *         }
                      *       ],
                      *       "has_more": false
@@ -6694,21 +6696,13 @@ export interface operations {
                 principal_id?: string;
                 /** @description Filter by administrative status (active/inactive), independent of presence. */
                 status?: components["schemas"]["AgentStatus"];
-                /**
-                 * @description Filter results by tag. Repeatable; multiple values combine with AND. Format: `Key:Value`, `Key:*` for any value, `Key:a,b,c` for IN.
-                 *
-                 *     Tag values containing `:` or `,` cannot be filtered with this grammar — the parser splits on those literally. Constrain values to plain identifiers when you intend to filter on them.
-                 *
-                 *     Some high-cardinality resources may ignore ad-hoc tag filtering.
-                 */
-                tag?: components["parameters"]["TagFilterParam"];
                 /** @description Maximum number of items to return */
                 limit?: components["parameters"]["LimitParam"];
             };
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
             };
             cookie?: never;
         };
@@ -6733,13 +6727,26 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
             };
             cookie?: never;
         };
         requestBody: {
             content: {
+                /**
+                 * @example {
+                 *       "name": "PR reviewer",
+                 *       "description": "Reviews pull requests for risky changes.",
+                 *       "kind": "llm",
+                 *       "color": "teal",
+                 *       "model": "claude-sonnet-4-6",
+                 *       "tool_presentation": "flat",
+                 *       "tags": {
+                 *         "owner": "product"
+                 *       }
+                 *     }
+                 */
                 "application/json": components["schemas"]["CreateAgentRequest"];
             };
         };
@@ -6750,6 +6757,26 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "id": "agent_5n8p2q7m4x9r3v6t",
+                     *       "principal_id": "agent_5n8p2q7m4x9r3v6t",
+                     *       "name": "PR reviewer",
+                     *       "description": "Reviews pull requests for risky changes.",
+                     *       "kind": "llm",
+                     *       "color": "teal",
+                     *       "model": "claude-sonnet-4-6",
+                     *       "tool_presentation": "flat",
+                     *       "status": "active",
+                     *       "tags": {
+                     *         "owner": "product"
+                     *       },
+                     *       "created_by": "user_2f9s3k4m5n6p7q8r",
+                     *       "updated_by": "user_2f9s3k4m5n6p7q8r",
+                     *       "created_at": "2026-06-15T14:30:00Z",
+                     *       "updated_at": "2026-06-15T14:30:00Z"
+                     *     }
+                     */
                     "application/json": components["schemas"]["Agent"];
                 };
             };
@@ -6758,6 +6785,7 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     getAgent: {
@@ -6765,10 +6793,10 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
                 /** @description Resource ID. */
-                id: components["parameters"]["IDParam"];
+                resource_id: components["parameters"]["IDParam"];
             };
             cookie?: never;
         };
@@ -6784,6 +6812,7 @@ export interface operations {
                 };
             };
             401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
         };
     };
@@ -6792,10 +6821,10 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
                 /** @description Resource ID. */
-                id: components["parameters"]["IDParam"];
+                resource_id: components["parameters"]["IDParam"];
             };
             cookie?: never;
         };
@@ -6811,6 +6840,7 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     updateAgent: {
@@ -6818,15 +6848,24 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
                 /** @description Resource ID. */
-                id: components["parameters"]["IDParam"];
+                resource_id: components["parameters"]["IDParam"];
             };
             cookie?: never;
         };
         requestBody: {
             content: {
+                /**
+                 * @example {
+                 *       "status": "active",
+                 *       "model": "claude-sonnet-4-6",
+                 *       "tags": {
+                 *         "owner": "product"
+                 *       }
+                 *     }
+                 */
                 "application/json": components["schemas"]["UpdateAgentRequest"];
             };
         };
@@ -6845,6 +6884,7 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     provisionAgentInbox: {
@@ -6852,10 +6892,10 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
                 /** @description Resource ID. */
-                id: components["parameters"]["IDParam"];
+                resource_id: components["parameters"]["IDParam"];
             };
             cookie?: never;
         };
@@ -6873,6 +6913,7 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     listAgentSessions: {
@@ -6891,10 +6932,10 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
                 /** @description Resource ID. */
-                id: components["parameters"]["IDParam"];
+                resource_id: components["parameters"]["IDParam"];
             };
             cookie?: never;
         };
@@ -6910,6 +6951,7 @@ export interface operations {
                 };
             };
             401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
         };
     };
@@ -6918,10 +6960,10 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
                 /** @description Resource ID. */
-                id: components["parameters"]["IDParam"];
+                resource_id: components["parameters"]["IDParam"];
                 /** @description Session identifier. */
                 session_id: string;
             };
@@ -6939,6 +6981,7 @@ export interface operations {
                 };
             };
             401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
         };
     };
@@ -6952,10 +6995,10 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
                 /** @description Resource ID. */
-                id: components["parameters"]["IDParam"];
+                resource_id: components["parameters"]["IDParam"];
                 /** @description Session identifier. */
                 session_id: string;
             };
@@ -6973,6 +7016,7 @@ export interface operations {
                 };
             };
             401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
         };
     };
@@ -6981,10 +7025,10 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
                 /** @description Resource ID. */
-                id: components["parameters"]["IDParam"];
+                resource_id: components["parameters"]["IDParam"];
                 /** @description Session identifier. */
                 session_id: string;
             };
@@ -7007,7 +7051,9 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     listSessionTurns: {
@@ -7015,10 +7061,10 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
                 /** @description Resource ID. */
-                id: components["parameters"]["IDParam"];
+                resource_id: components["parameters"]["IDParam"];
                 /** @description Session identifier. */
                 session_id: string;
             };
@@ -7036,6 +7082,7 @@ export interface operations {
                 };
             };
             401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
         };
     };
@@ -7049,10 +7096,10 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
                 /** @description Resource ID. */
-                id: components["parameters"]["IDParam"];
+                resource_id: components["parameters"]["IDParam"];
             };
             cookie?: never;
         };
@@ -7068,6 +7115,7 @@ export interface operations {
                 };
             };
             401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
         };
     };
@@ -7076,10 +7124,10 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
                 /** @description Resource ID. */
-                id: components["parameters"]["IDParam"];
+                resource_id: components["parameters"]["IDParam"];
             };
             cookie?: never;
         };
@@ -7104,15 +7152,30 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
                 /** @description Resource ID. */
-                id: components["parameters"]["IDParam"];
+                resource_id: components["parameters"]["IDParam"];
             };
             cookie?: never;
         };
         requestBody: {
             content: {
+                /**
+                 * @example {
+                 *       "provider": "slack",
+                 *       "integration_id": "int_slack_7x3m9q2v5p8n4r6t",
+                 *       "enabled": true,
+                 *       "dms": true,
+                 *       "mentions": true,
+                 *       "all_messages": false,
+                 *       "channels": [
+                 *         "C0123456789"
+                 *       ],
+                 *       "dm_policy": "open",
+                 *       "reply_mode": "auto"
+                 *     }
+                 */
                 "application/json": components["schemas"]["AgentMessagingBindingRequest"];
             };
         };
@@ -7131,6 +7194,7 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     deleteAgentMessagingBinding: {
@@ -7138,10 +7202,10 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
                 /** @description Resource ID. */
-                id: components["parameters"]["IDParam"];
+                resource_id: components["parameters"]["IDParam"];
                 /** @description Messaging binding identifier. */
                 binding_id: string;
             };
@@ -7159,6 +7223,7 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     streamSessionEvents: {
@@ -7166,10 +7231,10 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
                 /** @description Resource ID. */
-                id: components["parameters"]["IDParam"];
+                resource_id: components["parameters"]["IDParam"];
                 /** @description Session identifier. */
                 session_id: string;
             };
@@ -7177,28 +7242,29 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description SSE stream of live session events. */
+            /** @description Server-sent event stream of live session activity. Each message is framed as `event: <event type>` (e.g. `generation.delta`) followed by a `data:` line carrying the JSON-encoded event payload (the `SessionStreamEvent` shape, always including `session_id`). */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "text/event-stream": string;
+                    "text/event-stream": components["schemas"]["SessionStreamEvent"];
                 };
             };
             401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
         };
     };
-    listToolkitAssignments: {
+    listAgentToolkits: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
                 /** @description Resource ID. */
-                id: components["parameters"]["IDParam"];
+                resource_id: components["parameters"]["IDParam"];
             };
             cookie?: never;
         };
@@ -7218,20 +7284,27 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
-    replaceToolkits: {
+    replaceAgentToolkits: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
                 /** @description Resource ID. */
-                id: components["parameters"]["IDParam"];
+                resource_id: components["parameters"]["IDParam"];
             };
             cookie?: never;
         };
         requestBody: {
             content: {
+                /**
+                 * @example {
+                 *       "toolkit_ids": [
+                 *         "kit_4r8q2m7x9p5v3n6t"
+                 *       ]
+                 *     }
+                 */
                 "application/json": components["schemas"]["ReplaceToolkitsRequest"];
             };
         };
@@ -7249,78 +7322,18 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
-    listAgentTableGrants: {
+    listAgentSkills: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
                 /** @description Resource ID. */
-                id: components["parameters"]["IDParam"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AgentTableGrantListResponse"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    replaceAgentTableGrants: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
-                /** @description Resource ID. */
-                id: components["parameters"]["IDParam"];
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ReplaceAgentTableGrantsRequest"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AgentTableGrantListResponse"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    listSkillAssignments: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
-                /** @description Resource ID. */
-                id: components["parameters"]["IDParam"];
+                resource_id: components["parameters"]["IDParam"];
             };
             cookie?: never;
         };
@@ -7340,20 +7353,27 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
-    replaceSkills: {
+    replaceAgentSkills: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
                 /** @description Resource ID. */
-                id: components["parameters"]["IDParam"];
+                resource_id: components["parameters"]["IDParam"];
             };
             cookie?: never;
         };
         requestBody: {
             content: {
+                /**
+                 * @example {
+                 *       "skill_ids": [
+                 *         "skill_7n4q8x2m9p5v3r6t"
+                 *       ]
+                 *     }
+                 */
                 "application/json": components["schemas"]["ReplaceSkillsRequest"];
             };
         };
@@ -7371,6 +7391,7 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     getAgentTools: {
@@ -7385,10 +7406,10 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
                 /** @description Resource ID. */
-                id: components["parameters"]["IDParam"];
+                resource_id: components["parameters"]["IDParam"];
             };
             cookie?: never;
         };
@@ -7412,10 +7433,8 @@ export interface operations {
     listLoops: {
         parameters: {
             query?: {
-                /** @description Filter by lifecycle status. Omit to return all non-archived loops (the default). Pass a single status to filter to it exactly, or `all` to include archived loops too. */
-                status?: "draft" | "active" | "paused" | "archived" | "all";
-                /** @description Exact loop handle filter for resolving a handle to its loop ID in one request. */
-                handle?: string;
+                /** @description Filter by lifecycle status. Omit to return the normal loop list, or pass a visible status to filter to it exactly. */
+                status?: "draft" | "active" | "paused";
                 /** @description Opaque pagination cursor from a prior response. */
                 cursor?: string;
                 /** @description Maximum number of items to return. */
@@ -7423,8 +7442,8 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
             };
             cookie?: never;
         };
@@ -7448,13 +7467,24 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
             };
             cookie?: never;
         };
         requestBody: {
             content: {
+                /**
+                 * @example {
+                 *       "name": "Daily security check",
+                 *       "description": "Review open pull requests each morning.",
+                 *       "default_agent_id": "agent_5n8p2q7m4x9r3v6t",
+                 *       "tags": {
+                 *         "owner": "product"
+                 *       },
+                 *       "activate": false
+                 *     }
+                 */
                 "application/json": components["schemas"]["CreateLoopRequest"];
             };
         };
@@ -7465,6 +7495,21 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "id": "loop_9q2m7x5v3p8n4r6t",
+                     *       "name": "Daily security check",
+                     *       "description": "Review open pull requests each morning.",
+                     *       "status": "draft",
+                     *       "latest_version": 0,
+                     *       "triggers": [],
+                     *       "tags": {
+                     *         "owner": "product"
+                     *       },
+                     *       "created_at": "2026-06-15T14:30:00Z",
+                     *       "updated_at": "2026-06-15T14:30:00Z"
+                     *     }
+                     */
                     "application/json": components["schemas"]["Loop"];
                 };
             };
@@ -7472,6 +7517,7 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     getLoop: {
@@ -7479,10 +7525,10 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
                 /** @description Resource ID. */
-                id: components["parameters"]["IDParam"];
+                resource_id: components["parameters"]["IDParam"];
             };
             cookie?: never;
         };
@@ -7507,10 +7553,10 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
                 /** @description Resource ID. */
-                id: components["parameters"]["IDParam"];
+                resource_id: components["parameters"]["IDParam"];
             };
             cookie?: never;
         };
@@ -7526,6 +7572,7 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     updateLoop: {
@@ -7533,15 +7580,24 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
                 /** @description Resource ID. */
-                id: components["parameters"]["IDParam"];
+                resource_id: components["parameters"]["IDParam"];
             };
             cookie?: never;
         };
         requestBody: {
             content: {
+                /**
+                 * @example {
+                 *       "name": "Daily PR review",
+                 *       "status": "active",
+                 *       "tags": {
+                 *         "owner": "product"
+                 *       }
+                 *     }
+                 */
                 "application/json": components["schemas"]["UpdateLoopRequest"];
             };
         };
@@ -7559,6 +7615,8 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     listLoopVersions: {
@@ -7566,10 +7624,10 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
                 /** @description Resource ID. */
-                id: components["parameters"]["IDParam"];
+                resource_id: components["parameters"]["IDParam"];
             };
             cookie?: never;
         };
@@ -7594,15 +7652,32 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
                 /** @description Resource ID. */
-                id: components["parameters"]["IDParam"];
+                resource_id: components["parameters"]["IDParam"];
             };
             cookie?: never;
         };
         requestBody: {
             content: {
+                /**
+                 * @example {
+                 *       "spec": {
+                 *         "schema_version": "2",
+                 *         "steps": [
+                 *           {
+                 *             "key": "summarize",
+                 *             "kind": "agent",
+                 *             "config": {
+                 *               "agent_id": "agent_5n8p2q7m4x9r3v6t",
+                 *               "instructions": "Summarize open pull requests."
+                 *             }
+                 *           }
+                 *         ]
+                 *       }
+                 *     }
+                 */
                 "application/json": components["schemas"]["CreateLoopVersionRequest"];
             };
         };
@@ -7613,6 +7688,29 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "id": "lver_4v9n2q7m5x8p3r6t",
+                     *       "loop_id": "loop_9q2m7x5v3p8n4r6t",
+                     *       "version": 3,
+                     *       "status": "draft",
+                     *       "spec": {
+                     *         "schema_version": "2",
+                     *         "steps": [
+                     *           {
+                     *             "key": "summarize",
+                     *             "kind": "agent",
+                     *             "config": {
+                     *               "agent_id": "agent_5n8p2q7m4x9r3v6t",
+                     *               "instructions": "Summarize open pull requests."
+                     *             }
+                     *           }
+                     *         ]
+                     *       },
+                     *       "created_by": "user_2f9s3k4m5n6p7q8r",
+                     *       "created_at": "2026-06-15T14:30:00Z"
+                     *     }
+                     */
                     "application/json": components["schemas"]["LoopVersion"];
                 };
             };
@@ -7620,6 +7718,7 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     publishLoopVersion: {
@@ -7627,10 +7726,10 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
                 /** @description Resource ID. */
-                id: components["parameters"]["IDParam"];
+                resource_id: components["parameters"]["IDParam"];
                 /** @description Version number of the LoopVersion to publish. */
                 version: number;
             };
@@ -7651,6 +7750,7 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     deliverHTTPTrigger: {
@@ -7697,7 +7797,7 @@ export interface operations {
                      *       "deduped": false
                      *     }
                      */
-                    "application/json": components["schemas"]["HTTPTriggerDeliveryResponse"];
+                    "application/json": components["schemas"]["HTTPTriggerDeliveryResult"];
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -7744,10 +7844,10 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
                 /** @description Resource ID. */
-                id: components["parameters"]["IDParam"];
+                resource_id: components["parameters"]["IDParam"];
             };
             cookie?: never;
         };
@@ -7779,24 +7879,23 @@ export interface operations {
                 content: {
                     /**
                      * @example {
-                     *       "id": "run_01JZ0000000000000000000000",
-                     *       "org_id": "org_01JZ0000000000000000000000",
-                     *       "project_id": "prj_01JZ0000000000000000000000",
-                     *       "loop_id": "loop_01JZ0000000000000000000000",
-                     *       "loop_name": "Review Pull Request",
-                     *       "loop_version_id": "lver_01JZ0000000000000000000000",
+                     *       "id": "run_8q5m2x9v7p3n4r6t",
+                     *       "loop_id": "loop_9q2m7x5v3p8n4r6t",
+                     *       "loop_name": "Daily security check",
+                     *       "loop_version_id": "lver_4v9n2q7m5x8p3r6t",
                      *       "loop_version": 3,
                      *       "status": "queued",
                      *       "inputs": {
-                     *         "issue_id": "42"
+                     *         "issue_id": "42",
+                     *         "repository": "deepnoodle-ai/mobius-cloud"
                      *       },
                      *       "source": {
                      *         "type": "api",
                      *         "id": "review-service",
                      *         "label": "review-service"
                      *       },
-                     *       "created_at": "2026-06-12T14:00:00Z",
-                     *       "updated_at": "2026-06-12T14:00:00Z"
+                     *       "created_at": "2026-06-15T14:00:00Z",
+                     *       "updated_at": "2026-06-15T14:00:00Z"
                      *     }
                      */
                     "application/json": components["schemas"]["LoopRun"];
@@ -7807,6 +7906,7 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     listRuns: {
@@ -7825,8 +7925,8 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
             };
             cookie?: never;
         };
@@ -7850,10 +7950,10 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
                 /** @description Resource ID. */
-                id: components["parameters"]["IDParam"];
+                resource_id: components["parameters"]["IDParam"];
             };
             cookie?: never;
         };
@@ -7878,15 +7978,20 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
                 /** @description Resource ID. */
-                id: components["parameters"]["IDParam"];
+                resource_id: components["parameters"]["IDParam"];
             };
             cookie?: never;
         };
         requestBody?: {
             content: {
+                /**
+                 * @example {
+                 *       "reason": "superseded by manual remediation"
+                 *     }
+                 */
                 "application/json": components["schemas"]["CancelLoopRunRequest"];
             };
         };
@@ -7900,9 +8005,11 @@ export interface operations {
                     "application/json": components["schemas"]["LoopRun"];
                 };
             };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     listRunSteps: {
@@ -7910,10 +8017,10 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
                 /** @description Resource ID. */
-                id: components["parameters"]["IDParam"];
+                resource_id: components["parameters"]["IDParam"];
             };
             cookie?: never;
         };
@@ -7936,17 +8043,17 @@ export interface operations {
     listRunEvents: {
         parameters: {
             query?: {
-                /** @description Return events with sequence > since_sequence. */
-                since_sequence?: number;
+                /** @description Return events with sequence > after_sequence. */
+                after_sequence?: number;
                 /** @description Maximum number of items to return */
                 limit?: components["parameters"]["LimitParam"];
             };
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
                 /** @description Resource ID. */
-                id: components["parameters"]["IDParam"];
+                resource_id: components["parameters"]["IDParam"];
             };
             cookie?: never;
         };
@@ -7969,27 +8076,27 @@ export interface operations {
     streamRunEvents: {
         parameters: {
             query?: {
-                /** @description Stream events with sequence > since_sequence. */
-                since_sequence?: number;
+                /** @description Stream events with sequence > after_sequence. */
+                after_sequence?: number;
             };
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
                 /** @description Resource ID. */
-                id: components["parameters"]["IDParam"];
+                resource_id: components["parameters"]["IDParam"];
             };
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description OK */
+            /** @description Server-sent event stream. Each message is framed as `event: <run-event type>` followed by a `data:` line carrying the JSON-encoded run event (the `LoopRunEvent` shape). The stream ends when the run reaches a terminal status; reconnect with `after_sequence` (or the `Last-Event-ID` header) to resume. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "text/event-stream": string;
+                    "text/event-stream": components["schemas"]["LoopRunEvent"];
                 };
             };
             401: components["responses"]["Unauthorized"];
@@ -8002,15 +8109,24 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
                 /** @description Resource ID. */
-                id: components["parameters"]["IDParam"];
+                resource_id: components["parameters"]["IDParam"];
             };
             cookie?: never;
         };
         requestBody: {
             content: {
+                /**
+                 * @example {
+                 *       "step_key": "wait_for_external_result",
+                 *       "result": {
+                 *         "status": "complete",
+                 *         "source": "ci"
+                 *       }
+                 *     }
+                 */
                 "application/json": components["schemas"]["SignalLoopRunRequest"];
             };
         };
@@ -8028,6 +8144,7 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     listToolkits: {
@@ -8035,19 +8152,11 @@ export interface operations {
             query?: {
                 /** @description Include read-only system templates. */
                 include_system?: boolean;
-                /**
-                 * @description Filter results by tag. Repeatable; multiple values combine with AND. Format: `Key:Value`, `Key:*` for any value, `Key:a,b,c` for IN.
-                 *
-                 *     Tag values containing `:` or `,` cannot be filtered with this grammar — the parser splits on those literally. Constrain values to plain identifiers when you intend to filter on them.
-                 *
-                 *     Some high-cardinality resources may ignore ad-hoc tag filtering.
-                 */
-                tag?: components["parameters"]["TagFilterParam"];
             };
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
             };
             cookie?: never;
         };
@@ -8072,13 +8181,28 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
             };
             cookie?: never;
         };
         requestBody: {
             content: {
+                /**
+                 * @example {
+                 *       "name": "GitHub review",
+                 *       "description": "GitHub actions needed for pull-request review.",
+                 *       "actions": [
+                 *         {
+                 *           "selector_type": "exact",
+                 *           "selector": "github.create_review_comment"
+                 *         }
+                 *       ],
+                 *       "tags": {
+                 *         "owner": "product"
+                 *       }
+                 *     }
+                 */
                 "application/json": components["schemas"]["ToolkitRequest"];
             };
         };
@@ -8089,6 +8213,27 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "id": "kit_4r8q2m7x9p5v3n6t",
+                     *       "name": "GitHub review",
+                     *       "description": "GitHub actions needed for pull-request review.",
+                     *       "source": "project",
+                     *       "tags": {
+                     *         "owner": "product"
+                     *       },
+                     *       "actions": [
+                     *         {
+                     *           "selector_type": "exact",
+                     *           "selector": "github.create_review_comment"
+                     *         }
+                     *       ],
+                     *       "created_by": "user_2f9s3k4m5n6p7q8r",
+                     *       "updated_by": "user_2f9s3k4m5n6p7q8r",
+                     *       "created_at": "2026-06-15T14:30:00Z",
+                     *       "updated_at": "2026-06-15T14:30:00Z"
+                     *     }
+                     */
                     "application/json": components["schemas"]["Toolkit"];
                 };
             };
@@ -8097,6 +8242,7 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     getToolkit: {
@@ -8104,9 +8250,9 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
-                /** @description Toolkit ID (TypeID `kit_...`). */
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
+                /** @description Toolkit ID. */
                 toolkit_id: string;
             };
             cookie?: never;
@@ -8132,15 +8278,30 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
-                /** @description Toolkit ID (TypeID `kit_...`). */
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
+                /** @description Toolkit ID. */
                 toolkit_id: string;
             };
             cookie?: never;
         };
         requestBody: {
             content: {
+                /**
+                 * @example {
+                 *       "name": "GitHub review",
+                 *       "description": "GitHub actions needed for pull-request review.",
+                 *       "actions": [
+                 *         {
+                 *           "selector_type": "exact",
+                 *           "selector": "github.create_review_comment"
+                 *         }
+                 *       ],
+                 *       "tags": {
+                 *         "owner": "product"
+                 *       }
+                 *     }
+                 */
                 "application/json": components["schemas"]["ToolkitRequest"];
             };
         };
@@ -8159,6 +8320,7 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     deleteToolkit: {
@@ -8166,9 +8328,9 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
-                /** @description Toolkit ID (TypeID `kit_...`). */
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
+                /** @description Toolkit ID. */
                 toolkit_id: string;
             };
             cookie?: never;
@@ -8186,6 +8348,7 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     listSkills: {
@@ -8193,19 +8356,11 @@ export interface operations {
             query?: {
                 /** @description Include read-only system skill templates. */
                 include_system?: boolean;
-                /**
-                 * @description Filter results by tag. Repeatable; multiple values combine with AND. Format: `Key:Value`, `Key:*` for any value, `Key:a,b,c` for IN.
-                 *
-                 *     Tag values containing `:` or `,` cannot be filtered with this grammar — the parser splits on those literally. Constrain values to plain identifiers when you intend to filter on them.
-                 *
-                 *     Some high-cardinality resources may ignore ad-hoc tag filtering.
-                 */
-                tag?: components["parameters"]["TagFilterParam"];
             };
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
             };
             cookie?: never;
         };
@@ -8230,13 +8385,26 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
             };
             cookie?: never;
         };
         requestBody: {
             content: {
+                /**
+                 * @example {
+                 *       "name": "Pull request review",
+                 *       "description": "Review pull requests for correctness and risk.",
+                 *       "instructions": "Check the diff and leave concise findings.",
+                 *       "allowed_tools": [
+                 *         "github.create_review_comment"
+                 *       ],
+                 *       "tags": {
+                 *         "owner": "product"
+                 *       }
+                 *     }
+                 */
                 "application/json": components["schemas"]["SkillRequest"];
             };
         };
@@ -8247,6 +8415,25 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "id": "skill_7n4q8x2m9p5v3r6t",
+                     *       "name": "Pull request review",
+                     *       "description": "Review pull requests for correctness and risk.",
+                     *       "source": "project",
+                     *       "instructions": "Check the diff and leave concise findings.",
+                     *       "allowed_tools": [
+                     *         "github.create_review_comment"
+                     *       ],
+                     *       "tags": {
+                     *         "owner": "product"
+                     *       },
+                     *       "created_by": "user_2f9s3k4m5n6p7q8r",
+                     *       "updated_by": "user_2f9s3k4m5n6p7q8r",
+                     *       "created_at": "2026-06-15T14:30:00Z",
+                     *       "updated_at": "2026-06-15T14:30:00Z"
+                     *     }
+                     */
                     "application/json": components["schemas"]["Skill"];
                 };
             };
@@ -8255,6 +8442,7 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     importSkill: {
@@ -8262,13 +8450,19 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
             };
             cookie?: never;
         };
         requestBody: {
             content: {
+                /**
+                 * @example {
+                 *       "name": "Pull request review",
+                 *       "content": "---\nallowed_tools:\n  - github.create_review_comment\n---\nCheck the diff and leave concise findings.\n"
+                 *     }
+                 */
                 "application/json": components["schemas"]["ImportSkillRequest"];
             };
         };
@@ -8279,6 +8473,25 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "id": "skill_7n4q8x2m9p5v3r6t",
+                     *       "name": "Pull request review",
+                     *       "description": "Review pull requests for correctness and risk.",
+                     *       "source": "project",
+                     *       "instructions": "Check the diff and leave concise findings.",
+                     *       "allowed_tools": [
+                     *         "github.create_review_comment"
+                     *       ],
+                     *       "tags": {
+                     *         "owner": "product"
+                     *       },
+                     *       "created_by": "user_2f9s3k4m5n6p7q8r",
+                     *       "updated_by": "user_2f9s3k4m5n6p7q8r",
+                     *       "created_at": "2026-06-15T14:30:00Z",
+                     *       "updated_at": "2026-06-15T14:30:00Z"
+                     *     }
+                     */
                     "application/json": components["schemas"]["Skill"];
                 };
             };
@@ -8287,6 +8500,7 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     getSkill: {
@@ -8294,9 +8508,9 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
-                /** @description Skill ID (TypeID `skill_...`). */
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
+                /** @description Skill ID. */
                 skill_id: string;
             };
             cookie?: never;
@@ -8322,15 +8536,28 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
-                /** @description Skill ID (TypeID `skill_...`). */
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
+                /** @description Skill ID. */
                 skill_id: string;
             };
             cookie?: never;
         };
         requestBody: {
             content: {
+                /**
+                 * @example {
+                 *       "name": "Pull request review",
+                 *       "description": "Review pull requests for correctness and risk.",
+                 *       "instructions": "Check the diff and leave concise findings.",
+                 *       "allowed_tools": [
+                 *         "github.create_review_comment"
+                 *       ],
+                 *       "tags": {
+                 *         "owner": "product"
+                 *       }
+                 *     }
+                 */
                 "application/json": components["schemas"]["SkillRequest"];
             };
         };
@@ -8349,6 +8576,7 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     deleteSkill: {
@@ -8356,9 +8584,9 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
-                /** @description Skill ID (TypeID `skill_...`). */
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
+                /** @description Skill ID. */
                 skill_id: string;
             };
             cookie?: never;
@@ -8376,6 +8604,7 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     listTables: {
@@ -8385,19 +8614,13 @@ export interface operations {
                 cursor?: components["parameters"]["CursorParam"];
                 /** @description Maximum number of items to return */
                 limit?: components["parameters"]["LimitParam"];
-                /** @description Filter tables by name. Names are unique within a scope, but are not globally unique across owner-scoped tables; use this as a discovery filter and use the returned table `id` for follow-up operations. */
+                /** @description Filter tables by name. Table names are unique within a project; use this as a discovery filter and use the returned table `id` for follow-up operations. */
                 name?: components["parameters"]["TableNameQueryParam"];
-                /** @description Filter lists to tables owned by the authenticated user. */
-                owned_by_me?: components["parameters"]["TableOwnedByMeParam"];
-                /** @description Canonical user owner ID. Used with `scope=owner` for lookups; for list filters, narrows to tables owned by this user. Ignored when `owned_by_me=true` is present. */
-                owned_by?: components["parameters"]["TableOwnedByParam"];
-                /** @description Filter tables by scope. Omit to include project/default and owner scopes; use `owner` with `owned_by` or `owned_by_me=true` for per-user memory tables. */
-                scope?: components["parameters"]["TableScopeParam"];
             };
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
             };
             cookie?: never;
         };
@@ -8421,13 +8644,36 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
             };
             cookie?: never;
         };
         requestBody: {
             content: {
+                /**
+                 * @example {
+                 *       "name": "review_findings",
+                 *       "description": "Pull-request review findings.",
+                 *       "schema": {
+                 *         "columns": [
+                 *           {
+                 *             "name": "pull_request_url",
+                 *             "type": "string",
+                 *             "required": true
+                 *           },
+                 *           {
+                 *             "name": "severity",
+                 *             "type": "string"
+                 *           },
+                 *           {
+                 *             "name": "summary",
+                 *             "type": "string"
+                 *           }
+                 *         ]
+                 *       }
+                 *     }
+                 */
                 "application/json": components["schemas"]["CreateTableRequest"];
             };
         };
@@ -8438,6 +8684,32 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "id": "table_2x7q5m9v3p8r4n6t",
+                     *       "name": "review_findings",
+                     *       "description": "Pull-request review findings.",
+                     *       "schema": {
+                     *         "columns": [
+                     *           {
+                     *             "name": "pull_request_url",
+                     *             "type": "string",
+                     *             "required": true
+                     *           },
+                     *           {
+                     *             "name": "severity",
+                     *             "type": "string"
+                     *           },
+                     *           {
+                     *             "name": "summary",
+                     *             "type": "string"
+                     *           }
+                     *         ]
+                     *       },
+                     *       "created_at": "2026-06-15T14:30:00Z",
+                     *       "updated_at": "2026-06-15T14:30:00Z"
+                     *     }
+                     */
                     "application/json": components["schemas"]["Table"];
                 };
             };
@@ -8445,6 +8717,7 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     getTable: {
@@ -8452,8 +8725,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
                 /** @description Table ID. */
                 table_id: components["parameters"]["TableIDParam"];
             };
@@ -8475,47 +8748,13 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
-    updateTable: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
-                /** @description Table ID. */
-                table_id: components["parameters"]["TableIDParam"];
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateTableRequest"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Table"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            409: components["responses"]["Conflict"];
-        };
-    };
     deleteTable: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
                 /** @description Table ID. */
                 table_id: components["parameters"]["TableIDParam"];
             };
@@ -8533,6 +8772,76 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    updateTable: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
+                /** @description Table ID. */
+                table_id: components["parameters"]["TableIDParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "description": "Pull-request review findings for release triage.",
+                 *       "instructions": "Prioritize critical and high-severity review findings."
+                 *     }
+                 */
+                "application/json": components["schemas"]["UpdateTableRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "table_2x7q5m9v3p8r4n6t",
+                     *       "name": "review_findings",
+                     *       "description": "Pull-request review findings for release triage.",
+                     *       "schema": {
+                     *         "columns": [
+                     *           {
+                     *             "name": "pull_request_url",
+                     *             "type": "string"
+                     *           },
+                     *           {
+                     *             "name": "severity",
+                     *             "type": "string"
+                     *           },
+                     *           {
+                     *             "name": "summary",
+                     *             "type": "string"
+                     *           }
+                     *         ]
+                     *       },
+                     *       "tags": {
+                     *         "team": "product"
+                     *       },
+                     *       "created_at": "2026-06-15T14:30:00Z",
+                     *       "updated_at": "2026-06-15T14:35:00Z"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["Table"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     getTableStats: {
@@ -8540,8 +8849,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
                 /** @description Table ID. */
                 table_id: components["parameters"]["TableIDParam"];
             };
@@ -8563,13 +8872,13 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
-    insertTableRow: {
+    createTableRow: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
                 /** @description Table ID. */
                 table_id: components["parameters"]["TableIDParam"];
             };
@@ -8577,6 +8886,15 @@ export interface operations {
         };
         requestBody: {
             content: {
+                /**
+                 * @example {
+                 *       "data": {
+                 *         "pull_request_url": "https://github.com/deepnoodle-ai/mobius-cloud/pull/123",
+                 *         "severity": "medium",
+                 *         "summary": "Add a regression test for the error path."
+                 *       }
+                 *     }
+                 */
                 "application/json": components["schemas"]["InsertRowRequest"];
             };
         };
@@ -8587,6 +8905,20 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "id": "tablerow_5p9x2q7m4n8v3r6t",
+                     *       "table_id": "table_2x7q5m9v3p8r4n6t",
+                     *       "data": {
+                     *         "pull_request_url": "https://github.com/deepnoodle-ai/mobius-cloud/pull/123",
+                     *         "severity": "medium",
+                     *         "summary": "Add a regression test for the error path."
+                     *       },
+                     *       "version": 1,
+                     *       "created_at": "2026-06-15T14:30:00Z",
+                     *       "updated_at": "2026-06-15T14:30:00Z"
+                     *     }
+                     */
                     "application/json": components["schemas"]["TableRow"];
                 };
             };
@@ -8594,6 +8926,7 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     queryTableRows: {
@@ -8601,8 +8934,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
                 /** @description Table ID. */
                 table_id: components["parameters"]["TableIDParam"];
             };
@@ -8610,6 +8943,25 @@ export interface operations {
         };
         requestBody?: {
             content: {
+                /**
+                 * @example {
+                 *       "filter": {
+                 *         "severity": {
+                 *           "$in": [
+                 *             "high",
+                 *             "critical"
+                 *           ]
+                 *         }
+                 *       },
+                 *       "sort": [
+                 *         {
+                 *           "field": "created_at",
+                 *           "order": "desc"
+                 *         }
+                 *       ],
+                 *       "limit": 50
+                 *     }
+                 */
                 "application/json": components["schemas"]["QueryRowsRequest"];
             };
         };
@@ -8620,13 +8972,34 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["QueryRowsResponse"];
+                    /**
+                     * @example {
+                     *       "items": [
+                     *         {
+                     *           "id": "tablerow_5p9x2q7m4n8v3r6t",
+                     *           "table_id": "table_2x7q5m9v3p8r4n6t",
+                     *           "data": {
+                     *             "pull_request_url": "https://github.com/deepnoodle-ai/mobius-cloud/pull/123",
+                     *             "severity": "medium",
+                     *             "summary": "Add a regression test for the error path."
+                     *           },
+                     *           "version": 1,
+                     *           "created_at": "2026-06-15T14:30:00Z",
+                     *           "updated_at": "2026-06-15T14:30:00Z"
+                     *         }
+                     *       ],
+                     *       "has_more": false,
+                     *       "limit": 50
+                     *     }
+                     */
+                    "application/json": components["schemas"]["TableRowQueryListResponse"];
                 };
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     searchTableRows: {
@@ -8634,8 +9007,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
                 /** @description Table ID. */
                 table_id: components["parameters"]["TableIDParam"];
             };
@@ -8643,6 +9016,15 @@ export interface operations {
         };
         requestBody: {
             content: {
+                /**
+                 * @example {
+                 *       "query": "regression",
+                 *       "filter": {
+                 *         "severity": "medium"
+                 *       },
+                 *       "limit": 25
+                 *     }
+                 */
                 "application/json": components["schemas"]["SearchRowsRequest"];
             };
         };
@@ -8653,13 +9035,34 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SearchRowsResponse"];
+                    /**
+                     * @example {
+                     *       "items": [
+                     *         {
+                     *           "id": "tablerow_5p9x2q7m4n8v3r6t",
+                     *           "table_id": "table_2x7q5m9v3p8r4n6t",
+                     *           "data": {
+                     *             "pull_request_url": "https://github.com/deepnoodle-ai/mobius-cloud/pull/123",
+                     *             "severity": "medium",
+                     *             "summary": "Add a regression test for the error path."
+                     *           },
+                     *           "version": 1,
+                     *           "created_at": "2026-06-15T14:30:00Z",
+                     *           "updated_at": "2026-06-15T14:30:00Z"
+                     *         }
+                     *       ],
+                     *       "has_more": false,
+                     *       "limit": 25
+                     *     }
+                     */
+                    "application/json": components["schemas"]["TableRowSearchListResponse"];
                 };
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     upsertTableRow: {
@@ -8667,8 +9070,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
                 /** @description Table ID. */
                 table_id: components["parameters"]["TableIDParam"];
             };
@@ -8676,6 +9079,18 @@ export interface operations {
         };
         requestBody: {
             content: {
+                /**
+                 * @example {
+                 *       "key_columns": [
+                 *         "pull_request_url"
+                 *       ],
+                 *       "data": {
+                 *         "pull_request_url": "https://github.com/deepnoodle-ai/mobius-cloud/pull/123",
+                 *         "severity": "high",
+                 *         "summary": "Add regression coverage before merge."
+                 *       }
+                 *     }
+                 */
                 "application/json": components["schemas"]["UpsertRowRequest"];
             };
         };
@@ -8686,7 +9101,24 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["UpsertRowResponse"];
+                    /**
+                     * @example {
+                     *       "row": {
+                     *         "id": "tablerow_5p9x2q7m4n8v3r6t",
+                     *         "table_id": "table_2x7q5m9v3p8r4n6t",
+                     *         "data": {
+                     *           "pull_request_url": "https://github.com/deepnoodle-ai/mobius-cloud/pull/123",
+                     *           "severity": "high",
+                     *           "summary": "Add regression coverage before merge."
+                     *         },
+                     *         "version": 2,
+                     *         "created_at": "2026-06-15T14:30:00Z",
+                     *         "updated_at": "2026-06-15T14:36:00Z"
+                     *       },
+                     *       "created": false
+                     *     }
+                     */
+                    "application/json": components["schemas"]["UpsertRowResult"];
                 };
             };
             /** @description Created */
@@ -8695,7 +9127,24 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["UpsertRowResponse"];
+                    /**
+                     * @example {
+                     *       "row": {
+                     *         "id": "tablerow_6n3r8v4m7q2x9p5t",
+                     *         "table_id": "table_2x7q5m9v3p8r4n6t",
+                     *         "data": {
+                     *           "pull_request_url": "https://github.com/deepnoodle-ai/mobius-cloud/pull/124",
+                     *           "severity": "low",
+                     *           "summary": "Polish API examples."
+                     *         },
+                     *         "version": 1,
+                     *         "created_at": "2026-06-15T14:37:00Z",
+                     *         "updated_at": "2026-06-15T14:37:00Z"
+                     *       },
+                     *       "created": true
+                     *     }
+                     */
+                    "application/json": components["schemas"]["UpsertRowResult"];
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -8703,15 +9152,16 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
-    bulkInsertTableRows: {
+    bulkCreateTableRows: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
                 /** @description Table ID. */
                 table_id: components["parameters"]["TableIDParam"];
             };
@@ -8719,6 +9169,22 @@ export interface operations {
         };
         requestBody: {
             content: {
+                /**
+                 * @example {
+                 *       "rows": [
+                 *         {
+                 *           "pull_request_url": "https://github.com/deepnoodle-ai/mobius-cloud/pull/123",
+                 *           "severity": "medium",
+                 *           "summary": "Add a regression test for the error path."
+                 *         },
+                 *         {
+                 *           "pull_request_url": "https://github.com/deepnoodle-ai/mobius-cloud/pull/124",
+                 *           "severity": "low",
+                 *           "summary": "Polish API examples."
+                 *         }
+                 *       ]
+                 *     }
+                 */
                 "application/json": components["schemas"]["BulkInsertRowsRequest"];
             };
         };
@@ -8729,13 +9195,33 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["BulkInsertRowsResponse"];
+                    /**
+                     * @example {
+                     *       "inserted": 2,
+                     *       "items": [
+                     *         {
+                     *           "id": "tablerow_5p9x2q7m4n8v3r6t",
+                     *           "table_id": "table_2x7q5m9v3p8r4n6t",
+                     *           "data": {
+                     *             "pull_request_url": "https://github.com/deepnoodle-ai/mobius-cloud/pull/123",
+                     *             "severity": "medium",
+                     *             "summary": "Add a regression test for the error path."
+                     *           },
+                     *           "version": 1,
+                     *           "created_at": "2026-06-15T14:30:00Z",
+                     *           "updated_at": "2026-06-15T14:30:00Z"
+                     *         }
+                     *       ]
+                     *     }
+                     */
+                    "application/json": components["schemas"]["BulkInsertRowsResult"];
                 };
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     getTableRow: {
@@ -8743,8 +9229,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
                 /** @description Table ID. */
                 table_id: components["parameters"]["TableIDParam"];
                 /** @description Table row ID. */
@@ -8760,6 +9246,20 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "id": "tablerow_5p9x2q7m4n8v3r6t",
+                     *       "table_id": "table_2x7q5m9v3p8r4n6t",
+                     *       "data": {
+                     *         "pull_request_url": "https://github.com/deepnoodle-ai/mobius-cloud/pull/123",
+                     *         "severity": "medium",
+                     *         "summary": "Add a regression test for the error path."
+                     *       },
+                     *       "version": 1,
+                     *       "created_at": "2026-06-15T14:30:00Z",
+                     *       "updated_at": "2026-06-15T14:30:00Z"
+                     *     }
+                     */
                     "application/json": components["schemas"]["TableRow"];
                 };
             };
@@ -8773,8 +9273,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
                 /** @description Table ID. */
                 table_id: components["parameters"]["TableIDParam"];
                 /** @description Table row ID. */
@@ -8794,6 +9294,7 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     updateTableRow: {
@@ -8801,8 +9302,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
                 /** @description Table ID. */
                 table_id: components["parameters"]["TableIDParam"];
                 /** @description Table row ID. */
@@ -8812,6 +9313,14 @@ export interface operations {
         };
         requestBody: {
             content: {
+                /**
+                 * @example {
+                 *       "data": {
+                 *         "severity": "high"
+                 *       },
+                 *       "version": 1
+                 *     }
+                 */
                 "application/json": components["schemas"]["UpdateRowRequest"];
             };
         };
@@ -8822,6 +9331,20 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    /**
+                     * @example {
+                     *       "id": "tablerow_5p9x2q7m4n8v3r6t",
+                     *       "table_id": "table_2x7q5m9v3p8r4n6t",
+                     *       "data": {
+                     *         "pull_request_url": "https://github.com/deepnoodle-ai/mobius-cloud/pull/123",
+                     *         "severity": "high",
+                     *         "summary": "Add a regression test for the error path."
+                     *       },
+                     *       "version": 2,
+                     *       "created_at": "2026-06-15T14:30:00Z",
+                     *       "updated_at": "2026-06-15T14:36:00Z"
+                     *     }
+                     */
                     "application/json": components["schemas"]["TableRow"];
                 };
             };
@@ -8830,6 +9353,7 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     listArtifacts: {
@@ -8850,8 +9374,8 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
             };
             cookie?: never;
         };
@@ -8870,49 +9394,15 @@ export interface operations {
             403: components["responses"]["Forbidden"];
         };
     };
-    createArtifact: {
-        parameters: {
-            query?: never;
-            header: {
-                /** @description Active job lease token for worker-produced artifacts. */
-                "X-Mobius-Lease-Token": string;
-            };
-            path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "multipart/form-data": components["schemas"]["CreateArtifactRequest"];
-            };
-        };
-        responses: {
-            /** @description Artifact uploaded */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Artifact"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            409: components["responses"]["Conflict"];
-        };
-    };
     getArtifact: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
-                /** @description TypeID of the artifact (`art_...`) */
-                id: components["parameters"]["ArtifactIdParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
+                /** @description ID of the artifact */
+                artifact_id: components["parameters"]["ArtifactIdParam"];
             };
             cookie?: never;
         };
@@ -8937,10 +9427,10 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
-                /** @description TypeID of the artifact (`art_...`) */
-                id: components["parameters"]["ArtifactIdParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
+                /** @description ID of the artifact */
+                artifact_id: components["parameters"]["ArtifactIdParam"];
             };
             cookie?: never;
         };
@@ -8957,6 +9447,7 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     getArtifactContent: {
@@ -8964,10 +9455,10 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
-                /** @description TypeID of the artifact (`art_...`) */
-                id: components["parameters"]["ArtifactIdParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
+                /** @description ID of the artifact */
+                artifact_id: components["parameters"]["ArtifactIdParam"];
             };
             cookie?: never;
         };
@@ -8996,10 +9487,10 @@ export interface operations {
             };
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
-                /** @description TypeID of the artifact (`art_...`) */
-                id: components["parameters"]["ArtifactIdParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
+                /** @description ID of the artifact */
+                artifact_id: components["parameters"]["ArtifactIdParam"];
             };
             cookie?: never;
         };
@@ -9018,6 +9509,7 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     getArtifactStorageQuota: {
@@ -9025,8 +9517,8 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Project handle (unique per organization) */
-                project: components["parameters"]["ProjectHandleParam"];
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
             };
             cookie?: never;
         };

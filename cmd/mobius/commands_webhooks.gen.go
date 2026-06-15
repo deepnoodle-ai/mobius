@@ -80,7 +80,7 @@ func registerWebhooksCommands(app *cli.App) {
 
 	webhooksGrp.Command("delete").
 		Description("Delete webhook").
-		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
+		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -99,7 +99,7 @@ func registerWebhooksCommands(app *cli.App) {
 
 	webhooksGrp.Command("get").
 		Description("Get webhook").
-		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
+		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -153,7 +153,7 @@ func registerWebhooksCommands(app *cli.App) {
 
 	webhooksGrp.Command("list-deliveries").
 		Description("List webhook deliveries").
-		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
+		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		Flags(
 			cli.String("cursor", "").Help("Opaque pagination cursor returned from the previous response."),
 			cli.Int("limit", "").Help("Maximum number of results to return per page."),
@@ -185,7 +185,7 @@ func registerWebhooksCommands(app *cli.App) {
 
 	webhooksGrp.Command("ping").
 		Description("Test webhook URL").
-		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
+		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		Flags(
 			cli.String("url", "").Help("URL to test. When supplied, the ping is sent to this URL instead of the webhook's saved URL — use…"),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
@@ -223,7 +223,7 @@ func registerWebhooksCommands(app *cli.App) {
 
 	webhooksGrp.Command("rotate-secret").
 		Description("Rotate webhook signing secret").
-		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
+		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -242,7 +242,7 @@ func registerWebhooksCommands(app *cli.App) {
 
 	webhooksGrp.Command("update").
 		Description("Update webhook").
-		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
+		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		Flags(
 			cli.Bool("enabled", "").Help("Set to false to disable delivery without deleting the webhook."),
 			cli.Strings("events", "").Help("Replacement event subscriptions. Replaces the entire current list; an empty list subscribes to all …"),

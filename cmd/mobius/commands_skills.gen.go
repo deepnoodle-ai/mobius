@@ -24,13 +24,9 @@ func registerSkillsCommands(app *cli.App) {
 		Flags(
 			cli.Strings("allowed-tools", "").Help("Tool selectors that narrow the agent's effective tool set while this skill is active."),
 			cli.String("description", "").Help("Markdown description of the skill's purpose."),
-			cli.String("frontmatter", "").Help("Original imported frontmatter preserved for round-tripping. Accepts JSON, @file, or @-."),
 			cli.String("instructions", "").Help("[required] Markdown instructions loaded when the skill is active."),
-			cli.String("model-hint", "").Help("Advisory model preference; does not override the agent's default model."),
 			cli.String("name", "").Help("[required] Human-readable skill name."),
-			cli.String("slug", "").Help("Optional stable slug. When omitted, the server derives one from `name`."),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
-			cli.Bool("user-invocable", "").Help("Whether users may directly request this skill by name."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -54,34 +50,17 @@ func registerSkillsCommands(app *cli.App) {
 				v := ctx.String("description")
 				body.Description = &v
 			}
-			if ctx.IsSet("frontmatter") {
-				if err := decodeFlagJSON(ctx, "frontmatter", ctx.String("frontmatter"), &body.Frontmatter); err != nil {
-					return err
-				}
-			}
 			if ctx.IsSet("instructions") {
 				body.Instructions = ctx.String("instructions")
 			}
-			if ctx.IsSet("model-hint") {
-				v := ctx.String("model-hint")
-				body.ModelHint = &v
-			}
 			if ctx.IsSet("name") {
 				body.Name = ctx.String("name")
-			}
-			if ctx.IsSet("slug") {
-				v := ctx.String("slug")
-				body.Slug = &v
 			}
 			if tags, err := parseTagFlags(ctx); err != nil {
 				return err
 			} else if tags != nil {
 				v := api.TagMap(tags)
 				body.Tags = &v
-			}
-			if ctx.IsSet("user-invocable") {
-				v := ctx.Bool("user-invocable")
-				body.UserInvocable = &v
 			}
 			if body.Instructions == "" {
 				return fmt.Errorf("--instructions is required (or supply it via --file)")
@@ -101,7 +80,7 @@ func registerSkillsCommands(app *cli.App) {
 
 	skillsGrp.Command("delete").
 		Description("Delete skill").
-		AddArg(&cli.Arg{Name: "skill-id", Description: "Skill ID (TypeID `skill_...`).", Required: true}).
+		AddArg(&cli.Arg{Name: "skill-id", Description: "Skill ID.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -120,7 +99,7 @@ func registerSkillsCommands(app *cli.App) {
 
 	skillsGrp.Command("get").
 		Description("Get skill").
-		AddArg(&cli.Arg{Name: "skill-id", Description: "Skill ID (TypeID `skill_...`).", Required: true}).
+		AddArg(&cli.Arg{Name: "skill-id", Description: "Skill ID.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -204,17 +183,13 @@ func registerSkillsCommands(app *cli.App) {
 
 	skillsGrp.Command("update").
 		Description("Update skill").
-		AddArg(&cli.Arg{Name: "skill-id", Description: "Skill ID (TypeID `skill_...`).", Required: true}).
+		AddArg(&cli.Arg{Name: "skill-id", Description: "Skill ID.", Required: true}).
 		Flags(
 			cli.Strings("allowed-tools", "").Help("Tool selectors that narrow the agent's effective tool set while this skill is active."),
 			cli.String("description", "").Help("Markdown description of the skill's purpose."),
-			cli.String("frontmatter", "").Help("Original imported frontmatter preserved for round-tripping. Accepts JSON, @file, or @-."),
 			cli.String("instructions", "").Help("[required] Markdown instructions loaded when the skill is active."),
-			cli.String("model-hint", "").Help("Advisory model preference; does not override the agent's default model."),
 			cli.String("name", "").Help("[required] Human-readable skill name."),
-			cli.String("slug", "").Help("Optional stable slug. When omitted, the server derives one from `name`."),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
-			cli.Bool("user-invocable", "").Help("Whether users may directly request this skill by name."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -239,34 +214,17 @@ func registerSkillsCommands(app *cli.App) {
 				v := ctx.String("description")
 				body.Description = &v
 			}
-			if ctx.IsSet("frontmatter") {
-				if err := decodeFlagJSON(ctx, "frontmatter", ctx.String("frontmatter"), &body.Frontmatter); err != nil {
-					return err
-				}
-			}
 			if ctx.IsSet("instructions") {
 				body.Instructions = ctx.String("instructions")
 			}
-			if ctx.IsSet("model-hint") {
-				v := ctx.String("model-hint")
-				body.ModelHint = &v
-			}
 			if ctx.IsSet("name") {
 				body.Name = ctx.String("name")
-			}
-			if ctx.IsSet("slug") {
-				v := ctx.String("slug")
-				body.Slug = &v
 			}
 			if tags, err := parseTagFlags(ctx); err != nil {
 				return err
 			} else if tags != nil {
 				v := api.TagMap(tags)
 				body.Tags = &v
-			}
-			if ctx.IsSet("user-invocable") {
-				v := ctx.Bool("user-invocable")
-				body.UserInvocable = &v
 			}
 			if body.Instructions == "" {
 				return fmt.Errorf("--instructions is required (or supply it via --file)")

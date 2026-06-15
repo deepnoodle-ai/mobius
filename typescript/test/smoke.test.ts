@@ -150,7 +150,7 @@ test("client: run control helpers use automation run endpoints", async () => {
   assert.ok(seen.some((url) => url.endsWith("/v1/projects/test-project/runs/run_1")));
   assert.ok(
     seen.some((url) =>
-      url.endsWith("/v1/projects/test-project/runs/run_1/cancellations"),
+      url.endsWith("/v1/projects/test-project/runs/run_1/cancel"),
     ),
   );
   assert.ok(

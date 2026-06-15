@@ -36,19 +36,15 @@ type WaitRunOptions struct {
 	ReconnectDelay time.Duration
 }
 
-// StartRun starts a published automation by handle or loop ID.
-func (c *Client) StartRun(ctx context.Context, automationRef string, opts *StartRunOptions) (*api.LoopRun, error) {
-	return c.StartAutomationRun(ctx, automationRef, opts)
+// StartRun starts a published automation by loop ID.
+func (c *Client) StartRun(ctx context.Context, automationID string, opts *StartRunOptions) (*api.LoopRun, error) {
+	return c.StartAutomationRun(ctx, automationID, opts)
 }
 
-// StartAutomationRun starts a published automation by handle or loop ID.
-func (c *Client) StartAutomationRun(ctx context.Context, automationRef string, opts *StartRunOptions) (*api.LoopRun, error) {
-	loopID, err := c.resolveAutomationID(ctx, automationRef)
-	if err != nil {
-		return nil, err
-	}
+// StartAutomationRun starts a published automation by loop ID.
+func (c *Client) StartAutomationRun(ctx context.Context, automationID string, opts *StartRunOptions) (*api.LoopRun, error) {
 	req := startAutomationRunRequest(opts)
-	resp, err := c.ac.StartRunWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.IDParam(loopID), req)
+	resp, err := c.ac.StartRunWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.IDParam(automationID), req)
 	if err != nil {
 		return nil, fmt.Errorf("mobius: start automation run: %w", err)
 	}

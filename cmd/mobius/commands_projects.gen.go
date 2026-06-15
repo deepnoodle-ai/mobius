@@ -19,23 +19,6 @@ import (
 func registerProjectsCommands(app *cli.App) {
 	projectsGrp := app.Group("projects").Description("Projects within the organization")
 	projectsGrp.Alias("project")
-	projectsGrp.Command("archive").
-		Description("Archive project").
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			resp, err := client.ArchiveProjectWithResponse(ctx.Context(), p0)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "archiveProject", resp.StatusCode(), resp.Body)
-		})
-
 	projectsGrp.Command("create").
 		Description("Create project").
 		Flags(
@@ -130,7 +113,6 @@ func registerProjectsCommands(app *cli.App) {
 		Description("List projects").
 		Flags(
 			cli.String("search", "").Help("Prefix-match filter applied to project name and handle."),
-			cli.String("status", "").Help("Lifecycle filter. `active` (default) returns non-archived projects; `archived` returns archived pro…"),
 		).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -144,10 +126,6 @@ func registerProjectsCommands(app *cli.App) {
 				v := ctx.String("search")
 				params.Search = &v
 			}
-			if ctx.IsSet("status") {
-				v := api.ListProjectsParamsStatus(ctx.String("status"))
-				params.Status = &v
-			}
 			resp, err := client.ListProjectsWithResponse(ctx.Context(), params)
 			if err != nil {
 				return err
@@ -155,28 +133,10 @@ func registerProjectsCommands(app *cli.App) {
 			return printResponse(ctx, "listProjects", resp.StatusCode(), resp.Body)
 		})
 
-	projectsGrp.Command("restore").
-		Description("Restore project").
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			resp, err := client.RestoreProjectWithResponse(ctx.Context(), p0)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "restoreProject", resp.StatusCode(), resp.Body)
-		})
-
 	projectsGrp.Command("update").
 		Description("Update project").
 		Flags(
 			cli.String("access-mode", "").Help("`org_open`: every org member can see and use the project, subject to role assignments. `restricted`…"),
-			cli.String("default-agent-role-id", "").Help("Replacement role assigned to the auto-created agent principal of any new agent in this project. `nu…"),
 			cli.String("description", "").Help("Replacement description."),
 			cli.String("name", "").Help("Replacement human-readable name."),
 			cli.Bool("seed-existing-members", "").Help("When transitioning from `org_open` to `restricted`, set true to insert all current org members as p…"),
@@ -200,10 +160,6 @@ func registerProjectsCommands(app *cli.App) {
 				v := api.ProjectAccessMode(ctx.String("access-mode"))
 				body.AccessMode = &v
 			}
-			if ctx.IsSet("default-agent-role-id") {
-				v := ctx.String("default-agent-role-id")
-				body.DefaultAgentRoleId = &v
-			}
 			if ctx.IsSet("description") {
 				v := ctx.String("description")
 				body.Description = &v
@@ -222,7 +178,7 @@ func registerProjectsCommands(app *cli.App) {
 				v := api.TagMap(tags)
 				body.Tags = &v
 			}
-			if ctx.String("file") == "" && !ctx.IsSet("access-mode") && !ctx.IsSet("default-agent-role-id") && !ctx.IsSet("description") && !ctx.IsSet("name") && !ctx.IsSet("seed-existing-members") && !ctx.IsSet("tag") {
+			if ctx.String("file") == "" && !ctx.IsSet("access-mode") && !ctx.IsSet("description") && !ctx.IsSet("name") && !ctx.IsSet("seed-existing-members") && !ctx.IsSet("tag") {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
 			if ctx.Bool("dry-run") {
