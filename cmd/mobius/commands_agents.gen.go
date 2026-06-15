@@ -21,7 +21,7 @@ func registerAgentsCommands(app *cli.App) {
 	agentsGrp.Alias("agent")
 	agentsGrp.Command("append-session-messages").
 		Description("Append messages").
-		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
+		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		AddArg(&cli.Arg{Name: "session-id", Description: "Session identifier.", Required: true}).
 		Flags(
 			cli.String("messages", "").Help("[required] Messages to append to the session, in order. Accepts JSON, @file, or @-."),
@@ -83,14 +83,12 @@ func registerAgentsCommands(app *cli.App) {
 	agentsGrp.Command("create").
 		Description("Create agent").
 		Flags(
-			cli.Strings("capabilities", "").Help("Capability names used by orchestrators to select suitable agents."),
 			cli.String("color", "").Help("Display color for this agent (Mantine palette key, e.g. `indigo`). Optional; empty falls back to a …"),
 			cli.String("description", "").Help("Optional human-readable description."),
 			cli.String("kind", "").Help("Freeform classification (e.g. \"llm\", \"rpa\", \"integration\")."),
-			cli.String("model", "").Help("Model identifier for platform agents. Any id from `GET /v1/projects/{project}/catalog/models`, opti…"),
+			cli.String("model", "").Help("Model identifier for platform agents. Any id from `GET /v1/projects/{project_handle}/catalog/models…"),
 			cli.String("model-route", "").Help("Default model route used by built-in messaging and by loop agent steps that do not override the rou… Accepts JSON, @file, or @-."),
-			cli.String("name", "").Help("[required] Project-scoped unique name for this agent. Free-form human-readable label, 1-63 characters."),
-			cli.Strings("role-ids", "").Help("Roles to assign to the agent's principal. When omitted, the agent inherits the project's `default_a…"),
+			cli.String("name", "").Help("[required] Unique name for this agent. Free-form human-readable label, 1-63 characters."),
 			cli.String("system-prompt", "").Help("Custom system prompt for platform agents. Empty uses the generated default."),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
 			cli.String("tool-presentation", "").Help("Controls how granted actions are surfaced to the model in Mobius-hosted agent turns. `flat` exposes…"),
@@ -108,10 +106,6 @@ func registerAgentsCommands(app *cli.App) {
 			var body api.CreateAgentJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
-			}
-			if ctx.IsSet("capabilities") {
-				v := ctx.Strings("capabilities")
-				body.Capabilities = &v
 			}
 			if ctx.IsSet("color") {
 				v := ctx.String("color")
@@ -136,10 +130,6 @@ func registerAgentsCommands(app *cli.App) {
 			}
 			if ctx.IsSet("name") {
 				body.Name = ctx.String("name")
-			}
-			if ctx.IsSet("role-ids") {
-				v := ctx.Strings("role-ids")
-				body.RoleIds = &v
 			}
 			if ctx.IsSet("system-prompt") {
 				v := ctx.String("system-prompt")
@@ -170,7 +160,7 @@ func registerAgentsCommands(app *cli.App) {
 
 	agentsGrp.Command("delete").
 		Description("Delete agent").
-		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
+		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -189,7 +179,7 @@ func registerAgentsCommands(app *cli.App) {
 
 	agentsGrp.Command("delete-messaging-binding").
 		Description("Delete binding").
-		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
+		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		AddArg(&cli.Arg{Name: "binding-id", Description: "Messaging binding identifier.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -210,7 +200,7 @@ func registerAgentsCommands(app *cli.App) {
 
 	agentsGrp.Command("get").
 		Description("Get agent").
-		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
+		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -229,7 +219,7 @@ func registerAgentsCommands(app *cli.App) {
 
 	agentsGrp.Command("get-session").
 		Description("Get session").
-		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
+		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		AddArg(&cli.Arg{Name: "session-id", Description: "Session identifier.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -249,8 +239,8 @@ func registerAgentsCommands(app *cli.App) {
 		})
 
 	agentsGrp.Command("get-tools").
-		Description("List tools").
-		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
+		Description("Get resolved tools").
+		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		Flags(
 			cli.String("toolkit-ids", "").Help("Optional comma-separated toolkit subset to apply."),
 			cli.String("skill-name", "").Help("Optional assigned skill name to preselect as active."),
@@ -322,7 +312,7 @@ func registerAgentsCommands(app *cli.App) {
 
 	agentsGrp.Command("list-messages").
 		Description("List messages").
-		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
+		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		AddArg(&cli.Arg{Name: "session-id", Description: "Session identifier.", Required: true}).
 		Flags(
 			cli.Int("after-sequence", "").Help("Only include messages with sequence greater than this value."),
@@ -355,8 +345,8 @@ func registerAgentsCommands(app *cli.App) {
 		})
 
 	agentsGrp.Command("list-messages-2").
-		Description("List turn transcript").
-		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
+		Description("List turn messages").
+		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		Flags(
 			cli.Int("after-sequence", "").Help("Only include messages with sequence greater than this value."),
 			cli.Int("limit", "").Help("Maximum number of items to return"),
@@ -388,7 +378,7 @@ func registerAgentsCommands(app *cli.App) {
 
 	agentsGrp.Command("list-messaging-bindings").
 		Description("List bindings").
-		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
+		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -407,7 +397,7 @@ func registerAgentsCommands(app *cli.App) {
 
 	agentsGrp.Command("list-sessions").
 		Description("List sessions").
-		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
+		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		Flags(
 			cli.String("status", "").Help("Filter by session status."),
 			cli.String("scope", "").Help("Filter by session scope."),
@@ -447,9 +437,9 @@ func registerAgentsCommands(app *cli.App) {
 			return printResponse(ctx, "listAgentSessions", resp.StatusCode(), resp.Body)
 		})
 
-	agentsGrp.Command("list-skill-assignments").
-		Description("List skills").
-		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
+	agentsGrp.Command("list-skills").
+		Description("List assigned skills").
+		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -459,16 +449,16 @@ func registerAgentsCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			resp, err := client.ListSkillAssignmentsWithResponse(ctx.Context(), p0, p1)
+			resp, err := client.ListAgentSkillsWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, "listSkillAssignments", resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "listAgentSkills", resp.StatusCode(), resp.Body)
 		})
 
-	agentsGrp.Command("list-table-grants").
-		Description("List table grants").
-		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
+	agentsGrp.Command("list-toolkits").
+		Description("List assigned toolkits").
+		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -478,35 +468,16 @@ func registerAgentsCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			resp, err := client.ListAgentTableGrantsWithResponse(ctx.Context(), p0, p1)
+			resp, err := client.ListAgentToolkitsWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, "listAgentTableGrants", resp.StatusCode(), resp.Body)
-		})
-
-	agentsGrp.Command("list-toolkit-assignments").
-		Description("List toolkits").
-		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			resp, err := client.ListToolkitAssignmentsWithResponse(ctx.Context(), p0, p1)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "listToolkitAssignments", resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "listAgentToolkits", resp.StatusCode(), resp.Body)
 		})
 
 	agentsGrp.Command("list-turns").
 		Description("List turns").
-		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
+		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		AddArg(&cli.Arg{Name: "session-id", Description: "Session identifier.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -527,7 +498,7 @@ func registerAgentsCommands(app *cli.App) {
 
 	agentsGrp.Command("provision-inbox").
 		Description("Provision email inbox").
-		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
+		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -544,48 +515,9 @@ func registerAgentsCommands(app *cli.App) {
 			return printResponse(ctx, "provisionAgentInbox", resp.StatusCode(), resp.Body)
 		})
 
-	agentsGrp.Command("replace-agent-table-grants").
-		Description("Replace table grants").
-		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
-		Flags(
-			cli.String("grants", "").Help("[required] Full replacement set of table grants for the agent. Accepts JSON, @file, or @-."),
-			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
-			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
-		).
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			var body api.ReplaceAgentTableGrantsJSONRequestBody
-			if err := readJSONBody(ctx, &body); err != nil {
-				return err
-			}
-			if ctx.IsSet("grants") {
-				if err := decodeFlagJSON(ctx, "grants", ctx.String("grants"), &body.Grants); err != nil {
-					return err
-				}
-			}
-			if ctx.String("file") == "" && !ctx.IsSet("grants") {
-				return fmt.Errorf("--grants is required (or supply it via --file)")
-			}
-			if ctx.Bool("dry-run") {
-				return printDryRun(ctx, body)
-			}
-			resp, err := client.ReplaceAgentTableGrantsWithResponse(ctx.Context(), p0, p1, body)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "replaceAgentTableGrants", resp.StatusCode(), resp.Body)
-		})
-
 	agentsGrp.Command("replace-skills").
-		Description("Replace skills").
-		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
+		Description("Replace assigned skills").
+		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		Flags(
 			cli.Strings("skill-ids", "").Help("[required] Full replace-set of skill IDs to assign to the agent, in desired order."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
@@ -600,7 +532,7 @@ func registerAgentsCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			var body api.ReplaceSkillsJSONRequestBody
+			var body api.ReplaceAgentSkillsJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
 			}
@@ -613,16 +545,16 @@ func registerAgentsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.ReplaceSkillsWithResponse(ctx.Context(), p0, p1, body)
+			resp, err := client.ReplaceAgentSkillsWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, "replaceSkills", resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "replaceAgentSkills", resp.StatusCode(), resp.Body)
 		})
 
 	agentsGrp.Command("replace-toolkits").
-		Description("Replace toolkits").
-		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
+		Description("Replace assigned toolkits").
+		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		Flags(
 			cli.Strings("toolkit-ids", "").Help("[required] Full replace-set of toolkit IDs to assign to the agent, in desired order."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
@@ -637,7 +569,7 @@ func registerAgentsCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			var body api.ReplaceToolkitsJSONRequestBody
+			var body api.ReplaceAgentToolkitsJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
 			}
@@ -650,27 +582,28 @@ func registerAgentsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.ReplaceToolkitsWithResponse(ctx.Context(), p0, p1, body)
+			resp, err := client.ReplaceAgentToolkitsWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, "replaceToolkits", resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "replaceAgentToolkits", resp.StatusCode(), resp.Body)
 		})
 
 	agentsGrp.Command("save-messaging-binding").
 		Description("Save binding").
-		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
+		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		Flags(
 			cli.Bool("all-messages", "").Help("Respond to every message in bound channels, not just mentions."),
 			cli.Strings("channels", "").Help("Channel IDs the binding is scoped to (empty means all channels)."),
-			cli.String("dm-policy", "").Help("Direct-message access policy for the binding."),
+			cli.String("dm-policy", "").Help("Direct-message access policy: `open`, `allowlist`, or `disabled`."),
 			cli.Bool("dms", "").Help("Respond to direct messages."),
 			cli.Bool("enabled", "").Help("Whether the binding is active and the agent responds on this provider."),
 			cli.String("integration-id", "").Help("[required] ID of the connected integration that backs this binding."),
 			cli.Bool("mentions", "").Help("Respond when the agent is @-mentioned."),
 			cli.String("model-route", "").Help("Default model route used by built-in messaging and by loop agent steps that do not override the rou… Accepts JSON, @file, or @-."),
-			cli.String("provider", "").Help("[required] Provider supported by built-in agent messaging."),
-			cli.String("reply-mode", "").Help("Reply mode for built-in messaging."),
+			cli.String("provider", "").Help("[required] Provider supported by built-in agent messaging: `slack` or `telegram`."),
+			cli.Bool("replace-existing", "").Help("When enabling this binding, disable any other active agent binding for the same provider account."),
+			cli.String("reply-mode", "").Help("Reply mode for built-in messaging; currently `auto`."),
 			cli.Strings("sender-allow", "").Help("Sender IDs allowed to trigger the agent (empty means no allowlist)."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
@@ -723,6 +656,10 @@ func registerAgentsCommands(app *cli.App) {
 			if ctx.IsSet("provider") {
 				body.Provider = api.AgentMessagingProvider(ctx.String("provider"))
 			}
+			if ctx.IsSet("replace-existing") {
+				v := ctx.Bool("replace-existing")
+				body.ReplaceExisting = &v
+			}
 			if ctx.IsSet("reply-mode") {
 				v := api.AgentMessagingReplyMode(ctx.String("reply-mode"))
 				body.ReplyMode = &v
@@ -749,7 +686,7 @@ func registerAgentsCommands(app *cli.App) {
 
 	agentsGrp.Command("stream-session-events").
 		Description("Stream session events").
-		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
+		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		AddArg(&cli.Arg{Name: "session-id", Description: "Session identifier.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -770,16 +707,15 @@ func registerAgentsCommands(app *cli.App) {
 
 	agentsGrp.Command("update").
 		Description("Update agent").
-		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
+		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		Flags(
-			cli.Strings("capabilities", "").Help("Replacement capability names."),
 			cli.String("color", "").Help("Replacement display color (Mantine palette key, e.g. `indigo`). Pass empty string to clear and fall…"),
 			cli.String("description", "").Help("Replacement description."),
 			cli.String("kind", "").Help("Replacement freeform agent classification (e.g. `llm`, `rpa`)."),
-			cli.String("model", "").Help("Replacement model identifier for platform agents (any id from `GET /v1/projects/{project}/catalog/m…"),
+			cli.String("model", "").Help("Replacement model identifier for platform agents (any id from `GET /v1/projects/{project_handle}/ca…"),
 			cli.String("model-route", "").Help("Default model route used by built-in messaging and by loop agent steps that do not override the rou… Accepts JSON, @file, or @-."),
 			cli.String("name", "").Help("Free-form human-readable label, 1-63 characters; must be unique within the project."),
-			cli.String("status", "").Help("Replacement agent status: `active` or `inactive`. Use DELETE to soft-delete."),
+			cli.String("status", "").Help("Replacement agent status: `active` or `inactive`. Use DELETE to delete the agent."),
 			cli.String("system-prompt", "").Help("Replacement system prompt for platform agents."),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
 			cli.String("tool-presentation", "").Help("Controls how granted actions are surfaced to the model in Mobius-hosted agent turns. `flat` exposes…"),
@@ -798,10 +734,6 @@ func registerAgentsCommands(app *cli.App) {
 			var body api.UpdateAgentJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
-			}
-			if ctx.IsSet("capabilities") {
-				v := ctx.Strings("capabilities")
-				body.Capabilities = &v
 			}
 			if ctx.IsSet("color") {
 				v := ctx.String("color")
@@ -846,7 +778,7 @@ func registerAgentsCommands(app *cli.App) {
 				v := api.AgentToolPresentation(ctx.String("tool-presentation"))
 				body.ToolPresentation = &v
 			}
-			if ctx.String("file") == "" && !ctx.IsSet("capabilities") && !ctx.IsSet("color") && !ctx.IsSet("description") && !ctx.IsSet("kind") && !ctx.IsSet("model") && !ctx.IsSet("model-route") && !ctx.IsSet("name") && !ctx.IsSet("status") && !ctx.IsSet("system-prompt") && !ctx.IsSet("tag") && !ctx.IsSet("tool-presentation") {
+			if ctx.String("file") == "" && !ctx.IsSet("color") && !ctx.IsSet("description") && !ctx.IsSet("kind") && !ctx.IsSet("model") && !ctx.IsSet("model-route") && !ctx.IsSet("name") && !ctx.IsSet("status") && !ctx.IsSet("system-prompt") && !ctx.IsSet("tag") && !ctx.IsSet("tool-presentation") {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
 			if ctx.Bool("dry-run") {

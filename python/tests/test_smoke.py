@@ -88,10 +88,10 @@ def test_automation_helpers_use_project_scoped_routes() -> None:
         requests.append((request.method, request.url.path, body))
         if request.method == "POST" and request.url.path.endswith("/loops"):
             payload = json.loads(body)
-            return httpx.Response(201, json=_automation_body(handle=payload["handle"], name=payload["name"]))
+            return httpx.Response(201, json=_automation_body(name=payload["name"]))
         if request.method == "PATCH":
             payload = json.loads(body)
-            return httpx.Response(200, json=_automation_body(handle="research", name=payload["name"], status=payload["status"]))
+            return httpx.Response(200, json=_automation_body(name=payload["name"], status=payload["status"]))
         if request.method == "GET" and request.url.path.endswith("/loops"):
             assert request.url.params["status"] == "active"
             return httpx.Response(200, json={"items": [_automation_body()], "has_more": False})
@@ -102,7 +102,6 @@ def test_automation_helpers_use_project_scoped_routes() -> None:
     client = _client_with(handler)
     created = client.create_automation(
         AutomationOptions(
-            handle="research",
             name="Research",
             default_inputs={"topic": "agents"},
         )
@@ -114,7 +113,7 @@ def test_automation_helpers_use_project_scoped_routes() -> None:
     listed = client.list_automations(ListAutomationsOptions(status=AutomationStatus.active))
     client.delete_automation("loop_1")
 
-    assert created.handle == "research"
+    assert created.name == "Research"
     assert updated.status is AutomationStatus.active
     assert len(listed.items) == 1
     assert requests[0][0:2] == ("POST", "/v1/projects/test-project/loops")
@@ -180,7 +179,7 @@ def test_run_control_helpers_use_project_scoped_paths_and_enum_query_values() ->
     def handler(request: httpx.Request) -> httpx.Response:
         seen.append(str(request.url))
         path = request.url.path
-        if path.endswith("/runs/run_1/cancellations"):
+        if path.endswith("/runs/run_1/cancel"):
             return httpx.Response(200, json=_run_body("run_1", "cancelled"))
         if path.endswith("/runs/run_1/signals"):
             return httpx.Response(200, json=_run_body("run_1", "running"))
@@ -195,14 +194,14 @@ def test_run_control_helpers_use_project_scoped_paths_and_enum_query_values() ->
     assert client.signal_run("run_1", "approval", {"ok": True}).id == "run_1"
 
     assert any("/runs?status=completed" in url for url in seen)
-    assert any(url.endswith("/runs/run_1/cancellations") for url in seen)
+    assert any(url.endswith("/runs/run_1/cancel") for url in seen)
     assert any(url.endswith("/runs/run_1/signals") for url in seen)
 
 
 def test_watch_run_parses_automation_run_event_stream() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         assert request.url.path.endswith("/runs/run_1/events.stream")
-        assert request.url.params["since_sequence"] == "7"
+        assert request.url.params["after_sequence"] == "7"
         event = _run_event_body("evt_8", 8, "run.completed", {"status": "completed"})
         return httpx.Response(
             200,
@@ -323,16 +322,12 @@ def test_synthetic_webhook_delivery_posts_signed_envelope() -> None:
 
 def _automation_body(
     *,
-    handle: str = "research",
     name: str = "Research",
     status: str = "active",
     published_version: int | None = 1,
 ) -> dict[str, object]:
     return {
         "id": "loop_1",
-        "org_id": "org_1",
-        "project_id": "test-project",
-        "handle": handle,
         "name": name,
         "status": status,
         "latest_version": 1,
@@ -346,8 +341,6 @@ def _automation_body(
 def _automation_version_body(*, version: int, status: str) -> dict[str, object]:
     return {
         "id": f"lver_{version}",
-        "org_id": "org_1",
-        "project_id": "test-project",
         "loop_id": "loop_1",
         "version": version,
         "status": status,
@@ -359,8 +352,6 @@ def _automation_version_body(*, version: int, status: str) -> dict[str, object]:
 def _run_body(run_id: str, status: str) -> dict[str, object]:
     return {
         "id": run_id,
-        "org_id": "org_1",
-        "project_id": "test-project",
         "loop_id": "loop_1",
         "loop_version_id": "lver_1",
         "loop_version": 1,
@@ -379,8 +370,6 @@ def _run_event_body(
 ) -> dict[str, object]:
     return {
         "id": event_id,
-        "org_id": "org_1",
-        "project_id": "test-project",
         "run_id": "run_1",
         "sequence": sequence,
         "event_type": event_type,

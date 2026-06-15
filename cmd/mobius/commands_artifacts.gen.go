@@ -18,8 +18,8 @@ func registerArtifactsCommands(app *cli.App) {
 	artifactsGrp := app.Group("artifacts").Description("Run output artifacts and storage quota")
 	artifactsGrp.Alias("artifact")
 	artifactsGrp.Command("create-signed-url").
-		Description("Sign artifact URL").
-		AddArg(&cli.Arg{Name: "id", Description: "TypeID of the artifact (`art_...`)", Required: true}).
+		Description("Create signed artifact URL").
+		AddArg(&cli.Arg{Name: "artifact-id", Description: "ID of the artifact", Required: true}).
 		Flags(
 			cli.Int("ttl-seconds", "").Help("Requested signed URL TTL. The server caps this at the maximum supported artifact download TTL."),
 		).
@@ -46,7 +46,7 @@ func registerArtifactsCommands(app *cli.App) {
 
 	artifactsGrp.Command("delete").
 		Description("Delete artifact").
-		AddArg(&cli.Arg{Name: "id", Description: "TypeID of the artifact (`art_...`)", Required: true}).
+		AddArg(&cli.Arg{Name: "artifact-id", Description: "ID of the artifact", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -65,7 +65,7 @@ func registerArtifactsCommands(app *cli.App) {
 
 	artifactsGrp.Command("get").
 		Description("Get artifact").
-		AddArg(&cli.Arg{Name: "id", Description: "TypeID of the artifact (`art_...`)", Required: true}).
+		AddArg(&cli.Arg{Name: "artifact-id", Description: "ID of the artifact", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -83,8 +83,8 @@ func registerArtifactsCommands(app *cli.App) {
 		})
 
 	artifactsGrp.Command("get-content").
-		Description("Fetch artifact bytes").
-		AddArg(&cli.Arg{Name: "id", Description: "TypeID of the artifact (`art_...`)", Required: true}).
+		Description("Get artifact content").
+		AddArg(&cli.Arg{Name: "artifact-id", Description: "ID of the artifact", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -102,7 +102,7 @@ func registerArtifactsCommands(app *cli.App) {
 		})
 
 	artifactsGrp.Command("get-storage-quota").
-		Description("Get storage usage").
+		Description("Get artifact storage quota").
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)

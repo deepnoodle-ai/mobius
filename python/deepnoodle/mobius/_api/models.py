@@ -17,7 +17,10 @@ class Error(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    code: str = Field(..., description='Machine-readable error code')
+    code: str = Field(
+        ...,
+        description='Stable, machine-readable error code in lower_snake_case. The cross-cutting codes clients can rely on across endpoints are: `bad_request` (malformed input / failed validation), `unauthorized`, `forbidden`, `not_found`, `conflict` / `already_exists`, `rate_limit_exceeded`, and `service_unavailable`. Endpoint-specific codes (e.g. `loop_paused`, `invalid_signature`) extend this set; an unrecognized code should be handled by its HTTP status family.',
+    )
     message: str = Field(..., description='Human-readable error message')
     details: dict[str, Any] | None = Field(
         None,
@@ -34,10 +37,6 @@ class ErrorResponse(BaseModel):
         extra='forbid',
     )
     error: Error = Field(..., description='Error detail.')
-
-
-class ProjectID(RootModel[str]):
-    root: str = Field(..., description='Project ID.')
 
 
 class ResourceScope(StrEnum):
@@ -72,70 +71,15 @@ class CapabilityReadinessReason(StrEnum):
 
 class TagMap(RootModel[dict[str, str]]):
     """
-    Key/value tag map. Keys 1–128 chars, values 0–256 chars. Keys with the `mobius:` prefix are system-managed and cannot be set by callers. Maximum 8 tags per resource. Use tags to organize resources by environment, team, cost-center, or any other dimension meaningful to your organization; tags can be filtered on most list endpoints.
+    Key/value tags for organizing and filtering resources. Up to 8 per resource; keys 1–128 characters, values up to 256. Keys prefixed `mobius:` are system-managed and cannot be set by callers.
     """
 
     root: dict[str, str] = Field(..., max_length=256)
 
 
-class Kind(StrEnum):
-    """
-    The principal type represented by this user record.
-    """
-
-    human = 'human'
-    agent = 'agent'
-    service = 'service'
-    system = 'system'
-
-
-class User(BaseModel):
-    """
-    User or principal identity known to the organization. User records are useful for membership lists, role assignment UIs, attribution, and displaying profile information next to actions.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    id: str = Field(
-        ..., description='Clerk user ID. Stable and globally unique across all orgs.'
-    )
-    email: str = Field(..., description='Primary email address from Clerk.')
-    kind: Kind = Field(
-        ..., description='The principal type represented by this user record.'
-    )
-    display_name: str | None = Field(
-        None,
-        description='Authoritative single-line label for this user, regardless of kind. Humans get "First Last"; agents and other machine principals get their configured display name. Renderers should prefer this over first_name/last_name.',
-    )
-    color: str | None = Field(
-        None,
-        description='Optional Mantine palette key (e.g. "indigo") used by avatar surfaces when no avatar_url is set. Populated for agent-kind users; empty otherwise.',
-    )
-    first_name: str | None = Field(
-        None, description="User's first name from their Clerk profile."
-    )
-    last_name: str | None = Field(
-        None, description="User's last name from their Clerk profile."
-    )
-    avatar_url: str | None = Field(
-        None,
-        description='Profile avatar URL from Clerk (may be a Gravatar or uploaded image).',
-    )
-    created_at: AwareDatetime = Field(
-        ..., description='When the user record was first mirrored into Mobius.'
-    )
-    updated_at: AwareDatetime = Field(
-        ..., description='Timestamp when this user record was last synced from Clerk.'
-    )
-    deleted_at: AwareDatetime | None = Field(
-        None, description='When this user principal was soft-deleted, if applicable.'
-    )
-
-
 class AgentStatus(StrEnum):
     """
-    Administrative status. Inactive agents cannot claim new jobs. Soft-deleted agents are represented by `deleted_at` and excluded from normal reads.
+    Administrative status. Inactive agents cannot claim new jobs. Deleted agents are excluded from normal reads.
     """
 
     active = 'active'
@@ -153,7 +97,7 @@ class ProjectAccessMode(StrEnum):
 
 class Project(BaseModel):
     """
-    Workspace boundary for loops, actions, credentials, agents, and runtime activity. Most operational APIs are project-scoped, so this object tells clients which handle to use and who can see the project.
+    Workspace boundary for loops, actions, credentials, agents, and runtime activity. Most operational APIs live under a project, so this object tells clients which handle to use and who can see the project.
     """
 
     model_config = ConfigDict(
@@ -163,7 +107,7 @@ class Project(BaseModel):
     name: str = Field(..., description='Human-readable project name.')
     handle: str = Field(
         ...,
-        description='URL-safe slug used as a path segment in all project-scoped API routes. Unique within the org. Immutable after creation.',
+        description='URL-safe slug used as a path segment in project API routes. Unique within the org. Immutable after creation.',
     )
     description: str | None = Field(
         None, description='Optional human-readable description.'
@@ -174,16 +118,9 @@ class Project(BaseModel):
     created_by: str | None = Field(
         None, description='Principal ID of whoever created this project.'
     )
-    archived_at: AwareDatetime | None = Field(
-        None,
-        description='Timestamp when this project was archived. `null` for active projects. Archived projects are read-only and excluded from the default project listing.',
-    )
-    default_agent_role_id: str | None = Field(
-        None,
-        description='Role assigned to the auto-created agent principal of any new agent in this project, when no per-call `role_ids` are supplied on `createAgent`. `null` falls through to the system `Agent` role floor.',
-    )
     tags: TagMap | None = Field(
-        None, description='Resource tags applied to this project.'
+        None,
+        description='Free-form labels used for filtering, ownership, or automation.',
     )
     created_at: AwareDatetime = Field(
         ..., description='Timestamp when this project was created.'
@@ -202,12 +139,11 @@ class ProjectListResponse(BaseModel):
 
 class AgentModelRouteMode(StrEnum):
     """
-    Where the agent's default model call should run.
+    Model-call route mode: `managed` or `worker`.
     """
 
     managed = 'managed'
     worker = 'worker'
-    byo_provider = 'byo_provider'
 
 
 class AgentModelRoute(BaseModel):
@@ -218,7 +154,9 @@ class AgentModelRoute(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    mode: AgentModelRouteMode
+    mode: AgentModelRouteMode = Field(
+        ..., description='Where this model call should run.'
+    )
     environment_id: str | None = Field(
         None, description='Environment to use for worker-backed model calls.'
     )
@@ -228,9 +166,6 @@ class AgentModelRoute(BaseModel):
     )
     queue: str | None = Field(
         None, description='Worker queue for customer-worker model calls.'
-    )
-    required_capabilities: list[str] | None = Field(
-        None, description='Worker capabilities required for this route.'
     )
 
 
@@ -245,7 +180,7 @@ class AgentToolPresentation(StrEnum):
 
 class Agent(BaseModel):
     """
-    Project-scoped AI actor identity. An agent IS a principal (its permissions are role grants on that principal); agents are useful when loops need a named actor with instructions, capabilities, configuration, and session presence.
+    AI actor identity. An agent IS a principal (its permissions are role grants on that principal); agents are useful when loops need a named actor with instructions, configuration, and session presence.
     """
 
     model_config = ConfigDict(
@@ -274,15 +209,13 @@ class Agent(BaseModel):
         description='Display color for this agent in UI surfaces. One of the Mantine color palette keys (e.g. `indigo`, `teal`, `grape`); empty string falls back to a hash-derived color.',
         max_length=24,
     )
-    capabilities: list[str] | None = Field(
-        None,
-        description='Capability names used by orchestrators to select suitable agents.',
-    )
     model: str | None = Field(
         None,
-        description='Model identifier for platform agents. Accepts any id returned by `GET /v1/projects/{project}/catalog/models`, optionally `provider/`-prefixed (e.g. `xai/grok-4`); bare known ids (e.g. `claude-sonnet-4-6`) are auto-detected to their provider. Empty string falls back to the platform default.',
+        description='Model identifier for platform agents. Accepts any id returned by `GET /v1/projects/{project_handle}/catalog/models`, optionally `provider/`-prefixed (e.g. `xai/grok-4`); bare known ids (e.g. `claude-sonnet-4-6`) are auto-detected to their provider. Empty string falls back to the platform default.',
     )
-    model_route: AgentModelRoute | None = None
+    model_route: AgentModelRoute | None = Field(
+        None, description='Default route for model calls made by this agent.'
+    )
     tool_presentation: AgentToolPresentation | None = Field(
         None,
         description='Default tool presentation used by loop agent steps and built-in channel-message replies for this agent.',
@@ -296,26 +229,23 @@ class Agent(BaseModel):
     )
     email_address: str | None = Field(
         None,
-        description='Inbox address provisioned via POST /v1/projects/{project}/agents/{id}/inbox (opt-in; not created automatically at agent creation). The field is populated only after a successful provisioning call. Use this address to add the agent as a member on external platforms (Linear, GitHub, Slack, etc.) so the platform can deliver notifications to the agent.',
+        description='Inbox address provisioned via POST /v1/projects/{project_handle}/agents/{resource_id}/inbox (opt-in; not created automatically at agent creation). The field is populated only after a successful provisioning call. Use this address to add the agent as a member on external platforms (Linear, GitHub, Slack, etc.) so the platform can deliver notifications to the agent.',
     )
     tags: TagMap | None = Field(
-        None, description='Resource tags applied to this agent.'
+        None,
+        description='Free-form labels used for filtering, ownership, or automation.',
     )
     created_by: str | None = Field(
-        None, description='User ID of the principal who created this agent.'
+        None, description='ID of the principal who created this agent.'
     )
     updated_by: str | None = Field(
-        None, description='User ID of the principal who last updated this agent.'
+        None, description='ID of the principal who last updated this agent.'
     )
     created_at: AwareDatetime = Field(
         ..., description='Timestamp when this agent was created.'
     )
     updated_at: AwareDatetime = Field(
         ..., description='Timestamp when this agent was last updated.'
-    )
-    deleted_at: AwareDatetime | None = Field(
-        None,
-        description='Set when the agent has been soft-deleted. Soft-deleted agents are excluded from normal listing and lookups but their records are retained so historical chat messages can resolve the sender name.',
     )
 
 
@@ -342,9 +272,6 @@ class APIKey(BaseModel):
         ...,
         description='First 8 characters of the key, used to identify it without exposing the secret.',
     )
-    project_id: ProjectID = Field(
-        ..., description='Project that owns the principal this key authenticates as.'
-    )
     principal_id: str = Field(..., description='Principal this key authenticates as.')
     expires_at: AwareDatetime | None = Field(
         None,
@@ -355,7 +282,8 @@ class APIKey(BaseModel):
         description='Timestamp of the most recent authenticated request using this key.',
     )
     tags: TagMap | None = Field(
-        None, description='Resource tags applied to this API key.'
+        None,
+        description='Free-form labels used for filtering, ownership, or rotation policy.',
     )
     created_at: AwareDatetime = Field(
         ..., description='Timestamp when this key was created.'
@@ -378,9 +306,6 @@ class APIKeyCreateResult(BaseModel):
     key_prefix: str = Field(
         ..., description='First 8 characters of the key for identification.'
     )
-    project_id: ProjectID = Field(
-        ..., description='Project that owns the principal this key authenticates as.'
-    )
     principal_id: str = Field(..., description='Principal this key authenticates as.')
     expires_at: AwareDatetime | None = Field(
         None,
@@ -391,7 +316,7 @@ class APIKeyCreateResult(BaseModel):
         description='Timestamp of the most recent authenticated request using this key.',
     )
     tags: TagMap | None = Field(
-        None, description='Resource tags applied to this API key.'
+        None, description='Labels applied to the newly created key.'
     )
     created_at: AwareDatetime = Field(
         ..., description='Timestamp when this key was created.'
@@ -432,7 +357,7 @@ class CreateAPIKeyRequest(BaseModel):
     expires_at: AwareDatetime | None = Field(
         None, description='Optional hard expiry. Omit for a non-expiring key.'
     )
-    tags: TagMap | None = Field(None, description='Initial tag set.')
+    tags: TagMap | None = Field(None, description='Labels to apply to the new API key.')
 
 
 class ActionAnnotationsRequest(BaseModel):
@@ -457,7 +382,7 @@ class ActionAnnotationsRequest(BaseModel):
     )
 
 
-class ActionAnnotationsResponse(BaseModel):
+class ActionAnnotations(BaseModel):
     """
     Response hints that describe the safe-use properties of the action. Response annotations are forward-compatible so the server can add response-only hints without breaking strict clients.
     """
@@ -498,7 +423,7 @@ class CreateActionRequest(BaseModel):
     )
     name: str = Field(
         ...,
-        description='Project-scoped identifier used in loop step definitions. Lowercase alphanumeric + hyphens, e.g. "send-email". Must be unique within the project. Cannot start with "mobius." (reserved prefix).',
+        description='Identifier used in loop step definitions. Lowercase alphanumeric + hyphens, e.g. "send-email". Must be unique within the project. Cannot start with "mobius." (reserved prefix).',
     )
     title: str | None = Field(
         None, description='Human-readable display name shown in the UI and catalog.'
@@ -523,9 +448,9 @@ class CreateActionRequest(BaseModel):
     annotations: ActionAnnotationsRequest | None = Field(
         None, description='Safe-use hints used by execution and authoring tools.'
     )
-    tags: dict[str, str] | None = Field(
+    tags: TagMap | None = Field(
         None,
-        description='Arbitrary key-value string tags for filtering and organization.',
+        description='Free-form labels used for filtering, ownership, or lifecycle policy.',
     )
 
 
@@ -555,8 +480,8 @@ class UpdateActionRequest(BaseModel):
     annotations: ActionAnnotationsRequest | None = Field(
         None, description='Pass null to clear all annotation flags.'
     )
-    tags: dict[str, str] | None = Field(
-        None, description='Replacement tag map. Replaces the existing tags entirely.'
+    tags: TagMap | None = Field(
+        None, description='Replacement labels; send an empty object to clear all tags.'
     )
 
 
@@ -569,9 +494,7 @@ class Action(BaseModel):
         extra='forbid',
     )
     id: str = Field(..., description='Unique identifier for this action.')
-    name: str = Field(
-        ..., description='Project-scoped stable identifier used in loop definitions.'
-    )
+    name: str = Field(..., description='Stable identifier used in loop definitions.')
     title: str | None = Field(
         None, description='Human-readable display title for the action.'
     )
@@ -592,11 +515,11 @@ class Action(BaseModel):
     output_schema: dict[str, Any] | None = Field(
         None, description='JSON Schema describing the expected output shape.'
     )
-    annotations: ActionAnnotationsResponse | None = Field(
+    annotations: ActionAnnotations | None = Field(
         None, description='Safe-use hints returned for this action.'
     )
-    tags: dict[str, str] | None = Field(
-        None, description='Arbitrary key-value string tags.'
+    tags: TagMap | None = Field(
+        None, description='Free-form labels attached to this action.'
     )
     secret_ref: str | None = Field(
         None,
@@ -658,7 +581,7 @@ class Source(StrEnum):
 
 class Risk(StrEnum):
     """
-    Author-declared risk classification. Used by toolkit-author UIs to surface warnings and by audit views to prioritize attention.
+    Author-declared risk classification: `low`, `medium`, `high`, or `critical`. Used by toolkit-author UIs to surface warnings and by audit views to prioritize attention.
     """
 
     low = 'low'
@@ -668,6 +591,10 @@ class Risk(StrEnum):
 
 
 class SupportedLocation(StrEnum):
+    """
+    Execution location: `managed`, `worker`, or `environment`.
+    """
+
     managed = 'managed'
     worker = 'worker'
     environment = 'environment'
@@ -675,7 +602,7 @@ class SupportedLocation(StrEnum):
 
 class DefaultLocation(StrEnum):
     """
-    Location selected by default in authoring UIs.
+    Default execution location: `managed`, `worker`, or `environment`.
     """
 
     managed = 'managed'
@@ -684,14 +611,20 @@ class DefaultLocation(StrEnum):
 
 
 class ActionExecutionMetadata(BaseModel):
+    """
+    Execution-location metadata surfaced to loop authors and action pickers.
+    """
+
     model_config = ConfigDict(
         extra='forbid',
     )
     supported_locations: list[SupportedLocation] = Field(
-        ..., description='Execution locations supported by this action.'
+        ...,
+        description='Supported execution locations: `managed`, `worker`, or `environment`.',
     )
     default_location: DefaultLocation = Field(
-        ..., description='Location selected by default in authoring UIs.'
+        ...,
+        description='Default execution location: `managed`, `worker`, or `environment`.',
     )
     required_worker_capabilities: list[str] | None = Field(
         None,
@@ -727,7 +660,7 @@ class InvokeActionRequest(BaseModel):
 
 class Status(StrEnum):
     """
-    Terminal or in-progress status of the invocation.
+    Invocation status: `active`, `completed`, or `failed`.
     """
 
     active = 'active'
@@ -744,7 +677,7 @@ class ActionInvocationResult(BaseModel):
         extra='forbid',
     )
     status: Status = Field(
-        ..., description='Terminal or in-progress status of the invocation.'
+        ..., description='Invocation status: `active`, `completed`, or `failed`.'
     )
     job_id: str | None = Field(
         None, description='Job created for this direct invocation.'
@@ -826,7 +759,7 @@ class ActionInvocationListResponse(BaseModel):
     has_more: bool = Field(..., description='Whether additional pages are available.')
 
 
-class Kind1(StrEnum):
+class Kind(StrEnum):
     """
     `integration` for provider event sources; `capability` for built-in Mobius platform event sources.
     """
@@ -836,6 +769,10 @@ class Kind1(StrEnum):
 
 
 class EventCatalogEventType(BaseModel):
+    """
+    One concrete event type exposed by an event catalog source.
+    """
+
     model_config = ConfigDict(
         extra='forbid',
     )
@@ -843,28 +780,41 @@ class EventCatalogEventType(BaseModel):
         ...,
         description='Dotted event-type identifier (`table.row.inserted`, `github.pull_request.opened`).',
     )
-    description: str | None = None
+    description: str | None = Field(
+        None, description='Human-readable explanation of when this event fires.'
+    )
     event_schema: dict[str, Any] | None = Field(
         None,
-        description='JSON Schema for the normalized event data available to event-trigger runs at `{{ .inputs.event.* }}` and to event conditions/mappings at `event.*`. Absent only when the event payload is intentionally open-ended and the provider has not registered an authoring schema.',
+        description='JSON Schema for the normalized event data available to event-trigger runs (`${{ event.* }}` in schema_version 2 loops, `{{ .inputs.event.* }}` in schema_version 1) and to event conditions/mappings at `event.*`. Absent only when the event payload is intentionally open-ended and the provider has not registered an authoring schema.',
     )
     meta_schema: dict[str, Any] | None = Field(
         None,
-        description='JSON Schema for normalized routing metadata available to event-trigger runs at `{{ .inputs.meta.* }}` and to event conditions/mappings at `meta.*`.',
+        description='JSON Schema for normalized routing metadata available to event-trigger runs (`${{ meta.* }}` in schema_version 2 loops, `{{ .inputs.meta.* }}` in schema_version 1) and to event conditions/mappings at `meta.*`.',
     )
 
 
-class Kind2(StrEnum):
+class Kind1(StrEnum):
+    """
+    Whether the prefix names a platform capability or an authoring utility namespace.
+    """
+
     capability = 'capability'
     utility = 'utility'
 
 
 class EventCatalogReservedPrefix(BaseModel):
+    """
+    A recognized event namespace that is not itself triggerable.
+    """
+
     model_config = ConfigDict(
         extra='forbid',
     )
-    prefix: str
-    kind: Kind2
+    prefix: str = Field(..., description='Reserved top-level event prefix.')
+    kind: Kind1 = Field(
+        ...,
+        description='Whether the prefix names a platform capability or an authoring utility namespace.',
+    )
 
 
 class Reason(StrEnum):
@@ -886,6 +836,10 @@ class Source1(StrEnum):
 
 
 class ModelOption(BaseModel):
+    """
+    One selectable LLM model in the project model catalog.
+    """
+
     model_config = ConfigDict(
         extra='forbid',
     )
@@ -905,6 +859,10 @@ class ModelOption(BaseModel):
 
 
 class EnvironmentProvider(StrEnum):
+    """
+    Backing provider: `sprites`, `cloudflare_containers`, or `worker`.
+    """
+
     sprites = 'sprites'
     cloudflare_containers = 'cloudflare_containers'
     worker = 'worker'
@@ -912,7 +870,7 @@ class EnvironmentProvider(StrEnum):
 
 class ProvisionEnvironmentProvider(StrEnum):
     """
-    Providers the control plane can provision on demand. Excludes `worker`: worker-provided environments are registered out-of-band via the attach endpoint and are never provisioned through create/acquire.
+    Providers the control plane can provision on demand: `sprites` or `cloudflare_containers`. Excludes `worker`: worker-provided environments are registered out-of-band via the attach endpoint and are never provisioned through create/acquire.
     """
 
     sprites = 'sprites'
@@ -921,7 +879,7 @@ class ProvisionEnvironmentProvider(StrEnum):
 
 class EnvironmentStatus(StrEnum):
     """
-    Lifecycle status of an environment.
+    Lifecycle status: `provisioning`, `ready`, `running`, `retained`, `destroying`, `destroyed`, `failed`, or `orphaned`.
     """
 
     provisioning = 'provisioning'
@@ -944,20 +902,6 @@ class EnvironmentLifetime(StrEnum):
     explicit = 'explicit'
 
 
-class EnvironmentPurpose(StrEnum):
-    """
-    Declared purpose for an environment; used for routing and cleanup defaults.
-    """
-
-    implementation = 'implementation'
-    review = 'review'
-    verification = 'verification'
-    preview = 'preview'
-    debug = 'debug'
-    worker = 'worker'
-    custom = 'custom'
-
-
 class EnvironmentMode(StrEnum):
     """
     High-level ownership policy for how Mobius plans to use the environment. `run` is one-shot and auto-cleaned with a run; `agent` and `loop` are persistent environment policies; `manual` is operator controlled.
@@ -969,23 +913,9 @@ class EnvironmentMode(StrEnum):
     loop = 'loop'
 
 
-class EnvironmentBoundToType(StrEnum):
-    """
-    Execution or lifecycle object this environment is bound to. Ownership remains in `owned_by`.
-    """
-
-    none = 'none'
-    run = 'run'
-    worker_session = 'worker_session'
-    service = 'service'
-    agent = 'agent'
-    loop = 'loop'
-    manual = 'manual'
-
-
 class EnvironmentRetentionPolicy(StrEnum):
     """
-    Whether a finished environment is retained or destroyed, and under what outcome.
+    Retention behavior: `manual`, `destroy_on_success`, `retain_on_failure`, or `retain_always`.
     """
 
     manual = 'manual'
@@ -995,6 +925,10 @@ class EnvironmentRetentionPolicy(StrEnum):
 
 
 class EnvironmentCleanupStatus(StrEnum):
+    """
+    Cleanup outcome: `none`, `pending`, `succeeded`, `failed`, or `skipped`.
+    """
+
     none = 'none'
     pending = 'pending'
     succeeded = 'succeeded'
@@ -1002,39 +936,48 @@ class EnvironmentCleanupStatus(StrEnum):
     skipped = 'skipped'
 
 
-class EnvironmentLeaseStatus(StrEnum):
-    active = 'active'
-    released = 'released'
-    expired = 'expired'
-    revoked = 'revoked'
-
-
 class TemplateId(StrEnum):
+    """
+    Environment template used to initialize the workspace; currently `coding-default`.
+    """
+
     coding_default = 'coding-default'
 
 
 class Environment(BaseModel):
+    """
+    Durable execution environment record and provider state.
+    """
+
     model_config = ConfigDict(
         extra='forbid',
     )
-    id: str
-    name: str
-    scope: ResourceScope | None = None
-    provider: EnvironmentProvider
-    provider_resource_id: str | None = None
-    provider_resource_name: str | None = None
-    status: EnvironmentStatus
-    environment_mode: EnvironmentMode
-    lifetime: EnvironmentLifetime
-    purpose: EnvironmentPurpose | None = None
+    id: str = Field(..., description='Unique environment identifier.')
+    name: str = Field(..., description='Human-readable environment name.')
+    scope: ResourceScope | None = Field(
+        None, description='Naming scope for this environment.'
+    )
+    provider: EnvironmentProvider = Field(
+        ..., description='Backing environment provider.'
+    )
+    provider_resource_id: str | None = Field(
+        None, description='Provider-side resource identifier, when known.'
+    )
+    provider_resource_name: str | None = Field(
+        None, description='Provider-side display name, when known.'
+    )
+    status: EnvironmentStatus = Field(
+        ..., description='Current provisioning and lifecycle status.'
+    )
+    environment_mode: EnvironmentMode = Field(
+        ..., description='Reuse policy Mobius derived for the environment.'
+    )
+    lifetime: EnvironmentLifetime = Field(
+        ..., description='How long the environment is expected to live.'
+    )
     owned_by: str | None = Field(
         None,
         description="Principal owner ID. For agent-started work, this is the agent's principal ID.",
-    )
-    bound_to_type: EnvironmentBoundToType | None = None
-    bound_to_id: str | None = Field(
-        None,
-        description='ID of the run, worker session, service, or manual association named by `bound_to_type`.',
     )
     created_by: str | None = Field(
         None, description='User ID of the principal who created this environment.'
@@ -1042,53 +985,89 @@ class Environment(BaseModel):
     updated_by: str | None = Field(
         None, description='User ID of the principal who last updated this environment.'
     )
-    run_id: str | None = None
-    job_id: str | None = None
-    current_worker_session_id: str | None = None
-    agent_id: str | None = None
-    template_id: TemplateId | None = None
-    capabilities: list[str] = Field(..., max_length=50)
-    spec_version: int = Field(..., ge=1)
-    spec: dict[str, Any] | None = None
+    run_id: str | None = Field(
+        None, description='Associated run ID, when bound to a run.'
+    )
+    job_id: str | None = Field(
+        None, description='Associated job ID, when a worker job is active.'
+    )
+    current_worker_session_id: str | None = Field(
+        None,
+        description='Worker session currently attached to this environment, when any.',
+    )
+    agent_id: str | None = Field(
+        None, description='Associated agent ID, when bound to an agent.'
+    )
+    template_id: TemplateId | None = Field(
+        None,
+        description='Environment template used to initialize the workspace; currently `coding-default`.',
+    )
+    capabilities: list[str] = Field(
+        ...,
+        description='Capability strings the environment can provide.',
+        max_length=50,
+    )
+    spec_version: int = Field(
+        ..., description='Version of the environment spec format.', ge=1
+    )
+    spec: dict[str, Any] | None = Field(
+        None, description='Provider-specific desired state.'
+    )
     runtime: dict[str, Any] = Field(
         ...,
         description='Provider-observed runtime data. URLs live under runtime.urls, with runtime.urls.primary as the primary URL when present.',
     )
-    tags: TagMap | None = None
-    contains_secrets: bool
-    cleanup_status: EnvironmentCleanupStatus
-    retention_policy: EnvironmentRetentionPolicy
-    lease_expires_at: AwareDatetime | None = None
-    last_seen_at: AwareDatetime | None = None
-    last_reconciled_at: AwareDatetime | None = None
-    last_error: str | None = None
-    created_at: AwareDatetime
-    updated_at: AwareDatetime
-    destroyed_at: AwareDatetime | None = None
-
-
-class EnvironmentLease(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
+    tags: TagMap | None = Field(
+        None, description='Optional labels for filtering and organization.'
     )
-    id: str
-    environment_id: str
-    holder_type: EnvironmentBoundToType | None = None
-    holder_id: str | None = None
-    purpose: EnvironmentPurpose | None = None
-    status: EnvironmentLeaseStatus
-    acquired_at: AwareDatetime
-    expires_at: AwareDatetime | None = None
-    released_at: AwareDatetime | None = None
+    contains_secrets: bool = Field(
+        ...,
+        description='Whether the spec or runtime metadata references secret material.',
+    )
+    cleanup_status: EnvironmentCleanupStatus = Field(
+        ..., description='Last cleanup outcome.'
+    )
+    retention_policy: EnvironmentRetentionPolicy = Field(
+        ..., description='Retention behavior after work completes.'
+    )
+    lease_expires_at: AwareDatetime | None = Field(
+        None, description='Expiration time for the active lease, when leased.'
+    )
+    last_seen_at: AwareDatetime | None = Field(
+        None, description='Last time the provider or worker reported the environment.'
+    )
+    last_reconciled_at: AwareDatetime | None = Field(
+        None, description='Last reconciliation attempt time.'
+    )
+    last_error: str | None = Field(
+        None, description='Latest provider or worker error, when present.'
+    )
+    created_at: AwareDatetime = Field(
+        ..., description='Time the environment record was created.'
+    )
+    updated_at: AwareDatetime = Field(
+        ..., description='Time the environment record was last updated.'
+    )
+    destroyed_at: AwareDatetime | None = Field(
+        None, description='Time the environment was destroyed, when terminal.'
+    )
 
 
 class EnvironmentListResponse(BaseModel):
+    """
+    Cursor-paginated list of environments.
+    """
+
     model_config = ConfigDict(
         extra='forbid',
     )
-    items: list[Environment]
-    has_more: bool
-    next_cursor: str | None = None
+    items: list[Environment] = Field(
+        ..., description='Environments in the current page.'
+    )
+    has_more: bool = Field(..., description='Whether another page is available.')
+    next_cursor: str | None = Field(
+        None, description='Cursor to pass on the next request when `has_more` is true.'
+    )
 
 
 class TemplateId1(StrEnum):
@@ -1100,56 +1079,38 @@ class TemplateId1(StrEnum):
 
 
 class CreateEnvironmentRequest(BaseModel):
+    """
+    Request body for creating a managed environment.
+    """
+
     model_config = ConfigDict(
         extra='forbid',
     )
     name: str | None = Field(None, description='Human-readable environment name.')
-    scope: ResourceScope | None = None
-    provider: ProvisionEnvironmentProvider | None = None
-    environment_mode: EnvironmentMode | None = None
-    purpose: EnvironmentPurpose | None = None
+    scope: ResourceScope | None = Field(
+        None, description='Optional naming scope for the environment.'
+    )
+    provider: ProvisionEnvironmentProvider | None = Field(
+        None, description='Provider to provision: `sprites` or `cloudflare_containers`.'
+    )
     owned_by: str | None = Field(
         None, description='Canonical user owner ID. Defaults to the authenticated user.'
     )
-    bound_to_type: EnvironmentBoundToType | None = None
-    bound_to_id: str | None = Field(
-        None,
-        description='ID of the object the environment is bound to (paired with `bound_to_type`).',
-    )
-    lifetime: EnvironmentLifetime | None = None
     template_id: TemplateId1 | None = Field(
         None, description='V1 supports only coding-default.'
     )
-    spec: dict[str, Any] | None = None
-    tags: TagMap | None = None
-    retention_policy: EnvironmentRetentionPolicy | None = None
-
-
-class AttachWorkerEnvironmentRequest(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
+    spec: dict[str, Any] | None = Field(
+        None, description='Provider-specific desired state.'
     )
-    name: str = Field(
-        ..., description='Stable per-workspace environment name; the idempotency key.'
+    tags: TagMap | None = Field(
+        None, description='Labels used for filtering, ownership, or cleanup policy.'
     )
-    environment_mode: EnvironmentMode | None = None
-    bound_to_type: EnvironmentBoundToType | None = None
-    bound_to_id: str | None = Field(
-        None,
-        description='ID of the object the environment is bound to (paired with `bound_to_type`).',
-    )
-    workspace_path: str | None = Field(
-        None, description='Worker-host path backing the environment (informational).'
-    )
-    tags: TagMap | None = None
 
 
 class UpdateEnvironmentRequest(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    purpose: EnvironmentPurpose | None = None
-    retention_policy: EnvironmentRetentionPolicy | None = None
     scope: ResourceScope | None = Field(
         None,
         description='Resource scope; send null to return to the project/default scope.',
@@ -1157,261 +1118,8 @@ class UpdateEnvironmentRequest(BaseModel):
     owned_by: str | None = Field(
         None, description='Canonical user owner ID. Send null to clear ownership.'
     )
-    bound_to_type: EnvironmentBoundToType | None = None
-    bound_to_id: str | None = Field(
-        None,
-        description='ID of the object the environment is bound to; send null to clear.',
-    )
-    tags: TagMap | None = None
-
-
-class AcquireEnvironmentRequest(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    environment_id: str | None = Field(
-        None,
-        description='Existing environment ID to claim; omit to create a new environment.',
-    )
-    template_id: TemplateId1 | None = Field(
-        None, description='V1 supports only coding-default.'
-    )
-    name: str | None = Field(
-        None, description='Human-readable environment name (used when creating).'
-    )
-    scope: ResourceScope | None = None
-    provider: ProvisionEnvironmentProvider | None = None
-    environment_mode: EnvironmentMode | None = None
-    purpose: EnvironmentPurpose | None = None
-    holder_type: EnvironmentBoundToType | None = None
-    holder_id: str | None = Field(
-        None, description='ID of the lease holder (paired with `holder_type`).'
-    )
-    owned_by: str | None = Field(
-        None, description='Canonical user owner ID. Defaults to the authenticated user.'
-    )
-    bound_to_type: EnvironmentBoundToType | None = None
-    bound_to_id: str | None = Field(
-        None,
-        description='ID of the object the environment is bound to (paired with `bound_to_type`).',
-    )
-    lifetime: EnvironmentLifetime | None = None
-    spec: dict[str, Any] | None = None
-    tags: TagMap | None = None
-    lease_ttl: str | None = Field(
-        None, description='Go duration string, for example 30m or 2h.'
-    )
-
-
-class EnvironmentAcquireResult(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    environment: Environment
-    lease: EnvironmentLease
-
-
-class ExecEnvironmentRequest(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    command: list[str] = Field(
-        ..., description='Command and arguments to run, as an argv array.', min_length=1
-    )
-    dir: str | None = Field(
-        None,
-        description='Working directory for the command (defaults to the workspace root).',
-    )
-    env: list[str] | None = Field(
-        None, description='Extra environment variables as `KEY=VALUE` strings.'
-    )
-    stdin: str | None = Field(
-        None, description='Standard input to pipe to the command.'
-    )
-
-
-class EnvironmentExecResult(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    stdout: str
-    stderr: str
-    exit_code: int
-
-
-class WriteEnvironmentFileRequest(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    path: str = Field(..., description='Destination file path inside the environment.')
-    content: str = Field(..., description='File content to write.')
-
-
-class StartEnvironmentWorkerRequest(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    api_url: str | None = None
-    managed_runtime: bool | None = Field(
-        None,
-        description='Install/refresh the managed Mobius runtime bundle before starting the worker. Defaults to true unless `command` is supplied.',
-    )
-    runtime_version: str | None = Field(
-        None,
-        description='Runtime bundle version to install. Defaults to the server-configured runtime version.',
-    )
-    worker_name: str | None = Field(
-        None,
-        description='Friendly worker session name. Defaults to the environment name.',
-    )
-    queues: list[str] | None = Field(
-        None, description='Job queues the worker should claim from (defaults to all).'
-    )
-    action_names: list[str] | None = Field(
-        None, description='Restrict the worker to these action names.'
-    )
-    concurrency: int | None = Field(
-        None, description='Maximum number of jobs to run concurrently.', ge=1
-    )
-    command: list[str] | None = Field(
-        None, description='Override the worker command and arguments, as an argv array.'
-    )
-    dir: str | None = Field(
-        None, description='Working directory for the worker process.'
-    )
-
-
-class EnvironmentStartWorkerResult(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    environment: Environment
-    api_key_id: str
-    key_expires_at: AwareDatetime
-    managed_runtime: bool
-    runtime_version: str
-    runtime_installed_at: AwareDatetime | None = None
-    worker_log_path: str
-    worker_session_id: str | None = None
-    stdout: str
-    stderr: str
-    exit_code: int
-
-
-class EnvironmentWorkerLogsResponse(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    environment_id: str
-    log_name: str
-    log_path: str
-    tail: int
-    content: str
-    stderr: str | None = None
-    exit_code: int
-
-
-class Operation(StrEnum):
-    """
-    Git operation the minted credential will authorize.
-    """
-
-    clone = 'clone'
-    fetch = 'fetch'
-    push = 'push'
-
-
-class CreateEnvironmentGitCredentialRequest(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    repo_full_name: str = Field(
-        ..., description='GitHub `owner/name` repository full name.'
-    )
-    operation: Operation = Field(
-        'clone', description='Git operation the minted credential will authorize.'
-    )
-
-
-class EnvironmentGitCredentialResult(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    host: str
-    username: str
-    token: str = Field(
-        ..., description='One-time GitHub installation token. Do not log or persist.'
-    )
-    expires_at: AwareDatetime
-    repo_full_name: str
-
-
-class InstanceStatus(StrEnum):
-    """
-    High-level lifecycle indicator for the row.
-    * `active` — recent heartbeat, healthy.
-    * `stale` — no heartbeat within the staleness window; row
-    retained for display until the 30-day delete floor.
-    * `draining` — explicit graceful-shutdown signal from the
-    SDK (reserved for future SDK releases).
-
-    Conflicts (a different process tried to register this `worker_instance_id` within the takeover window and was rejected) are surfaced inline as a 409 from the worker protocol; the previous registration's row remains `active` and never appears as a separate "conflicting" entry.
-    """
-
-    active = 'active'
-    stale = 'stale'
-    draining = 'draining'
-
-
-class Status1(StrEnum):
-    """
-    Current job lifecycle state.
-    """
-
-    pending = 'pending'
-    claimed = 'claimed'
-    completed = 'completed'
-    failed = 'failed'
-    cancelled = 'cancelled'
-
-
-class WorkerSessionJobRef(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    id: str = Field(..., description='Job ID.')
-    run_id: str = Field(..., description='Loop run that owns the job.')
-    step_name: str = Field(..., description='Loop step name.')
-    action: str = Field(..., description='Action executed by the worker.')
-    status: Status1 = Field(..., description='Current job lifecycle state.')
-    claimed_at: AwareDatetime | None = Field(
-        None, description='Timestamp when the worker claimed the job.'
-    )
-    heartbeat_at: AwareDatetime | None = Field(
-        None, description='Most recent heartbeat timestamp while the job is claimed.'
-    )
-    updated_at: AwareDatetime = Field(..., description='Last job update timestamp.')
-
-
-class WorkerSessionTotals(BaseModel):
-    """
-    Project-wide rollup of the rendered worker sessions. Useful for the page header — "3 active instances · 18 slots · 7 busy · 1 stale" — without iterating items client-side.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    active_instances: int = Field(
-        ..., description='Count of `instance_status == "active"` rows.', ge=0
-    )
-    slots: int = Field(
-        ..., description='Sum of `concurrency_limit` across active rows.', ge=0
-    )
-    busy: int = Field(
-        ..., description='Sum of `busy_job_count` across active rows.', ge=0
-    )
-    stale: int = Field(
-        ..., description='Count of `instance_status == "stale"` rows.', ge=0
+    tags: TagMap | None = Field(
+        None, description='Replacement labels; send an empty object to clear all tags.'
     )
 
 
@@ -1559,7 +1267,7 @@ class WorkerSocketJobsClaimFrame(BaseModel):
     models: list[WorkerSocketModelCapability] | None = None
 
 
-class Kind3(StrEnum):
+class Kind2(StrEnum):
     action_execution = 'action_execution'
     llm_generation = 'llm_generation'
 
@@ -1584,7 +1292,7 @@ class WorkerSocketClaimedJob(BaseModel):
         extra='forbid',
     )
     id: str = Field(..., description='Job ID.')
-    kind: Kind3
+    kind: Kind2
     origin: Origin
     executor_kind: ExecutorKind
     queue: str
@@ -1671,7 +1379,7 @@ class Type8(StrEnum):
     job_report = 'job.report'
 
 
-class Status2(StrEnum):
+class Status1(StrEnum):
     completed = 'completed'
     failed = 'failed'
     cancelled = 'cancelled'
@@ -1687,7 +1395,7 @@ class WorkerSocketJobReportFrame(BaseModel):
     lease_token: str = Field(
         ..., description='Opaque per-job lease fence returned by claim.'
     )
-    status: Status2 = 'completed'
+    status: Status1 = 'completed'
     result: dict[str, Any] | None = None
     error_type: str | None = None
     error_message: str | None = None
@@ -1839,7 +1547,9 @@ class CreateProjectRequest(BaseModel):
     access_mode: ProjectAccessMode | None = Field(
         None, description='Initial project access policy: `org_open` or `restricted`.'
     )
-    tags: TagMap | None = Field(None, description='Initial tag set.')
+    tags: TagMap | None = Field(
+        None, description='Initial labels used for filtering, ownership, or automation.'
+    )
 
 
 class UpdateProjectRequest(BaseModel):
@@ -1856,12 +1566,8 @@ class UpdateProjectRequest(BaseModel):
         None,
         description='When transitioning from `org_open` to `restricted`, set true to insert all current org members as project members so nobody loses visibility on the flip. Ignored on other transitions.',
     )
-    default_agent_role_id: str | None = Field(
-        None,
-        description='Replacement role assigned to the auto-created agent principal of any new agent in this project. `null` clears the override and falls through to the system `Agent` role floor. Must resolve to a system-defined role or a role scoped to this project.',
-    )
     tags: TagMap | None = Field(
-        None, description='When supplied, replaces the user tag set on the project.'
+        None, description='Replacement labels; send an empty object to clear all tags.'
     )
 
 
@@ -1905,7 +1611,8 @@ class Webhook(BaseModel):
         None, description='User ID of the principal who last updated this webhook.'
     )
     tags: TagMap | None = Field(
-        None, description='Resource tags applied to this webhook.'
+        None,
+        description='Free-form labels used for filtering, ownership, or delivery policy.',
     )
     secret_ref: str | None = Field(
         None,
@@ -2011,7 +1718,9 @@ class CreateWebhookRequest(BaseModel):
         None,
         description='Whether the webhook starts enabled. Defaults to true when omitted.',
     )
-    tags: TagMap | None = Field(None, description='Initial tag set.')
+    tags: TagMap | None = Field(
+        None, description='Initial labels to apply to the webhook.'
+    )
 
 
 class UpdateWebhookRequest(BaseModel):
@@ -2029,8 +1738,7 @@ class UpdateWebhookRequest(BaseModel):
         description='Set to false to disable delivery without deleting the webhook.',
     )
     tags: TagMap | None = Field(
-        None,
-        description='When supplied, replaces the user tag set on the webhook. System tags (`mobius:*`) are preserved.',
+        None, description='Replacement labels; send an empty object to clear all tags.'
     )
 
 
@@ -2065,7 +1773,7 @@ class PingWebhookResult(BaseModel):
 
 class AgentMessagingDMPolicy(StrEnum):
     """
-    Direct-message access policy for the binding.
+    Direct-message access policy: `open`, `allowlist`, or `disabled`.
     """
 
     open = 'open'
@@ -2075,7 +1783,7 @@ class AgentMessagingDMPolicy(StrEnum):
 
 class AgentMessagingReplyMode(StrEnum):
     """
-    Reply mode for built-in messaging.
+    Reply mode for built-in messaging; currently `auto`.
     """
 
     auto = 'auto'
@@ -2083,7 +1791,7 @@ class AgentMessagingReplyMode(StrEnum):
 
 class AgentMessagingProvider(StrEnum):
     """
-    Provider supported by built-in agent messaging.
+    Provider supported by built-in agent messaging: `slack` or `telegram`.
     """
 
     slack = 'slack'
@@ -2091,12 +1799,18 @@ class AgentMessagingProvider(StrEnum):
 
 
 class AgentMessagingBinding(BaseModel):
+    """
+    Messaging provider account that an agent can answer from.
+    """
+
     model_config = ConfigDict(
         extra='forbid',
     )
     id: str = Field(..., description='Messaging binding identifier.')
     agent_id: str = Field(..., description='Agent this binding belongs to.')
-    provider: AgentMessagingProvider
+    provider: AgentMessagingProvider = Field(
+        ..., description='Messaging provider for this binding: `slack` or `telegram`.'
+    )
     integration_id: str = Field(
         ..., description='Connected integration account this binding applies to.'
     )
@@ -2115,27 +1829,43 @@ class AgentMessagingBinding(BaseModel):
         ...,
         description='Optional provider conversation allowlist. Empty means any conversation on the integration.',
     )
-    dm_policy: AgentMessagingDMPolicy
+    dm_policy: AgentMessagingDMPolicy = Field(
+        ...,
+        description='Who may direct-message this agent: `open`, `allowlist`, or `disabled`.',
+    )
     sender_allow: list[str] = Field(
         ..., description='Optional provider sender allowlist. Empty means any sender.'
     )
-    reply_mode: AgentMessagingReplyMode
-    model_route: AgentModelRoute | None = None
-    created_at: AwareDatetime
-    updated_at: AwareDatetime
+    reply_mode: AgentMessagingReplyMode = Field(
+        ..., description='How the agent replies to inbound provider messages.'
+    )
+    model_route: AgentModelRoute | None = Field(
+        None,
+        description='Optional model route override used for replies through this binding.',
+    )
+    created_at: AwareDatetime = Field(..., description='Time the binding was created.')
+    updated_at: AwareDatetime = Field(
+        ..., description='Time the binding was last updated.'
+    )
 
 
 class AgentMessagingBindingRequest(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    provider: AgentMessagingProvider
+    provider: AgentMessagingProvider = Field(
+        ..., description='Messaging provider for this binding: `slack` or `telegram`.'
+    )
     integration_id: str = Field(
         ..., description='ID of the connected integration that backs this binding.'
     )
     enabled: bool = Field(
         False,
         description='Whether the binding is active and the agent responds on this provider.',
+    )
+    replace_existing: bool = Field(
+        False,
+        description='When enabling this binding, disable any other active agent binding for the same provider account.',
     )
     dms: bool = Field(True, description='Respond to direct messages.')
     mentions: bool = Field(True, description='Respond when the agent is @-mentioned.')
@@ -2147,25 +1877,35 @@ class AgentMessagingBindingRequest(BaseModel):
         None,
         description='Channel IDs the binding is scoped to (empty means all channels).',
     )
-    dm_policy: AgentMessagingDMPolicy | None = None
+    dm_policy: AgentMessagingDMPolicy | None = Field(
+        None,
+        description='Who may direct-message this agent: `open`, `allowlist`, or `disabled`.',
+    )
     sender_allow: list[str] | None = Field(
         None,
         description='Sender IDs allowed to trigger the agent (empty means no allowlist).',
     )
-    reply_mode: AgentMessagingReplyMode | None = None
-    model_route: AgentModelRoute | None = None
+    reply_mode: AgentMessagingReplyMode | None = Field(
+        None, description='Reply behavior for provider messages; currently `auto`.'
+    )
+    model_route: AgentModelRoute | None = Field(
+        None,
+        description='Optional model route override used for replies through this binding.',
+    )
 
 
 class AgentMessagingBindingListResponse(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    items: list[AgentMessagingBinding]
+    items: list[AgentMessagingBinding] = Field(
+        ..., description='Messaging bindings configured for this agent.'
+    )
 
 
 class SessionStatus(StrEnum):
     """
-    Durable conversation session status.
+    Durable conversation session status: `active`, `archived`, or `deleted`.
     """
 
     active = 'active'
@@ -2175,7 +1915,7 @@ class SessionStatus(StrEnum):
 
 class SessionOrigin(StrEnum):
     """
-    Surface that created the session.
+    Surface that created the session: `manual`, `api`, or `loop`.
     """
 
     manual = 'manual'
@@ -2185,7 +1925,7 @@ class SessionOrigin(StrEnum):
 
 class SessionScope(StrEnum):
     """
-    Boundary used to resolve named sessions.
+    Boundary used to resolve named sessions: `agent` or `loop`.
     """
 
     agent = 'agent'
@@ -2194,7 +1934,7 @@ class SessionScope(StrEnum):
 
 class SessionVisibility(StrEnum):
     """
-    Visibility of the session in project surfaces.
+    Visibility of the session in project surfaces: `project` or `private`.
     """
 
     project = 'project'
@@ -2203,7 +1943,7 @@ class SessionVisibility(StrEnum):
 
 class SessionMessageRole(StrEnum):
     """
-    Role of one message in a session transcript.
+    Message role: `system`, `user`, `assistant`, `tool`, or `compaction`.
     """
 
     system = 'system'
@@ -2215,7 +1955,7 @@ class SessionMessageRole(StrEnum):
 
 class SessionMessageEntryType(StrEnum):
     """
-    Row type for a persisted transcript entry.
+    Transcript entry type: `message` or `compaction`.
     """
 
     message = 'message'
@@ -2224,7 +1964,7 @@ class SessionMessageEntryType(StrEnum):
 
 class AgentTurnStatus(StrEnum):
     """
-    Lifecycle status of one agent turn.
+    Agent turn lifecycle status: `running`, `waiting`, `completed`, `failed`, or `cancelled`.
     """
 
     running = 'running'
@@ -2263,7 +2003,9 @@ class AgentTurn(BaseModel):
         ...,
         description='1-based attempt number for this run-step; retries create new turns.',
     )
-    status: AgentTurnStatus
+    status: AgentTurnStatus = Field(
+        ..., description='Current lifecycle status of the agent turn.'
+    )
     seq: int | None = Field(
         None,
         description='Per-session ordering hint (cosmetic; turns are ordered by creation time).',
@@ -2274,8 +2016,10 @@ class AgentTurn(BaseModel):
     error_message: str | None = Field(
         None, description='Human-readable failure detail when the turn failed.'
     )
-    created_at: AwareDatetime
-    updated_at: AwareDatetime
+    created_at: AwareDatetime = Field(..., description='Time the turn was created.')
+    updated_at: AwareDatetime = Field(
+        ..., description='Time the turn was last updated.'
+    )
     completed_at: AwareDatetime | None = Field(
         None, description='When the turn reached a terminal status.'
     )
@@ -2291,16 +2035,21 @@ class AgentTurnListResponse(BaseModel):
 
 
 class Session(BaseModel):
+    """
+    Durable conversation transcript owned by an agent.
+    """
+
     model_config = ConfigDict(
         extra='forbid',
     )
     id: str = Field(..., description='Stable session identifier.')
-    project_id: str = Field(..., description='Project that owns this session.')
     agent_id: str = Field(..., description='Agent that owns this session.')
     title: str = Field(..., description='Human-readable session title.')
-    status: SessionStatus
-    origin: SessionOrigin
-    scope: SessionScope
+    status: SessionStatus = Field(..., description='Lifecycle status of the session.')
+    origin: SessionOrigin = Field(..., description='Surface that created the session.')
+    scope: SessionScope = Field(
+        ..., description='Boundary used to resolve the session key.'
+    )
     scope_ref_id: str = Field(
         ...,
         description='Identifier of the resource the session is scoped to (e.g. the agent for agent-scoped sessions).',
@@ -2313,7 +2062,9 @@ class Session(BaseModel):
         ...,
         description='Stable session routing key used to look up a scoped conversation (mirrors `scope_name`).',
     )
-    visibility: SessionVisibility
+    visibility: SessionVisibility = Field(
+        ..., description='Where the session appears in project UI surfaces.'
+    )
     model: str | None = Field(
         None, description='Model the session most recently exchanged tokens with.'
     )
@@ -2337,7 +2088,8 @@ class Session(BaseModel):
         ..., description='Optimistic-concurrency version. Increments on every mutation.'
     )
     last_message_at: AwareDatetime | None = Field(
-        None, description='Timestamp of the most recent message append, if any.'
+        None,
+        description='Timestamp of the most recent message append; null before any messages are stored.',
     )
     forked_from_session_id: str | None = Field(
         None, description='Source session this one was forked from, if any.'
@@ -2363,19 +2115,38 @@ class SessionListResponse(BaseModel):
     items: list[Session] = Field(..., description='The list of results for this page.')
 
 
+class SessionStreamEvent(BaseModel):
+    """
+    JSON payload of a single `data:` line on the session event stream. The SSE `event:` field carries the event type (e.g. `generation.delta`); this object carries the event-specific fields. Additional fields beyond `session_id` vary by event type.
+    """
+
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    session_id: str = Field(..., description='The session this event belongs to.')
+
+
 class SessionMessage(BaseModel):
+    """
+    One persisted message or compaction entry in a session transcript.
+    """
+
     model_config = ConfigDict(
         extra='forbid',
     )
     id: str = Field(..., description='Stable message identifier.')
     session_id: str = Field(..., description='Session this message belongs to.')
     agent_id: str = Field(..., description='Agent that owns the parent session.')
-    role: SessionMessageRole
+    role: SessionMessageRole = Field(
+        ..., description='Role of this message in the transcript.'
+    )
     content: list[dict[str, Any]] = Field(
         ...,
         description='Ordered content blocks (text, tool calls, tool results, images).',
     )
-    entry_type: SessionMessageEntryType
+    entry_type: SessionMessageEntryType = Field(
+        ..., description='Whether this row is a normal message or a compaction summary.'
+    )
     covers_through_sequence: int | None = Field(
         None,
         description='For `compaction` messages, the highest sequence number this summary covers.',
@@ -2406,10 +2177,16 @@ class SessionMessageListResponse(BaseModel):
 
 
 class AppendSessionMessage(BaseModel):
+    """
+    Message payload to append to an existing durable session.
+    """
+
     model_config = ConfigDict(
         extra='forbid',
     )
-    role: SessionMessageRole
+    role: SessionMessageRole = Field(
+        ..., description='Role to store for this appended message.'
+    )
     content: list[dict[str, Any]] = Field(
         ...,
         description='Ordered content blocks (text, tool calls, tool results, images).',
@@ -2423,113 +2200,6 @@ class AppendSessionMessage(BaseModel):
     )
 
 
-class SelectorType(StrEnum):
-    """
-    How to match action catalog names.
-    """
-
-    exact = 'exact'
-    group = 'group'
-    platform = 'platform'
-    custom = 'custom'
-    wildcard = 'wildcard'
-
-
-class ToolkitActionGrant(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    selector_type: SelectorType = Field(
-        ..., description='How to match action catalog names.'
-    )
-    selector: str = Field(
-        ...,
-        description='Selector value. Examples: `github.list_issues`, `github.*`, `platform.github.*`, `custom.*`, or `*`.',
-    )
-
-
-class Source2(StrEnum):
-    """
-    Provenance of this toolkit. `system` toolkits are built-in; `project` toolkits are user-authored.
-    """
-
-    system = 'system'
-    project = 'project'
-
-
-class Toolkit(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    id: str = Field(..., description='Toolkit ID (TypeID `kit_...`).')
-    org_id: str = Field(..., description='Organization that owns this toolkit.')
-    project_id: str = Field(..., description='Project that owns this toolkit.')
-    name: str = Field(..., description='Human-readable toolkit name.')
-    description: str | None = Field(
-        None, description="Markdown description of the toolkit's purpose."
-    )
-    source: Source2 = Field(
-        ...,
-        description='Provenance of this toolkit. `system` toolkits are built-in; `project` toolkits are user-authored.',
-    )
-    tags: TagMap | None = Field(
-        None, description='Resource tags applied to this toolkit.'
-    )
-    action_grants: list[ToolkitActionGrant] = Field(
-        ...,
-        description='Action selectors granted by this toolkit. Each entry is matched against the unified action catalog at manifest-resolution time.',
-    )
-    created_by: str | None = Field(
-        None, description='User ID of the principal who created this toolkit.'
-    )
-    updated_by: str | None = Field(
-        None, description='User ID of the principal who last updated this toolkit.'
-    )
-    created_at: AwareDatetime = Field(..., description='Record creation timestamp.')
-    updated_at: AwareDatetime = Field(..., description='Last update timestamp.')
-
-
-class ToolkitRequest(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    name: str = Field(
-        ..., description='Human-readable toolkit name.', max_length=80, min_length=1
-    )
-    description: str | None = Field(
-        None,
-        description="Markdown description of the toolkit's purpose.",
-        max_length=1000,
-    )
-    action_grants: list[ToolkitActionGrant] | None = Field(
-        None, description='Action selectors granted by this toolkit.'
-    )
-    tags: TagMap | None = Field(
-        None, description='Resource tags to apply to this toolkit.'
-    )
-
-
-class ToolkitListResponse(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    items: list[Toolkit] = Field(..., description='The list of results for this page.')
-
-
-class ToolkitAssignment(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    agent_id: str = Field(..., description='Agent the toolkit is assigned to.')
-    toolkit_id: str = Field(..., description='Toolkit assigned to the agent.')
-    toolkit: Toolkit | None = None
-    position: int = Field(
-        ...,
-        description="Ordering position of this assignment in the agent's toolkit list.",
-    )
-    created_at: AwareDatetime = Field(..., description='Record creation timestamp.')
-
-
 class ReplaceToolkitsRequest(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
@@ -2538,204 +2208,6 @@ class ReplaceToolkitsRequest(BaseModel):
         ...,
         description='Full replace-set of toolkit IDs to assign to the agent, in desired order.',
     )
-
-
-class ToolkitAssignmentListResponse(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    items: list[ToolkitAssignment] = Field(
-        ..., description='Toolkit assignments for this agent, in position order.'
-    )
-
-
-class AgentTableAccessMode(StrEnum):
-    """
-    Table operations the agent may perform through memory bindings.
-    """
-
-    read = 'read'
-    append = 'append'
-    write = 'write'
-
-
-class AgentTableGrant(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    id: str = Field(..., description='Grant ID.')
-    agent_id: str = Field(..., description='Agent receiving access.')
-    table_id: str = Field(..., description='Stable table ID granted to the agent.')
-    access_mode: AgentTableAccessMode
-    instructions: str | None = Field(
-        None, description='Author instructions for how the agent should use this table.'
-    )
-    created_by: str | None = Field(
-        None, description='User ID of the principal who last replaced the grant set.'
-    )
-    created_at: AwareDatetime = Field(..., description='Record creation timestamp.')
-    updated_at: AwareDatetime = Field(..., description='Last update timestamp.')
-
-
-class AgentTableGrantInput(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    table_id: str = Field(..., description='Stable table ID to grant.')
-    access_mode: AgentTableAccessMode
-    instructions: str | None = Field(
-        None, description='Author instructions for how the agent should use this table.'
-    )
-
-
-class ReplaceAgentTableGrantsRequest(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    grants: list[AgentTableGrantInput] = Field(
-        ..., description='Full replacement set of table grants for the agent.'
-    )
-
-
-class AgentTableGrantListResponse(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    items: list[AgentTableGrant] = Field(
-        ..., description='Durable table memory grants for this agent.'
-    )
-
-
-class Source3(StrEnum):
-    """
-    Provenance of this skill. `system` is built-in; `project` is user-authored; `imported` came from an external bundle.
-    """
-
-    system = 'system'
-    project = 'project'
-    imported = 'imported'
-
-
-class Skill(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    id: str = Field(..., description='Skill ID (TypeID `skill_...`).')
-    org_id: str = Field(..., description='Organization that owns this skill.')
-    project_id: str = Field(..., description='Project that owns this skill.')
-    name: str = Field(..., description='Human-readable skill name.')
-    slug: str | None = Field(
-        None, description='Stable slug used in API paths and references.'
-    )
-    description: str | None = Field(
-        None, description="Markdown description of the skill's purpose."
-    )
-    source: Source3 = Field(
-        ...,
-        description='Provenance of this skill. `system` is built-in; `project` is user-authored; `imported` came from an external bundle.',
-    )
-    instructions: str = Field(
-        ..., description='Markdown instructions loaded when the skill is active.'
-    )
-    allowed_tools: list[str] = Field(
-        ...,
-        description="Canonical action names, wildcard selectors, or group references that narrow the agent's effective tool set while this skill is active. Uses the same selector vocabulary as toolkit grants.",
-    )
-    frontmatter: dict[str, Any] | None = Field(
-        None, description='Original imported frontmatter preserved for round-tripping.'
-    )
-    model_hint: str | None = Field(
-        None,
-        description='Advisory model preference; it does not override the agent model in v1.',
-    )
-    user_invocable: bool | None = Field(
-        None, description='Whether users may directly request this skill by name.'
-    )
-    tags: TagMap | None = Field(
-        None, description='Resource tags applied to this skill.'
-    )
-    created_by: str | None = Field(
-        None, description='User ID of the principal who created this skill.'
-    )
-    updated_by: str | None = Field(
-        None, description='User ID of the principal who last updated this skill.'
-    )
-    created_at: AwareDatetime = Field(..., description='Record creation timestamp.')
-    updated_at: AwareDatetime = Field(..., description='Last update timestamp.')
-
-
-class SkillRequest(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    name: str = Field(
-        ..., description='Human-readable skill name.', max_length=80, min_length=1
-    )
-    slug: str | None = Field(
-        None,
-        description='Optional stable slug. When omitted, the server derives one from `name`.',
-    )
-    description: str | None = Field(
-        None,
-        description="Markdown description of the skill's purpose.",
-        max_length=1000,
-    )
-    instructions: str = Field(
-        ...,
-        description='Markdown instructions loaded when the skill is active.',
-        min_length=1,
-    )
-    allowed_tools: list[str] | None = Field(
-        None,
-        description="Tool selectors that narrow the agent's effective tool set while this skill is active.",
-    )
-    frontmatter: dict[str, Any] | None = Field(
-        None, description='Original imported frontmatter preserved for round-tripping.'
-    )
-    model_hint: str | None = Field(
-        None,
-        description="Advisory model preference; does not override the agent's default model.",
-    )
-    user_invocable: bool | None = Field(
-        None, description='Whether users may directly request this skill by name.'
-    )
-    tags: TagMap | None = Field(
-        None, description='Resource tags to apply to this skill.'
-    )
-
-
-class ImportSkillRequest(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    content: str = Field(
-        ..., description='Full skill document, optionally with YAML frontmatter.'
-    )
-    name: str | None = Field(None, description='Optional name override.')
-
-
-class SkillListResponse(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    items: list[Skill] = Field(..., description='The list of results for this page.')
-
-
-class SkillAssignment(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    agent_id: str = Field(..., description='Agent the skill is assigned to.')
-    skill_id: str = Field(..., description='Skill assigned to the agent.')
-    skill: Skill | None = None
-    enabled: bool = Field(
-        ..., description='Whether the assignment is currently active.'
-    )
-    position: int = Field(
-        ...,
-        description="Ordering position of this assignment in the agent's skill list.",
-    )
-    created_at: AwareDatetime = Field(..., description='Record creation timestamp.')
 
 
 class ReplaceSkillsRequest(BaseModel):
@@ -2748,16 +2220,11 @@ class ReplaceSkillsRequest(BaseModel):
     )
 
 
-class SkillAssignmentListResponse(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    items: list[SkillAssignment] = Field(
-        ..., description='Skill assignments for this agent, in position order.'
-    )
-
-
 class SkillManifestEntry(BaseModel):
+    """
+    Skill entry included in a resolved agent tool manifest.
+    """
+
     model_config = ConfigDict(
         extra='forbid',
     )
@@ -2770,12 +2237,6 @@ class SkillManifestEntry(BaseModel):
         ...,
         description='Whether this skill is currently active in the resolved manifest.',
     )
-    model_hint: str | None = Field(
-        None, description='Advisory model preference for this skill.'
-    )
-    user_invocable: bool | None = Field(
-        None, description='Whether users may directly request this skill by name.'
-    )
     missing_required: list[str] | None = Field(
         None,
         description='Tool selectors the skill requires but that are not available to the agent.',
@@ -2787,6 +2248,10 @@ class SkillManifestEntry(BaseModel):
 
 
 class AgentManifestWarning(BaseModel):
+    """
+    Non-fatal warning produced while resolving an agent tool manifest.
+    """
+
     model_config = ConfigDict(
         extra='forbid',
     )
@@ -2806,31 +2271,11 @@ class AgentManifestWarning(BaseModel):
     )
 
 
-class AgentBlockedGrant(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    selector_type: str = Field(
-        ..., description='Selector kind (e.g. `action`, `wildcard`, `group`).'
-    )
-    selector: str = Field(
-        ..., description='Selector value as authored on the toolkit grant.'
-    )
-    action_name: str | None = Field(
-        None,
-        description='Canonical action name the selector resolved to, when the grant matched a real catalog entry that the agent principal is not permitted to invoke.',
-    )
-    reason: str = Field(
-        ...,
-        description='Why the grant is currently blocked (e.g. missing permission, archived action).',
-    )
-    permission_id: str | None = Field(
-        None,
-        description='ID of the missing permission, when the block was caused by an authorization gap.',
-    )
-
-
 class ResolvedActionGroup(BaseModel):
+    """
+    Action group expanded during manifest resolution.
+    """
+
     model_config = ConfigDict(
         extra='forbid',
     )
@@ -2846,14 +2291,9 @@ class CreateAgentRequest(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    role_ids: list[str] | None = Field(
-        None,
-        description="Roles to assign to the agent's principal. When omitted, the agent inherits the project's `default_agent_role_id`, falling through to the system `Agent` role floor when unset.",
-        min_length=1,
-    )
     name: str = Field(
         ...,
-        description='Project-scoped unique name for this agent. Free-form human-readable label, 1-63 characters.',
+        description='Unique name for this agent. Free-form human-readable label, 1-63 characters.',
         max_length=63,
         min_length=1,
     )
@@ -2868,15 +2308,13 @@ class CreateAgentRequest(BaseModel):
         description='Display color for this agent (Mantine palette key, e.g. `indigo`). Optional; empty falls back to a hash-derived color.',
         max_length=24,
     )
-    capabilities: list[str] | None = Field(
-        None,
-        description='Capability names used by orchestrators to select suitable agents.',
-    )
     model: str | None = Field(
         None,
-        description='Model identifier for platform agents. Any id from `GET /v1/projects/{project}/catalog/models`, optionally `provider/`-prefixed (e.g. `xai/grok-4`); bare known ids (e.g. `claude-sonnet-4-6`) are auto-detected. Empty falls back to the platform default.',
+        description='Model identifier for platform agents. Any id from `GET /v1/projects/{project_handle}/catalog/models`, optionally `provider/`-prefixed (e.g. `xai/grok-4`); bare known ids (e.g. `claude-sonnet-4-6`) are auto-detected. Empty falls back to the platform default.',
     )
-    model_route: AgentModelRoute | None = None
+    model_route: AgentModelRoute | None = Field(
+        None, description='Default route for model calls made by this agent.'
+    )
     tool_presentation: AgentToolPresentation | None = Field(
         None, description='Omit to use the create-time default, `flat`.'
     )
@@ -2884,12 +2322,14 @@ class CreateAgentRequest(BaseModel):
         None,
         description='Custom system prompt for platform agents. Empty uses the generated default.',
     )
-    tags: TagMap | None = Field(None, description='Initial tag set.')
+    tags: TagMap | None = Field(
+        None, description='Initial labels used for filtering, ownership, or automation.'
+    )
 
 
-class Status3(StrEnum):
+class Status2(StrEnum):
     """
-    Replacement agent status: `active` or `inactive`. Use DELETE to soft-delete.
+    Replacement agent status: `active` or `inactive`. Use DELETE to delete the agent.
     """
 
     active = 'active'
@@ -2922,37 +2362,154 @@ class UpdateAgentRequest(BaseModel):
         description='Replacement display color (Mantine palette key, e.g. `indigo`). Pass empty string to clear and fall back to a hash-derived color.',
         max_length=24,
     )
-    capabilities: list[str] | None = Field(
-        None, description='Replacement capability names.'
-    )
     model: str | None = Field(
         None,
-        description='Replacement model identifier for platform agents (any id from `GET /v1/projects/{project}/catalog/models`, optionally `provider/`-prefixed).',
+        description='Replacement model identifier for platform agents (any id from `GET /v1/projects/{project_handle}/catalog/models`, optionally `provider/`-prefixed).',
     )
-    model_route: AgentModelRoute | None = None
-    tool_presentation: AgentToolPresentation | None = None
+    model_route: AgentModelRoute | None = Field(
+        None,
+        description='Replacement default route for model calls made by this agent.',
+    )
+    tool_presentation: AgentToolPresentation | None = Field(
+        None,
+        description='Replacement tool presentation used by loop agent steps and channel replies.',
+    )
     system_prompt: str | None = Field(
         None, description='Replacement system prompt for platform agents.'
     )
-    status: Status3 | None = Field(
+    status: Status2 | None = Field(
         None,
-        description='Replacement agent status: `active` or `inactive`. Use DELETE to soft-delete.',
+        description='Replacement agent status: `active` or `inactive`. Use DELETE to delete the agent.',
     )
     tags: TagMap | None = Field(
-        None,
-        description='When supplied, replaces the user tag set on the agent. System tags (`mobius:*`) are preserved.',
+        None, description='Replacement labels; send an empty object to clear all tags.'
     )
+
+
+class SelectorType(StrEnum):
+    """
+    Selector type: `exact`, `group`, `platform`, `custom`, or `wildcard`.
+    """
+
+    exact = 'exact'
+    group = 'group'
+    platform = 'platform'
+    custom = 'custom'
+    wildcard = 'wildcard'
+
+
+class ToolkitAction(BaseModel):
+    """
+    Action selector included in a toolkit.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    selector_type: SelectorType = Field(
+        ...,
+        description='Selector type: `exact`, `group`, `platform`, `custom`, or `wildcard`.',
+    )
+    selector: str = Field(
+        ...,
+        description='Selector value. Examples: `github.list_issues`, `github.*`, `platform.github.*`, `custom.*`, or `*`.',
+    )
+
+
+class Source2(StrEnum):
+    """
+    Provenance of this toolkit. `system` toolkits are built-in; `project` toolkits are user-authored.
+    """
+
+    system = 'system'
+    project = 'project'
+
+
+class Toolkit(BaseModel):
+    """
+    Reusable bundle of action selectors assignable to agents.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str = Field(..., description='Toolkit ID.')
+    name: str = Field(..., description='Human-readable toolkit name.')
+    description: str | None = Field(
+        None, description="Markdown description of the toolkit's purpose."
+    )
+    source: Source2 = Field(
+        ...,
+        description='Provenance of this toolkit. `system` toolkits are built-in; `project` toolkits are user-authored.',
+    )
+    tags: TagMap | None = Field(None, description='Labels to apply to the toolkit.')
+    actions: list[ToolkitAction] = Field(
+        ...,
+        description='Action selectors provided by this toolkit. Each entry is matched against the unified action catalog at manifest-resolution time.',
+    )
+    created_by: str | None = Field(
+        None, description='ID of the principal who created this toolkit.'
+    )
+    updated_by: str | None = Field(
+        None, description='ID of the principal who last updated this toolkit.'
+    )
+    created_at: AwareDatetime = Field(..., description='Record creation timestamp.')
+    updated_at: AwareDatetime = Field(..., description='Last update timestamp.')
+
+
+class Source3(StrEnum):
+    """
+    Provenance of this skill. `system` is built-in; `project` is project-local.
+    """
+
+    system = 'system'
+    project = 'project'
+
+
+class Skill(BaseModel):
+    """
+    Reusable instruction bundle assignable to agents.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str = Field(..., description='Skill ID.')
+    name: str = Field(..., description='Human-readable skill name.')
+    description: str | None = Field(
+        None, description="Markdown description of the skill's purpose."
+    )
+    source: Source3 = Field(
+        ...,
+        description='Provenance of this skill. `system` is built-in; `project` is project-local.',
+    )
+    instructions: str = Field(
+        ..., description='Markdown instructions loaded when the skill is active.'
+    )
+    allowed_tools: list[str] | None = Field(
+        None,
+        description="Canonical action names, wildcard selectors, or group references that narrow the agent's effective tool set while this skill is active. Uses the same selector vocabulary as toolkit grants.",
+    )
+    tags: TagMap | None = Field(None, description='Labels to apply to the skill.')
+    created_by: str | None = Field(
+        None, description='ID of the principal who created this skill.'
+    )
+    updated_by: str | None = Field(
+        None, description='ID of the principal who last updated this skill.'
+    )
+    created_at: AwareDatetime = Field(..., description='Record creation timestamp.')
+    updated_at: AwareDatetime = Field(..., description='Last update timestamp.')
 
 
 class LoopStatus(StrEnum):
     """
-    Lifecycle status of a loop.
+    Loop lifecycle status: `draft`, `active`, `paused`, or `deleted`.
     """
 
     draft = 'draft'
     active = 'active'
     paused = 'paused'
-    archived = 'archived'
+    deleted = 'deleted'
 
 
 class UpdateLoopRequest(BaseModel):
@@ -2967,7 +2524,9 @@ class UpdateLoopRequest(BaseModel):
     description: str | None = Field(
         None, description="Markdown description of the loop's purpose."
     )
-    status: LoopStatus | None = None
+    status: LoopStatus | None = Field(
+        None, description='Replacement lifecycle status for the loop.'
+    )
     default_agent_id: str | None = Field(
         None,
         description='Agent used by `agent` steps that do not pin an agent explicitly.',
@@ -2979,13 +2538,12 @@ class UpdateLoopRequest(BaseModel):
     settings: dict[str, Any] | None = Field(
         None, description='Free-form loop-level settings consumed by the engine.'
     )
-    tags: dict[str, str] | None = Field(
-        None,
-        description='Free-form label map used to organise loops in listings and search.',
+    tags: TagMap | None = Field(
+        None, description='Replacement labels; send an empty object to clear all tags.'
     )
 
 
-class Status4(StrEnum):
+class Status3(StrEnum):
     """
     Publication state. `draft` is editable but not runnable; `published` is the currently runnable version; `superseded` is a prior published version retained for historical runs.
     """
@@ -3006,7 +2564,7 @@ class SchemaVersion(StrEnum):
 
 class Concurrency(StrEnum):
     """
-    Behavior when a run starts while another run of the same loop is active.
+    Concurrency behavior: `allow`, `queue`, `skip`, or `replace`.
     """
 
     allow = 'allow'
@@ -3045,19 +2603,34 @@ class LoopSpecRepository(BaseModel):
 
 
 class LoopSpecInput(BaseModel):
+    """
+    One named input accepted by a loop spec.
+    """
+
     model_config = ConfigDict(
         extra='forbid',
     )
-    type: str | None = None
-    description: str | None = None
-    required: bool | None = None
+    type: str | None = Field(
+        None, description='JSON-compatible input type expected by authoring tools.'
+    )
+    description: str | None = Field(
+        None, description='Human guidance shown when collecting the input value.'
+    )
+    required: bool | None = Field(
+        None,
+        description='Whether callers must provide this input when starting the loop.',
+    )
     default: Any | None = Field(
         None,
         description='Optional default value for this input. May be any JSON value.',
     )
 
 
-class Kind4(StrEnum):
+class Kind3(StrEnum):
+    """
+    Trigger mechanism: `http`, `schedule`, `event`, or `manual`.
+    """
+
     http = 'http'
     schedule = 'schedule'
     event = 'event'
@@ -3065,6 +2638,10 @@ class Kind4(StrEnum):
 
 
 class ConcurrencyPolicy(StrEnum):
+    """
+    Trigger concurrency behavior: `allow`, `queue`, `skip`, or `replace`.
+    """
+
     allow = 'allow'
     queue = 'queue'
     skip = 'skip'
@@ -3127,27 +2704,51 @@ class EventTriggerConfig(BaseModel):
     )
 
 
-class Kind5(StrEnum):
+class Kind4(StrEnum):
+    """
+    Step discriminator value; always `agent`.
+    """
+
     agent = 'agent'
 
 
-class Kind6(StrEnum):
+class Kind5(StrEnum):
+    """
+    Step discriminator value; always `action`.
+    """
+
     action = 'action'
 
 
-class Kind7(StrEnum):
+class Kind6(StrEnum):
+    """
+    Step discriminator value; always `sleep`.
+    """
+
     sleep = 'sleep'
 
 
-class Kind8(StrEnum):
+class Kind7(StrEnum):
+    """
+    Step discriminator value; always `wait_for_event`.
+    """
+
     wait_for_event = 'wait_for_event'
 
 
-class Kind9(StrEnum):
+class Kind8(StrEnum):
+    """
+    Step discriminator value; always `loop`.
+    """
+
     loop = 'loop'
 
 
-class Kind10(StrEnum):
+class Kind9(StrEnum):
+    """
+    Step discriminator value; always `check`.
+    """
+
     check = 'check'
 
 
@@ -3161,7 +2762,7 @@ class LoopSpecLimits(BaseModel):
     )
     budget_usd: float | None = Field(
         None,
-        description='Run budget in US dollars (1 credit = $0.01). The run halts with stop reason `budget_exceeded` at the next checkpoint (step boundary or agent tool iteration) once its metered spend reaches the ceiling; a `run.budget_warning` event fires once at 80%. Enforcement granularity is one model call or metered action — a run can overshoot by at most the call in flight. Mutually exclusive with `credit_budget`; values finer than $0.00001 (one milli-credit) are rejected at compile.',
+        description='Run budget in US dollars (1 credit = $0.01). The run halts with stop reason `budget_exceeded` at the next checkpoint (step boundary or agent tool iteration) once its metered spend reaches the ceiling; a `run.budget_warning` event fires once at 80%. Enforcement granularity is one model call or metered action — a run can overshoot by at most the call in flight. Mutually exclusive with `credit_budget`; values finer than 0.001 credit ($0.00001) are rejected at compile.',
         ge=0.0,
     )
     credit_budget: int | None = Field(
@@ -3211,14 +2812,18 @@ class LoopEnvironmentPolicy(BaseModel):
     disabled: bool | None = Field(
         None, description='Disable automatic environment allocation.'
     )
-    mode: EnvironmentMode | None = None
+    mode: EnvironmentMode | None = Field(
+        None, description='Environment ownership mode to request.'
+    )
     environment_id: str | None = Field(
         None, description='Existing dedicated environment to use for this loop.'
     )
     template_id: str | None = Field(
         None, description='Environment template to use when Mobius creates one.'
     )
-    provider: EnvironmentProvider | None = None
+    provider: EnvironmentProvider | None = Field(
+        None, description='Provider to use when Mobius creates an environment.'
+    )
     runtime_version: str | None = Field(
         None,
         description='Mobius worker runtime version to install when starting the worker.',
@@ -3227,7 +2832,9 @@ class LoopEnvironmentPolicy(BaseModel):
         None,
         description='Whether Mobius should start the managed worker automatically.',
     )
-    retention_policy: EnvironmentRetentionPolicy | None = None
+    retention_policy: EnvironmentRetentionPolicy | None = Field(
+        None, description='Cleanup behavior after the run or lease ends.'
+    )
 
 
 class Scope(StrEnum):
@@ -3242,7 +2849,7 @@ class Scope(StrEnum):
 
 class Strategy(StrEnum):
     """
-    Compaction strategy. `auto` compacts when the token threshold is exceeded.
+    Compaction strategy: `auto`, `manual`, `disabled`, or `none`.
     """
 
     auto = 'auto'
@@ -3261,7 +2868,7 @@ class CompactionPolicy(BaseModel):
     )
     strategy: Strategy | None = Field(
         None,
-        description='Compaction strategy. `auto` compacts when the token threshold is exceeded.',
+        description='Compaction strategy: `auto`, `manual`, `disabled`, or `none`.',
     )
     threshold_tokens: int | None = Field(
         None, description='Token threshold that triggers automatic compaction.', ge=1
@@ -3294,14 +2901,16 @@ class LoopAgentSessionPolicy(BaseModel):
     title: str | None = Field(
         None, description='Optional Go-template string for the session display title.'
     )
-    visibility: SessionVisibility | None = None
+    visibility: SessionVisibility | None = Field(
+        None, description='Visibility for durable sessions created from this policy.'
+    )
     compaction_policy: CompactionPolicy | None = Field(
         None,
         description='Optional per-session compaction policy merged with server defaults when the session is first created. Existing sessions keep their current compaction policy unless edited through a session-specific operation.',
         examples=[
             {
                 'strategy': 'auto',
-                'threshold_tokens': 8000,
+                'threshold_tokens': 25000,
                 'summary_model': 'claude-haiku-4-5-20251001',
             }
         ],
@@ -3309,41 +2918,38 @@ class LoopAgentSessionPolicy(BaseModel):
 
 
 class Mode(StrEnum):
+    """
+    Model route mode: `managed` or `worker`.
+    """
+
     managed = 'managed'
-    byo_provider = 'byo_provider'
     worker = 'worker'
 
 
 class LoopModelRoute(BaseModel):
+    """
+    Model-routing override for an agent step.
+    """
+
     model_config = ConfigDict(
         extra='forbid',
     )
-    mode: Mode
+    mode: Mode = Field(..., description='Model route mode: `managed` or `worker`.')
     environment_id: str | None = Field(
         None, description='Managed environment to route worker-backed model calls to.'
     )
-    provider: str | None = None
-    model: str | None = None
-    queue: str | None = None
-    required_capabilities: list[str] | None = None
-
-
-class AccessMode(StrEnum):
-    read = 'read'
-    append = 'append'
-    write = 'write'
-
-
-class LoopAgentMemoryTableRef(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
+    provider: str | None = Field(None, description='Provider or worker route name.')
+    model: str | None = Field(None, description='Model identifier for this route.')
+    queue: str | None = Field(
+        None, description='Worker queue for customer-worker model calls.'
     )
-    table_id: str
-    access_mode: AccessMode
-    instructions: str | None = None
 
 
 class ExecutionLocation(StrEnum):
+    """
+    Execution location: `managed`, `worker`, or `environment`.
+    """
+
     managed = 'managed'
     worker = 'worker'
     environment = 'environment'
@@ -3357,13 +2963,17 @@ class LoopActionStep(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    action_name: str
-    execution_location: ExecutionLocation | None = None
+    action_name: str = Field(..., description='Catalog action name to invoke.')
+    execution_location: ExecutionLocation | None = Field(
+        None, description='Execution location: `managed`, `worker`, or `environment`.'
+    )
     environment_id: str | None = Field(
         None,
         description='Managed environment to route this worker-backed action to. When omitted for `execution_location: environment`, Mobius resolves one from `spec.defaults.environment`.',
     )
-    parameters: dict[str, Any] | None = None
+    parameters: dict[str, Any] | None = Field(
+        None, description='Action parameters, after template rendering.'
+    )
 
 
 class LoopSleepStep(BaseModel):
@@ -3377,7 +2987,9 @@ class LoopSleepStep(BaseModel):
     duration: str | None = Field(
         None, description='Go duration string such as `30s`, `5m`, or `2h`.'
     )
-    until: AwareDatetime | None = None
+    until: AwareDatetime | None = Field(
+        None, description='Absolute time to resume the run.'
+    )
 
 
 class LoopWaitForEventStep(BaseModel):
@@ -3388,9 +3000,15 @@ class LoopWaitForEventStep(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    event_type: str
-    source_id: str | None = None
-    match: dict[str, Any] | None = None
+    event_type: str = Field(
+        ..., description='Event type or pattern that resumes the waiting step.'
+    )
+    source_id: str | None = Field(
+        None, description='Optional source identifier used to scope event matching.'
+    )
+    match: dict[str, Any] | None = Field(
+        None, description='Structured field match applied to incoming event payloads.'
+    )
     condition: str | None = Field(
         None, description='Optional expr predicate evaluated against `{ event, meta }`.'
     )
@@ -3407,17 +3025,17 @@ class LoopSubLoopStep(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    loop_handle: str = Field(
+    loop_id: str = Field(
         ...,
-        description='Stable handle of the loop to trigger, scoped to the same project as the parent loop.',
+        description='ID of the loop to trigger, scoped to the same project as the parent loop.',
     )
     inputs: dict[str, Any] | None = Field(
         None,
-        description="Input map handed to the child run. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions resolved against the parent run. When omitted the parent step's resolved input map is forwarded.",
+        description="Input map handed to the child run. String leaves render against the parent run before the child starts: `{{ .inputs.* }}` / `{{ .context.* }}` Go text/template actions in schema_version 1, `${{ ... }}` expr interpolations over `inputs`, `event`, `meta`, and `steps.<key>.output` in schema_version 2. When omitted the parent's run inputs are forwarded.",
     )
     condition: str | None = Field(
         None,
-        description='Optional expr predicate evaluated against the `{ inputs, context }` envelope of the parent run before the child is triggered. It must evaluate to a bool; a false result skips the step and starts no child run. Same predicate language as `wait_for_event` and event trigger conditions.',
+        description='Optional expr predicate evaluated against the `{ inputs, context }` envelope of the parent run before the child is triggered. It must evaluate to a bool; a false result skips the step and starts no child run. schema_version 1 only; replaced in 2 by the step-level `if` field.',
     )
 
 
@@ -3431,7 +3049,7 @@ class OnFail(StrEnum):
     gate = 'gate'
 
 
-class Kind11(StrEnum):
+class Kind10(StrEnum):
     """
     `expr` evaluates a deterministic predicate with the same language as step conditions and event waits. `agent` runs a bounded judge turn returning a strict `{pass, reason}` verdict; its spend counts against the run budget and it consumes one run agent turn.
     """
@@ -3441,19 +3059,23 @@ class Kind11(StrEnum):
 
 
 class LoopCheckAssertion(BaseModel):
+    """
+    One assertion evaluated by a check step.
+    """
+
     model_config = ConfigDict(
         extra='forbid',
     )
     name: str = Field(
         ..., description='Unique assertion name shown on the timeline proof row.'
     )
-    kind: Kind11 = Field(
+    kind: Kind10 = Field(
         ...,
         description='`expr` evaluates a deterministic predicate with the same language as step conditions and event waits. `agent` runs a bounded judge turn returning a strict `{pass, reason}` verdict; its spend counts against the run budget and it consumes one run agent turn.',
     )
     expr: str | None = Field(
         None,
-        description='Predicate for `kind: expr`, evaluated against the `{ inputs, context }` envelope. Required for expr assertions.',
+        description="Predicate for `kind: expr`, evaluated against the run's template environment (`{ inputs, context }` in schema_version 1; `inputs`, `event`, `meta`, and `steps.<key>.output` in schema_version 2). Required for expr assertions.",
     )
     agent: str | None = Field(
         None,
@@ -3461,7 +3083,7 @@ class LoopCheckAssertion(BaseModel):
     )
     prompt: str | None = Field(
         None,
-        description='Judge instruction for `kind: agent`, rendered with `{{ .inputs.* }}` / `{{ .context.* }}` template actions before the cited evidence is appended. Required for agent assertions.',
+        description='Judge instruction for `kind: agent`, rendered like every other templated string (`{{ .inputs.* }}` / `{{ .context.* }}` in schema_version 1, `${{ ... }}` expr interpolation in 2) before the cited evidence is appended. Required for agent assertions.',
     )
     evidence: list[str] | None = Field(
         None,
@@ -3496,7 +3118,12 @@ class LoopRetryPolicy(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    max_attempts: int | None = Field(None, ge=1, le=10)
+    max_attempts: int | None = Field(
+        None,
+        description='Total attempts allowed for the step, including the first attempt.',
+        ge=1,
+        le=10,
+    )
     delay: str | None = Field(
         None,
         description='Go duration string such as `30s`, `5m`, or `2h`. Applied between attempts for in-process (synchronous) action retries; worker-executed actions re-queue immediately for the next attempt.',
@@ -3504,37 +3131,38 @@ class LoopRetryPolicy(BaseModel):
 
 
 class OnTimeout(StrEnum):
+    """
+    Timeout behavior; currently only `fail`.
+    """
+
     fail = 'fail'
 
 
 class LoopTimeoutPolicy(BaseModel):
+    """
+    Timeout behavior for one loop step.
+    """
+
     model_config = ConfigDict(
         extra='forbid',
     )
     duration: str | None = Field(
         None, description='Go duration string such as `30s`, `5m`, or `2h`.'
     )
-    on_timeout: OnTimeout | None = None
-
-
-class ConcurrencyPolicy1(StrEnum):
-    """
-    Behavior when a fire arrives while prior runs of this loop are still active.
-    """
-
-    allow = 'allow'
-    queue = 'queue'
-    skip = 'skip'
-    replace = 'replace'
+    on_timeout: OnTimeout | None = Field(
+        None, description='Timeout behavior; currently only `fail`.'
+    )
 
 
 class LoopTrigger(BaseModel):
+    """
+    Materialized trigger created from a published loop version.
+    """
+
     model_config = ConfigDict(
         extra='forbid',
     )
     id: str = Field(..., description='Stable trigger identifier.')
-    org_id: str = Field(..., description='Organization that owns this trigger.')
-    project_id: str = Field(..., description='Project that owns this trigger.')
     loop_id: str = Field(..., description='Loop this trigger belongs to.')
     name: str = Field(..., description='Human-readable trigger name.')
     kind: str = Field(..., description='One of: http, schedule, event.')
@@ -3545,9 +3173,9 @@ class LoopTrigger(BaseModel):
         None,
         description='Kind-specific configuration (schedule cron, event matcher, HTTP-trigger options).',
     )
-    concurrency_policy: ConcurrencyPolicy1 = Field(
+    concurrency_policy: ConcurrencyPolicy = Field(
         ...,
-        description='Behavior when a fire arrives while prior runs of this loop are still active.',
+        description='Trigger concurrency behavior: `allow`, `queue`, `skip`, or `replace`.',
     )
     max_concurrent_runs: int = Field(
         ..., description='Cap on concurrent runs allowed from this trigger.', ge=1
@@ -3592,7 +3220,7 @@ class HTTPTriggerDeliveryRequest(BaseModel):
     )
 
 
-class Status5(StrEnum):
+class Status4(StrEnum):
     """
     Acceptance status of the source-event row. The only synchronous success value is `accepted`; processing happens asynchronously after the source event is durable.
     """
@@ -3600,9 +3228,9 @@ class Status5(StrEnum):
     accepted = 'accepted'
 
 
-class HTTPTriggerDeliveryResponse(BaseModel):
+class HTTPTriggerDeliveryResult(BaseModel):
     """
-    Synchronous receipt for an inbound HTTP-trigger delivery. The trigger dispatch and run start happen asynchronously after this response. Clients can poll via `GET /v1/projects/{project}/runs?source_event_id=<source_event_id>` to discover the run once the source-event processor reserves it.
+    Synchronous receipt for an inbound HTTP-trigger delivery. The trigger dispatch and run start happen asynchronously after this response. Clients can poll via `GET /v1/projects/{project_handle}/runs?source_event_id=<source_event_id>` to discover the run once the source-event processor reserves it.
     """
 
     model_config = ConfigDict(
@@ -3612,7 +3240,7 @@ class HTTPTriggerDeliveryResponse(BaseModel):
         ...,
         description='Durable source-event id (also the `dedup_key` seed). Stable across retries with the same `Idempotency-Key`.',
     )
-    status: Status5 = Field(
+    status: Status4 = Field(
         ...,
         description='Acceptance status of the source-event row. The only synchronous success value is `accepted`; processing happens asynchronously after the source event is durable.',
     )
@@ -3654,7 +3282,7 @@ class SignalLoopRunRequest(BaseModel):
 
 class Type18(StrEnum):
     """
-    Source category for the run start.
+    Source category for the run start: `api`, `trigger`, `manual`, or `signal`.
     """
 
     api = 'api'
@@ -3671,7 +3299,10 @@ class LoopRunSource(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    type: Type18 | None = Field(None, description='Source category for the run start.')
+    type: Type18 | None = Field(
+        None,
+        description='Source category for the run start: `api`, `trigger`, `manual`, or `signal`.',
+    )
     id: str | None = Field(
         None, description="Identifier within the source type's namespace."
     )
@@ -3687,7 +3318,7 @@ class LoopRunSource(BaseModel):
 
 class LoopRunStatus(StrEnum):
     """
-    Lifecycle state of a loop run.
+    Run lifecycle state: `queued`, `running`, `suspended`, `completed`, `failed`, or `cancelled`.
     """
 
     queued = 'queued'
@@ -3720,7 +3351,7 @@ class LoopRunStopReason(StrEnum):
 
 class LoopRunStepKind(StrEnum):
     """
-    The step type. `cleanup` is system-materialized — it appears in run step listings for terminal cleanup work but cannot be authored in an `LoopSpec`.
+    Step type: `agent`, `action`, `sleep`, `wait_for_event`, `interaction`, `loop`, `check`, or system-materialized `cleanup`. `cleanup` appears in run step listings for terminal cleanup work but cannot be authored in a `LoopSpec`.
     """
 
     agent = 'agent'
@@ -3735,7 +3366,7 @@ class LoopRunStepKind(StrEnum):
 
 class LoopRunStepStatus(StrEnum):
     """
-    Lifecycle state of a loop run step.
+    Step lifecycle state: `pending`, `running`, `suspended`, `completed`, `failed`, `skipped`, or `cancelled`.
     """
 
     pending = 'pending'
@@ -3749,7 +3380,7 @@ class LoopRunStepStatus(StrEnum):
 
 class Verdict(StrEnum):
     """
-    Check outcome for `check`-kind steps; absent on every other kind. A failed check routed `on_fail: continue` completes the step with `verdict: fail` — status and verdict are separate axes (the step did its job: it checked).
+    Check outcome for `check`-kind steps: `pass` or `fail`; absent on every other kind. A failed check routed `on_fail: continue` completes the step with `verdict: fail` — status and verdict are separate axes (the step did its job: it checked).
     """
 
     pass_ = 'pass'
@@ -3757,12 +3388,14 @@ class Verdict(StrEnum):
 
 
 class LoopRunStep(BaseModel):
+    """
+    One execution step inside a loop run.
+    """
+
     model_config = ConfigDict(
         extra='forbid',
     )
     id: str = Field(..., description='Stable step identifier.')
-    org_id: str = Field(..., description='Organization that owns the parent run.')
-    project_id: str = Field(..., description='Project that owns the parent run.')
     run_id: str = Field(..., description='Run this step belongs to.')
     step_key: str = Field(
         ..., description='Stable key for this step within its loop version.'
@@ -3770,8 +3403,13 @@ class LoopRunStep(BaseModel):
     step_name: str | None = Field(
         None, description='Display name from the authored spec, when present.'
     )
-    kind: LoopRunStepKind
-    status: LoopRunStepStatus
+    kind: LoopRunStepKind = Field(
+        ...,
+        description='Step kind copied from the authored spec or system cleanup step.',
+    )
+    status: LoopRunStepStatus = Field(
+        ..., description='Current lifecycle state of this run step.'
+    )
     seq: int = Field(
         ..., description='Zero-indexed ordinal of this step within its run.'
     )
@@ -3787,7 +3425,7 @@ class LoopRunStep(BaseModel):
     )
     result: Any | None = Field(
         None,
-        description='Step output (shape varies by kind); absent until completion. When the step sets `save_as`, this value is also reachable in downstream step templates at `{{ .context.<save_as> }}`.',
+        description='Step output (shape varies by kind); absent until completion. Downstream step templates reach this value at `${{ steps.<key>.output }}` (schema_version 2) or `{{ .context.<save_as> }}` (schema_version 1).',
     )
     job_id: str | None = Field(
         None, description='Worker job that executed this step, when applicable.'
@@ -3803,17 +3441,18 @@ class LoopRunStep(BaseModel):
     )
     verdict: Verdict | None = Field(
         None,
-        description='Check outcome for `check`-kind steps; absent on every other kind. A failed check routed `on_fail: continue` completes the step with `verdict: fail` — status and verdict are separate axes (the step did its job: it checked).',
+        description='Check outcome for `check`-kind steps: `pass` or `fail`; absent on every other kind. A failed check routed `on_fail: continue` completes the step with `verdict: fail` — status and verdict are separate axes (the step did its job: it checked).',
     )
     verdict_detail: dict[str, Any] | None = Field(
         None,
         description='Verdict document for `check`-kind steps: `verdict`, `on_fail`, `checks` (per-assertion results — name, kind, pass, expr or judge reason, judge identity, evidence refs), `failed` (red assertion names), and `overridden_by` / `gate` records when an approval gate resolved the verdict.',
     )
     started_at: AwareDatetime | None = Field(
-        None, description='Time the step entered `running`.'
+        None, description='Time the step entered `running`; null until the step starts.'
     )
     completed_at: AwareDatetime | None = Field(
-        None, description='Time the step reached a terminal status.'
+        None,
+        description='Time the step reached a terminal status; null until the step completes.',
     )
     created_at: AwareDatetime = Field(..., description='Record creation timestamp.')
     updated_at: AwareDatetime = Field(..., description='Last update timestamp.')
@@ -3829,12 +3468,14 @@ class LoopRunStepListResponse(BaseModel):
 
 
 class LoopRunEvent(BaseModel):
+    """
+    One durable event emitted while a loop run progresses.
+    """
+
     model_config = ConfigDict(
         extra='forbid',
     )
     id: str = Field(..., description='Stable event identifier.')
-    org_id: str = Field(..., description='Organization that owns the parent run.')
-    project_id: str = Field(..., description='Project that owns the parent run.')
     run_id: str = Field(..., description='Run this event belongs to.')
     sequence: int = Field(
         ...,
@@ -3842,7 +3483,7 @@ class LoopRunEvent(BaseModel):
     )
     event_type: str = Field(
         ...,
-        description="Event type from the run-stream taxonomy (e.g. `run.started`, `step.completed`, `wait.opened`, `action.called`, `action.completed`, `action.failed`, `artifact.created`, `limit.reached`, `usage.recorded`).\n\nGuardrail events: `run.budget_warning` fires once when run spend first reaches 80% of the run budget (payload: `credit_budget_milli`, `credit_spent_milli`, `percent`); `run.budget_exceeded` fires when the budget halts the run at a checkpoint (same payload plus the `step` it halted before). `usage.recorded` payloads carry `step_key`, the event's `credit_cost_milli`, its `budget_cost_milli` (rate-card cost counted against the run budget, nonzero even for BYOK), and the cumulative `run_credit_spent_milli`.",
+        description="Event type from the run-stream taxonomy (e.g. `run.started`, `step.completed`, `wait.opened`, `action.called`, `action.completed`, `action.failed`, `artifact.created`, `limit.reached`, `usage.recorded`).\n\nGuardrail events: `run.budget_warning` fires once when run spend first reaches 80% of the run budget (payload: `credit_budget`, `credit_spent`, `percent`); `run.budget_exceeded` fires when the budget halts the run at a checkpoint (same payload plus the `step` it halted before). `usage.recorded` payloads carry `step_key`, the event's `credit_cost`, its `budget_cost` (rate-card cost counted against the run budget, nonzero even for BYOK), and the cumulative `run_credit_spent`.",
     )
     step_id: str | None = Field(
         None, description='ID of the step this event belongs to, when applicable.'
@@ -3868,14 +3509,84 @@ class LoopRunEventListResponse(BaseModel):
     )
     next_sequence: int | None = Field(
         None,
-        description='Sequence number of the most recent event in `items`; clients can pass this back as `since_sequence` on the next poll.',
+        description='Sequence number of the most recent event in `items`; clients can pass this back as `after_sequence` on the next poll.',
     )
     has_more: bool | None = Field(
         None, description='True when more events exist after the returned page.'
     )
 
 
+class ToolkitRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    name: str = Field(
+        ..., description='Human-readable toolkit name.', max_length=80, min_length=1
+    )
+    description: str | None = Field(
+        None,
+        description="Markdown description of the toolkit's purpose.",
+        max_length=1000,
+    )
+    actions: list[ToolkitAction] | None = Field(
+        None, description='Action selectors provided by this toolkit.'
+    )
+    tags: TagMap | None = Field(None, description='Labels to apply to the toolkit.')
+
+
+class ToolkitListResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    items: list[Toolkit] = Field(..., description='The list of results for this page.')
+
+
+class SkillRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    name: str = Field(
+        ..., description='Human-readable skill name.', max_length=80, min_length=1
+    )
+    description: str | None = Field(
+        None,
+        description="Markdown description of the skill's purpose.",
+        max_length=1000,
+    )
+    instructions: str = Field(
+        ...,
+        description='Markdown instructions loaded when the skill is active.',
+        min_length=1,
+    )
+    allowed_tools: list[str] = Field(
+        [],
+        description="Tool selectors that narrow the agent's effective tool set while this skill is active.",
+    )
+    tags: TagMap | None = Field(None, description='Labels to apply to the skill.')
+
+
+class ImportSkillRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    content: str = Field(
+        ..., description='Full skill document, optionally with YAML frontmatter.'
+    )
+    name: str | None = Field(None, description='Optional name override.')
+
+
+class SkillListResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    items: list[Skill] = Field(..., description='The list of results for this page.')
+
+
 class ColumnType(StrEnum):
+    """
+    Column value type: `string`, `number`, `boolean`, `date`, `object`, `array`, or `any`.
+    """
+
     string = 'string'
     number = 'number'
     boolean = 'boolean'
@@ -3886,13 +3597,24 @@ class ColumnType(StrEnum):
 
 
 class ColumnDef(BaseModel):
+    """
+    One typed column in a table schema.
+    """
+
     model_config = ConfigDict(
         extra='forbid',
     )
-    name: str
-    type: ColumnType
-    required: bool = False
-    unique: bool = False
+    name: str = Field(..., description='Column name used as the key inside row `data`.')
+    type: ColumnType = Field(
+        ..., description='JSON-compatible value type accepted for this column.'
+    )
+    required: bool = Field(
+        False,
+        description='Whether inserts must include a non-null value for this column.',
+    )
+    unique: bool = Field(
+        False, description='Whether the column value must be unique within the table.'
+    )
     indexed: bool = Field(
         False,
         description='Marks the column as an expected filter/sort field so backends can maintain efficient indexes.',
@@ -3900,55 +3622,84 @@ class ColumnDef(BaseModel):
     default: Any | None = Field(
         None, description='Default value applied when column is absent on insert'
     )
-    description: str | None = None
-    deprecated: bool = False
+    description: str | None = Field(
+        None, description="Human-readable explanation of the column's purpose."
+    )
+    deprecated: bool = Field(
+        False, description='Whether authors should avoid using this column in new rows.'
+    )
 
 
 class IndexDef(BaseModel):
+    """
+    Declared index over one or more table columns.
+    """
+
     model_config = ConfigDict(
         extra='forbid',
     )
-    name: str
-    columns: list[str]
-    unique: bool = False
+    name: str = Field(
+        ..., description='Stable index name unique within the table schema.'
+    )
+    columns: list[str] = Field(
+        ..., description='Column names included in the index, in order.'
+    )
+    unique: bool = Field(
+        False, description='Whether the index enforces uniqueness across its columns.'
+    )
 
 
 class TableSchema(BaseModel):
+    """
+    Column and index definition for a table.
+    """
+
     model_config = ConfigDict(
         extra='forbid',
     )
-    columns: list[ColumnDef] = Field(..., max_length=200, min_length=1)
-    indexes: list[IndexDef] | None = Field(None, max_length=20)
-
-
-class TableAccessMode(StrEnum):
-    """
-    Controls read/write access to the table. "project" allows anyone with project table permissions (default for unowned tables). "private" restricts access to the owner only (default when an owner is set).
-    """
-
-    project = 'project'
-    private = 'private'
+    columns: list[ColumnDef] = Field(
+        ...,
+        description='Ordered list of columns accepted in row data.',
+        max_length=200,
+        min_length=1,
+    )
+    indexes: list[IndexDef] | None = Field(
+        None,
+        description='Optional declared indexes maintained by the backend.',
+        max_length=20,
+    )
 
 
 class Table(BaseModel):
+    """
+    Project table metadata and schema.
+    """
+
     model_config = ConfigDict(
         extra='forbid',
     )
-    id: str
-    org_id: str
-    project_id: str
-    name: str = Field(..., max_length=64, pattern='^[a-z][a-z0-9_]*$')
-    scope: ResourceScope | None = None
-    description: str | None = None
-    schema_: TableSchema = Field(..., alias='schema')
-    tags: dict[str, str] | None = None
-    owned_by: str | None = Field(
-        None,
-        description='Principal owner ID. AI-agent owners use their agent principal ID.',
-    )
-    access_mode: TableAccessMode = Field(
+    id: str = Field(..., description='Unique table identifier.')
+    name: str = Field(
         ...,
-        description='Controls read/write access. When access_mode is "private", owned_by MUST be present; the server enforces this invariant. If access_mode is omitted on create, the server defaults to "private" when an owner is set and "project" when no owner is provided.',
+        description='Lowercase snake_case table name, unique within the project.',
+        max_length=64,
+        pattern='^[a-z][a-z0-9_]*$',
+    )
+    description: str | None = Field(
+        None, description='Human-readable table description.'
+    )
+    instructions: str | None = Field(
+        None,
+        description='Optional author guidance for how this table should be used (e.g. surfaced to agents).',
+    )
+    schema_: TableSchema = Field(
+        ...,
+        alias='schema',
+        description='Column and index schema enforced for table rows.',
+    )
+    tags: TagMap | None = Field(
+        None,
+        description='Free-form labels used for filtering, ownership, or automation.',
     )
     created_by: str | None = Field(
         None, description='User ID of the principal who created this table.'
@@ -3956,33 +3707,62 @@ class Table(BaseModel):
     updated_by: str | None = Field(
         None, description='User ID of the principal who last updated this table.'
     )
-    created_at: AwareDatetime
-    updated_at: AwareDatetime
+    created_at: AwareDatetime = Field(..., description='Time the table was created.')
+    updated_at: AwareDatetime = Field(
+        ..., description='Time the table metadata or schema was last updated.'
+    )
 
 
 class TableListResponse(BaseModel):
+    """
+    Cursor-paginated list of tables.
+    """
+
     model_config = ConfigDict(
         extra='forbid',
     )
-    items: list[Table]
-    has_more: bool
-    next_cursor: str | None = None
+    items: list[Table] = Field(..., description='Tables in the current page.')
+    has_more: bool = Field(..., description='Whether another page is available.')
+    next_cursor: str | None = Field(
+        None, description='Cursor to pass on the next request when `has_more` is true.'
+    )
 
 
 class TableStats(BaseModel):
+    """
+    Point-in-time storage and indexing statistics for one table.
+    """
+
     model_config = ConfigDict(
         extra='forbid',
     )
-    table_id: str
-    row_count: int
-    approx_data_bytes: int
-    approx_index_bytes: int
-    indexed_column_count: int
-    declared_index_count: int
-    search_index_present: bool
-    generated_at: AwareDatetime
-    oldest_row_created_at: AwareDatetime | None = None
-    newest_row_updated_at: AwareDatetime | None = None
+    table_id: str = Field(..., description='Table these statistics describe.')
+    row_count: int = Field(..., description='Approximate number of rows in the table.')
+    approx_data_bytes: int = Field(
+        ..., description='Approximate bytes used by table data.'
+    )
+    approx_index_bytes: int = Field(
+        ..., description='Approximate bytes used by table indexes.'
+    )
+    indexed_column_count: int = Field(
+        ..., description='Number of columns with backend-maintained indexes.'
+    )
+    declared_index_count: int = Field(
+        ..., description='Number of indexes declared in the table schema.'
+    )
+    search_index_present: bool = Field(
+        ..., description='Whether a full-text search index is present for the table.'
+    )
+    generated_at: AwareDatetime = Field(
+        ..., description='Time this statistics snapshot was generated.'
+    )
+    oldest_row_created_at: AwareDatetime | None = Field(
+        None, description='Creation time of the oldest row, when the table has rows.'
+    )
+    newest_row_updated_at: AwareDatetime | None = Field(
+        None,
+        description='Update time of the newest changed row, when the table has rows.',
+    )
 
 
 class CreateTableRequest(BaseModel):
@@ -3991,7 +3771,7 @@ class CreateTableRequest(BaseModel):
     )
     name: str = Field(
         ...,
-        description='Table name (lowercase, snake_case); unique within the project scope.',
+        description='Table name (lowercase, snake_case); unique within the project.',
         max_length=64,
         pattern='^[a-z][a-z0-9_]*$',
     )
@@ -4000,13 +3780,16 @@ class CreateTableRequest(BaseModel):
         description='Optional human-readable description of the table.',
         max_length=1000,
     )
-    schema_: TableSchema = Field(..., alias='schema')
-    scope: ResourceScope | None = None
-    owned_by: str | None = Field(
+    instructions: str | None = Field(
         None,
-        description='Canonical user owner ID. Required when `scope` is `owner`; defaults to the authenticated user for owned table creates.',
+        description='Optional author guidance for how this table should be used (e.g. surfaced to agents).',
+        max_length=2000,
     )
-    access_mode: TableAccessMode | None = None
+    schema_: TableSchema = Field(
+        ...,
+        alias='schema',
+        description='Column and index definition for the new table.',
+    )
 
 
 class UpdateTableRequest(BaseModel):
@@ -4015,7 +3798,7 @@ class UpdateTableRequest(BaseModel):
     )
     name: str | None = Field(
         None,
-        description='Table name (lowercase, snake_case); unique within the project scope.',
+        description='Table name (lowercase, snake_case); unique within the project.',
         max_length=64,
         pattern='^[a-z][a-z0-9_]*$',
     )
@@ -4024,41 +3807,52 @@ class UpdateTableRequest(BaseModel):
         description='Optional human-readable description of the table.',
         max_length=1000,
     )
-    schema_: TableSchema | None = Field(None, alias='schema')
-    scope: ResourceScope | None = Field(
+    instructions: str | None = Field(
         None,
-        description='Set to `owner` for owner-scoped names, or null to return to the project/default scope.',
+        description='Optional author guidance for how this table should be used (e.g. surfaced to agents).',
+        max_length=2000,
     )
-    owned_by: str | None = Field(
-        None, description='Canonical user owner ID. Send null to clear ownership.'
+    schema_: TableSchema | None = Field(
+        None, alias='schema', description='Replacement column and index definition.'
     )
-    access_mode: TableAccessMode | None = None
 
 
 class TableRow(BaseModel):
+    """
+    One stored row in a project table.
+    """
+
     model_config = ConfigDict(
         extra='forbid',
     )
-    id: str
-    table_id: str
-    data: dict[str, Any]
-    version: int
-    created_at: AwareDatetime
-    updated_at: AwareDatetime
+    id: str = Field(..., description='Unique row identifier.')
+    table_id: str = Field(..., description='Table this row belongs to.')
+    data: dict[str, Any] = Field(
+        ..., description='JSON object keyed by table column name.'
+    )
+    version: int = Field(
+        ..., description='Optimistic-lock version incremented on each update.'
+    )
+    created_at: AwareDatetime = Field(..., description='Time the row was inserted.')
+    updated_at: AwareDatetime = Field(..., description='Time the row was last updated.')
 
 
 class InsertRowRequest(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    data: dict[str, Any]
+    data: dict[str, Any] = Field(
+        ..., description='JSON object keyed by table column name.'
+    )
 
 
 class UpdateRowRequest(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    data: dict[str, Any]
+    data: dict[str, Any] = Field(
+        ..., description='Replacement row data keyed by table column name.'
+    )
     version: int | None = Field(
         None,
         description='Expected version for optimistic locking. Omit or 0 to skip the check.',
@@ -4067,6 +3861,10 @@ class UpdateRowRequest(BaseModel):
 
 
 class Order(StrEnum):
+    """
+    Sort direction for this field: `asc` or `desc`.
+    """
+
     asc = 'asc'
     desc = 'desc'
 
@@ -4075,8 +3873,10 @@ class SortItem(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    field: str
-    order: Order = 'asc'
+    field: str = Field(..., description='Column name to sort by.')
+    order: Order = Field(
+        'asc', description='Sort direction for this field: `asc` or `desc`.'
+    )
 
 
 class QueryRowsRequest(BaseModel):
@@ -4086,24 +3886,32 @@ class QueryRowsRequest(BaseModel):
     filter: dict[str, Any] | None = Field(
         None, description='Column equality or operator filter'
     )
-    sort: list[SortItem] | None = Field(None, max_length=10)
+    sort: list[SortItem] | None = Field(
+        None, description='Sort clauses applied after filtering.', max_length=10
+    )
     limit: int = Field(
-        100,
-        description='Maximum number of rows to return (1–1000, default 100).',
+        20,
+        description='Maximum number of rows to return (1–100, default 20).',
         ge=1,
-        le=1000,
+        le=100,
     )
     cursor: str | None = Field(None, description='Opaque cursor from a prior response.')
 
 
-class QueryRowsResponse(BaseModel):
+class TableRowQueryListResponse(BaseModel):
+    """
+    Cursor-paginated table row query result.
+    """
+
     model_config = ConfigDict(
         extra='forbid',
     )
-    items: list[TableRow]
-    has_more: bool
-    limit: int | None = None
-    next_cursor: str | None = None
+    items: list[TableRow] = Field(..., description='Rows in the current page.')
+    has_more: bool = Field(..., description='Whether another result page is available.')
+    limit: int | None = Field(None, description='Page size used for this response.')
+    next_cursor: str | None = Field(
+        None, description='Cursor to pass on the next query when `has_more` is true.'
+    )
 
 
 class SearchRowsRequest(BaseModel):
@@ -4120,39 +3928,56 @@ class SearchRowsRequest(BaseModel):
         description='Optional column equality or operator filter applied before text search.',
     )
     limit: int = Field(
-        100,
-        description='Maximum number of rows to return (1–1000, default 100).',
+        20,
+        description='Maximum number of rows to return (1–100, default 20).',
         ge=1,
-        le=1000,
+        le=100,
     )
     cursor: str | None = Field(
         None, description='Opaque cursor from a prior search response.'
     )
 
 
-class SearchRowsResponse(BaseModel):
+class TableRowSearchListResponse(BaseModel):
+    """
+    Cursor-paginated table row search result.
+    """
+
     model_config = ConfigDict(
         extra='forbid',
     )
-    items: list[TableRow]
-    has_more: bool
-    limit: int | None = None
-    next_cursor: str | None = None
+    items: list[TableRow] = Field(
+        ..., description='Rows matching the search query and filters.'
+    )
+    has_more: bool = Field(..., description='Whether another result page is available.')
+    limit: int | None = Field(None, description='Page size used for this response.')
+    next_cursor: str | None = Field(
+        None, description='Cursor to pass on the next search when `has_more` is true.'
+    )
 
 
 class BulkInsertRowsRequest(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    rows: list[dict[str, Any]] = Field(..., max_length=1000, min_length=1)
+    rows: list[dict[str, Any]] = Field(
+        ...,
+        description='Row data objects to validate and insert.',
+        max_length=1000,
+        min_length=1,
+    )
 
 
-class BulkInsertRowsResponse(BaseModel):
+class BulkInsertRowsResult(BaseModel):
+    """
+    Result of a successful bulk row insert.
+    """
+
     model_config = ConfigDict(
         extra='forbid',
     )
-    inserted: int
-    items: list[TableRow]
+    inserted: int = Field(..., description='Number of rows inserted.')
+    items: list[TableRow] = Field(..., description='Inserted rows in request order.')
 
 
 class UpsertRowRequest(BaseModel):
@@ -4170,11 +3995,15 @@ class UpsertRowRequest(BaseModel):
     )
 
 
-class UpsertRowResponse(BaseModel):
+class UpsertRowResult(BaseModel):
+    """
+    Result of inserting or updating a row by key columns.
+    """
+
     model_config = ConfigDict(
         extra='forbid',
     )
-    row: TableRow
+    row: TableRow = Field(..., description='Row after insert or update.')
     created: bool = Field(
         ...,
         description='True when a new row was inserted; false when an existing row was updated.',
@@ -4182,15 +4011,13 @@ class UpsertRowResponse(BaseModel):
 
 
 class ArtifactState(StrEnum):
+    """
+    Artifact lifecycle state: `pending_upload`, `available`, or `failed`.
+    """
+
     pending_upload = 'pending_upload'
     available = 'available'
-    expired = 'expired'
-    deleted = 'deleted'
     failed = 'failed'
-
-
-class ArtifactStorageBackend(StrEnum):
-    mobius = 'mobius'
 
 
 class ArtifactVisibility(StrEnum):
@@ -4203,17 +4030,17 @@ class ArtifactVisibility(StrEnum):
 
 
 class Artifact(BaseModel):
+    """
+    Stored file or generated artifact metadata.
+    """
+
     model_config = ConfigDict(
         extra='forbid',
     )
-    id: str
-    org_id: str
-    project_id: str
-    owner_id: str = Field(
-        ...,
-        description='User-keyed private artifact-space owner. Empty for project-shared artifacts.',
+    id: str = Field(..., description='Unique artifact identifier.')
+    visibility: ArtifactVisibility = Field(
+        ..., description='Visibility policy for the artifact.'
     )
-    visibility: ArtifactVisibility
     run_id: str | None = Field(
         None,
         description='Loop run that produced this artifact, derived from the active worker lease.',
@@ -4226,90 +4053,90 @@ class Artifact(BaseModel):
         ...,
         description='Display name or relative virtual path. Forward slash may be used to organize artifacts inside private or shared project space.',
     )
-    mime_type: str
-    size_bytes: int
-    sha256: str | None = None
-    storage: ArtifactStorageBackend
-    tags: dict[str, str] | None = None
-    state: ArtifactState
-    created_at: AwareDatetime
+    mime_type: str = Field(
+        ..., description='MIME type recorded for the artifact content.'
+    )
+    size_bytes: int = Field(..., description='Artifact content size in bytes.')
+    sha256: str | None = Field(
+        None, description='SHA-256 digest of the artifact content, when available.'
+    )
+    state: ArtifactState = Field(..., description='Current artifact lifecycle state.')
+    created_at: AwareDatetime = Field(
+        ..., description='Time the artifact metadata was created.'
+    )
     created_by: str | None = Field(
         None,
         description='Principal ID of the actor who created this artifact. Empty for system-initiated writes.',
     )
-    updated_at: AwareDatetime | None = None
+    updated_at: AwareDatetime | None = Field(
+        None, description='Time the artifact metadata was last updated.'
+    )
     updated_by: str | None = Field(
         None,
         description='Principal ID of the actor who last updated this artifact. Empty for system-initiated writes.',
     )
-    committed_at: AwareDatetime | None = None
-    expires_at: AwareDatetime | None = None
-    deleted_at: AwareDatetime | None = None
+    committed_at: AwareDatetime | None = Field(
+        None, description='Time the artifact content became available.'
+    )
 
 
 class ArtifactListResponse(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    items: list[Artifact]
-    has_more: bool
-    next_cursor: str | None = None
-
-
-class CreateArtifactRequest(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
+    items: list[Artifact] = Field(..., description='Artifacts in the current page.')
+    has_more: bool = Field(..., description='Whether another page is available.')
+    next_cursor: str | None = Field(
+        None, description='Cursor to pass on the next request when `has_more` is true.'
     )
-    file: bytes = Field(
-        ...,
-        description='File bytes to upload into artifact storage. Multipart parts may be sent in any order; Mobius reads metadata fields and temporarily spools the file part when needed before streaming bytes to artifact storage.',
-    )
-    name: str = Field(
-        ...,
-        description='Display name or relative virtual path. Forward slash may be used to organize artifacts inside private or shared project space.',
-        max_length=256,
-    )
-    mime: str | None = Field(
-        None,
-        description='Optional MIME type override. Defaults to the uploaded file part content type, then `application/octet-stream`.',
-    )
-    size_bytes: int | None = Field(
-        None,
-        description='Optional declared file size. When supplied, Mobius verifies the streamed byte count exactly matches this value.',
-        ge=0,
-    )
-    tags: dict[str, str] | None = None
-    retain_for_seconds: int | None = Field(
-        None,
-        description='Set an artifact-specific expiry relative to upload time. Omit to keep the artifact indefinitely unless project settings configure a default TTL.',
-        ge=0,
-    )
-    retain_until: AwareDatetime | None = None
 
 
 class Method(StrEnum):
+    """
+    HTTP method to use with `url`; currently `GET`.
+    """
+
     GET = 'GET'
 
 
 class ArtifactSignedUrl(BaseModel):
+    """
+    Short-lived URL for downloading artifact content.
+    """
+
     model_config = ConfigDict(
         extra='forbid',
     )
-    url: str
-    method: Method
-    expires_at: AwareDatetime
+    url: str = Field(..., description='Signed URL to call before `expires_at`.')
+    method: Method = Field(
+        ..., description='HTTP method to use with `url`; currently `GET`.'
+    )
+    expires_at: AwareDatetime = Field(
+        ..., description='Time when the signed URL expires.'
+    )
 
 
 class ArtifactQuotaUsage(BaseModel):
+    """
+    Current artifact storage usage and quota snapshot.
+    """
+
     model_config = ConfigDict(
         extra='forbid',
     )
-    org_id: str
-    used_bytes: int
-    limit_bytes: int
-    artifact_count: int
-    pending_count: int
-    generated_at: AwareDatetime
+    used_bytes: int = Field(
+        ..., description='Bytes currently counted toward the artifact quota.'
+    )
+    limit_bytes: int = Field(..., description='Maximum bytes allowed for artifacts.')
+    artifact_count: int = Field(
+        ..., description='Number of artifacts currently counted.'
+    )
+    pending_count: int = Field(
+        ..., description='Number of artifacts waiting for content upload.'
+    )
+    generated_at: AwareDatetime = Field(
+        ..., description='Time this quota snapshot was generated.'
+    )
 
 
 class ActionCatalogEntry(BaseModel):
@@ -4352,9 +4179,9 @@ class ActionCatalogEntry(BaseModel):
     )
     risk: Risk = Field(
         ...,
-        description='Author-declared risk classification. Used by toolkit-author UIs to surface warnings and by audit views to prioritize attention.',
+        description='Author-declared risk classification: `low`, `medium`, `high`, or `critical`. Used by toolkit-author UIs to surface warnings and by audit views to prioritize attention.',
     )
-    annotations: ActionAnnotationsResponse = Field(
+    annotations: ActionAnnotations = Field(
         ...,
         description='Safe-use hints returned for this catalog action. Always present; flags default to false.',
     )
@@ -4399,12 +4226,16 @@ class EventCatalogSource(BaseModel):
         ...,
         description='Top-level dotted segment that names the source (`table`, `github`).',
     )
-    kind: Kind1 = Field(
+    kind: Kind = Field(
         ...,
         description='`integration` for provider event sources; `capability` for built-in Mobius platform event sources.',
     )
-    display_name: str
-    description: str | None = None
+    display_name: str = Field(
+        ..., description='Human-readable source name for UI pickers.'
+    )
+    description: str | None = Field(
+        None, description='Short explanation of what emits events under this prefix.'
+    )
     readiness: CapabilityReadiness = Field(
         ...,
         description='Whether this source can start a loop now. `capability` sources are always `ready`. `integration` sources are `ready` only when the project has an active, usable connection for the provider.',
@@ -4413,10 +4244,16 @@ class EventCatalogSource(BaseModel):
         None,
         description='Why an `integration` source is `needs_setup`. Omitted when `readiness` is `ready` and for `capability` sources.',
     )
-    event_types: list[EventCatalogEventType]
+    event_types: list[EventCatalogEventType] = Field(
+        ..., description='Concrete event types currently documented for this source.'
+    )
 
 
 class ModelProviderGroup(BaseModel):
+    """
+    Available model choices for one provider.
+    """
+
     model_config = ConfigDict(
         extra='forbid',
     )
@@ -4429,111 +4266,8 @@ class ModelProviderGroup(BaseModel):
         ...,
         description='Where credentials come from — a project integration (`byok`) or a platform-managed key (`platform`).',
     )
-    models: list[ModelOption]
-
-
-class WorkerSession(BaseModel):
-    """
-    Recently observed worker process for a project. Use sessions to see which machines, users, API clients, or agents are polling for work, what their configured concurrency is, and whether they appear stale.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    id: str = Field(
-        ...,
-        description='Server-assigned session row ID (`wsess_…`). Generated by the control plane on first registration; opaque to workers and stable across refreshes for a given live row.',
-    )
-    worker_instance_id: str = Field(
-        ...,
-        description='Caller-configured stable identifier for the worker process. The SDK auto-detects this from the runtime platform (Cloud Run revision, Kubernetes pod, Fly machine, Railway replica, Render instance) and falls back to a UUID. Unique within `(org_id, project_id)`.',
-    )
-    concurrency_limit: int = Field(
-        ...,
-        description='Configured maximum number of jobs this worker process will hold in flight simultaneously. Reported by the SDK on register; rendered as a saturation bar in the admin UI (`busy_job_count / concurrency_limit`).',
-        ge=1,
-    )
-    name: str | None = Field(
-        None, description='Optional human-readable name supplied in the claim request.'
-    )
-    version: str | None = Field(
-        None, description='Optional version string supplied in the claim request.'
-    )
-    last_seen_at: AwareDatetime | None = Field(
-        None,
-        description="Timestamp of this session's most recent register, claim, or job heartbeat activity. Used to compute `stale`.",
-    )
-    last_activity_at: AwareDatetime | None = Field(
-        None,
-        description='Most recent observed activity for this session, derived from `last_seen_at`, currently claimed job heartbeats, and the latest terminal job update.',
-    )
-    capabilities: list[str] | None = Field(
-        None,
-        description='Coarse capability labels advertised by the worker for routing and builder eligibility.',
-    )
-    queues: list[str] | None = Field(
-        None,
-        description='Queue names this worker can claim. Empty or absent means the default project queue set.',
-    )
-    action_names: list[str] | None = Field(
-        None,
-        description='Action names this worker can execute. Empty or absent means the worker has not advertised a narrowed action set.',
-    )
-    models: list[WorkerSocketModelCapability] | None = Field(
-        None, description='Provider/model pairs this worker can generate with.'
-    )
-    principal_id: str | None = Field(
-        None,
-        description="Principal this session authenticated as on register/heartbeat. A machine principal (kind `system`/`service`/`agent`) for deployed workers, or a human's principal when polling via the CLI. Inspect the embedded `principal.kind` to distinguish.",
-    )
-    principal: User | None = Field(
-        None,
-        description='Embedded profile for `principal_id` — the authenticating principal, human or machine. Absent only when the principal record is unavailable.',
-    )
-    api_key_id: str | None = Field(
-        None,
-        description='ID of the specific API key this session presented on its most recent register/heartbeat. Only set for API-key (machine principal) sessions; changes across credential rotations. Use together with `principal_id` to see rotation progress across a fleet.',
-    )
-    agent_id: str | None = Field(
-        None,
-        description='Agent this session represents, when the polling process declared itself as a registered agent (via `agent_id` on the claim request or via inference from its machine principal). Absent for ad-hoc worker processes that are not tied to a declared agent.',
-    )
-    environment_id: str | None = Field(
-        None,
-        description='Managed environment this worker is running inside, when Mobius started it in a Sprite or another managed execution environment.',
-    )
-    instance_status: InstanceStatus = Field(
-        ...,
-        description='High-level lifecycle indicator for the row.\n* `active` — recent heartbeat, healthy.\n* `stale` — no heartbeat within the staleness window; row\nretained for display until the 30-day delete floor.\n* `draining` — explicit graceful-shutdown signal from the\nSDK (reserved for future SDK releases).\n\nConflicts (a different process tried to register this `worker_instance_id` within the takeover window and was rejected) are surfaced inline as a 409 from the worker protocol; the previous registration\'s row remains `active` and never appears as a separate "conflicting" entry.',
-    )
-    stale: bool = Field(
-        ...,
-        description='True when `last_seen_at` is older than 90 seconds or absent. Computed at read time, not stored. Equivalent to `instance_status == "stale"`; both are returned for backward compatibility while clients update.',
-    )
-    busy_job_count: int = Field(
-        ...,
-        description='Number of jobs this worker session is currently holding.',
-        ge=0,
-    )
-    current_jobs: list[WorkerSessionJobRef] = Field(
-        ..., description='Currently claimed jobs held by this worker session.'
-    )
-    last_job: WorkerSessionJobRef | None = Field(
-        None,
-        description='Most recent completed or failed job this worker session handled.',
-    )
-
-
-class WorkerSessionListResponse(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    items: list[WorkerSession] = Field(
-        ..., description='The list of recently seen worker sessions.'
-    )
-    totals: WorkerSessionTotals = Field(
-        ...,
-        description='Aggregate counts across `items`, computed by the server so UIs do not need to re-derive them on every render.',
+    models: list[ModelOption] = Field(
+        ..., description='Models offered by this provider in display order.'
     )
 
 
@@ -4603,6 +4337,67 @@ class AppendSessionMessagesRequest(BaseModel):
     )
 
 
+class ToolkitAssignment(BaseModel):
+    """
+    Assignment linking a toolkit to an agent.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    agent_id: str = Field(..., description='Agent the toolkit is assigned to.')
+    toolkit_id: str = Field(..., description='Toolkit assigned to the agent.')
+    toolkit: Toolkit | None = Field(
+        None, description='Expanded toolkit metadata for this assignment.'
+    )
+    position: int = Field(
+        ...,
+        description="Ordering position of this assignment in the agent's toolkit list.",
+    )
+    created_at: AwareDatetime = Field(..., description='Record creation timestamp.')
+
+
+class ToolkitAssignmentListResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    items: list[ToolkitAssignment] = Field(
+        ..., description='Toolkit assignments for this agent, in position order.'
+    )
+
+
+class SkillAssignment(BaseModel):
+    """
+    Assignment linking a skill to an agent.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    agent_id: str = Field(..., description='Agent the skill is assigned to.')
+    skill_id: str = Field(..., description='Skill assigned to the agent.')
+    skill: Skill | None = Field(
+        None, description='Expanded skill metadata for this assignment.'
+    )
+    enabled: bool = Field(
+        ..., description='Whether the assignment is currently active.'
+    )
+    position: int = Field(
+        ...,
+        description="Ordering position of this assignment in the agent's skill list.",
+    )
+    created_at: AwareDatetime = Field(..., description='Record creation timestamp.')
+
+
+class SkillAssignmentListResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    items: list[SkillAssignment] = Field(
+        ..., description='Skill assignments for this agent, in position order.'
+    )
+
+
 class AgentToolManifest(BaseModel):
     """
     The flat, resolved tool set visible to one agent. Replaces the prior Capability/Action split: every entry in `tools` is an action catalog entry the agent can invoke as its own named tool.
@@ -4612,10 +4407,9 @@ class AgentToolManifest(BaseModel):
         extra='forbid',
     )
     agent_id: str = Field(..., description='Agent this manifest was resolved for.')
-    project_id: str = Field(..., description='Project the manifest is scoped to.')
     policy_hash: str = Field(
         ...,
-        description='Stable hash over the resolved tool + skill set; bumps when grants or permissions change.',
+        description='Stable hash over the resolved tool + skill set; bumps when assigned toolkits or skills change.',
     )
     toolkit_ids: list[str] = Field(
         ..., description='Toolkit IDs that contributed to the resolved manifest.'
@@ -4634,10 +4428,6 @@ class AgentToolManifest(BaseModel):
     warnings: list[AgentManifestWarning] = Field(
         ..., description='Non-fatal issues encountered while resolving the manifest.'
     )
-    blocked_grants: list[AgentBlockedGrant] = Field(
-        ...,
-        description='Grants that resolved to a catalog entry the agent cannot currently invoke.',
-    )
 
 
 class Loop(BaseModel):
@@ -4649,17 +4439,14 @@ class Loop(BaseModel):
         extra='forbid',
     )
     id: str = Field(..., description='Stable loop identifier.')
-    org_id: str = Field(..., description='Organization that owns this loop.')
-    project_id: str = Field(..., description='Project that owns this loop.')
-    handle: str = Field(
-        ...,
-        description='Stable per-project loop handle. Immutable after creation. Use it for authored references and `?handle=` resolution; address the loop resource by `id`.',
-    )
     name: str = Field(..., description='Human-readable display name.')
     description: str | None = Field(
         None, description="Markdown description of the loop's purpose."
     )
-    status: LoopStatus
+    status: LoopStatus = Field(
+        ...,
+        description='Current loop lifecycle status: `draft`, `active`, `paused`, or `deleted`.',
+    )
     owner: str | None = Field(
         None, description='User who created or currently owns this loop.'
     )
@@ -4682,9 +4469,9 @@ class Loop(BaseModel):
     settings: dict[str, Any] | None = Field(
         None, description='Free-form loop-level settings consumed by the engine.'
     )
-    tags: dict[str, str] | None = Field(
+    tags: TagMap | None = Field(
         None,
-        description='Free-form label map used to organise loops in listings and search.',
+        description='Free-form labels used for filtering, ownership, or automation.',
     )
     triggers: list[LoopTrigger] = Field(
         ..., description='Triggers that can start runs of this loop.'
@@ -4692,8 +4479,9 @@ class Loop(BaseModel):
     last_run_at: AwareDatetime | None = Field(
         None, description='Timestamp of the most recent run start, if any.'
     )
-    archived_at: AwareDatetime | None = Field(
-        None, description='Soft-archive timestamp; absent on active loops.'
+    deleted_at: AwareDatetime | None = Field(
+        None,
+        description='Timestamp when this loop was deleted; absent on active loops.',
     )
     created_at: AwareDatetime = Field(..., description='Record creation timestamp.')
     updated_at: AwareDatetime = Field(..., description='Last update timestamp.')
@@ -4714,6 +4502,10 @@ class LoopListResponse(BaseModel):
 
 
 class LoopSpecTrigger(BaseModel):
+    """
+    One trigger declaration inside a loop spec.
+    """
+
     model_config = ConfigDict(
         extra='forbid',
     )
@@ -4721,19 +4513,35 @@ class LoopSpecTrigger(BaseModel):
         None, description='Stable user-authored trigger key within the spec.'
     )
     name: str | None = Field(None, description='Human-readable trigger name.')
-    kind: Kind4
-    enabled: bool | None = None
+    kind: Kind3 = Field(
+        ..., description='Trigger mechanism: `http`, `schedule`, `event`, or `manual`.'
+    )
+    enabled: bool | None = Field(
+        None,
+        description='Whether this trigger should be materialized when the loop version is published.',
+    )
     config: HTTPTriggerConfig | ScheduleTriggerConfig | EventTriggerConfig | None = (
         Field(
             None,
             description='Kind-specific trigger configuration. Use `HTTPTriggerConfig` for `kind: http`, `ScheduleTriggerConfig` for `kind: schedule`, and `EventTriggerConfig` for `kind: event`. Omit for manual triggers.',
         )
     )
-    concurrency_policy: ConcurrencyPolicy | None = None
-    max_concurrent_runs: int | None = Field(None, ge=1)
+    concurrency_policy: ConcurrencyPolicy | None = Field(
+        None,
+        description='Trigger concurrency behavior: `allow`, `queue`, `skip`, or `replace`.',
+    )
+    max_concurrent_runs: int | None = Field(
+        None,
+        description='Maximum number of concurrently active runs for this trigger.',
+        ge=1,
+    )
 
 
 class LoopActionStepSpec(BaseModel):
+    """
+    Action step entry inside `LoopSpec.steps`.
+    """
+
     model_config = ConfigDict(
         extra='forbid',
     )
@@ -4744,14 +4552,20 @@ class LoopActionStepSpec(BaseModel):
         alias='if',
         description='Bare expr predicate evaluated before the step runs; false skips the step. Requires schema_version "2".',
     )
-    kind: Literal['action']
-    config: LoopActionStep
+    kind: Literal['action'] = Field(
+        ..., description='Step discriminator value; always `action`.'
+    )
+    config: LoopActionStep = Field(..., description='Action-step configuration.')
     input: dict[str, Any] | None = Field(
         None,
         description='Step-local input object resolved when the step starts. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions. schema_version 1 only; removed in 2 (reference inputs/event/meta/steps directly in config fields).',
     )
-    retry: LoopRetryPolicy | None = None
-    timeout: LoopTimeoutPolicy | None = None
+    retry: LoopRetryPolicy | None = Field(
+        None, description='Retry policy for this step.'
+    )
+    timeout: LoopTimeoutPolicy | None = Field(
+        None, description='Timeout policy for this step.'
+    )
     save_as: str | None = Field(
         None,
         description="Context key used to store this step's output. Defaults to `key`. schema_version 1 only; removed in 2 (outputs are always at steps.<key>.output).",
@@ -4759,6 +4573,10 @@ class LoopActionStepSpec(BaseModel):
 
 
 class LoopSleepStepSpec(BaseModel):
+    """
+    Sleep step entry inside `LoopSpec.steps`.
+    """
+
     model_config = ConfigDict(
         extra='forbid',
     )
@@ -4769,14 +4587,20 @@ class LoopSleepStepSpec(BaseModel):
         alias='if',
         description='Bare expr predicate evaluated before the step runs; false skips the step. Requires schema_version "2".',
     )
-    kind: Literal['sleep']
-    config: LoopSleepStep
+    kind: Literal['sleep'] = Field(
+        ..., description='Step discriminator value; always `sleep`.'
+    )
+    config: LoopSleepStep = Field(..., description='Sleep-step configuration.')
     input: dict[str, Any] | None = Field(
         None,
         description='Step-local input object resolved when the step starts. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions. schema_version 1 only; removed in 2 (reference inputs/event/meta/steps directly in config fields).',
     )
-    retry: LoopRetryPolicy | None = None
-    timeout: LoopTimeoutPolicy | None = None
+    retry: LoopRetryPolicy | None = Field(
+        None, description='Retry policy for this step.'
+    )
+    timeout: LoopTimeoutPolicy | None = Field(
+        None, description='Timeout policy for this step.'
+    )
     save_as: str | None = Field(
         None,
         description="Context key used to store this step's output. Defaults to `key`. schema_version 1 only; removed in 2 (outputs are always at steps.<key>.output).",
@@ -4784,6 +4608,10 @@ class LoopSleepStepSpec(BaseModel):
 
 
 class LoopWaitForEventStepSpec(BaseModel):
+    """
+    Wait-for-event step entry inside `LoopSpec.steps`.
+    """
+
     model_config = ConfigDict(
         extra='forbid',
     )
@@ -4794,14 +4622,22 @@ class LoopWaitForEventStepSpec(BaseModel):
         alias='if',
         description='Bare expr predicate evaluated before the step runs; false skips the step. Requires schema_version "2".',
     )
-    kind: Literal['wait_for_event']
-    config: LoopWaitForEventStep
+    kind: Literal['wait_for_event'] = Field(
+        ..., description='Step discriminator value; always `wait_for_event`.'
+    )
+    config: LoopWaitForEventStep = Field(
+        ..., description='Wait-for-event step configuration.'
+    )
     input: dict[str, Any] | None = Field(
         None,
         description='Step-local input object resolved when the step starts. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions. schema_version 1 only; removed in 2 (reference inputs/event/meta/steps directly in config fields).',
     )
-    retry: LoopRetryPolicy | None = None
-    timeout: LoopTimeoutPolicy | None = None
+    retry: LoopRetryPolicy | None = Field(
+        None, description='Retry policy for this step.'
+    )
+    timeout: LoopTimeoutPolicy | None = Field(
+        None, description='Timeout policy for this step.'
+    )
     save_as: str | None = Field(
         None,
         description="Context key used to store this step's output. Defaults to `key`. schema_version 1 only; removed in 2 (outputs are always at steps.<key>.output).",
@@ -4809,6 +4645,10 @@ class LoopWaitForEventStepSpec(BaseModel):
 
 
 class LoopSubLoopStepSpec(BaseModel):
+    """
+    Child-loop step entry inside `LoopSpec.steps`.
+    """
+
     model_config = ConfigDict(
         extra='forbid',
     )
@@ -4819,14 +4659,20 @@ class LoopSubLoopStepSpec(BaseModel):
         alias='if',
         description='Bare expr predicate evaluated before the step runs; false skips the step. Requires schema_version "2".',
     )
-    kind: Literal['loop']
-    config: LoopSubLoopStep
+    kind: Literal['loop'] = Field(
+        ..., description='Step discriminator value; always `loop`.'
+    )
+    config: LoopSubLoopStep = Field(..., description='Child-loop step configuration.')
     input: dict[str, Any] | None = Field(
         None,
         description='Step-local input object resolved when the step starts. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions. schema_version 1 only; removed in 2 (reference inputs/event/meta/steps directly in config fields).',
     )
-    retry: LoopRetryPolicy | None = None
-    timeout: LoopTimeoutPolicy | None = None
+    retry: LoopRetryPolicy | None = Field(
+        None, description='Retry policy for this step.'
+    )
+    timeout: LoopTimeoutPolicy | None = Field(
+        None, description='Timeout policy for this step.'
+    )
     save_as: str | None = Field(
         None,
         description="Context key used to store this step's output. Defaults to `key`. schema_version 1 only; removed in 2 (outputs are always at steps.<key>.output).",
@@ -4841,8 +4687,12 @@ class LoopSpecDefaults(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    environment: LoopEnvironmentPolicy | None = None
-    agent_session: LoopAgentSessionPolicy | None = None
+    environment: LoopEnvironmentPolicy | None = Field(
+        None, description='Default managed-environment policy for steps that need one.'
+    )
+    agent_session: LoopAgentSessionPolicy | None = Field(
+        None, description='Default durable session policy for agent steps.'
+    )
 
 
 class LoopAgentStep(BaseModel):
@@ -4853,26 +4703,40 @@ class LoopAgentStep(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    agent_id: str
-    instructions: str
+    agent_id: str = Field(..., description='Agent to run for this step.')
+    instructions: str = Field(
+        ...,
+        description='Prompt or task instructions rendered before the agent turn starts.',
+    )
     tool_names: list[str] | None = Field(
         None,
         description="Optional per-step tool allow-list. When omitted, prompt-only managed agent steps default to no tools; set `disable_tools: false` to allow the agent's full granted tool set.",
     )
     disable_tools: bool | None = Field(
         None,
-        description="Disable all tool calls for this agent step. When omitted, prompt-only managed agent steps (no `tool_names`, output schema, memory tables, or worker/BYOK model route) default to tool-less execution and skip managed environment allocation. Set `false` explicitly to opt back into the agent's granted tools.",
+        description="Disable all tool calls for this agent step. When omitted, prompt-only managed agent steps (no `tool_names`, output schema, or worker model route) default to tool-less execution and skip managed environment allocation. Set `false` explicitly to opt back into the agent's granted tools.",
     )
-    output_schema: dict[str, Any] | None = None
-    max_turns: int | None = Field(None, ge=1)
-    model_route: LoopModelRoute | None = None
-    memory_tables: list[LoopAgentMemoryTableRef] | None = None
-    session: LoopAgentSessionPolicy | None = None
+    output_schema: dict[str, Any] | None = Field(
+        None,
+        description='JSON Schema the agent should satisfy when returning structured output.',
+    )
+    max_turns: int | None = Field(
+        None,
+        description='Maximum tool iterations allowed within this agent turn.',
+        ge=1,
+    )
+    model_route: LoopModelRoute | None = Field(
+        None, description='Optional model route override for this agent step.'
+    )
+    session: LoopAgentSessionPolicy | None = Field(
+        None,
+        description='Optional durable session policy override for this agent step.',
+    )
 
 
 class LoopCheckStep(BaseModel):
     """
-    Check step configuration recognised inside `LoopSpec.steps[].config`. A check step evaluates typed assertions over the run's `{ inputs, context }` envelope — deterministic `expr` predicates, or `agent` judges for everything that isn't deterministic — records a per-assertion verdict with cited evidence, and routes on failure: fail the run (stop reason `check_failed`), continue with the red verdict on the record, or open an approval gate carrying the evidence (rejection stops the run with `gate_rejected`). All assertions are evaluated; there is no short-circuit. An assertion that errors (bad expr, judge model failure, unparseable verdict) fails closed — never a silent pass.
+    Check step configuration recognised inside `LoopSpec.steps[].config`. A check step evaluates typed assertions over the run's template environment (`{ inputs, context }` in schema_version 1; `inputs`, `event`, `meta`, and `steps.<key>.output` in schema_version 2) — deterministic `expr` predicates, or `agent` judges for everything that isn't deterministic — records a per-assertion verdict with cited evidence, and routes on failure: fail the run (stop reason `check_failed`), continue with the red verdict on the record, or open an approval gate carrying the evidence (rejection stops the run with `gate_rejected`). All assertions are evaluated; there is no short-circuit. An assertion that errors (bad expr, judge model failure, unparseable verdict) fails closed — never a silent pass.
     """
 
     model_config = ConfigDict(
@@ -4887,12 +4751,14 @@ class LoopCheckStep(BaseModel):
         'fail',
         description='Routing when any assertion fails. `fail` stops the run with stop reason `check_failed`. `continue` proceeds with the red verdict recorded. `gate` opens a `request_approval` interaction carrying the failed assertions and evidence; approval resumes the run with the verdict recorded as overridden, rejection stops it with `gate_rejected`.',
     )
-    gate: LoopCheckGate | None = None
+    gate: LoopCheckGate | None = Field(
+        None, description='Approval gate configuration used when `on_fail` is `gate`.'
+    )
 
 
 class StartLoopRunRequest(BaseModel):
     """
-    Body for `POST /v1/projects/{project}/loops/{id}/runs`. All fields are optional; an empty body starts a run with no inputs and no attribution.
+    Body for `POST /v1/projects/{project_handle}/loops/{resource_id}/runs`. All fields are optional; an empty body starts a run with no inputs and no attribution.
     """
 
     model_config = ConfigDict(
@@ -4900,16 +4766,18 @@ class StartLoopRunRequest(BaseModel):
     )
     inputs: dict[str, Any] | None = Field(
         None,
-        description='Free-form input map passed to the run. Available to steps via `{{ .inputs.<key> }}` Go text/template actions.',
+        description='Input map passed to the run. schema_version 1 loops receive it as-is and reference it via `{{ .inputs.<key> }}` Go text/template actions. schema_version 2 loops resolve it against the declared `inputs:` contract — undeclared keys are dropped, defaults fill, required inputs must resolve — and reference it via `${{ inputs.<key> }}`.',
     )
-    source: LoopRunSource | None = None
+    source: LoopRunSource | None = Field(
+        None, description='Attribution for the call that starts the run.'
+    )
     idempotency_key: str | None = Field(
         None,
         description='Caller-supplied idempotency key, scoped to (org, project). Repeat calls with the same `idempotency_key` while the prior run is still non-terminal return the existing run (same `id`). A repeat after the prior run terminated returns `409 Conflict` with code `idempotency_key_conflict` and details containing the existing run id and its terminal status.',
     )
     budget_usd: float | None = Field(
         None,
-        description="Per-run budget override in US dollars (1 credit = $0.01). Overrides the loop spec's `limits` budget for this run only. Mutually exclusive with `credit_budget` — setting both is a `400`. Values finer than $0.00001 (one milli-credit) are rejected. The run halts at the next checkpoint (step boundary or agent tool iteration) once spend reaches the budget; enforcement granularity is one model call or metered action.",
+        description="Per-run budget override in US dollars (1 credit = $0.01). Overrides the loop spec's `limits` budget for this run only. Mutually exclusive with `credit_budget` — setting both is a `400`. Values finer than 0.001 credit ($0.00001) are rejected. The run halts at the next checkpoint (step boundary or agent tool iteration) once spend reaches the budget; enforcement granularity is one model call or metered action.",
         ge=0.0,
     )
     credit_budget: int | None = Field(
@@ -4928,8 +4796,6 @@ class LoopRun(BaseModel):
         extra='forbid',
     )
     id: str = Field(..., description='Stable run identifier.')
-    org_id: str = Field(..., description='Organization that owns this run.')
-    project_id: str = Field(..., description='Project that owns this run.')
     loop_id: str = Field(..., description='Loop this run belongs to.')
     loop_name: str | None = Field(
         None, description='Human-readable name of the loop this run belongs to.'
@@ -4940,15 +4806,19 @@ class LoopRun(BaseModel):
     loop_version: int = Field(
         ..., description='Version number of the LoopVersion this run is executing.'
     )
-    status: LoopRunStatus
-    stop_reason: LoopRunStopReason | None = None
-    credit_budget_milli: int | None = Field(
-        None,
-        description="The run's budget ceiling in milli-credits (1 credit = 1,000 milli-credits = $0.01). Resolved at run start from the StartRun override, the loop spec's `limits` block, or the trial-plan default, in that order. Absent when the run is unbounded.",
+    status: LoopRunStatus = Field(
+        ..., description='Current lifecycle state of this run.'
     )
-    credit_spent_milli: int | None = Field(
+    stop_reason: LoopRunStopReason | None = Field(
+        None, description='Terminal reason recorded when the run stops.'
+    )
+    credit_budget: float | None = Field(
         None,
-        description="Metered spend attributed to this run so far, in milli-credits. Incremented atomically with each usage-ledger insert that carries this run's id. Counts all metered work regardless of credential source (BYOK calls count at their rate-card equivalent even though they bill zero credits).",
+        description="The run's budget ceiling in credits (1 credit = $0.01), with up to 3 decimal places. Resolved at run start from the StartRun override, the loop spec's `limits` block, or the trial-plan default, in that order. Absent when the run is unbounded.",
+    )
+    credit_spent: float | None = Field(
+        None,
+        description="Metered spend attributed to this run so far, in credits (up to 3 decimal places). Incremented atomically with each usage-ledger insert that carries this run's id. Counts all metered work regardless of credential source (BYOK calls count at their rate-card equivalent even though they bill zero credits).",
     )
     max_agent_turns: int | None = Field(
         None,
@@ -4960,13 +4830,23 @@ class LoopRun(BaseModel):
     )
     inputs: dict[str, Any] | None = Field(
         None,
-        description="Input map supplied when the run started, merged over the loop's `default_inputs`, and reachable in step templates at `{{ .inputs.<key> }}`. For event-kind trigger runs this is the normalized `{ event, meta }` envelope (`{{ .inputs.event.* }}`, `{{ .inputs.meta.* }}`) — see the loop templating guide.",
+        description="Input map resolved when the run started, reachable in step templates at `{{ .inputs.<key> }}` (schema_version 1) or `${{ inputs.<key> }}` (schema_version 2). In schema_version 1 event-trigger runs this is the normalized `{ event, meta }` envelope (`{{ .inputs.event.* }}`, `{{ .inputs.meta.* }}`); in schema_version 2 the trigger envelope lives in the run's `event` and `meta` fields instead and inputs hold only declared keys.",
+    )
+    event: dict[str, Any] | None = Field(
+        None,
+        description='Normalized payload of the event that started the run, reachable in schema_version 2 templates at `${{ event.* }}`: the webhook body for event triggers, the request body for HTTP triggers. Empty for manual and schedule runs.',
+    )
+    meta: dict[str, Any] | None = Field(
+        None,
+        description='Run and trigger metadata envelope, reachable in schema_version 2 templates at `${{ meta.* }}`: `run_id`, `loop_id`, `source`, `trigger`, plus trigger-supplied facts such as `event_type`, `source_event_id`, and `scheduled_at`.',
     )
     result: dict[str, Any] | None = Field(
         None,
-        description="Final result payload: the run's accumulated step outputs, keyed by each step's `save_as`. Absent until the run terminates successfully.",
+        description="Final result payload. When the loop declares an `output:` block (schema_version 2) this is that block rendered at completion; otherwise it is the run's accumulated step outputs, keyed by step key (`save_as` in schema_version 1). Absent until the run terminates successfully.",
     )
-    source: LoopRunSource | None = None
+    source: LoopRunSource | None = Field(
+        None, description='Source that started this run.'
+    )
     parent_run_id: str | None = Field(
         None,
         description='Run that triggered this run via an `loop` step. Present only on child runs; absent for top-level runs.',
@@ -5023,7 +4903,9 @@ class EventCatalogResponse(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    items: list[EventCatalogSource]
+    items: list[EventCatalogSource] = Field(
+        ..., description='Event sources available for authoring triggers.'
+    )
     reserved_prefixes: list[EventCatalogReservedPrefix] = Field(
         ...,
         description='Platform namespaces that are recognized but are not triggerable event sources. Authoring UIs use these to distinguish a recognized-but-unsupported matcher prefix from a wholly unknown one.',
@@ -5052,6 +4934,10 @@ class ModelCatalogResponse(BaseModel):
 
 
 class LoopAgentStepSpec(BaseModel):
+    """
+    Agent step entry inside `LoopSpec.steps`.
+    """
+
     model_config = ConfigDict(
         extra='forbid',
     )
@@ -5062,14 +4948,20 @@ class LoopAgentStepSpec(BaseModel):
         alias='if',
         description='Bare expr predicate evaluated before the step runs; false skips the step. Requires schema_version "2".',
     )
-    kind: Literal['agent']
-    config: LoopAgentStep
+    kind: Literal['agent'] = Field(
+        ..., description='Step discriminator value; always `agent`.'
+    )
+    config: LoopAgentStep = Field(..., description='Agent-step configuration.')
     input: dict[str, Any] | None = Field(
         None,
         description='Step-local input object resolved when the step starts. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions. schema_version 1 only; removed in 2 (reference inputs/event/meta/steps directly in config fields).',
     )
-    retry: LoopRetryPolicy | None = None
-    timeout: LoopTimeoutPolicy | None = None
+    retry: LoopRetryPolicy | None = Field(
+        None, description='Retry policy for this step.'
+    )
+    timeout: LoopTimeoutPolicy | None = Field(
+        None, description='Timeout policy for this step.'
+    )
     save_as: str | None = Field(
         None,
         description="Context key used to store this step's output. Defaults to `key`. schema_version 1 only; removed in 2 (outputs are always at steps.<key>.output).",
@@ -5077,6 +4969,10 @@ class LoopAgentStepSpec(BaseModel):
 
 
 class LoopCheckStepSpec(BaseModel):
+    """
+    Check step entry inside `LoopSpec.steps`.
+    """
+
     model_config = ConfigDict(
         extra='forbid',
     )
@@ -5087,14 +4983,20 @@ class LoopCheckStepSpec(BaseModel):
         alias='if',
         description='Bare expr predicate evaluated before the step runs; false skips the step. Requires schema_version "2".',
     )
-    kind: Literal['check']
-    config: LoopCheckStep
+    kind: Literal['check'] = Field(
+        ..., description='Step discriminator value; always `check`.'
+    )
+    config: LoopCheckStep = Field(..., description='Check-step configuration.')
     input: dict[str, Any] | None = Field(
         None,
         description='Step-local input object resolved when the step starts. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions. schema_version 1 only; removed in 2 (reference inputs/event/meta/steps directly in config fields).',
     )
-    retry: LoopRetryPolicy | None = None
-    timeout: LoopTimeoutPolicy | None = None
+    retry: LoopRetryPolicy | None = Field(
+        None, description='Retry policy for this step.'
+    )
+    timeout: LoopTimeoutPolicy | None = Field(
+        None, description='Timeout policy for this step.'
+    )
     save_as: str | None = Field(
         None,
         description="Context key used to store this step's output. Defaults to `key`. schema_version 1 only; removed in 2 (outputs are always at steps.<key>.output).",
@@ -5147,7 +5049,7 @@ class LoopSpec(BaseModel):
     )
     concurrency: Concurrency | None = Field(
         None,
-        description='Behavior when a run starts while another run of the same loop is active.',
+        description='Concurrency behavior: `allow`, `queue`, `skip`, or `replace`.',
     )
     triggers: list[LoopSpecTrigger] | None = Field(
         None, description='Desired triggers materialized when a version is published.'
@@ -5156,33 +5058,38 @@ class LoopSpec(BaseModel):
         None,
         description='Source repositories the loop targets. When a shared managed environment is selected, the runtime prepares these repositories before user-authored steps run.',
     )
-    steps: list[LoopStep]
+    steps: list[LoopStep] = Field(
+        ..., description='Ordered user-authored steps to execute for each run.'
+    )
     output: dict[str, Any] | None = Field(
         None,
         description="Declared run result. When present, string leaves are rendered against the run inputs and saved step outputs at completion and the rendered map is the run's result — the contract for API consumers, `run.completed` subscribers, and parent loops. When absent, the result is the full accumulated context map. In schema_version 2 string leaves use `${{ ... }}` interpolation.",
     )
-    cleanup: list[dict[str, Any]] | None = None
-    limits: LoopSpecLimits | None = None
-    defaults: LoopSpecDefaults | None = None
+    cleanup: list[dict[str, Any]] | None = Field(
+        None,
+        description='Cleanup steps or policies evaluated after normal step execution.',
+    )
+    limits: LoopSpecLimits | None = Field(
+        None, description='Run guardrails such as budget, timeout, and turn limits.'
+    )
+    defaults: LoopSpecDefaults | None = Field(
+        None,
+        description='Run-level defaults applied when individual steps omit a policy.',
+    )
 
 
 class CreateLoopVersionRequest(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    spec: LoopSpec
+    spec: LoopSpec = Field(
+        ..., description='Loop spec to store as a new draft version.'
+    )
 
 
 class CreateLoopRequest(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
-    )
-    handle: str = Field(
-        ...,
-        description='Stable per-project loop handle. Must be lowercase alphanumeric with single hyphen separators. Immutable after creation.',
-        max_length=100,
-        min_length=1,
-        pattern='^[a-z0-9]+(-[a-z0-9]+)*$',
     )
     name: str = Field(..., description='Human-readable display name.')
     description: str | None = Field(
@@ -5199,9 +5106,9 @@ class CreateLoopRequest(BaseModel):
     settings: dict[str, Any] | None = Field(
         None, description='Free-form loop-level settings consumed by the engine.'
     )
-    tags: dict[str, str] | None = Field(
+    tags: TagMap | None = Field(
         None,
-        description='Free-form label map used to organise loops in listings and search.',
+        description='Free-form labels used for filtering, ownership, or automation.',
     )
     spec: LoopSpec | None = Field(
         None,
@@ -5214,19 +5121,23 @@ class CreateLoopRequest(BaseModel):
 
 
 class LoopVersion(BaseModel):
+    """
+    Stored immutable loop spec version.
+    """
+
     model_config = ConfigDict(
         extra='forbid',
     )
     id: str = Field(..., description='Stable identifier for this LoopVersion record.')
-    org_id: str = Field(..., description='Organization that owns this version.')
-    project_id: str = Field(..., description='Project that owns this version.')
     loop_id: str = Field(..., description='Loop this version belongs to.')
     version: int = Field(..., description='Monotonic version number, unique per loop.')
-    status: Status4 = Field(
+    status: Status3 = Field(
         ...,
         description='Publication state. `draft` is editable but not runnable; `published` is the currently runnable version; `superseded` is a prior published version retained for historical runs.',
     )
-    spec: LoopSpec | None = None
+    spec: LoopSpec | None = Field(
+        None, description='Authored loop spec captured by this version.'
+    )
     validation: dict[str, Any] | None = Field(
         None,
         description='Validation result for `spec` produced at version-creation time.',

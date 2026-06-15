@@ -27,9 +27,9 @@ func registerActionsCommands(app *cli.App) {
 			cli.String("endpoint-kind", "").Help("Backing kind for the action. `http` actions POST to `endpoint_url` with a Mobius signature. `worker…"),
 			cli.String("endpoint-url", "").Help("Required when endpoint_kind is `http`; omitted for worker actions."),
 			cli.String("input-schema", "").Help("JSON Schema describing the expected input parameters. Accepts JSON, @file, or @-."),
-			cli.String("name", "").Help("[required] Project-scoped identifier used in loop step definitions. Lowercase alphanumeric + hyphens, e.g. \"se…"),
+			cli.String("name", "").Help("[required] Identifier used in loop step definitions. Lowercase alphanumeric + hyphens, e.g. \"send-email\". Must…"),
 			cli.String("output-schema", "").Help("JSON Schema describing the expected output shape. Accepts JSON, @file, or @-."),
-			cli.String("tags", "").Help("Arbitrary key-value string tags for filtering and organization. Accepts JSON, @file, or @-."),
+			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
 			cli.String("title", "").Help("Human-readable display name shown in the UI and catalog."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
@@ -76,10 +76,11 @@ func registerActionsCommands(app *cli.App) {
 					return err
 				}
 			}
-			if ctx.IsSet("tags") {
-				if err := decodeFlagJSON(ctx, "tags", ctx.String("tags"), &body.Tags); err != nil {
-					return err
-				}
+			if tags, err := parseTagFlags(ctx); err != nil {
+				return err
+			} else if tags != nil {
+				v := api.TagMap(tags)
+				body.Tags = &v
 			}
 			if ctx.IsSet("title") {
 				v := ctx.String("title")
@@ -100,7 +101,7 @@ func registerActionsCommands(app *cli.App) {
 
 	actionsGrp.Command("delete").
 		Description("Delete action").
-		AddArg(&cli.Arg{Name: "action-name", Description: "Project-scoped action name used in loop step definitions.", Required: true}).
+		AddArg(&cli.Arg{Name: "action-name", Description: "Action name used in loop step definitions.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -119,7 +120,7 @@ func registerActionsCommands(app *cli.App) {
 
 	actionsGrp.Command("invoke").
 		Description("Invoke action").
-		AddArg(&cli.Arg{Name: "action-name", Description: "Project-scoped action name used in loop step definitions.", Required: true}).
+		AddArg(&cli.Arg{Name: "action-name", Description: "Action name used in loop step definitions.", Required: true}).
 		Flags(
 			cli.String("input", "").Help("Input values matching the action's input_schema. Accepts JSON, @file, or @-."),
 			cli.Int("timeout-seconds", "").Help("How long (in seconds) to wait for synchronous completion. Default 30, max 120."),
@@ -213,7 +214,7 @@ func registerActionsCommands(app *cli.App) {
 
 	actionsGrp.Command("rotate-secret").
 		Description("Rotate signing secret").
-		AddArg(&cli.Arg{Name: "action-name", Description: "Project-scoped action name used in loop step definitions.", Required: true}).
+		AddArg(&cli.Arg{Name: "action-name", Description: "Action name used in loop step definitions.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -232,14 +233,14 @@ func registerActionsCommands(app *cli.App) {
 
 	actionsGrp.Command("update").
 		Description("Update action").
-		AddArg(&cli.Arg{Name: "action-name", Description: "Project-scoped action name used in loop step definitions.", Required: true}).
+		AddArg(&cli.Arg{Name: "action-name", Description: "Action name used in loop step definitions.", Required: true}).
 		Flags(
 			cli.String("annotations", "").Help("Pass null to clear all annotation flags. Accepts JSON, @file, or @-."),
 			cli.String("description", "").Help("Replacement Markdown description."),
 			cli.String("endpoint-url", "").Help("Replacement endpoint URL. Valid for HTTP actions only."),
 			cli.String("input-schema", "").Help("Replacement JSON Schema for inputs. Replaces the existing schema. Accepts JSON, @file, or @-."),
 			cli.String("output-schema", "").Help("Replacement JSON Schema for outputs. Replaces the existing schema. Accepts JSON, @file, or @-."),
-			cli.String("tags", "").Help("Replacement tag map. Replaces the existing tags entirely. Accepts JSON, @file, or @-."),
+			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
 			cli.String("title", "").Help("Replacement display title."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
@@ -280,16 +281,17 @@ func registerActionsCommands(app *cli.App) {
 					return err
 				}
 			}
-			if ctx.IsSet("tags") {
-				if err := decodeFlagJSON(ctx, "tags", ctx.String("tags"), &body.Tags); err != nil {
-					return err
-				}
+			if tags, err := parseTagFlags(ctx); err != nil {
+				return err
+			} else if tags != nil {
+				v := api.TagMap(tags)
+				body.Tags = &v
 			}
 			if ctx.IsSet("title") {
 				v := ctx.String("title")
 				body.Title = &v
 			}
-			if ctx.String("file") == "" && !ctx.IsSet("annotations") && !ctx.IsSet("description") && !ctx.IsSet("endpoint-url") && !ctx.IsSet("input-schema") && !ctx.IsSet("output-schema") && !ctx.IsSet("tags") && !ctx.IsSet("title") {
+			if ctx.String("file") == "" && !ctx.IsSet("annotations") && !ctx.IsSet("description") && !ctx.IsSet("endpoint-url") && !ctx.IsSet("input-schema") && !ctx.IsSet("output-schema") && !ctx.IsSet("tag") && !ctx.IsSet("title") {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
 			if ctx.Bool("dry-run") {

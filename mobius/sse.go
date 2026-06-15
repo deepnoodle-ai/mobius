@@ -27,7 +27,7 @@ const sseReadBufferSize = 8 << 20
 // live updates.
 func (c *Client) WatchRun(ctx context.Context, runID string, since int64) (<-chan RunEvent, error) {
 	resp, err := c.ac.StreamRunEvents(ctx, api.ProjectHandleParam(c.projectHandle), api.IDParam(runID), &api.StreamRunEventsParams{
-		SinceSequence: sinceSequenceParam(since),
+		AfterSequence: sinceSequenceParam(since),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("mobius: open run stream: %w", err)
@@ -43,7 +43,7 @@ func (c *Client) WatchRun(ctx context.Context, runID string, since int64) (<-cha
 }
 
 // sinceSequenceParam returns nil for zero so the request omits
-// ?since_sequence=0 and the server delivers live-only updates.
+// ?after_sequence=0 and the server delivers live-only updates.
 func sinceSequenceParam(since int64) *int64 {
 	if since <= 0 {
 		return nil

@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"reflect"
-	"strings"
 
 	"github.com/deepnoodle-ai/mobius/mobius/api"
 )
@@ -14,27 +12,23 @@ import (
 // AutomationOptions contains common saved automation metadata.
 type AutomationOptions struct {
 	Name           string
-	Handle         string
 	Description    string
 	DefaultAgentID string
 	DefaultInputs  map[string]interface{}
 	Settings       map[string]interface{}
 	Tags           map[string]string
-	Triggers       []api.LoopSpecTrigger
 }
 
 // UpdateAutomationOptions contains metadata fields that can be updated on a
 // saved automation.
 type UpdateAutomationOptions struct {
-	Name            string
-	Description     string
-	DefaultAgentID  string
-	DefaultInputs   map[string]interface{}
-	Settings        map[string]interface{}
-	Status          api.LoopStatus
-	Tags            map[string]string
-	Triggers        []api.LoopSpecTrigger
-	ReplaceTriggers bool
+	Name           string
+	Description    string
+	DefaultAgentID string
+	DefaultInputs  map[string]interface{}
+	Settings       map[string]interface{}
+	Status         api.LoopStatus
+	Tags           map[string]string
 }
 
 // AutomationVersionOptions configures immutable automation-version creation.
@@ -48,26 +42,8 @@ type AutomationVersionOptions struct {
 // ListAutomationsOptions filters and paginates saved automations.
 type ListAutomationsOptions struct {
 	Status api.ListLoopsParamsStatus
-	Handle string
 	Cursor string
 	Limit  int
-}
-
-// AutomationSyncResult describes one EnsureAutomation or SyncAutomations result.
-type AutomationSyncResult struct {
-	Automation *api.Loop
-	Version    *api.LoopVersion
-	Created    bool
-	Updated    bool
-	Published  bool
-}
-
-// AutomationConfig is one desired saved automation definition for
-// SyncAutomations.
-type AutomationConfig struct {
-	Spec           map[string]interface{}
-	Options        AutomationOptions
-	VersionOptions AutomationVersionOptions
 }
 
 // ListAutomations returns saved automation summaries.
@@ -82,26 +58,16 @@ func (c *Client) ListAutomations(ctx context.Context, opts *ListAutomationsOptio
 	return resp.JSON200, nil
 }
 
-// GetAutomation returns a saved automation by handle or loop ID.
-func (c *Client) GetAutomation(ctx context.Context, ref string) (*api.Loop, error) {
-	if looksLikeLoopID(ref) {
-		resp, err := c.ac.GetLoopWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.IDParam(ref))
-		if err != nil {
-			return nil, fmt.Errorf("mobius: get automation: %w", err)
-		}
-		if resp.JSON200 == nil {
-			return nil, unexpectedAutomationStatus("get automation", resp.Status(), resp.Body)
-		}
-		return resp.JSON200, nil
-	}
-	page, err := c.ListAutomations(ctx, &ListAutomationsOptions{Handle: ref, Limit: 1})
+// GetAutomation returns a saved automation by loop ID.
+func (c *Client) GetAutomation(ctx context.Context, id string) (*api.Loop, error) {
+	resp, err := c.ac.GetLoopWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.IDParam(id))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("mobius: get automation: %w", err)
 	}
-	if len(page.Items) == 0 {
-		return nil, fmt.Errorf("mobius: get automation: not found")
+	if resp.JSON200 == nil {
+		return nil, unexpectedAutomationStatus("get automation", resp.Status(), resp.Body)
 	}
-	return &page.Items[0], nil
+	return resp.JSON200, nil
 }
 
 // CreateAutomation creates a saved automation shell. Add runnable behavior with
@@ -121,14 +87,10 @@ func (c *Client) CreateAutomation(ctx context.Context, opts AutomationOptions) (
 	return resp.JSON201, nil
 }
 
-// UpdateAutomation updates mutable saved automation metadata by handle or loop ID.
-func (c *Client) UpdateAutomation(ctx context.Context, ref string, opts UpdateAutomationOptions) (*api.Loop, error) {
-	loopID, err := c.resolveAutomationID(ctx, ref)
-	if err != nil {
-		return nil, err
-	}
+// UpdateAutomation updates mutable saved automation metadata by loop ID.
+func (c *Client) UpdateAutomation(ctx context.Context, id string, opts UpdateAutomationOptions) (*api.Loop, error) {
 	req := updateAutomationRequest(opts)
-	resp, err := c.ac.UpdateLoopWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.IDParam(loopID), req)
+	resp, err := c.ac.UpdateLoopWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.IDParam(id), req)
 	if err != nil {
 		return nil, fmt.Errorf("mobius: update automation: %w", err)
 	}
@@ -138,13 +100,9 @@ func (c *Client) UpdateAutomation(ctx context.Context, ref string, opts UpdateAu
 	return resp.JSON200, nil
 }
 
-// DeleteAutomation archives a saved automation by handle or loop ID.
-func (c *Client) DeleteAutomation(ctx context.Context, ref string) error {
-	loopID, err := c.resolveAutomationID(ctx, ref)
-	if err != nil {
-		return err
-	}
-	resp, err := c.ac.DeleteLoopWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.IDParam(loopID))
+// DeleteAutomation archives a saved automation by loop ID.
+func (c *Client) DeleteAutomation(ctx context.Context, id string) error {
+	resp, err := c.ac.DeleteLoopWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.IDParam(id))
 	if err != nil {
 		return fmt.Errorf("mobius: delete automation: %w", err)
 	}
@@ -155,18 +113,14 @@ func (c *Client) DeleteAutomation(ctx context.Context, ref string) error {
 }
 
 // CreateAutomationVersion creates an immutable automation version from the
-// authoring spec, addressed by handle or loop ID.
-func (c *Client) CreateAutomationVersion(ctx context.Context, ref string, spec map[string]interface{}, opts *AutomationVersionOptions) (*api.LoopVersion, error) {
-	loopID, err := c.resolveAutomationID(ctx, ref)
-	if err != nil {
-		return nil, err
-	}
+// authoring spec, addressed by loop ID.
+func (c *Client) CreateAutomationVersion(ctx context.Context, id string, spec map[string]interface{}, opts *AutomationVersionOptions) (*api.LoopVersion, error) {
 	typedSpec, err := automationSpecFromMap(spec)
 	if err != nil {
 		return nil, err
 	}
 	req := api.CreateLoopVersionRequest{Spec: typedSpec}
-	resp, err := c.ac.CreateLoopVersionWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.IDParam(loopID), req)
+	resp, err := c.ac.CreateLoopVersionWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.IDParam(id), req)
 	if err != nil {
 		return nil, fmt.Errorf("mobius: create automation version: %w", err)
 	}
@@ -175,8 +129,7 @@ func (c *Client) CreateAutomationVersion(ctx context.Context, ref string, spec m
 	}
 	version := resp.JSON201
 	if opts != nil && opts.Publish {
-		_, err := c.PublishAutomationVersion(ctx, loopID, version.Version)
-		if err != nil {
+		if _, err := c.PublishAutomationVersion(ctx, id, version.Version); err != nil {
 			return nil, err
 		}
 	}
@@ -184,13 +137,9 @@ func (c *Client) CreateAutomationVersion(ctx context.Context, ref string, spec m
 }
 
 // PublishAutomationVersion makes version runnable and returns the updated
-// automation, addressed by handle or loop ID.
-func (c *Client) PublishAutomationVersion(ctx context.Context, ref string, version int) (*api.Loop, error) {
-	loopID, err := c.resolveAutomationID(ctx, ref)
-	if err != nil {
-		return nil, err
-	}
-	resp, err := c.ac.PublishLoopVersionWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.IDParam(loopID), version)
+// automation, addressed by loop ID.
+func (c *Client) PublishAutomationVersion(ctx context.Context, id string, version int) (*api.Loop, error) {
+	resp, err := c.ac.PublishLoopVersionWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.IDParam(id), version)
 	if err != nil {
 		return nil, fmt.Errorf("mobius: publish automation version: %w", err)
 	}
@@ -200,101 +149,26 @@ func (c *Client) PublishAutomationVersion(ctx context.Context, ref string, versi
 	return resp.JSON200, nil
 }
 
-// EnsureAutomation creates or updates the automation matching opts.Handle and
-// creates a new version when spec differs from the latest known version input.
-func (c *Client) EnsureAutomation(ctx context.Context, spec map[string]interface{}, opts AutomationOptions, versionOpts *AutomationVersionOptions) (*AutomationSyncResult, error) {
-	desired, err := normalizeAutomationOptions(spec, opts)
-	if err != nil {
-		return nil, err
-	}
-	spec = automationSpecWithTriggers(spec, desired.Triggers)
-	existing, err := c.findAutomation(ctx, desired)
-	if err != nil {
-		return nil, err
-	}
-	if existing == nil {
-		automation, err := c.CreateAutomation(ctx, desired)
-		if err != nil {
-			return nil, err
-		}
-		version, err := c.CreateAutomationVersion(ctx, automation.Id, spec, versionOpts)
-		if err != nil {
-			return nil, err
-		}
-		result := &AutomationSyncResult{Automation: automation, Version: version, Created: true}
-		if versionOpts != nil && versionOpts.Publish {
-			automation, err := c.GetAutomation(ctx, automation.Id)
-			if err != nil {
-				return nil, err
-			}
-			result.Automation = automation
-			result.Published = true
-		}
-		return result, nil
-	}
-
-	update := automationUpdateForDiff(existing, desired)
-	result := &AutomationSyncResult{Automation: existing}
-	if update != nil {
-		automation, err := c.UpdateAutomation(ctx, existing.Id, *update)
-		if err != nil {
-			return nil, err
-		}
-		result.Automation = automation
-		result.Updated = true
-	}
-	version, err := c.CreateAutomationVersion(ctx, result.Automation.Id, spec, versionOpts)
-	if err != nil {
-		return nil, err
-	}
-	result.Version = version
-	if versionOpts != nil && versionOpts.Publish {
-		automation, err := c.GetAutomation(ctx, result.Automation.Id)
-		if err != nil {
-			return nil, err
-		}
-		result.Automation = automation
-		result.Published = true
-	}
-	return result, nil
-}
-
-// SyncAutomations ensures each desired saved automation in order.
-func (c *Client) SyncAutomations(ctx context.Context, configs ...AutomationConfig) ([]AutomationSyncResult, error) {
-	results := make([]AutomationSyncResult, 0, len(configs))
-	for _, cfg := range configs {
-		result, err := c.EnsureAutomation(ctx, cfg.Spec, cfg.Options, &cfg.VersionOptions)
-		if err != nil {
-			return results, err
-		}
-		results = append(results, *result)
-	}
-	return results, nil
-}
-
 func createAutomationRequest(opts AutomationOptions) (api.CreateLoopRequest, error) {
-	normalized, err := normalizeAutomationOptions(nil, opts)
-	if err != nil {
-		return api.CreateLoopRequest{}, err
+	if opts.Name == "" {
+		return api.CreateLoopRequest{}, errors.New("mobius: automation name is required")
 	}
-	req := api.CreateLoopRequest{
-		Handle: normalized.Handle,
-		Name:   normalized.Name,
+	req := api.CreateLoopRequest{Name: opts.Name}
+	if opts.Description != "" {
+		req.Description = &opts.Description
 	}
-	if normalized.Description != "" {
-		req.Description = &normalized.Description
+	if opts.DefaultAgentID != "" {
+		req.DefaultAgentId = &opts.DefaultAgentID
 	}
-	if normalized.DefaultAgentID != "" {
-		req.DefaultAgentId = &normalized.DefaultAgentID
+	if opts.DefaultInputs != nil {
+		req.DefaultInputs = &opts.DefaultInputs
 	}
-	if normalized.DefaultInputs != nil {
-		req.DefaultInputs = &normalized.DefaultInputs
+	if opts.Settings != nil {
+		req.Settings = &opts.Settings
 	}
-	if normalized.Settings != nil {
-		req.Settings = &normalized.Settings
-	}
-	if normalized.Tags != nil {
-		req.Tags = &normalized.Tags
+	if opts.Tags != nil {
+		tags := api.TagMap(opts.Tags)
+		req.Tags = &tags
 	}
 	return req, nil
 }
@@ -320,7 +194,8 @@ func updateAutomationRequest(opts UpdateAutomationOptions) api.UpdateLoopRequest
 		req.Status = &opts.Status
 	}
 	if opts.Tags != nil {
-		req.Tags = &opts.Tags
+		tags := api.TagMap(opts.Tags)
+		req.Tags = &tags
 	}
 	return req
 }
@@ -333,9 +208,6 @@ func listAutomationsParams(opts *ListAutomationsOptions) *api.ListLoopsParams {
 	if opts.Status != "" {
 		params.Status = &opts.Status
 	}
-	if opts.Handle != "" {
-		params.Handle = &opts.Handle
-	}
 	if opts.Cursor != "" {
 		params.Cursor = &opts.Cursor
 	}
@@ -343,114 +215,6 @@ func listAutomationsParams(opts *ListAutomationsOptions) *api.ListLoopsParams {
 		params.Limit = &opts.Limit
 	}
 	return params
-}
-
-func normalizeAutomationOptions(spec map[string]interface{}, opts AutomationOptions) (AutomationOptions, error) {
-	normalized := opts
-	if normalized.Name == "" {
-		normalized.Name = stringMapValue(spec, "name")
-	}
-	if normalized.Handle == "" {
-		normalized.Handle = stringMapValue(spec, "handle")
-	}
-	if normalized.Name == "" {
-		return normalized, errors.New("mobius: automation name is required")
-	}
-	if normalized.Handle == "" {
-		return normalized, errors.New("mobius: automation handle is required")
-	}
-	return normalized, nil
-}
-
-func stringMapValue(m map[string]interface{}, key string) string {
-	if m == nil {
-		return ""
-	}
-	v, _ := m[key].(string)
-	return v
-}
-
-func (c *Client) findAutomation(ctx context.Context, desired AutomationOptions) (*api.Loop, error) {
-	if desired.Handle == "" && desired.Name == "" {
-		return nil, errors.New("mobius: ensure automation requires a handle or name")
-	}
-	if desired.Handle != "" {
-		page, err := c.ListAutomations(ctx, &ListAutomationsOptions{Handle: desired.Handle, Limit: 1})
-		if err != nil {
-			return nil, err
-		}
-		if len(page.Items) > 0 {
-			return &page.Items[0], nil
-		}
-		return nil, nil
-	}
-	cursor := ""
-	for {
-		page, err := c.ListAutomations(ctx, &ListAutomationsOptions{Cursor: cursor, Limit: 100})
-		if err != nil {
-			return nil, err
-		}
-		for i := range page.Items {
-			item := &page.Items[i]
-			if desired.Handle != "" && item.Handle == desired.Handle {
-				return item, nil
-			}
-			if desired.Handle == "" && item.Name == desired.Name {
-				return item, nil
-			}
-		}
-		if page.HasMore == nil || !*page.HasMore || page.NextCursor == nil || *page.NextCursor == "" {
-			return nil, nil
-		}
-		cursor = *page.NextCursor
-	}
-}
-
-func automationUpdateForDiff(current *api.Loop, desired AutomationOptions) *UpdateAutomationOptions {
-	update := &UpdateAutomationOptions{}
-	changed := false
-	if desired.Name != "" && current.Name != desired.Name {
-		update.Name = desired.Name
-		changed = true
-	}
-	if desired.Description != "" && stringPtrValue(current.Description) != desired.Description {
-		update.Description = desired.Description
-		changed = true
-	}
-	if desired.DefaultAgentID != "" && stringPtrValue(current.DefaultAgentId) != desired.DefaultAgentID {
-		update.DefaultAgentID = desired.DefaultAgentID
-		changed = true
-	}
-	if desired.DefaultInputs != nil && !reflect.DeepEqual(mapPtrValue(current.DefaultInputs), desired.DefaultInputs) {
-		update.DefaultInputs = desired.DefaultInputs
-		changed = true
-	}
-	if desired.Settings != nil && !reflect.DeepEqual(mapPtrValue(current.Settings), desired.Settings) {
-		update.Settings = desired.Settings
-		changed = true
-	}
-	if desired.Tags != nil && !reflect.DeepEqual(stringMapPtrValue(current.Tags), desired.Tags) {
-		update.Tags = desired.Tags
-		changed = true
-	}
-	if !changed {
-		return nil
-	}
-	return update
-}
-
-func mapPtrValue(m *map[string]interface{}) map[string]interface{} {
-	if m == nil {
-		return nil
-	}
-	return *m
-}
-
-func stringMapPtrValue(m *map[string]string) map[string]string {
-	if m == nil {
-		return nil
-	}
-	return *m
 }
 
 func automationSpecFromMap(spec map[string]interface{}) (api.LoopSpec, error) {
@@ -463,43 +227,6 @@ func automationSpecFromMap(spec map[string]interface{}) (api.LoopSpec, error) {
 		return api.LoopSpec{}, fmt.Errorf("mobius: invalid automation spec: %w", err)
 	}
 	return out, nil
-}
-
-func (c *Client) resolveAutomationID(ctx context.Context, ref string) (string, error) {
-	if strings.TrimSpace(ref) == "" {
-		return "", errors.New("mobius: automation handle or id is required")
-	}
-	if looksLikeLoopID(ref) {
-		return ref, nil
-	}
-	automation, err := c.GetAutomation(ctx, ref)
-	if err != nil {
-		return "", err
-	}
-	return automation.Id, nil
-}
-
-func looksLikeLoopID(ref string) bool {
-	return strings.HasPrefix(ref, "loop_") || strings.HasPrefix(ref, "aut_")
-}
-
-func automationSpecWithTriggers(spec map[string]interface{}, triggers []api.LoopSpecTrigger) map[string]interface{} {
-	if len(triggers) == 0 {
-		return spec
-	}
-	out := map[string]interface{}{}
-	for key, value := range spec {
-		out[key] = value
-	}
-	out["triggers"] = triggers
-	return out
-}
-
-func stringPtrValue(s *string) string {
-	if s == nil {
-		return ""
-	}
-	return *s
 }
 
 func unexpectedAutomationStatus(op, status string, body []byte) error {

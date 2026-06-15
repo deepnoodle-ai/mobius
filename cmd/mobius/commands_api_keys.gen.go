@@ -74,9 +74,28 @@ func registerApiKeysCommands(app *cli.App) {
 			return printResponse(ctx, "createAPIKey", resp.StatusCode(), resp.Body)
 		})
 
+	apiKeysGrp.Command("delete").
+		Description("Delete API key").
+		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			p1 := ctx.Arg(0)
+			resp, err := client.DeleteAPIKeyWithResponse(ctx.Context(), p0, p1)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "deleteAPIKey", resp.StatusCode(), resp.Body)
+		})
+
 	apiKeysGrp.Command("get").
 		Description("Get API key").
-		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
+		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -121,25 +140,6 @@ func registerApiKeysCommands(app *cli.App) {
 				return err
 			}
 			return printResponse(ctx, "listAPIKeys", resp.StatusCode(), resp.Body)
-		})
-
-	apiKeysGrp.Command("revoke").
-		Description("Revoke API key").
-		AddArg(&cli.Arg{Name: "id", Description: "Resource ID.", Required: true}).
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			resp, err := client.RevokeAPIKeyWithResponse(ctx.Context(), p0, p1)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "revokeAPIKey", resp.StatusCode(), resp.Body)
 		})
 
 }

@@ -19,11 +19,11 @@ import (
 func registerTablesCommands(app *cli.App) {
 	tablesGrp := app.Group("tables").Description("Project-scoped tables and rows")
 	tablesGrp.Alias("table")
-	tablesGrp.Command("bulk-insert-rows").
-		Description("Bulk insert rows").
+	tablesGrp.Command("bulk-create-rows").
+		Description("Bulk create rows").
 		AddArg(&cli.Arg{Name: "table-id", Description: "Table ID.", Required: true}).
 		Flags(
-			cli.String("rows", "").Help("[required] rows Accepts JSON, @file, or @-."),
+			cli.String("rows", "").Help("[required] Row data objects to validate and insert. Accepts JSON, @file, or @-."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -36,7 +36,7 @@ func registerTablesCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			var body api.BulkInsertTableRowsJSONRequestBody
+			var body api.BulkCreateTableRowsJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
 			}
@@ -51,22 +51,20 @@ func registerTablesCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.BulkInsertTableRowsWithResponse(ctx.Context(), p0, p1, body)
+			resp, err := client.BulkCreateTableRowsWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, "bulkInsertTableRows", resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "bulkCreateTableRows", resp.StatusCode(), resp.Body)
 		})
 
 	tablesGrp.Command("create").
 		Description("Create table").
 		Flags(
-			cli.String("access-mode", "").Help("Controls read/write access to the table. \"project\" allows anyone with project table permissions (de…"),
 			cli.String("description", "").Help("Optional human-readable description of the table."),
-			cli.String("name", "").Help("[required] Table name (lowercase, snake_case); unique within the project scope."),
-			cli.String("owned-by", "").Help("Canonical user owner ID. Required when `scope` is `owner`; defaults to the authenticated user for o…"),
-			cli.String("schema", "").Help("[required] schema Accepts JSON, @file, or @-."),
-			cli.String("scope", "").Help("Optional namespace for named runtime resources. Omitted/null means the project/default scope; `owne…"),
+			cli.String("instructions", "").Help("Optional author guidance for how this table should be used (e.g. surfaced to agents)."),
+			cli.String("name", "").Help("[required] Table name (lowercase, snake_case); unique within the project."),
+			cli.String("schema", "").Help("[required] Column and index definition for a table. Accepts JSON, @file, or @-."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -82,29 +80,21 @@ func registerTablesCommands(app *cli.App) {
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
 			}
-			if ctx.IsSet("access-mode") {
-				v := api.TableAccessMode(ctx.String("access-mode"))
-				body.AccessMode = &v
-			}
 			if ctx.IsSet("description") {
 				v := ctx.String("description")
 				body.Description = &v
 			}
+			if ctx.IsSet("instructions") {
+				v := ctx.String("instructions")
+				body.Instructions = &v
+			}
 			if ctx.IsSet("name") {
 				body.Name = ctx.String("name")
-			}
-			if ctx.IsSet("owned-by") {
-				v := ctx.String("owned-by")
-				body.OwnedBy = &v
 			}
 			if ctx.IsSet("schema") {
 				if err := decodeFlagJSON(ctx, "schema", ctx.String("schema"), &body.Schema); err != nil {
 					return err
 				}
-			}
-			if ctx.IsSet("scope") {
-				v := api.ResourceScope(ctx.String("scope"))
-				body.Scope = &v
 			}
 			if body.Name == "" {
 				return fmt.Errorf("--name is required (or supply it via --file)")
@@ -120,6 +110,45 @@ func registerTablesCommands(app *cli.App) {
 				return err
 			}
 			return printResponse(ctx, "createTable", resp.StatusCode(), resp.Body)
+		})
+
+	tablesGrp.Command("create-row").
+		Description("Create row").
+		AddArg(&cli.Arg{Name: "table-id", Description: "Table ID.", Required: true}).
+		Flags(
+			cli.String("data", "").Help("[required] JSON object keyed by table column name. Accepts JSON, @file, or @-."),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			p1 := ctx.Arg(0)
+			var body api.CreateTableRowJSONRequestBody
+			if err := readJSONBody(ctx, &body); err != nil {
+				return err
+			}
+			if ctx.IsSet("data") {
+				if err := decodeFlagJSON(ctx, "data", ctx.String("data"), &body.Data); err != nil {
+					return err
+				}
+			}
+			if ctx.String("file") == "" && !ctx.IsSet("data") {
+				return fmt.Errorf("--data is required (or supply it via --file)")
+			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
+			}
+			resp, err := client.CreateTableRowWithResponse(ctx.Context(), p0, p1, body)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "createTableRow", resp.StatusCode(), resp.Body)
 		})
 
 	tablesGrp.Command("delete").
@@ -221,54 +250,12 @@ func registerTablesCommands(app *cli.App) {
 			return printResponse(ctx, "getTableStats", resp.StatusCode(), resp.Body)
 		})
 
-	tablesGrp.Command("insert-row").
-		Description("Insert row").
-		AddArg(&cli.Arg{Name: "table-id", Description: "Table ID.", Required: true}).
-		Flags(
-			cli.String("data", "").Help("[required] data Accepts JSON, @file, or @-."),
-			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
-			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
-		).
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			var body api.InsertTableRowJSONRequestBody
-			if err := readJSONBody(ctx, &body); err != nil {
-				return err
-			}
-			if ctx.IsSet("data") {
-				if err := decodeFlagJSON(ctx, "data", ctx.String("data"), &body.Data); err != nil {
-					return err
-				}
-			}
-			if ctx.String("file") == "" && !ctx.IsSet("data") {
-				return fmt.Errorf("--data is required (or supply it via --file)")
-			}
-			if ctx.Bool("dry-run") {
-				return printDryRun(ctx, body)
-			}
-			resp, err := client.InsertTableRowWithResponse(ctx.Context(), p0, p1, body)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "insertTableRow", resp.StatusCode(), resp.Body)
-		})
-
 	tablesGrp.Command("list").
 		Description("List tables").
 		Flags(
 			cli.String("cursor", "").Help("Cursor for pagination (opaque string from previous response)"),
 			cli.Int("limit", "").Help("Maximum number of items to return"),
-			cli.String("name", "").Help("Filter tables by name. Names are unique within a scope, but are not globally unique across owner-sc…"),
-			cli.Bool("owned-by-me", "").Help("Filter lists to tables owned by the authenticated user."),
-			cli.String("owned-by", "").Help("Canonical user owner ID. Used with `scope=owner` for lookups; for list filters, narrows to tables o…"),
-			cli.String("scope", "").Help("Filter tables by scope. Omit to include project/default and owner scopes; use `owner` with `owned_b…"),
+			cli.String("name", "").Help("Filter tables by name. Table names are unique within a project; use this as a discovery filter and …"),
 		).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -291,18 +278,6 @@ func registerTablesCommands(app *cli.App) {
 				v := api.TableNameQueryParam(ctx.String("name"))
 				params.Name = &v
 			}
-			if ctx.IsSet("owned-by-me") {
-				v := ctx.Bool("owned-by-me")
-				params.OwnedByMe = &v
-			}
-			if ctx.IsSet("owned-by") {
-				v := api.TableOwnedByParam(ctx.String("owned-by"))
-				params.OwnedBy = &v
-			}
-			if ctx.IsSet("scope") {
-				v := api.TableScopeParam(ctx.String("scope"))
-				params.Scope = &v
-			}
 			resp, err := client.ListTablesWithResponse(ctx.Context(), p0, params)
 			if err != nil {
 				return err
@@ -316,8 +291,8 @@ func registerTablesCommands(app *cli.App) {
 		Flags(
 			cli.String("cursor", "").Help("Opaque cursor from a prior response."),
 			cli.String("filter", "").Help("Column equality or operator filter Accepts JSON, @file, or @-."),
-			cli.Int("limit", "").Help("Maximum number of rows to return (1–1000, default 100)."),
-			cli.String("sort", "").Help("sort Accepts JSON, @file, or @-."),
+			cli.Int("limit", "").Help("Maximum number of rows to return (1–100, default 20)."),
+			cli.String("sort", "").Help("Sort clauses applied after filtering. Accepts JSON, @file, or @-."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -371,7 +346,7 @@ func registerTablesCommands(app *cli.App) {
 		Flags(
 			cli.String("cursor", "").Help("Opaque cursor from a prior search response."),
 			cli.String("filter", "").Help("Optional column equality or operator filter applied before text search. Accepts JSON, @file, or @-."),
-			cli.Int("limit", "").Help("Maximum number of rows to return (1–1000, default 100)."),
+			cli.Int("limit", "").Help("Maximum number of rows to return (1–100, default 20)."),
 			cli.String("query", "").Help("[required] Token-prefix search query. Hyphens and other punctuation split terms."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
@@ -422,12 +397,10 @@ func registerTablesCommands(app *cli.App) {
 		Description("Update table").
 		AddArg(&cli.Arg{Name: "table-id", Description: "Table ID.", Required: true}).
 		Flags(
-			cli.String("access-mode", "").Help("Controls read/write access to the table. \"project\" allows anyone with project table permissions (de…"),
 			cli.String("description", "").Help("Optional human-readable description of the table."),
-			cli.String("name", "").Help("Table name (lowercase, snake_case); unique within the project scope."),
-			cli.String("owned-by", "").Help("Canonical user owner ID. Send null to clear ownership."),
-			cli.String("schema", "").Help("schema Accepts JSON, @file, or @-."),
-			cli.String("scope", "").Help("Set to `owner` for owner-scoped names, or null to return to the project/default scope."),
+			cli.String("instructions", "").Help("Optional author guidance for how this table should be used (e.g. surfaced to agents)."),
+			cli.String("name", "").Help("Table name (lowercase, snake_case); unique within the project."),
+			cli.String("schema", "").Help("Column and index definition for a table. Accepts JSON, @file, or @-."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -444,32 +417,24 @@ func registerTablesCommands(app *cli.App) {
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
 			}
-			if ctx.IsSet("access-mode") {
-				v := api.TableAccessMode(ctx.String("access-mode"))
-				body.AccessMode = &v
-			}
 			if ctx.IsSet("description") {
 				v := ctx.String("description")
 				body.Description = &v
 			}
+			if ctx.IsSet("instructions") {
+				v := ctx.String("instructions")
+				body.Instructions = &v
+			}
 			if ctx.IsSet("name") {
 				v := ctx.String("name")
 				body.Name = &v
-			}
-			if ctx.IsSet("owned-by") {
-				v := ctx.String("owned-by")
-				body.OwnedBy = &v
 			}
 			if ctx.IsSet("schema") {
 				if err := decodeFlagJSON(ctx, "schema", ctx.String("schema"), &body.Schema); err != nil {
 					return err
 				}
 			}
-			if ctx.IsSet("scope") {
-				v := api.ResourceScope(ctx.String("scope"))
-				body.Scope = &v
-			}
-			if ctx.String("file") == "" && !ctx.IsSet("access-mode") && !ctx.IsSet("description") && !ctx.IsSet("name") && !ctx.IsSet("owned-by") && !ctx.IsSet("schema") && !ctx.IsSet("scope") {
+			if ctx.String("file") == "" && !ctx.IsSet("description") && !ctx.IsSet("instructions") && !ctx.IsSet("name") && !ctx.IsSet("schema") {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
 			if ctx.Bool("dry-run") {
@@ -483,11 +448,11 @@ func registerTablesCommands(app *cli.App) {
 		})
 
 	tablesGrp.Command("update-row").
-		Description("Update row (PATCH — merges into existing data)").
+		Description("Update row").
 		AddArg(&cli.Arg{Name: "table-id", Description: "Table ID.", Required: true}).
 		AddArg(&cli.Arg{Name: "row-id", Description: "Table row ID.", Required: true}).
 		Flags(
-			cli.String("data", "").Help("[required] data Accepts JSON, @file, or @-."),
+			cli.String("data", "").Help("[required] Replacement row data keyed by table column name. Accepts JSON, @file, or @-."),
 			cli.Int("version", "").Help("Expected version for optimistic locking. Omit or 0 to skip the check."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),

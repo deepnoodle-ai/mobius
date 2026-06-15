@@ -16,7 +16,7 @@ func registerCatalogCommands(app *cli.App) {
 	catalogGrp := app.Group("catalog").Description("Available actions and triggerable events")
 	catalogGrp.Command("get-action").
 		Description("Get action").
-		AddArg(&cli.Arg{Name: "action-name", Description: "Project-scoped action name used in loop step definitions.", Required: true}).
+		AddArg(&cli.Arg{Name: "action-name", Description: "Action name used in loop step definitions.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)

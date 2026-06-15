@@ -238,6 +238,13 @@ func strPtr(s string) *string {
 	return &s
 }
 
+func stringPtrValue(s *string) string {
+	if s == nil {
+		return ""
+	}
+	return *s
+}
+
 func messageIDPtr() *api.WorkerSocketMessageID {
 	id := api.WorkerSocketMessageID("msg_" + uuid.NewString())
 	return &id
