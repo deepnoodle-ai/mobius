@@ -17,7 +17,7 @@ import (
 // declared here so every subcommand inherits them.
 func newApp() *cli.App {
 	app := cli.New("mobius").
-		Description("CLI for the Mobius agent automation platform").
+		Description("CLI for the Mobius agent loop platform").
 		Version(cliVersion()).
 		AddCompletionCommand()
 

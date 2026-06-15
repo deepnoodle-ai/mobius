@@ -17,7 +17,7 @@ import (
 
 // registerLoopsCommands registers every generated subcommand in the "loops" group.
 func registerLoopsCommands(app *cli.App) {
-	loopsGrp := app.Group("loops")
+	loopsGrp := app.Group("loops").Description("Loop definitions, versions, and runs")
 	loopsGrp.Alias("loop")
 	loopsGrp.Command("create").
 		Description("Create loop").
