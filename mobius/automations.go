@@ -13,7 +13,7 @@ import (
 // authoring spec that makes the automation runnable.
 //
 // The public API no longer models automations as a shell plus immutable
-// versions: the runnable definition (steps, inputs, triggers, defaults,
+// versions: the runnable definition (steps, event, config, triggers, defaults,
 // limits, …) lives inline on the loop. Set Spec to author that definition in
 // the same call that creates the automation. Explicit fields below take
 // precedence over the same keys in Spec.
@@ -21,14 +21,14 @@ type AutomationOptions struct {
 	Name          string
 	Description   string
 	AgentID       string
-	DefaultInputs map[string]interface{}
+	DefaultConfig map[string]interface{}
 	Settings      map[string]interface{}
 	Tags          map[string]string
 
 	// Spec is the authoring definition for the automation. Recognised keys
-	// mirror the loop spec (schema_version, steps, inputs, triggers, defaults,
-	// limits, output, repositories, cleanup, …). When it carries steps the
-	// automation is runnable immediately.
+	// mirror the loop spec (schema_version, steps, event, config, triggers,
+	// defaults, limits, output, repositories, cleanup, …). When it carries
+	// steps the automation is runnable immediately.
 	Spec map[string]interface{}
 }
 
@@ -38,7 +38,7 @@ type UpdateAutomationOptions struct {
 	Name          string
 	Description   string
 	AgentID       string
-	DefaultInputs map[string]interface{}
+	DefaultConfig map[string]interface{}
 	Settings      map[string]interface{}
 	Status        api.LoopStatus
 	Tags          map[string]string
@@ -140,8 +140,8 @@ func createAutomationRequest(opts AutomationOptions) (api.CreateLoopRequest, err
 	if opts.AgentID != "" {
 		req.AgentId = &opts.AgentID
 	}
-	if opts.DefaultInputs != nil {
-		req.DefaultInputs = &opts.DefaultInputs
+	if opts.DefaultConfig != nil {
+		req.DefaultConfig = &opts.DefaultConfig
 	}
 	if opts.Settings != nil {
 		req.Settings = &opts.Settings
@@ -167,8 +167,8 @@ func updateAutomationRequest(opts UpdateAutomationOptions) (api.UpdateLoopReques
 	if opts.AgentID != "" {
 		req.AgentId = &opts.AgentID
 	}
-	if opts.DefaultInputs != nil {
-		req.DefaultInputs = &opts.DefaultInputs
+	if opts.DefaultConfig != nil {
+		req.DefaultConfig = &opts.DefaultConfig
 	}
 	if opts.Settings != nil {
 		req.Settings = &opts.Settings
@@ -202,8 +202,8 @@ func listAutomationsParams(opts *ListAutomationsOptions) *api.ListLoopsParams {
 
 // applyAutomationSpec decodes the authoring spec map into the typed request.
 // The loop spec fields are top-level on the create/update request, so a JSON
-// round-trip populates steps, inputs, triggers, defaults, limits, and the rest
-// in one shot. Explicit option fields are layered on top by the caller.
+// round-trip populates steps, event, config, triggers, defaults, limits, and
+// the rest in one shot. Explicit option fields are layered on top by the caller.
 func applyAutomationSpec(spec map[string]interface{}, req interface{}) error {
 	if spec == nil {
 		return nil

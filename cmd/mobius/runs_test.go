@@ -26,12 +26,12 @@ func TestRunsStartUsesPolishedCommandName(t *testing.T) {
 			"runs", "start", "smoke",
 			"--api-url", srv.URL,
 			"--api-key", "mbx_test",
-			"--inputs", `{"hello":"world"}`,
+			"--event", `{"hello":"world"}`,
 			"--quiet",
 		),
 	)
 	assert.True(t, result.Success(), "runs start failed: %v\nstderr: %s", result.Err, result.Stderr)
-	assert.Equal(t, map[string]any{"hello": "world"}, got["inputs"])
+	assert.Equal(t, map[string]any{"hello": "world"}, got["event"])
 }
 
 func TestRunsHelpUsesPolishedCommandNames(t *testing.T) {

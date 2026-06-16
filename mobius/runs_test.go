@@ -34,13 +34,15 @@ func TestStartAutomationRun_HighLevelClient(t *testing.T) {
 
 	run, err := c.StartAutomationRun(context.Background(), "loop_1", &StartRunOptions{
 		ExternalID: "external-1",
-		Inputs:     map[string]interface{}{"topic": "sdk"},
+		Event:      map[string]interface{}{"topic": "sdk"},
+		Config:     map[string]interface{}{"priority": "normal"},
 	})
 
 	assert.NoError(t, err)
 	assert.Equal(t, run.Id, "run_1")
 	assert.Equal(t, body["idempotency_key"], "external-1")
-	assert.Equal(t, body["inputs"].(map[string]any)["topic"], "sdk")
+	assert.Equal(t, body["event"].(map[string]any)["topic"], "sdk")
+	assert.Equal(t, body["config"].(map[string]any)["priority"], "normal")
 }
 
 func TestRunControl_HighLevelClient(t *testing.T) {

@@ -171,7 +171,7 @@ class AgentModelRoute(BaseModel):
 
 class AgentToolPresentation(StrEnum):
     """
-    Controls how granted actions are surfaced to the model in Mobius-hosted agent turns. `flat` exposes one tool per action, while `meta` groups related actions behind compact command routers.
+    Controls how granted actions are surfaced to the model in Mobius-hosted agent turns. `meta` (the default) groups related actions behind compact command routers, while `flat` exposes one tool per action.
     """
 
     flat = 'flat'
@@ -2783,7 +2783,7 @@ class LoopAgentSessionPolicy(BaseModel):
     )
     name: str | None = Field(
         None,
-        description='Optional Go-template string rendered against `inputs`, `context`, `agent`, `loop`, `run`, `source`, and `step`. When omitted, Mobius derives a stable name from the event payload, falling back to the trigger or `default`.',
+        description='Optional Go-template string rendered against `event`, `meta`, `config`, `context`, `agent`, `loop`, `run`, `source`, and `step`. When omitted, Mobius derives a stable name from the event payload, falling back to the trigger or `default`.',
     )
     title: str | None = Field(
         None, description='Optional Go-template string for the session display title.'
@@ -2916,9 +2916,16 @@ class LoopSubLoopStep(BaseModel):
         ...,
         description='ID of the loop to trigger, scoped to the same project as the parent loop.',
     )
-    inputs: dict[str, Any] | None = Field(
+    event: dict[str, Any] | None = Field(
         None,
-        description="Input map handed to the child run. String leaves render against the parent run before the child starts using `${{ ... }}` expr interpolations over `inputs`, `event`, `meta`, `steps.<id>.output`, or `steps[0].output`. When omitted the parent's run inputs are forwarded.",
+        description="Event object handed to the child run. String leaves render against the parent run before the child starts using `${{ ... }}` expr interpolations over `event`, `meta`, `config`, `steps.<id>.output`, or `steps[0].output`. When omitted the parent's resolved event payload is forwarded.",
+    )
+    config: dict[str, Any] | None = Field(
+        None, description='Optional config object handed to the child run.'
+    )
+    condition: str | None = Field(
+        None,
+        description='Removed legacy field. Use the step-level `if` field for child-loop conditions.',
     )
 
 
@@ -2958,7 +2965,7 @@ class LoopCheckAssertion(BaseModel):
     )
     expr: str | None = Field(
         None,
-        description="Predicate for `kind: expr`, evaluated against the run's template environment (`inputs`, `event`, `meta`, `steps.<id>.output`, and `steps[0].output`). Required for expr assertions.",
+        description="Predicate for `kind: expr`, evaluated against the run's template environment (`event`, `meta`, `config`, `steps.<id>.output`, and `steps[0].output`). Required for expr assertions.",
     )
     agent: str | None = Field(
         None,
@@ -3039,7 +3046,7 @@ class LoopTimeoutPolicy(BaseModel):
 
 class HTTPTriggerDeliveryRequest(BaseModel):
     """
-    Free-form JSON object delivered to the HTTP trigger. The payload is recorded on the source event and forwarded to the run as inputs.
+    Free-form JSON object delivered to the HTTP trigger. The payload is recorded on the source event and forwarded to the run as the event.
     """
 
     model_config = ConfigDict(
@@ -3679,7 +3686,8 @@ class UpdateRowRequest(BaseModel):
         extra='forbid',
     )
     data: dict[str, Any] = Field(
-        ..., description='Replacement row data keyed by table column name.'
+        ...,
+        description='Fields to merge into the existing row, keyed by table column name.',
     )
     version: int | None = Field(
         None,
@@ -4462,7 +4470,7 @@ class LoopAgentStep(BaseModel):
 
 class LoopCheckStep(BaseModel):
     """
-    Check step configuration recognised inside `LoopSpec.steps[].config`. A check step evaluates typed assertions over the run's template environment (`inputs`, `event`, `meta`, `steps.<id>.output`, and `steps[0].output`) — deterministic `expr` predicates, or `agent` judges for everything that isn't deterministic — records a per-assertion verdict with cited evidence, and routes on failure: fail the run (stop reason `check_failed`), continue with the red verdict on the record, or open an approval gate carrying the evidence (rejection stops the run with `gate_rejected`). All assertions are evaluated; there is no short-circuit. An assertion that errors (bad expr, judge model failure, unparseable verdict) fails closed — never a silent pass.
+    Check step configuration recognised inside `LoopSpec.steps[].config`. A check step evaluates typed assertions over the run's template `event`, `meta`, `config`, `steps.<id>.output`, and `steps[0].output`) — deterministic `expr` predicates, or `agent` judges for everything that isn't deterministic — records a per-assertion verdict with cited evidence, and routes on failure: fail the run (stop reason `check_failed`), continue with the red verdict on the record, or open an approval gate carrying the evidence (rejection stops the run with `gate_rejected`). All assertions are evaluated; there is no short-circuit. An assertion that errors (bad expr, judge model failure, unparseable verdict) fails closed — never a silent pass.
     """
 
     model_config = ConfigDict(
@@ -4484,15 +4492,23 @@ class LoopCheckStep(BaseModel):
 
 class StartLoopRunRequest(BaseModel):
     """
-    Body for `POST /v1/projects/{project_handle}/loops/{resource_id}/runs`. All fields are optional; an empty body starts a run with no inputs and no attribution.
+    Body for `POST /v1/projects/{project_handle}/loops/{resource_id}/runs`. All fields are optional; an empty body starts a run with an empty event/config envelope and no attribution.
     """
 
     model_config = ConfigDict(
         extra='forbid',
     )
-    inputs: dict[str, Any] | None = Field(
+    event: dict[str, Any] | None = Field(
         None,
-        description='Input map passed to the run. Loops resolve it against the declared `inputs:` contract — undeclared keys are dropped, defaults fill, required inputs must resolve — and reference it via `${{ inputs.<key> }}`.',
+        description='Exact event object that starts the run. Manual/API starts use this object the same way integration, HTTP, and schedule triggers do. Templates reference it via `${{ event.<key> }}`.',
+    )
+    meta: dict[str, Any] | None = Field(
+        None,
+        description='Optional event metadata supplied by the caller. Mobius also adds provenance such as run, loop, source, trigger, and source-event ids.',
+    )
+    config: dict[str, Any] | None = Field(
+        None,
+        description='Optional static or caller-provided configuration for handling the event. Templates reference it via `config.*`.',
     )
     source: LoopRunSource | None = Field(
         None, description='Attribution for the call that starts the run.'
@@ -4554,17 +4570,17 @@ class LoopRun(BaseModel):
         None,
         description='Number of agent turns started for this run so far. Compared against `max_agent_turns` when that cap is set.',
     )
-    inputs: dict[str, Any] | None = Field(
-        None,
-        description="Input map resolved when the run started, reachable in step templates at `${{ inputs.<key> }}`. Event trigger data lives in the run's `event` and `meta` fields; inputs hold only declared keys.",
-    )
     event: dict[str, Any] | None = Field(
         None,
-        description='Normalized payload of the event that started the run, reachable in templates at `${{ event.* }}`: the webhook body for event triggers, the request body for HTTP triggers. Empty for manual and schedule runs.',
+        description='Exact safe/canonical event object that started the run, reachable in templates at `event.*`.',
     )
     meta: dict[str, Any] | None = Field(
         None,
         description='Run and trigger metadata envelope, reachable in templates at `${{ meta.* }}`: `run_id`, `loop_id`, `source`, `trigger`, plus trigger-supplied facts such as `event_type`, `source_event_id`, and `scheduled_at`.',
+    )
+    config: dict[str, Any] | None = Field(
+        None,
+        description='Optional static or caller-provided configuration resolved when the run started, reachable in templates at `config.*`.',
     )
     result: dict[str, Any] | None = Field(
         None,
@@ -4771,8 +4787,11 @@ class Loop(BaseModel):
         '2',
         description='Loop authoring schema version. Only schema version 2 is accepted.',
     )
-    inputs: dict[str, LoopSpecInput] | None = Field(
-        None, description='Declared run inputs for this loop.'
+    event: dict[str, LoopSpecInput] | None = Field(
+        None, description='Declared event fields for this loop.'
+    )
+    config: dict[str, LoopSpecInput] | None = Field(
+        None, description='Declared run config fields for this loop.'
     )
     concurrency: Concurrency | None = Field(
         None,
@@ -4801,9 +4820,9 @@ class Loop(BaseModel):
         None,
         description='Run-level defaults applied when individual steps omit a policy.',
     )
-    default_inputs: dict[str, Any] | None = Field(
+    default_config: dict[str, Any] | None = Field(
         None,
-        description='Default values merged into `inputs` when a run is started without overrides.',
+        description='Default config values used when a run is started without overrides.',
     )
     settings: dict[str, Any] | None = Field(
         None, description='Free-form loop-level settings consumed by the engine.'
@@ -4853,8 +4872,11 @@ class CreateLoopRequest(BaseModel):
         '2',
         description='Loop authoring schema version. Only schema version 2 is accepted.',
     )
-    inputs: dict[str, LoopSpecInput] | None = Field(
-        None, description='Declared run inputs for this loop.'
+    event: dict[str, LoopSpecInput] | None = Field(
+        None, description='Declared event fields for this loop.'
+    )
+    config: dict[str, LoopSpecInput] | None = Field(
+        None, description='Declared run config fields for this loop.'
     )
     concurrency: Concurrency | None = Field(
         None,
@@ -4884,9 +4906,9 @@ class CreateLoopRequest(BaseModel):
         None,
         description='Run-level defaults applied when individual steps omit a policy.',
     )
-    default_inputs: dict[str, Any] | None = Field(
+    default_config: dict[str, Any] | None = Field(
         None,
-        description='Default values merged into `inputs` when a run is started without overrides.',
+        description='Default config values used when a run is started without overrides.',
     )
     settings: dict[str, Any] | None = Field(
         None, description='Free-form loop-level settings consumed by the engine.'
@@ -4920,8 +4942,11 @@ class UpdateLoopRequest(BaseModel):
         '2',
         description='Loop authoring schema version. Only schema version 2 is accepted.',
     )
-    inputs: dict[str, LoopSpecInput] | None = Field(
-        None, description='Declared run inputs for this loop.'
+    event: dict[str, LoopSpecInput] | None = Field(
+        None, description='Declared event fields for this loop.'
+    )
+    config: dict[str, LoopSpecInput] | None = Field(
+        None, description='Declared run config fields for this loop.'
     )
     concurrency: Concurrency | None = Field(
         None,
@@ -4949,9 +4974,9 @@ class UpdateLoopRequest(BaseModel):
     defaults: LoopSpecDefaults | None = Field(
         None, description='Replacement run-level defaults.'
     )
-    default_inputs: dict[str, Any] | None = Field(
+    default_config: dict[str, Any] | None = Field(
         None,
-        description='Default values merged into `inputs` when a run is started without overrides.',
+        description='Default config values used when a run is started without overrides.',
     )
     settings: dict[str, Any] | None = Field(
         None, description='Free-form loop-level settings consumed by the engine.'

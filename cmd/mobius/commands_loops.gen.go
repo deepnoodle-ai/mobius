@@ -25,10 +25,11 @@ func registerLoopsCommands(app *cli.App) {
 			cli.String("agent-id", "").Help("Agent associated with this loop. Agent steps use it when they do not pin `config.agent_id`."),
 			cli.String("cleanup", "").Help("Cleanup steps or policies evaluated after normal step execution. Accepts JSON, @file, or @-."),
 			cli.String("concurrency", "").Help("Concurrency behavior: `allow`, `queue`, `skip`, or `replace`."),
-			cli.String("default-inputs", "").Help("Default values merged into `inputs` when a run is started without overrides. Accepts JSON, @file, or @-."),
+			cli.String("config", "").Help("Declared run config fields for this loop. Accepts JSON, @file, or @-."),
+			cli.String("default-config", "").Help("Default config values used when a run is started without overrides. Accepts JSON, @file, or @-."),
 			cli.String("defaults", "").Help("Run-level defaults inside the loop spec. Lives at `spec.defaults` in the JSON the engine compiles. … Accepts JSON, @file, or @-."),
 			cli.String("description", "").Help("Markdown description of the loop's purpose."),
-			cli.String("inputs", "").Help("Declared run inputs for this loop. Accepts JSON, @file, or @-."),
+			cli.String("event", "").Help("Declared event fields for this loop. Accepts JSON, @file, or @-."),
 			cli.String("limits", "").Help("Run guardrails. Lives at `spec.limits` in the JSON the engine compiles. Every limit is optional; ab… Accepts JSON, @file, or @-."),
 			cli.String("name", "").Help("[required] Human-readable display name."),
 			cli.String("repositories", "").Help("Source repositories the loop targets. Accepts JSON, @file, or @-."),
@@ -65,8 +66,13 @@ func registerLoopsCommands(app *cli.App) {
 				v := api.CreateLoopRequestConcurrency(ctx.String("concurrency"))
 				body.Concurrency = &v
 			}
-			if ctx.IsSet("default-inputs") {
-				if err := decodeFlagJSON(ctx, "default-inputs", ctx.String("default-inputs"), &body.DefaultInputs); err != nil {
+			if ctx.IsSet("config") {
+				if err := decodeFlagJSON(ctx, "config", ctx.String("config"), &body.Config); err != nil {
+					return err
+				}
+			}
+			if ctx.IsSet("default-config") {
+				if err := decodeFlagJSON(ctx, "default-config", ctx.String("default-config"), &body.DefaultConfig); err != nil {
 					return err
 				}
 			}
@@ -79,8 +85,8 @@ func registerLoopsCommands(app *cli.App) {
 				v := ctx.String("description")
 				body.Description = &v
 			}
-			if ctx.IsSet("inputs") {
-				if err := decodeFlagJSON(ctx, "inputs", ctx.String("inputs"), &body.Inputs); err != nil {
+			if ctx.IsSet("event") {
+				if err := decodeFlagJSON(ctx, "event", ctx.String("event"), &body.Event); err != nil {
 					return err
 				}
 			}
@@ -268,10 +274,11 @@ func registerLoopsCommands(app *cli.App) {
 			cli.String("agent-id", "").Help("Agent associated with this loop. Agent steps use it when they do not pin `config.agent_id`."),
 			cli.String("cleanup", "").Help("Replacement cleanup steps or policies. Accepts JSON, @file, or @-."),
 			cli.String("concurrency", "").Help("Concurrency behavior: `allow`, `queue`, `skip`, or `replace`."),
-			cli.String("default-inputs", "").Help("Default values merged into `inputs` when a run is started without overrides. Accepts JSON, @file, or @-."),
+			cli.String("config", "").Help("Declared run config fields for this loop. Accepts JSON, @file, or @-."),
+			cli.String("default-config", "").Help("Default config values used when a run is started without overrides. Accepts JSON, @file, or @-."),
 			cli.String("defaults", "").Help("Run-level defaults inside the loop spec. Lives at `spec.defaults` in the JSON the engine compiles. … Accepts JSON, @file, or @-."),
 			cli.String("description", "").Help("Markdown description of the loop's purpose."),
-			cli.String("inputs", "").Help("Declared run inputs for this loop. Accepts JSON, @file, or @-."),
+			cli.String("event", "").Help("Declared event fields for this loop. Accepts JSON, @file, or @-."),
 			cli.String("limits", "").Help("Run guardrails. Lives at `spec.limits` in the JSON the engine compiles. Every limit is optional; ab… Accepts JSON, @file, or @-."),
 			cli.String("name", "").Help("Human-readable display name."),
 			cli.String("repositories", "").Help("Replacement source repositories the loop targets. Accepts JSON, @file, or @-."),
@@ -310,8 +317,13 @@ func registerLoopsCommands(app *cli.App) {
 				v := api.UpdateLoopRequestConcurrency(ctx.String("concurrency"))
 				body.Concurrency = &v
 			}
-			if ctx.IsSet("default-inputs") {
-				if err := decodeFlagJSON(ctx, "default-inputs", ctx.String("default-inputs"), &body.DefaultInputs); err != nil {
+			if ctx.IsSet("config") {
+				if err := decodeFlagJSON(ctx, "config", ctx.String("config"), &body.Config); err != nil {
+					return err
+				}
+			}
+			if ctx.IsSet("default-config") {
+				if err := decodeFlagJSON(ctx, "default-config", ctx.String("default-config"), &body.DefaultConfig); err != nil {
 					return err
 				}
 			}
@@ -324,8 +336,8 @@ func registerLoopsCommands(app *cli.App) {
 				v := ctx.String("description")
 				body.Description = &v
 			}
-			if ctx.IsSet("inputs") {
-				if err := decodeFlagJSON(ctx, "inputs", ctx.String("inputs"), &body.Inputs); err != nil {
+			if ctx.IsSet("event") {
+				if err := decodeFlagJSON(ctx, "event", ctx.String("event"), &body.Event); err != nil {
 					return err
 				}
 			}
@@ -372,7 +384,7 @@ func registerLoopsCommands(app *cli.App) {
 					return err
 				}
 			}
-			if ctx.String("file") == "" && !ctx.IsSet("agent-id") && !ctx.IsSet("cleanup") && !ctx.IsSet("concurrency") && !ctx.IsSet("default-inputs") && !ctx.IsSet("defaults") && !ctx.IsSet("description") && !ctx.IsSet("inputs") && !ctx.IsSet("limits") && !ctx.IsSet("name") && !ctx.IsSet("repositories") && !ctx.IsSet("schema-version") && !ctx.IsSet("settings") && !ctx.IsSet("status") && !ctx.IsSet("steps") && !ctx.IsSet("tag") && !ctx.IsSet("triggers") {
+			if ctx.String("file") == "" && !ctx.IsSet("agent-id") && !ctx.IsSet("cleanup") && !ctx.IsSet("concurrency") && !ctx.IsSet("config") && !ctx.IsSet("default-config") && !ctx.IsSet("defaults") && !ctx.IsSet("description") && !ctx.IsSet("event") && !ctx.IsSet("limits") && !ctx.IsSet("name") && !ctx.IsSet("repositories") && !ctx.IsSet("schema-version") && !ctx.IsSet("settings") && !ctx.IsSet("status") && !ctx.IsSet("steps") && !ctx.IsSet("tag") && !ctx.IsSet("triggers") {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
 			if ctx.Bool("dry-run") {

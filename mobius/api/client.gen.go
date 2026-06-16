@@ -2320,7 +2320,7 @@ type Agent struct {
 	// Tags Key/value tags for organizing and filtering resources. Up to 8 per resource; keys 1–128 characters, values up to 256. Keys prefixed `mobius:` are system-managed and cannot be set by callers.
 	Tags *TagMap `json:"tags,omitempty"`
 
-	// ToolPresentation Controls how granted actions are surfaced to the model in Mobius-hosted agent turns. `flat` exposes one tool per action, while `meta` groups related actions behind compact command routers.
+	// ToolPresentation Controls how granted actions are surfaced to the model in Mobius-hosted agent turns. `meta` (the default) groups related actions behind compact command routers, while `flat` exposes one tool per action.
 	ToolPresentation *AgentToolPresentation `json:"tool_presentation,omitempty"`
 
 	// UpdatedAt Timestamp when this agent was last updated.
@@ -2507,7 +2507,7 @@ type AgentToolManifest struct {
 	Warnings []AgentManifestWarning `json:"warnings"`
 }
 
-// AgentToolPresentation Controls how granted actions are surfaced to the model in Mobius-hosted agent turns. `flat` exposes one tool per action, while `meta` groups related actions behind compact command routers.
+// AgentToolPresentation Controls how granted actions are surfaced to the model in Mobius-hosted agent turns. `meta` (the default) groups related actions behind compact command routers, while `flat` exposes one tool per action.
 type AgentToolPresentation string
 
 // AgentTurn One attempt of an agent running the agent loop — the unit that produces a transcript. A turn is triggered either by a loop step (run_id + step_id) or an inbound channel message (channel_exchange_id); the two are mutually exclusive. Its messages are read via the turn's transcript endpoint.
@@ -2812,7 +2812,7 @@ type CreateAgentRequest struct {
 	// Tags Key/value tags for organizing and filtering resources. Up to 8 per resource; keys 1–128 characters, values up to 256. Keys prefixed `mobius:` are system-managed and cannot be set by callers.
 	Tags *TagMap `json:"tags,omitempty"`
 
-	// ToolPresentation Controls how granted actions are surfaced to the model in Mobius-hosted agent turns. `flat` exposes one tool per action, while `meta` groups related actions behind compact command routers.
+	// ToolPresentation Controls how granted actions are surfaced to the model in Mobius-hosted agent turns. `meta` (the default) groups related actions behind compact command routers, while `flat` exposes one tool per action.
 	ToolPresentation *AgentToolPresentation `json:"tool_presentation,omitempty"`
 }
 
@@ -2851,8 +2851,11 @@ type CreateLoopRequest struct {
 	// Concurrency Concurrency behavior: `allow`, `queue`, `skip`, or `replace`.
 	Concurrency *CreateLoopRequestConcurrency `json:"concurrency,omitempty"`
 
-	// DefaultInputs Default values merged into `inputs` when a run is started without overrides.
-	DefaultInputs *map[string]interface{} `json:"default_inputs,omitempty"`
+	// Config Declared run config fields for this loop.
+	Config *map[string]LoopSpecInput `json:"config,omitempty"`
+
+	// DefaultConfig Default config values used when a run is started without overrides.
+	DefaultConfig *map[string]interface{} `json:"default_config,omitempty"`
 
 	// Defaults Run-level defaults inside the loop spec. Lives at `spec.defaults` in the JSON the engine compiles. The run wall-clock limit moved to `limits.wall_clock_timeout`.
 	Defaults *LoopSpecDefaults `json:"defaults,omitempty"`
@@ -2860,8 +2863,8 @@ type CreateLoopRequest struct {
 	// Description Markdown description of the loop's purpose.
 	Description *string `json:"description,omitempty"`
 
-	// Inputs Declared run inputs for this loop.
-	Inputs *map[string]LoopSpecInput `json:"inputs,omitempty"`
+	// Event Declared event fields for this loop.
+	Event *map[string]LoopSpecInput `json:"event,omitempty"`
 
 	// Limits Run guardrails. Lives at `spec.limits` in the JSON the engine compiles. Every limit is optional; absent or zero means unbounded (plan-level org caps still apply), with one exception — trial-plan runs default to a 100-credit ($1) budget when no budget is set here or on the start request. Paid plans default to unbounded.
 	Limits *LoopSpecLimits `json:"limits,omitempty"`
@@ -3119,7 +3122,7 @@ type HTTPTriggerConfig struct {
 	HttpHandle *string `json:"http_handle,omitempty"`
 }
 
-// HTTPTriggerDeliveryRequest Free-form JSON object delivered to the HTTP trigger. The payload is recorded on the source event and forwarded to the run as inputs.
+// HTTPTriggerDeliveryRequest Free-form JSON object delivered to the HTTP trigger. The payload is recorded on the source event and forwarded to the run as the event.
 type HTTPTriggerDeliveryRequest map[string]interface{}
 
 // HTTPTriggerDeliveryResult Synchronous receipt for an inbound HTTP-trigger delivery. The trigger dispatch and run start happen asynchronously after this response. Clients can poll via `GET /v1/projects/{project_handle}/runs?source_event_id=<source_event_id>` to discover the run once the source-event processor reserves it.
@@ -3187,11 +3190,14 @@ type Loop struct {
 	// Concurrency Concurrency behavior: `allow`, `queue`, `skip`, or `replace`.
 	Concurrency *LoopConcurrency `json:"concurrency,omitempty"`
 
+	// Config Declared run config fields for this loop.
+	Config *map[string]LoopSpecInput `json:"config,omitempty"`
+
 	// CreatedAt Record creation timestamp.
 	CreatedAt time.Time `json:"created_at"`
 
-	// DefaultInputs Default values merged into `inputs` when a run is started without overrides.
-	DefaultInputs *map[string]interface{} `json:"default_inputs,omitempty"`
+	// DefaultConfig Default config values used when a run is started without overrides.
+	DefaultConfig *map[string]interface{} `json:"default_config,omitempty"`
 
 	// Defaults Run-level defaults inside the loop spec. Lives at `spec.defaults` in the JSON the engine compiles. The run wall-clock limit moved to `limits.wall_clock_timeout`.
 	Defaults *LoopSpecDefaults `json:"defaults,omitempty"`
@@ -3202,11 +3208,11 @@ type Loop struct {
 	// Description Markdown description of the loop's purpose.
 	Description *string `json:"description,omitempty"`
 
+	// Event Declared event fields for this loop.
+	Event *map[string]LoopSpecInput `json:"event,omitempty"`
+
 	// Id Stable loop identifier.
 	Id string `json:"id"`
-
-	// Inputs Declared run inputs for this loop.
-	Inputs *map[string]LoopSpecInput `json:"inputs,omitempty"`
 
 	// LastRunAt Timestamp of the most recent run start, if any.
 	LastRunAt *time.Time `json:"last_run_at,omitempty"`
@@ -3316,7 +3322,7 @@ type LoopAgentSessionPolicy struct {
 	// Disabled Disable durable session context and transcript writes for the affected agent step(s).
 	Disabled *bool `json:"disabled,omitempty"`
 
-	// Name Optional Go-template string rendered against `inputs`, `context`, `agent`, `loop`, `run`, `source`, and `step`. When omitted, Mobius derives a stable name from the event payload, falling back to the trigger or `default`.
+	// Name Optional Go-template string rendered against `event`, `meta`, `config`, `context`, `agent`, `loop`, `run`, `source`, and `step`. When omitted, Mobius derives a stable name from the event payload, falling back to the trigger or `default`.
 	Name *string `json:"name,omitempty"`
 
 	// Scope Named-session boundary. `auto` and omitted use `loop`. `agent` intentionally shares the named session across loops using the same agent.
@@ -3397,7 +3403,7 @@ type LoopCheckAssertion struct {
 	// Evidence Step ids whose saved outputs this assertion judges. Each must reference an earlier step. Cited outputs are shown to agent judges and recorded on the verdict.
 	Evidence *[]string `json:"evidence,omitempty"`
 
-	// Expr Predicate for `kind: expr`, evaluated against the run's template environment (`inputs`, `event`, `meta`, `steps.<id>.output`, and `steps[0].output`). Required for expr assertions.
+	// Expr Predicate for `kind: expr`, evaluated against the run's template environment (`event`, `meta`, `config`, `steps.<id>.output`, and `steps[0].output`). Required for expr assertions.
 	Expr *string `json:"expr,omitempty"`
 
 	// Kind `expr` evaluates a deterministic predicate with the same language as step conditions and event waits. `agent` runs a bounded judge turn returning a strict `{pass, reason}` verdict; its spend counts against the run budget and it consumes one run agent turn.
@@ -3422,7 +3428,7 @@ type LoopCheckGate struct {
 	Targets []string `json:"targets"`
 }
 
-// LoopCheckStep Check step configuration recognised inside `LoopSpec.steps[].config`. A check step evaluates typed assertions over the run's template environment (`inputs`, `event`, `meta`, `steps.<id>.output`, and `steps[0].output`) — deterministic `expr` predicates, or `agent` judges for everything that isn't deterministic — records a per-assertion verdict with cited evidence, and routes on failure: fail the run (stop reason `check_failed`), continue with the red verdict on the record, or open an approval gate carrying the evidence (rejection stops the run with `gate_rejected`). All assertions are evaluated; there is no short-circuit. An assertion that errors (bad expr, judge model failure, unparseable verdict) fails closed — never a silent pass.
+// LoopCheckStep Check step configuration recognised inside `LoopSpec.steps[].config`. A check step evaluates typed assertions over the run's template `event`, `meta`, `config`, `steps.<id>.output`, and `steps[0].output`) — deterministic `expr` predicates, or `agent` judges for everything that isn't deterministic — records a per-assertion verdict with cited evidence, and routes on failure: fail the run (stop reason `check_failed`), continue with the red verdict on the record, or open an approval gate carrying the evidence (rejection stops the run with `gate_rejected`). All assertions are evaluated; there is no short-circuit. An assertion that errors (bad expr, judge model failure, unparseable verdict) fails closed — never a silent pass.
 type LoopCheckStep struct {
 	// Checks Assertions evaluated in order; names must be unique.
 	Checks []LoopCheckAssertion `json:"checks"`
@@ -3439,7 +3445,7 @@ type LoopCheckStepOnFail string
 
 // LoopCheckStepSpec Check step entry inside `LoopSpec.steps`.
 type LoopCheckStepSpec struct {
-	// Config Check step configuration recognised inside `LoopSpec.steps[].config`. A check step evaluates typed assertions over the run's template environment (`inputs`, `event`, `meta`, `steps.<id>.output`, and `steps[0].output`) — deterministic `expr` predicates, or `agent` judges for everything that isn't deterministic — records a per-assertion verdict with cited evidence, and routes on failure: fail the run (stop reason `check_failed`), continue with the red verdict on the record, or open an approval gate carrying the evidence (rejection stops the run with `gate_rejected`). All assertions are evaluated; there is no short-circuit. An assertion that errors (bad expr, judge model failure, unparseable verdict) fails closed — never a silent pass.
+	// Config Check step configuration recognised inside `LoopSpec.steps[].config`. A check step evaluates typed assertions over the run's template `event`, `meta`, `config`, `steps.<id>.output`, and `steps[0].output`) — deterministic `expr` predicates, or `agent` judges for everything that isn't deterministic — records a per-assertion verdict with cited evidence, and routes on failure: fail the run (stop reason `check_failed`), continue with the red verdict on the record, or open an approval gate carrying the evidence (rejection stops the run with `gate_rejected`). All assertions are evaluated; there is no short-circuit. An assertion that errors (bad expr, judge model failure, unparseable verdict) fails closed — never a silent pass.
 	Config LoopCheckStep `json:"config"`
 
 	// Id Optional stable step id within the spec. If omitted, the compiler uses the step index as a string, such as `"0"`.
@@ -3541,6 +3547,9 @@ type LoopRun struct {
 	// CompletedAt Time the run reached a terminal status.
 	CompletedAt *time.Time `json:"completed_at,omitempty"`
 
+	// Config Optional static or caller-provided configuration resolved when the run started, reachable in templates at `config.*`.
+	Config *map[string]interface{} `json:"config,omitempty"`
+
 	// CreatedAt Record creation timestamp.
 	CreatedAt time.Time `json:"created_at"`
 
@@ -3556,14 +3565,11 @@ type LoopRun struct {
 	// ErrorType Machine-readable failure classification when available.
 	ErrorType *string `json:"error_type,omitempty"`
 
-	// Event Normalized payload of the event that started the run, reachable in templates at `${{ event.* }}`: the webhook body for event triggers, the request body for HTTP triggers. Empty for manual and schedule runs.
+	// Event Exact safe/canonical event object that started the run, reachable in templates at `event.*`.
 	Event *map[string]interface{} `json:"event,omitempty"`
 
 	// Id Stable run identifier.
 	Id string `json:"id"`
-
-	// Inputs Input map resolved when the run started, reachable in step templates at `${{ inputs.<key> }}`. Event trigger data lives in the run's `event` and `meta` fields; inputs hold only declared keys.
-	Inputs *map[string]interface{} `json:"inputs,omitempty"`
 
 	// LoopId Loop this run belongs to.
 	LoopId string `json:"loop_id"`
@@ -3943,8 +3949,14 @@ type LoopStep struct {
 
 // LoopSubLoopStep Loop-trigger step configuration recognised inside `LoopSpec.steps[].config`. Triggers another loop in the same project as an independent child run (fire-and-forget). The child run records `parent_run_id`, `parent_loop_id`, and `parent_step_key` so the lineage is visible from the child.
 type LoopSubLoopStep struct {
-	// Inputs Input map handed to the child run. String leaves render against the parent run before the child starts using `${{ ... }}` expr interpolations over `inputs`, `event`, `meta`, `steps.<id>.output`, or `steps[0].output`. When omitted the parent's run inputs are forwarded.
-	Inputs *map[string]interface{} `json:"inputs,omitempty"`
+	// Condition Removed legacy field. Use the step-level `if` field for child-loop conditions.
+	Condition *string `json:"condition,omitempty"`
+
+	// Config Optional config object handed to the child run.
+	Config *map[string]interface{} `json:"config,omitempty"`
+
+	// Event Event object handed to the child run. String leaves render against the parent run before the child starts using `${{ ... }}` expr interpolations over `event`, `meta`, `config`, `steps.<id>.output`, or `steps[0].output`. When omitted the parent's resolved event payload is forwarded.
+	Event *map[string]interface{} `json:"event,omitempty"`
 
 	// LoopId ID of the loop to trigger, scoped to the same project as the parent loop.
 	LoopId string `json:"loop_id"`
@@ -4503,19 +4515,25 @@ type SkillRequest struct {
 	Tags *TagMap `json:"tags,omitempty"`
 }
 
-// StartLoopRunRequest Body for `POST /v1/projects/{project_handle}/loops/{resource_id}/runs`. All fields are optional; an empty body starts a run with no inputs and no attribution.
+// StartLoopRunRequest Body for `POST /v1/projects/{project_handle}/loops/{resource_id}/runs`. All fields are optional; an empty body starts a run with an empty event/config envelope and no attribution.
 type StartLoopRunRequest struct {
 	// BudgetUsd Per-run budget override in US dollars (1 credit = $0.01). Overrides the loop spec's `limits` budget for this run only. Mutually exclusive with `credit_budget` — setting both is a `400`. Values finer than 0.001 credit ($0.00001) are rejected. The run halts at the next checkpoint (step boundary or agent tool iteration) once spend reaches the budget; enforcement granularity is one model call or metered action.
 	BudgetUsd *float64 `json:"budget_usd,omitempty"`
 
+	// Config Optional static or caller-provided configuration for handling the event. Templates reference it via `config.*`.
+	Config *map[string]interface{} `json:"config,omitempty"`
+
 	// CreditBudget Per-run budget override in whole credits (1 credit = $0.01). Same ceiling semantics as `budget_usd`; set exactly one.
 	CreditBudget *int64 `json:"credit_budget,omitempty"`
+
+	// Event Exact event object that starts the run. Manual/API starts use this object the same way integration, HTTP, and schedule triggers do. Templates reference it via `${{ event.<key> }}`.
+	Event *map[string]interface{} `json:"event,omitempty"`
 
 	// IdempotencyKey Caller-supplied idempotency key, scoped to (org, project). Repeat calls with the same `idempotency_key` while the prior run is still non-terminal return the existing run (same `id`). A repeat after the prior run terminated returns `409 Conflict` with code `idempotency_key_conflict` and details containing the existing run id and its terminal status.
 	IdempotencyKey *string `json:"idempotency_key,omitempty"`
 
-	// Inputs Input map passed to the run. Loops resolve it against the declared `inputs:` contract — undeclared keys are dropped, defaults fill, required inputs must resolve — and reference it via `${{ inputs.<key> }}`.
-	Inputs *map[string]interface{} `json:"inputs,omitempty"`
+	// Meta Optional event metadata supplied by the caller. Mobius also adds provenance such as run, loop, source, trigger, and source-event ids.
+	Meta *map[string]interface{} `json:"meta,omitempty"`
 
 	// Source Optional attribution for the call that started this run. Triggers and HTTP trigger dispatch populate `trigger_id` and `trigger_fire_id`. API callers usually only set `type` and `id`.
 	Source *LoopRunSource `json:"source,omitempty"`
@@ -4808,7 +4826,7 @@ type UpdateAgentRequest struct {
 	// Tags Key/value tags for organizing and filtering resources. Up to 8 per resource; keys 1–128 characters, values up to 256. Keys prefixed `mobius:` are system-managed and cannot be set by callers.
 	Tags *TagMap `json:"tags,omitempty"`
 
-	// ToolPresentation Controls how granted actions are surfaced to the model in Mobius-hosted agent turns. `flat` exposes one tool per action, while `meta` groups related actions behind compact command routers.
+	// ToolPresentation Controls how granted actions are surfaced to the model in Mobius-hosted agent turns. `meta` (the default) groups related actions behind compact command routers, while `flat` exposes one tool per action.
 	ToolPresentation *AgentToolPresentation `json:"tool_presentation,omitempty"`
 }
 
@@ -4838,8 +4856,11 @@ type UpdateLoopRequest struct {
 	// Concurrency Concurrency behavior: `allow`, `queue`, `skip`, or `replace`.
 	Concurrency *UpdateLoopRequestConcurrency `json:"concurrency,omitempty"`
 
-	// DefaultInputs Default values merged into `inputs` when a run is started without overrides.
-	DefaultInputs *map[string]interface{} `json:"default_inputs,omitempty"`
+	// Config Declared run config fields for this loop.
+	Config *map[string]LoopSpecInput `json:"config,omitempty"`
+
+	// DefaultConfig Default config values used when a run is started without overrides.
+	DefaultConfig *map[string]interface{} `json:"default_config,omitempty"`
 
 	// Defaults Run-level defaults inside the loop spec. Lives at `spec.defaults` in the JSON the engine compiles. The run wall-clock limit moved to `limits.wall_clock_timeout`.
 	Defaults *LoopSpecDefaults `json:"defaults,omitempty"`
@@ -4847,8 +4868,8 @@ type UpdateLoopRequest struct {
 	// Description Markdown description of the loop's purpose.
 	Description *string `json:"description,omitempty"`
 
-	// Inputs Declared run inputs for this loop.
-	Inputs *map[string]LoopSpecInput `json:"inputs,omitempty"`
+	// Event Declared event fields for this loop.
+	Event *map[string]LoopSpecInput `json:"event,omitempty"`
 
 	// Limits Run guardrails. Lives at `spec.limits` in the JSON the engine compiles. Every limit is optional; absent or zero means unbounded (plan-level org caps still apply), with one exception — trial-plan runs default to a 100-credit ($1) budget when no budget is set here or on the start request. Paid plans default to unbounded.
 	Limits *LoopSpecLimits `json:"limits,omitempty"`
@@ -4907,7 +4928,7 @@ type UpdateProjectRequest struct {
 
 // UpdateRowRequest defines model for UpdateRowRequest.
 type UpdateRowRequest struct {
-	// Data Replacement row data keyed by table column name.
+	// Data Fields to merge into the existing row, keyed by table column name.
 	Data map[string]interface{} `json:"data"`
 
 	// Version Expected version for optimistic locking. Omit or 0 to skip the check.
@@ -16934,7 +16955,6 @@ type DeleteSkillResponse struct {
 	JSON401      *Unauthorized
 	JSON403      *Forbidden
 	JSON404      *NotFound
-	JSON409      *Conflict
 	JSON429      *TooManyRequests
 }
 
@@ -17587,7 +17607,6 @@ type DeleteToolkitResponse struct {
 	JSON401      *Unauthorized
 	JSON403      *Forbidden
 	JSON404      *NotFound
-	JSON409      *Conflict
 	JSON429      *TooManyRequests
 }
 
@@ -22731,13 +22750,6 @@ func ParseDeleteSkillResponse(rsp *http.Response) (*DeleteSkillResponse, error) 
 		}
 		response.JSON404 = &dest
 
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
-		var dest Conflict
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON409 = &dest
-
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
 		var dest TooManyRequests
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -23805,13 +23817,6 @@ func ParseDeleteToolkitResponse(rsp *http.Response) (*DeleteToolkitResponse, err
 			return nil, err
 		}
 		response.JSON404 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
-		var dest Conflict
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
 		var dest TooManyRequests

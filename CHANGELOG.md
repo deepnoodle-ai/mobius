@@ -6,6 +6,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 
 ## [Unreleased]
 
+### Changed
+
+- SDKs / CLI: runs now carry a structured `event` / `config` / `meta`
+  envelope instead of a single `inputs` map, synced from the mobius-cloud
+  spec. Starting a run takes `event` (the exact event object, reachable in
+  templates at `event.*`), optional `config` (`config.*`), and optional
+  `meta`; the loop run record exposes the same fields. The high-level
+  `StartRunOptions` gains `Event` / `Config` / `Meta` (Go) and
+  `event` / `config` / `meta` (Python, TypeScript) in place of `Inputs` /
+  `inputs`, and the loop create/update `default_inputs` option is now
+  `default_config`. The `mobius runs start` CLI flag `--inputs` is now
+  `--event`, plus `--config` and `--meta`.
+- SDKs: the agent `tool_presentation` default is now `meta` (grouped command
+  routers) rather than `flat` (one tool per action).
+- SDKs: deleting a toolkit or skill no longer returns `409 Conflict` when it
+  is still assigned to agents — it is automatically detached, so deletion is
+  never blocked by existing assignments.
+
 ## [0.0.24] - 2026-06-12
 
 ### Added

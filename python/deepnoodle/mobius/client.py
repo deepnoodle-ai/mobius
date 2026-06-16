@@ -53,14 +53,14 @@ class AutomationOptions:
     name: str
     description: str | None = None
     agent_id: str | None = None
-    default_inputs: dict[str, Any] | None = None
+    default_config: dict[str, Any] | None = None
     settings: dict[str, Any] | None = None
     tags: TagMap | dict[str, str] | None = None
     # Authoring definition for the automation. Recognised keys mirror the loop
-    # spec (steps, inputs, triggers, defaults, limits, output, repositories,
-    # cleanup, ...). When it carries steps the automation is runnable
-    # immediately. Keys are merged into the create request; explicit fields
-    # above take precedence.
+    # spec (steps, event, config, triggers, defaults, limits, output,
+    # repositories, cleanup, ...). When it carries steps the automation is
+    # runnable immediately. Keys are merged into the create request; explicit
+    # fields above take precedence.
     spec: dict[str, Any] | None = None
 
 
@@ -69,7 +69,7 @@ class UpdateAutomationOptions:
     name: str | None = None
     description: str | None = None
     agent_id: str | None = None
-    default_inputs: dict[str, Any] | None = None
+    default_config: dict[str, Any] | None = None
     settings: dict[str, Any] | None = None
     status: AutomationStatus | None = None
     tags: TagMap | dict[str, str] | None = None
@@ -86,7 +86,13 @@ class ListAutomationsOptions:
 
 @dataclass
 class StartRunOptions:
-    inputs: dict[str, Any] | None = None
+    # Exact event object that starts the run, reachable in templates at
+    # ``event.*``. ``config`` holds optional static or caller-provided
+    # configuration (``config.*``); ``meta`` holds optional caller-supplied
+    # event metadata (Mobius adds its own provenance).
+    event: dict[str, Any] | None = None
+    config: dict[str, Any] | None = None
+    meta: dict[str, Any] | None = None
     source: AutomationRunSource | None = None
     external_id: str | None = None
 
@@ -366,9 +372,9 @@ def _drop_none(values: dict[str, Any]) -> dict[str, Any]:
 def _merge_automation_fields(opts: Any) -> dict[str, Any]:
     """Flatten automation options into loop request fields.
 
-    The loop spec (steps, inputs, triggers, ...) lives inline on the loop, so
-    the ``spec`` mapping is merged into the top-level request fields. Explicit
-    option fields take precedence over the same keys in ``spec``.
+    The loop spec (steps, event, config, triggers, ...) lives inline on the
+    loop, so the ``spec`` mapping is merged into the top-level request fields.
+    Explicit option fields take precedence over the same keys in ``spec``.
     """
     fields = dict(opts.__dict__)
     spec = fields.pop("spec", None) or {}
