@@ -316,27 +316,6 @@ func (e ArtifactSignedUrlMethod) Valid() bool {
 	}
 }
 
-// Defines values for ArtifactState.
-const (
-	ArtifactStateAvailable     ArtifactState = "available"
-	ArtifactStateFailed        ArtifactState = "failed"
-	ArtifactStatePendingUpload ArtifactState = "pending_upload"
-)
-
-// Valid indicates whether the value is a known member of the ArtifactState enum.
-func (e ArtifactState) Valid() bool {
-	switch e {
-	case ArtifactStateAvailable:
-		return true
-	case ArtifactStateFailed:
-		return true
-	case ArtifactStatePendingUpload:
-		return true
-	default:
-		return false
-	}
-}
-
 // Defines values for ArtifactVisibility.
 const (
 	ArtifactVisibilityPrivate ArtifactVisibility = "private"
@@ -451,15 +430,39 @@ func (e CreateEnvironmentRequestTemplateId) Valid() bool {
 	}
 }
 
-// Defines values for EnvironmentTemplateId.
+// Defines values for CreateLoopRequestConcurrency.
 const (
-	EnvironmentTemplateIdCodingDefault EnvironmentTemplateId = "coding-default"
+	CreateLoopRequestConcurrencyAllow   CreateLoopRequestConcurrency = "allow"
+	CreateLoopRequestConcurrencyQueue   CreateLoopRequestConcurrency = "queue"
+	CreateLoopRequestConcurrencyReplace CreateLoopRequestConcurrency = "replace"
+	CreateLoopRequestConcurrencySkip    CreateLoopRequestConcurrency = "skip"
 )
 
-// Valid indicates whether the value is a known member of the EnvironmentTemplateId enum.
-func (e EnvironmentTemplateId) Valid() bool {
+// Valid indicates whether the value is a known member of the CreateLoopRequestConcurrency enum.
+func (e CreateLoopRequestConcurrency) Valid() bool {
 	switch e {
-	case EnvironmentTemplateIdCodingDefault:
+	case CreateLoopRequestConcurrencyAllow:
+		return true
+	case CreateLoopRequestConcurrencyQueue:
+		return true
+	case CreateLoopRequestConcurrencyReplace:
+		return true
+	case CreateLoopRequestConcurrencySkip:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CreateLoopRequestSchemaVersion.
+const (
+	CreateLoopRequestSchemaVersionN2 CreateLoopRequestSchemaVersion = "2"
+)
+
+// Valid indicates whether the value is a known member of the CreateLoopRequestSchemaVersion enum.
+func (e CreateLoopRequestSchemaVersion) Valid() bool {
+	switch e {
+	case CreateLoopRequestSchemaVersionN2:
 		return true
 	default:
 		return false
@@ -664,6 +667,45 @@ const (
 func (e HTTPTriggerDeliveryResultStatus) Valid() bool {
 	switch e {
 	case HTTPTriggerDeliveryResultStatusAccepted:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LoopConcurrency.
+const (
+	LoopConcurrencyAllow   LoopConcurrency = "allow"
+	LoopConcurrencyQueue   LoopConcurrency = "queue"
+	LoopConcurrencyReplace LoopConcurrency = "replace"
+	LoopConcurrencySkip    LoopConcurrency = "skip"
+)
+
+// Valid indicates whether the value is a known member of the LoopConcurrency enum.
+func (e LoopConcurrency) Valid() bool {
+	switch e {
+	case LoopConcurrencyAllow:
+		return true
+	case LoopConcurrencyQueue:
+		return true
+	case LoopConcurrencyReplace:
+		return true
+	case LoopConcurrencySkip:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LoopSchemaVersion.
+const (
+	LoopSchemaVersionN2 LoopSchemaVersion = "2"
+)
+
+// Valid indicates whether the value is a known member of the LoopSchemaVersion enum.
+func (e LoopSchemaVersion) Valid() bool {
+	switch e {
+	case LoopSchemaVersionN2:
 		return true
 	default:
 		return false
@@ -1039,48 +1081,6 @@ func (e LoopSleepStepSpecKind) Valid() bool {
 	}
 }
 
-// Defines values for LoopSpecConcurrency.
-const (
-	LoopSpecConcurrencyAllow   LoopSpecConcurrency = "allow"
-	LoopSpecConcurrencyQueue   LoopSpecConcurrency = "queue"
-	LoopSpecConcurrencyReplace LoopSpecConcurrency = "replace"
-	LoopSpecConcurrencySkip    LoopSpecConcurrency = "skip"
-)
-
-// Valid indicates whether the value is a known member of the LoopSpecConcurrency enum.
-func (e LoopSpecConcurrency) Valid() bool {
-	switch e {
-	case LoopSpecConcurrencyAllow:
-		return true
-	case LoopSpecConcurrencyQueue:
-		return true
-	case LoopSpecConcurrencyReplace:
-		return true
-	case LoopSpecConcurrencySkip:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for LoopSpecSchemaVersion.
-const (
-	LoopSpecSchemaVersionN1 LoopSpecSchemaVersion = "1"
-	LoopSpecSchemaVersionN2 LoopSpecSchemaVersion = "2"
-)
-
-// Valid indicates whether the value is a known member of the LoopSpecSchemaVersion enum.
-func (e LoopSpecSchemaVersion) Valid() bool {
-	switch e {
-	case LoopSpecSchemaVersionN1:
-		return true
-	case LoopSpecSchemaVersionN2:
-		return true
-	default:
-		return false
-	}
-}
-
 // Defines values for LoopSpecRepositoryProvider.
 const (
 	LoopSpecRepositoryProviderGithub LoopSpecRepositoryProvider = "github"
@@ -1198,51 +1198,6 @@ func (e LoopTimeoutPolicyOnTimeout) Valid() bool {
 	}
 }
 
-// Defines values for LoopTriggerConcurrencyPolicy.
-const (
-	LoopTriggerConcurrencyPolicyAllow   LoopTriggerConcurrencyPolicy = "allow"
-	LoopTriggerConcurrencyPolicyQueue   LoopTriggerConcurrencyPolicy = "queue"
-	LoopTriggerConcurrencyPolicyReplace LoopTriggerConcurrencyPolicy = "replace"
-	LoopTriggerConcurrencyPolicySkip    LoopTriggerConcurrencyPolicy = "skip"
-)
-
-// Valid indicates whether the value is a known member of the LoopTriggerConcurrencyPolicy enum.
-func (e LoopTriggerConcurrencyPolicy) Valid() bool {
-	switch e {
-	case LoopTriggerConcurrencyPolicyAllow:
-		return true
-	case LoopTriggerConcurrencyPolicyQueue:
-		return true
-	case LoopTriggerConcurrencyPolicyReplace:
-		return true
-	case LoopTriggerConcurrencyPolicySkip:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for LoopVersionStatus.
-const (
-	LoopVersionStatusDraft      LoopVersionStatus = "draft"
-	LoopVersionStatusPublished  LoopVersionStatus = "published"
-	LoopVersionStatusSuperseded LoopVersionStatus = "superseded"
-)
-
-// Valid indicates whether the value is a known member of the LoopVersionStatus enum.
-func (e LoopVersionStatus) Valid() bool {
-	switch e {
-	case LoopVersionStatusDraft:
-		return true
-	case LoopVersionStatusPublished:
-		return true
-	case LoopVersionStatusSuperseded:
-		return true
-	default:
-		return false
-	}
-}
-
 // Defines values for LoopWaitForEventStepSpecKind.
 const (
 	LoopWaitForEventStepSpecKindWaitForEvent LoopWaitForEventStepSpecKind = "wait_for_event"
@@ -1296,14 +1251,14 @@ func (e ModelProviderGroupSource) Valid() bool {
 
 // Defines values for ProjectAccessMode.
 const (
-	ProjectAccessModeOrgOpen    ProjectAccessMode = "org_open"
+	ProjectAccessModeOpen       ProjectAccessMode = "open"
 	ProjectAccessModeRestricted ProjectAccessMode = "restricted"
 )
 
 // Valid indicates whether the value is a known member of the ProjectAccessMode enum.
 func (e ProjectAccessMode) Valid() bool {
 	switch e {
-	case ProjectAccessModeOrgOpen:
+	case ProjectAccessModeOpen:
 		return true
 	case ProjectAccessModeRestricted:
 		return true
@@ -1561,6 +1516,45 @@ func (e UpdateAgentRequestStatus) Valid() bool {
 	case UpdateAgentRequestStatusActive:
 		return true
 	case UpdateAgentRequestStatusInactive:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for UpdateLoopRequestConcurrency.
+const (
+	UpdateLoopRequestConcurrencyAllow   UpdateLoopRequestConcurrency = "allow"
+	UpdateLoopRequestConcurrencyQueue   UpdateLoopRequestConcurrency = "queue"
+	UpdateLoopRequestConcurrencyReplace UpdateLoopRequestConcurrency = "replace"
+	UpdateLoopRequestConcurrencySkip    UpdateLoopRequestConcurrency = "skip"
+)
+
+// Valid indicates whether the value is a known member of the UpdateLoopRequestConcurrency enum.
+func (e UpdateLoopRequestConcurrency) Valid() bool {
+	switch e {
+	case UpdateLoopRequestConcurrencyAllow:
+		return true
+	case UpdateLoopRequestConcurrencyQueue:
+		return true
+	case UpdateLoopRequestConcurrencyReplace:
+		return true
+	case UpdateLoopRequestConcurrencySkip:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for UpdateLoopRequestSchemaVersion.
+const (
+	UpdateLoopRequestSchemaVersionN2 UpdateLoopRequestSchemaVersion = "2"
+)
+
+// Valid indicates whether the value is a known member of the UpdateLoopRequestSchemaVersion enum.
+func (e UpdateLoopRequestSchemaVersion) Valid() bool {
+	switch e {
+	case UpdateLoopRequestSchemaVersionN2:
 		return true
 	default:
 		return false
@@ -2605,9 +2599,6 @@ type AppendSessionMessagesRequest struct {
 
 // Artifact Stored file or generated artifact metadata.
 type Artifact struct {
-	// CommittedAt Time the artifact content became available.
-	CommittedAt *time.Time `json:"committed_at,omitempty"`
-
 	// CreatedAt Time the artifact metadata was created.
 	CreatedAt time.Time `json:"created_at"`
 
@@ -2631,9 +2622,6 @@ type Artifact struct {
 
 	// SizeBytes Artifact content size in bytes.
 	SizeBytes int64 `json:"size_bytes"`
-
-	// State Artifact lifecycle state: `pending_upload`, `available`, or `failed`.
-	State ArtifactState `json:"state"`
 
 	// StepId Loop step that produced this artifact, derived from the active worker lease.
 	StepId *string `json:"step_id,omitempty"`
@@ -2692,9 +2680,6 @@ type ArtifactSignedUrl struct {
 
 // ArtifactSignedUrlMethod HTTP method to use with `url`; currently `GET`.
 type ArtifactSignedUrlMethod string
-
-// ArtifactState Artifact lifecycle state: `pending_upload`, `available`, or `failed`.
-type ArtifactState string
 
 // ArtifactVisibility Private artifacts are visible only to their owner user. Shared artifacts are visible to the project.
 type ArtifactVisibility string
@@ -2845,9 +2830,6 @@ type CreateEnvironmentRequest struct {
 	// Scope Optional namespace for named runtime resources. Omitted/null means the project/default scope; `owner` means names are unique within `(project, owned_by)`.
 	Scope *ResourceScope `json:"scope,omitempty"`
 
-	// Spec Provider-specific desired state.
-	Spec *map[string]interface{} `json:"spec,omitempty"`
-
 	// Tags Key/value tags for organizing and filtering resources. Up to 8 per resource; keys 1–128 characters, values up to 256. Keys prefixed `mobius:` are system-managed and cannot be set by callers.
 	Tags *TagMap `json:"tags,omitempty"`
 
@@ -2860,40 +2842,64 @@ type CreateEnvironmentRequestTemplateId string
 
 // CreateLoopRequest defines model for CreateLoopRequest.
 type CreateLoopRequest struct {
-	// Activate When true, `spec` is required. Mobius stores it as version 1, publishes it, materializes its triggers, and sets the loop status to `active` before returning.
-	Activate *bool `json:"activate,omitempty"`
+	// AgentId Agent associated with this loop. Agent steps use it when they do not pin `config.agent_id`.
+	AgentId *string `json:"agent_id,omitempty"`
 
-	// DefaultAgentId Agent used by `agent` steps that do not pin an agent explicitly.
-	DefaultAgentId *string `json:"default_agent_id,omitempty"`
+	// Cleanup Cleanup steps or policies evaluated after normal step execution.
+	Cleanup *[]map[string]interface{} `json:"cleanup,omitempty"`
+
+	// Concurrency Concurrency behavior: `allow`, `queue`, `skip`, or `replace`.
+	Concurrency *CreateLoopRequestConcurrency `json:"concurrency,omitempty"`
 
 	// DefaultInputs Default values merged into `inputs` when a run is started without overrides.
 	DefaultInputs *map[string]interface{} `json:"default_inputs,omitempty"`
 
+	// Defaults Run-level defaults inside the loop spec. Lives at `spec.defaults` in the JSON the engine compiles. The run wall-clock limit moved to `limits.wall_clock_timeout`.
+	Defaults *LoopSpecDefaults `json:"defaults,omitempty"`
+
 	// Description Markdown description of the loop's purpose.
 	Description *string `json:"description,omitempty"`
+
+	// Inputs Declared run inputs for this loop.
+	Inputs *map[string]LoopSpecInput `json:"inputs,omitempty"`
+
+	// Limits Run guardrails. Lives at `spec.limits` in the JSON the engine compiles. Every limit is optional; absent or zero means unbounded (plan-level org caps still apply), with one exception — trial-plan runs default to a 100-credit ($1) budget when no budget is set here or on the start request. Paid plans default to unbounded.
+	Limits *LoopSpecLimits `json:"limits,omitempty"`
 
 	// Name Human-readable display name.
 	Name string `json:"name"`
 
+	// Output Declared run result contract.
+	Output *map[string]interface{} `json:"output,omitempty"`
+
+	// Repositories Source repositories the loop targets.
+	Repositories *[]LoopSpecRepository `json:"repositories,omitempty"`
+
+	// SchemaVersion Loop authoring schema version. Only schema version 2 is accepted.
+	SchemaVersion *CreateLoopRequestSchemaVersion `json:"schema_version,omitempty"`
+
 	// Settings Free-form loop-level settings consumed by the engine.
 	Settings *map[string]interface{} `json:"settings,omitempty"`
 
-	// Spec Authoring representation of a loop.
-	Spec *LoopSpec `json:"spec,omitempty"`
+	// Steps Ordered user-authored steps to execute for each run. When present, the definition is runnable immediately.
+	Steps *[]LoopStep `json:"steps,omitempty"`
 
 	// Tags Key/value tags for organizing and filtering resources. Up to 8 per resource; keys 1–128 characters, values up to 256. Keys prefixed `mobius:` are system-managed and cannot be set by callers.
 	Tags *TagMap `json:"tags,omitempty"`
+
+	// Triggers Authored trigger declarations for this loop.
+	Triggers *[]LoopSpecTrigger `json:"triggers,omitempty"`
 }
 
-// CreateLoopVersionRequest defines model for CreateLoopVersionRequest.
-type CreateLoopVersionRequest struct {
-	// Spec Authoring representation of a loop.
-	Spec LoopSpec `json:"spec"`
-}
+// CreateLoopRequestConcurrency Concurrency behavior: `allow`, `queue`, `skip`, or `replace`.
+type CreateLoopRequestConcurrency string
+
+// CreateLoopRequestSchemaVersion Loop authoring schema version. Only schema version 2 is accepted.
+type CreateLoopRequestSchemaVersion string
 
 // CreateProjectRequest defines model for CreateProjectRequest.
 type CreateProjectRequest struct {
-	// AccessMode `org_open`: every org member can see and use the project, subject to role assignments. `restricted`: only listed project members (and org owners/admins) can see or use the project.
+	// AccessMode `open`: every org member can see and use the project, subject to role assignments. `restricted`: only listed project members (and org owners/admins) can see or use the project.
 	AccessMode *ProjectAccessMode `json:"access_mode,omitempty"`
 
 	// Description Optional human-readable description.
@@ -2942,52 +2948,22 @@ type CreateWebhookRequest struct {
 	Url *string `json:"url,omitempty"`
 }
 
-// Environment Durable execution environment record and provider state.
+// Environment Durable execution environment summary.
 type Environment struct {
-	// AgentId Associated agent ID, when bound to an agent.
-	AgentId *string `json:"agent_id,omitempty"`
-
-	// Capabilities Capability strings the environment can provide.
-	Capabilities []string `json:"capabilities"`
-
 	// CleanupStatus Cleanup outcome: `none`, `pending`, `succeeded`, `failed`, or `skipped`.
 	CleanupStatus EnvironmentCleanupStatus `json:"cleanup_status"`
-
-	// ContainsSecrets Whether the spec or runtime metadata references secret material.
-	ContainsSecrets bool `json:"contains_secrets"`
 
 	// CreatedAt Time the environment record was created.
 	CreatedAt time.Time `json:"created_at"`
 
-	// CreatedBy User ID of the principal who created this environment.
-	CreatedBy *string `json:"created_by,omitempty"`
-
 	// CurrentWorkerSessionId Worker session currently attached to this environment, when any.
 	CurrentWorkerSessionId *string `json:"current_worker_session_id,omitempty"`
-
-	// DestroyedAt Time the environment was destroyed, when terminal.
-	DestroyedAt *time.Time `json:"destroyed_at,omitempty"`
-
-	// EnvironmentMode High-level ownership policy for how Mobius plans to use the environment. `run` is one-shot and auto-cleaned with a run; `agent` and `loop` are persistent environment policies; `manual` is operator controlled.
-	EnvironmentMode EnvironmentMode `json:"environment_mode"`
 
 	// Id Unique environment identifier.
 	Id string `json:"id"`
 
-	// JobId Associated job ID, when a worker job is active.
-	JobId *string `json:"job_id,omitempty"`
-
-	// LastError Latest provider or worker error, when present.
-	LastError *string `json:"last_error,omitempty"`
-
-	// LastReconciledAt Last reconciliation attempt time.
-	LastReconciledAt *time.Time `json:"last_reconciled_at,omitempty"`
-
 	// LastSeenAt Last time the provider or worker reported the environment.
 	LastSeenAt *time.Time `json:"last_seen_at,omitempty"`
-
-	// LeaseExpiresAt Expiration time for the active lease, when leased.
-	LeaseExpiresAt *time.Time `json:"lease_expires_at,omitempty"`
 
 	// Lifetime Lifecycle owner for automatic cleanup. `run` environments are destroyed during their owning run's Finalize phase; `lease` environments are reaped after lease expiry; `explicit` environments require an explicit destroy call.
 	Lifetime EnvironmentLifetime `json:"lifetime"`
@@ -3001,29 +2977,11 @@ type Environment struct {
 	// Provider Backing provider: `sprites`, `cloudflare_containers`, or `worker`.
 	Provider EnvironmentProvider `json:"provider"`
 
-	// ProviderResourceId Provider-side resource identifier, when known.
-	ProviderResourceId *string `json:"provider_resource_id,omitempty"`
-
-	// ProviderResourceName Provider-side display name, when known.
-	ProviderResourceName *string `json:"provider_resource_name,omitempty"`
-
 	// RetentionPolicy Retention behavior: `manual`, `destroy_on_success`, `retain_on_failure`, or `retain_always`.
 	RetentionPolicy EnvironmentRetentionPolicy `json:"retention_policy"`
 
-	// RunId Associated run ID, when bound to a run.
-	RunId *string `json:"run_id,omitempty"`
-
-	// Runtime Provider-observed runtime data. URLs live under runtime.urls, with runtime.urls.primary as the primary URL when present.
-	Runtime map[string]interface{} `json:"runtime"`
-
 	// Scope Optional namespace for named runtime resources. Omitted/null means the project/default scope; `owner` means names are unique within `(project, owned_by)`.
 	Scope *ResourceScope `json:"scope,omitempty"`
-
-	// Spec Provider-specific desired state.
-	Spec *map[string]interface{} `json:"spec,omitempty"`
-
-	// SpecVersion Version of the environment spec format.
-	SpecVersion int `json:"spec_version"`
 
 	// Status Lifecycle status: `provisioning`, `ready`, `running`, `retained`, `destroying`, `destroyed`, `failed`, or `orphaned`.
 	Status EnvironmentStatus `json:"status"`
@@ -3031,18 +2989,9 @@ type Environment struct {
 	// Tags Key/value tags for organizing and filtering resources. Up to 8 per resource; keys 1–128 characters, values up to 256. Keys prefixed `mobius:` are system-managed and cannot be set by callers.
 	Tags *TagMap `json:"tags,omitempty"`
 
-	// TemplateId Environment template used to initialize the workspace; currently `coding-default`.
-	TemplateId *EnvironmentTemplateId `json:"template_id,omitempty"`
-
 	// UpdatedAt Time the environment record was last updated.
 	UpdatedAt time.Time `json:"updated_at"`
-
-	// UpdatedBy User ID of the principal who last updated this environment.
-	UpdatedBy *string `json:"updated_by,omitempty"`
 }
-
-// EnvironmentTemplateId Environment template used to initialize the workspace; currently `coding-default`.
-type EnvironmentTemplateId string
 
 // EnvironmentCleanupStatus Cleanup outcome: `none`, `pending`, `succeeded`, `failed`, or `skipped`.
 type EnvironmentCleanupStatus string
@@ -3094,10 +3043,10 @@ type EventCatalogEventType struct {
 	// Description Human-readable explanation of when this event fires.
 	Description *string `json:"description,omitempty"`
 
-	// EventSchema JSON Schema for the normalized event data available to event-trigger runs (`${{ event.* }}` in schema_version 2 loops, `{{ .inputs.event.* }}` in schema_version 1) and to event conditions/mappings at `event.*`. Absent only when the event payload is intentionally open-ended and the provider has not registered an authoring schema.
+	// EventSchema JSON Schema for the normalized event data available to event-trigger runs at `${{ event.* }}` and to event conditions/mappings at `event.*`. Absent only when the event payload is intentionally open-ended and the provider has not registered an authoring schema.
 	EventSchema *map[string]interface{} `json:"event_schema,omitempty"`
 
-	// MetaSchema JSON Schema for normalized routing metadata available to event-trigger runs (`${{ meta.* }}` in schema_version 2 loops, `{{ .inputs.meta.* }}` in schema_version 1) and to event conditions/mappings at `meta.*`.
+	// MetaSchema JSON Schema for normalized routing metadata available to event-trigger runs at `${{ meta.* }}` and to event conditions/mappings at `meta.*`.
 	MetaSchema *map[string]interface{} `json:"meta_schema,omitempty"`
 
 	// Name Dotted event-type identifier (`table.row.inserted`, `github.pull_request.opened`).
@@ -3227,16 +3176,25 @@ type InvokeActionRequest struct {
 	TimeoutSeconds *int `json:"timeout_seconds,omitempty"`
 }
 
-// Loop A loop. The `triggers` array reports the currently materialized runnable triggers. Desired triggers are authored in `LoopSpec.triggers` and reconciled when a version is published.
+// Loop A loop and its current authored definition. Updating any authoring field creates an internal revision and makes it runnable immediately.
 type Loop struct {
+	// AgentId Agent associated with this loop. Agent steps use it when they do not pin `config.agent_id`.
+	AgentId *string `json:"agent_id,omitempty"`
+
+	// Cleanup Cleanup steps or policies evaluated after normal step execution.
+	Cleanup *[]map[string]interface{} `json:"cleanup,omitempty"`
+
+	// Concurrency Concurrency behavior: `allow`, `queue`, `skip`, or `replace`.
+	Concurrency *LoopConcurrency `json:"concurrency,omitempty"`
+
 	// CreatedAt Record creation timestamp.
 	CreatedAt time.Time `json:"created_at"`
 
-	// DefaultAgentId Agent used by `agent` steps that do not pin an agent explicitly.
-	DefaultAgentId *string `json:"default_agent_id,omitempty"`
-
 	// DefaultInputs Default values merged into `inputs` when a run is started without overrides.
 	DefaultInputs *map[string]interface{} `json:"default_inputs,omitempty"`
+
+	// Defaults Run-level defaults inside the loop spec. Lives at `spec.defaults` in the JSON the engine compiles. The run wall-clock limit moved to `limits.wall_clock_timeout`.
+	Defaults *LoopSpecDefaults `json:"defaults,omitempty"`
 
 	// DeletedAt Timestamp when this loop was deleted; absent on active loops.
 	DeletedAt *time.Time `json:"deleted_at,omitempty"`
@@ -3247,20 +3205,29 @@ type Loop struct {
 	// Id Stable loop identifier.
 	Id string `json:"id"`
 
+	// Inputs Declared run inputs for this loop.
+	Inputs *map[string]LoopSpecInput `json:"inputs,omitempty"`
+
 	// LastRunAt Timestamp of the most recent run start, if any.
 	LastRunAt *time.Time `json:"last_run_at,omitempty"`
 
-	// LatestVersion Newest stored LoopVersion number, regardless of publication status.
-	LatestVersion int `json:"latest_version"`
+	// Limits Run guardrails. Lives at `spec.limits` in the JSON the engine compiles. Every limit is optional; absent or zero means unbounded (plan-level org caps still apply), with one exception — trial-plan runs default to a 100-credit ($1) budget when no budget is set here or on the start request. Paid plans default to unbounded.
+	Limits *LoopSpecLimits `json:"limits,omitempty"`
 
 	// Name Human-readable display name.
 	Name string `json:"name"`
 
+	// Output Declared run result contract.
+	Output *map[string]interface{} `json:"output,omitempty"`
+
 	// Owner User who created or currently owns this loop.
 	Owner *string `json:"owner,omitempty"`
 
-	// PublishedVersion Currently runnable version. Absent until a version is published.
-	PublishedVersion *int `json:"published_version,omitempty"`
+	// Repositories Source repositories the loop targets.
+	Repositories *[]LoopSpecRepository `json:"repositories,omitempty"`
+
+	// SchemaVersion Loop authoring schema version. Only schema version 2 is accepted.
+	SchemaVersion *LoopSchemaVersion `json:"schema_version,omitempty"`
 
 	// Settings Free-form loop-level settings consumed by the engine.
 	Settings *map[string]interface{} `json:"settings,omitempty"`
@@ -3268,15 +3235,24 @@ type Loop struct {
 	// Status Loop lifecycle status: `draft`, `active`, `paused`, or `deleted`.
 	Status LoopStatus `json:"status"`
 
+	// Steps Ordered user-authored steps to execute for each run.
+	Steps *[]LoopStep `json:"steps,omitempty"`
+
 	// Tags Key/value tags for organizing and filtering resources. Up to 8 per resource; keys 1–128 characters, values up to 256. Keys prefixed `mobius:` are system-managed and cannot be set by callers.
 	Tags *TagMap `json:"tags,omitempty"`
 
-	// Triggers Triggers that can start runs of this loop.
-	Triggers []LoopTrigger `json:"triggers"`
+	// Triggers Authored trigger declarations for this loop.
+	Triggers *[]LoopSpecTrigger `json:"triggers,omitempty"`
 
 	// UpdatedAt Last update timestamp.
 	UpdatedAt time.Time `json:"updated_at"`
 }
+
+// LoopConcurrency Concurrency behavior: `allow`, `queue`, `skip`, or `replace`.
+type LoopConcurrency string
+
+// LoopSchemaVersion Loop authoring schema version. Only schema version 2 is accepted.
+type LoopSchemaVersion string
 
 // LoopActionStep Action step configuration recognised inside `LoopSpec.steps[].config`.
 type LoopActionStep struct {
@@ -3301,14 +3277,11 @@ type LoopActionStepSpec struct {
 	// Config Action step configuration recognised inside `LoopSpec.steps[].config`.
 	Config LoopActionStep `json:"config"`
 
-	// If Bare expr predicate evaluated before the step runs; false skips the step. Requires schema_version "2".
+	// Id Optional stable step id within the spec. If omitted, the compiler uses the step index as a string, such as `"0"`.
+	Id *string `json:"id,omitempty"`
+
+	// If Bare expr predicate evaluated before the step runs; false skips the step.
 	If *string `json:"if,omitempty"`
-
-	// Input Step-local input object resolved when the step starts. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions. schema_version 1 only; removed in 2 (reference inputs/event/meta/steps directly in config fields).
-	Input *map[string]interface{} `json:"input,omitempty"`
-
-	// Key Stable step key within the spec.
-	Key string `json:"key"`
 
 	// Kind Step discriminator value; always `action`.
 	Kind LoopActionStepSpecKind `json:"kind"`
@@ -3318,9 +3291,6 @@ type LoopActionStepSpec struct {
 
 	// Retry Retry policy for a step. `max_attempts` is the total number of attempts (1 = no retry); it bounds both worker-reported failures and lease-loss recovery for worker-executed action steps. A worker that reports a failure with attempts remaining re-queues for another attempt rather than failing the run; the run fails once attempts are exhausted. The attempt count is visible on the run timeline (`action.retried`, `action.failed`) and on the executing job (`claim_attempt` / `max_attempts`). Cancellation is always terminal. Capped server-side at 10 attempts.
 	Retry *LoopRetryPolicy `json:"retry,omitempty"`
-
-	// SaveAs Context key used to store this step's output. Defaults to `key`. schema_version 1 only; removed in 2 (outputs are always at steps.<key>.output).
-	SaveAs *string `json:"save_as,omitempty"`
 
 	// Timeout Timeout behavior for one loop step.
 	Timeout *LoopTimeoutPolicy `json:"timeout,omitempty"`
@@ -3367,8 +3337,8 @@ type LoopAgentSessionPolicyScope string
 
 // LoopAgentStep Agent step configuration recognised inside `LoopSpec.steps[].config`.
 type LoopAgentStep struct {
-	// AgentId Agent to run for this step.
-	AgentId string `json:"agent_id"`
+	// AgentId Agent to run for this step. Omit to use the loop's top-level `agent_id`.
+	AgentId *string `json:"agent_id,omitempty"`
 
 	// DisableTools Disable all tool calls for this agent step. When omitted, prompt-only managed agent steps (no `tool_names`, output schema, or worker model route) default to tool-less execution and skip managed environment allocation. Set `false` explicitly to opt back into the agent's granted tools.
 	DisableTools *bool `json:"disable_tools,omitempty"`
@@ -3397,14 +3367,11 @@ type LoopAgentStepSpec struct {
 	// Config Agent step configuration recognised inside `LoopSpec.steps[].config`.
 	Config LoopAgentStep `json:"config"`
 
-	// If Bare expr predicate evaluated before the step runs; false skips the step. Requires schema_version "2".
+	// Id Optional stable step id within the spec. If omitted, the compiler uses the step index as a string, such as `"0"`.
+	Id *string `json:"id,omitempty"`
+
+	// If Bare expr predicate evaluated before the step runs; false skips the step.
 	If *string `json:"if,omitempty"`
-
-	// Input Step-local input object resolved when the step starts. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions. schema_version 1 only; removed in 2 (reference inputs/event/meta/steps directly in config fields).
-	Input *map[string]interface{} `json:"input,omitempty"`
-
-	// Key Stable step key within the spec.
-	Key string `json:"key"`
 
 	// Kind Step discriminator value; always `agent`.
 	Kind LoopAgentStepSpecKind `json:"kind"`
@@ -3414,9 +3381,6 @@ type LoopAgentStepSpec struct {
 
 	// Retry Retry policy for a step. `max_attempts` is the total number of attempts (1 = no retry); it bounds both worker-reported failures and lease-loss recovery for worker-executed action steps. A worker that reports a failure with attempts remaining re-queues for another attempt rather than failing the run; the run fails once attempts are exhausted. The attempt count is visible on the run timeline (`action.retried`, `action.failed`) and on the executing job (`claim_attempt` / `max_attempts`). Cancellation is always terminal. Capped server-side at 10 attempts.
 	Retry *LoopRetryPolicy `json:"retry,omitempty"`
-
-	// SaveAs Context key used to store this step's output. Defaults to `key`. schema_version 1 only; removed in 2 (outputs are always at steps.<key>.output).
-	SaveAs *string `json:"save_as,omitempty"`
 
 	// Timeout Timeout behavior for one loop step.
 	Timeout *LoopTimeoutPolicy `json:"timeout,omitempty"`
@@ -3430,10 +3394,10 @@ type LoopCheckAssertion struct {
 	// Agent Judge agent id for `kind: agent`. Omit to use the built-in platform reviewer `mobius-reviewer`. The judge should be a different agent than the one that produced the evidence; the compiler warns when a judge grades its own work.
 	Agent *string `json:"agent,omitempty"`
 
-	// Evidence Step keys whose saved outputs this assertion judges. Each must reference an earlier step. Cited outputs are shown to agent judges and recorded on the verdict.
+	// Evidence Step ids whose saved outputs this assertion judges. Each must reference an earlier step. Cited outputs are shown to agent judges and recorded on the verdict.
 	Evidence *[]string `json:"evidence,omitempty"`
 
-	// Expr Predicate for `kind: expr`, evaluated against the run's template environment (`{ inputs, context }` in schema_version 1; `inputs`, `event`, `meta`, and `steps.<key>.output` in schema_version 2). Required for expr assertions.
+	// Expr Predicate for `kind: expr`, evaluated against the run's template environment (`inputs`, `event`, `meta`, `steps.<id>.output`, and `steps[0].output`). Required for expr assertions.
 	Expr *string `json:"expr,omitempty"`
 
 	// Kind `expr` evaluates a deterministic predicate with the same language as step conditions and event waits. `agent` runs a bounded judge turn returning a strict `{pass, reason}` verdict; its spend counts against the run budget and it consumes one run agent turn.
@@ -3442,7 +3406,7 @@ type LoopCheckAssertion struct {
 	// Name Unique assertion name shown on the timeline proof row.
 	Name string `json:"name"`
 
-	// Prompt Judge instruction for `kind: agent`, rendered like every other templated string (`{{ .inputs.* }}` / `{{ .context.* }}` in schema_version 1, `${{ ... }}` expr interpolation in 2) before the cited evidence is appended. Required for agent assertions.
+	// Prompt Judge instruction for `kind: agent`, rendered with `${{ ... }}` expr interpolation before the cited evidence is appended. Required for agent assertions.
 	Prompt *string `json:"prompt,omitempty"`
 }
 
@@ -3458,7 +3422,7 @@ type LoopCheckGate struct {
 	Targets []string `json:"targets"`
 }
 
-// LoopCheckStep Check step configuration recognised inside `LoopSpec.steps[].config`. A check step evaluates typed assertions over the run's template environment (`{ inputs, context }` in schema_version 1; `inputs`, `event`, `meta`, and `steps.<key>.output` in schema_version 2) — deterministic `expr` predicates, or `agent` judges for everything that isn't deterministic — records a per-assertion verdict with cited evidence, and routes on failure: fail the run (stop reason `check_failed`), continue with the red verdict on the record, or open an approval gate carrying the evidence (rejection stops the run with `gate_rejected`). All assertions are evaluated; there is no short-circuit. An assertion that errors (bad expr, judge model failure, unparseable verdict) fails closed — never a silent pass.
+// LoopCheckStep Check step configuration recognised inside `LoopSpec.steps[].config`. A check step evaluates typed assertions over the run's template environment (`inputs`, `event`, `meta`, `steps.<id>.output`, and `steps[0].output`) — deterministic `expr` predicates, or `agent` judges for everything that isn't deterministic — records a per-assertion verdict with cited evidence, and routes on failure: fail the run (stop reason `check_failed`), continue with the red verdict on the record, or open an approval gate carrying the evidence (rejection stops the run with `gate_rejected`). All assertions are evaluated; there is no short-circuit. An assertion that errors (bad expr, judge model failure, unparseable verdict) fails closed — never a silent pass.
 type LoopCheckStep struct {
 	// Checks Assertions evaluated in order; names must be unique.
 	Checks []LoopCheckAssertion `json:"checks"`
@@ -3475,17 +3439,14 @@ type LoopCheckStepOnFail string
 
 // LoopCheckStepSpec Check step entry inside `LoopSpec.steps`.
 type LoopCheckStepSpec struct {
-	// Config Check step configuration recognised inside `LoopSpec.steps[].config`. A check step evaluates typed assertions over the run's template environment (`{ inputs, context }` in schema_version 1; `inputs`, `event`, `meta`, and `steps.<key>.output` in schema_version 2) — deterministic `expr` predicates, or `agent` judges for everything that isn't deterministic — records a per-assertion verdict with cited evidence, and routes on failure: fail the run (stop reason `check_failed`), continue with the red verdict on the record, or open an approval gate carrying the evidence (rejection stops the run with `gate_rejected`). All assertions are evaluated; there is no short-circuit. An assertion that errors (bad expr, judge model failure, unparseable verdict) fails closed — never a silent pass.
+	// Config Check step configuration recognised inside `LoopSpec.steps[].config`. A check step evaluates typed assertions over the run's template environment (`inputs`, `event`, `meta`, `steps.<id>.output`, and `steps[0].output`) — deterministic `expr` predicates, or `agent` judges for everything that isn't deterministic — records a per-assertion verdict with cited evidence, and routes on failure: fail the run (stop reason `check_failed`), continue with the red verdict on the record, or open an approval gate carrying the evidence (rejection stops the run with `gate_rejected`). All assertions are evaluated; there is no short-circuit. An assertion that errors (bad expr, judge model failure, unparseable verdict) fails closed — never a silent pass.
 	Config LoopCheckStep `json:"config"`
 
-	// If Bare expr predicate evaluated before the step runs; false skips the step. Requires schema_version "2".
+	// Id Optional stable step id within the spec. If omitted, the compiler uses the step index as a string, such as `"0"`.
+	Id *string `json:"id,omitempty"`
+
+	// If Bare expr predicate evaluated before the step runs; false skips the step.
 	If *string `json:"if,omitempty"`
-
-	// Input Step-local input object resolved when the step starts. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions. schema_version 1 only; removed in 2 (reference inputs/event/meta/steps directly in config fields).
-	Input *map[string]interface{} `json:"input,omitempty"`
-
-	// Key Stable step key within the spec.
-	Key string `json:"key"`
 
 	// Kind Step discriminator value; always `check`.
 	Kind LoopCheckStepSpecKind `json:"kind"`
@@ -3495,9 +3456,6 @@ type LoopCheckStepSpec struct {
 
 	// Retry Retry policy for a step. `max_attempts` is the total number of attempts (1 = no retry); it bounds both worker-reported failures and lease-loss recovery for worker-executed action steps. A worker that reports a failure with attempts remaining re-queues for another attempt rather than failing the run; the run fails once attempts are exhausted. The attempt count is visible on the run timeline (`action.retried`, `action.failed`) and on the executing job (`claim_attempt` / `max_attempts`). Cancellation is always terminal. Capped server-side at 10 attempts.
 	Retry *LoopRetryPolicy `json:"retry,omitempty"`
-
-	// SaveAs Context key used to store this step's output. Defaults to `key`. schema_version 1 only; removed in 2 (outputs are always at steps.<key>.output).
-	SaveAs *string `json:"save_as,omitempty"`
 
 	// Timeout Timeout behavior for one loop step.
 	Timeout *LoopTimeoutPolicy `json:"timeout,omitempty"`
@@ -3598,13 +3556,13 @@ type LoopRun struct {
 	// ErrorType Machine-readable failure classification when available.
 	ErrorType *string `json:"error_type,omitempty"`
 
-	// Event Normalized payload of the event that started the run, reachable in schema_version 2 templates at `${{ event.* }}`: the webhook body for event triggers, the request body for HTTP triggers. Empty for manual and schedule runs.
+	// Event Normalized payload of the event that started the run, reachable in templates at `${{ event.* }}`: the webhook body for event triggers, the request body for HTTP triggers. Empty for manual and schedule runs.
 	Event *map[string]interface{} `json:"event,omitempty"`
 
 	// Id Stable run identifier.
 	Id string `json:"id"`
 
-	// Inputs Input map resolved when the run started, reachable in step templates at `{{ .inputs.<key> }}` (schema_version 1) or `${{ inputs.<key> }}` (schema_version 2). In schema_version 1 event-trigger runs this is the normalized `{ event, meta }` envelope (`{{ .inputs.event.* }}`, `{{ .inputs.meta.* }}`); in schema_version 2 the trigger envelope lives in the run's `event` and `meta` fields instead and inputs hold only declared keys.
+	// Inputs Input map resolved when the run started, reachable in step templates at `${{ inputs.<key> }}`. Event trigger data lives in the run's `event` and `meta` fields; inputs hold only declared keys.
 	Inputs *map[string]interface{} `json:"inputs,omitempty"`
 
 	// LoopId Loop this run belongs to.
@@ -3622,7 +3580,7 @@ type LoopRun struct {
 	// MaxAgentTurns Run-wide cap on agent turns across all steps, from the loop spec's `limits.max_agent_turns`. Absent when unbounded.
 	MaxAgentTurns *int `json:"max_agent_turns,omitempty"`
 
-	// Meta Run and trigger metadata envelope, reachable in schema_version 2 templates at `${{ meta.* }}`: `run_id`, `loop_id`, `source`, `trigger`, plus trigger-supplied facts such as `event_type`, `source_event_id`, and `scheduled_at`.
+	// Meta Run and trigger metadata envelope, reachable in templates at `${{ meta.* }}`: `run_id`, `loop_id`, `source`, `trigger`, plus trigger-supplied facts such as `event_type`, `source_event_id`, and `scheduled_at`.
 	Meta *map[string]interface{} `json:"meta,omitempty"`
 
 	// ParentLoopId Loop that triggered this run via an `loop` step. Present only on child runs.
@@ -3634,7 +3592,7 @@ type LoopRun struct {
 	// ParentStepKey Step key within the parent run's loop that triggered this run. Present only on child runs.
 	ParentStepKey *string `json:"parent_step_key,omitempty"`
 
-	// Result Final result payload. When the loop declares an `output:` block (schema_version 2) this is that block rendered at completion; otherwise it is the run's accumulated step outputs, keyed by step key (`save_as` in schema_version 1). Absent until the run terminates successfully.
+	// Result Final result payload. When the loop declares an `output:` block this is that block rendered at completion; otherwise it is the run's accumulated step outputs, keyed by step id. Absent until the run terminates successfully.
 	Result *map[string]interface{} `json:"result,omitempty"`
 
 	// Source Optional attribution for the call that started this run. Triggers and HTTP trigger dispatch populate `trigger_id` and `trigger_fire_id`. API callers usually only set `type` and `id`.
@@ -3686,7 +3644,7 @@ type LoopRunEvent struct {
 	// StepId ID of the step this event belongs to, when applicable.
 	StepId *string `json:"step_id,omitempty"`
 
-	// StepKey Loop step key this event belongs to, when applicable.
+	// StepKey Legacy alias for the loop step ID this event belongs to, when applicable.
 	StepKey *string `json:"step_key,omitempty"`
 }
 
@@ -3770,7 +3728,7 @@ type LoopRunStep struct {
 	// Parameters Authored step parameters, before template rendering.
 	Parameters *map[string]interface{} `json:"parameters,omitempty"`
 
-	// Result Step output (shape varies by kind); absent until completion. Downstream step templates reach this value at `${{ steps.<key>.output }}` (schema_version 2) or `{{ .context.<save_as> }}` (schema_version 1).
+	// Result Step output (shape varies by kind); absent until completion. Downstream step templates reach this value at `${{ steps.<id>.output }}` or `${{ steps[0].output }}`.
 	Result interface{} `json:"result,omitempty"`
 
 	// RunId Run this step belongs to.
@@ -3838,14 +3796,11 @@ type LoopSleepStepSpec struct {
 	// Config Sleep step configuration recognised inside `LoopSpec.steps[].config`.
 	Config LoopSleepStep `json:"config"`
 
-	// If Bare expr predicate evaluated before the step runs; false skips the step. Requires schema_version "2".
+	// Id Optional stable step id within the spec. If omitted, the compiler uses the step index as a string, such as `"0"`.
+	Id *string `json:"id,omitempty"`
+
+	// If Bare expr predicate evaluated before the step runs; false skips the step.
 	If *string `json:"if,omitempty"`
-
-	// Input Step-local input object resolved when the step starts. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions. schema_version 1 only; removed in 2 (reference inputs/event/meta/steps directly in config fields).
-	Input *map[string]interface{} `json:"input,omitempty"`
-
-	// Key Stable step key within the spec.
-	Key string `json:"key"`
 
 	// Kind Step discriminator value; always `sleep`.
 	Kind LoopSleepStepSpecKind `json:"kind"`
@@ -3856,60 +3811,12 @@ type LoopSleepStepSpec struct {
 	// Retry Retry policy for a step. `max_attempts` is the total number of attempts (1 = no retry); it bounds both worker-reported failures and lease-loss recovery for worker-executed action steps. A worker that reports a failure with attempts remaining re-queues for another attempt rather than failing the run; the run fails once attempts are exhausted. The attempt count is visible on the run timeline (`action.retried`, `action.failed`) and on the executing job (`claim_attempt` / `max_attempts`). Cancellation is always terminal. Capped server-side at 10 attempts.
 	Retry *LoopRetryPolicy `json:"retry,omitempty"`
 
-	// SaveAs Context key used to store this step's output. Defaults to `key`. schema_version 1 only; removed in 2 (outputs are always at steps.<key>.output).
-	SaveAs *string `json:"save_as,omitempty"`
-
 	// Timeout Timeout behavior for one loop step.
 	Timeout *LoopTimeoutPolicy `json:"timeout,omitempty"`
 }
 
 // LoopSleepStepSpecKind Step discriminator value; always `sleep`.
 type LoopSleepStepSpecKind string
-
-// LoopSpec Authoring representation of a loop.
-type LoopSpec struct {
-	// Cleanup Cleanup steps or policies evaluated after normal step execution.
-	Cleanup *[]map[string]interface{} `json:"cleanup,omitempty"`
-
-	// Concurrency Concurrency behavior: `allow`, `queue`, `skip`, or `replace`.
-	Concurrency *LoopSpecConcurrency `json:"concurrency,omitempty"`
-
-	// Defaults Run-level defaults inside the loop spec. Lives at `spec.defaults` in the JSON the engine compiles. The run wall-clock limit moved to `limits.wall_clock_timeout`.
-	Defaults *LoopSpecDefaults `json:"defaults,omitempty"`
-
-	// Description Optional spec-local Markdown description.
-	Description *string `json:"description,omitempty"`
-
-	// Inputs Declared run inputs. In schema_version 2 these form the run-input contract — undeclared keys are dropped and required inputs without defaults fail the start.
-	Inputs *map[string]LoopSpecInput `json:"inputs,omitempty"`
-
-	// Limits Run guardrails. Lives at `spec.limits` in the JSON the engine compiles. Every limit is optional; absent or zero means unbounded (plan-level org caps still apply), with one exception — trial-plan runs default to a 100-credit ($1) budget when no budget is set here or on the start request. Paid plans default to unbounded.
-	Limits *LoopSpecLimits `json:"limits,omitempty"`
-
-	// Name Optional spec-local display name.
-	Name *string `json:"name,omitempty"`
-
-	// Output Declared run result. When present, string leaves are rendered against the run inputs and saved step outputs at completion and the rendered map is the run's result — the contract for API consumers, `run.completed` subscribers, and parent loops. When absent, the result is the full accumulated context map. In schema_version 2 string leaves use `${{ ... }}` interpolation.
-	Output *map[string]interface{} `json:"output,omitempty"`
-
-	// Repositories Source repositories the loop targets. When a shared managed environment is selected, the runtime prepares these repositories before user-authored steps run.
-	Repositories *[]LoopSpecRepository `json:"repositories,omitempty"`
-
-	// SchemaVersion Loop spec schema version. `"1"` renders strings with Go text/template `{{ .inputs.x }}` / `{{ .context.x }}` actions. `"2"` uses expr `${{ ... }}` templates and bare expr predicates over the `inputs`, `event`, `meta`, and `steps.<key>.output` namespace.
-	SchemaVersion *LoopSpecSchemaVersion `json:"schema_version,omitempty"`
-
-	// Steps Ordered user-authored steps to execute for each run.
-	Steps []LoopStep `json:"steps"`
-
-	// Triggers Desired triggers materialized when a version is published.
-	Triggers *[]LoopSpecTrigger `json:"triggers,omitempty"`
-}
-
-// LoopSpecConcurrency Concurrency behavior: `allow`, `queue`, `skip`, or `replace`.
-type LoopSpecConcurrency string
-
-// LoopSpecSchemaVersion Loop spec schema version. `"1"` renders strings with Go text/template `{{ .inputs.x }}` / `{{ .context.x }}` actions. `"2"` uses expr `${{ ... }}` templates and bare expr predicates over the `inputs`, `event`, `meta`, and `steps.<key>.output` namespace.
-type LoopSpecSchemaVersion string
 
 // LoopSpecDefaults Run-level defaults inside the loop spec. Lives at `spec.defaults` in the JSON the engine compiles. The run wall-clock limit moved to `limits.wall_clock_timeout`.
 type LoopSpecDefaults struct {
@@ -3999,7 +3906,7 @@ type LoopSpecTrigger struct {
 	// Config Kind-specific trigger configuration. Use `HTTPTriggerConfig` for `kind: http`, `ScheduleTriggerConfig` for `kind: schedule`, and `EventTriggerConfig` for `kind: event`. Omit for manual triggers.
 	Config *LoopSpecTrigger_Config `json:"config,omitempty"`
 
-	// Enabled Whether this trigger should be materialized when the loop version is published.
+	// Enabled Whether this trigger should be materialized for the current runnable definition.
 	Enabled *bool `json:"enabled,omitempty"`
 
 	// Key Stable user-authored trigger key within the spec.
@@ -4036,10 +3943,7 @@ type LoopStep struct {
 
 // LoopSubLoopStep Loop-trigger step configuration recognised inside `LoopSpec.steps[].config`. Triggers another loop in the same project as an independent child run (fire-and-forget). The child run records `parent_run_id`, `parent_loop_id`, and `parent_step_key` so the lineage is visible from the child.
 type LoopSubLoopStep struct {
-	// Condition Optional expr predicate evaluated against the `{ inputs, context }` envelope of the parent run before the child is triggered. It must evaluate to a bool; a false result skips the step and starts no child run. schema_version 1 only; replaced in 2 by the step-level `if` field.
-	Condition *string `json:"condition,omitempty"`
-
-	// Inputs Input map handed to the child run. String leaves render against the parent run before the child starts: `{{ .inputs.* }}` / `{{ .context.* }}` Go text/template actions in schema_version 1, `${{ ... }}` expr interpolations over `inputs`, `event`, `meta`, and `steps.<key>.output` in schema_version 2. When omitted the parent's run inputs are forwarded.
+	// Inputs Input map handed to the child run. String leaves render against the parent run before the child starts using `${{ ... }}` expr interpolations over `inputs`, `event`, `meta`, `steps.<id>.output`, or `steps[0].output`. When omitted the parent's run inputs are forwarded.
 	Inputs *map[string]interface{} `json:"inputs,omitempty"`
 
 	// LoopId ID of the loop to trigger, scoped to the same project as the parent loop.
@@ -4051,14 +3955,11 @@ type LoopSubLoopStepSpec struct {
 	// Config Loop-trigger step configuration recognised inside `LoopSpec.steps[].config`. Triggers another loop in the same project as an independent child run (fire-and-forget). The child run records `parent_run_id`, `parent_loop_id`, and `parent_step_key` so the lineage is visible from the child.
 	Config LoopSubLoopStep `json:"config"`
 
-	// If Bare expr predicate evaluated before the step runs; false skips the step. Requires schema_version "2".
+	// Id Optional stable step id within the spec. If omitted, the compiler uses the step index as a string, such as `"0"`.
+	Id *string `json:"id,omitempty"`
+
+	// If Bare expr predicate evaluated before the step runs; false skips the step.
 	If *string `json:"if,omitempty"`
-
-	// Input Step-local input object resolved when the step starts. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions. schema_version 1 only; removed in 2 (reference inputs/event/meta/steps directly in config fields).
-	Input *map[string]interface{} `json:"input,omitempty"`
-
-	// Key Stable step key within the spec.
-	Key string `json:"key"`
 
 	// Kind Step discriminator value; always `loop`.
 	Kind LoopSubLoopStepSpecKind `json:"kind"`
@@ -4068,9 +3969,6 @@ type LoopSubLoopStepSpec struct {
 
 	// Retry Retry policy for a step. `max_attempts` is the total number of attempts (1 = no retry); it bounds both worker-reported failures and lease-loss recovery for worker-executed action steps. A worker that reports a failure with attempts remaining re-queues for another attempt rather than failing the run; the run fails once attempts are exhausted. The attempt count is visible on the run timeline (`action.retried`, `action.failed`) and on the executing job (`claim_attempt` / `max_attempts`). Cancellation is always terminal. Capped server-side at 10 attempts.
 	Retry *LoopRetryPolicy `json:"retry,omitempty"`
-
-	// SaveAs Context key used to store this step's output. Defaults to `key`. schema_version 1 only; removed in 2 (outputs are always at steps.<key>.output).
-	SaveAs *string `json:"save_as,omitempty"`
 
 	// Timeout Timeout behavior for one loop step.
 	Timeout *LoopTimeoutPolicy `json:"timeout,omitempty"`
@@ -4090,99 +3988,6 @@ type LoopTimeoutPolicy struct {
 
 // LoopTimeoutPolicyOnTimeout Timeout behavior; currently only `fail`.
 type LoopTimeoutPolicyOnTimeout string
-
-// LoopTrigger Materialized trigger created from a published loop version.
-type LoopTrigger struct {
-	// ConcurrencyPolicy Trigger concurrency behavior: `allow`, `queue`, `skip`, or `replace`.
-	ConcurrencyPolicy LoopTriggerConcurrencyPolicy `json:"concurrency_policy"`
-
-	// Condition Optional expr predicate evaluated against the public `{ event, meta }` envelope; the trigger fires only when it passes. Set only for event-kind triggers.
-	Condition *string `json:"condition,omitempty"`
-
-	// Config Kind-specific configuration (schedule cron, event matcher, HTTP-trigger options).
-	Config *map[string]interface{} `json:"config,omitempty"`
-
-	// CreatedAt Record creation timestamp.
-	CreatedAt time.Time `json:"created_at"`
-
-	// Enabled Whether the trigger is currently allowed to start runs.
-	Enabled bool `json:"enabled"`
-
-	// EventType Source-event type this trigger subscribes to. Set only for event-kind triggers.
-	EventType *string `json:"event_type,omitempty"`
-
-	// HttpHandle Public, globally unique delivery handle exposed in `POST /v1/triggers/http/{http_handle}`. The delivery endpoint has no project path segment, so the handle is resolved globally. Set only for http-kind triggers.
-	HttpHandle *string `json:"http_handle,omitempty"`
-
-	// Id Stable trigger identifier.
-	Id string `json:"id"`
-
-	// Kind One of: http, schedule, event.
-	Kind string `json:"kind"`
-
-	// LastFireAt Timestamp of the most recent fire.
-	LastFireAt *time.Time `json:"last_fire_at,omitempty"`
-
-	// LoopId Loop this trigger belongs to.
-	LoopId string `json:"loop_id"`
-
-	// MaxConcurrentRuns Cap on concurrent runs allowed from this trigger.
-	MaxConcurrentRuns int `json:"max_concurrent_runs"`
-
-	// Name Human-readable trigger name.
-	Name string `json:"name"`
-
-	// NextFireAt Next scheduled fire time. Set only for schedule-kind triggers.
-	NextFireAt *time.Time `json:"next_fire_at,omitempty"`
-
-	// SigningSecretSet Whether an HMAC signing secret is configured on this HTTP trigger. The secret value itself is never returned — rotate it via the signing-secret endpoint to reveal a new value once. Set only for http-kind triggers.
-	SigningSecretSet *bool `json:"signing_secret_set,omitempty"`
-
-	// SourceId Optional source identifier used to scope event matching.
-	SourceId *string `json:"source_id,omitempty"`
-
-	// UpdatedAt Last update timestamp.
-	UpdatedAt time.Time `json:"updated_at"`
-}
-
-// LoopTriggerConcurrencyPolicy Trigger concurrency behavior: `allow`, `queue`, `skip`, or `replace`.
-type LoopTriggerConcurrencyPolicy string
-
-// LoopVersion Stored immutable loop spec version.
-type LoopVersion struct {
-	// CreatedAt Record creation timestamp.
-	CreatedAt time.Time `json:"created_at"`
-
-	// CreatedBy User who authored this version.
-	CreatedBy *string `json:"created_by,omitempty"`
-
-	// Id Stable identifier for this LoopVersion record.
-	Id string `json:"id"`
-
-	// LoopId Loop this version belongs to.
-	LoopId string `json:"loop_id"`
-
-	// Spec Authoring representation of a loop.
-	Spec *LoopSpec `json:"spec,omitempty"`
-
-	// Status Publication state. `draft` is editable but not runnable; `published` is the currently runnable version; `superseded` is a prior published version retained for historical runs.
-	Status LoopVersionStatus `json:"status"`
-
-	// Validation Validation result for `spec` produced at version-creation time.
-	Validation *map[string]interface{} `json:"validation,omitempty"`
-
-	// Version Monotonic version number, unique per loop.
-	Version int `json:"version"`
-}
-
-// LoopVersionStatus Publication state. `draft` is editable but not runnable; `published` is the currently runnable version; `superseded` is a prior published version retained for historical runs.
-type LoopVersionStatus string
-
-// LoopVersionListResponse defines model for LoopVersionListResponse.
-type LoopVersionListResponse struct {
-	// Items LoopVersions returned for this loop, newest version first.
-	Items []LoopVersion `json:"items"`
-}
 
 // LoopWaitForEventStep Wait-for-event step configuration recognised inside `LoopSpec.steps[].config`.
 type LoopWaitForEventStep struct {
@@ -4207,14 +4012,11 @@ type LoopWaitForEventStepSpec struct {
 	// Config Wait-for-event step configuration recognised inside `LoopSpec.steps[].config`.
 	Config LoopWaitForEventStep `json:"config"`
 
-	// If Bare expr predicate evaluated before the step runs; false skips the step. Requires schema_version "2".
+	// Id Optional stable step id within the spec. If omitted, the compiler uses the step index as a string, such as `"0"`.
+	Id *string `json:"id,omitempty"`
+
+	// If Bare expr predicate evaluated before the step runs; false skips the step.
 	If *string `json:"if,omitempty"`
-
-	// Input Step-local input object resolved when the step starts. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions. schema_version 1 only; removed in 2 (reference inputs/event/meta/steps directly in config fields).
-	Input *map[string]interface{} `json:"input,omitempty"`
-
-	// Key Stable step key within the spec.
-	Key string `json:"key"`
 
 	// Kind Step discriminator value; always `wait_for_event`.
 	Kind LoopWaitForEventStepSpecKind `json:"kind"`
@@ -4224,9 +4026,6 @@ type LoopWaitForEventStepSpec struct {
 
 	// Retry Retry policy for a step. `max_attempts` is the total number of attempts (1 = no retry); it bounds both worker-reported failures and lease-loss recovery for worker-executed action steps. A worker that reports a failure with attempts remaining re-queues for another attempt rather than failing the run; the run fails once attempts are exhausted. The attempt count is visible on the run timeline (`action.retried`, `action.failed`) and on the executing job (`claim_attempt` / `max_attempts`). Cancellation is always terminal. Capped server-side at 10 attempts.
 	Retry *LoopRetryPolicy `json:"retry,omitempty"`
-
-	// SaveAs Context key used to store this step's output. Defaults to `key`. schema_version 1 only; removed in 2 (outputs are always at steps.<key>.output).
-	SaveAs *string `json:"save_as,omitempty"`
 
 	// Timeout Timeout behavior for one loop step.
 	Timeout *LoopTimeoutPolicy `json:"timeout,omitempty"`
@@ -4309,7 +4108,7 @@ type PingWebhookResult struct {
 
 // Project Workspace boundary for loops, actions, credentials, agents, and runtime activity. Most operational APIs live under a project, so this object tells clients which handle to use and who can see the project.
 type Project struct {
-	// AccessMode `org_open`: every org member can see and use the project, subject to role assignments. `restricted`: only listed project members (and org owners/admins) can see or use the project.
+	// AccessMode `open`: every org member can see and use the project, subject to role assignments. `restricted`: only listed project members (and org owners/admins) can see or use the project.
 	AccessMode ProjectAccessMode `json:"access_mode"`
 
 	// CreatedAt Timestamp when this project was created.
@@ -4337,7 +4136,7 @@ type Project struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-// ProjectAccessMode `org_open`: every org member can see and use the project, subject to role assignments. `restricted`: only listed project members (and org owners/admins) can see or use the project.
+// ProjectAccessMode `open`: every org member can see and use the project, subject to role assignments. `restricted`: only listed project members (and org owners/admins) can see or use the project.
 type ProjectAccessMode string
 
 // ProjectListResponse defines model for ProjectListResponse.
@@ -4715,7 +4514,7 @@ type StartLoopRunRequest struct {
 	// IdempotencyKey Caller-supplied idempotency key, scoped to (org, project). Repeat calls with the same `idempotency_key` while the prior run is still non-terminal return the existing run (same `id`). A repeat after the prior run terminated returns `409 Conflict` with code `idempotency_key_conflict` and details containing the existing run id and its terminal status.
 	IdempotencyKey *string `json:"idempotency_key,omitempty"`
 
-	// Inputs Input map passed to the run. schema_version 1 loops receive it as-is and reference it via `{{ .inputs.<key> }}` Go text/template actions. schema_version 2 loops resolve it against the declared `inputs:` contract — undeclared keys are dropped, defaults fill, required inputs must resolve — and reference it via `${{ inputs.<key> }}`.
+	// Inputs Input map passed to the run. Loops resolve it against the declared `inputs:` contract — undeclared keys are dropped, defaults fill, required inputs must resolve — and reference it via `${{ inputs.<key> }}`.
 	Inputs *map[string]interface{} `json:"inputs,omitempty"`
 
 	// Source Optional attribution for the call that started this run. Triggers and HTTP trigger dispatch populate `trigger_id` and `trigger_fire_id`. API callers usually only set `type` and `id`.
@@ -5028,19 +4827,43 @@ type UpdateEnvironmentRequest struct {
 	Tags *TagMap `json:"tags,omitempty"`
 }
 
-// UpdateLoopRequest Partial update of loop metadata. Desired triggers live in `LoopSpec.triggers` and are materialized when a version is published.
+// UpdateLoopRequest Partial update of loop metadata and/or authoring fields. Authoring changes become runnable immediately.
 type UpdateLoopRequest struct {
-	// DefaultAgentId Agent used by `agent` steps that do not pin an agent explicitly.
-	DefaultAgentId *string `json:"default_agent_id,omitempty"`
+	// AgentId Agent associated with this loop. Agent steps use it when they do not pin `config.agent_id`.
+	AgentId *string `json:"agent_id,omitempty"`
+
+	// Cleanup Replacement cleanup steps or policies.
+	Cleanup *[]map[string]interface{} `json:"cleanup,omitempty"`
+
+	// Concurrency Concurrency behavior: `allow`, `queue`, `skip`, or `replace`.
+	Concurrency *UpdateLoopRequestConcurrency `json:"concurrency,omitempty"`
 
 	// DefaultInputs Default values merged into `inputs` when a run is started without overrides.
 	DefaultInputs *map[string]interface{} `json:"default_inputs,omitempty"`
 
+	// Defaults Run-level defaults inside the loop spec. Lives at `spec.defaults` in the JSON the engine compiles. The run wall-clock limit moved to `limits.wall_clock_timeout`.
+	Defaults *LoopSpecDefaults `json:"defaults,omitempty"`
+
 	// Description Markdown description of the loop's purpose.
 	Description *string `json:"description,omitempty"`
 
+	// Inputs Declared run inputs for this loop.
+	Inputs *map[string]LoopSpecInput `json:"inputs,omitempty"`
+
+	// Limits Run guardrails. Lives at `spec.limits` in the JSON the engine compiles. Every limit is optional; absent or zero means unbounded (plan-level org caps still apply), with one exception — trial-plan runs default to a 100-credit ($1) budget when no budget is set here or on the start request. Paid plans default to unbounded.
+	Limits *LoopSpecLimits `json:"limits,omitempty"`
+
 	// Name Human-readable display name.
 	Name *string `json:"name,omitempty"`
+
+	// Output Replacement run result contract.
+	Output *map[string]interface{} `json:"output,omitempty"`
+
+	// Repositories Replacement source repositories the loop targets.
+	Repositories *[]LoopSpecRepository `json:"repositories,omitempty"`
+
+	// SchemaVersion Loop authoring schema version. Only schema version 2 is accepted.
+	SchemaVersion *UpdateLoopRequestSchemaVersion `json:"schema_version,omitempty"`
 
 	// Settings Free-form loop-level settings consumed by the engine.
 	Settings *map[string]interface{} `json:"settings,omitempty"`
@@ -5048,13 +4871,25 @@ type UpdateLoopRequest struct {
 	// Status Loop lifecycle status: `draft`, `active`, `paused`, or `deleted`.
 	Status *LoopStatus `json:"status,omitempty"`
 
+	// Steps Replacement ordered user-authored steps.
+	Steps *[]LoopStep `json:"steps,omitempty"`
+
 	// Tags Key/value tags for organizing and filtering resources. Up to 8 per resource; keys 1–128 characters, values up to 256. Keys prefixed `mobius:` are system-managed and cannot be set by callers.
 	Tags *TagMap `json:"tags,omitempty"`
+
+	// Triggers Replacement authored trigger declarations.
+	Triggers *[]LoopSpecTrigger `json:"triggers,omitempty"`
 }
+
+// UpdateLoopRequestConcurrency Concurrency behavior: `allow`, `queue`, `skip`, or `replace`.
+type UpdateLoopRequestConcurrency string
+
+// UpdateLoopRequestSchemaVersion Loop authoring schema version. Only schema version 2 is accepted.
+type UpdateLoopRequestSchemaVersion string
 
 // UpdateProjectRequest defines model for UpdateProjectRequest.
 type UpdateProjectRequest struct {
-	// AccessMode `org_open`: every org member can see and use the project, subject to role assignments. `restricted`: only listed project members (and org owners/admins) can see or use the project.
+	// AccessMode `open`: every org member can see and use the project, subject to role assignments. `restricted`: only listed project members (and org owners/admins) can see or use the project.
 	AccessMode *ProjectAccessMode `json:"access_mode,omitempty"`
 
 	// Description Replacement description.
@@ -5063,7 +4898,7 @@ type UpdateProjectRequest struct {
 	// Name Replacement human-readable name.
 	Name *string `json:"name,omitempty"`
 
-	// SeedExistingMembers When transitioning from `org_open` to `restricted`, set true to insert all current org members as project members so nobody loses visibility on the flip. Ignored on other transitions.
+	// SeedExistingMembers When transitioning from `open` to `restricted`, set true to insert all current org members as project members so nobody loses visibility on the flip. Ignored on other transitions.
 	SeedExistingMembers *bool `json:"seed_existing_members,omitempty"`
 
 	// Tags Key/value tags for organizing and filtering resources. Up to 8 per resource; keys 1–128 characters, values up to 256. Keys prefixed `mobius:` are system-managed and cannot be set by callers.
@@ -5727,9 +5562,6 @@ type ListArtifactsParams struct {
 	// Mime Mime prefix filter (e.g. `image/`)
 	Mime *string `form:"mime,omitempty" json:"mime,omitempty"`
 
-	// State Filter by artifact lifecycle state.
-	State *ArtifactState `form:"state,omitempty" json:"state,omitempty"`
-
 	// Cursor Cursor for pagination (opaque string from previous response)
 	Cursor *CursorParam `form:"cursor,omitempty" json:"cursor,omitempty"`
 
@@ -5751,17 +5583,8 @@ type ListEnvironmentsParams struct {
 	// Limit Maximum number of items to return
 	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
 
-	// Provider Filter by backing environment provider.
-	Provider *EnvironmentProvider `form:"provider,omitempty" json:"provider,omitempty"`
-
 	// Status Filter by environment lifecycle status.
 	Status *EnvironmentStatus `form:"status,omitempty" json:"status,omitempty"`
-
-	// Scope Omit for all/default-scoped environments; use `owner` with `owned_by` to list owner-scoped environments.
-	Scope *ResourceScope `form:"scope,omitempty" json:"scope,omitempty"`
-
-	// OwnedBy Canonical user owner ID for the environment.
-	OwnedBy *string `form:"owned_by,omitempty" json:"owned_by,omitempty"`
 
 	// RunId Filter to environments created for the given run.
 	RunId *string `form:"run_id,omitempty" json:"run_id,omitempty"`
@@ -5777,6 +5600,9 @@ type ListEnvironmentsParams struct {
 type ListLoopsParams struct {
 	// Status Filter by lifecycle status. Omit to return the normal loop list, or pass a visible status to filter to it exactly.
 	Status *ListLoopsParamsStatus `form:"status,omitempty" json:"status,omitempty"`
+
+	// AgentId Return only loops associated with this agent.
+	AgentId *string `form:"agent_id,omitempty" json:"agent_id,omitempty"`
 
 	// Cursor Opaque pagination cursor from a prior response.
 	Cursor *string `form:"cursor,omitempty" json:"cursor,omitempty"`
@@ -5914,11 +5740,11 @@ type SaveAgentMessagingBindingJSONRequestBody = AgentMessagingBindingRequest
 // AppendSessionMessagesJSONRequestBody defines body for AppendSessionMessages for application/json ContentType.
 type AppendSessionMessagesJSONRequestBody = AppendSessionMessagesRequest
 
-// ReplaceAgentSkillsJSONRequestBody defines body for ReplaceAgentSkills for application/json ContentType.
-type ReplaceAgentSkillsJSONRequestBody = ReplaceSkillsRequest
+// ReplaceAgentSkillAssignmentsJSONRequestBody defines body for ReplaceAgentSkillAssignments for application/json ContentType.
+type ReplaceAgentSkillAssignmentsJSONRequestBody = ReplaceSkillsRequest
 
-// ReplaceAgentToolkitsJSONRequestBody defines body for ReplaceAgentToolkits for application/json ContentType.
-type ReplaceAgentToolkitsJSONRequestBody = ReplaceToolkitsRequest
+// ReplaceAgentToolkitAssignmentsJSONRequestBody defines body for ReplaceAgentToolkitAssignments for application/json ContentType.
+type ReplaceAgentToolkitAssignmentsJSONRequestBody = ReplaceToolkitsRequest
 
 // CreateAPIKeyJSONRequestBody defines body for CreateAPIKey for application/json ContentType.
 type CreateAPIKeyJSONRequestBody = CreateAPIKeyRequest
@@ -5937,9 +5763,6 @@ type UpdateLoopJSONRequestBody = UpdateLoopRequest
 
 // StartRunJSONRequestBody defines body for StartRun for application/json ContentType.
 type StartRunJSONRequestBody = StartLoopRunRequest
-
-// CreateLoopVersionJSONRequestBody defines body for CreateLoopVersion for application/json ContentType.
-type CreateLoopVersionJSONRequestBody = CreateLoopVersionRequest
 
 // CancelRunJSONRequestBody defines body for CancelRun for application/json ContentType.
 type CancelRunJSONRequestBody = CancelLoopRunRequest
@@ -7168,21 +6991,21 @@ type ClientInterface interface {
 	// ListSessionTurns request
 	ListSessionTurns(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, sessionId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListAgentSkills request
-	ListAgentSkills(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// ListAgentSkillAssignments request
+	ListAgentSkillAssignments(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ReplaceAgentSkillsWithBody request with any body
-	ReplaceAgentSkillsWithBody(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// ReplaceAgentSkillAssignmentsWithBody request with any body
+	ReplaceAgentSkillAssignmentsWithBody(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	ReplaceAgentSkills(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, body ReplaceAgentSkillsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ReplaceAgentSkillAssignments(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, body ReplaceAgentSkillAssignmentsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListAgentToolkits request
-	ListAgentToolkits(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// ListAgentToolkitAssignments request
+	ListAgentToolkitAssignments(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ReplaceAgentToolkitsWithBody request with any body
-	ReplaceAgentToolkitsWithBody(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// ReplaceAgentToolkitAssignmentsWithBody request with any body
+	ReplaceAgentToolkitAssignmentsWithBody(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	ReplaceAgentToolkits(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, body ReplaceAgentToolkitsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ReplaceAgentToolkitAssignments(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, body ReplaceAgentToolkitAssignmentsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetAgentTools request
 	GetAgentTools(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, params *GetAgentToolsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -7270,17 +7093,6 @@ type ClientInterface interface {
 	StartRunWithBody(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	StartRun(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, body StartRunJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// ListLoopVersions request
-	ListLoopVersions(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// CreateLoopVersionWithBody request with any body
-	CreateLoopVersionWithBody(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	CreateLoopVersion(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, body CreateLoopVersionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// PublishLoopVersion request
-	PublishLoopVersion(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, version int, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListRuns request
 	ListRuns(ctx context.Context, projectHandle ProjectHandleParam, params *ListRunsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -7873,8 +7685,8 @@ func (c *Client) ListSessionTurns(ctx context.Context, projectHandle ProjectHand
 	return c.Client.Do(req)
 }
 
-func (c *Client) ListAgentSkills(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListAgentSkillsRequest(c.Server, projectHandle, resourceId)
+func (c *Client) ListAgentSkillAssignments(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListAgentSkillAssignmentsRequest(c.Server, projectHandle, resourceId)
 	if err != nil {
 		return nil, err
 	}
@@ -7885,8 +7697,8 @@ func (c *Client) ListAgentSkills(ctx context.Context, projectHandle ProjectHandl
 	return c.Client.Do(req)
 }
 
-func (c *Client) ReplaceAgentSkillsWithBody(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewReplaceAgentSkillsRequestWithBody(c.Server, projectHandle, resourceId, contentType, body)
+func (c *Client) ReplaceAgentSkillAssignmentsWithBody(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewReplaceAgentSkillAssignmentsRequestWithBody(c.Server, projectHandle, resourceId, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -7897,8 +7709,8 @@ func (c *Client) ReplaceAgentSkillsWithBody(ctx context.Context, projectHandle P
 	return c.Client.Do(req)
 }
 
-func (c *Client) ReplaceAgentSkills(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, body ReplaceAgentSkillsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewReplaceAgentSkillsRequest(c.Server, projectHandle, resourceId, body)
+func (c *Client) ReplaceAgentSkillAssignments(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, body ReplaceAgentSkillAssignmentsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewReplaceAgentSkillAssignmentsRequest(c.Server, projectHandle, resourceId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -7909,8 +7721,8 @@ func (c *Client) ReplaceAgentSkills(ctx context.Context, projectHandle ProjectHa
 	return c.Client.Do(req)
 }
 
-func (c *Client) ListAgentToolkits(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListAgentToolkitsRequest(c.Server, projectHandle, resourceId)
+func (c *Client) ListAgentToolkitAssignments(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListAgentToolkitAssignmentsRequest(c.Server, projectHandle, resourceId)
 	if err != nil {
 		return nil, err
 	}
@@ -7921,8 +7733,8 @@ func (c *Client) ListAgentToolkits(ctx context.Context, projectHandle ProjectHan
 	return c.Client.Do(req)
 }
 
-func (c *Client) ReplaceAgentToolkitsWithBody(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewReplaceAgentToolkitsRequestWithBody(c.Server, projectHandle, resourceId, contentType, body)
+func (c *Client) ReplaceAgentToolkitAssignmentsWithBody(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewReplaceAgentToolkitAssignmentsRequestWithBody(c.Server, projectHandle, resourceId, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -7933,8 +7745,8 @@ func (c *Client) ReplaceAgentToolkitsWithBody(ctx context.Context, projectHandle
 	return c.Client.Do(req)
 }
 
-func (c *Client) ReplaceAgentToolkits(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, body ReplaceAgentToolkitsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewReplaceAgentToolkitsRequest(c.Server, projectHandle, resourceId, body)
+func (c *Client) ReplaceAgentToolkitAssignments(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, body ReplaceAgentToolkitAssignmentsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewReplaceAgentToolkitAssignmentsRequest(c.Server, projectHandle, resourceId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -8307,54 +8119,6 @@ func (c *Client) StartRunWithBody(ctx context.Context, projectHandle ProjectHand
 
 func (c *Client) StartRun(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, body StartRunJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewStartRunRequest(c.Server, projectHandle, resourceId, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) ListLoopVersions(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListLoopVersionsRequest(c.Server, projectHandle, resourceId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) CreateLoopVersionWithBody(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateLoopVersionRequestWithBody(c.Server, projectHandle, resourceId, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) CreateLoopVersion(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, body CreateLoopVersionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateLoopVersionRequest(c.Server, projectHandle, resourceId, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) PublishLoopVersion(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, version int, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewPublishLoopVersionRequest(c.Server, projectHandle, resourceId, version)
 	if err != nil {
 		return nil, err
 	}
@@ -10548,8 +10312,8 @@ func NewListSessionTurnsRequest(server string, projectHandle ProjectHandleParam,
 	return req, nil
 }
 
-// NewListAgentSkillsRequest generates requests for ListAgentSkills
-func NewListAgentSkillsRequest(server string, projectHandle ProjectHandleParam, resourceId IDParam) (*http.Request, error) {
+// NewListAgentSkillAssignmentsRequest generates requests for ListAgentSkillAssignments
+func NewListAgentSkillAssignmentsRequest(server string, projectHandle ProjectHandleParam, resourceId IDParam) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -10589,19 +10353,19 @@ func NewListAgentSkillsRequest(server string, projectHandle ProjectHandleParam, 
 	return req, nil
 }
 
-// NewReplaceAgentSkillsRequest calls the generic ReplaceAgentSkills builder with application/json body
-func NewReplaceAgentSkillsRequest(server string, projectHandle ProjectHandleParam, resourceId IDParam, body ReplaceAgentSkillsJSONRequestBody) (*http.Request, error) {
+// NewReplaceAgentSkillAssignmentsRequest calls the generic ReplaceAgentSkillAssignments builder with application/json body
+func NewReplaceAgentSkillAssignmentsRequest(server string, projectHandle ProjectHandleParam, resourceId IDParam, body ReplaceAgentSkillAssignmentsJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewReplaceAgentSkillsRequestWithBody(server, projectHandle, resourceId, "application/json", bodyReader)
+	return NewReplaceAgentSkillAssignmentsRequestWithBody(server, projectHandle, resourceId, "application/json", bodyReader)
 }
 
-// NewReplaceAgentSkillsRequestWithBody generates requests for ReplaceAgentSkills with any type of body
-func NewReplaceAgentSkillsRequestWithBody(server string, projectHandle ProjectHandleParam, resourceId IDParam, contentType string, body io.Reader) (*http.Request, error) {
+// NewReplaceAgentSkillAssignmentsRequestWithBody generates requests for ReplaceAgentSkillAssignments with any type of body
+func NewReplaceAgentSkillAssignmentsRequestWithBody(server string, projectHandle ProjectHandleParam, resourceId IDParam, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -10643,8 +10407,8 @@ func NewReplaceAgentSkillsRequestWithBody(server string, projectHandle ProjectHa
 	return req, nil
 }
 
-// NewListAgentToolkitsRequest generates requests for ListAgentToolkits
-func NewListAgentToolkitsRequest(server string, projectHandle ProjectHandleParam, resourceId IDParam) (*http.Request, error) {
+// NewListAgentToolkitAssignmentsRequest generates requests for ListAgentToolkitAssignments
+func NewListAgentToolkitAssignmentsRequest(server string, projectHandle ProjectHandleParam, resourceId IDParam) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -10684,19 +10448,19 @@ func NewListAgentToolkitsRequest(server string, projectHandle ProjectHandleParam
 	return req, nil
 }
 
-// NewReplaceAgentToolkitsRequest calls the generic ReplaceAgentToolkits builder with application/json body
-func NewReplaceAgentToolkitsRequest(server string, projectHandle ProjectHandleParam, resourceId IDParam, body ReplaceAgentToolkitsJSONRequestBody) (*http.Request, error) {
+// NewReplaceAgentToolkitAssignmentsRequest calls the generic ReplaceAgentToolkitAssignments builder with application/json body
+func NewReplaceAgentToolkitAssignmentsRequest(server string, projectHandle ProjectHandleParam, resourceId IDParam, body ReplaceAgentToolkitAssignmentsJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewReplaceAgentToolkitsRequestWithBody(server, projectHandle, resourceId, "application/json", bodyReader)
+	return NewReplaceAgentToolkitAssignmentsRequestWithBody(server, projectHandle, resourceId, "application/json", bodyReader)
 }
 
-// NewReplaceAgentToolkitsRequestWithBody generates requests for ReplaceAgentToolkits with any type of body
-func NewReplaceAgentToolkitsRequestWithBody(server string, projectHandle ProjectHandleParam, resourceId IDParam, contentType string, body io.Reader) (*http.Request, error) {
+// NewReplaceAgentToolkitAssignmentsRequestWithBody generates requests for ReplaceAgentToolkitAssignments with any type of body
+func NewReplaceAgentToolkitAssignmentsRequestWithBody(server string, projectHandle ProjectHandleParam, resourceId IDParam, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -11094,18 +10858,6 @@ func NewListArtifactsRequest(server string, projectHandle ProjectHandleParam, pa
 		if params.Mime != nil {
 
 			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "mime", *params.Mime, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.State != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "state", *params.State, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -11546,45 +11298,9 @@ func NewListEnvironmentsRequest(server string, projectHandle ProjectHandleParam,
 
 		}
 
-		if params.Provider != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "provider", *params.Provider, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
 		if params.Status != nil {
 
 			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "status", *params.Status, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.Scope != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "scope", *params.Scope, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.OwnedBy != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "owned_by", *params.OwnedBy, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -11874,6 +11590,18 @@ func NewListLoopsRequest(server string, projectHandle ProjectHandleParam, params
 
 		}
 
+		if params.AgentId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "agent_id", *params.AgentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
 		if params.Cursor != nil {
 
 			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "cursor", *params.Cursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
@@ -12145,149 +11873,6 @@ func NewStartRunRequestWithBody(server string, projectHandle ProjectHandleParam,
 	}
 
 	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewListLoopVersionsRequest generates requests for ListLoopVersions
-func NewListLoopVersionsRequest(server string, projectHandle ProjectHandleParam, resourceId IDParam) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project_handle", projectHandle, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "resource_id", resourceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/projects/%s/loops/%s/versions", pathParam0, pathParam1)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewCreateLoopVersionRequest calls the generic CreateLoopVersion builder with application/json body
-func NewCreateLoopVersionRequest(server string, projectHandle ProjectHandleParam, resourceId IDParam, body CreateLoopVersionJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewCreateLoopVersionRequestWithBody(server, projectHandle, resourceId, "application/json", bodyReader)
-}
-
-// NewCreateLoopVersionRequestWithBody generates requests for CreateLoopVersion with any type of body
-func NewCreateLoopVersionRequestWithBody(server string, projectHandle ProjectHandleParam, resourceId IDParam, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project_handle", projectHandle, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "resource_id", resourceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/projects/%s/loops/%s/versions", pathParam0, pathParam1)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewPublishLoopVersionRequest generates requests for PublishLoopVersion
-func NewPublishLoopVersionRequest(server string, projectHandle ProjectHandleParam, resourceId IDParam, version int) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project_handle", projectHandle, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "resource_id", resourceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam2 string
-
-	pathParam2, err = runtime.StyleParamWithOptions("simple", false, "version", version, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "integer", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/projects/%s/loops/%s/versions/%s/publication", pathParam0, pathParam1, pathParam2)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
 
 	return req, nil
 }
@@ -14840,21 +14425,21 @@ type ClientWithResponsesInterface interface {
 	// ListSessionTurnsWithResponse request
 	ListSessionTurnsWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, sessionId string, reqEditors ...RequestEditorFn) (*ListSessionTurnsResponse, error)
 
-	// ListAgentSkillsWithResponse request
-	ListAgentSkillsWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, reqEditors ...RequestEditorFn) (*ListAgentSkillsResponse, error)
+	// ListAgentSkillAssignmentsWithResponse request
+	ListAgentSkillAssignmentsWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, reqEditors ...RequestEditorFn) (*ListAgentSkillAssignmentsResponse, error)
 
-	// ReplaceAgentSkillsWithBodyWithResponse request with any body
-	ReplaceAgentSkillsWithBodyWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ReplaceAgentSkillsResponse, error)
+	// ReplaceAgentSkillAssignmentsWithBodyWithResponse request with any body
+	ReplaceAgentSkillAssignmentsWithBodyWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ReplaceAgentSkillAssignmentsResponse, error)
 
-	ReplaceAgentSkillsWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, body ReplaceAgentSkillsJSONRequestBody, reqEditors ...RequestEditorFn) (*ReplaceAgentSkillsResponse, error)
+	ReplaceAgentSkillAssignmentsWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, body ReplaceAgentSkillAssignmentsJSONRequestBody, reqEditors ...RequestEditorFn) (*ReplaceAgentSkillAssignmentsResponse, error)
 
-	// ListAgentToolkitsWithResponse request
-	ListAgentToolkitsWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, reqEditors ...RequestEditorFn) (*ListAgentToolkitsResponse, error)
+	// ListAgentToolkitAssignmentsWithResponse request
+	ListAgentToolkitAssignmentsWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, reqEditors ...RequestEditorFn) (*ListAgentToolkitAssignmentsResponse, error)
 
-	// ReplaceAgentToolkitsWithBodyWithResponse request with any body
-	ReplaceAgentToolkitsWithBodyWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ReplaceAgentToolkitsResponse, error)
+	// ReplaceAgentToolkitAssignmentsWithBodyWithResponse request with any body
+	ReplaceAgentToolkitAssignmentsWithBodyWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ReplaceAgentToolkitAssignmentsResponse, error)
 
-	ReplaceAgentToolkitsWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, body ReplaceAgentToolkitsJSONRequestBody, reqEditors ...RequestEditorFn) (*ReplaceAgentToolkitsResponse, error)
+	ReplaceAgentToolkitAssignmentsWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, body ReplaceAgentToolkitAssignmentsJSONRequestBody, reqEditors ...RequestEditorFn) (*ReplaceAgentToolkitAssignmentsResponse, error)
 
 	// GetAgentToolsWithResponse request
 	GetAgentToolsWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, params *GetAgentToolsParams, reqEditors ...RequestEditorFn) (*GetAgentToolsResponse, error)
@@ -14942,17 +14527,6 @@ type ClientWithResponsesInterface interface {
 	StartRunWithBodyWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*StartRunResponse, error)
 
 	StartRunWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, body StartRunJSONRequestBody, reqEditors ...RequestEditorFn) (*StartRunResponse, error)
-
-	// ListLoopVersionsWithResponse request
-	ListLoopVersionsWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, reqEditors ...RequestEditorFn) (*ListLoopVersionsResponse, error)
-
-	// CreateLoopVersionWithBodyWithResponse request with any body
-	CreateLoopVersionWithBodyWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateLoopVersionResponse, error)
-
-	CreateLoopVersionWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, body CreateLoopVersionJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateLoopVersionResponse, error)
-
-	// PublishLoopVersionWithResponse request
-	PublishLoopVersionWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, version int, reqEditors ...RequestEditorFn) (*PublishLoopVersionResponse, error)
 
 	// ListRunsWithResponse request
 	ListRunsWithResponse(ctx context.Context, projectHandle ProjectHandleParam, params *ListRunsParams, reqEditors ...RequestEditorFn) (*ListRunsResponse, error)
@@ -16008,7 +15582,7 @@ func (r ListSessionTurnsResponse) ContentType() string {
 	return ""
 }
 
-type ListAgentSkillsResponse struct {
+type ListAgentSkillAssignmentsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *SkillAssignmentListResponse
@@ -16018,7 +15592,7 @@ type ListAgentSkillsResponse struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r ListAgentSkillsResponse) Status() string {
+func (r ListAgentSkillAssignmentsResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -16026,7 +15600,7 @@ func (r ListAgentSkillsResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r ListAgentSkillsResponse) StatusCode() int {
+func (r ListAgentSkillAssignmentsResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -16034,14 +15608,14 @@ func (r ListAgentSkillsResponse) StatusCode() int {
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ListAgentSkillsResponse) ContentType() string {
+func (r ListAgentSkillAssignmentsResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
 	return ""
 }
 
-type ReplaceAgentSkillsResponse struct {
+type ReplaceAgentSkillAssignmentsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *SkillAssignmentListResponse
@@ -16053,7 +15627,7 @@ type ReplaceAgentSkillsResponse struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r ReplaceAgentSkillsResponse) Status() string {
+func (r ReplaceAgentSkillAssignmentsResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -16061,7 +15635,7 @@ func (r ReplaceAgentSkillsResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r ReplaceAgentSkillsResponse) StatusCode() int {
+func (r ReplaceAgentSkillAssignmentsResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -16069,14 +15643,14 @@ func (r ReplaceAgentSkillsResponse) StatusCode() int {
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ReplaceAgentSkillsResponse) ContentType() string {
+func (r ReplaceAgentSkillAssignmentsResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
 	return ""
 }
 
-type ListAgentToolkitsResponse struct {
+type ListAgentToolkitAssignmentsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *ToolkitAssignmentListResponse
@@ -16086,7 +15660,7 @@ type ListAgentToolkitsResponse struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r ListAgentToolkitsResponse) Status() string {
+func (r ListAgentToolkitAssignmentsResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -16094,7 +15668,7 @@ func (r ListAgentToolkitsResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r ListAgentToolkitsResponse) StatusCode() int {
+func (r ListAgentToolkitAssignmentsResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -16102,14 +15676,14 @@ func (r ListAgentToolkitsResponse) StatusCode() int {
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ListAgentToolkitsResponse) ContentType() string {
+func (r ListAgentToolkitAssignmentsResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
 	return ""
 }
 
-type ReplaceAgentToolkitsResponse struct {
+type ReplaceAgentToolkitAssignmentsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *ToolkitAssignmentListResponse
@@ -16121,7 +15695,7 @@ type ReplaceAgentToolkitsResponse struct {
 }
 
 // Status returns HTTPResponse.Status
-func (r ReplaceAgentToolkitsResponse) Status() string {
+func (r ReplaceAgentToolkitAssignmentsResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -16129,7 +15703,7 @@ func (r ReplaceAgentToolkitsResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r ReplaceAgentToolkitsResponse) StatusCode() int {
+func (r ReplaceAgentToolkitAssignmentsResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -16137,7 +15711,7 @@ func (r ReplaceAgentToolkitsResponse) StatusCode() int {
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ReplaceAgentToolkitsResponse) ContentType() string {
+func (r ReplaceAgentToolkitAssignmentsResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -16978,109 +16552,6 @@ func (r StartRunResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r StartRunResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type ListLoopVersionsResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *LoopVersionListResponse
-	JSON401      *Unauthorized
-	JSON403      *Forbidden
-	JSON404      *NotFound
-}
-
-// Status returns HTTPResponse.Status
-func (r ListLoopVersionsResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ListLoopVersionsResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ListLoopVersionsResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type CreateLoopVersionResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON201      *LoopVersion
-	JSON400      *BadRequest
-	JSON401      *Unauthorized
-	JSON403      *Forbidden
-	JSON404      *NotFound
-	JSON429      *TooManyRequests
-}
-
-// Status returns HTTPResponse.Status
-func (r CreateLoopVersionResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r CreateLoopVersionResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r CreateLoopVersionResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type PublishLoopVersionResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *Loop
-	JSON401      *Unauthorized
-	JSON403      *Forbidden
-	JSON404      *NotFound
-	JSON409      *Conflict
-	JSON429      *TooManyRequests
-}
-
-// Status returns HTTPResponse.Status
-func (r PublishLoopVersionResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r PublishLoopVersionResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r PublishLoopVersionResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -18893,56 +18364,56 @@ func (c *ClientWithResponses) ListSessionTurnsWithResponse(ctx context.Context, 
 	return ParseListSessionTurnsResponse(rsp)
 }
 
-// ListAgentSkillsWithResponse request returning *ListAgentSkillsResponse
-func (c *ClientWithResponses) ListAgentSkillsWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, reqEditors ...RequestEditorFn) (*ListAgentSkillsResponse, error) {
-	rsp, err := c.ListAgentSkills(ctx, projectHandle, resourceId, reqEditors...)
+// ListAgentSkillAssignmentsWithResponse request returning *ListAgentSkillAssignmentsResponse
+func (c *ClientWithResponses) ListAgentSkillAssignmentsWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, reqEditors ...RequestEditorFn) (*ListAgentSkillAssignmentsResponse, error) {
+	rsp, err := c.ListAgentSkillAssignments(ctx, projectHandle, resourceId, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseListAgentSkillsResponse(rsp)
+	return ParseListAgentSkillAssignmentsResponse(rsp)
 }
 
-// ReplaceAgentSkillsWithBodyWithResponse request with arbitrary body returning *ReplaceAgentSkillsResponse
-func (c *ClientWithResponses) ReplaceAgentSkillsWithBodyWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ReplaceAgentSkillsResponse, error) {
-	rsp, err := c.ReplaceAgentSkillsWithBody(ctx, projectHandle, resourceId, contentType, body, reqEditors...)
+// ReplaceAgentSkillAssignmentsWithBodyWithResponse request with arbitrary body returning *ReplaceAgentSkillAssignmentsResponse
+func (c *ClientWithResponses) ReplaceAgentSkillAssignmentsWithBodyWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ReplaceAgentSkillAssignmentsResponse, error) {
+	rsp, err := c.ReplaceAgentSkillAssignmentsWithBody(ctx, projectHandle, resourceId, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseReplaceAgentSkillsResponse(rsp)
+	return ParseReplaceAgentSkillAssignmentsResponse(rsp)
 }
 
-func (c *ClientWithResponses) ReplaceAgentSkillsWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, body ReplaceAgentSkillsJSONRequestBody, reqEditors ...RequestEditorFn) (*ReplaceAgentSkillsResponse, error) {
-	rsp, err := c.ReplaceAgentSkills(ctx, projectHandle, resourceId, body, reqEditors...)
+func (c *ClientWithResponses) ReplaceAgentSkillAssignmentsWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, body ReplaceAgentSkillAssignmentsJSONRequestBody, reqEditors ...RequestEditorFn) (*ReplaceAgentSkillAssignmentsResponse, error) {
+	rsp, err := c.ReplaceAgentSkillAssignments(ctx, projectHandle, resourceId, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseReplaceAgentSkillsResponse(rsp)
+	return ParseReplaceAgentSkillAssignmentsResponse(rsp)
 }
 
-// ListAgentToolkitsWithResponse request returning *ListAgentToolkitsResponse
-func (c *ClientWithResponses) ListAgentToolkitsWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, reqEditors ...RequestEditorFn) (*ListAgentToolkitsResponse, error) {
-	rsp, err := c.ListAgentToolkits(ctx, projectHandle, resourceId, reqEditors...)
+// ListAgentToolkitAssignmentsWithResponse request returning *ListAgentToolkitAssignmentsResponse
+func (c *ClientWithResponses) ListAgentToolkitAssignmentsWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, reqEditors ...RequestEditorFn) (*ListAgentToolkitAssignmentsResponse, error) {
+	rsp, err := c.ListAgentToolkitAssignments(ctx, projectHandle, resourceId, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseListAgentToolkitsResponse(rsp)
+	return ParseListAgentToolkitAssignmentsResponse(rsp)
 }
 
-// ReplaceAgentToolkitsWithBodyWithResponse request with arbitrary body returning *ReplaceAgentToolkitsResponse
-func (c *ClientWithResponses) ReplaceAgentToolkitsWithBodyWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ReplaceAgentToolkitsResponse, error) {
-	rsp, err := c.ReplaceAgentToolkitsWithBody(ctx, projectHandle, resourceId, contentType, body, reqEditors...)
+// ReplaceAgentToolkitAssignmentsWithBodyWithResponse request with arbitrary body returning *ReplaceAgentToolkitAssignmentsResponse
+func (c *ClientWithResponses) ReplaceAgentToolkitAssignmentsWithBodyWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ReplaceAgentToolkitAssignmentsResponse, error) {
+	rsp, err := c.ReplaceAgentToolkitAssignmentsWithBody(ctx, projectHandle, resourceId, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseReplaceAgentToolkitsResponse(rsp)
+	return ParseReplaceAgentToolkitAssignmentsResponse(rsp)
 }
 
-func (c *ClientWithResponses) ReplaceAgentToolkitsWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, body ReplaceAgentToolkitsJSONRequestBody, reqEditors ...RequestEditorFn) (*ReplaceAgentToolkitsResponse, error) {
-	rsp, err := c.ReplaceAgentToolkits(ctx, projectHandle, resourceId, body, reqEditors...)
+func (c *ClientWithResponses) ReplaceAgentToolkitAssignmentsWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, body ReplaceAgentToolkitAssignmentsJSONRequestBody, reqEditors ...RequestEditorFn) (*ReplaceAgentToolkitAssignmentsResponse, error) {
+	rsp, err := c.ReplaceAgentToolkitAssignments(ctx, projectHandle, resourceId, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParseReplaceAgentToolkitsResponse(rsp)
+	return ParseReplaceAgentToolkitAssignmentsResponse(rsp)
 }
 
 // GetAgentToolsWithResponse request returning *GetAgentToolsResponse
@@ -19216,41 +18687,6 @@ func (c *ClientWithResponses) StartRunWithResponse(ctx context.Context, projectH
 		return nil, err
 	}
 	return ParseStartRunResponse(rsp)
-}
-
-// ListLoopVersionsWithResponse request returning *ListLoopVersionsResponse
-func (c *ClientWithResponses) ListLoopVersionsWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, reqEditors ...RequestEditorFn) (*ListLoopVersionsResponse, error) {
-	rsp, err := c.ListLoopVersions(ctx, projectHandle, resourceId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseListLoopVersionsResponse(rsp)
-}
-
-// CreateLoopVersionWithBodyWithResponse request with arbitrary body returning *CreateLoopVersionResponse
-func (c *ClientWithResponses) CreateLoopVersionWithBodyWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateLoopVersionResponse, error) {
-	rsp, err := c.CreateLoopVersionWithBody(ctx, projectHandle, resourceId, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateLoopVersionResponse(rsp)
-}
-
-func (c *ClientWithResponses) CreateLoopVersionWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, body CreateLoopVersionJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateLoopVersionResponse, error) {
-	rsp, err := c.CreateLoopVersion(ctx, projectHandle, resourceId, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateLoopVersionResponse(rsp)
-}
-
-// PublishLoopVersionWithResponse request returning *PublishLoopVersionResponse
-func (c *ClientWithResponses) PublishLoopVersionWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, version int, reqEditors ...RequestEditorFn) (*PublishLoopVersionResponse, error) {
-	rsp, err := c.PublishLoopVersion(ctx, projectHandle, resourceId, version, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParsePublishLoopVersionResponse(rsp)
 }
 
 // ListRunsWithResponse request returning *ListRunsResponse
@@ -21198,15 +20634,15 @@ func ParseListSessionTurnsResponse(rsp *http.Response) (*ListSessionTurnsRespons
 	return response, nil
 }
 
-// ParseListAgentSkillsResponse parses an HTTP response from a ListAgentSkillsWithResponse call
-func ParseListAgentSkillsResponse(rsp *http.Response) (*ListAgentSkillsResponse, error) {
+// ParseListAgentSkillAssignmentsResponse parses an HTTP response from a ListAgentSkillAssignmentsWithResponse call
+func ParseListAgentSkillAssignmentsResponse(rsp *http.Response) (*ListAgentSkillAssignmentsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &ListAgentSkillsResponse{
+	response := &ListAgentSkillAssignmentsResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -21245,15 +20681,15 @@ func ParseListAgentSkillsResponse(rsp *http.Response) (*ListAgentSkillsResponse,
 	return response, nil
 }
 
-// ParseReplaceAgentSkillsResponse parses an HTTP response from a ReplaceAgentSkillsWithResponse call
-func ParseReplaceAgentSkillsResponse(rsp *http.Response) (*ReplaceAgentSkillsResponse, error) {
+// ParseReplaceAgentSkillAssignmentsResponse parses an HTTP response from a ReplaceAgentSkillAssignmentsWithResponse call
+func ParseReplaceAgentSkillAssignmentsResponse(rsp *http.Response) (*ReplaceAgentSkillAssignmentsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &ReplaceAgentSkillsResponse{
+	response := &ReplaceAgentSkillAssignmentsResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -21306,15 +20742,15 @@ func ParseReplaceAgentSkillsResponse(rsp *http.Response) (*ReplaceAgentSkillsRes
 	return response, nil
 }
 
-// ParseListAgentToolkitsResponse parses an HTTP response from a ListAgentToolkitsWithResponse call
-func ParseListAgentToolkitsResponse(rsp *http.Response) (*ListAgentToolkitsResponse, error) {
+// ParseListAgentToolkitAssignmentsResponse parses an HTTP response from a ListAgentToolkitAssignmentsWithResponse call
+func ParseListAgentToolkitAssignmentsResponse(rsp *http.Response) (*ListAgentToolkitAssignmentsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &ListAgentToolkitsResponse{
+	response := &ListAgentToolkitAssignmentsResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -21353,15 +20789,15 @@ func ParseListAgentToolkitsResponse(rsp *http.Response) (*ListAgentToolkitsRespo
 	return response, nil
 }
 
-// ParseReplaceAgentToolkitsResponse parses an HTTP response from a ReplaceAgentToolkitsWithResponse call
-func ParseReplaceAgentToolkitsResponse(rsp *http.Response) (*ReplaceAgentToolkitsResponse, error) {
+// ParseReplaceAgentToolkitAssignmentsResponse parses an HTTP response from a ReplaceAgentToolkitAssignmentsWithResponse call
+func ParseReplaceAgentToolkitAssignmentsResponse(rsp *http.Response) (*ReplaceAgentToolkitAssignmentsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &ReplaceAgentToolkitsResponse{
+	response := &ReplaceAgentToolkitAssignmentsResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -22653,175 +22089,6 @@ func ParseStartRunResponse(rsp *http.Response) (*StartRunResponse, error) {
 			return nil, err
 		}
 		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
-		var dest Conflict
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON409 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
-		var dest TooManyRequests
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON429 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseListLoopVersionsResponse parses an HTTP response from a ListLoopVersionsWithResponse call
-func ParseListLoopVersionsResponse(rsp *http.Response) (*ListLoopVersionsResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ListLoopVersionsResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest LoopVersionListResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseCreateLoopVersionResponse parses an HTTP response from a CreateLoopVersionWithResponse call
-func ParseCreateLoopVersionResponse(rsp *http.Response) (*CreateLoopVersionResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &CreateLoopVersionResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
-		var dest LoopVersion
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON201 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest BadRequest
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
-		var dest TooManyRequests
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON429 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParsePublishLoopVersionResponse parses an HTTP response from a PublishLoopVersionWithResponse call
-func ParsePublishLoopVersionResponse(rsp *http.Response) (*PublishLoopVersionResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &PublishLoopVersionResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Loop
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
 		var dest Unauthorized

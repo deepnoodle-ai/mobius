@@ -245,7 +245,7 @@ export interface paths {
         };
         /**
          * List environments
-         * @description Returns project environments visible to the caller, newest-first. Filters let clients narrow by provider, lifecycle status, run, owner scope, and recently destroyed tombstones.
+         * @description Returns project environments visible to the caller, newest-first. Filters let clients narrow by lifecycle status, run, and recently destroyed tombstones.
          */
         get: operations["listEnvironments"];
         put?: never;
@@ -355,7 +355,7 @@ export interface paths {
         head?: never;
         /**
          * Update project
-         * @description Updates `name`, `description`, and/or `access_mode`. The request also accepts `seed_existing_members` when flipping `access_mode` from `org_open` to `restricted`. The project handle is immutable and cannot be changed after creation.
+         * @description Updates `name`, `description`, and/or `access_mode`. The request also accepts `seed_existing_members` when flipping `access_mode` from `open` to `restricted`. The project handle is immutable and cannot be changed after creation.
          */
         patch: operations["updateProject"];
         trace?: never;
@@ -536,7 +536,7 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Provision email inbox
+         * Provision agent inbox
          * @description Provisions a dedicated email inbox for the agent. The address is derived from the agent ID (`{agentID}@mobiusinbox.com`) and stored on the agent record. Idempotent: if an inbox is already provisioned, the existing agent is returned unchanged.
          */
         post: operations["provisionAgentInbox"];
@@ -554,7 +554,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List sessions
+         * List agent sessions
          * @description Returns durable conversation sessions for one agent, newest activity first. Remote workers use this to inspect their own remembered conversations.
          */
         get: operations["listAgentSessions"];
@@ -574,7 +574,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get session
+         * Get agent session
          * @description Returns one durable conversation session for an agent.
          */
         get: operations["getAgentSession"];
@@ -594,13 +594,13 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List messages
+         * List session messages
          * @description Returns raw session messages in sequence order for replay.
          */
         get: operations["listSessionMessages"];
         put?: never;
         /**
-         * Append messages
+         * Append session messages
          * @description Appends one or more messages to a durable session and returns the updated session. The service assigns sequence numbers atomically and may append an additional compaction summary when the session crosses its compaction threshold.
          */
         post: operations["appendSessionMessages"];
@@ -618,8 +618,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List turns
-         * @description Returns the session's AgentTurns in chronological order — the spine a turn-grouped transcript is built on. Each turn carries its run/step or channel-exchange linkage, attempt, and status; fetch a turn's messages from its transcript endpoint.
+         * List session turns
+         * @description Returns the session's turns in chronological order. Each turn groups related transcript messages and includes links to any run step or channel exchange that produced it.
          */
         get: operations["listSessionTurns"];
         put?: never;
@@ -639,7 +639,7 @@ export interface paths {
         };
         /**
          * List turn messages
-         * @description Returns the messages produced by a single AgentTurn, in sequence order — an indexed read on the turn_id spine, with no metadata scan. This is the single-turn transcript read; group a whole session client-side by joining the session's messages on turn_id.
+         * @description Returns the transcript messages for one turn in sequence order. Use this endpoint when a client already has a turn ID; use the session messages endpoint to read the full session transcript.
          */
         get: operations["listTurnMessages"];
         put?: never;
@@ -658,13 +658,13 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List bindings
-         * @description Returns the provider accounts this agent can answer on.
+         * List agent messaging bindings
+         * @description Returns messaging provider accounts that route messages to this agent.
          */
         get: operations["listAgentMessagingBindings"];
         /**
-         * Save binding
-         * @description Upserts one provider-account binding used to route messages to this agent.
+         * Save agent messaging binding
+         * @description Saves one provider-account binding used to route messages to this agent.
          */
         put: operations["saveAgentMessagingBinding"];
         post?: never;
@@ -685,8 +685,8 @@ export interface paths {
         put?: never;
         post?: never;
         /**
-         * Delete binding
-         * @description Removes one messaging binding from the agent and provider account.
+         * Delete agent messaging binding
+         * @description Deletes one messaging binding from the agent and provider account.
          */
         delete: operations["deleteAgentMessagingBinding"];
         options?: never;
@@ -722,15 +722,15 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List assigned toolkits
+         * List agent toolkit assignments
          * @description Returns the toolkits assigned to an agent in assignment order.
          */
-        get: operations["listAgentToolkits"];
+        get: operations["listAgentToolkitAssignments"];
         /**
-         * Replace assigned toolkits
+         * Replace agent toolkit assignments
          * @description Replaces the agent's toolkit assignment set as a whole. The effective tool surface is the union of the assigned toolkits' actions, narrowed by any active skills and per-invocation filters.
          */
-        put: operations["replaceAgentToolkits"];
+        put: operations["replaceAgentToolkitAssignments"];
         post?: never;
         delete?: never;
         options?: never;
@@ -746,15 +746,15 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List assigned skills
+         * List agent skill assignments
          * @description Returns the skills assigned to an agent in assignment order.
          */
-        get: operations["listAgentSkills"];
+        get: operations["listAgentSkillAssignments"];
         /**
-         * Replace assigned skills
+         * Replace agent skill assignments
          * @description Replaces the agent's skill assignment set as a whole. A skill can narrow the agent's tools while active via its `allowed_tools` filter; it never widens the set beyond the assigned toolkits' actions.
          */
-        put: operations["replaceAgentSkills"];
+        put: operations["replaceAgentSkillAssignments"];
         post?: never;
         delete?: never;
         options?: never;
@@ -770,7 +770,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get resolved tools
+         * Get agent tools
          * @description Resolves the effective set of tools an agent can invoke: the flat union of the assigned toolkits' actions, optionally restricted by a toolkit subset, per-invocation tool filters, and active skill narrowing.
          */
         get: operations["getAgentTools"];
@@ -791,13 +791,13 @@ export interface paths {
         };
         /**
          * List loops
-         * @description Returns loops in the project, newest-first. Supports filtering by lifecycle status and cursor-based pagination. Deleted loops are omitted from normal list responses.
+         * @description Returns loops in the project, newest-first. Supports filtering by lifecycle status, associated agent, and cursor-based pagination. Deleted loops are omitted from normal list responses.
          */
         get: operations["listLoops"];
         put?: never;
         /**
          * Create loop
-         * @description Creates a new loop, addressed thereafter by its generated `id`. Include `spec` to create the first draft version inline; set `activate: true` with `spec` to publish that version and make the loop active in one request.
+         * @description Creates a new loop, addressed thereafter by its generated `id`. If authoring fields such as `steps` are supplied, they become the runnable definition immediately and the loop returns `active`.
          */
         post: operations["createLoop"];
         delete?: never;
@@ -815,7 +815,7 @@ export interface paths {
         };
         /**
          * Get loop
-         * @description Returns one loop by ID, including status, owner metadata, and the published spec when available.
+         * @description Returns one loop by ID, including its current authored definition.
          */
         get: operations["getLoop"];
         put?: never;
@@ -829,53 +829,9 @@ export interface paths {
         head?: never;
         /**
          * Update loop
-         * @description Updates mutable fields on the loop. The id, org, and project remain immutable.
+         * @description Updates mutable fields on the loop. If authoring fields such as `steps` are supplied, they replace the current runnable definition immediately. The id, org, and project remain immutable.
          */
         patch: operations["updateLoop"];
-        trace?: never;
-    };
-    "/v1/projects/{project_handle}/loops/{resource_id}/versions": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List versions
-         * @description Returns every stored version (draft, published, superseded) for one loop, newest version first.
-         */
-        get: operations["listLoopVersions"];
-        put?: never;
-        /**
-         * Create version
-         * @description Stores a new draft `LoopVersion` with the supplied spec. Returns the new version. Use `publishLoopVersion` to make it runnable.
-         */
-        post: operations["createLoopVersion"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/projects/{project_handle}/loops/{resource_id}/versions/{version}/publication": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Publish version
-         * @description Marks the supplied version `published` and updates the loop's `published_version`. Prior published versions become `superseded`.
-         */
-        post: operations["publishLoopVersion"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
         trace?: never;
     };
     "/v1/triggers/http/{http_handle}": {
@@ -909,7 +865,7 @@ export interface paths {
         put?: never;
         /**
          * Start run
-         * @description Resolves `{resource_id}` to the latest runnable version and starts a run. Returns the created run when accepted, or the existing run when the request carries an `idempotency_key` that matches a still-active prior run. Reusing the key after the prior run is terminal returns `409 Conflict`.
+         * @description Resolves `{resource_id}` to the current runnable loop definition and starts a run. Returns the created run when accepted, or the existing run when the request carries an `idempotency_key` that matches a still-active prior run. Reusing the key after the prior run is terminal returns `409 Conflict`.
          */
         post: operations["startRun"];
         delete?: never;
@@ -1049,7 +1005,7 @@ export interface paths {
         put?: never;
         /**
          * Signal run
-         * @description Resumes a run that is suspended on a `wait_event` step matching the provided `step_key`. The `result` payload becomes the step's output, available to downstream steps at `steps.<key>.output` (schema_version 2) or `{{ .context.<save_as> }}` (schema_version 1).
+         * @description Resumes a run that is suspended on a `wait_event` step matching the provided `step_key`. The `result` payload becomes the step's output, available to downstream steps at `steps.<id>.output` or `steps[0].output` in `${{ ... }}` templates.
          */
         post: operations["signalRun"];
         delete?: never;
@@ -1391,7 +1347,7 @@ export interface paths {
         };
         /**
          * List artifacts
-         * @description Returns artifacts in the project, ordered (created_at desc, id desc). Optional filters narrow by run, step, state, or mime prefix. Deleted artifacts are excluded from API reads.
+         * @description Returns ready artifacts in the project, ordered (created_at desc, id desc). Optional filters narrow by run, step, or mime prefix. Deleted or unfinished artifacts are excluded from API reads.
          */
         get: operations["listArtifacts"];
         put?: never;
@@ -1534,10 +1490,10 @@ export interface components {
          */
         AgentStatus: "active" | "inactive";
         /**
-         * @description `org_open`: every org member can see and use the project, subject to role assignments. `restricted`: only listed project members (and org owners/admins) can see or use the project.
+         * @description `open`: every org member can see and use the project, subject to role assignments. `restricted`: only listed project members (and org owners/admins) can see or use the project.
          * @enum {string}
          */
-        ProjectAccessMode: "org_open" | "restricted";
+        ProjectAccessMode: "open" | "restricted";
         /**
          * @description Workspace boundary for loops, actions, credentials, agents, and runtime activity. Most operational APIs live under a project, so this object tells clients which handle to use and who can see the project.
          * @example {
@@ -1563,7 +1519,7 @@ export interface components {
             handle: string;
             /** @description Optional human-readable description. */
             description?: string;
-            /** @description Current project access policy: `org_open` or `restricted`. */
+            /** @description Current project access policy: `open` or `restricted`. */
             access_mode: components["schemas"]["ProjectAccessMode"];
             /** @description Principal ID of whoever created this project. */
             created_by?: string;
@@ -2218,11 +2174,11 @@ export interface components {
             name: string;
             /** @description Human-readable explanation of when this event fires. */
             description?: string;
-            /** @description JSON Schema for the normalized event data available to event-trigger runs (`${{ event.* }}` in schema_version 2 loops, `{{ .inputs.event.* }}` in schema_version 1) and to event conditions/mappings at `event.*`. Absent only when the event payload is intentionally open-ended and the provider has not registered an authoring schema. */
+            /** @description JSON Schema for the normalized event data available to event-trigger runs at `${{ event.* }}` and to event conditions/mappings at `event.*`. Absent only when the event payload is intentionally open-ended and the provider has not registered an authoring schema. */
             event_schema?: {
                 [key: string]: unknown;
             };
-            /** @description JSON Schema for normalized routing metadata available to event-trigger runs (`${{ meta.* }}` in schema_version 2 loops, `{{ .inputs.meta.* }}` in schema_version 1) and to event conditions/mappings at `meta.*`. */
+            /** @description JSON Schema for normalized routing metadata available to event-trigger runs at `${{ meta.* }}` and to event conditions/mappings at `meta.*`. */
             meta_schema?: {
                 [key: string]: unknown;
             };
@@ -2311,7 +2267,7 @@ export interface components {
          * @enum {string}
          */
         EnvironmentCleanupStatus: "none" | "pending" | "succeeded" | "failed" | "skipped";
-        /** @description Durable execution environment record and provider state. */
+        /** @description Durable execution environment summary. */
         Environment: {
             /** @description Unique environment identifier. */
             id: string;
@@ -2321,72 +2277,25 @@ export interface components {
             scope?: components["schemas"]["ResourceScope"];
             /** @description Backing environment provider. */
             provider: components["schemas"]["EnvironmentProvider"];
-            /** @description Provider-side resource identifier, when known. */
-            provider_resource_id?: string;
-            /** @description Provider-side display name, when known. */
-            provider_resource_name?: string;
             /** @description Current provisioning and lifecycle status. */
             status: components["schemas"]["EnvironmentStatus"];
-            /** @description Reuse policy Mobius derived for the environment. */
-            environment_mode: components["schemas"]["EnvironmentMode"];
             /** @description How long the environment is expected to live. */
             lifetime: components["schemas"]["EnvironmentLifetime"];
             /** @description Principal owner ID. For agent-started work, this is the agent's principal ID. */
             owned_by?: string;
-            /** @description User ID of the principal who created this environment. */
-            created_by?: string;
-            /** @description User ID of the principal who last updated this environment. */
-            updated_by?: string;
-            /** @description Associated run ID, when bound to a run. */
-            run_id?: string;
-            /** @description Associated job ID, when a worker job is active. */
-            job_id?: string;
             /** @description Worker session currently attached to this environment, when any. */
             current_worker_session_id?: string;
-            /** @description Associated agent ID, when bound to an agent. */
-            agent_id?: string;
-            /**
-             * @description Environment template used to initialize the workspace; currently `coding-default`.
-             * @enum {string}
-             */
-            template_id?: "coding-default";
-            /** @description Capability strings the environment can provide. */
-            capabilities: string[];
-            /** @description Version of the environment spec format. */
-            spec_version: number;
-            /** @description Provider-specific desired state. */
-            spec?: {
-                [key: string]: unknown;
-            };
-            /** @description Provider-observed runtime data. URLs live under runtime.urls, with runtime.urls.primary as the primary URL when present. */
-            runtime: {
-                [key: string]: unknown;
-            };
             /** @description Optional labels for filtering and organization. */
             tags?: components["schemas"]["TagMap"];
-            /** @description Whether the spec or runtime metadata references secret material. */
-            contains_secrets: boolean;
             /** @description Last cleanup outcome. */
             cleanup_status: components["schemas"]["EnvironmentCleanupStatus"];
             /** @description Retention behavior after work completes. */
             retention_policy: components["schemas"]["EnvironmentRetentionPolicy"];
             /**
              * Format: date-time
-             * @description Expiration time for the active lease, when leased.
-             */
-            lease_expires_at?: string;
-            /**
-             * Format: date-time
              * @description Last time the provider or worker reported the environment.
              */
             last_seen_at?: string;
-            /**
-             * Format: date-time
-             * @description Last reconciliation attempt time.
-             */
-            last_reconciled_at?: string;
-            /** @description Latest provider or worker error, when present. */
-            last_error?: string;
             /**
              * Format: date-time
              * @description Time the environment record was created.
@@ -2397,11 +2306,6 @@ export interface components {
              * @description Time the environment record was last updated.
              */
             updated_at: string;
-            /**
-             * Format: date-time
-             * @description Time the environment was destroyed, when terminal.
-             */
-            destroyed_at?: string;
         };
         /** @description Cursor-paginated list of environments. */
         EnvironmentListResponse: {
@@ -2427,10 +2331,6 @@ export interface components {
              * @enum {string}
              */
             template_id?: "coding-default";
-            /** @description Provider-specific desired state. */
-            spec?: {
-                [key: string]: unknown;
-            };
             /** @description Labels used for filtering, ownership, or cleanup policy. */
             tags?: components["schemas"]["TagMap"];
         };
@@ -2682,7 +2582,7 @@ export interface components {
             handle?: string;
             /** @description Optional human-readable description. */
             description?: string;
-            /** @description Initial project access policy: `org_open` or `restricted`. */
+            /** @description Initial project access policy: `open` or `restricted`. */
             access_mode?: components["schemas"]["ProjectAccessMode"];
             /** @description Initial labels used for filtering, ownership, or automation. */
             tags?: components["schemas"]["TagMap"];
@@ -2692,9 +2592,9 @@ export interface components {
             name?: string;
             /** @description Replacement description. */
             description?: string;
-            /** @description Replacement project access policy: `org_open` or `restricted`. */
+            /** @description Replacement project access policy: `open` or `restricted`. */
             access_mode?: components["schemas"]["ProjectAccessMode"];
-            /** @description When transitioning from `org_open` to `restricted`, set true to insert all current org members as project members so nobody loses visibility on the flip. Ignored on other transitions. */
+            /** @description When transitioning from `open` to `restricted`, set true to insert all current org members as project members so nobody loses visibility on the flip. Ignored on other transitions. */
             seed_existing_members?: boolean;
             /** @description Replacement labels; send an empty object to clear all tags. */
             tags?: components["schemas"]["TagMap"];
@@ -3493,16 +3393,15 @@ export interface components {
             updated_at: string;
         };
         /**
-         * @description A loop. The `triggers` array reports the currently materialized runnable triggers. Desired triggers are authored in `LoopSpec.triggers` and reconciled when a version is published.
+         * @description A loop and its current authored definition. Updating any authoring field creates an internal revision and makes it runnable immediately.
          * @example {
          *       "id": "loop_9q2m7x5v3p8n4r6t",
          *       "name": "Daily security check",
          *       "description": "Review open pull requests each morning.",
          *       "status": "active",
          *       "owner": "user_2f9s3k4m5n6p7q8r",
-         *       "default_agent_id": "agent_5n8p2q7m4x9r3v6t",
-         *       "latest_version": 3,
-         *       "published_version": 3,
+         *       "agent_id": "agent_5n8p2q7m4x9r3v6t",
+         *       "schema_version": "2",
          *       "default_inputs": {
          *         "repository": "deepnoodle-ai/mobius-cloud"
          *       },
@@ -3511,20 +3410,22 @@ export interface components {
          *       },
          *       "triggers": [
          *         {
-         *           "id": "atrg_3m8p5q9x2v7n4r6t",
-         *           "loop_id": "loop_9q2m7x5v3p8n4r6t",
          *           "name": "Weekday morning",
          *           "kind": "schedule",
-         *           "enabled": true,
          *           "config": {
          *             "cron": "0 9 * * 1-5",
          *             "timezone": "America/New_York"
-         *           },
-         *           "concurrency_policy": "skip",
-         *           "max_concurrent_runs": 1,
-         *           "next_fire_at": "2026-06-16T13:00:00Z",
-         *           "created_at": "2026-06-15T14:30:00Z",
-         *           "updated_at": "2026-06-15T14:30:00Z"
+         *           }
+         *         }
+         *       ],
+         *       "steps": [
+         *         {
+         *           "id": "summarize",
+         *           "kind": "agent",
+         *           "config": {
+         *             "agent_id": "agent_5n8p2q7m4x9r3v6t",
+         *             "instructions": "Summarize open pull requests."
+         *           }
          *         }
          *       ],
          *       "last_run_at": "2026-06-15T13:00:00Z",
@@ -3543,12 +3444,41 @@ export interface components {
             status: components["schemas"]["LoopStatus"];
             /** @description User who created or currently owns this loop. */
             owner?: string;
-            /** @description Agent used by `agent` steps that do not pin an agent explicitly. */
-            default_agent_id?: string;
-            /** @description Newest stored LoopVersion number, regardless of publication status. */
-            latest_version: number;
-            /** @description Currently runnable version. Absent until a version is published. */
-            published_version?: number;
+            /** @description Agent associated with this loop. Agent steps use it when they do not pin `config.agent_id`. */
+            agent_id?: string;
+            /**
+             * @description Loop authoring schema version. Only schema version 2 is accepted.
+             * @default 2
+             * @enum {string}
+             */
+            schema_version: "2";
+            /** @description Declared run inputs for this loop. */
+            inputs?: {
+                [key: string]: components["schemas"]["LoopSpecInput"];
+            };
+            /**
+             * @description Concurrency behavior: `allow`, `queue`, `skip`, or `replace`.
+             * @enum {string}
+             */
+            concurrency?: "allow" | "queue" | "skip" | "replace";
+            /** @description Authored trigger declarations for this loop. */
+            triggers?: components["schemas"]["LoopSpecTrigger"][];
+            /** @description Source repositories the loop targets. */
+            repositories?: components["schemas"]["LoopSpecRepository"][];
+            /** @description Ordered user-authored steps to execute for each run. */
+            steps?: components["schemas"]["LoopStep"][];
+            /** @description Declared run result contract. */
+            output?: {
+                [key: string]: unknown;
+            };
+            /** @description Cleanup steps or policies evaluated after normal step execution. */
+            cleanup?: {
+                [key: string]: unknown;
+            }[];
+            /** @description Run guardrails such as budget, timeout, and turn limits. */
+            limits?: components["schemas"]["LoopSpecLimits"];
+            /** @description Run-level defaults applied when individual steps omit a policy. */
+            defaults?: components["schemas"]["LoopSpecDefaults"];
             /** @description Default values merged into `inputs` when a run is started without overrides. */
             default_inputs?: {
                 [key: string]: unknown;
@@ -3559,8 +3489,6 @@ export interface components {
             };
             /** @description Free-form labels used for filtering, ownership, or automation. */
             tags?: components["schemas"]["TagMap"];
-            /** @description Triggers that can start runs of this loop. */
-            triggers: components["schemas"]["LoopTrigger"][];
             /**
              * Format: date-time
              * @description Timestamp of the most recent run start, if any.
@@ -3594,8 +3522,6 @@ export interface components {
          *           "id": "loop_9q2m7x5v3p8n4r6t",
          *           "name": "Daily security check",
          *           "status": "active",
-         *           "latest_version": 3,
-         *           "published_version": 3,
          *           "triggers": [],
          *           "created_at": "2026-06-15T14:30:00Z",
          *           "updated_at": "2026-06-15T14:30:00Z"
@@ -3616,14 +3542,33 @@ export interface components {
          * @example {
          *       "name": "Daily security check",
          *       "description": "Review open pull requests each morning.",
-         *       "default_agent_id": "agent_5n8p2q7m4x9r3v6t",
+         *       "agent_id": "agent_5n8p2q7m4x9r3v6t",
+         *       "schema_version": "2",
+         *       "triggers": [
+         *         {
+         *           "name": "Weekday morning",
+         *           "kind": "schedule",
+         *           "config": {
+         *             "cron": "0 9 * * 1-5",
+         *             "timezone": "America/New_York"
+         *           }
+         *         }
+         *       ],
+         *       "steps": [
+         *         {
+         *           "id": "summarize",
+         *           "kind": "agent",
+         *           "config": {
+         *             "instructions": "Summarize open pull requests."
+         *           }
+         *         }
+         *       ],
          *       "default_inputs": {
          *         "repository": "deepnoodle-ai/mobius-cloud"
          *       },
          *       "tags": {
          *         "owner": "product"
-         *       },
-         *       "activate": false
+         *       }
          *     }
          */
         CreateLoopRequest: {
@@ -3631,87 +3576,15 @@ export interface components {
             name: string;
             /** @description Markdown description of the loop's purpose. */
             description?: string;
-            /** @description Agent used by `agent` steps that do not pin an agent explicitly. */
-            default_agent_id?: string;
-            /** @description Default values merged into `inputs` when a run is started without overrides. */
-            default_inputs?: {
-                [key: string]: unknown;
-            };
-            /** @description Free-form loop-level settings consumed by the engine. */
-            settings?: {
-                [key: string]: unknown;
-            };
-            /** @description Free-form labels used for filtering, ownership, or automation. */
-            tags?: components["schemas"]["TagMap"];
-            /** @description Optional initial loop spec to store as version 1 during creation. */
-            spec?: components["schemas"]["LoopSpec"];
+            /** @description Agent associated with this loop. Agent steps use it when they do not pin `config.agent_id`. */
+            agent_id?: string;
             /**
-             * @description When true, `spec` is required. Mobius stores it as version 1, publishes it, materializes its triggers, and sets the loop status to `active` before returning.
-             * @default false
-             */
-            activate: boolean;
-        };
-        /** @description Partial update of loop metadata. Desired triggers live in `LoopSpec.triggers` and are materialized when a version is published. */
-        UpdateLoopRequest: {
-            /** @description Human-readable display name. */
-            name?: string;
-            /** @description Markdown description of the loop's purpose. */
-            description?: string;
-            /** @description Replacement lifecycle status for the loop. */
-            status?: components["schemas"]["LoopStatus"];
-            /** @description Agent used by `agent` steps that do not pin an agent explicitly. */
-            default_agent_id?: string;
-            /** @description Default values merged into `inputs` when a run is started without overrides. */
-            default_inputs?: {
-                [key: string]: unknown;
-            };
-            /** @description Free-form loop-level settings consumed by the engine. */
-            settings?: {
-                [key: string]: unknown;
-            };
-            /** @description Replacement labels; send an empty object to clear all tags. */
-            tags?: components["schemas"]["TagMap"];
-        };
-        /** @description Stored immutable loop spec version. */
-        LoopVersion: {
-            /** @description Stable identifier for this LoopVersion record. */
-            id: string;
-            /** @description Loop this version belongs to. */
-            loop_id: string;
-            /** @description Monotonic version number, unique per loop. */
-            version: number;
-            /**
-             * @description Publication state. `draft` is editable but not runnable; `published` is the currently runnable version; `superseded` is a prior published version retained for historical runs.
+             * @description Loop authoring schema version. Only schema version 2 is accepted.
+             * @default 2
              * @enum {string}
              */
-            status: "draft" | "published" | "superseded";
-            /** @description Authored loop spec captured by this version. */
-            spec?: components["schemas"]["LoopSpec"];
-            /** @description Validation result for `spec` produced at version-creation time. */
-            validation?: {
-                [key: string]: unknown;
-            };
-            /** @description User who authored this version. */
-            created_by?: string;
-            /**
-             * Format: date-time
-             * @description Record creation timestamp.
-             */
-            created_at: string;
-        };
-        /** @description Authoring representation of a loop. */
-        LoopSpec: {
-            /**
-             * @description Loop spec schema version. `"1"` renders strings with Go text/template `{{ .inputs.x }}` / `{{ .context.x }}` actions. `"2"` uses expr `${{ ... }}` templates and bare expr predicates over the `inputs`, `event`, `meta`, and `steps.<key>.output` namespace.
-             * @default 1
-             * @enum {string}
-             */
-            schema_version: "1" | "2";
-            /** @description Optional spec-local display name. */
-            name?: string;
-            /** @description Optional spec-local Markdown description. */
-            description?: string;
-            /** @description Declared run inputs. In schema_version 2 these form the run-input contract — undeclared keys are dropped and required inputs without defaults fail the start. */
+            schema_version: "2";
+            /** @description Declared run inputs for this loop. */
             inputs?: {
                 [key: string]: components["schemas"]["LoopSpecInput"];
             };
@@ -3720,13 +3593,13 @@ export interface components {
              * @enum {string}
              */
             concurrency?: "allow" | "queue" | "skip" | "replace";
-            /** @description Desired triggers materialized when a version is published. */
+            /** @description Authored trigger declarations for this loop. */
             triggers?: components["schemas"]["LoopSpecTrigger"][];
-            /** @description Source repositories the loop targets. When a shared managed environment is selected, the runtime prepares these repositories before user-authored steps run. */
+            /** @description Source repositories the loop targets. */
             repositories?: components["schemas"]["LoopSpecRepository"][];
-            /** @description Ordered user-authored steps to execute for each run. */
-            steps: components["schemas"]["LoopStep"][];
-            /** @description Declared run result. When present, string leaves are rendered against the run inputs and saved step outputs at completion and the rendered map is the run's result — the contract for API consumers, `run.completed` subscribers, and parent loops. When absent, the result is the full accumulated context map. In schema_version 2 string leaves use `${{ ... }}` interpolation. */
+            /** @description Ordered user-authored steps to execute for each run. When present, the definition is runnable immediately. */
+            steps?: components["schemas"]["LoopStep"][];
+            /** @description Declared run result contract. */
             output?: {
                 [key: string]: unknown;
             };
@@ -3738,6 +3611,69 @@ export interface components {
             limits?: components["schemas"]["LoopSpecLimits"];
             /** @description Run-level defaults applied when individual steps omit a policy. */
             defaults?: components["schemas"]["LoopSpecDefaults"];
+            /** @description Default values merged into `inputs` when a run is started without overrides. */
+            default_inputs?: {
+                [key: string]: unknown;
+            };
+            /** @description Free-form loop-level settings consumed by the engine. */
+            settings?: {
+                [key: string]: unknown;
+            };
+            /** @description Free-form labels used for filtering, ownership, or automation. */
+            tags?: components["schemas"]["TagMap"];
+        };
+        /** @description Partial update of loop metadata and/or authoring fields. Authoring changes become runnable immediately. */
+        UpdateLoopRequest: {
+            /** @description Human-readable display name. */
+            name?: string;
+            /** @description Markdown description of the loop's purpose. */
+            description?: string;
+            /** @description Replacement lifecycle status for the loop. */
+            status?: components["schemas"]["LoopStatus"];
+            /** @description Agent associated with this loop. Agent steps use it when they do not pin `config.agent_id`. */
+            agent_id?: string;
+            /**
+             * @description Loop authoring schema version. Only schema version 2 is accepted.
+             * @enum {string}
+             */
+            schema_version?: "2";
+            /** @description Declared run inputs for this loop. */
+            inputs?: {
+                [key: string]: components["schemas"]["LoopSpecInput"];
+            };
+            /**
+             * @description Concurrency behavior: `allow`, `queue`, `skip`, or `replace`.
+             * @enum {string}
+             */
+            concurrency?: "allow" | "queue" | "skip" | "replace";
+            /** @description Replacement authored trigger declarations. */
+            triggers?: components["schemas"]["LoopSpecTrigger"][];
+            /** @description Replacement source repositories the loop targets. */
+            repositories?: components["schemas"]["LoopSpecRepository"][];
+            /** @description Replacement ordered user-authored steps. */
+            steps?: components["schemas"]["LoopStep"][];
+            /** @description Replacement run result contract. */
+            output?: {
+                [key: string]: unknown;
+            };
+            /** @description Replacement cleanup steps or policies. */
+            cleanup?: {
+                [key: string]: unknown;
+            }[];
+            /** @description Replacement run guardrails such as budget, timeout, and turn limits. */
+            limits?: components["schemas"]["LoopSpecLimits"];
+            /** @description Replacement run-level defaults. */
+            defaults?: components["schemas"]["LoopSpecDefaults"];
+            /** @description Default values merged into `inputs` when a run is started without overrides. */
+            default_inputs?: {
+                [key: string]: unknown;
+            };
+            /** @description Free-form loop-level settings consumed by the engine. */
+            settings?: {
+                [key: string]: unknown;
+            };
+            /** @description Replacement labels; send an empty object to clear all tags. */
+            tags?: components["schemas"]["TagMap"];
         };
         /** @description Source repository target attached to a loop spec. */
         LoopSpecRepository: {
@@ -3776,7 +3712,7 @@ export interface components {
              * @enum {string}
              */
             kind: "http" | "schedule" | "event" | "manual";
-            /** @description Whether this trigger should be materialized when the loop version is published. */
+            /** @description Whether this trigger should be materialized for the current runnable definition. */
             enabled?: boolean;
             /** @description Kind-specific trigger configuration. Use `HTTPTriggerConfig` for `kind: http`, `ScheduleTriggerConfig` for `kind: schedule`, and `EventTriggerConfig` for `kind: event`. Omit for manual triggers. */
             config?: components["schemas"]["HTTPTriggerConfig"] | components["schemas"]["ScheduleTriggerConfig"] | components["schemas"]["EventTriggerConfig"];
@@ -3815,11 +3751,11 @@ export interface components {
         LoopStep: components["schemas"]["LoopAgentStepSpec"] | components["schemas"]["LoopActionStepSpec"] | components["schemas"]["LoopSleepStepSpec"] | components["schemas"]["LoopWaitForEventStepSpec"] | components["schemas"]["LoopSubLoopStepSpec"] | components["schemas"]["LoopCheckStepSpec"];
         /** @description Agent step entry inside `LoopSpec.steps`. */
         LoopAgentStepSpec: {
-            /** @description Stable step key within the spec. */
-            key: string;
+            /** @description Optional stable step id within the spec. If omitted, the compiler uses the step index as a string, such as `"0"`. */
+            id?: string;
             /** @description Human-readable step name. */
             name?: string;
-            /** @description Bare expr predicate evaluated before the step runs; false skips the step. Requires schema_version "2". */
+            /** @description Bare expr predicate evaluated before the step runs; false skips the step. */
             if?: string;
             /**
              * @description Step discriminator value; always `agent`. (enum property replaced by openapi-typescript)
@@ -3828,24 +3764,18 @@ export interface components {
             kind: "agent";
             /** @description Agent-step configuration. */
             config: components["schemas"]["LoopAgentStep"];
-            /** @description Step-local input object resolved when the step starts. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions. schema_version 1 only; removed in 2 (reference inputs/event/meta/steps directly in config fields). */
-            input?: {
-                [key: string]: unknown;
-            };
             /** @description Retry policy for this step. */
             retry?: components["schemas"]["LoopRetryPolicy"];
             /** @description Timeout policy for this step. */
             timeout?: components["schemas"]["LoopTimeoutPolicy"];
-            /** @description Context key used to store this step's output. Defaults to `key`. schema_version 1 only; removed in 2 (outputs are always at steps.<key>.output). */
-            save_as?: string;
         };
         /** @description Action step entry inside `LoopSpec.steps`. */
         LoopActionStepSpec: {
-            /** @description Stable step key within the spec. */
-            key: string;
+            /** @description Optional stable step id within the spec. If omitted, the compiler uses the step index as a string, such as `"0"`. */
+            id?: string;
             /** @description Human-readable step name. */
             name?: string;
-            /** @description Bare expr predicate evaluated before the step runs; false skips the step. Requires schema_version "2". */
+            /** @description Bare expr predicate evaluated before the step runs; false skips the step. */
             if?: string;
             /**
              * @description Step discriminator value; always `action`. (enum property replaced by openapi-typescript)
@@ -3854,24 +3784,18 @@ export interface components {
             kind: "action";
             /** @description Action-step configuration. */
             config: components["schemas"]["LoopActionStep"];
-            /** @description Step-local input object resolved when the step starts. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions. schema_version 1 only; removed in 2 (reference inputs/event/meta/steps directly in config fields). */
-            input?: {
-                [key: string]: unknown;
-            };
             /** @description Retry policy for this step. */
             retry?: components["schemas"]["LoopRetryPolicy"];
             /** @description Timeout policy for this step. */
             timeout?: components["schemas"]["LoopTimeoutPolicy"];
-            /** @description Context key used to store this step's output. Defaults to `key`. schema_version 1 only; removed in 2 (outputs are always at steps.<key>.output). */
-            save_as?: string;
         };
         /** @description Sleep step entry inside `LoopSpec.steps`. */
         LoopSleepStepSpec: {
-            /** @description Stable step key within the spec. */
-            key: string;
+            /** @description Optional stable step id within the spec. If omitted, the compiler uses the step index as a string, such as `"0"`. */
+            id?: string;
             /** @description Human-readable step name. */
             name?: string;
-            /** @description Bare expr predicate evaluated before the step runs; false skips the step. Requires schema_version "2". */
+            /** @description Bare expr predicate evaluated before the step runs; false skips the step. */
             if?: string;
             /**
              * @description Step discriminator value; always `sleep`. (enum property replaced by openapi-typescript)
@@ -3880,24 +3804,18 @@ export interface components {
             kind: "sleep";
             /** @description Sleep-step configuration. */
             config: components["schemas"]["LoopSleepStep"];
-            /** @description Step-local input object resolved when the step starts. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions. schema_version 1 only; removed in 2 (reference inputs/event/meta/steps directly in config fields). */
-            input?: {
-                [key: string]: unknown;
-            };
             /** @description Retry policy for this step. */
             retry?: components["schemas"]["LoopRetryPolicy"];
             /** @description Timeout policy for this step. */
             timeout?: components["schemas"]["LoopTimeoutPolicy"];
-            /** @description Context key used to store this step's output. Defaults to `key`. schema_version 1 only; removed in 2 (outputs are always at steps.<key>.output). */
-            save_as?: string;
         };
         /** @description Wait-for-event step entry inside `LoopSpec.steps`. */
         LoopWaitForEventStepSpec: {
-            /** @description Stable step key within the spec. */
-            key: string;
+            /** @description Optional stable step id within the spec. If omitted, the compiler uses the step index as a string, such as `"0"`. */
+            id?: string;
             /** @description Human-readable step name. */
             name?: string;
-            /** @description Bare expr predicate evaluated before the step runs; false skips the step. Requires schema_version "2". */
+            /** @description Bare expr predicate evaluated before the step runs; false skips the step. */
             if?: string;
             /**
              * @description Step discriminator value; always `wait_for_event`. (enum property replaced by openapi-typescript)
@@ -3906,24 +3824,18 @@ export interface components {
             kind: "wait_for_event";
             /** @description Wait-for-event step configuration. */
             config: components["schemas"]["LoopWaitForEventStep"];
-            /** @description Step-local input object resolved when the step starts. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions. schema_version 1 only; removed in 2 (reference inputs/event/meta/steps directly in config fields). */
-            input?: {
-                [key: string]: unknown;
-            };
             /** @description Retry policy for this step. */
             retry?: components["schemas"]["LoopRetryPolicy"];
             /** @description Timeout policy for this step. */
             timeout?: components["schemas"]["LoopTimeoutPolicy"];
-            /** @description Context key used to store this step's output. Defaults to `key`. schema_version 1 only; removed in 2 (outputs are always at steps.<key>.output). */
-            save_as?: string;
         };
         /** @description Child-loop step entry inside `LoopSpec.steps`. */
         LoopSubLoopStepSpec: {
-            /** @description Stable step key within the spec. */
-            key: string;
+            /** @description Optional stable step id within the spec. If omitted, the compiler uses the step index as a string, such as `"0"`. */
+            id?: string;
             /** @description Human-readable step name. */
             name?: string;
-            /** @description Bare expr predicate evaluated before the step runs; false skips the step. Requires schema_version "2". */
+            /** @description Bare expr predicate evaluated before the step runs; false skips the step. */
             if?: string;
             /**
              * @description Step discriminator value; always `loop`. (enum property replaced by openapi-typescript)
@@ -3932,24 +3844,18 @@ export interface components {
             kind: "loop";
             /** @description Child-loop step configuration. */
             config: components["schemas"]["LoopSubLoopStep"];
-            /** @description Step-local input object resolved when the step starts. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions. schema_version 1 only; removed in 2 (reference inputs/event/meta/steps directly in config fields). */
-            input?: {
-                [key: string]: unknown;
-            };
             /** @description Retry policy for this step. */
             retry?: components["schemas"]["LoopRetryPolicy"];
             /** @description Timeout policy for this step. */
             timeout?: components["schemas"]["LoopTimeoutPolicy"];
-            /** @description Context key used to store this step's output. Defaults to `key`. schema_version 1 only; removed in 2 (outputs are always at steps.<key>.output). */
-            save_as?: string;
         };
         /** @description Check step entry inside `LoopSpec.steps`. */
         LoopCheckStepSpec: {
-            /** @description Stable step key within the spec. */
-            key: string;
+            /** @description Optional stable step id within the spec. If omitted, the compiler uses the step index as a string, such as `"0"`. */
+            id?: string;
             /** @description Human-readable step name. */
             name?: string;
-            /** @description Bare expr predicate evaluated before the step runs; false skips the step. Requires schema_version "2". */
+            /** @description Bare expr predicate evaluated before the step runs; false skips the step. */
             if?: string;
             /**
              * @description Step discriminator value; always `check`. (enum property replaced by openapi-typescript)
@@ -3958,16 +3864,10 @@ export interface components {
             kind: "check";
             /** @description Check-step configuration. */
             config: components["schemas"]["LoopCheckStep"];
-            /** @description Step-local input object resolved when the step starts. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions. schema_version 1 only; removed in 2 (reference inputs/event/meta/steps directly in config fields). */
-            input?: {
-                [key: string]: unknown;
-            };
             /** @description Retry policy for this step. */
             retry?: components["schemas"]["LoopRetryPolicy"];
             /** @description Timeout policy for this step. */
             timeout?: components["schemas"]["LoopTimeoutPolicy"];
-            /** @description Context key used to store this step's output. Defaults to `key`. schema_version 1 only; removed in 2 (outputs are always at steps.<key>.output). */
-            save_as?: string;
         };
         /** @description Run guardrails. Lives at `spec.limits` in the JSON the engine compiles. Every limit is optional; absent or zero means unbounded (plan-level org caps still apply), with one exception — trial-plan runs default to a 100-credit ($1) budget when no budget is set here or on the start request. Paid plans default to unbounded. */
         LoopSpecLimits: {
@@ -4028,8 +3928,8 @@ export interface components {
         };
         /** @description Agent step configuration recognised inside `LoopSpec.steps[].config`. */
         LoopAgentStep: {
-            /** @description Agent to run for this step. */
-            agent_id: string;
+            /** @description Agent to run for this step. Omit to use the loop's top-level `agent_id`. */
+            agent_id?: string;
             /** @description Prompt or task instructions rendered before the agent turn starts. */
             instructions: string;
             /** @description Optional per-step tool allow-list. When omitted, prompt-only managed agent steps default to no tools; set `disable_tools: false` to allow the agent's full granted tool set. */
@@ -4145,14 +4045,12 @@ export interface components {
         LoopSubLoopStep: {
             /** @description ID of the loop to trigger, scoped to the same project as the parent loop. */
             loop_id: string;
-            /** @description Input map handed to the child run. String leaves render against the parent run before the child starts: `{{ .inputs.* }}` / `{{ .context.* }}` Go text/template actions in schema_version 1, `${{ ... }}` expr interpolations over `inputs`, `event`, `meta`, and `steps.<key>.output` in schema_version 2. When omitted the parent's run inputs are forwarded. */
+            /** @description Input map handed to the child run. String leaves render against the parent run before the child starts using `${{ ... }}` expr interpolations over `inputs`, `event`, `meta`, `steps.<id>.output`, or `steps[0].output`. When omitted the parent's run inputs are forwarded. */
             inputs?: {
                 [key: string]: unknown;
             };
-            /** @description Optional expr predicate evaluated against the `{ inputs, context }` envelope of the parent run before the child is triggered. It must evaluate to a bool; a false result skips the step and starts no child run. schema_version 1 only; replaced in 2 by the step-level `if` field. */
-            condition?: string;
         };
-        /** @description Check step configuration recognised inside `LoopSpec.steps[].config`. A check step evaluates typed assertions over the run's template environment (`{ inputs, context }` in schema_version 1; `inputs`, `event`, `meta`, and `steps.<key>.output` in schema_version 2) — deterministic `expr` predicates, or `agent` judges for everything that isn't deterministic — records a per-assertion verdict with cited evidence, and routes on failure: fail the run (stop reason `check_failed`), continue with the red verdict on the record, or open an approval gate carrying the evidence (rejection stops the run with `gate_rejected`). All assertions are evaluated; there is no short-circuit. An assertion that errors (bad expr, judge model failure, unparseable verdict) fails closed — never a silent pass. */
+        /** @description Check step configuration recognised inside `LoopSpec.steps[].config`. A check step evaluates typed assertions over the run's template environment (`inputs`, `event`, `meta`, `steps.<id>.output`, and `steps[0].output`) — deterministic `expr` predicates, or `agent` judges for everything that isn't deterministic — records a per-assertion verdict with cited evidence, and routes on failure: fail the run (stop reason `check_failed`), continue with the red verdict on the record, or open an approval gate carrying the evidence (rejection stops the run with `gate_rejected`). All assertions are evaluated; there is no short-circuit. An assertion that errors (bad expr, judge model failure, unparseable verdict) fails closed — never a silent pass. */
         LoopCheckStep: {
             /** @description Assertions evaluated in order; names must be unique. */
             checks: components["schemas"]["LoopCheckAssertion"][];
@@ -4174,13 +4072,13 @@ export interface components {
              * @enum {string}
              */
             kind: "expr" | "agent";
-            /** @description Predicate for `kind: expr`, evaluated against the run's template environment (`{ inputs, context }` in schema_version 1; `inputs`, `event`, `meta`, and `steps.<key>.output` in schema_version 2). Required for expr assertions. */
+            /** @description Predicate for `kind: expr`, evaluated against the run's template environment (`inputs`, `event`, `meta`, `steps.<id>.output`, and `steps[0].output`). Required for expr assertions. */
             expr?: string;
             /** @description Judge agent id for `kind: agent`. Omit to use the built-in platform reviewer `mobius-reviewer`. The judge should be a different agent than the one that produced the evidence; the compiler warns when a judge grades its own work. */
             agent?: string;
-            /** @description Judge instruction for `kind: agent`, rendered like every other templated string (`{{ .inputs.* }}` / `{{ .context.* }}` in schema_version 1, `${{ ... }}` expr interpolation in 2) before the cited evidence is appended. Required for agent assertions. */
+            /** @description Judge instruction for `kind: agent`, rendered with `${{ ... }}` expr interpolation before the cited evidence is appended. Required for agent assertions. */
             prompt?: string;
-            /** @description Step keys whose saved outputs this assertion judges. Each must reference an earlier step. Cited outputs are shown to agent judges and recorded on the verdict. */
+            /** @description Step ids whose saved outputs this assertion judges. Each must reference an earlier step. Cited outputs are shown to agent judges and recorded on the verdict. */
             evidence?: string[];
         };
         /** @description Approval gate opened when `on_fail: gate` trips. */
@@ -4206,86 +4104,6 @@ export interface components {
              * @enum {string}
              */
             on_timeout?: "fail";
-        };
-        LoopVersionListResponse: {
-            /** @description LoopVersions returned for this loop, newest version first. */
-            items: components["schemas"]["LoopVersion"][];
-        };
-        CreateLoopVersionRequest: {
-            /** @description Loop spec to store as a new draft version. */
-            spec: components["schemas"]["LoopSpec"];
-        };
-        /**
-         * @description Materialized trigger created from a published loop version.
-         * @example {
-         *       "id": "atrg_3m8p5q9x2v7n4r6t",
-         *       "loop_id": "loop_9q2m7x5v3p8n4r6t",
-         *       "name": "Weekday morning",
-         *       "kind": "schedule",
-         *       "enabled": true,
-         *       "config": {
-         *         "cron": "0 9 * * 1-5",
-         *         "timezone": "America/New_York"
-         *       },
-         *       "concurrency_policy": "skip",
-         *       "max_concurrent_runs": 1,
-         *       "next_fire_at": "2026-06-16T13:00:00Z",
-         *       "created_at": "2026-06-15T14:30:00Z",
-         *       "updated_at": "2026-06-15T14:30:00Z"
-         *     }
-         */
-        LoopTrigger: {
-            /** @description Stable trigger identifier. */
-            id: string;
-            /** @description Loop this trigger belongs to. */
-            loop_id: string;
-            /** @description Human-readable trigger name. */
-            name: string;
-            /** @description One of: http, schedule, event. */
-            kind: string;
-            /** @description Whether the trigger is currently allowed to start runs. */
-            enabled: boolean;
-            /** @description Kind-specific configuration (schedule cron, event matcher, HTTP-trigger options). */
-            config?: {
-                [key: string]: unknown;
-            };
-            /**
-             * @description Trigger concurrency behavior: `allow`, `queue`, `skip`, or `replace`.
-             * @enum {string}
-             */
-            concurrency_policy: "allow" | "queue" | "skip" | "replace";
-            /** @description Cap on concurrent runs allowed from this trigger. */
-            max_concurrent_runs: number;
-            /** @description Public, globally unique delivery handle exposed in `POST /v1/triggers/http/{http_handle}`. The delivery endpoint has no project path segment, so the handle is resolved globally. Set only for http-kind triggers. */
-            http_handle?: string;
-            /** @description Whether an HMAC signing secret is configured on this HTTP trigger. The secret value itself is never returned — rotate it via the signing-secret endpoint to reveal a new value once. Set only for http-kind triggers. */
-            signing_secret_set?: boolean;
-            /** @description Source-event type this trigger subscribes to. Set only for event-kind triggers. */
-            event_type?: string;
-            /** @description Optional source identifier used to scope event matching. */
-            source_id?: string;
-            /** @description Optional expr predicate evaluated against the public `{ event, meta }` envelope; the trigger fires only when it passes. Set only for event-kind triggers. */
-            condition?: string;
-            /**
-             * Format: date-time
-             * @description Timestamp of the most recent fire.
-             */
-            last_fire_at?: string;
-            /**
-             * Format: date-time
-             * @description Next scheduled fire time. Set only for schedule-kind triggers.
-             */
-            next_fire_at?: string;
-            /**
-             * Format: date-time
-             * @description Record creation timestamp.
-             */
-            created_at: string;
-            /**
-             * Format: date-time
-             * @description Last update timestamp.
-             */
-            updated_at: string;
         };
         /** @description Free-form JSON object delivered to the HTTP trigger. The payload is recorded on the source event and forwarded to the run as inputs. */
         HTTPTriggerDeliveryRequest: {
@@ -4320,7 +4138,7 @@ export interface components {
          *     }
          */
         StartLoopRunRequest: {
-            /** @description Input map passed to the run. schema_version 1 loops receive it as-is and reference it via `{{ .inputs.<key> }}` Go text/template actions. schema_version 2 loops resolve it against the declared `inputs:` contract — undeclared keys are dropped, defaults fill, required inputs must resolve — and reference it via `${{ inputs.<key> }}`. */
+            /** @description Input map passed to the run. Loops resolve it against the declared `inputs:` contract — undeclared keys are dropped, defaults fill, required inputs must resolve — and reference it via `${{ inputs.<key> }}`. */
             inputs?: {
                 [key: string]: unknown;
             };
@@ -4435,19 +4253,19 @@ export interface components {
             max_agent_turns?: number;
             /** @description Number of agent turns started for this run so far. Compared against `max_agent_turns` when that cap is set. */
             agent_turns_used?: number;
-            /** @description Input map resolved when the run started, reachable in step templates at `{{ .inputs.<key> }}` (schema_version 1) or `${{ inputs.<key> }}` (schema_version 2). In schema_version 1 event-trigger runs this is the normalized `{ event, meta }` envelope (`{{ .inputs.event.* }}`, `{{ .inputs.meta.* }}`); in schema_version 2 the trigger envelope lives in the run's `event` and `meta` fields instead and inputs hold only declared keys. */
+            /** @description Input map resolved when the run started, reachable in step templates at `${{ inputs.<key> }}`. Event trigger data lives in the run's `event` and `meta` fields; inputs hold only declared keys. */
             inputs?: {
                 [key: string]: unknown;
             };
-            /** @description Normalized payload of the event that started the run, reachable in schema_version 2 templates at `${{ event.* }}`: the webhook body for event triggers, the request body for HTTP triggers. Empty for manual and schedule runs. */
+            /** @description Normalized payload of the event that started the run, reachable in templates at `${{ event.* }}`: the webhook body for event triggers, the request body for HTTP triggers. Empty for manual and schedule runs. */
             event?: {
                 [key: string]: unknown;
             };
-            /** @description Run and trigger metadata envelope, reachable in schema_version 2 templates at `${{ meta.* }}`: `run_id`, `loop_id`, `source`, `trigger`, plus trigger-supplied facts such as `event_type`, `source_event_id`, and `scheduled_at`. */
+            /** @description Run and trigger metadata envelope, reachable in templates at `${{ meta.* }}`: `run_id`, `loop_id`, `source`, `trigger`, plus trigger-supplied facts such as `event_type`, `source_event_id`, and `scheduled_at`. */
             meta?: {
                 [key: string]: unknown;
             };
-            /** @description Final result payload. When the loop declares an `output:` block (schema_version 2) this is that block rendered at completion; otherwise it is the run's accumulated step outputs, keyed by step key (`save_as` in schema_version 1). Absent until the run terminates successfully. */
+            /** @description Final result payload. When the loop declares an `output:` block this is that block rendered at completion; otherwise it is the run's accumulated step outputs, keyed by step id. Absent until the run terminates successfully. */
             result?: {
                 [key: string]: unknown;
             };
@@ -4586,7 +4404,7 @@ export interface components {
             parameters?: {
                 [key: string]: unknown;
             };
-            /** @description Step output (shape varies by kind); absent until completion. Downstream step templates reach this value at `${{ steps.<key>.output }}` (schema_version 2) or `{{ .context.<save_as> }}` (schema_version 1). */
+            /** @description Step output (shape varies by kind); absent until completion. Downstream step templates reach this value at `${{ steps.<id>.output }}` or `${{ steps[0].output }}`. */
             result?: unknown;
             /** @description Worker job that executed this step, when applicable. */
             job_id?: string | null;
@@ -4663,7 +4481,7 @@ export interface components {
             event_type: string;
             /** @description ID of the step this event belongs to, when applicable. */
             step_id?: string | null;
-            /** @description Loop step key this event belongs to, when applicable. */
+            /** @description Legacy alias for the loop step ID this event belongs to, when applicable. */
             step_key?: string | null;
             /** @description Event-type-specific payload. See the run-event taxonomy for shapes. */
             payload?: {
@@ -5130,11 +4948,6 @@ export interface components {
             created: boolean;
         };
         /**
-         * @description Artifact lifecycle state: `pending_upload`, `available`, or `failed`.
-         * @enum {string}
-         */
-        ArtifactState: "pending_upload" | "available" | "failed";
-        /**
          * @description Private artifacts are visible only to their owner user. Shared artifacts are visible to the project.
          * @enum {string}
          */
@@ -5150,10 +4963,8 @@ export interface components {
          *       "mime_type": "text/markdown",
          *       "size_bytes": 1842,
          *       "sha256": "8f4c2b9d0e6a1f3c5b7d9e0a2c4f6b8d9e1a3c5f7b9d0e2a4c6f8b0d2e4a6c8",
-         *       "state": "available",
          *       "created_at": "2026-06-15T14:30:00Z",
-         *       "created_by": "agent_5n8p2q7m4x9r3v6t",
-         *       "committed_at": "2026-06-15T14:31:00Z"
+         *       "created_by": "agent_5n8p2q7m4x9r3v6t"
          *     }
          */
         Artifact: {
@@ -5176,8 +4987,6 @@ export interface components {
             size_bytes: number;
             /** @description SHA-256 digest of the artifact content, when available. */
             sha256?: string;
-            /** @description Current artifact lifecycle state. */
-            state: components["schemas"]["ArtifactState"];
             /**
              * Format: date-time
              * @description Time the artifact metadata was created.
@@ -5192,11 +5001,6 @@ export interface components {
             updated_at?: string;
             /** @description Principal ID of the actor who last updated this artifact. Empty for system-initiated writes. */
             updated_by?: string;
-            /**
-             * Format: date-time
-             * @description Time the artifact content became available.
-             */
-            committed_at?: string;
         };
         /**
          * @example {
@@ -5207,7 +5011,6 @@ export interface components {
          *           "name": "reports/review-findings.md",
          *           "mime_type": "text/markdown",
          *           "size_bytes": 1842,
-         *           "state": "available",
          *           "created_at": "2026-06-15T14:30:00Z"
          *         }
          *       ],
@@ -5951,14 +5754,8 @@ export interface operations {
                 cursor?: components["parameters"]["CursorParam"];
                 /** @description Maximum number of items to return */
                 limit?: components["parameters"]["LimitParam"];
-                /** @description Filter by backing environment provider. */
-                provider?: components["schemas"]["EnvironmentProvider"];
                 /** @description Filter by environment lifecycle status. */
                 status?: components["schemas"]["EnvironmentStatus"];
-                /** @description Omit for all/default-scoped environments; use `owner` with `owned_by` to list owner-scoped environments. */
-                scope?: components["schemas"]["ResourceScope"];
-                /** @description Canonical user owner ID for the environment. */
-                owned_by?: string;
                 /** @description Filter to environments created for the given run. */
                 run_id?: string;
                 /** @description Include destroyed environments in the result. By default destroyed rows are excluded; set this to true (or pass status=destroyed) to see them. */
@@ -6026,17 +5823,10 @@ export interface operations {
                      *       "name": "review-workspace",
                      *       "provider": "sprites",
                      *       "status": "provisioning",
-                     *       "environment_mode": "manual",
                      *       "lifetime": "explicit",
-                     *       "template_id": "coding-default",
-                     *       "capabilities": [],
-                     *       "spec_version": 1,
-                     *       "spec": {},
-                     *       "runtime": {},
                      *       "tags": {
                      *         "owner": "product"
                      *       },
-                     *       "contains_secrets": false,
                      *       "cleanup_status": "none",
                      *       "retention_policy": "manual",
                      *       "created_at": "2026-06-15T14:30:00Z",
@@ -7256,7 +7046,7 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
-    listAgentToolkits: {
+    listAgentToolkitAssignments: {
         parameters: {
             query?: never;
             header?: never;
@@ -7284,7 +7074,7 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
-    replaceAgentToolkits: {
+    replaceAgentToolkitAssignments: {
         parameters: {
             query?: never;
             header?: never;
@@ -7325,7 +7115,7 @@ export interface operations {
             429: components["responses"]["TooManyRequests"];
         };
     };
-    listAgentSkills: {
+    listAgentSkillAssignments: {
         parameters: {
             query?: never;
             header?: never;
@@ -7353,7 +7143,7 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
-    replaceAgentSkills: {
+    replaceAgentSkillAssignments: {
         parameters: {
             query?: never;
             header?: never;
@@ -7435,6 +7225,8 @@ export interface operations {
             query?: {
                 /** @description Filter by lifecycle status. Omit to return the normal loop list, or pass a visible status to filter to it exactly. */
                 status?: "draft" | "active" | "paused";
+                /** @description Return only loops associated with this agent. */
+                agent_id?: string;
                 /** @description Opaque pagination cursor from a prior response. */
                 cursor?: string;
                 /** @description Maximum number of items to return. */
@@ -7478,11 +7270,30 @@ export interface operations {
                  * @example {
                  *       "name": "Daily security check",
                  *       "description": "Review open pull requests each morning.",
-                 *       "default_agent_id": "agent_5n8p2q7m4x9r3v6t",
+                 *       "agent_id": "agent_5n8p2q7m4x9r3v6t",
+                 *       "schema_version": "2",
+                 *       "triggers": [
+                 *         {
+                 *           "name": "Weekday morning",
+                 *           "kind": "schedule",
+                 *           "config": {
+                 *             "cron": "0 9 * * 1-5",
+                 *             "timezone": "America/New_York"
+                 *           }
+                 *         }
+                 *       ],
+                 *       "steps": [
+                 *         {
+                 *           "id": "summarize",
+                 *           "kind": "agent",
+                 *           "config": {
+                 *             "instructions": "Summarize open pull requests."
+                 *           }
+                 *         }
+                 *       ],
                  *       "tags": {
                  *         "owner": "product"
-                 *       },
-                 *       "activate": false
+                 *       }
                  *     }
                  */
                 "application/json": components["schemas"]["CreateLoopRequest"];
@@ -7500,9 +7311,29 @@ export interface operations {
                      *       "id": "loop_9q2m7x5v3p8n4r6t",
                      *       "name": "Daily security check",
                      *       "description": "Review open pull requests each morning.",
-                     *       "status": "draft",
-                     *       "latest_version": 0,
-                     *       "triggers": [],
+                     *       "status": "active",
+                     *       "agent_id": "agent_5n8p2q7m4x9r3v6t",
+                     *       "schema_version": "2",
+                     *       "triggers": [
+                     *         {
+                     *           "name": "Weekday morning",
+                     *           "kind": "schedule",
+                     *           "config": {
+                     *             "cron": "0 9 * * 1-5",
+                     *             "timezone": "America/New_York"
+                     *           }
+                     *         }
+                     *       ],
+                     *       "steps": [
+                     *         {
+                     *           "id": "summarize",
+                     *           "kind": "agent",
+                     *           "config": {
+                     *             "agent_id": "agent_5n8p2q7m4x9r3v6t",
+                     *             "instructions": "Summarize open pull requests."
+                     *           }
+                     *         }
+                     *       ],
                      *       "tags": {
                      *         "owner": "product"
                      *       },
@@ -7612,140 +7443,6 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            409: components["responses"]["Conflict"];
-            429: components["responses"]["TooManyRequests"];
-        };
-    };
-    listLoopVersions: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Project handle */
-                project_handle: components["parameters"]["ProjectHandleParam"];
-                /** @description Resource ID. */
-                resource_id: components["parameters"]["IDParam"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["LoopVersionListResponse"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    createLoopVersion: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Project handle */
-                project_handle: components["parameters"]["ProjectHandleParam"];
-                /** @description Resource ID. */
-                resource_id: components["parameters"]["IDParam"];
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                /**
-                 * @example {
-                 *       "spec": {
-                 *         "schema_version": "2",
-                 *         "steps": [
-                 *           {
-                 *             "key": "summarize",
-                 *             "kind": "agent",
-                 *             "config": {
-                 *               "agent_id": "agent_5n8p2q7m4x9r3v6t",
-                 *               "instructions": "Summarize open pull requests."
-                 *             }
-                 *           }
-                 *         ]
-                 *       }
-                 *     }
-                 */
-                "application/json": components["schemas"]["CreateLoopVersionRequest"];
-            };
-        };
-        responses: {
-            /** @description Created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "id": "lver_4v9n2q7m5x8p3r6t",
-                     *       "loop_id": "loop_9q2m7x5v3p8n4r6t",
-                     *       "version": 3,
-                     *       "status": "draft",
-                     *       "spec": {
-                     *         "schema_version": "2",
-                     *         "steps": [
-                     *           {
-                     *             "key": "summarize",
-                     *             "kind": "agent",
-                     *             "config": {
-                     *               "agent_id": "agent_5n8p2q7m4x9r3v6t",
-                     *               "instructions": "Summarize open pull requests."
-                     *             }
-                     *           }
-                     *         ]
-                     *       },
-                     *       "created_by": "user_2f9s3k4m5n6p7q8r",
-                     *       "created_at": "2026-06-15T14:30:00Z"
-                     *     }
-                     */
-                    "application/json": components["schemas"]["LoopVersion"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            429: components["responses"]["TooManyRequests"];
-        };
-    };
-    publishLoopVersion: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Project handle */
-                project_handle: components["parameters"]["ProjectHandleParam"];
-                /** @description Resource ID. */
-                resource_id: components["parameters"]["IDParam"];
-                /** @description Version number of the LoopVersion to publish. */
-                version: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Loop"];
-                };
-            };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
@@ -9365,8 +9062,6 @@ export interface operations {
                 step_id?: string;
                 /** @description Mime prefix filter (e.g. `image/`) */
                 mime?: string;
-                /** @description Filter by artifact lifecycle state. */
-                state?: components["schemas"]["ArtifactState"];
                 /** @description Cursor for pagination (opaque string from previous response) */
                 cursor?: components["parameters"]["CursorParam"];
                 /** @description Maximum number of items to return */

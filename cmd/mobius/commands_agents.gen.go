@@ -20,7 +20,7 @@ func registerAgentsCommands(app *cli.App) {
 	agentsGrp := app.Group("agents").Description("Agents, sessions, and presence")
 	agentsGrp.Alias("agent")
 	agentsGrp.Command("append-session-messages").
-		Description("Append messages").
+		Description("Append session messages").
 		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		AddArg(&cli.Arg{Name: "session-id", Description: "Session identifier.", Required: true}).
 		Flags(
@@ -178,7 +178,7 @@ func registerAgentsCommands(app *cli.App) {
 		})
 
 	agentsGrp.Command("delete-messaging-binding").
-		Description("Delete binding").
+		Description("Delete agent messaging binding").
 		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		AddArg(&cli.Arg{Name: "binding-id", Description: "Messaging binding identifier.", Required: true}).
 		Use(requireAuth()).
@@ -218,7 +218,7 @@ func registerAgentsCommands(app *cli.App) {
 		})
 
 	agentsGrp.Command("get-session").
-		Description("Get session").
+		Description("Get agent session").
 		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		AddArg(&cli.Arg{Name: "session-id", Description: "Session identifier.", Required: true}).
 		Use(requireAuth()).
@@ -239,7 +239,7 @@ func registerAgentsCommands(app *cli.App) {
 		})
 
 	agentsGrp.Command("get-tools").
-		Description("Get resolved tools").
+		Description("Get agent tools").
 		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		Flags(
 			cli.String("toolkit-ids", "").Help("Optional comma-separated toolkit subset to apply."),
@@ -311,7 +311,7 @@ func registerAgentsCommands(app *cli.App) {
 		})
 
 	agentsGrp.Command("list-messages").
-		Description("List messages").
+		Description("List session messages").
 		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		AddArg(&cli.Arg{Name: "session-id", Description: "Session identifier.", Required: true}).
 		Flags(
@@ -377,7 +377,7 @@ func registerAgentsCommands(app *cli.App) {
 		})
 
 	agentsGrp.Command("list-messaging-bindings").
-		Description("List bindings").
+		Description("List agent messaging bindings").
 		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -396,7 +396,7 @@ func registerAgentsCommands(app *cli.App) {
 		})
 
 	agentsGrp.Command("list-sessions").
-		Description("List sessions").
+		Description("List agent sessions").
 		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		Flags(
 			cli.String("status", "").Help("Filter by session status."),
@@ -437,8 +437,8 @@ func registerAgentsCommands(app *cli.App) {
 			return printResponse(ctx, "listAgentSessions", resp.StatusCode(), resp.Body)
 		})
 
-	agentsGrp.Command("list-skills").
-		Description("List assigned skills").
+	agentsGrp.Command("list-skill-assignments").
+		Description("List agent skill assignments").
 		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -449,15 +449,15 @@ func registerAgentsCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			resp, err := client.ListAgentSkillsWithResponse(ctx.Context(), p0, p1)
+			resp, err := client.ListAgentSkillAssignmentsWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, "listAgentSkills", resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "listAgentSkillAssignments", resp.StatusCode(), resp.Body)
 		})
 
-	agentsGrp.Command("list-toolkits").
-		Description("List assigned toolkits").
+	agentsGrp.Command("list-toolkit-assignments").
+		Description("List agent toolkit assignments").
 		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -468,15 +468,15 @@ func registerAgentsCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			resp, err := client.ListAgentToolkitsWithResponse(ctx.Context(), p0, p1)
+			resp, err := client.ListAgentToolkitAssignmentsWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, "listAgentToolkits", resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "listAgentToolkitAssignments", resp.StatusCode(), resp.Body)
 		})
 
 	agentsGrp.Command("list-turns").
-		Description("List turns").
+		Description("List session turns").
 		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		AddArg(&cli.Arg{Name: "session-id", Description: "Session identifier.", Required: true}).
 		Use(requireAuth()).
@@ -497,7 +497,7 @@ func registerAgentsCommands(app *cli.App) {
 		})
 
 	agentsGrp.Command("provision-inbox").
-		Description("Provision email inbox").
+		Description("Provision agent inbox").
 		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -515,8 +515,8 @@ func registerAgentsCommands(app *cli.App) {
 			return printResponse(ctx, "provisionAgentInbox", resp.StatusCode(), resp.Body)
 		})
 
-	agentsGrp.Command("replace-skills").
-		Description("Replace assigned skills").
+	agentsGrp.Command("replace-skill-assignments").
+		Description("Replace agent skill assignments").
 		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		Flags(
 			cli.Strings("skill-ids", "").Help("[required] Full replace-set of skill IDs to assign to the agent, in desired order."),
@@ -532,7 +532,7 @@ func registerAgentsCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			var body api.ReplaceAgentSkillsJSONRequestBody
+			var body api.ReplaceAgentSkillAssignmentsJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
 			}
@@ -545,15 +545,15 @@ func registerAgentsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.ReplaceAgentSkillsWithResponse(ctx.Context(), p0, p1, body)
+			resp, err := client.ReplaceAgentSkillAssignmentsWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, "replaceAgentSkills", resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "replaceAgentSkillAssignments", resp.StatusCode(), resp.Body)
 		})
 
-	agentsGrp.Command("replace-toolkits").
-		Description("Replace assigned toolkits").
+	agentsGrp.Command("replace-toolkit-assignments").
+		Description("Replace agent toolkit assignments").
 		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		Flags(
 			cli.Strings("toolkit-ids", "").Help("[required] Full replace-set of toolkit IDs to assign to the agent, in desired order."),
@@ -569,7 +569,7 @@ func registerAgentsCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			var body api.ReplaceAgentToolkitsJSONRequestBody
+			var body api.ReplaceAgentToolkitAssignmentsJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
 			}
@@ -582,15 +582,15 @@ func registerAgentsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.ReplaceAgentToolkitsWithResponse(ctx.Context(), p0, p1, body)
+			resp, err := client.ReplaceAgentToolkitAssignmentsWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, "replaceAgentToolkits", resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "replaceAgentToolkitAssignments", resp.StatusCode(), resp.Body)
 		})
 
 	agentsGrp.Command("save-messaging-binding").
-		Description("Save binding").
+		Description("Save agent messaging binding").
 		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		Flags(
 			cli.Bool("all-messages", "").Help("Respond to every message in bound channels, not just mentions."),

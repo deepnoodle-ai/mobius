@@ -26,7 +26,6 @@ func registerEnvironmentsCommands(app *cli.App) {
 			cli.String("owned-by", "").Help("Canonical user owner ID. Defaults to the authenticated user."),
 			cli.String("provider", "").Help("Providers the control plane can provision on demand: `sprites` or `cloudflare_containers`. Excludes…"),
 			cli.String("scope", "").Help("Optional namespace for named runtime resources. Omitted/null means the project/default scope; `owne…"),
-			cli.String("spec", "").Help("Provider-specific desired state. Accepts JSON, @file, or @-."),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
 			cli.String("template-id", "").Help("V1 supports only coding-default."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
@@ -60,11 +59,6 @@ func registerEnvironmentsCommands(app *cli.App) {
 				v := api.ResourceScope(ctx.String("scope"))
 				body.Scope = &v
 			}
-			if ctx.IsSet("spec") {
-				if err := decodeFlagJSON(ctx, "spec", ctx.String("spec"), &body.Spec); err != nil {
-					return err
-				}
-			}
 			if tags, err := parseTagFlags(ctx); err != nil {
 				return err
 			} else if tags != nil {
@@ -75,7 +69,7 @@ func registerEnvironmentsCommands(app *cli.App) {
 				v := api.CreateEnvironmentRequestTemplateId(ctx.String("template-id"))
 				body.TemplateId = &v
 			}
-			if ctx.String("file") == "" && !ctx.IsSet("name") && !ctx.IsSet("owned-by") && !ctx.IsSet("provider") && !ctx.IsSet("scope") && !ctx.IsSet("spec") && !ctx.IsSet("tag") && !ctx.IsSet("template-id") {
+			if ctx.String("file") == "" && !ctx.IsSet("name") && !ctx.IsSet("owned-by") && !ctx.IsSet("provider") && !ctx.IsSet("scope") && !ctx.IsSet("tag") && !ctx.IsSet("template-id") {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
 			if ctx.Bool("dry-run") {
@@ -131,10 +125,7 @@ func registerEnvironmentsCommands(app *cli.App) {
 		Flags(
 			cli.String("cursor", "").Help("Cursor for pagination (opaque string from previous response)"),
 			cli.Int("limit", "").Help("Maximum number of items to return"),
-			cli.String("provider", "").Help("Filter by backing environment provider."),
 			cli.String("status", "").Help("Filter by environment lifecycle status."),
-			cli.String("scope", "").Help("Omit for all/default-scoped environments; use `owner` with `owned_by` to list owner-scoped environm…"),
-			cli.String("owned-by", "").Help("Canonical user owner ID for the environment."),
 			cli.String("run-id", "").Help("Filter to environments created for the given run."),
 			cli.Bool("include-destroyed", "").Help("Include destroyed environments in the result. By default destroyed rows are excluded; set this to t…"),
 		).
@@ -155,21 +146,9 @@ func registerEnvironmentsCommands(app *cli.App) {
 				v := api.LimitParam(ctx.Int("limit"))
 				params.Limit = &v
 			}
-			if ctx.IsSet("provider") {
-				v := api.EnvironmentProvider(ctx.String("provider"))
-				params.Provider = &v
-			}
 			if ctx.IsSet("status") {
 				v := api.EnvironmentStatus(ctx.String("status"))
 				params.Status = &v
-			}
-			if ctx.IsSet("scope") {
-				v := api.ResourceScope(ctx.String("scope"))
-				params.Scope = &v
-			}
-			if ctx.IsSet("owned-by") {
-				v := ctx.String("owned-by")
-				params.OwnedBy = &v
 			}
 			if ctx.IsSet("run-id") {
 				v := ctx.String("run-id")

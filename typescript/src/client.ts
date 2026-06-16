@@ -1,7 +1,6 @@
 import type {
   CancelLoopRunRequest,
   CreateLoopRequest,
-  CreateLoopVersionRequest,
   Loop,
   LoopListResponse,
   LoopRun,
@@ -10,8 +9,6 @@ import type {
   LoopRunSource,
   LoopRunStatus,
   LoopStatus,
-  LoopVersion,
-  LoopVersionListResponse,
   SignalLoopRunRequest,
   StartLoopRunRequest,
   TagMap,
@@ -33,11 +30,8 @@ type AutomationRunListResponse = LoopRunListResponse;
 type AutomationRunSource = LoopRunSource;
 type AutomationRunStatus = LoopRunStatus;
 type AutomationStatus = LoopStatus;
-type AutomationVersion = LoopVersion;
-type AutomationVersionListResponse = LoopVersionListResponse;
 type CancelAutomationRunRequest = CancelLoopRunRequest;
 type CreateAutomationRequest = CreateLoopRequest;
-type CreateAutomationVersionRequest = CreateLoopVersionRequest;
 type SignalAutomationRunRequest = SignalLoopRunRequest;
 type StartAutomationRunRequest = StartLoopRunRequest;
 type UpdateAutomationRequest = UpdateLoopRequest;
@@ -137,26 +131,28 @@ function extractHandleFromApiKey(apiKey: string): string | null {
 export interface AutomationOptions {
   name: string;
   description?: string;
-  default_agent_id?: string;
+  agent_id?: string;
   default_inputs?: Record<string, unknown>;
   settings?: Record<string, unknown>;
   tags?: TagMap;
+  /**
+   * Authoring definition for the automation. Recognised keys mirror the loop
+   * spec (steps, inputs, triggers, defaults, limits, output, repositories,
+   * cleanup, …). When it carries steps the automation is runnable immediately.
+   */
+  spec?: Record<string, unknown>;
 }
 
 export interface UpdateAutomationOptions {
   name?: string;
   description?: string;
-  default_agent_id?: string;
+  agent_id?: string;
   default_inputs?: Record<string, unknown>;
   settings?: Record<string, unknown>;
   status?: AutomationStatus;
   tags?: TagMap;
-}
-
-export interface AutomationVersionOptions {
-  /** Retained for source compatibility. The public API compiles server-side. */
-  compiled_plan?: Record<string, unknown>;
-  publish?: boolean;
+  /** Replacement authoring definition. See {@link AutomationOptions.spec}. */
+  spec?: Record<string, unknown>;
 }
 
 export interface ListAutomationsOptions {
@@ -261,15 +257,18 @@ export class Client {
   }
 
   async createAutomation(opts: AutomationOptions): Promise<Automation> {
-    const body: CreateAutomationRequest = removeUndefined({
-      name: opts.name,
-      activate: false,
-      description: opts.description,
-      default_agent_id: opts.default_agent_id,
-      default_inputs: opts.default_inputs,
-      settings: opts.settings,
-      tags: opts.tags,
-    });
+    const body = {
+      schema_version: "2" as const,
+      ...(opts.spec ?? {}),
+      ...removeUndefined({
+        name: opts.name,
+        description: opts.description,
+        agent_id: opts.agent_id,
+        default_inputs: opts.default_inputs,
+        settings: opts.settings,
+        tags: opts.tags,
+      }),
+    } as CreateAutomationRequest;
     const resp = await this.request("/v1/projects/:project/loops", {
       method: "POST",
       body,
@@ -281,7 +280,11 @@ export class Client {
     id: string,
     opts: UpdateAutomationOptions,
   ): Promise<Automation> {
-    const body: UpdateAutomationRequest = removeUndefined(opts);
+    const { spec, ...meta } = opts;
+    const body = {
+      ...(spec ?? {}),
+      ...removeUndefined(meta),
+    } as UpdateAutomationRequest;
     const resp = await this.request(
       `/v1/projects/:project/loops/${encodeURIComponent(id)}`,
       { method: "PATCH", body },
@@ -294,46 +297,6 @@ export class Client {
       `/v1/projects/:project/loops/${encodeURIComponent(id)}`,
       { method: "DELETE" },
     );
-  }
-
-  async listAutomationVersions(
-    id: string,
-  ): Promise<AutomationVersionListResponse> {
-    const resp = await this.request(
-      `/v1/projects/:project/loops/${encodeURIComponent(id)}/versions`,
-      { method: "GET" },
-    );
-    return (await resp.json()) as AutomationVersionListResponse;
-  }
-
-  async createAutomationVersion(
-    id: string,
-    spec: Record<string, unknown>,
-    opts: AutomationVersionOptions = {},
-  ): Promise<AutomationVersion> {
-    const body: CreateAutomationVersionRequest = removeUndefined({
-      spec: spec as CreateAutomationVersionRequest["spec"],
-    });
-    const resp = await this.request(
-      `/v1/projects/:project/loops/${encodeURIComponent(id)}/versions`,
-      { method: "POST", body },
-    );
-    const version = (await resp.json()) as AutomationVersion;
-    if (opts.publish) {
-      await this.publishAutomationVersion(id, version.version);
-    }
-    return version;
-  }
-
-  async publishAutomationVersion(
-    id: string,
-    version: number,
-  ): Promise<Automation> {
-    const resp = await this.request(
-      `/v1/projects/:project/loops/${encodeURIComponent(id)}/versions/${version}/publication`,
-      { method: "POST" },
-    );
-    return (await resp.json()) as Automation;
   }
 
   async startRun(
@@ -484,8 +447,6 @@ export type {
   AutomationRunEvent,
   AutomationRunListResponse,
   AutomationRunStatus,
-  AutomationVersion,
-  AutomationVersionListResponse,
 };
 
 export function isTerminalRunStatus(status: AutomationRunStatus | string): boolean {

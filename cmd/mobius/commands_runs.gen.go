@@ -222,7 +222,7 @@ func registerRunsCommands(app *cli.App) {
 			cli.String("budget-usd", "").Help("Per-run budget override in US dollars (1 credit = $0.01). Overrides the loop spec's `limits` budget… Accepts JSON, @file, or @-."),
 			cli.Int("credit-budget", "").Help("Per-run budget override in whole credits (1 credit = $0.01). Same ceiling semantics as `budget_usd`…"),
 			cli.String("idempotency-key", "").Help("Caller-supplied idempotency key, scoped to (org, project). Repeat calls with the same `idempotency_…"),
-			cli.String("inputs", "").Help("Input map passed to the run. schema_version 1 loops receive it as-is and reference it via `{{ .inpu… Accepts JSON, @file, or @-."),
+			cli.String("inputs", "").Help("Input map passed to the run. Loops resolve it against the declared `inputs:` contract — undeclare… Accepts JSON, @file, or @-."),
 			cli.String("source", "").Help("Optional attribution for the call that started this run. Triggers and HTTP trigger dispatch populat… Accepts JSON, @file, or @-."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),

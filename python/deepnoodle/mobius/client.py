@@ -13,7 +13,6 @@ import httpx
 from ._api.models import (
     CancelLoopRunRequest as CancelAutomationRunRequest,
     CreateLoopRequest as CreateAutomationRequest,
-    CreateLoopVersionRequest as CreateAutomationVersionRequest,
     Loop as Automation,
     LoopListResponse as AutomationListResponse,
     LoopRun as AutomationRun,
@@ -22,8 +21,6 @@ from ._api.models import (
     LoopRunSource as AutomationRunSource,
     LoopRunStatus as AutomationRunStatus,
     LoopStatus as AutomationStatus,
-    LoopVersion as AutomationVersion,
-    LoopVersionListResponse as AutomationVersionListResponse,
     SignalLoopRunRequest as SignalAutomationRunRequest,
     StartLoopRunRequest as StartAutomationRunRequest,
     TagMap,
@@ -55,28 +52,29 @@ class ClientOptions:
 class AutomationOptions:
     name: str
     description: str | None = None
-    default_agent_id: str | None = None
+    agent_id: str | None = None
     default_inputs: dict[str, Any] | None = None
     settings: dict[str, Any] | None = None
     tags: TagMap | dict[str, str] | None = None
+    # Authoring definition for the automation. Recognised keys mirror the loop
+    # spec (steps, inputs, triggers, defaults, limits, output, repositories,
+    # cleanup, ...). When it carries steps the automation is runnable
+    # immediately. Keys are merged into the create request; explicit fields
+    # above take precedence.
+    spec: dict[str, Any] | None = None
 
 
 @dataclass
 class UpdateAutomationOptions:
     name: str | None = None
     description: str | None = None
-    default_agent_id: str | None = None
+    agent_id: str | None = None
     default_inputs: dict[str, Any] | None = None
     settings: dict[str, Any] | None = None
     status: AutomationStatus | None = None
     tags: TagMap | dict[str, str] | None = None
-
-
-@dataclass
-class AutomationVersionOptions:
-    # Retained for source compatibility. The public API compiles server-side.
-    compiled_plan: dict[str, Any] | None = None
-    publish: bool = False
+    # Replacement authoring definition. See AutomationOptions.spec.
+    spec: dict[str, Any] | None = None
 
 
 @dataclass
@@ -216,41 +214,17 @@ class Client:
         return Automation.model_validate(resp.json())
 
     def create_automation(self, opts: AutomationOptions) -> Automation:
-        body = CreateAutomationRequest(**_drop_none(opts.__dict__))
+        body = CreateAutomationRequest(**_merge_automation_fields(opts))
         resp = self._request("POST", "/v1/projects/{project}/loops", json=body)
         return Automation.model_validate(resp.json())
 
     def update_automation(self, loop_id: str, opts: UpdateAutomationOptions) -> Automation:
-        body = UpdateAutomationRequest(**_drop_none(opts.__dict__))
+        body = UpdateAutomationRequest(**_merge_automation_fields(opts))
         resp = self._request("PATCH", f"/v1/projects/{{project}}/loops/{quote(loop_id, safe='')}", json=body)
         return Automation.model_validate(resp.json())
 
     def delete_automation(self, loop_id: str) -> None:
         self._request("DELETE", f"/v1/projects/{{project}}/loops/{quote(loop_id, safe='')}")
-
-    def list_automation_versions(self, loop_id: str) -> AutomationVersionListResponse:
-        resp = self._request("GET", f"/v1/projects/{{project}}/loops/{quote(loop_id, safe='')}/versions")
-        return AutomationVersionListResponse.model_validate(resp.json())
-
-    def create_automation_version(
-        self,
-        loop_id: str,
-        spec: dict[str, Any],
-        opts: AutomationVersionOptions | None = None,
-    ) -> AutomationVersion:
-        opts = opts or AutomationVersionOptions()
-        body = CreateAutomationVersionRequest(
-            spec=spec,
-        )
-        resp = self._request("POST", f"/v1/projects/{{project}}/loops/{quote(loop_id, safe='')}/versions", json=body)
-        version = AutomationVersion.model_validate(resp.json())
-        if opts.publish:
-            self.publish_automation_version(loop_id, version.version)
-        return version
-
-    def publish_automation_version(self, loop_id: str, version: int) -> Automation:
-        resp = self._request("POST", f"/v1/projects/{{project}}/loops/{quote(loop_id, safe='')}/versions/{version}/publication")
-        return Automation.model_validate(resp.json())
 
     def start_run(self, automation_id: str, opts: StartRunOptions | None = None) -> AutomationRun:
         return self.start_automation_run(automation_id, opts)
@@ -387,6 +361,18 @@ def _model_dump(value: Any) -> Any:
 
 def _drop_none(values: dict[str, Any]) -> dict[str, Any]:
     return {k: v for k, v in values.items() if v is not None}
+
+
+def _merge_automation_fields(opts: Any) -> dict[str, Any]:
+    """Flatten automation options into loop request fields.
+
+    The loop spec (steps, inputs, triggers, ...) lives inline on the loop, so
+    the ``spec`` mapping is merged into the top-level request fields. Explicit
+    option fields take precedence over the same keys in ``spec``.
+    """
+    fields = dict(opts.__dict__)
+    spec = fields.pop("spec", None) or {}
+    return {**spec, **_drop_none(fields)}
 
 
 def _params(opts: Any | None) -> dict[str, Any] | None:
