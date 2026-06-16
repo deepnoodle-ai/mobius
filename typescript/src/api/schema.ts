@@ -903,7 +903,7 @@ export interface paths {
         };
         /**
          * Get run
-         * @description Returns one loop run by ID with its current status, inputs, result, and source attribution.
+         * @description Returns one loop run by ID with its current status, event, config, result, and source attribution.
          */
         get: operations["getRun"];
         put?: never;
@@ -1058,7 +1058,7 @@ export interface paths {
         post?: never;
         /**
          * Delete toolkit
-         * @description Deletes a project-local toolkit that is not assigned to any agent.
+         * @description Deletes a project-local toolkit. The toolkit is automatically detached from any agents that reference it, so deletion is never blocked by existing assignments.
          */
         delete: operations["deleteToolkit"];
         options?: never;
@@ -1130,7 +1130,7 @@ export interface paths {
         post?: never;
         /**
          * Delete skill
-         * @description Deletes a project-local skill that is not assigned to any agent.
+         * @description Deletes a project-local skill. The skill is automatically detached from any agents that reference it, so deletion is never blocked by existing assignments.
          */
         delete: operations["deleteSkill"];
         options?: never;
@@ -1559,7 +1559,7 @@ export interface components {
             queue?: string;
         };
         /**
-         * @description Controls how granted actions are surfaced to the model in Mobius-hosted agent turns. `flat` exposes one tool per action, while `meta` groups related actions behind compact command routers.
+         * @description Controls how granted actions are surfaced to the model in Mobius-hosted agent turns. `meta` (the default) groups related actions behind compact command routers, while `flat` exposes one tool per action.
          * @enum {string}
          */
         AgentToolPresentation: "flat" | "meta";
@@ -1573,7 +1573,7 @@ export interface components {
          *       "kind": "llm",
          *       "color": "teal",
          *       "model": "claude-sonnet-4-6",
-         *       "tool_presentation": "flat",
+         *       "tool_presentation": "meta",
          *       "status": "active",
          *       "tags": {
          *         "owner": "product"
@@ -3218,7 +3218,7 @@ export interface components {
          *       "kind": "llm",
          *       "color": "teal",
          *       "model": "claude-sonnet-4-6",
-         *       "tool_presentation": "flat",
+         *       "tool_presentation": "meta",
          *       "tags": {
          *         "owner": "product"
          *       }
@@ -3402,7 +3402,7 @@ export interface components {
          *       "owner": "user_2f9s3k4m5n6p7q8r",
          *       "agent_id": "agent_5n8p2q7m4x9r3v6t",
          *       "schema_version": "2",
-         *       "default_inputs": {
+         *       "default_config": {
          *         "repository": "deepnoodle-ai/mobius-cloud"
          *       },
          *       "tags": {
@@ -3452,8 +3452,12 @@ export interface components {
              * @enum {string}
              */
             schema_version: "2";
-            /** @description Declared run inputs for this loop. */
-            inputs?: {
+            /** @description Declared event fields for this loop. */
+            event?: {
+                [key: string]: components["schemas"]["LoopSpecInput"];
+            };
+            /** @description Declared run config fields for this loop. */
+            config?: {
                 [key: string]: components["schemas"]["LoopSpecInput"];
             };
             /**
@@ -3479,8 +3483,8 @@ export interface components {
             limits?: components["schemas"]["LoopSpecLimits"];
             /** @description Run-level defaults applied when individual steps omit a policy. */
             defaults?: components["schemas"]["LoopSpecDefaults"];
-            /** @description Default values merged into `inputs` when a run is started without overrides. */
-            default_inputs?: {
+            /** @description Default config values used when a run is started without overrides. */
+            default_config?: {
                 [key: string]: unknown;
             };
             /** @description Free-form loop-level settings consumed by the engine. */
@@ -3563,7 +3567,7 @@ export interface components {
          *           }
          *         }
          *       ],
-         *       "default_inputs": {
+         *       "default_config": {
          *         "repository": "deepnoodle-ai/mobius-cloud"
          *       },
          *       "tags": {
@@ -3584,8 +3588,12 @@ export interface components {
              * @enum {string}
              */
             schema_version: "2";
-            /** @description Declared run inputs for this loop. */
-            inputs?: {
+            /** @description Declared event fields for this loop. */
+            event?: {
+                [key: string]: components["schemas"]["LoopSpecInput"];
+            };
+            /** @description Declared run config fields for this loop. */
+            config?: {
                 [key: string]: components["schemas"]["LoopSpecInput"];
             };
             /**
@@ -3611,8 +3619,8 @@ export interface components {
             limits?: components["schemas"]["LoopSpecLimits"];
             /** @description Run-level defaults applied when individual steps omit a policy. */
             defaults?: components["schemas"]["LoopSpecDefaults"];
-            /** @description Default values merged into `inputs` when a run is started without overrides. */
-            default_inputs?: {
+            /** @description Default config values used when a run is started without overrides. */
+            default_config?: {
                 [key: string]: unknown;
             };
             /** @description Free-form loop-level settings consumed by the engine. */
@@ -3637,8 +3645,12 @@ export interface components {
              * @enum {string}
              */
             schema_version?: "2";
-            /** @description Declared run inputs for this loop. */
-            inputs?: {
+            /** @description Declared event fields for this loop. */
+            event?: {
+                [key: string]: components["schemas"]["LoopSpecInput"];
+            };
+            /** @description Declared run config fields for this loop. */
+            config?: {
                 [key: string]: components["schemas"]["LoopSpecInput"];
             };
             /**
@@ -3664,8 +3676,8 @@ export interface components {
             limits?: components["schemas"]["LoopSpecLimits"];
             /** @description Replacement run-level defaults. */
             defaults?: components["schemas"]["LoopSpecDefaults"];
-            /** @description Default values merged into `inputs` when a run is started without overrides. */
-            default_inputs?: {
+            /** @description Default config values used when a run is started without overrides. */
+            default_config?: {
                 [key: string]: unknown;
             };
             /** @description Free-form loop-level settings consumed by the engine. */
@@ -3956,7 +3968,7 @@ export interface components {
              * @enum {string}
              */
             scope?: "auto" | "loop" | "agent";
-            /** @description Optional Go-template string rendered against `inputs`, `context`, `agent`, `loop`, `run`, `source`, and `step`. When omitted, Mobius derives a stable name from the event payload, falling back to the trigger or `default`. */
+            /** @description Optional Go-template string rendered against `event`, `meta`, `config`, `context`, `agent`, `loop`, `run`, `source`, and `step`. When omitted, Mobius derives a stable name from the event payload, falling back to the trigger or `default`. */
             name?: string;
             /** @description Optional Go-template string for the session display title. */
             title?: string;
@@ -4045,12 +4057,18 @@ export interface components {
         LoopSubLoopStep: {
             /** @description ID of the loop to trigger, scoped to the same project as the parent loop. */
             loop_id: string;
-            /** @description Input map handed to the child run. String leaves render against the parent run before the child starts using `${{ ... }}` expr interpolations over `inputs`, `event`, `meta`, `steps.<id>.output`, or `steps[0].output`. When omitted the parent's run inputs are forwarded. */
-            inputs?: {
+            /** @description Event object handed to the child run. String leaves render against the parent run before the child starts using `${{ ... }}` expr interpolations over `event`, `meta`, `config`, `steps.<id>.output`, or `steps[0].output`. When omitted the parent's resolved event payload is forwarded. */
+            event?: {
                 [key: string]: unknown;
             };
+            /** @description Optional config object handed to the child run. */
+            config?: {
+                [key: string]: unknown;
+            };
+            /** @description Removed legacy field. Use the step-level `if` field for child-loop conditions. */
+            condition?: string;
         };
-        /** @description Check step configuration recognised inside `LoopSpec.steps[].config`. A check step evaluates typed assertions over the run's template environment (`inputs`, `event`, `meta`, `steps.<id>.output`, and `steps[0].output`) — deterministic `expr` predicates, or `agent` judges for everything that isn't deterministic — records a per-assertion verdict with cited evidence, and routes on failure: fail the run (stop reason `check_failed`), continue with the red verdict on the record, or open an approval gate carrying the evidence (rejection stops the run with `gate_rejected`). All assertions are evaluated; there is no short-circuit. An assertion that errors (bad expr, judge model failure, unparseable verdict) fails closed — never a silent pass. */
+        /** @description Check step configuration recognised inside `LoopSpec.steps[].config`. A check step evaluates typed assertions over the run's template `event`, `meta`, `config`, `steps.<id>.output`, and `steps[0].output`) — deterministic `expr` predicates, or `agent` judges for everything that isn't deterministic — records a per-assertion verdict with cited evidence, and routes on failure: fail the run (stop reason `check_failed`), continue with the red verdict on the record, or open an approval gate carrying the evidence (rejection stops the run with `gate_rejected`). All assertions are evaluated; there is no short-circuit. An assertion that errors (bad expr, judge model failure, unparseable verdict) fails closed — never a silent pass. */
         LoopCheckStep: {
             /** @description Assertions evaluated in order; names must be unique. */
             checks: components["schemas"]["LoopCheckAssertion"][];
@@ -4072,7 +4090,7 @@ export interface components {
              * @enum {string}
              */
             kind: "expr" | "agent";
-            /** @description Predicate for `kind: expr`, evaluated against the run's template environment (`inputs`, `event`, `meta`, `steps.<id>.output`, and `steps[0].output`). Required for expr assertions. */
+            /** @description Predicate for `kind: expr`, evaluated against the run's template environment (`event`, `meta`, `config`, `steps.<id>.output`, and `steps[0].output`). Required for expr assertions. */
             expr?: string;
             /** @description Judge agent id for `kind: agent`. Omit to use the built-in platform reviewer `mobius-reviewer`. The judge should be a different agent than the one that produced the evidence; the compiler warns when a judge grades its own work. */
             agent?: string;
@@ -4105,7 +4123,7 @@ export interface components {
              */
             on_timeout?: "fail";
         };
-        /** @description Free-form JSON object delivered to the HTTP trigger. The payload is recorded on the source event and forwarded to the run as inputs. */
+        /** @description Free-form JSON object delivered to the HTTP trigger. The payload is recorded on the source event and forwarded to the run as the event. */
         HTTPTriggerDeliveryRequest: {
             [key: string]: unknown;
         };
@@ -4122,11 +4140,14 @@ export interface components {
             deduped?: boolean;
         };
         /**
-         * @description Body for `POST /v1/projects/{project_handle}/loops/{resource_id}/runs`. All fields are optional; an empty body starts a run with no inputs and no attribution.
+         * @description Body for `POST /v1/projects/{project_handle}/loops/{resource_id}/runs`. All fields are optional; an empty body starts a run with an empty event/config envelope and no attribution.
          * @example {
-         *       "inputs": {
+         *       "event": {
          *         "issue_id": "42",
          *         "repository": "deepnoodle-ai/mobius-cloud"
+         *       },
+         *       "config": {
+         *         "priority": "normal"
          *       },
          *       "source": {
          *         "type": "api",
@@ -4138,8 +4159,16 @@ export interface components {
          *     }
          */
         StartLoopRunRequest: {
-            /** @description Input map passed to the run. Loops resolve it against the declared `inputs:` contract — undeclared keys are dropped, defaults fill, required inputs must resolve — and reference it via `${{ inputs.<key> }}`. */
-            inputs?: {
+            /** @description Exact event object that starts the run. Manual/API starts use this object the same way integration, HTTP, and schedule triggers do. Templates reference it via `${{ event.<key> }}`. */
+            event?: {
+                [key: string]: unknown;
+            };
+            /** @description Optional event metadata supplied by the caller. Mobius also adds provenance such as run, loop, source, trigger, and source-event ids. */
+            meta?: {
+                [key: string]: unknown;
+            };
+            /** @description Optional static or caller-provided configuration for handling the event. Templates reference it via `config.*`. */
+            config?: {
                 [key: string]: unknown;
             };
             /** @description Attribution for the call that starts the run. */
@@ -4212,8 +4241,11 @@ export interface components {
          *       "status": "running",
          *       "credit_budget": 1000,
          *       "credit_spent": 12.5,
-         *       "inputs": {
+         *       "event": {
          *         "repository": "deepnoodle-ai/mobius-cloud"
+         *       },
+         *       "config": {
+         *         "priority": "normal"
          *       },
          *       "source": {
          *         "type": "api",
@@ -4253,16 +4285,16 @@ export interface components {
             max_agent_turns?: number;
             /** @description Number of agent turns started for this run so far. Compared against `max_agent_turns` when that cap is set. */
             agent_turns_used?: number;
-            /** @description Input map resolved when the run started, reachable in step templates at `${{ inputs.<key> }}`. Event trigger data lives in the run's `event` and `meta` fields; inputs hold only declared keys. */
-            inputs?: {
-                [key: string]: unknown;
-            };
-            /** @description Normalized payload of the event that started the run, reachable in templates at `${{ event.* }}`: the webhook body for event triggers, the request body for HTTP triggers. Empty for manual and schedule runs. */
+            /** @description Exact safe/canonical event object that started the run, reachable in templates at `event.*`. */
             event?: {
                 [key: string]: unknown;
             };
             /** @description Run and trigger metadata envelope, reachable in templates at `${{ meta.* }}`: `run_id`, `loop_id`, `source`, `trigger`, plus trigger-supplied facts such as `event_type`, `source_event_id`, and `scheduled_at`. */
             meta?: {
+                [key: string]: unknown;
+            };
+            /** @description Optional static or caller-provided configuration resolved when the run started, reachable in templates at `config.*`. */
+            config?: {
                 [key: string]: unknown;
             };
             /** @description Final result payload. When the loop declares an `output:` block this is that block rendered at completion; otherwise it is the run's accumulated step outputs, keyed by step id. Absent until the run terminates successfully. */
@@ -4851,7 +4883,7 @@ export interface components {
             };
         };
         UpdateRowRequest: {
-            /** @description Replacement row data keyed by table column name. */
+            /** @description Fields to merge into the existing row, keyed by table column name. */
             data: {
                 [key: string]: unknown;
             };
@@ -6531,7 +6563,7 @@ export interface operations {
                  *       "kind": "llm",
                  *       "color": "teal",
                  *       "model": "claude-sonnet-4-6",
-                 *       "tool_presentation": "flat",
+                 *       "tool_presentation": "meta",
                  *       "tags": {
                  *         "owner": "product"
                  *       }
@@ -6556,7 +6588,7 @@ export interface operations {
                      *       "kind": "llm",
                      *       "color": "teal",
                      *       "model": "claude-sonnet-4-6",
-                     *       "tool_presentation": "flat",
+                     *       "tool_presentation": "meta",
                      *       "status": "active",
                      *       "tags": {
                      *         "owner": "product"
@@ -7552,8 +7584,12 @@ export interface operations {
             content: {
                 /**
                  * @example {
-                 *       "inputs": {
-                 *         "issue_id": "42"
+                 *       "event": {
+                 *         "issue_id": "42",
+                 *         "repository": "deepnoodle-ai/mobius-cloud"
+                 *       },
+                 *       "config": {
+                 *         "priority": "normal"
                  *       },
                  *       "source": {
                  *         "type": "api",
@@ -7582,9 +7618,12 @@ export interface operations {
                      *       "loop_version_id": "lver_4v9n2q7m5x8p3r6t",
                      *       "loop_version": 3,
                      *       "status": "queued",
-                     *       "inputs": {
+                     *       "event": {
                      *         "issue_id": "42",
                      *         "repository": "deepnoodle-ai/mobius-cloud"
+                     *       },
+                     *       "config": {
+                     *         "priority": "normal"
                      *       },
                      *       "source": {
                      *         "type": "api",
@@ -8044,7 +8083,6 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
-            409: components["responses"]["Conflict"];
             429: components["responses"]["TooManyRequests"];
         };
     };
@@ -8300,7 +8338,6 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
-            409: components["responses"]["Conflict"];
             429: components["responses"]["TooManyRequests"];
         };
     };

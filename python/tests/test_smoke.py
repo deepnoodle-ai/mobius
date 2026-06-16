@@ -102,7 +102,7 @@ def test_automation_helpers_use_project_scoped_routes() -> None:
     created = client.create_automation(
         AutomationOptions(
             name="Research",
-            default_inputs={"topic": "agents"},
+            default_config={"topic": "agents"},
         )
     )
     updated = client.update_automation(
@@ -162,7 +162,8 @@ def test_start_run_posts_to_automation_bound_route() -> None:
         "loop_1",
         StartRunOptions(
             external_id="external-1",
-            inputs={"topic": "sdk"},
+            event={"topic": "sdk"},
+            config={"priority": "normal"},
             source=AutomationRunSource(type="api", id="test"),
         ),
     )
@@ -170,7 +171,8 @@ def test_start_run_posts_to_automation_bound_route() -> None:
     assert run.id == "run_1"
     assert seen["path"] == "/v1/projects/test-project/loops/loop_1/runs"
     assert '"idempotency_key":"external-1"' in str(seen["body"])
-    assert '"topic":"sdk"' in str(seen["body"])
+    assert '"event":{"topic":"sdk"}' in str(seen["body"])
+    assert '"config":{"priority":"normal"}' in str(seen["body"])
 
 
 def test_run_control_helpers_use_project_scoped_paths_and_enum_query_values() -> None:
@@ -342,7 +344,7 @@ def _run_body(run_id: str, status: str) -> dict[str, object]:
         "loop_version_id": "lver_1",
         "loop_version": 1,
         "status": status,
-        "inputs": {"topic": "sdk"},
+        "event": {"topic": "sdk"},
         "created_at": "2026-05-27T00:00:00Z",
         "updated_at": "2026-05-27T00:00:00Z",
     }

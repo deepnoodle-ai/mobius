@@ -73,39 +73,31 @@ await deliverSyntheticWebhook({
 
 ## Automations And Runs
 
-Create a saved automation, add an immutable version, publish it, then start a
-run by automation handle.
+Create a saved, runnable automation with an inline spec, then start a run by
+loop ID. The run's `event` object is reachable in step templates at `event.*`;
+optional `config` is reachable at `config.*`.
 
 ```go
 automation, err := client.CreateAutomation(ctx, mobius.AutomationOptions{
-	Handle: "customer-onboarding",
-	Name:   "Customer onboarding",
+	Name: "Customer onboarding",
+	Spec: map[string]any{"steps": []any{ /* ... */ }},
 })
 if err != nil { return err }
-_, err = client.CreateAutomationVersion(ctx, automation.Handle, spec, &mobius.AutomationVersionOptions{
-	Publish: true,
-})
-if err != nil { return err }
-run, err := client.StartAutomationRun(ctx, automation.Handle, &mobius.StartRunOptions{
-	Inputs:     map[string]any{"customer_id": "cus_123"},
+run, err := client.StartAutomationRun(ctx, automation.Id, &mobius.StartRunOptions{
+	Event:      map[string]any{"customer_id": "cus_123"},
 	ExternalID: "customer-run-123",
 })
 ```
 
 ```python
 automation = client.create_automation(mobius.AutomationOptions(
-    handle="customer-onboarding",
     name="Customer onboarding",
+    spec={"steps": []},
 ))
-client.create_automation_version(
-    automation.handle,
-    spec,
-    mobius.AutomationVersionOptions(publish=True),
-)
 run = client.start_automation_run(
-    automation.handle,
+    automation.id,
     mobius.StartRunOptions(
-        inputs={"customer_id": "cus_123"},
+        event={"customer_id": "cus_123"},
         external_id="customer-run-123",
     ),
 )
@@ -113,14 +105,11 @@ run = client.start_automation_run(
 
 ```ts
 const automation = await client.createAutomation({
-  handle: "customer-onboarding",
   name: "Customer onboarding",
+  spec: { steps: [] },
 });
-await client.createAutomationVersion(automation.handle, spec, {
-  publish: true,
-});
-const run = await client.startAutomationRun(automation.handle, {
-  inputs: { customer_id: "cus_123" },
+const run = await client.startAutomationRun(automation.id, {
+  event: { customer_id: "cus_123" },
   external_id: "customer-run-123",
 });
 ```

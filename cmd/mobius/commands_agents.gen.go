@@ -91,7 +91,7 @@ func registerAgentsCommands(app *cli.App) {
 			cli.String("name", "").Help("[required] Unique name for this agent. Free-form human-readable label, 1-63 characters."),
 			cli.String("system-prompt", "").Help("Custom system prompt for platform agents. Empty uses the generated default."),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
-			cli.String("tool-presentation", "").Help("Controls how granted actions are surfaced to the model in Mobius-hosted agent turns. `flat` exposes…"),
+			cli.String("tool-presentation", "").Help("Controls how granted actions are surfaced to the model in Mobius-hosted agent turns. `meta` (the de…"),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -718,7 +718,7 @@ func registerAgentsCommands(app *cli.App) {
 			cli.String("status", "").Help("Replacement agent status: `active` or `inactive`. Use DELETE to delete the agent."),
 			cli.String("system-prompt", "").Help("Replacement system prompt for platform agents."),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
-			cli.String("tool-presentation", "").Help("Controls how granted actions are surfaced to the model in Mobius-hosted agent turns. `flat` exposes…"),
+			cli.String("tool-presentation", "").Help("Controls how granted actions are surfaced to the model in Mobius-hosted agent turns. `meta` (the de…"),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).

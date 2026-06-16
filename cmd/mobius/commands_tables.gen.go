@@ -452,7 +452,7 @@ func registerTablesCommands(app *cli.App) {
 		AddArg(&cli.Arg{Name: "table-id", Description: "Table ID.", Required: true}).
 		AddArg(&cli.Arg{Name: "row-id", Description: "Table row ID.", Required: true}).
 		Flags(
-			cli.String("data", "").Help("[required] Replacement row data keyed by table column name. Accepts JSON, @file, or @-."),
+			cli.String("data", "").Help("[required] Fields to merge into the existing row, keyed by table column name. Accepts JSON, @file, or @-."),
 			cli.Int("version", "").Help("Expected version for optimistic locking. Omit or 0 to skip the check."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),

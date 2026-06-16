@@ -67,7 +67,7 @@ const client = new Client({ apiKey: process.env.MOBIUS_API_KEY! });
 
 const run = await client.startAutomationRun("customer-onboarding", {
   external_id: "customer-run-123",
-  inputs: { customer_id: "cus_123" },
+  event: { customer_id: "cus_123" },
 });
 
 const terminal = await client.waitRun(run.id);
@@ -78,15 +78,11 @@ console.log(terminal.status, terminal.result, terminal.error_message);
 
 ```ts
 const automation = await client.createAutomation({
-  handle: "customer-onboarding",
   name: "Customer onboarding",
+  spec: { steps: [] },
 });
 
-const version = await client.createAutomationVersion(automation.handle, {
-  steps: [],
-}, { publish: true });
-
-console.log(automation.id, version.version);
+console.log(automation.id, automation.status);
 ```
 
 ### Webhooks
@@ -124,7 +120,7 @@ const client = new Client({
 try {
   await client.startAutomationRun("customer-onboarding", {
     external_id: "customer-run-123",
-    inputs: { customer_id: "cus_123" },
+    event: { customer_id: "cus_123" },
   });
 } catch (err) {
   if (err instanceof RateLimitError) {

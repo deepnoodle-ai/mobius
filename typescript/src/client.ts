@@ -132,13 +132,14 @@ export interface AutomationOptions {
   name: string;
   description?: string;
   agent_id?: string;
-  default_inputs?: Record<string, unknown>;
+  default_config?: Record<string, unknown>;
   settings?: Record<string, unknown>;
   tags?: TagMap;
   /**
    * Authoring definition for the automation. Recognised keys mirror the loop
-   * spec (steps, inputs, triggers, defaults, limits, output, repositories,
-   * cleanup, …). When it carries steps the automation is runnable immediately.
+   * spec (steps, event, config, triggers, defaults, limits, output,
+   * repositories, cleanup, …). When it carries steps the automation is
+   * runnable immediately.
    */
   spec?: Record<string, unknown>;
 }
@@ -147,7 +148,7 @@ export interface UpdateAutomationOptions {
   name?: string;
   description?: string;
   agent_id?: string;
-  default_inputs?: Record<string, unknown>;
+  default_config?: Record<string, unknown>;
   settings?: Record<string, unknown>;
   status?: AutomationStatus;
   tags?: TagMap;
@@ -162,7 +163,12 @@ export interface ListAutomationsOptions {
 }
 
 export interface StartRunOptions {
-  inputs?: Record<string, unknown>;
+  /** Exact event object that starts the run, reachable in templates at `event.*`. */
+  event?: Record<string, unknown>;
+  /** Optional static or caller-provided configuration, reachable at `config.*`. */
+  config?: Record<string, unknown>;
+  /** Optional caller-supplied event metadata; Mobius adds its own provenance. */
+  meta?: Record<string, unknown>;
   source?: AutomationRunSource;
   external_id?: string;
 }
@@ -264,7 +270,7 @@ export class Client {
         name: opts.name,
         description: opts.description,
         agent_id: opts.agent_id,
-        default_inputs: opts.default_inputs,
+        default_config: opts.default_config,
         settings: opts.settings,
         tags: opts.tags,
       }),
@@ -311,7 +317,9 @@ export class Client {
     opts: StartRunOptions = {},
   ): Promise<AutomationRun> {
     const body: StartAutomationRunRequest = removeUndefined({
-      inputs: opts.inputs,
+      event: opts.event,
+      config: opts.config,
+      meta: opts.meta,
       source: opts.source,
       idempotency_key: opts.external_id,
     });

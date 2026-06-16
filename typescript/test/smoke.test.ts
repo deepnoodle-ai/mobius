@@ -113,7 +113,7 @@ test("client: startAutomationRun posts the new request shape", async () => {
     });
     const run = await client.startAutomationRun("loop_1", {
       external_id: "external-1",
-      inputs: { topic: "sdk" },
+      event: { topic: "sdk" },
     });
     assert.equal(run.id, "run_1");
   } finally {
@@ -124,6 +124,7 @@ test("client: startAutomationRun posts the new request shape", async () => {
     "https://api.example.invalid/v1/projects/test-project/loops/loop_1/runs",
   );
   assert.match(requestBody, /"idempotency_key":"external-1"/);
+  assert.match(requestBody, /"event":\{"topic":"sdk"\}/);
 });
 
 test("client: run control helpers use automation run endpoints", async () => {

@@ -12,8 +12,15 @@ const defaultWaitRunReconnectDelay = time.Second
 
 // StartRunOptions contains common fields for starting automation runs.
 // ExternalID is a caller-supplied correlation and idempotency key.
+//
+// Event is the exact event object that starts the run, reachable in templates
+// at ${{ event.<key> }}. Config is optional static or caller-provided
+// configuration reachable at config.*. Meta is optional caller-supplied event
+// metadata; Mobius adds its own provenance (run, loop, source, trigger ids).
 type StartRunOptions struct {
-	Inputs     map[string]interface{}
+	Event      map[string]interface{}
+	Config     map[string]interface{}
+	Meta       map[string]interface{}
 	Source     *api.LoopRunSource
 	ExternalID string
 }
@@ -178,8 +185,14 @@ func startAutomationRunRequest(opts *StartRunOptions) api.StartLoopRunRequest {
 	if opts == nil {
 		return req
 	}
-	if opts.Inputs != nil {
-		req.Inputs = &opts.Inputs
+	if opts.Event != nil {
+		req.Event = &opts.Event
+	}
+	if opts.Config != nil {
+		req.Config = &opts.Config
+	}
+	if opts.Meta != nil {
+		req.Meta = &opts.Meta
 	}
 	if opts.Source != nil {
 		req.Source = opts.Source
