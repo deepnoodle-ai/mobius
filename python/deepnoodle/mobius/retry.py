@@ -25,11 +25,13 @@ _IDEMPOTENT_METHODS = frozenset({"GET", "HEAD", "PUT", "DELETE", "OPTIONS"})
 
 
 class RetryingTransport(httpx.BaseTransport):
-    """Wraps a transport, retrying 429 and 503 responses per the shared spec.
+    """Wraps a transport, retrying 429/503 responses and transport-level
+    errors per the shared spec.
 
     Only GET/HEAD/PUT/DELETE/OPTIONS and POST/PATCH requests carrying an
     ``Idempotency-Key`` header are retried; other POST/PATCH requests
-    surface ``RateLimitError`` immediately on 429.
+    surface ``RateLimitError`` immediately on 429 and re-raise transport
+    errors immediately.
     """
 
     def __init__(
@@ -47,14 +49,27 @@ class RetryingTransport(httpx.BaseTransport):
 
     def handle_request(self, request: httpx.Request) -> httpx.Response:
         attempt = 0
+        idempotent = _is_idempotent(request)
         while True:
-            response = self._base.handle_request(request)
+            try:
+                response = self._base.handle_request(request)
+            except httpx.TransportError:
+                # No HTTP response was produced (connection reset, EOF,
+                # I/O timeout, ...). Retry replayable, idempotent requests
+                # on the exponential-backoff schedule; otherwise re-raise.
+                if not idempotent or attempt >= self._max_retries:
+                    raise
+                wait = _clamp(BASE_RETRY_BACKOFF_SECONDS * (2**attempt))
+                if wait > 0:
+                    self._sleep(wait)
+                attempt += 1
+                continue
+
             status = response.status_code
 
             if status not in (429, 503):
                 return response
 
-            idempotent = _is_idempotent(request)
             out_of_budget = attempt >= self._max_retries or not idempotent
 
             if status == 429 and out_of_budget:

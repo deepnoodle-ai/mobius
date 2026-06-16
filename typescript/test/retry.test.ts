@@ -225,3 +225,68 @@ test("retry: non-retryable statuses pass through unchanged", async () => {
   assert.equal(callCount(), 1);
   assert.deepEqual(rec.calls, []);
 });
+
+// A fetch that throws (transport-level error) for the first `failures` calls,
+// then resolves 200. Models a connection reset / DNS failure / I/O timeout.
+function throwingFetch(
+  failures: number,
+  err: Error,
+): { fetch: typeof globalThis.fetch; callCount: () => number } {
+  let i = 0;
+  const fetchFn: typeof globalThis.fetch = async () => {
+    i += 1;
+    if (i <= failures) throw err;
+    return new Response(`{"ok":true}`, { status: 200 });
+  };
+  return { fetch: fetchFn, callCount: () => i };
+}
+
+test("retry: transport error then 200 succeeds", async () => {
+  const { fetch, callCount } = throwingFetch(
+    2,
+    new Error("connection reset by peer"),
+  );
+  const rec = new SleepRecorder();
+  const wrapped = wrapFetchWithRetry(fetch, { maxRetries: 3, sleep: rec.sleep });
+  const resp = await wrapped("https://x/y");
+  assert.equal(resp.status, 200);
+  assert.equal(callCount(), 3);
+  assert.deepEqual(rec.calls, [1, 2]);
+});
+
+test("retry: transport error exhausts budget and rethrows", async () => {
+  const err = new Error("dial: connection refused");
+  const { fetch, callCount } = throwingFetch(100, err);
+  const rec = new SleepRecorder();
+  const wrapped = wrapFetchWithRetry(fetch, { maxRetries: 2, sleep: rec.sleep });
+  await assert.rejects(() => wrapped("https://x/y"), /connection refused/);
+  // attempts 0 and 1 back off; attempt 2 is out of budget and rethrows.
+  assert.equal(callCount(), 3);
+  assert.deepEqual(rec.calls, [1, 2]);
+});
+
+test("retry: transport error not retried for non-idempotent POST", async () => {
+  const { fetch, callCount } = throwingFetch(100, new Error("unexpected EOF"));
+  const rec = new SleepRecorder();
+  const wrapped = wrapFetchWithRetry(fetch, { maxRetries: 3, sleep: rec.sleep });
+  await assert.rejects(
+    () => wrapped("https://x/y", { method: "POST", body: "{}" }),
+    /unexpected EOF/,
+  );
+  assert.equal(callCount(), 1);
+  assert.deepEqual(rec.calls, []);
+});
+
+test("retry: aborted request is not retried", async () => {
+  const abort = new Error("the operation was aborted");
+  abort.name = "AbortError";
+  const { fetch, callCount } = throwingFetch(100, abort);
+  const rec = new SleepRecorder();
+  const wrapped = wrapFetchWithRetry(fetch, { maxRetries: 3, sleep: rec.sleep });
+  await assert.rejects(
+    () => wrapped("https://x/y"),
+    (e: unknown) => (e as Error).name === "AbortError",
+  );
+  assert.equal(callCount(), 1);
+  assert.deepEqual(rec.calls, []);
+});

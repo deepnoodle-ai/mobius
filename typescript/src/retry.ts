@@ -1,5 +1,5 @@
-// 429/503-aware retrying `fetch` wrapper. Implements the shared retry
-// policy documented in ../../docs/retries.md.
+// 429/503- and transport-error-aware retrying `fetch` wrapper. Implements the
+// shared retry policy documented in ../../docs/retries.md.
 
 export class RateLimitError extends Error {
   readonly retryAfter: number;
@@ -74,7 +74,25 @@ export function wrapFetchWithRetry(
     const idempotent = isIdempotent(method, hasIdempotencyKey);
 
     while (true) {
-      const response = await fetchFn(input, init);
+      let response: Response;
+      try {
+        response = await fetchFn(input, init);
+      } catch (err) {
+        // No HTTP response was produced (network error: connection reset,
+        // DNS failure, I/O timeout, ...). Retry replayable, idempotent
+        // requests on the exponential-backoff schedule; an aborted request
+        // or an exhausted budget re-throws the underlying error.
+        if (!idempotent || attempt >= maxRetries || isAbortError(err)) {
+          throw err;
+        }
+        const wait = clamp(BASE_RETRY_BACKOFF_SECONDS * 2 ** attempt);
+        if (wait > 0) {
+          await sleep(wait);
+        }
+        attempt++;
+        continue;
+      }
+
       const status = response.status;
       if (status !== 429 && status !== 503) {
         return response;
@@ -123,6 +141,18 @@ function isIdempotent(method: string, hasIdempotencyKey: boolean): boolean {
   if (IDEMPOTENT_METHODS.has(method)) return true;
   if (method === "POST" || method === "PATCH") return hasIdempotencyKey;
   return false;
+}
+
+// isAbortError reports whether a thrown fetch error is caller cancellation
+// (an aborted AbortSignal) rather than a transient transport failure. Abort
+// is terminal and must never be retried.
+function isAbortError(err: unknown): boolean {
+  return (
+    typeof err === "object" &&
+    err !== null &&
+    "name" in err &&
+    (err as { name?: unknown }).name === "AbortError"
+  );
 }
 
 async function drainBody(response: Response): Promise<void> {
