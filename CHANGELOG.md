@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 
 ## [Unreleased]
 
+## [0.0.25] - 2026-06-16
+
 ### Changed
 
 - SDKs / CLI: runs now carry a structured `event` / `config` / `meta`
