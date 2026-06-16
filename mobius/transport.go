@@ -19,16 +19,21 @@ const MaxRetryBackoff = 60 * time.Second
 const baseRetryBackoff = 1 * time.Second
 
 // RetryingTransport wraps an http.RoundTripper to retry 429 and 503
-// responses per the policy documented in docs/retries.md:
+// responses and transport-level errors per the policy documented in
+// docs/retries.md:
 //
-//   - Only 429 and 503 are retried.
+//   - 429 and 503 responses are retried, as are transport-level errors
+//     (connection reset, unexpected EOF, dial failure) that never yield an
+//     HTTP response.
 //   - GET/HEAD/PUT/DELETE are always replayable; POST/PATCH are replayed
-//     only when an Idempotency-Key header is set.
+//     only when an Idempotency-Key header is set. Non-replayable requests
+//     surface the error without a retry.
 //   - Sleep duration is taken from Retry-After (int seconds or HTTP-date)
 //     or, absent that header, from exponential backoff (1s, 2s, 4s, ...)
-//     capped at [MaxRetryBackoff].
+//     capped at [MaxRetryBackoff]. Transport errors always use backoff.
 //   - When retries are exhausted — or not allowed — a 429 surfaces as
-//     [*RateLimitError] populated from the response headers.
+//     [*RateLimitError] populated from the response headers, and a
+//     transport error surfaces as the underlying error.
 type RetryingTransport struct {
 	// Base is the underlying transport. Defaults to [http.DefaultTransport].
 	Base http.RoundTripper
@@ -83,7 +88,29 @@ func (t *RetryingTransport) RoundTrip(req *http.Request) (*http.Response, error)
 
 		resp, err := t.base().RoundTrip(thisReq)
 		if err != nil {
-			return nil, err
+			// Transport-level failure (connection reset, unexpected EOF,
+			// dial error, ...). These never produce an HTTP response, so the
+			// 429/503 handling below cannot see them. Retry idempotent,
+			// replayable requests on the same backoff budget; give up once
+			// the budget is spent, the request is not safe to replay, or the
+			// context is done.
+			if !canRetry || attempt >= t.MaxRetries || ctx.Err() != nil {
+				return nil, err
+			}
+			wait := expBackoff(attempt)
+			if t.Logger != nil {
+				t.Logger.Warn("mobius: retrying after transport error",
+					slog.String("method", req.Method),
+					slog.String("url", req.URL.String()),
+					slog.String("error", err.Error()),
+					slog.Int("attempt", attempt+1),
+					slog.Duration("wait", wait),
+				)
+			}
+			if serr := t.sleepFn()(ctx, wait); serr != nil {
+				return nil, err
+			}
+			continue
 		}
 
 		if !isRetryableStatus(resp.StatusCode) {
@@ -162,6 +189,12 @@ func retryAfterOrBackoff(resp *http.Response, attempt int, now func() time.Time)
 	if d, ok := parseRetryAfter(resp.Header.Get("Retry-After"), now); ok {
 		return clampBackoff(d)
 	}
+	return expBackoff(attempt)
+}
+
+// expBackoff returns the exponential backoff for a zero-based attempt index
+// (1s, 2s, 4s, ...), clamped to [MaxRetryBackoff].
+func expBackoff(attempt int) time.Duration {
 	multiplier := math.Pow(2, float64(attempt))
 	return clampBackoff(time.Duration(float64(baseRetryBackoff) * multiplier))
 }

@@ -2,8 +2,10 @@
 
 The Mobius API may respond to any authenticated request with `429 Too Many
 Requests` when a rate-limit bucket is exhausted, or `503 Service Unavailable`
-when the backend is transiently overloaded. All official SDKs (Go, Python,
-TypeScript) share the same retry semantics so that customer behavior is
+when the backend is transiently overloaded. A request may also fail at the
+transport layer — connection reset, unexpected EOF, DNS failure, I/O timeout —
+before any response is produced. All official SDKs (Go, Python, TypeScript)
+share the same retry semantics for these cases so that customer behavior is
 consistent across languages.
 
 This document is the authoritative spec. If one language drifts from it,
@@ -15,31 +17,36 @@ The retry layer sits **below** the generated client and wraps every outbound
 request. It observes only the response status code and a small set of
 headers; it does not inspect request or response bodies.
 
-## Retryable status codes
+## Retryable failures
 
-Only the following statuses trigger a retry:
+A retry is triggered by any of:
 
-| Status | Meaning |
-|--------|---------|
+| Failure | Meaning |
+|---------|---------|
 | `429 Too Many Requests` | Rate-limit exceeded for the credential or org. |
 | `503 Service Unavailable` | Backend signalling transient unavailability. |
+| Transport-level error | The request never produced an HTTP response — DNS failure, connection reset, unexpected EOF, or I/O timeout. |
 
 Any other status — including `500`, `502`, and `504` — is **not** retried.
-(Those can indicate half-applied writes; the caller decides how to handle.)
+(Those reach the caller as an ordinary response; they can indicate
+half-applied writes, so the caller decides how to handle.)
 
-Network-level errors (DNS failure, connection reset, I/O timeout) are also
-**not** retried automatically. Callers that want to retry network errors
-should do so at the application layer.
+Transport-level errors are retried only for replayable, idempotent requests
+(see [idempotency gating](#idempotency-gating)); a non-idempotent request
+surfaces the underlying error without a retry. Caller cancellation — a
+cancelled context or aborted signal — stops the retry loop immediately and is
+never itself treated as a retryable error.
 
 ## Idempotency gating
 
 Retrying a non-idempotent write risks creating duplicates. The SDK retries
 only when the request is safe to replay:
 
-- `GET`, `HEAD`, `PUT`, `DELETE` — always retried on retryable statuses.
+- `GET`, `HEAD`, `PUT`, `DELETE` — always retried on a retryable failure.
 - `POST` — retried **only** when the request carries an `Idempotency-Key`
   header. A `POST` without that header is never retried; on `429` the SDK
-  surfaces `RateLimitError` immediately.
+  surfaces `RateLimitError` immediately, and on a transport error it surfaces
+  the underlying error immediately.
 - `PATCH` — treated like `POST`: retried only with `Idempotency-Key`.
 
 ## Backoff
@@ -56,6 +63,9 @@ For each retry the SDK sleeps a bounded number of seconds, chosen as:
    very long waits should disable SDK retries and implement their own
    policy.
 
+Transport-level errors carry no `Retry-After`, so they always use the
+exponential-backoff schedule.
+
 The context/`AbortSignal` passed by the caller is respected during sleep —
 cancellation aborts the retry loop with the cancellation error.
 
@@ -70,7 +80,9 @@ cancellation aborts the retry loop with the cancellation error.
 
 `503` retries that eventually give up do **not** wrap into `RateLimitError`
 — the SDK passes the underlying response through so the caller's existing
-status handling applies.
+status handling applies. Likewise, a transport-level error that exhausts its
+budget (or is not allowed to retry) surfaces the underlying network error
+unchanged — never wrapped as `RateLimitError`.
 
 ## `RateLimitError` shape
 
@@ -112,8 +124,9 @@ Each SDK surfaces `RateLimitError` in a way idiomatic for that language:
 | Knob | Default |
 |------|---------|
 | Retry statuses | `{429, 503}` |
+| Retry transport errors | yes (idempotent + replayable only) |
 | Retries | `3` |
-| Retry non-idempotent POST on 429 | no (surface error) |
+| Retry non-idempotent POST on 429 / transport error | no (surface error) |
 | Max sleep per attempt | `60s` |
 | Exp backoff base | `1s`, doubled each attempt |
 

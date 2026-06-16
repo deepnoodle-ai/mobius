@@ -212,6 +212,69 @@ def test_non_retryable_status_passes_through() -> None:
     assert rec.sleeps == []
 
 
+def test_retries_on_transport_error_then_succeeds() -> None:
+    calls = {"n": 0}
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        calls["n"] += 1
+        if calls["n"] <= 2:
+            raise httpx.ConnectError("connection reset by peer", request=req)
+        return httpx.Response(200, json={"ok": True})
+
+    rec = _Recorder()
+    with _wrap(handler, max_retries=3, sleep=rec.sleep) as client:
+        resp = client.get("/x")
+    assert resp.status_code == 200
+    assert calls["n"] == 3
+    assert rec.sleeps == [1.0, 2.0]
+
+
+def test_transport_error_exhausts_budget_reraises() -> None:
+    calls = {"n": 0}
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        calls["n"] += 1
+        raise httpx.ReadError("dial tcp: connection refused", request=req)
+
+    rec = _Recorder()
+    with _wrap(handler, max_retries=2, sleep=rec.sleep) as client:
+        with pytest.raises(httpx.TransportError):
+            client.get("/x")
+    # attempts 0 and 1 back off; attempt 2 is out of budget and re-raises.
+    assert calls["n"] == 3
+    assert rec.sleeps == [1.0, 2.0]
+
+
+def test_transport_error_not_retried_for_non_idempotent() -> None:
+    calls = {"n": 0}
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        calls["n"] += 1
+        raise httpx.ConnectError("unexpected EOF", request=req)
+
+    rec = _Recorder()
+    with _wrap(handler, max_retries=3, sleep=rec.sleep) as client:
+        with pytest.raises(httpx.TransportError):
+            client.post("/x", json={"a": 1})
+    assert calls["n"] == 1
+    assert rec.sleeps == []
+
+
+def test_transport_error_max_retries_zero_reraises() -> None:
+    calls = {"n": 0}
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        calls["n"] += 1
+        raise httpx.ConnectError("connection reset by peer", request=req)
+
+    rec = _Recorder()
+    with _wrap(handler, max_retries=0, sleep=rec.sleep) as client:
+        with pytest.raises(httpx.TransportError):
+            client.get("/x")
+    assert calls["n"] == 1
+    assert rec.sleeps == []
+
+
 def test_rate_limited_error_is_instance_of_rate_limit_error() -> None:
     # Legacy subclass relationship: except RateLimitError catches both.
     err = RateLimitedError("job_1", retry_after=5)

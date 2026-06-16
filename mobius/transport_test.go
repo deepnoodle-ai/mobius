@@ -356,3 +356,99 @@ func TestRateLimitError_UnwrapsToSentinel(t *testing.T) {
 	e := &RateLimitError{Scope: "key"}
 	assert.True(t, errors.Is(e, ErrRateLimited))
 }
+
+// scriptedTransport fails the first `failures` round trips with `err` (no HTTP
+// response, modeling a transport-level fault such as a connection reset), then
+// serves a 200 with a small JSON body.
+type scriptedTransport struct {
+	calls    atomic.Int32
+	failures int
+	err      error
+}
+
+func (s *scriptedTransport) RoundTrip(_ *http.Request) (*http.Response, error) {
+	n := int(s.calls.Add(1))
+	if n <= s.failures {
+		return nil, s.err
+	}
+	return &http.Response{
+		StatusCode: 200,
+		Body:       io.NopCloser(bytes.NewReader([]byte(`{"ok":true}`))),
+		Header:     make(http.Header),
+	}, nil
+}
+
+func TestRetryingTransport_RetriesTransportErrorThenSucceeds(t *testing.T) {
+	base := &scriptedTransport{failures: 2, err: errors.New("connection reset by peer")}
+	rec := &recordingSleep{}
+	tp := &RetryingTransport{Base: base, MaxRetries: 3, sleep: rec.sleep}
+	req := newRequest(t, http.MethodGet, "http://example.test/runs/run_x", "")
+
+	resp, err := tp.RoundTrip(req)
+	assert.NoError(t, err)
+	assert.Equal(t, resp.StatusCode, 200)
+	_ = resp.Body.Close()
+	assert.Equal(t, base.calls.Load(), int32(3))
+	assert.Equal(t, len(rec.calls), 2)
+	assert.Equal(t, rec.calls[0], 1*time.Second)
+	assert.Equal(t, rec.calls[1], 2*time.Second)
+}
+
+func TestRetryingTransport_TransportErrorExhaustsBudget(t *testing.T) {
+	sentinel := errors.New("dial tcp: connection refused")
+	base := &scriptedTransport{failures: 100, err: sentinel}
+	rec := &recordingSleep{}
+	tp := &RetryingTransport{Base: base, MaxRetries: 2, sleep: rec.sleep}
+	req := newRequest(t, http.MethodGet, "http://example.test/runs/run_x", "")
+
+	_, err := tp.RoundTrip(req)
+	assert.ErrorIs(t, err, sentinel)
+	// attempts 0 and 1 sleep then retry; attempt 2 is out of budget.
+	assert.Equal(t, len(rec.calls), 2)
+	assert.Equal(t, base.calls.Load(), int32(3))
+}
+
+func TestRetryingTransport_TransportErrorNotRetriedForNonIdempotent(t *testing.T) {
+	sentinel := errors.New("unexpected EOF")
+	base := &scriptedTransport{failures: 100, err: sentinel}
+	rec := &recordingSleep{}
+	tp := &RetryingTransport{Base: base, MaxRetries: 3, sleep: rec.sleep}
+	// POST without an Idempotency-Key is not safe to replay.
+	req := newRequest(t, http.MethodPost, "http://example.test/runs", `{"a":1}`)
+
+	_, err := tp.RoundTrip(req)
+	assert.ErrorIs(t, err, sentinel)
+	assert.Equal(t, len(rec.calls), 0)
+	assert.Equal(t, base.calls.Load(), int32(1))
+}
+
+func TestRetryingTransport_TransportErrorMaxRetriesZero(t *testing.T) {
+	sentinel := errors.New("connection reset by peer")
+	base := &scriptedTransport{failures: 100, err: sentinel}
+	rec := &recordingSleep{}
+	tp := &RetryingTransport{Base: base, MaxRetries: 0, sleep: rec.sleep}
+	req := newRequest(t, http.MethodGet, "http://example.test/runs/run_x", "")
+
+	_, err := tp.RoundTrip(req)
+	assert.ErrorIs(t, err, sentinel)
+	assert.Equal(t, len(rec.calls), 0)
+	assert.Equal(t, base.calls.Load(), int32(1))
+}
+
+func TestRetryingTransport_TransportErrorContextDoneStops(t *testing.T) {
+	sentinel := errors.New("connection reset by peer")
+	base := &scriptedTransport{failures: 100, err: sentinel}
+	rec := &recordingSleep{}
+	tp := &RetryingTransport{Base: base, MaxRetries: 3, sleep: rec.sleep}
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	req := newRequest(t, http.MethodGet, "http://example.test/runs/run_x", "")
+	req = req.WithContext(ctx)
+
+	_, err := tp.RoundTrip(req)
+	// The underlying transport error surfaces; the done context stops retries
+	// before any backoff sleep.
+	assert.ErrorIs(t, err, sentinel)
+	assert.Equal(t, len(rec.calls), 0)
+	assert.Equal(t, base.calls.Load(), int32(1))
+}
