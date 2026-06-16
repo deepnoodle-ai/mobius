@@ -9,34 +9,43 @@ import (
 	"github.com/deepnoodle-ai/mobius/mobius/api"
 )
 
-// AutomationOptions contains common saved automation metadata.
+// AutomationOptions contains saved automation metadata plus the optional
+// authoring spec that makes the automation runnable.
+//
+// The public API no longer models automations as a shell plus immutable
+// versions: the runnable definition (steps, inputs, triggers, defaults,
+// limits, …) lives inline on the loop. Set Spec to author that definition in
+// the same call that creates the automation. Explicit fields below take
+// precedence over the same keys in Spec.
 type AutomationOptions struct {
-	Name           string
-	Description    string
-	DefaultAgentID string
-	DefaultInputs  map[string]interface{}
-	Settings       map[string]interface{}
-	Tags           map[string]string
+	Name          string
+	Description   string
+	AgentID       string
+	DefaultInputs map[string]interface{}
+	Settings      map[string]interface{}
+	Tags          map[string]string
+
+	// Spec is the authoring definition for the automation. Recognised keys
+	// mirror the loop spec (schema_version, steps, inputs, triggers, defaults,
+	// limits, output, repositories, cleanup, …). When it carries steps the
+	// automation is runnable immediately.
+	Spec map[string]interface{}
 }
 
-// UpdateAutomationOptions contains metadata fields that can be updated on a
-// saved automation.
+// UpdateAutomationOptions contains metadata fields and authoring spec that can
+// be updated on a saved automation. Only the fields that are set are sent.
 type UpdateAutomationOptions struct {
-	Name           string
-	Description    string
-	DefaultAgentID string
-	DefaultInputs  map[string]interface{}
-	Settings       map[string]interface{}
-	Status         api.LoopStatus
-	Tags           map[string]string
-}
+	Name          string
+	Description   string
+	AgentID       string
+	DefaultInputs map[string]interface{}
+	Settings      map[string]interface{}
+	Status        api.LoopStatus
+	Tags          map[string]string
 
-// AutomationVersionOptions configures immutable automation-version creation.
-type AutomationVersionOptions struct {
-	// CompiledPlan is retained for source compatibility. The current public API
-	// compiles server-side and no longer accepts this field on create-version.
-	CompiledPlan map[string]interface{}
-	Publish      bool
+	// Spec replaces the authoring definition for the automation. See
+	// AutomationOptions.Spec for the recognised keys.
+	Spec map[string]interface{}
 }
 
 // ListAutomationsOptions filters and paginates saved automations.
@@ -70,8 +79,8 @@ func (c *Client) GetAutomation(ctx context.Context, id string) (*api.Loop, error
 	return resp.JSON200, nil
 }
 
-// CreateAutomation creates a saved automation shell. Add runnable behavior with
-// CreateAutomationVersion and PublishAutomationVersion.
+// CreateAutomation creates a saved automation. Provide AutomationOptions.Spec
+// with steps to make it runnable in the same call.
 func (c *Client) CreateAutomation(ctx context.Context, opts AutomationOptions) (*api.Loop, error) {
 	req, err := createAutomationRequest(opts)
 	if err != nil {
@@ -87,9 +96,13 @@ func (c *Client) CreateAutomation(ctx context.Context, opts AutomationOptions) (
 	return resp.JSON201, nil
 }
 
-// UpdateAutomation updates mutable saved automation metadata by loop ID.
+// UpdateAutomation updates mutable saved automation metadata and authoring
+// spec by loop ID.
 func (c *Client) UpdateAutomation(ctx context.Context, id string, opts UpdateAutomationOptions) (*api.Loop, error) {
-	req := updateAutomationRequest(opts)
+	req, err := updateAutomationRequest(opts)
+	if err != nil {
+		return nil, err
+	}
 	resp, err := c.ac.UpdateLoopWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.IDParam(id), req)
 	if err != nil {
 		return nil, fmt.Errorf("mobius: update automation: %w", err)
@@ -112,53 +125,20 @@ func (c *Client) DeleteAutomation(ctx context.Context, id string) error {
 	return nil
 }
 
-// CreateAutomationVersion creates an immutable automation version from the
-// authoring spec, addressed by loop ID.
-func (c *Client) CreateAutomationVersion(ctx context.Context, id string, spec map[string]interface{}, opts *AutomationVersionOptions) (*api.LoopVersion, error) {
-	typedSpec, err := automationSpecFromMap(spec)
-	if err != nil {
-		return nil, err
-	}
-	req := api.CreateLoopVersionRequest{Spec: typedSpec}
-	resp, err := c.ac.CreateLoopVersionWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.IDParam(id), req)
-	if err != nil {
-		return nil, fmt.Errorf("mobius: create automation version: %w", err)
-	}
-	if resp.JSON201 == nil {
-		return nil, unexpectedAutomationStatus("create automation version", resp.Status(), resp.Body)
-	}
-	version := resp.JSON201
-	if opts != nil && opts.Publish {
-		if _, err := c.PublishAutomationVersion(ctx, id, version.Version); err != nil {
-			return nil, err
-		}
-	}
-	return version, nil
-}
-
-// PublishAutomationVersion makes version runnable and returns the updated
-// automation, addressed by loop ID.
-func (c *Client) PublishAutomationVersion(ctx context.Context, id string, version int) (*api.Loop, error) {
-	resp, err := c.ac.PublishLoopVersionWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.IDParam(id), version)
-	if err != nil {
-		return nil, fmt.Errorf("mobius: publish automation version: %w", err)
-	}
-	if resp.JSON200 == nil {
-		return nil, unexpectedAutomationStatus("publish automation version", resp.Status(), resp.Body)
-	}
-	return resp.JSON200, nil
-}
-
 func createAutomationRequest(opts AutomationOptions) (api.CreateLoopRequest, error) {
 	if opts.Name == "" {
 		return api.CreateLoopRequest{}, errors.New("mobius: automation name is required")
 	}
-	req := api.CreateLoopRequest{Name: opts.Name}
+	req := api.CreateLoopRequest{}
+	if err := applyAutomationSpec(opts.Spec, &req); err != nil {
+		return api.CreateLoopRequest{}, err
+	}
+	req.Name = opts.Name
 	if opts.Description != "" {
 		req.Description = &opts.Description
 	}
-	if opts.DefaultAgentID != "" {
-		req.DefaultAgentId = &opts.DefaultAgentID
+	if opts.AgentID != "" {
+		req.AgentId = &opts.AgentID
 	}
 	if opts.DefaultInputs != nil {
 		req.DefaultInputs = &opts.DefaultInputs
@@ -173,16 +153,19 @@ func createAutomationRequest(opts AutomationOptions) (api.CreateLoopRequest, err
 	return req, nil
 }
 
-func updateAutomationRequest(opts UpdateAutomationOptions) api.UpdateLoopRequest {
+func updateAutomationRequest(opts UpdateAutomationOptions) (api.UpdateLoopRequest, error) {
 	req := api.UpdateLoopRequest{}
+	if err := applyAutomationSpec(opts.Spec, &req); err != nil {
+		return api.UpdateLoopRequest{}, err
+	}
 	if opts.Name != "" {
 		req.Name = &opts.Name
 	}
 	if opts.Description != "" {
 		req.Description = &opts.Description
 	}
-	if opts.DefaultAgentID != "" {
-		req.DefaultAgentId = &opts.DefaultAgentID
+	if opts.AgentID != "" {
+		req.AgentId = &opts.AgentID
 	}
 	if opts.DefaultInputs != nil {
 		req.DefaultInputs = &opts.DefaultInputs
@@ -197,7 +180,7 @@ func updateAutomationRequest(opts UpdateAutomationOptions) api.UpdateLoopRequest
 		tags := api.TagMap(opts.Tags)
 		req.Tags = &tags
 	}
-	return req
+	return req, nil
 }
 
 func listAutomationsParams(opts *ListAutomationsOptions) *api.ListLoopsParams {
@@ -217,16 +200,22 @@ func listAutomationsParams(opts *ListAutomationsOptions) *api.ListLoopsParams {
 	return params
 }
 
-func automationSpecFromMap(spec map[string]interface{}) (api.LoopSpec, error) {
+// applyAutomationSpec decodes the authoring spec map into the typed request.
+// The loop spec fields are top-level on the create/update request, so a JSON
+// round-trip populates steps, inputs, triggers, defaults, limits, and the rest
+// in one shot. Explicit option fields are layered on top by the caller.
+func applyAutomationSpec(spec map[string]interface{}, req interface{}) error {
+	if spec == nil {
+		return nil
+	}
 	raw, err := json.Marshal(spec)
 	if err != nil {
-		return api.LoopSpec{}, err
+		return fmt.Errorf("mobius: invalid automation spec: %w", err)
 	}
-	var out api.LoopSpec
-	if err := json.Unmarshal(raw, &out); err != nil {
-		return api.LoopSpec{}, fmt.Errorf("mobius: invalid automation spec: %w", err)
+	if err := json.Unmarshal(raw, req); err != nil {
+		return fmt.Errorf("mobius: invalid automation spec: %w", err)
 	}
-	return out, nil
+	return nil
 }
 
 func unexpectedAutomationStatus(op, status string, body []byte) error {

@@ -4,7 +4,6 @@ from .action import action
 from .client import (
     DEFAULT_BASE_URL,
     AutomationOptions,
-    AutomationVersionOptions,
     Client,
     ClientOptions,
     LeaseLostError,
@@ -59,7 +58,6 @@ __all__ = [
     "ActionContext",
     "AuthRevokedError",
     "AutomationOptions",
-    "AutomationVersionOptions",
     "Client",
     "ClientOptions",
     "DEFAULT_BASE_URL",

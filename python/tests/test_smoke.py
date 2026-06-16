@@ -31,7 +31,6 @@ from deepnoodle.mobius import (
 )
 from deepnoodle.mobius.client import (
     AutomationOptions,
-    AutomationVersionOptions,
     ListAutomationsOptions,
     UpdateAutomationOptions,
 )
@@ -120,33 +119,34 @@ def test_automation_helpers_use_project_scoped_routes() -> None:
     assert any(req[0] == "DELETE" and req[1].endswith("/loops/loop_1") for req in requests)
 
 
-def test_automation_version_helpers_create_and_publish() -> None:
-    requests: list[tuple[str, str, str]] = []
+def test_create_automation_sends_inline_spec() -> None:
+    captured: dict[str, object] = {}
 
     def handler(request: httpx.Request) -> httpx.Response:
-        body = request.read().decode()
-        requests.append((request.method, request.url.path, body))
-        if request.method == "POST" and request.url.path.endswith("/versions"):
-            payload = json.loads(body)
-            assert payload["spec"]["steps"] == []
-            return httpx.Response(201, json=_automation_version_body(version=2, status="draft"))
-        if request.method == "POST" and request.url.path.endswith("/versions/2/publication"):
-            return httpx.Response(200, json=_automation_body(published_version=2))
-        if request.method == "GET":
-            return httpx.Response(200, json={"items": [_automation_version_body(version=2, status="published")]})
+        if request.method == "POST" and request.url.path.endswith("/loops"):
+            captured["payload"] = json.loads(request.read().decode())
+            return httpx.Response(201, json=_automation_body(name="Research"))
         return httpx.Response(404)
 
     client = _client_with(handler)
-    version = client.create_automation_version(
-        "loop_1",
-        {"steps": []},
-        AutomationVersionOptions(compiled_plan={"steps": []}, publish=True),
+    created = client.create_automation(
+        AutomationOptions(
+            name="Research",
+            agent_id="agent_1",
+            spec={
+                "schema_version": "2",
+                "steps": [{"kind": "agent", "config": {"instructions": "do research"}}],
+            },
+        )
     )
-    versions = client.list_automation_versions("loop_1")
 
-    assert version.version == 2
-    assert len(versions.items) == 1
-    assert any(path.endswith("/versions/2/publication") for _, path, _ in requests)
+    payload = captured["payload"]
+    assert created.name == "Research"
+    # Explicit fields and the inline spec are both flattened onto the request.
+    assert payload["name"] == "Research"
+    assert payload["agent_id"] == "agent_1"
+    assert payload["schema_version"] == "2"
+    assert payload["steps"] == [{"kind": "agent", "config": {"instructions": "do research"}}]
 
 
 def test_start_run_posts_to_automation_bound_route() -> None:
@@ -324,28 +324,14 @@ def _automation_body(
     *,
     name: str = "Research",
     status: str = "active",
-    published_version: int | None = 1,
 ) -> dict[str, object]:
     return {
         "id": "loop_1",
         "name": name,
         "status": status,
-        "latest_version": 1,
-        "published_version": published_version,
         "triggers": [],
         "created_at": "2026-05-27T00:00:00Z",
         "updated_at": "2026-05-27T00:00:00Z",
-    }
-
-
-def _automation_version_body(*, version: int, status: str) -> dict[str, object]:
-    return {
-        "id": f"lver_{version}",
-        "loop_id": "loop_1",
-        "version": version,
-        "status": status,
-        "spec": {"steps": []},
-        "created_at": "2026-05-27T00:00:00Z",
     }
 
 

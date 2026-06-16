@@ -124,7 +124,6 @@ func registerArtifactsCommands(app *cli.App) {
 			cli.String("run-id", "").Help("Filter to artifacts produced by this loop run."),
 			cli.String("step-id", "").Help("Filter to artifacts produced by this run step."),
 			cli.String("mime", "").Help("Mime prefix filter (e.g. `image/`)"),
-			cli.String("state", "").Help("Filter by artifact lifecycle state."),
 			cli.String("cursor", "").Help("Cursor for pagination (opaque string from previous response)"),
 			cli.Int("limit", "").Help("Maximum number of items to return"),
 		).
@@ -148,10 +147,6 @@ func registerArtifactsCommands(app *cli.App) {
 			if ctx.IsSet("mime") {
 				v := ctx.String("mime")
 				params.Mime = &v
-			}
-			if ctx.IsSet("state") {
-				v := api.ArtifactState(ctx.String("state"))
-				params.State = &v
 			}
 			if ctx.IsSet("cursor") {
 				v := api.CursorParam(ctx.String("cursor"))

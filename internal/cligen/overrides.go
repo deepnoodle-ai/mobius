@@ -38,11 +38,12 @@ var overrides = map[string]Override{
 	// (the group name already carries it).
 	"provisionAgentInbox":       {Command: "provision-inbox"},
 	"saveAgentMessagingBinding": {Command: "save-messaging-binding"},
-	// `replaceAgentSkills`/`replaceAgentToolkits` keep a redundant `agent`
-	// token the auto-derivation can't strip (the group already carries it);
-	// the matching list ops derive cleanly to `list-skills`/`list-toolkits`.
-	"replaceAgentSkills":   {Command: "replace-skills"},
-	"replaceAgentToolkits": {Command: "replace-toolkits"},
+	// `replaceAgentSkillAssignments`/`replaceAgentToolkitAssignments` keep a
+	// redundant `agent` token the auto-derivation can't strip (the group
+	// already carries it); the matching list ops derive cleanly to
+	// `list-skill-assignments`/`list-toolkit-assignments`.
+	"replaceAgentSkillAssignments":   {Command: "replace-skill-assignments"},
+	"replaceAgentToolkitAssignments": {Command: "replace-toolkit-assignments"},
 
 	// --- skills -----------------------------------------------------------
 	// `import` isn't in the verb list, so the auto-derive keeps the

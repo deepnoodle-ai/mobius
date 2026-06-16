@@ -22,7 +22,7 @@ func registerProjectsCommands(app *cli.App) {
 	projectsGrp.Command("create").
 		Description("Create project").
 		Flags(
-			cli.String("access-mode", "").Help("`org_open`: every org member can see and use the project, subject to role assignments. `restricted`…"),
+			cli.String("access-mode", "").Help("`open`: every org member can see and use the project, subject to role assignments. `restricted`: on…"),
 			cli.String("description", "").Help("Optional human-readable description."),
 			cli.String("handle", "").Help("URL-safe slug for API routes. Auto-derived from name if omitted. Must be unique within the org. Can…"),
 			cli.String("name", "").Help("[required] Human-readable project name."),
@@ -136,10 +136,10 @@ func registerProjectsCommands(app *cli.App) {
 	projectsGrp.Command("update").
 		Description("Update project").
 		Flags(
-			cli.String("access-mode", "").Help("`org_open`: every org member can see and use the project, subject to role assignments. `restricted`…"),
+			cli.String("access-mode", "").Help("`open`: every org member can see and use the project, subject to role assignments. `restricted`: on…"),
 			cli.String("description", "").Help("Replacement description."),
 			cli.String("name", "").Help("Replacement human-readable name."),
-			cli.Bool("seed-existing-members", "").Help("When transitioning from `org_open` to `restricted`, set true to insert all current org members as p…"),
+			cli.Bool("seed-existing-members", "").Help("When transitioning from `open` to `restricted`, set true to insert all current org members as proje…"),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),

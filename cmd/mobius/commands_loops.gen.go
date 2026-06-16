@@ -22,14 +22,21 @@ func registerLoopsCommands(app *cli.App) {
 	loopsGrp.Command("create").
 		Description("Create loop").
 		Flags(
-			cli.Bool("activate", "").Help("When true, `spec` is required. Mobius stores it as version 1, publishes it, materializes its trigge…"),
-			cli.String("default-agent-id", "").Help("Agent used by `agent` steps that do not pin an agent explicitly."),
+			cli.String("agent-id", "").Help("Agent associated with this loop. Agent steps use it when they do not pin `config.agent_id`."),
+			cli.String("cleanup", "").Help("Cleanup steps or policies evaluated after normal step execution. Accepts JSON, @file, or @-."),
+			cli.String("concurrency", "").Help("Concurrency behavior: `allow`, `queue`, `skip`, or `replace`."),
 			cli.String("default-inputs", "").Help("Default values merged into `inputs` when a run is started without overrides. Accepts JSON, @file, or @-."),
+			cli.String("defaults", "").Help("Run-level defaults inside the loop spec. Lives at `spec.defaults` in the JSON the engine compiles. … Accepts JSON, @file, or @-."),
 			cli.String("description", "").Help("Markdown description of the loop's purpose."),
+			cli.String("inputs", "").Help("Declared run inputs for this loop. Accepts JSON, @file, or @-."),
+			cli.String("limits", "").Help("Run guardrails. Lives at `spec.limits` in the JSON the engine compiles. Every limit is optional; ab… Accepts JSON, @file, or @-."),
 			cli.String("name", "").Help("[required] Human-readable display name."),
+			cli.String("repositories", "").Help("Source repositories the loop targets. Accepts JSON, @file, or @-."),
+			cli.String("schema-version", "").Help("Loop authoring schema version. Only schema version 2 is accepted."),
 			cli.String("settings", "").Help("Free-form loop-level settings consumed by the engine. Accepts JSON, @file, or @-."),
-			cli.String("spec", "").Help("Authoring representation of a loop. Accepts JSON, @file, or @-."),
+			cli.String("steps", "").Help("Ordered user-authored steps to execute for each run. When present, the definition is runnable immed… Accepts JSON, @file, or @-."),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
+			cli.String("triggers", "").Help("Authored trigger declarations for this loop. Accepts JSON, @file, or @-."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -45,16 +52,26 @@ func registerLoopsCommands(app *cli.App) {
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
 			}
-			if ctx.IsSet("activate") {
-				v := ctx.Bool("activate")
-				body.Activate = &v
+			if ctx.IsSet("agent-id") {
+				v := ctx.String("agent-id")
+				body.AgentId = &v
 			}
-			if ctx.IsSet("default-agent-id") {
-				v := ctx.String("default-agent-id")
-				body.DefaultAgentId = &v
+			if ctx.IsSet("cleanup") {
+				if err := decodeFlagJSON(ctx, "cleanup", ctx.String("cleanup"), &body.Cleanup); err != nil {
+					return err
+				}
+			}
+			if ctx.IsSet("concurrency") {
+				v := api.CreateLoopRequestConcurrency(ctx.String("concurrency"))
+				body.Concurrency = &v
 			}
 			if ctx.IsSet("default-inputs") {
 				if err := decodeFlagJSON(ctx, "default-inputs", ctx.String("default-inputs"), &body.DefaultInputs); err != nil {
+					return err
+				}
+			}
+			if ctx.IsSet("defaults") {
+				if err := decodeFlagJSON(ctx, "defaults", ctx.String("defaults"), &body.Defaults); err != nil {
 					return err
 				}
 			}
@@ -62,16 +79,35 @@ func registerLoopsCommands(app *cli.App) {
 				v := ctx.String("description")
 				body.Description = &v
 			}
+			if ctx.IsSet("inputs") {
+				if err := decodeFlagJSON(ctx, "inputs", ctx.String("inputs"), &body.Inputs); err != nil {
+					return err
+				}
+			}
+			if ctx.IsSet("limits") {
+				if err := decodeFlagJSON(ctx, "limits", ctx.String("limits"), &body.Limits); err != nil {
+					return err
+				}
+			}
 			if ctx.IsSet("name") {
 				body.Name = ctx.String("name")
+			}
+			if ctx.IsSet("repositories") {
+				if err := decodeFlagJSON(ctx, "repositories", ctx.String("repositories"), &body.Repositories); err != nil {
+					return err
+				}
+			}
+			if ctx.IsSet("schema-version") {
+				v := api.CreateLoopRequestSchemaVersion(ctx.String("schema-version"))
+				body.SchemaVersion = &v
 			}
 			if ctx.IsSet("settings") {
 				if err := decodeFlagJSON(ctx, "settings", ctx.String("settings"), &body.Settings); err != nil {
 					return err
 				}
 			}
-			if ctx.IsSet("spec") {
-				if err := decodeFlagJSON(ctx, "spec", ctx.String("spec"), &body.Spec); err != nil {
+			if ctx.IsSet("steps") {
+				if err := decodeFlagJSON(ctx, "steps", ctx.String("steps"), &body.Steps); err != nil {
 					return err
 				}
 			}
@@ -80,6 +116,11 @@ func registerLoopsCommands(app *cli.App) {
 			} else if tags != nil {
 				v := api.TagMap(tags)
 				body.Tags = &v
+			}
+			if ctx.IsSet("triggers") {
+				if err := decodeFlagJSON(ctx, "triggers", ctx.String("triggers"), &body.Triggers); err != nil {
+					return err
+				}
 			}
 			if body.Name == "" {
 				return fmt.Errorf("--name is required (or supply it via --file)")
@@ -92,45 +133,6 @@ func registerLoopsCommands(app *cli.App) {
 				return err
 			}
 			return printResponse(ctx, "createLoop", resp.StatusCode(), resp.Body)
-		})
-
-	loopsGrp.Command("create-version").
-		Description("Create version").
-		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
-		Flags(
-			cli.String("spec", "").Help("[required] Authoring representation of a loop. Accepts JSON, @file, or @-."),
-			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
-			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
-		).
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			var body api.CreateLoopVersionJSONRequestBody
-			if err := readJSONBody(ctx, &body); err != nil {
-				return err
-			}
-			if ctx.IsSet("spec") {
-				if err := decodeFlagJSON(ctx, "spec", ctx.String("spec"), &body.Spec); err != nil {
-					return err
-				}
-			}
-			if ctx.String("file") == "" && !ctx.IsSet("spec") {
-				return fmt.Errorf("--spec is required (or supply it via --file)")
-			}
-			if ctx.Bool("dry-run") {
-				return printDryRun(ctx, body)
-			}
-			resp, err := client.CreateLoopVersionWithResponse(ctx.Context(), p0, p1, body)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "createLoopVersion", resp.StatusCode(), resp.Body)
 		})
 
 	loopsGrp.Command("delete").
@@ -223,6 +225,7 @@ func registerLoopsCommands(app *cli.App) {
 		Description("List loops").
 		Flags(
 			cli.String("status", "").Help("Filter by lifecycle status. Omit to return the normal loop list, or pass a visible status to filter…"),
+			cli.String("agent-id", "").Help("Return only loops associated with this agent."),
 			cli.String("cursor", "").Help("Opaque pagination cursor from a prior response."),
 			cli.Int("limit", "").Help("Maximum number of items to return."),
 		).
@@ -239,6 +242,10 @@ func registerLoopsCommands(app *cli.App) {
 				v := api.ListLoopsParamsStatus(ctx.String("status"))
 				params.Status = &v
 			}
+			if ctx.IsSet("agent-id") {
+				v := ctx.String("agent-id")
+				params.AgentId = &v
+			}
 			if ctx.IsSet("cursor") {
 				v := ctx.String("cursor")
 				params.Cursor = &v
@@ -254,60 +261,26 @@ func registerLoopsCommands(app *cli.App) {
 			return printResponse(ctx, "listLoops", resp.StatusCode(), resp.Body)
 		})
 
-	loopsGrp.Command("list-versions").
-		Description("List versions").
-		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			resp, err := client.ListLoopVersionsWithResponse(ctx.Context(), p0, p1)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "listLoopVersions", resp.StatusCode(), resp.Body)
-		})
-
-	loopsGrp.Command("publish-loop-version").
-		Description("Publish version").
-		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
-		AddArg(&cli.Arg{Name: "version", Description: "Version number of the LoopVersion to publish.", Required: true}).
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			p2, err := parseIntArg(ctx.Arg(1), "version")
-			if err != nil {
-				return err
-			}
-			resp, err := client.PublishLoopVersionWithResponse(ctx.Context(), p0, p1, p2)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "publishLoopVersion", resp.StatusCode(), resp.Body)
-		})
-
 	loopsGrp.Command("update").
 		Description("Update loop").
 		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		Flags(
-			cli.String("default-agent-id", "").Help("Agent used by `agent` steps that do not pin an agent explicitly."),
+			cli.String("agent-id", "").Help("Agent associated with this loop. Agent steps use it when they do not pin `config.agent_id`."),
+			cli.String("cleanup", "").Help("Replacement cleanup steps or policies. Accepts JSON, @file, or @-."),
+			cli.String("concurrency", "").Help("Concurrency behavior: `allow`, `queue`, `skip`, or `replace`."),
 			cli.String("default-inputs", "").Help("Default values merged into `inputs` when a run is started without overrides. Accepts JSON, @file, or @-."),
+			cli.String("defaults", "").Help("Run-level defaults inside the loop spec. Lives at `spec.defaults` in the JSON the engine compiles. … Accepts JSON, @file, or @-."),
 			cli.String("description", "").Help("Markdown description of the loop's purpose."),
+			cli.String("inputs", "").Help("Declared run inputs for this loop. Accepts JSON, @file, or @-."),
+			cli.String("limits", "").Help("Run guardrails. Lives at `spec.limits` in the JSON the engine compiles. Every limit is optional; ab… Accepts JSON, @file, or @-."),
 			cli.String("name", "").Help("Human-readable display name."),
+			cli.String("repositories", "").Help("Replacement source repositories the loop targets. Accepts JSON, @file, or @-."),
+			cli.String("schema-version", "").Help("Loop authoring schema version. Only schema version 2 is accepted."),
 			cli.String("settings", "").Help("Free-form loop-level settings consumed by the engine. Accepts JSON, @file, or @-."),
 			cli.String("status", "").Help("Loop lifecycle status: `draft`, `active`, `paused`, or `deleted`."),
+			cli.String("steps", "").Help("Replacement ordered user-authored steps. Accepts JSON, @file, or @-."),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
+			cli.String("triggers", "").Help("Replacement authored trigger declarations. Accepts JSON, @file, or @-."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -324,12 +297,26 @@ func registerLoopsCommands(app *cli.App) {
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
 			}
-			if ctx.IsSet("default-agent-id") {
-				v := ctx.String("default-agent-id")
-				body.DefaultAgentId = &v
+			if ctx.IsSet("agent-id") {
+				v := ctx.String("agent-id")
+				body.AgentId = &v
+			}
+			if ctx.IsSet("cleanup") {
+				if err := decodeFlagJSON(ctx, "cleanup", ctx.String("cleanup"), &body.Cleanup); err != nil {
+					return err
+				}
+			}
+			if ctx.IsSet("concurrency") {
+				v := api.UpdateLoopRequestConcurrency(ctx.String("concurrency"))
+				body.Concurrency = &v
 			}
 			if ctx.IsSet("default-inputs") {
 				if err := decodeFlagJSON(ctx, "default-inputs", ctx.String("default-inputs"), &body.DefaultInputs); err != nil {
+					return err
+				}
+			}
+			if ctx.IsSet("defaults") {
+				if err := decodeFlagJSON(ctx, "defaults", ctx.String("defaults"), &body.Defaults); err != nil {
 					return err
 				}
 			}
@@ -337,9 +324,28 @@ func registerLoopsCommands(app *cli.App) {
 				v := ctx.String("description")
 				body.Description = &v
 			}
+			if ctx.IsSet("inputs") {
+				if err := decodeFlagJSON(ctx, "inputs", ctx.String("inputs"), &body.Inputs); err != nil {
+					return err
+				}
+			}
+			if ctx.IsSet("limits") {
+				if err := decodeFlagJSON(ctx, "limits", ctx.String("limits"), &body.Limits); err != nil {
+					return err
+				}
+			}
 			if ctx.IsSet("name") {
 				v := ctx.String("name")
 				body.Name = &v
+			}
+			if ctx.IsSet("repositories") {
+				if err := decodeFlagJSON(ctx, "repositories", ctx.String("repositories"), &body.Repositories); err != nil {
+					return err
+				}
+			}
+			if ctx.IsSet("schema-version") {
+				v := api.UpdateLoopRequestSchemaVersion(ctx.String("schema-version"))
+				body.SchemaVersion = &v
 			}
 			if ctx.IsSet("settings") {
 				if err := decodeFlagJSON(ctx, "settings", ctx.String("settings"), &body.Settings); err != nil {
@@ -350,13 +356,23 @@ func registerLoopsCommands(app *cli.App) {
 				v := api.LoopStatus(ctx.String("status"))
 				body.Status = &v
 			}
+			if ctx.IsSet("steps") {
+				if err := decodeFlagJSON(ctx, "steps", ctx.String("steps"), &body.Steps); err != nil {
+					return err
+				}
+			}
 			if tags, err := parseTagFlags(ctx); err != nil {
 				return err
 			} else if tags != nil {
 				v := api.TagMap(tags)
 				body.Tags = &v
 			}
-			if ctx.String("file") == "" && !ctx.IsSet("default-agent-id") && !ctx.IsSet("default-inputs") && !ctx.IsSet("description") && !ctx.IsSet("name") && !ctx.IsSet("settings") && !ctx.IsSet("status") && !ctx.IsSet("tag") {
+			if ctx.IsSet("triggers") {
+				if err := decodeFlagJSON(ctx, "triggers", ctx.String("triggers"), &body.Triggers); err != nil {
+					return err
+				}
+			}
+			if ctx.String("file") == "" && !ctx.IsSet("agent-id") && !ctx.IsSet("cleanup") && !ctx.IsSet("concurrency") && !ctx.IsSet("default-inputs") && !ctx.IsSet("defaults") && !ctx.IsSet("description") && !ctx.IsSet("inputs") && !ctx.IsSet("limits") && !ctx.IsSet("name") && !ctx.IsSet("repositories") && !ctx.IsSet("schema-version") && !ctx.IsSet("settings") && !ctx.IsSet("status") && !ctx.IsSet("steps") && !ctx.IsSet("tag") && !ctx.IsSet("triggers") {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
 			if ctx.Bool("dry-run") {

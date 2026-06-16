@@ -88,10 +88,10 @@ class AgentStatus(StrEnum):
 
 class ProjectAccessMode(StrEnum):
     """
-    `org_open`: every org member can see and use the project, subject to role assignments. `restricted`: only listed project members (and org owners/admins) can see or use the project.
+    `open`: every org member can see and use the project, subject to role assignments. `restricted`: only listed project members (and org owners/admins) can see or use the project.
     """
 
-    org_open = 'org_open'
+    open = 'open'
     restricted = 'restricted'
 
 
@@ -113,7 +113,7 @@ class Project(BaseModel):
         None, description='Optional human-readable description.'
     )
     access_mode: ProjectAccessMode = Field(
-        ..., description='Current project access policy: `org_open` or `restricted`.'
+        ..., description='Current project access policy: `open` or `restricted`.'
     )
     created_by: str | None = Field(
         None, description='Principal ID of whoever created this project.'
@@ -785,11 +785,11 @@ class EventCatalogEventType(BaseModel):
     )
     event_schema: dict[str, Any] | None = Field(
         None,
-        description='JSON Schema for the normalized event data available to event-trigger runs (`${{ event.* }}` in schema_version 2 loops, `{{ .inputs.event.* }}` in schema_version 1) and to event conditions/mappings at `event.*`. Absent only when the event payload is intentionally open-ended and the provider has not registered an authoring schema.',
+        description='JSON Schema for the normalized event data available to event-trigger runs at `${{ event.* }}` and to event conditions/mappings at `event.*`. Absent only when the event payload is intentionally open-ended and the provider has not registered an authoring schema.',
     )
     meta_schema: dict[str, Any] | None = Field(
         None,
-        description='JSON Schema for normalized routing metadata available to event-trigger runs (`${{ meta.* }}` in schema_version 2 loops, `{{ .inputs.meta.* }}` in schema_version 1) and to event conditions/mappings at `meta.*`.',
+        description='JSON Schema for normalized routing metadata available to event-trigger runs at `${{ meta.* }}` and to event conditions/mappings at `meta.*`.',
     )
 
 
@@ -936,17 +936,9 @@ class EnvironmentCleanupStatus(StrEnum):
     skipped = 'skipped'
 
 
-class TemplateId(StrEnum):
-    """
-    Environment template used to initialize the workspace; currently `coding-default`.
-    """
-
-    coding_default = 'coding-default'
-
-
 class Environment(BaseModel):
     """
-    Durable execution environment record and provider state.
+    Durable execution environment summary.
     """
 
     model_config = ConfigDict(
@@ -960,17 +952,8 @@ class Environment(BaseModel):
     provider: EnvironmentProvider = Field(
         ..., description='Backing environment provider.'
     )
-    provider_resource_id: str | None = Field(
-        None, description='Provider-side resource identifier, when known.'
-    )
-    provider_resource_name: str | None = Field(
-        None, description='Provider-side display name, when known.'
-    )
     status: EnvironmentStatus = Field(
         ..., description='Current provisioning and lifecycle status.'
-    )
-    environment_mode: EnvironmentMode = Field(
-        ..., description='Reuse policy Mobius derived for the environment.'
     )
     lifetime: EnvironmentLifetime = Field(
         ..., description='How long the environment is expected to live.'
@@ -979,50 +962,12 @@ class Environment(BaseModel):
         None,
         description="Principal owner ID. For agent-started work, this is the agent's principal ID.",
     )
-    created_by: str | None = Field(
-        None, description='User ID of the principal who created this environment.'
-    )
-    updated_by: str | None = Field(
-        None, description='User ID of the principal who last updated this environment.'
-    )
-    run_id: str | None = Field(
-        None, description='Associated run ID, when bound to a run.'
-    )
-    job_id: str | None = Field(
-        None, description='Associated job ID, when a worker job is active.'
-    )
     current_worker_session_id: str | None = Field(
         None,
         description='Worker session currently attached to this environment, when any.',
     )
-    agent_id: str | None = Field(
-        None, description='Associated agent ID, when bound to an agent.'
-    )
-    template_id: TemplateId | None = Field(
-        None,
-        description='Environment template used to initialize the workspace; currently `coding-default`.',
-    )
-    capabilities: list[str] = Field(
-        ...,
-        description='Capability strings the environment can provide.',
-        max_length=50,
-    )
-    spec_version: int = Field(
-        ..., description='Version of the environment spec format.', ge=1
-    )
-    spec: dict[str, Any] | None = Field(
-        None, description='Provider-specific desired state.'
-    )
-    runtime: dict[str, Any] = Field(
-        ...,
-        description='Provider-observed runtime data. URLs live under runtime.urls, with runtime.urls.primary as the primary URL when present.',
-    )
     tags: TagMap | None = Field(
         None, description='Optional labels for filtering and organization.'
-    )
-    contains_secrets: bool = Field(
-        ...,
-        description='Whether the spec or runtime metadata references secret material.',
     )
     cleanup_status: EnvironmentCleanupStatus = Field(
         ..., description='Last cleanup outcome.'
@@ -1030,26 +975,14 @@ class Environment(BaseModel):
     retention_policy: EnvironmentRetentionPolicy = Field(
         ..., description='Retention behavior after work completes.'
     )
-    lease_expires_at: AwareDatetime | None = Field(
-        None, description='Expiration time for the active lease, when leased.'
-    )
     last_seen_at: AwareDatetime | None = Field(
         None, description='Last time the provider or worker reported the environment.'
-    )
-    last_reconciled_at: AwareDatetime | None = Field(
-        None, description='Last reconciliation attempt time.'
-    )
-    last_error: str | None = Field(
-        None, description='Latest provider or worker error, when present.'
     )
     created_at: AwareDatetime = Field(
         ..., description='Time the environment record was created.'
     )
     updated_at: AwareDatetime = Field(
         ..., description='Time the environment record was last updated.'
-    )
-    destroyed_at: AwareDatetime | None = Field(
-        None, description='Time the environment was destroyed, when terminal.'
     )
 
 
@@ -1070,7 +1003,7 @@ class EnvironmentListResponse(BaseModel):
     )
 
 
-class TemplateId1(StrEnum):
+class TemplateId(StrEnum):
     """
     V1 supports only coding-default.
     """
@@ -1096,11 +1029,8 @@ class CreateEnvironmentRequest(BaseModel):
     owned_by: str | None = Field(
         None, description='Canonical user owner ID. Defaults to the authenticated user.'
     )
-    template_id: TemplateId1 | None = Field(
+    template_id: TemplateId | None = Field(
         None, description='V1 supports only coding-default.'
-    )
-    spec: dict[str, Any] | None = Field(
-        None, description='Provider-specific desired state.'
     )
     tags: TagMap | None = Field(
         None, description='Labels used for filtering, ownership, or cleanup policy.'
@@ -1545,7 +1475,7 @@ class CreateProjectRequest(BaseModel):
         None, description='Optional human-readable description.'
     )
     access_mode: ProjectAccessMode | None = Field(
-        None, description='Initial project access policy: `org_open` or `restricted`.'
+        None, description='Initial project access policy: `open` or `restricted`.'
     )
     tags: TagMap | None = Field(
         None, description='Initial labels used for filtering, ownership, or automation.'
@@ -1559,12 +1489,11 @@ class UpdateProjectRequest(BaseModel):
     name: str | None = Field(None, description='Replacement human-readable name.')
     description: str | None = Field(None, description='Replacement description.')
     access_mode: ProjectAccessMode | None = Field(
-        None,
-        description='Replacement project access policy: `org_open` or `restricted`.',
+        None, description='Replacement project access policy: `open` or `restricted`.'
     )
     seed_existing_members: bool | None = Field(
         None,
-        description='When transitioning from `org_open` to `restricted`, set true to insert all current org members as project members so nobody loses visibility on the flip. Ignored on other transitions.',
+        description='When transitioning from `open` to `restricted`, set true to insert all current org members as project members so nobody loses visibility on the flip. Ignored on other transitions.',
     )
     tags: TagMap | None = Field(
         None, description='Replacement labels; send an empty object to clear all tags.'
@@ -2501,64 +2430,11 @@ class Skill(BaseModel):
     updated_at: AwareDatetime = Field(..., description='Last update timestamp.')
 
 
-class LoopStatus(StrEnum):
-    """
-    Loop lifecycle status: `draft`, `active`, `paused`, or `deleted`.
-    """
-
-    draft = 'draft'
-    active = 'active'
-    paused = 'paused'
-    deleted = 'deleted'
-
-
-class UpdateLoopRequest(BaseModel):
-    """
-    Partial update of loop metadata. Desired triggers live in `LoopSpec.triggers` and are materialized when a version is published.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    name: str | None = Field(None, description='Human-readable display name.')
-    description: str | None = Field(
-        None, description="Markdown description of the loop's purpose."
-    )
-    status: LoopStatus | None = Field(
-        None, description='Replacement lifecycle status for the loop.'
-    )
-    default_agent_id: str | None = Field(
-        None,
-        description='Agent used by `agent` steps that do not pin an agent explicitly.',
-    )
-    default_inputs: dict[str, Any] | None = Field(
-        None,
-        description='Default values merged into `inputs` when a run is started without overrides.',
-    )
-    settings: dict[str, Any] | None = Field(
-        None, description='Free-form loop-level settings consumed by the engine.'
-    )
-    tags: TagMap | None = Field(
-        None, description='Replacement labels; send an empty object to clear all tags.'
-    )
-
-
-class Status3(StrEnum):
-    """
-    Publication state. `draft` is editable but not runnable; `published` is the currently runnable version; `superseded` is a prior published version retained for historical runs.
-    """
-
-    draft = 'draft'
-    published = 'published'
-    superseded = 'superseded'
-
-
 class SchemaVersion(StrEnum):
     """
-    Loop spec schema version. `"1"` renders strings with Go text/template `{{ .inputs.x }}` / `{{ .context.x }}` actions. `"2"` uses expr `${{ ... }}` templates and bare expr predicates over the `inputs`, `event`, `meta`, and `steps.<key>.output` namespace.
+    Loop authoring schema version. Only schema version 2 is accepted.
     """
 
-    field_1 = '1'
     field_2 = '2'
 
 
@@ -2571,6 +2447,17 @@ class Concurrency(StrEnum):
     queue = 'queue'
     skip = 'skip'
     replace = 'replace'
+
+
+class LoopStatus(StrEnum):
+    """
+    Loop lifecycle status: `draft`, `active`, `paused`, or `deleted`.
+    """
+
+    draft = 'draft'
+    active = 'active'
+    paused = 'paused'
+    deleted = 'deleted'
 
 
 class Provider(StrEnum):
@@ -3031,11 +2918,7 @@ class LoopSubLoopStep(BaseModel):
     )
     inputs: dict[str, Any] | None = Field(
         None,
-        description="Input map handed to the child run. String leaves render against the parent run before the child starts: `{{ .inputs.* }}` / `{{ .context.* }}` Go text/template actions in schema_version 1, `${{ ... }}` expr interpolations over `inputs`, `event`, `meta`, and `steps.<key>.output` in schema_version 2. When omitted the parent's run inputs are forwarded.",
-    )
-    condition: str | None = Field(
-        None,
-        description='Optional expr predicate evaluated against the `{ inputs, context }` envelope of the parent run before the child is triggered. It must evaluate to a bool; a false result skips the step and starts no child run. schema_version 1 only; replaced in 2 by the step-level `if` field.',
+        description="Input map handed to the child run. String leaves render against the parent run before the child starts using `${{ ... }}` expr interpolations over `inputs`, `event`, `meta`, `steps.<id>.output`, or `steps[0].output`. When omitted the parent's run inputs are forwarded.",
     )
 
 
@@ -3075,7 +2958,7 @@ class LoopCheckAssertion(BaseModel):
     )
     expr: str | None = Field(
         None,
-        description="Predicate for `kind: expr`, evaluated against the run's template environment (`{ inputs, context }` in schema_version 1; `inputs`, `event`, `meta`, and `steps.<key>.output` in schema_version 2). Required for expr assertions.",
+        description="Predicate for `kind: expr`, evaluated against the run's template environment (`inputs`, `event`, `meta`, `steps.<id>.output`, and `steps[0].output`). Required for expr assertions.",
     )
     agent: str | None = Field(
         None,
@@ -3083,11 +2966,11 @@ class LoopCheckAssertion(BaseModel):
     )
     prompt: str | None = Field(
         None,
-        description='Judge instruction for `kind: agent`, rendered like every other templated string (`{{ .inputs.* }}` / `{{ .context.* }}` in schema_version 1, `${{ ... }}` expr interpolation in 2) before the cited evidence is appended. Required for agent assertions.',
+        description='Judge instruction for `kind: agent`, rendered with `${{ ... }}` expr interpolation before the cited evidence is appended. Required for agent assertions.',
     )
     evidence: list[str] | None = Field(
         None,
-        description='Step keys whose saved outputs this assertion judges. Each must reference an earlier step. Cited outputs are shown to agent judges and recorded on the verdict.',
+        description='Step ids whose saved outputs this assertion judges. Each must reference an earlier step. Cited outputs are shown to agent judges and recorded on the verdict.',
     )
 
 
@@ -3154,62 +3037,6 @@ class LoopTimeoutPolicy(BaseModel):
     )
 
 
-class LoopTrigger(BaseModel):
-    """
-    Materialized trigger created from a published loop version.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    id: str = Field(..., description='Stable trigger identifier.')
-    loop_id: str = Field(..., description='Loop this trigger belongs to.')
-    name: str = Field(..., description='Human-readable trigger name.')
-    kind: str = Field(..., description='One of: http, schedule, event.')
-    enabled: bool = Field(
-        ..., description='Whether the trigger is currently allowed to start runs.'
-    )
-    config: dict[str, Any] | None = Field(
-        None,
-        description='Kind-specific configuration (schedule cron, event matcher, HTTP-trigger options).',
-    )
-    concurrency_policy: ConcurrencyPolicy = Field(
-        ...,
-        description='Trigger concurrency behavior: `allow`, `queue`, `skip`, or `replace`.',
-    )
-    max_concurrent_runs: int = Field(
-        ..., description='Cap on concurrent runs allowed from this trigger.', ge=1
-    )
-    http_handle: str | None = Field(
-        None,
-        description='Public, globally unique delivery handle exposed in `POST /v1/triggers/http/{http_handle}`. The delivery endpoint has no project path segment, so the handle is resolved globally. Set only for http-kind triggers.',
-    )
-    signing_secret_set: bool | None = Field(
-        None,
-        description='Whether an HMAC signing secret is configured on this HTTP trigger. The secret value itself is never returned — rotate it via the signing-secret endpoint to reveal a new value once. Set only for http-kind triggers.',
-    )
-    event_type: str | None = Field(
-        None,
-        description='Source-event type this trigger subscribes to. Set only for event-kind triggers.',
-    )
-    source_id: str | None = Field(
-        None, description='Optional source identifier used to scope event matching.'
-    )
-    condition: str | None = Field(
-        None,
-        description='Optional expr predicate evaluated against the public `{ event, meta }` envelope; the trigger fires only when it passes. Set only for event-kind triggers.',
-    )
-    last_fire_at: AwareDatetime | None = Field(
-        None, description='Timestamp of the most recent fire.'
-    )
-    next_fire_at: AwareDatetime | None = Field(
-        None,
-        description='Next scheduled fire time. Set only for schedule-kind triggers.',
-    )
-    created_at: AwareDatetime = Field(..., description='Record creation timestamp.')
-    updated_at: AwareDatetime = Field(..., description='Last update timestamp.')
-
-
 class HTTPTriggerDeliveryRequest(BaseModel):
     """
     Free-form JSON object delivered to the HTTP trigger. The payload is recorded on the source event and forwarded to the run as inputs.
@@ -3220,7 +3047,7 @@ class HTTPTriggerDeliveryRequest(BaseModel):
     )
 
 
-class Status4(StrEnum):
+class Status3(StrEnum):
     """
     Acceptance status of the source-event row. The only synchronous success value is `accepted`; processing happens asynchronously after the source event is durable.
     """
@@ -3240,7 +3067,7 @@ class HTTPTriggerDeliveryResult(BaseModel):
         ...,
         description='Durable source-event id (also the `dedup_key` seed). Stable across retries with the same `Idempotency-Key`.',
     )
-    status: Status4 = Field(
+    status: Status3 = Field(
         ...,
         description='Acceptance status of the source-event row. The only synchronous success value is `accepted`; processing happens asynchronously after the source event is durable.',
     )
@@ -3425,7 +3252,7 @@ class LoopRunStep(BaseModel):
     )
     result: Any | None = Field(
         None,
-        description='Step output (shape varies by kind); absent until completion. Downstream step templates reach this value at `${{ steps.<key>.output }}` (schema_version 2) or `{{ .context.<save_as> }}` (schema_version 1).',
+        description='Step output (shape varies by kind); absent until completion. Downstream step templates reach this value at `${{ steps.<id>.output }}` or `${{ steps[0].output }}`.',
     )
     job_id: str | None = Field(
         None, description='Worker job that executed this step, when applicable.'
@@ -3489,7 +3316,8 @@ class LoopRunEvent(BaseModel):
         None, description='ID of the step this event belongs to, when applicable.'
     )
     step_key: str | None = Field(
-        None, description='Loop step key this event belongs to, when applicable.'
+        None,
+        description='Legacy alias for the loop step ID this event belongs to, when applicable.',
     )
     payload: dict[str, Any] | None = Field(
         None,
@@ -4010,16 +3838,6 @@ class UpsertRowResult(BaseModel):
     )
 
 
-class ArtifactState(StrEnum):
-    """
-    Artifact lifecycle state: `pending_upload`, `available`, or `failed`.
-    """
-
-    pending_upload = 'pending_upload'
-    available = 'available'
-    failed = 'failed'
-
-
 class ArtifactVisibility(StrEnum):
     """
     Private artifacts are visible only to their owner user. Shared artifacts are visible to the project.
@@ -4060,7 +3878,6 @@ class Artifact(BaseModel):
     sha256: str | None = Field(
         None, description='SHA-256 digest of the artifact content, when available.'
     )
-    state: ArtifactState = Field(..., description='Current artifact lifecycle state.')
     created_at: AwareDatetime = Field(
         ..., description='Time the artifact metadata was created.'
     )
@@ -4074,9 +3891,6 @@ class Artifact(BaseModel):
     updated_by: str | None = Field(
         None,
         description='Principal ID of the actor who last updated this artifact. Empty for system-initiated writes.',
-    )
-    committed_at: AwareDatetime | None = Field(
-        None, description='Time the artifact content became available.'
     )
 
 
@@ -4430,77 +4244,6 @@ class AgentToolManifest(BaseModel):
     )
 
 
-class Loop(BaseModel):
-    """
-    A loop. The `triggers` array reports the currently materialized runnable triggers. Desired triggers are authored in `LoopSpec.triggers` and reconciled when a version is published.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    id: str = Field(..., description='Stable loop identifier.')
-    name: str = Field(..., description='Human-readable display name.')
-    description: str | None = Field(
-        None, description="Markdown description of the loop's purpose."
-    )
-    status: LoopStatus = Field(
-        ...,
-        description='Current loop lifecycle status: `draft`, `active`, `paused`, or `deleted`.',
-    )
-    owner: str | None = Field(
-        None, description='User who created or currently owns this loop.'
-    )
-    default_agent_id: str | None = Field(
-        None,
-        description='Agent used by `agent` steps that do not pin an agent explicitly.',
-    )
-    latest_version: int = Field(
-        ...,
-        description='Newest stored LoopVersion number, regardless of publication status.',
-    )
-    published_version: int | None = Field(
-        None,
-        description='Currently runnable version. Absent until a version is published.',
-    )
-    default_inputs: dict[str, Any] | None = Field(
-        None,
-        description='Default values merged into `inputs` when a run is started without overrides.',
-    )
-    settings: dict[str, Any] | None = Field(
-        None, description='Free-form loop-level settings consumed by the engine.'
-    )
-    tags: TagMap | None = Field(
-        None,
-        description='Free-form labels used for filtering, ownership, or automation.',
-    )
-    triggers: list[LoopTrigger] = Field(
-        ..., description='Triggers that can start runs of this loop.'
-    )
-    last_run_at: AwareDatetime | None = Field(
-        None, description='Timestamp of the most recent run start, if any.'
-    )
-    deleted_at: AwareDatetime | None = Field(
-        None,
-        description='Timestamp when this loop was deleted; absent on active loops.',
-    )
-    created_at: AwareDatetime = Field(..., description='Record creation timestamp.')
-    updated_at: AwareDatetime = Field(..., description='Last update timestamp.')
-
-
-class LoopListResponse(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    items: list[Loop] = Field(..., description='The list of results for this page.')
-    next_cursor: str | None = Field(
-        None,
-        description='Opaque cursor for the next page; absent when no more results.',
-    )
-    has_more: bool | None = Field(
-        None, description='True when more items exist after this page.'
-    )
-
-
 class LoopSpecTrigger(BaseModel):
     """
     One trigger declaration inside a loop spec.
@@ -4518,7 +4261,7 @@ class LoopSpecTrigger(BaseModel):
     )
     enabled: bool | None = Field(
         None,
-        description='Whether this trigger should be materialized when the loop version is published.',
+        description='Whether this trigger should be materialized for the current runnable definition.',
     )
     config: HTTPTriggerConfig | ScheduleTriggerConfig | EventTriggerConfig | None = (
         Field(
@@ -4545,30 +4288,25 @@ class LoopActionStepSpec(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    key: str = Field(..., description='Stable step key within the spec.')
+    id: str | None = Field(
+        None,
+        description='Optional stable step id within the spec. If omitted, the compiler uses the step index as a string, such as `"0"`.',
+    )
     name: str | None = Field(None, description='Human-readable step name.')
     if_: str | None = Field(
         None,
         alias='if',
-        description='Bare expr predicate evaluated before the step runs; false skips the step. Requires schema_version "2".',
+        description='Bare expr predicate evaluated before the step runs; false skips the step.',
     )
     kind: Literal['action'] = Field(
         ..., description='Step discriminator value; always `action`.'
     )
     config: LoopActionStep = Field(..., description='Action-step configuration.')
-    input: dict[str, Any] | None = Field(
-        None,
-        description='Step-local input object resolved when the step starts. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions. schema_version 1 only; removed in 2 (reference inputs/event/meta/steps directly in config fields).',
-    )
     retry: LoopRetryPolicy | None = Field(
         None, description='Retry policy for this step.'
     )
     timeout: LoopTimeoutPolicy | None = Field(
         None, description='Timeout policy for this step.'
-    )
-    save_as: str | None = Field(
-        None,
-        description="Context key used to store this step's output. Defaults to `key`. schema_version 1 only; removed in 2 (outputs are always at steps.<key>.output).",
     )
 
 
@@ -4580,30 +4318,25 @@ class LoopSleepStepSpec(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    key: str = Field(..., description='Stable step key within the spec.')
+    id: str | None = Field(
+        None,
+        description='Optional stable step id within the spec. If omitted, the compiler uses the step index as a string, such as `"0"`.',
+    )
     name: str | None = Field(None, description='Human-readable step name.')
     if_: str | None = Field(
         None,
         alias='if',
-        description='Bare expr predicate evaluated before the step runs; false skips the step. Requires schema_version "2".',
+        description='Bare expr predicate evaluated before the step runs; false skips the step.',
     )
     kind: Literal['sleep'] = Field(
         ..., description='Step discriminator value; always `sleep`.'
     )
     config: LoopSleepStep = Field(..., description='Sleep-step configuration.')
-    input: dict[str, Any] | None = Field(
-        None,
-        description='Step-local input object resolved when the step starts. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions. schema_version 1 only; removed in 2 (reference inputs/event/meta/steps directly in config fields).',
-    )
     retry: LoopRetryPolicy | None = Field(
         None, description='Retry policy for this step.'
     )
     timeout: LoopTimeoutPolicy | None = Field(
         None, description='Timeout policy for this step.'
-    )
-    save_as: str | None = Field(
-        None,
-        description="Context key used to store this step's output. Defaults to `key`. schema_version 1 only; removed in 2 (outputs are always at steps.<key>.output).",
     )
 
 
@@ -4615,12 +4348,15 @@ class LoopWaitForEventStepSpec(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    key: str = Field(..., description='Stable step key within the spec.')
+    id: str | None = Field(
+        None,
+        description='Optional stable step id within the spec. If omitted, the compiler uses the step index as a string, such as `"0"`.',
+    )
     name: str | None = Field(None, description='Human-readable step name.')
     if_: str | None = Field(
         None,
         alias='if',
-        description='Bare expr predicate evaluated before the step runs; false skips the step. Requires schema_version "2".',
+        description='Bare expr predicate evaluated before the step runs; false skips the step.',
     )
     kind: Literal['wait_for_event'] = Field(
         ..., description='Step discriminator value; always `wait_for_event`.'
@@ -4628,19 +4364,11 @@ class LoopWaitForEventStepSpec(BaseModel):
     config: LoopWaitForEventStep = Field(
         ..., description='Wait-for-event step configuration.'
     )
-    input: dict[str, Any] | None = Field(
-        None,
-        description='Step-local input object resolved when the step starts. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions. schema_version 1 only; removed in 2 (reference inputs/event/meta/steps directly in config fields).',
-    )
     retry: LoopRetryPolicy | None = Field(
         None, description='Retry policy for this step.'
     )
     timeout: LoopTimeoutPolicy | None = Field(
         None, description='Timeout policy for this step.'
-    )
-    save_as: str | None = Field(
-        None,
-        description="Context key used to store this step's output. Defaults to `key`. schema_version 1 only; removed in 2 (outputs are always at steps.<key>.output).",
     )
 
 
@@ -4652,30 +4380,25 @@ class LoopSubLoopStepSpec(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    key: str = Field(..., description='Stable step key within the spec.')
+    id: str | None = Field(
+        None,
+        description='Optional stable step id within the spec. If omitted, the compiler uses the step index as a string, such as `"0"`.',
+    )
     name: str | None = Field(None, description='Human-readable step name.')
     if_: str | None = Field(
         None,
         alias='if',
-        description='Bare expr predicate evaluated before the step runs; false skips the step. Requires schema_version "2".',
+        description='Bare expr predicate evaluated before the step runs; false skips the step.',
     )
     kind: Literal['loop'] = Field(
         ..., description='Step discriminator value; always `loop`.'
     )
     config: LoopSubLoopStep = Field(..., description='Child-loop step configuration.')
-    input: dict[str, Any] | None = Field(
-        None,
-        description='Step-local input object resolved when the step starts. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions. schema_version 1 only; removed in 2 (reference inputs/event/meta/steps directly in config fields).',
-    )
     retry: LoopRetryPolicy | None = Field(
         None, description='Retry policy for this step.'
     )
     timeout: LoopTimeoutPolicy | None = Field(
         None, description='Timeout policy for this step.'
-    )
-    save_as: str | None = Field(
-        None,
-        description="Context key used to store this step's output. Defaults to `key`. schema_version 1 only; removed in 2 (outputs are always at steps.<key>.output).",
     )
 
 
@@ -4703,7 +4426,10 @@ class LoopAgentStep(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    agent_id: str = Field(..., description='Agent to run for this step.')
+    agent_id: str | None = Field(
+        None,
+        description="Agent to run for this step. Omit to use the loop's top-level `agent_id`.",
+    )
     instructions: str = Field(
         ...,
         description='Prompt or task instructions rendered before the agent turn starts.',
@@ -4736,7 +4462,7 @@ class LoopAgentStep(BaseModel):
 
 class LoopCheckStep(BaseModel):
     """
-    Check step configuration recognised inside `LoopSpec.steps[].config`. A check step evaluates typed assertions over the run's template environment (`{ inputs, context }` in schema_version 1; `inputs`, `event`, `meta`, and `steps.<key>.output` in schema_version 2) — deterministic `expr` predicates, or `agent` judges for everything that isn't deterministic — records a per-assertion verdict with cited evidence, and routes on failure: fail the run (stop reason `check_failed`), continue with the red verdict on the record, or open an approval gate carrying the evidence (rejection stops the run with `gate_rejected`). All assertions are evaluated; there is no short-circuit. An assertion that errors (bad expr, judge model failure, unparseable verdict) fails closed — never a silent pass.
+    Check step configuration recognised inside `LoopSpec.steps[].config`. A check step evaluates typed assertions over the run's template environment (`inputs`, `event`, `meta`, `steps.<id>.output`, and `steps[0].output`) — deterministic `expr` predicates, or `agent` judges for everything that isn't deterministic — records a per-assertion verdict with cited evidence, and routes on failure: fail the run (stop reason `check_failed`), continue with the red verdict on the record, or open an approval gate carrying the evidence (rejection stops the run with `gate_rejected`). All assertions are evaluated; there is no short-circuit. An assertion that errors (bad expr, judge model failure, unparseable verdict) fails closed — never a silent pass.
     """
 
     model_config = ConfigDict(
@@ -4766,7 +4492,7 @@ class StartLoopRunRequest(BaseModel):
     )
     inputs: dict[str, Any] | None = Field(
         None,
-        description='Input map passed to the run. schema_version 1 loops receive it as-is and reference it via `{{ .inputs.<key> }}` Go text/template actions. schema_version 2 loops resolve it against the declared `inputs:` contract — undeclared keys are dropped, defaults fill, required inputs must resolve — and reference it via `${{ inputs.<key> }}`.',
+        description='Input map passed to the run. Loops resolve it against the declared `inputs:` contract — undeclared keys are dropped, defaults fill, required inputs must resolve — and reference it via `${{ inputs.<key> }}`.',
     )
     source: LoopRunSource | None = Field(
         None, description='Attribution for the call that starts the run.'
@@ -4830,19 +4556,19 @@ class LoopRun(BaseModel):
     )
     inputs: dict[str, Any] | None = Field(
         None,
-        description="Input map resolved when the run started, reachable in step templates at `{{ .inputs.<key> }}` (schema_version 1) or `${{ inputs.<key> }}` (schema_version 2). In schema_version 1 event-trigger runs this is the normalized `{ event, meta }` envelope (`{{ .inputs.event.* }}`, `{{ .inputs.meta.* }}`); in schema_version 2 the trigger envelope lives in the run's `event` and `meta` fields instead and inputs hold only declared keys.",
+        description="Input map resolved when the run started, reachable in step templates at `${{ inputs.<key> }}`. Event trigger data lives in the run's `event` and `meta` fields; inputs hold only declared keys.",
     )
     event: dict[str, Any] | None = Field(
         None,
-        description='Normalized payload of the event that started the run, reachable in schema_version 2 templates at `${{ event.* }}`: the webhook body for event triggers, the request body for HTTP triggers. Empty for manual and schedule runs.',
+        description='Normalized payload of the event that started the run, reachable in templates at `${{ event.* }}`: the webhook body for event triggers, the request body for HTTP triggers. Empty for manual and schedule runs.',
     )
     meta: dict[str, Any] | None = Field(
         None,
-        description='Run and trigger metadata envelope, reachable in schema_version 2 templates at `${{ meta.* }}`: `run_id`, `loop_id`, `source`, `trigger`, plus trigger-supplied facts such as `event_type`, `source_event_id`, and `scheduled_at`.',
+        description='Run and trigger metadata envelope, reachable in templates at `${{ meta.* }}`: `run_id`, `loop_id`, `source`, `trigger`, plus trigger-supplied facts such as `event_type`, `source_event_id`, and `scheduled_at`.',
     )
     result: dict[str, Any] | None = Field(
         None,
-        description="Final result payload. When the loop declares an `output:` block (schema_version 2) this is that block rendered at completion; otherwise it is the run's accumulated step outputs, keyed by step key (`save_as` in schema_version 1). Absent until the run terminates successfully.",
+        description="Final result payload. When the loop declares an `output:` block this is that block rendered at completion; otherwise it is the run's accumulated step outputs, keyed by step id. Absent until the run terminates successfully.",
     )
     source: LoopRunSource | None = Field(
         None, description='Source that started this run.'
@@ -4941,30 +4667,25 @@ class LoopAgentStepSpec(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    key: str = Field(..., description='Stable step key within the spec.')
+    id: str | None = Field(
+        None,
+        description='Optional stable step id within the spec. If omitted, the compiler uses the step index as a string, such as `"0"`.',
+    )
     name: str | None = Field(None, description='Human-readable step name.')
     if_: str | None = Field(
         None,
         alias='if',
-        description='Bare expr predicate evaluated before the step runs; false skips the step. Requires schema_version "2".',
+        description='Bare expr predicate evaluated before the step runs; false skips the step.',
     )
     kind: Literal['agent'] = Field(
         ..., description='Step discriminator value; always `agent`.'
     )
     config: LoopAgentStep = Field(..., description='Agent-step configuration.')
-    input: dict[str, Any] | None = Field(
-        None,
-        description='Step-local input object resolved when the step starts. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions. schema_version 1 only; removed in 2 (reference inputs/event/meta/steps directly in config fields).',
-    )
     retry: LoopRetryPolicy | None = Field(
         None, description='Retry policy for this step.'
     )
     timeout: LoopTimeoutPolicy | None = Field(
         None, description='Timeout policy for this step.'
-    )
-    save_as: str | None = Field(
-        None,
-        description="Context key used to store this step's output. Defaults to `key`. schema_version 1 only; removed in 2 (outputs are always at steps.<key>.output).",
     )
 
 
@@ -4976,30 +4697,25 @@ class LoopCheckStepSpec(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    key: str = Field(..., description='Stable step key within the spec.')
+    id: str | None = Field(
+        None,
+        description='Optional stable step id within the spec. If omitted, the compiler uses the step index as a string, such as `"0"`.',
+    )
     name: str | None = Field(None, description='Human-readable step name.')
     if_: str | None = Field(
         None,
         alias='if',
-        description='Bare expr predicate evaluated before the step runs; false skips the step. Requires schema_version "2".',
+        description='Bare expr predicate evaluated before the step runs; false skips the step.',
     )
     kind: Literal['check'] = Field(
         ..., description='Step discriminator value; always `check`.'
     )
     config: LoopCheckStep = Field(..., description='Check-step configuration.')
-    input: dict[str, Any] | None = Field(
-        None,
-        description='Step-local input object resolved when the step starts. String leaves may contain `{{ .inputs.* }}` or `{{ .context.* }}` Go text/template actions. schema_version 1 only; removed in 2 (reference inputs/event/meta/steps directly in config fields).',
-    )
     retry: LoopRetryPolicy | None = Field(
         None, description='Retry policy for this step.'
     )
     timeout: LoopTimeoutPolicy | None = Field(
         None, description='Timeout policy for this step.'
-    )
-    save_as: str | None = Field(
-        None,
-        description="Context key used to store this step's output. Defaults to `key`. schema_version 1 only; removed in 2 (outputs are always at steps.<key>.output).",
     )
 
 
@@ -5027,43 +4743,52 @@ class LoopStep(
     )
 
 
-class LoopSpec(BaseModel):
+class Loop(BaseModel):
     """
-    Authoring representation of a loop.
+    A loop and its current authored definition. Updating any authoring field creates an internal revision and makes it runnable immediately.
     """
 
     model_config = ConfigDict(
         extra='forbid',
     )
-    schema_version: SchemaVersion = Field(
-        '1',
-        description='Loop spec schema version. `"1"` renders strings with Go text/template `{{ .inputs.x }}` / `{{ .context.x }}` actions. `"2"` uses expr `${{ ... }}` templates and bare expr predicates over the `inputs`, `event`, `meta`, and `steps.<key>.output` namespace.',
-    )
-    name: str | None = Field(None, description='Optional spec-local display name.')
+    id: str = Field(..., description='Stable loop identifier.')
+    name: str = Field(..., description='Human-readable display name.')
     description: str | None = Field(
-        None, description='Optional spec-local Markdown description.'
+        None, description="Markdown description of the loop's purpose."
+    )
+    status: LoopStatus = Field(
+        ...,
+        description='Current loop lifecycle status: `draft`, `active`, `paused`, or `deleted`.',
+    )
+    owner: str | None = Field(
+        None, description='User who created or currently owns this loop.'
+    )
+    agent_id: str | None = Field(
+        None,
+        description='Agent associated with this loop. Agent steps use it when they do not pin `config.agent_id`.',
+    )
+    schema_version: SchemaVersion = Field(
+        '2',
+        description='Loop authoring schema version. Only schema version 2 is accepted.',
     )
     inputs: dict[str, LoopSpecInput] | None = Field(
-        None,
-        description='Declared run inputs. In schema_version 2 these form the run-input contract — undeclared keys are dropped and required inputs without defaults fail the start.',
+        None, description='Declared run inputs for this loop.'
     )
     concurrency: Concurrency | None = Field(
         None,
         description='Concurrency behavior: `allow`, `queue`, `skip`, or `replace`.',
     )
     triggers: list[LoopSpecTrigger] | None = Field(
-        None, description='Desired triggers materialized when a version is published.'
+        None, description='Authored trigger declarations for this loop.'
     )
     repositories: list[LoopSpecRepository] | None = Field(
-        None,
-        description='Source repositories the loop targets. When a shared managed environment is selected, the runtime prepares these repositories before user-authored steps run.',
+        None, description='Source repositories the loop targets.'
     )
-    steps: list[LoopStep] = Field(
-        ..., description='Ordered user-authored steps to execute for each run.'
+    steps: list[LoopStep] | None = Field(
+        None, description='Ordered user-authored steps to execute for each run.'
     )
     output: dict[str, Any] | None = Field(
-        None,
-        description="Declared run result. When present, string leaves are rendered against the run inputs and saved step outputs at completion and the rendered map is the run's result — the contract for API consumers, `run.completed` subscribers, and parent loops. When absent, the result is the full accumulated context map. In schema_version 2 string leaves use `${{ ... }}` interpolation.",
+        None, description='Declared run result contract.'
     )
     cleanup: list[dict[str, Any]] | None = Field(
         None,
@@ -5076,14 +4801,39 @@ class LoopSpec(BaseModel):
         None,
         description='Run-level defaults applied when individual steps omit a policy.',
     )
+    default_inputs: dict[str, Any] | None = Field(
+        None,
+        description='Default values merged into `inputs` when a run is started without overrides.',
+    )
+    settings: dict[str, Any] | None = Field(
+        None, description='Free-form loop-level settings consumed by the engine.'
+    )
+    tags: TagMap | None = Field(
+        None,
+        description='Free-form labels used for filtering, ownership, or automation.',
+    )
+    last_run_at: AwareDatetime | None = Field(
+        None, description='Timestamp of the most recent run start, if any.'
+    )
+    deleted_at: AwareDatetime | None = Field(
+        None,
+        description='Timestamp when this loop was deleted; absent on active loops.',
+    )
+    created_at: AwareDatetime = Field(..., description='Record creation timestamp.')
+    updated_at: AwareDatetime = Field(..., description='Last update timestamp.')
 
 
-class CreateLoopVersionRequest(BaseModel):
+class LoopListResponse(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    spec: LoopSpec = Field(
-        ..., description='Loop spec to store as a new draft version.'
+    items: list[Loop] = Field(..., description='The list of results for this page.')
+    next_cursor: str | None = Field(
+        None,
+        description='Opaque cursor for the next page; absent when no more results.',
+    )
+    has_more: bool | None = Field(
+        None, description='True when more items exist after this page.'
     )
 
 
@@ -5095,9 +4845,44 @@ class CreateLoopRequest(BaseModel):
     description: str | None = Field(
         None, description="Markdown description of the loop's purpose."
     )
-    default_agent_id: str | None = Field(
+    agent_id: str | None = Field(
         None,
-        description='Agent used by `agent` steps that do not pin an agent explicitly.',
+        description='Agent associated with this loop. Agent steps use it when they do not pin `config.agent_id`.',
+    )
+    schema_version: SchemaVersion = Field(
+        '2',
+        description='Loop authoring schema version. Only schema version 2 is accepted.',
+    )
+    inputs: dict[str, LoopSpecInput] | None = Field(
+        None, description='Declared run inputs for this loop.'
+    )
+    concurrency: Concurrency | None = Field(
+        None,
+        description='Concurrency behavior: `allow`, `queue`, `skip`, or `replace`.',
+    )
+    triggers: list[LoopSpecTrigger] | None = Field(
+        None, description='Authored trigger declarations for this loop.'
+    )
+    repositories: list[LoopSpecRepository] | None = Field(
+        None, description='Source repositories the loop targets.'
+    )
+    steps: list[LoopStep] | None = Field(
+        None,
+        description='Ordered user-authored steps to execute for each run. When present, the definition is runnable immediately.',
+    )
+    output: dict[str, Any] | None = Field(
+        None, description='Declared run result contract.'
+    )
+    cleanup: list[dict[str, Any]] | None = Field(
+        None,
+        description='Cleanup steps or policies evaluated after normal step execution.',
+    )
+    limits: LoopSpecLimits | None = Field(
+        None, description='Run guardrails such as budget, timeout, and turn limits.'
+    )
+    defaults: LoopSpecDefaults | None = Field(
+        None,
+        description='Run-level defaults applied when individual steps omit a policy.',
     )
     default_inputs: dict[str, Any] | None = Field(
         None,
@@ -5110,46 +4895,67 @@ class CreateLoopRequest(BaseModel):
         None,
         description='Free-form labels used for filtering, ownership, or automation.',
     )
-    spec: LoopSpec | None = Field(
-        None,
-        description='Optional initial loop spec to store as version 1 during creation.',
-    )
-    activate: bool = Field(
-        False,
-        description='When true, `spec` is required. Mobius stores it as version 1, publishes it, materializes its triggers, and sets the loop status to `active` before returning.',
-    )
 
 
-class LoopVersion(BaseModel):
+class UpdateLoopRequest(BaseModel):
     """
-    Stored immutable loop spec version.
+    Partial update of loop metadata and/or authoring fields. Authoring changes become runnable immediately.
     """
 
     model_config = ConfigDict(
         extra='forbid',
     )
-    id: str = Field(..., description='Stable identifier for this LoopVersion record.')
-    loop_id: str = Field(..., description='Loop this version belongs to.')
-    version: int = Field(..., description='Monotonic version number, unique per loop.')
-    status: Status3 = Field(
-        ...,
-        description='Publication state. `draft` is editable but not runnable; `published` is the currently runnable version; `superseded` is a prior published version retained for historical runs.',
+    name: str | None = Field(None, description='Human-readable display name.')
+    description: str | None = Field(
+        None, description="Markdown description of the loop's purpose."
     )
-    spec: LoopSpec | None = Field(
-        None, description='Authored loop spec captured by this version.'
+    status: LoopStatus | None = Field(
+        None, description='Replacement lifecycle status for the loop.'
     )
-    validation: dict[str, Any] | None = Field(
+    agent_id: str | None = Field(
         None,
-        description='Validation result for `spec` produced at version-creation time.',
+        description='Agent associated with this loop. Agent steps use it when they do not pin `config.agent_id`.',
     )
-    created_by: str | None = Field(None, description='User who authored this version.')
-    created_at: AwareDatetime = Field(..., description='Record creation timestamp.')
-
-
-class LoopVersionListResponse(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
+    schema_version: SchemaVersion | None = Field(
+        '2',
+        description='Loop authoring schema version. Only schema version 2 is accepted.',
     )
-    items: list[LoopVersion] = Field(
-        ..., description='LoopVersions returned for this loop, newest version first.'
+    inputs: dict[str, LoopSpecInput] | None = Field(
+        None, description='Declared run inputs for this loop.'
+    )
+    concurrency: Concurrency | None = Field(
+        None,
+        description='Concurrency behavior: `allow`, `queue`, `skip`, or `replace`.',
+    )
+    triggers: list[LoopSpecTrigger] | None = Field(
+        None, description='Replacement authored trigger declarations.'
+    )
+    repositories: list[LoopSpecRepository] | None = Field(
+        None, description='Replacement source repositories the loop targets.'
+    )
+    steps: list[LoopStep] | None = Field(
+        None, description='Replacement ordered user-authored steps.'
+    )
+    output: dict[str, Any] | None = Field(
+        None, description='Replacement run result contract.'
+    )
+    cleanup: list[dict[str, Any]] | None = Field(
+        None, description='Replacement cleanup steps or policies.'
+    )
+    limits: LoopSpecLimits | None = Field(
+        None,
+        description='Replacement run guardrails such as budget, timeout, and turn limits.',
+    )
+    defaults: LoopSpecDefaults | None = Field(
+        None, description='Replacement run-level defaults.'
+    )
+    default_inputs: dict[str, Any] | None = Field(
+        None,
+        description='Default values merged into `inputs` when a run is started without overrides.',
+    )
+    settings: dict[str, Any] | None = Field(
+        None, description='Free-form loop-level settings consumed by the engine.'
+    )
+    tags: TagMap | None = Field(
+        None, description='Replacement labels; send an empty object to clear all tags.'
     )
