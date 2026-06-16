@@ -17,7 +17,7 @@ import (
 
 // registerRunsCommands registers every generated subcommand in the "runs" group.
 func registerRunsCommands(app *cli.App) {
-	runsGrp := app.Group("runs").Description("Automation runs")
+	runsGrp := app.Group("runs").Description("Loop runs")
 	runsGrp.Alias("run")
 	runsGrp.Command("cancel").
 		Description("Cancel run").

@@ -8,7 +8,7 @@ package main
 //   - Group overrides the subcommand group (default: the operation's first
 //     OpenAPI tag).
 //   - Command overrides the leaf command name (default: derived from the
-//     operationId, e.g. `listAutomations` -> `list`, `getAutomation` -> `get`).
+//     operationId, e.g. `listLoops` -> `list`, `getLoop` -> `get`).
 //   - Description overrides the short help string (default: the OpenAPI
 //     operation summary).
 type Override struct {
@@ -97,15 +97,15 @@ var overrides = map[string]Override{
 // well when listed vertically in `mobius --help`. Prefer consistent
 // grammatical shape across entries.
 var groupDescriptions = map[string]string{
-	"actions":      "Actions available to automations and agents",
+	"actions":      "Actions available to loops and agents",
 	"agents":       "Agents, sessions, and presence",
 	"api-keys":     "Project and organization API keys",
 	"artifacts":    "Run output artifacts and storage quota",
-	"automations":  "Automation definitions, versions, and runs",
 	"catalog":      "Available actions and triggerable events",
 	"environments": "Managed execution environments",
+	"loops":        "Loop definitions, versions, and runs",
 	"projects":     "Projects within the organization",
-	"runs":         "Automation runs",
+	"runs":         "Loop runs",
 	"skills":       "Skill templates that shape agent behavior and tool access",
 	"tables":       "Project-scoped tables and rows",
 	"toolkits":     "Sets of tools agents can use to take action",
