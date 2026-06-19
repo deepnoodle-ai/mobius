@@ -74,6 +74,10 @@ type Worker struct {
 	sessionToken string
 	authRevoked  atomic.Bool
 
+	// keepWarm holds the worker's environment in an active state while jobs are
+	// in flight (e.g. a Sprite microVM); a no-op on hosts that don't pause.
+	keepWarm hold
+
 	// Job lifecycle state that survives socket reconnects.
 	slots     chan struct{} // capacity = Concurrency; one token per in-flight job
 	slotFreed chan struct{} // nudges the run loop to claim after a job finishes
@@ -106,6 +110,7 @@ func (c *Client) NewWorker(cfg WorkerConfig) *Worker {
 		config:        cfg,
 		registry:      NewActionRegistry(),
 		generators:    map[string]GenerationFunc{},
+		keepWarm:      detectHold(cfg.Logger),
 		slots:         make(chan struct{}, cfg.Concurrency),
 		slotFreed:     make(chan struct{}, cfg.Concurrency),
 		socketChanged: make(chan struct{}),
@@ -134,8 +139,15 @@ func (w *Worker) RegisterGenerator(provider, model string, fn GenerationFunc) {
 // revoked. WebSocket reconnects are routine; job liveness is controlled by
 // per-job heartbeat frames, not by socket lifetime alone.
 func (w *Worker) Run(ctx context.Context) error {
+	// Maintain the Sprite keep-warm hold for the worker's lifetime; the
+	// maintainer reacts to per-job acquire/release and is a no-op off-Sprite.
+	holdCtx, cancelHold := context.WithCancel(ctx)
+	defer cancelHold()
+	go w.keepWarm.run(holdCtx)
 	// In-flight jobs run under ctx (not the socket), so cancelling ctx aborts
-	// them; wait for those goroutines to unwind before Run returns.
+	// them; wait for those goroutines to unwind before Run returns. This defer
+	// runs before cancelHold (LIFO), keeping the keep-warm hold active until
+	// all draining jobs have unwound.
 	defer w.wg.Wait()
 	for {
 		if w.authRevoked.Load() {
@@ -502,6 +514,10 @@ func (w *Worker) finishJob(jobID string) {
 // job is intentionally not tied to the socket it was claimed on.
 func (w *Worker) runJob(lifeCtx, jobCtx context.Context, job *runtimeJob) {
 	defer w.finishJob(job.JobID)
+	// Hold the environment warm for this job so a long outbound op (e.g. git
+	// clone) can't be frozen by the host pausing mid-flight. No-op off-Sprite.
+	w.keepWarm.acquire()
+	defer w.keepWarm.release()
 	log := w.config.Logger.With(
 		"job_id", job.JobID,
 		"run_id", job.RunID,
