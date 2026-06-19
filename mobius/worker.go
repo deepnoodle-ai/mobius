@@ -139,14 +139,16 @@ func (w *Worker) RegisterGenerator(provider, model string, fn GenerationFunc) {
 // revoked. WebSocket reconnects are routine; job liveness is controlled by
 // per-job heartbeat frames, not by socket lifetime alone.
 func (w *Worker) Run(ctx context.Context) error {
-	// In-flight jobs run under ctx (not the socket), so cancelling ctx aborts
-	// them; wait for those goroutines to unwind before Run returns.
-	defer w.wg.Wait()
 	// Maintain the Sprite keep-warm hold for the worker's lifetime; the
 	// maintainer reacts to per-job acquire/release and is a no-op off-Sprite.
 	holdCtx, cancelHold := context.WithCancel(ctx)
 	defer cancelHold()
 	go w.keepWarm.run(holdCtx)
+	// In-flight jobs run under ctx (not the socket), so cancelling ctx aborts
+	// them; wait for those goroutines to unwind before Run returns. This defer
+	// runs before cancelHold (LIFO), keeping the keep-warm hold active until
+	// all draining jobs have unwound.
+	defer w.wg.Wait()
 	for {
 		if w.authRevoked.Load() {
 			return ErrAuthRevoked
