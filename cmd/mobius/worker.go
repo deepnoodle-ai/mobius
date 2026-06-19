@@ -52,6 +52,9 @@ func registerWorkerCommand(app *cli.App) {
 			cli.Int("workers", "").
 				Default(0).
 				Help("Run N independent worker instances (advanced; mutually exclusive with --concurrency)"),
+			cli.Bool("keep-warm-for-lifetime", "").
+				Env("MOBIUS_WORKER_KEEP_WARM").
+				Help("Keep the environment warm for the worker's whole lifetime, not just while a job runs (set for run-scoped environments so the VM doesn't hibernate between an agent's tool calls)"),
 		).
 		Run(func(ctx *cli.Context) error {
 			client, err := clientFromContext(ctx)
@@ -67,6 +70,7 @@ func registerWorkerCommand(app *cli.App) {
 			environmentID := ctx.String("environment-id")
 			concurrency := ctx.Int("concurrency")
 			workers := ctx.Int("workers")
+			keepWarmForLifetime := ctx.Bool("keep-warm-for-lifetime")
 
 			if workers > 0 && concurrency > 1 {
 				return fmt.Errorf(
@@ -78,14 +82,15 @@ func registerWorkerCommand(app *cli.App) {
 			}
 
 			baseConfig := mobius.WorkerConfig{
-				Name:             name,
-				WorkerInstanceID: instanceID,
-				Version:          ctx.String("worker-version"),
-				EnvironmentID:    environmentID,
-				Queues:           queues,
-				Actions:          actions,
-				Concurrency:      concurrency,
-				Logger:           logger,
+				Name:                name,
+				WorkerInstanceID:    instanceID,
+				Version:             ctx.String("worker-version"),
+				EnvironmentID:       environmentID,
+				Queues:              queues,
+				Actions:             actions,
+				Concurrency:         concurrency,
+				KeepWarmForLifetime: keepWarmForLifetime,
+				Logger:              logger,
 			}
 
 			auth := authFor(ctx)
@@ -98,6 +103,7 @@ func registerWorkerCommand(app *cli.App) {
 				"actions", actions,
 				"concurrency", concurrency,
 				"workers", workers,
+				"keep_warm_for_lifetime", keepWarmForLifetime,
 			)
 
 			if workers > 0 {
