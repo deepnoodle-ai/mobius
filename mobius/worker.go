@@ -54,6 +54,15 @@ type WorkerConfig struct {
 	ReconnectDelay    time.Duration
 	HeartbeatInterval time.Duration
 	Logger            *slog.Logger
+
+	// KeepWarmForLifetime pins the environment keep-warm hold for the worker's
+	// entire lifetime rather than only while a job is in flight. Set it for
+	// single-run (run-scoped) environments: their agent steps dispatch a sequence
+	// of tool-call jobs with idle LLM think-time between them, and a per-job hold
+	// lets the environment (e.g. a Sprite microVM) pause in those gaps and strand
+	// the worker so the next job is never claimed. Leave it false for reused
+	// (lease/explicit) environments so they still hibernate between jobs.
+	KeepWarmForLifetime bool
 }
 
 // Worker connects to Mobius Cloud over the worker WebSocket, claims jobs,
@@ -144,6 +153,13 @@ func (w *Worker) Run(ctx context.Context) error {
 	holdCtx, cancelHold := context.WithCancel(ctx)
 	defer cancelHold()
 	go w.keepWarm.run(holdCtx)
+	if w.config.KeepWarmForLifetime {
+		// Pin a baseline hold so the environment stays warm across the idle gaps
+		// between this run's jobs (e.g. agent-loop think-time between tool calls).
+		// Never released explicitly: the maintainer deletes the hold when holdCtx
+		// is cancelled on worker shutdown.
+		w.keepWarm.acquire()
+	}
 	// In-flight jobs run under ctx (not the socket), so cancelling ctx aborts
 	// them; wait for those goroutines to unwind before Run returns. This defer
 	// runs before cancelHold (LIFO), keeping the keep-warm hold active until
