@@ -86,6 +86,14 @@ type Worker struct {
 	// keepWarm holds the worker's environment in an active state while jobs are
 	// in flight (e.g. a Sprite microVM); a no-op on hosts that don't pause.
 	keepWarm hold
+	// keepWarmEstablished records that the lifetime keep-warm hold was
+	// successfully established at startup. It is reported to Mobius Cloud as a
+	// worker capability so operators can confirm — without shelling into the
+	// environment — that a run-scoped worker actually pinned its Sprite warm
+	// (vs. the env var being dropped or the hold silently failing). In
+	// fail-closed lifetime mode a registered worker has always established it,
+	// but reporting it explicitly turns that invariant into a visible signal.
+	keepWarmEstablished atomic.Bool
 
 	// Job lifecycle state that survives socket reconnects.
 	slots     chan struct{} // capacity = Concurrency; one token per in-flight job
@@ -180,6 +188,9 @@ func (w *Worker) Run(ctx context.Context) error {
 			}
 			return fmt.Errorf("mobius: required keep-warm hold was not established")
 		}
+		w.keepWarmEstablished.Store(true)
+		w.config.Logger.Info("worker keep-warm: lifetime hold established",
+			"environment_id", w.config.EnvironmentID)
 	}
 	// In-flight jobs run under ctx (not the socket), so cancelling ctx aborts
 	// them; wait for those goroutines to unwind before Run returns. This defer
@@ -421,6 +432,7 @@ func (w *Worker) register(ctx context.Context, socket *workerSocket) error {
 		AvailableSlots:     &available,
 		ActionNames:        stringSlicePtr(w.actionNames()),
 		Queues:             stringSlicePtr(w.config.Queues),
+		Capabilities:       stringSlicePtr(w.capabilities()),
 		Models:             modelCapabilitiesPtr(w.config.Models),
 		EnvironmentId:      strPtr(w.config.EnvironmentID),
 		Name:               strPtr(w.config.Name),
@@ -481,6 +493,31 @@ func (w *Worker) actionNames() []string {
 		return append([]string(nil), w.config.Actions...)
 	}
 	return w.registry.Names()
+}
+
+// Capability labels a worker advertises to Mobius Cloud. These are operational
+// telemetry — they describe the worker's keep-warm posture so operators can see,
+// from the worker session alone, whether a run-scoped worker actually pinned its
+// environment warm. They are namespaced ("keep-warm:*") and never required by
+// any job, so advertising them does not affect job routing (eligibility is a
+// subset match: a worker with extra labels still matches).
+const (
+	capabilityKeepWarmLifetime    = "keep-warm:lifetime"
+	capabilityKeepWarmEstablished = "keep-warm:established"
+)
+
+// capabilities returns the worker's advertised capability labels. Empty for a
+// worker with no keep-warm posture (the common case), so the register frame
+// omits the field entirely.
+func (w *Worker) capabilities() []string {
+	var caps []string
+	if w.config.KeepWarmForLifetime {
+		caps = append(caps, capabilityKeepWarmLifetime)
+		if w.keepWarmEstablished.Load() {
+			caps = append(caps, capabilityKeepWarmEstablished)
+		}
+	}
+	return caps
 }
 
 // setSocket binds (or clears, with nil) the worker's current socket and wakes
