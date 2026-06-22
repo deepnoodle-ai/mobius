@@ -97,6 +97,25 @@ func runUntilReturn(t *testing.T, w *Worker) {
 	}
 }
 
+func TestWorker_Capabilities_NoneWithoutKeepWarm(t *testing.T) {
+	w, _ := newTestWorker(t, WorkerConfig{})
+	assert.Equal(t, 0, len(w.capabilities()))
+}
+
+func TestWorker_Capabilities_LifetimeAdvertisedBeforeEstablished(t *testing.T) {
+	w, _ := newTestWorker(t, WorkerConfig{KeepWarmForLifetime: true})
+	// Before the hold is established, only the posture (not the confirmation) is
+	// advertised.
+	assert.Equal(t, []string{capabilityKeepWarmLifetime}, w.capabilities())
+}
+
+func TestWorker_Capabilities_EstablishedAfterRun(t *testing.T) {
+	w, fake := newTestWorker(t, WorkerConfig{KeepWarmForLifetime: true})
+	runUntilReturn(t, w)
+	assert.Equal(t, 1, fake.ensureCount())
+	assert.Equal(t, []string{capabilityKeepWarmLifetime, capabilityKeepWarmEstablished}, w.capabilities())
+}
+
 func TestWorker_KeepWarmForLifetime_PinsHold(t *testing.T) {
 	w, fake := newTestWorker(t, WorkerConfig{KeepWarmForLifetime: true})
 	runUntilReturn(t, w)
