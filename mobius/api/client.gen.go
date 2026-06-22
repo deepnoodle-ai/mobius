@@ -189,6 +189,7 @@ func (e AgentMessagingDMPolicy) Valid() bool {
 
 // Defines values for AgentMessagingProvider.
 const (
+	AgentMessagingProviderLinear   AgentMessagingProvider = "linear"
 	AgentMessagingProviderSlack    AgentMessagingProvider = "slack"
 	AgentMessagingProviderTelegram AgentMessagingProvider = "telegram"
 )
@@ -196,6 +197,8 @@ const (
 // Valid indicates whether the value is a known member of the AgentMessagingProvider enum.
 func (e AgentMessagingProvider) Valid() bool {
 	switch e {
+	case AgentMessagingProviderLinear:
+		return true
 	case AgentMessagingProviderSlack:
 		return true
 	case AgentMessagingProviderTelegram:
@@ -310,6 +313,36 @@ const (
 func (e ArtifactSignedUrlMethod) Valid() bool {
 	switch e {
 	case ArtifactSignedUrlMethodGET:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ArtifactThumbnailSummaryStatus.
+const (
+	ArtifactThumbnailSummaryStatusAvailable  ArtifactThumbnailSummaryStatus = "available"
+	ArtifactThumbnailSummaryStatusFailed     ArtifactThumbnailSummaryStatus = "failed"
+	ArtifactThumbnailSummaryStatusProcessing ArtifactThumbnailSummaryStatus = "processing"
+	ArtifactThumbnailSummaryStatusQueued     ArtifactThumbnailSummaryStatus = "queued"
+	ArtifactThumbnailSummaryStatusSkipped    ArtifactThumbnailSummaryStatus = "skipped"
+	ArtifactThumbnailSummaryStatusStale      ArtifactThumbnailSummaryStatus = "stale"
+)
+
+// Valid indicates whether the value is a known member of the ArtifactThumbnailSummaryStatus enum.
+func (e ArtifactThumbnailSummaryStatus) Valid() bool {
+	switch e {
+	case ArtifactThumbnailSummaryStatusAvailable:
+		return true
+	case ArtifactThumbnailSummaryStatusFailed:
+		return true
+	case ArtifactThumbnailSummaryStatusProcessing:
+		return true
+	case ArtifactThumbnailSummaryStatusQueued:
+		return true
+	case ArtifactThumbnailSummaryStatusSkipped:
+		return true
+	case ArtifactThumbnailSummaryStatusStale:
 		return true
 	default:
 		return false
@@ -456,13 +489,34 @@ func (e CreateLoopRequestConcurrency) Valid() bool {
 
 // Defines values for CreateLoopRequestSchemaVersion.
 const (
-	CreateLoopRequestSchemaVersionN2 CreateLoopRequestSchemaVersion = "2"
+	CreateLoopRequestSchemaVersionN1 CreateLoopRequestSchemaVersion = "1"
 )
 
 // Valid indicates whether the value is a known member of the CreateLoopRequestSchemaVersion enum.
 func (e CreateLoopRequestSchemaVersion) Valid() bool {
 	switch e {
-	case CreateLoopRequestSchemaVersionN2:
+	case CreateLoopRequestSchemaVersionN1:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CreateSessionRequestMode.
+const (
+	CreateSessionRequestModeContinue         CreateSessionRequestMode = "continue"
+	CreateSessionRequestModeContinueOrCreate CreateSessionRequestMode = "continue_or_create"
+	CreateSessionRequestModeNew              CreateSessionRequestMode = "new"
+)
+
+// Valid indicates whether the value is a known member of the CreateSessionRequestMode enum.
+func (e CreateSessionRequestMode) Valid() bool {
+	switch e {
+	case CreateSessionRequestModeContinue:
+		return true
+	case CreateSessionRequestModeContinueOrCreate:
+		return true
+	case CreateSessionRequestModeNew:
 		return true
 	default:
 		return false
@@ -699,13 +753,13 @@ func (e LoopConcurrency) Valid() bool {
 
 // Defines values for LoopSchemaVersion.
 const (
-	LoopSchemaVersionN2 LoopSchemaVersion = "2"
+	LoopSchemaVersionN1 LoopSchemaVersion = "1"
 )
 
 // Valid indicates whether the value is a known member of the LoopSchemaVersion enum.
 func (e LoopSchemaVersion) Valid() bool {
 	switch e {
-	case LoopSchemaVersionN2:
+	case LoopSchemaVersionN1:
 		return true
 	default:
 		return false
@@ -1096,6 +1150,24 @@ func (e LoopSpecRepositoryProvider) Valid() bool {
 	}
 }
 
+// Defines values for LoopSpecRepositorySource.
+const (
+	LoopSpecRepositorySourceMatch  LoopSpecRepositorySource = "match"
+	LoopSpecRepositorySourceStatic LoopSpecRepositorySource = "static"
+)
+
+// Valid indicates whether the value is a known member of the LoopSpecRepositorySource enum.
+func (e LoopSpecRepositorySource) Valid() bool {
+	switch e {
+	case LoopSpecRepositorySourceMatch:
+		return true
+	case LoopSpecRepositorySourceStatic:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for LoopSpecTriggerConcurrencyPolicy.
 const (
 	LoopSpecTriggerConcurrencyPolicyAllow   LoopSpecTriggerConcurrencyPolicy = "allow"
@@ -1312,6 +1384,21 @@ const (
 func (e ResourceScope) Valid() bool {
 	switch e {
 	case ResourceScopeOwner:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SendSessionEventInputType.
+const (
+	SendSessionEventInputTypeUserMessage SendSessionEventInputType = "user.message"
+)
+
+// Valid indicates whether the value is a known member of the SendSessionEventInputType enum.
+func (e SendSessionEventInputType) Valid() bool {
+	switch e {
+	case SendSessionEventInputTypeUserMessage:
 		return true
 	default:
 		return false
@@ -1548,13 +1635,13 @@ func (e UpdateLoopRequestConcurrency) Valid() bool {
 
 // Defines values for UpdateLoopRequestSchemaVersion.
 const (
-	UpdateLoopRequestSchemaVersionN2 UpdateLoopRequestSchemaVersion = "2"
+	UpdateLoopRequestSchemaVersionN1 UpdateLoopRequestSchemaVersion = "1"
 )
 
 // Valid indicates whether the value is a known member of the UpdateLoopRequestSchemaVersion enum.
 func (e UpdateLoopRequestSchemaVersion) Valid() bool {
 	switch e {
-	case UpdateLoopRequestSchemaVersionN2:
+	case UpdateLoopRequestSchemaVersionN1:
 		return true
 	default:
 		return false
@@ -2320,6 +2407,9 @@ type Agent struct {
 	// Tags Key/value tags for organizing and filtering resources. Up to 8 per resource; keys 1–128 characters, values up to 256. Keys prefixed `mobius:` are system-managed and cannot be set by callers.
 	Tags *TagMap `json:"tags,omitempty"`
 
+	// TimeoutSeconds Execution timeout, in seconds, for a single turn of this platform agent. `0` (or omitted) uses the platform default (600s / 10 minutes). A loop step's own timeout overrides this for that step.
+	TimeoutSeconds *int64 `json:"timeout_seconds,omitempty"`
+
 	// ToolPresentation Controls how granted actions are surfaced to the model in Mobius-hosted agent turns. `meta` (the default) groups related actions behind compact command routers, while `flat` exposes one tool per action.
 	ToolPresentation *AgentToolPresentation `json:"tool_presentation,omitempty"`
 
@@ -2392,7 +2482,7 @@ type AgentMessagingBinding struct {
 	// ModelRoute Default model route used by built-in messaging and by loop agent steps that do not override the route.
 	ModelRoute *AgentModelRoute `json:"model_route,omitempty"`
 
-	// Provider Provider supported by built-in agent messaging: `slack` or `telegram`.
+	// Provider Provider supported by built-in agent messaging: `slack`, `telegram`, or `linear` (Linear agent sessions).
 	Provider AgentMessagingProvider `json:"provider"`
 
 	// ReplyMode Reply mode for built-in messaging; currently `auto`.
@@ -2437,7 +2527,7 @@ type AgentMessagingBindingRequest struct {
 	// ModelRoute Default model route used by built-in messaging and by loop agent steps that do not override the route.
 	ModelRoute *AgentModelRoute `json:"model_route,omitempty"`
 
-	// Provider Provider supported by built-in agent messaging: `slack` or `telegram`.
+	// Provider Provider supported by built-in agent messaging: `slack`, `telegram`, or `linear` (Linear agent sessions).
 	Provider AgentMessagingProvider `json:"provider"`
 
 	// ReplaceExisting When enabling this binding, disable any other active agent binding for the same provider account.
@@ -2453,7 +2543,7 @@ type AgentMessagingBindingRequest struct {
 // AgentMessagingDMPolicy Direct-message access policy: `open`, `allowlist`, or `disabled`.
 type AgentMessagingDMPolicy string
 
-// AgentMessagingProvider Provider supported by built-in agent messaging: `slack` or `telegram`.
+// AgentMessagingProvider Provider supported by built-in agent messaging: `slack`, `telegram`, or `linear` (Linear agent sessions).
 type AgentMessagingProvider string
 
 // AgentMessagingReplyMode Reply mode for built-in messaging; currently `auto`.
@@ -2626,6 +2716,9 @@ type Artifact struct {
 	// StepId Loop step that produced this artifact, derived from the active worker lease.
 	StepId *string `json:"step_id,omitempty"`
 
+	// Thumbnail Summary of the Mobius-generated thumbnail for an artifact's default variant. The UI uses `status` to decide whether to fetch the thumbnail image, render a placeholder, or show a typed fallback card.
+	Thumbnail *ArtifactThumbnailSummary `json:"thumbnail,omitempty"`
+
 	// UpdatedAt Time the artifact metadata was last updated.
 	UpdatedAt *time.Time `json:"updated_at,omitempty"`
 
@@ -2681,6 +2774,30 @@ type ArtifactSignedUrl struct {
 // ArtifactSignedUrlMethod HTTP method to use with `url`; currently `GET`.
 type ArtifactSignedUrlMethod string
 
+// ArtifactThumbnailSummary Summary of the Mobius-generated thumbnail for an artifact's default variant. The UI uses `status` to decide whether to fetch the thumbnail image, render a placeholder, or show a typed fallback card.
+type ArtifactThumbnailSummary struct {
+	// Height Thumbnail pixel height when available.
+	Height *int `json:"height,omitempty"`
+
+	// MimeType Thumbnail image MIME type when available (image/jpeg or image/png).
+	MimeType *string `json:"mime_type,omitempty"`
+
+	// Status Current thumbnail state for the source artifact's content.
+	Status ArtifactThumbnailSummaryStatus `json:"status"`
+
+	// UpdatedAt Time this thumbnail state was last updated.
+	UpdatedAt *time.Time `json:"updated_at,omitempty"`
+
+	// Variant Variant name this summary describes (e.g. `card`).
+	Variant string `json:"variant"`
+
+	// Width Thumbnail pixel width when available.
+	Width *int `json:"width,omitempty"`
+}
+
+// ArtifactThumbnailSummaryStatus Current thumbnail state for the source artifact's content.
+type ArtifactThumbnailSummaryStatus string
+
 // ArtifactVisibility Private artifacts are visible only to their owner user. Shared artifacts are visible to the project.
 type ArtifactVisibility string
 
@@ -2733,9 +2850,6 @@ type ColumnDef struct {
 
 	// Type Column value type: `string`, `number`, `boolean`, `date`, `object`, `array`, or `any`.
 	Type ColumnType `json:"type"`
-
-	// Unique Whether the column value must be unique within the table.
-	Unique *bool `json:"unique,omitempty"`
 }
 
 // ColumnType Column value type: `string`, `number`, `boolean`, `date`, `object`, `array`, or `any`.
@@ -2812,6 +2926,9 @@ type CreateAgentRequest struct {
 	// Tags Key/value tags for organizing and filtering resources. Up to 8 per resource; keys 1–128 characters, values up to 256. Keys prefixed `mobius:` are system-managed and cannot be set by callers.
 	Tags *TagMap `json:"tags,omitempty"`
 
+	// TimeoutSeconds Per-turn execution timeout in seconds for this platform agent. Omit or `0` to use the platform default (600s / 10 minutes); a loop step's own timeout overrides it for that step.
+	TimeoutSeconds *int64 `json:"timeout_seconds,omitempty"`
+
 	// ToolPresentation Controls how granted actions are surfaced to the model in Mobius-hosted agent turns. `meta` (the default) groups related actions behind compact command routers, while `flat` exposes one tool per action.
 	ToolPresentation *AgentToolPresentation `json:"tool_presentation,omitempty"`
 }
@@ -2878,7 +2995,7 @@ type CreateLoopRequest struct {
 	// Repositories Source repositories the loop targets.
 	Repositories *[]LoopSpecRepository `json:"repositories,omitempty"`
 
-	// SchemaVersion Loop authoring schema version. Only schema version 2 is accepted.
+	// SchemaVersion Loop authoring schema version. Only schema version 1 is accepted.
 	SchemaVersion *CreateLoopRequestSchemaVersion `json:"schema_version,omitempty"`
 
 	// Settings Free-form loop-level settings consumed by the engine.
@@ -2897,7 +3014,7 @@ type CreateLoopRequest struct {
 // CreateLoopRequestConcurrency Concurrency behavior: `allow`, `queue`, `skip`, or `replace`.
 type CreateLoopRequestConcurrency string
 
-// CreateLoopRequestSchemaVersion Loop authoring schema version. Only schema version 2 is accepted.
+// CreateLoopRequestSchemaVersion Loop authoring schema version. Only schema version 1 is accepted.
 type CreateLoopRequestSchemaVersion string
 
 // CreateProjectRequest defines model for CreateProjectRequest.
@@ -2918,6 +3035,33 @@ type CreateProjectRequest struct {
 	Tags *TagMap `json:"tags,omitempty"`
 }
 
+// CreateSessionRequest Resolve-or-create policy for a session.
+type CreateSessionRequest struct {
+	// AgentId Agent that owns the session.
+	AgentId string `json:"agent_id"`
+
+	// Metadata Free-form caller metadata for the session.
+	Metadata *map[string]interface{} `json:"metadata,omitempty"`
+
+	// Mode `continue_or_create` (default) resolves an existing session for the `session_key` or creates one; `new` always creates a fresh session; `continue` resolves an existing session and fails if none exists.
+	Mode *CreateSessionRequestMode `json:"mode,omitempty"`
+
+	// Model Model to record on the session.
+	Model *string `json:"model,omitempty"`
+
+	// SessionKey Stable key identifying the conversation within the agent.
+	SessionKey *string `json:"session_key,omitempty"`
+
+	// Title Human-friendly session title.
+	Title *string `json:"title,omitempty"`
+
+	// Visibility Visibility of the session in project surfaces: `project` or `private`.
+	Visibility *SessionVisibility `json:"visibility,omitempty"`
+}
+
+// CreateSessionRequestMode `continue_or_create` (default) resolves an existing session for the `session_key` or creates one; `new` always creates a fresh session; `continue` resolves an existing session and fails if none exists.
+type CreateSessionRequestMode string
+
 // CreateTableRequest defines model for CreateTableRequest.
 type CreateTableRequest struct {
 	// Description Optional human-readable description of the table.
@@ -2929,7 +3073,7 @@ type CreateTableRequest struct {
 	// Name Table name (lowercase, snake_case); unique within the project.
 	Name string `json:"name"`
 
-	// Schema Column and index definition for a table.
+	// Schema Column and index definition for a table. Each table has exactly one required string identity column.
 	Schema TableSchema `json:"schema"`
 }
 
@@ -3156,9 +3300,6 @@ type IndexDef struct {
 
 	// Name Stable index name unique within the table schema.
 	Name string `json:"name"`
-
-	// Unique Whether the index enforces uniqueness across its columns.
-	Unique *bool `json:"unique,omitempty"`
 }
 
 // InsertRowRequest defines model for InsertRowRequest.
@@ -3232,7 +3373,7 @@ type Loop struct {
 	// Repositories Source repositories the loop targets.
 	Repositories *[]LoopSpecRepository `json:"repositories,omitempty"`
 
-	// SchemaVersion Loop authoring schema version. Only schema version 2 is accepted.
+	// SchemaVersion Loop authoring schema version. Only schema version 1 is accepted.
 	SchemaVersion *LoopSchemaVersion `json:"schema_version,omitempty"`
 
 	// Settings Free-form loop-level settings consumed by the engine.
@@ -3257,7 +3398,7 @@ type Loop struct {
 // LoopConcurrency Concurrency behavior: `allow`, `queue`, `skip`, or `replace`.
 type LoopConcurrency string
 
-// LoopSchemaVersion Loop authoring schema version. Only schema version 2 is accepted.
+// LoopSchemaVersion Loop authoring schema version. Only schema version 1 is accepted.
 type LoopSchemaVersion string
 
 // LoopActionStep Action step configuration recognised inside `LoopSpec.steps[].config`.
@@ -3346,7 +3487,7 @@ type LoopAgentStep struct {
 	// AgentId Agent to run for this step. Omit to use the loop's top-level `agent_id`.
 	AgentId *string `json:"agent_id,omitempty"`
 
-	// DisableTools Disable all tool calls for this agent step. When omitted, prompt-only managed agent steps (no `tool_names`, output schema, or worker model route) default to tool-less execution and skip managed environment allocation. Set `false` explicitly to opt back into the agent's granted tools.
+	// DisableTools Disable granted action and memory tools for this agent step. Reserved runtime tools such as `invoke_skill` and structured-output submission may still be present when applicable. When omitted, the agent's granted tools are available.
 	DisableTools *bool `json:"disable_tools,omitempty"`
 
 	// Instructions Prompt or task instructions rendered before the agent turn starts.
@@ -3632,7 +3773,7 @@ type LoopRunEvent struct {
 
 	// EventType Event type from the run-stream taxonomy (e.g. `run.started`, `step.completed`, `wait.opened`, `action.called`, `action.completed`, `action.failed`, `artifact.created`, `limit.reached`, `usage.recorded`).
 	//
-	// Guardrail events: `run.budget_warning` fires once when run spend first reaches 80% of the run budget (payload: `credit_budget`, `credit_spent`, `percent`); `run.budget_exceeded` fires when the budget halts the run at a checkpoint (same payload plus the `step` it halted before). `usage.recorded` payloads carry `step_key`, the event's `credit_cost`, its `budget_cost` (rate-card cost counted against the run budget, nonzero even for BYOK), and the cumulative `run_credit_spent`.
+	// Guardrail events: `run.budget_exceeded` fires when the budget halts the run at a checkpoint (payload: `credit_budget`, `credit_spent`, `percent_used`, plus the `step` it halted before). `usage.recorded` payloads carry `step_key`, the event's `credit_cost`, its `budget_cost` (rate-card cost counted against the run budget, nonzero even for BYOK), and the cumulative `run_credit_spent`.
 	EventType string `json:"event_type"`
 
 	// Id Stable event identifier.
@@ -3704,6 +3845,12 @@ type LoopRunStatus string
 
 // LoopRunStep One execution step inside a loop run.
 type LoopRunStep struct {
+	// AgentId Agent that executed this step, for `agent`-kind steps.
+	AgentId *string `json:"agent_id,omitempty"`
+
+	// AgentTurnId Most recent AgentTurn this step ran (its latest attempt), for `agent`-kind steps. Resolves to the step's messages within the session via their `turn_id`.
+	AgentTurnId *string `json:"agent_turn_id,omitempty"`
+
 	// Attempt Number of times this step has been attempted.
 	Attempt int `json:"attempt"`
 
@@ -3742,6 +3889,9 @@ type LoopRunStep struct {
 
 	// Seq Zero-indexed ordinal of this step within its run.
 	Seq int64 `json:"seq"`
+
+	// SessionId Session the agent ran in, for `agent`-kind steps. Present once the step has started a turn; links the step to its conversation so the UI can open the transcript with this step's messages highlighted.
+	SessionId *string `json:"session_id,omitempty"`
 
 	// StartedAt Time the step entered `running`; null until the step starts.
 	StartedAt *time.Time `json:"started_at,omitempty"`
@@ -3850,7 +4000,7 @@ type LoopSpecInput struct {
 
 // LoopSpecLimits Run guardrails. Lives at `spec.limits` in the JSON the engine compiles. Every limit is optional; absent or zero means unbounded (plan-level org caps still apply), with one exception — trial-plan runs default to a 100-credit ($1) budget when no budget is set here or on the start request. Paid plans default to unbounded.
 type LoopSpecLimits struct {
-	// BudgetUsd Run budget in US dollars (1 credit = $0.01). The run halts with stop reason `budget_exceeded` at the next checkpoint (step boundary or agent tool iteration) once its metered spend reaches the ceiling; a `run.budget_warning` event fires once at 80%. Enforcement granularity is one model call or metered action — a run can overshoot by at most the call in flight. Mutually exclusive with `credit_budget`; values finer than 0.001 credit ($0.00001) are rejected at compile.
+	// BudgetUsd Run budget in US dollars (1 credit = $0.01). The budget is a hard limit: the run halts with stop reason `budget_exceeded` at the next checkpoint (step boundary or agent tool iteration) once its metered spend reaches the ceiling. Enforcement granularity is one model call or metered action — a run can overshoot by at most the call in flight. Mutually exclusive with `credit_budget`; values finer than 0.001 credit ($0.00001) are rejected at compile.
 	BudgetUsd *float64 `json:"budget_usd,omitempty"`
 
 	// CreditBudget Run budget in whole credits (1 credit = $0.01). Same ceiling semantics as `budget_usd`; set exactly one.
@@ -3875,10 +4025,10 @@ type LoopSpecLimits struct {
 	WallClockTimeout *string `json:"wall_clock_timeout,omitempty"`
 }
 
-// LoopSpecRepository Source repository target attached to a loop spec.
+// LoopSpecRepository Source repository target attached to a loop spec. A `static` repository clones the named `full_name`. A `match` repository resolves the repository from the run's trigger event (for example the base repository of an opened GitHub pull request) and requires the loop to have an event trigger; pull requests opened from a fork are never cloned. `full_name` is required for `static` repositories and ignored for `match` repositories.
 type LoopSpecRepository struct {
-	// FullName Provider repository full name, e.g. `owner/repo`.
-	FullName string `json:"full_name"`
+	// FullName Provider repository full name, e.g. `owner/repo`. Required when `source` is `static`.
+	FullName *string `json:"full_name,omitempty"`
 
 	// Id Provider-specific repository id.
 	Id *LoopSpecRepository_Id `json:"id,omitempty"`
@@ -3888,6 +4038,12 @@ type LoopSpecRepository struct {
 
 	// Provider Repository provider. GitHub is the only supported provider today.
 	Provider *LoopSpecRepositoryProvider `json:"provider,omitempty"`
+
+	// Ref Optional branch, tag, or ref to check out. For `static` repositories it pins the checkout; for `match` repositories it overrides the ref derived from the event. Omitted uses the provider default branch.
+	Ref *string `json:"ref,omitempty"`
+
+	// Source How the repository target is resolved. `static` clones `full_name`; `match` clones the repository the trigger event concerns.
+	Source *LoopSpecRepositorySource `json:"source,omitempty"`
 }
 
 // LoopSpecRepositoryId0 defines model for .
@@ -3903,6 +4059,9 @@ type LoopSpecRepository_Id struct {
 
 // LoopSpecRepositoryProvider Repository provider. GitHub is the only supported provider today.
 type LoopSpecRepositoryProvider string
+
+// LoopSpecRepositorySource How the repository target is resolved. `static` clones `full_name`; `match` clones the repository the trigger event concerns.
+type LoopSpecRepositorySource string
 
 // LoopSpecTrigger One trigger declaration inside a loop spec.
 type LoopSpecTrigger struct {
@@ -4247,6 +4406,33 @@ type SearchRowsRequest struct {
 	Query string `json:"query"`
 }
 
+// SendSessionEventInput One input event in a send. Phase 1 supports a single `user.message`.
+type SendSessionEventInput struct {
+	// Content Ordered content blocks (text, images) for the input message.
+	Content []map[string]interface{} `json:"content"`
+
+	// Role Message role: `system`, `user`, `assistant`, `tool`, or `compaction`.
+	Role *SessionMessageRole `json:"role,omitempty"`
+
+	// Type Input event type. Defaults to `user.message`.
+	Type *SendSessionEventInputType `json:"type,omitempty"`
+}
+
+// SendSessionEventInputType Input event type. Defaults to `user.message`.
+type SendSessionEventInputType string
+
+// SendSessionEventsRequest Caller input to append and run against a session.
+type SendSessionEventsRequest struct {
+	// Events Input events to send. Phase 1 accepts exactly one `user.message`.
+	Events []SendSessionEventInput `json:"events"`
+
+	// IdempotencyKey Dedup key scoped to the session. A repeat send with the same key returns the existing invocation's cursor and writes nothing new.
+	IdempotencyKey *string `json:"idempotency_key,omitempty"`
+
+	// Metadata Free-form caller metadata attached to the input message.
+	Metadata *map[string]interface{} `json:"metadata,omitempty"`
+}
+
 // Session Durable conversation transcript owned by an agent.
 type Session struct {
 	// AgentId Agent that owns this session.
@@ -4320,6 +4506,18 @@ type Session struct {
 
 	// Visibility Visibility of the session in project surfaces: `project` or `private`.
 	Visibility SessionVisibility `json:"visibility"`
+}
+
+// SessionInvocationAck Acknowledgement that an invocation started, with a stream cursor.
+type SessionInvocationAck struct {
+	// Deduped True when a repeated idempotency key returned an existing invocation.
+	Deduped *bool `json:"deduped,omitempty"`
+
+	// Seq The durable event sequence cursor to stream from. Pass it as `after_sequence` to the events stream to follow this invocation.
+	Seq int64 `json:"seq"`
+
+	// Session Durable conversation transcript owned by an agent.
+	Session Session `json:"session"`
 }
 
 // SessionListResponse defines model for SessionListResponse.
@@ -4476,16 +4674,16 @@ type SkillListResponse struct {
 	Items []Skill `json:"items"`
 }
 
-// SkillManifestEntry Skill entry included in a resolved agent tool manifest.
+// SkillManifestEntry Skill metadata included in a resolved agent tool manifest. Full instructions are loaded at runtime through the invoke_skill tool.
 type SkillManifestEntry struct {
 	// Active Whether this skill is currently active in the resolved manifest.
 	Active bool `json:"active"`
 
+	// Description Markdown description of the skill's purpose.
+	Description *string `json:"description,omitempty"`
+
 	// Id Skill ID this manifest entry resolved to.
 	Id string `json:"id"`
-
-	// Instructions Markdown instructions loaded for this skill.
-	Instructions string `json:"instructions"`
 
 	// MissingRecommended Tool selectors the skill recommends but that are not available to the agent.
 	MissingRecommended *[]string `json:"missing_recommended,omitempty"`
@@ -4635,10 +4833,13 @@ type TableRowSearchListResponse struct {
 	NextCursor *string `json:"next_cursor,omitempty"`
 }
 
-// TableSchema Column and index definition for a table.
+// TableSchema Column and index definition for a table. Each table has exactly one required string identity column.
 type TableSchema struct {
 	// Columns Ordered list of columns accepted in row data.
 	Columns []ColumnDef `json:"columns"`
+
+	// IdentityColumn Name of the required string column that uniquely identifies one row in this table.
+	IdentityColumn string `json:"identity_column"`
 
 	// Indexes Optional declared indexes maintained by the backend.
 	Indexes *[]IndexDef `json:"indexes,omitempty"`
@@ -4826,6 +5027,9 @@ type UpdateAgentRequest struct {
 	// Tags Key/value tags for organizing and filtering resources. Up to 8 per resource; keys 1–128 characters, values up to 256. Keys prefixed `mobius:` are system-managed and cannot be set by callers.
 	Tags *TagMap `json:"tags,omitempty"`
 
+	// TimeoutSeconds Replacement per-turn execution timeout in seconds for this platform agent. `0` resets to the platform default (600s / 10 minutes); a loop step's own timeout overrides it for that step.
+	TimeoutSeconds *int64 `json:"timeout_seconds,omitempty"`
+
 	// ToolPresentation Controls how granted actions are surfaced to the model in Mobius-hosted agent turns. `meta` (the default) groups related actions behind compact command routers, while `flat` exposes one tool per action.
 	ToolPresentation *AgentToolPresentation `json:"tool_presentation,omitempty"`
 }
@@ -4883,7 +5087,7 @@ type UpdateLoopRequest struct {
 	// Repositories Replacement source repositories the loop targets.
 	Repositories *[]LoopSpecRepository `json:"repositories,omitempty"`
 
-	// SchemaVersion Loop authoring schema version. Only schema version 2 is accepted.
+	// SchemaVersion Loop authoring schema version. Only schema version 1 is accepted.
 	SchemaVersion *UpdateLoopRequestSchemaVersion `json:"schema_version,omitempty"`
 
 	// Settings Free-form loop-level settings consumed by the engine.
@@ -4905,7 +5109,7 @@ type UpdateLoopRequest struct {
 // UpdateLoopRequestConcurrency Concurrency behavior: `allow`, `queue`, `skip`, or `replace`.
 type UpdateLoopRequestConcurrency string
 
-// UpdateLoopRequestSchemaVersion Loop authoring schema version. Only schema version 2 is accepted.
+// UpdateLoopRequestSchemaVersion Loop authoring schema version. Only schema version 1 is accepted.
 type UpdateLoopRequestSchemaVersion string
 
 // UpdateProjectRequest defines model for UpdateProjectRequest.
@@ -4935,6 +5139,15 @@ type UpdateRowRequest struct {
 	Version *int `json:"version,omitempty"`
 }
 
+// UpdateSessionRequest Mutable display and lifecycle fields for a session.
+type UpdateSessionRequest struct {
+	// Status Durable conversation session status: `active`, `archived`, or `deleted`.
+	Status *SessionStatus `json:"status,omitempty"`
+
+	// Title Human-readable session title.
+	Title *string `json:"title,omitempty"`
+}
+
 // UpdateTableRequest defines model for UpdateTableRequest.
 type UpdateTableRequest struct {
 	// Description Optional human-readable description of the table.
@@ -4946,7 +5159,7 @@ type UpdateTableRequest struct {
 	// Name Table name (lowercase, snake_case); unique within the project.
 	Name *string `json:"name,omitempty"`
 
-	// Schema Column and index definition for a table.
+	// Schema Column and index definition for a table. Each table has exactly one required string identity column.
 	Schema *TableSchema `json:"schema,omitempty"`
 }
 
@@ -4970,14 +5183,11 @@ type UpdateWebhookRequest struct {
 
 // UpsertRowRequest defines model for UpsertRowRequest.
 type UpsertRowRequest struct {
-	// Data Full row data. Must include values for all key_columns.
+	// Data Fields to create or merge into the row. Must include the table's identity column.
 	Data map[string]interface{} `json:"data"`
-
-	// KeyColumns Column names used to match an existing row.
-	KeyColumns []string `json:"key_columns"`
 }
 
-// UpsertRowResult Result of inserting or updating a row by key columns.
+// UpsertRowResult Result of inserting or updating a row by the table's identity column.
 type UpsertRowResult struct {
 	// Created True when a new row was inserted; false when an existing row was updated.
 	Created bool `json:"created"`
@@ -5524,33 +5734,6 @@ type ListAgentsParams struct {
 	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
-// ListAgentSessionsParams defines parameters for ListAgentSessions.
-type ListAgentSessionsParams struct {
-	// Status Filter by session status.
-	Status *SessionStatus `form:"status,omitempty" json:"status,omitempty"`
-
-	// Scope Filter by session scope.
-	Scope *SessionScope `form:"scope,omitempty" json:"scope,omitempty"`
-
-	// Provider Filter messaging sessions by provider metadata, e.g. `slack` or `telegram`.
-	Provider *string `form:"provider,omitempty" json:"provider,omitempty"`
-
-	// Since Only include sessions with activity after this timestamp.
-	Since *time.Time `form:"since,omitempty" json:"since,omitempty"`
-
-	// Limit Maximum number of items to return
-	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
-}
-
-// ListSessionMessagesParams defines parameters for ListSessionMessages.
-type ListSessionMessagesParams struct {
-	// AfterSequence Only include messages with sequence greater than this value.
-	AfterSequence *int `form:"after_sequence,omitempty" json:"after_sequence,omitempty"`
-
-	// Limit Maximum number of items to return
-	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
-}
-
 // GetAgentToolsParams defines parameters for GetAgentTools.
 type GetAgentToolsParams struct {
 	// ToolkitIds Optional comma-separated toolkit subset to apply.
@@ -5668,6 +5851,45 @@ type StreamRunEventsParams struct {
 	AfterSequence *int64 `form:"after_sequence,omitempty" json:"after_sequence,omitempty"`
 }
 
+// ListSessionsParams defines parameters for ListSessions.
+type ListSessionsParams struct {
+	// AgentId Filter to sessions owned by this agent.
+	AgentId *string `form:"agent_id,omitempty" json:"agent_id,omitempty"`
+
+	// Status Filter by session status.
+	Status *SessionStatus `form:"status,omitempty" json:"status,omitempty"`
+
+	// Scope Filter by session scope.
+	Scope *SessionScope `form:"scope,omitempty" json:"scope,omitempty"`
+
+	// Provider Filter messaging sessions by provider metadata, e.g. `slack` or `telegram`.
+	Provider *string `form:"provider,omitempty" json:"provider,omitempty"`
+
+	// IntegrationId Filter to sessions created by this integration, e.g. agent sessions started from a connected provider.
+	IntegrationId *string `form:"integration_id,omitempty" json:"integration_id,omitempty"`
+
+	// Since Only include sessions with activity after this timestamp.
+	Since *time.Time `form:"since,omitempty" json:"since,omitempty"`
+
+	// Limit Maximum number of items to return
+	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// StreamSessionEventsParams defines parameters for StreamSessionEvents.
+type StreamSessionEventsParams struct {
+	// AfterSequence Resume the stream after this durable event sequence number.
+	AfterSequence *int64 `form:"after_sequence,omitempty" json:"after_sequence,omitempty"`
+}
+
+// ListSessionMessagesParams defines parameters for ListSessionMessages.
+type ListSessionMessagesParams struct {
+	// AfterSequence Only include messages with sequence greater than this value.
+	AfterSequence *int `form:"after_sequence,omitempty" json:"after_sequence,omitempty"`
+
+	// Limit Maximum number of items to return
+	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
 // ListSkillsParams defines parameters for ListSkills.
 type ListSkillsParams struct {
 	// IncludeSystem Include read-only system skill templates.
@@ -5758,9 +5980,6 @@ type UpdateAgentJSONRequestBody = UpdateAgentRequest
 // SaveAgentMessagingBindingJSONRequestBody defines body for SaveAgentMessagingBinding for application/json ContentType.
 type SaveAgentMessagingBindingJSONRequestBody = AgentMessagingBindingRequest
 
-// AppendSessionMessagesJSONRequestBody defines body for AppendSessionMessages for application/json ContentType.
-type AppendSessionMessagesJSONRequestBody = AppendSessionMessagesRequest
-
 // ReplaceAgentSkillAssignmentsJSONRequestBody defines body for ReplaceAgentSkillAssignments for application/json ContentType.
 type ReplaceAgentSkillAssignmentsJSONRequestBody = ReplaceSkillsRequest
 
@@ -5790,6 +6009,18 @@ type CancelRunJSONRequestBody = CancelLoopRunRequest
 
 // SignalRunJSONRequestBody defines body for SignalRun for application/json ContentType.
 type SignalRunJSONRequestBody = SignalLoopRunRequest
+
+// CreateSessionJSONRequestBody defines body for CreateSession for application/json ContentType.
+type CreateSessionJSONRequestBody = CreateSessionRequest
+
+// UpdateSessionJSONRequestBody defines body for UpdateSession for application/json ContentType.
+type UpdateSessionJSONRequestBody = UpdateSessionRequest
+
+// SendSessionEventsJSONRequestBody defines body for SendSessionEvents for application/json ContentType.
+type SendSessionEventsJSONRequestBody = SendSessionEventsRequest
+
+// AppendSessionMessagesJSONRequestBody defines body for AppendSessionMessages for application/json ContentType.
+type AppendSessionMessagesJSONRequestBody = AppendSessionMessagesRequest
 
 // CreateSkillJSONRequestBody defines body for CreateSkill for application/json ContentType.
 type CreateSkillJSONRequestBody = SkillRequest
@@ -6992,26 +7223,6 @@ type ClientInterface interface {
 	// DeleteAgentMessagingBinding request
 	DeleteAgentMessagingBinding(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, bindingId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListAgentSessions request
-	ListAgentSessions(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, params *ListAgentSessionsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// GetAgentSession request
-	GetAgentSession(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, sessionId string, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// StreamSessionEvents request
-	StreamSessionEvents(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, sessionId string, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// ListSessionMessages request
-	ListSessionMessages(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, sessionId string, params *ListSessionMessagesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// AppendSessionMessagesWithBody request with any body
-	AppendSessionMessagesWithBody(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, sessionId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	AppendSessionMessages(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, sessionId string, body AppendSessionMessagesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// ListSessionTurns request
-	ListSessionTurns(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, sessionId string, reqEditors ...RequestEditorFn) (*http.Response, error)
-
 	// ListAgentSkillAssignments request
 	ListAgentSkillAssignments(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -7139,6 +7350,47 @@ type ClientInterface interface {
 
 	// ListRunSteps request
 	ListRunSteps(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListSessions request
+	ListSessions(ctx context.Context, projectHandle ProjectHandleParam, params *ListSessionsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateSessionWithBody request with any body
+	CreateSessionWithBody(ctx context.Context, projectHandle ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	CreateSession(ctx context.Context, projectHandle ProjectHandleParam, body CreateSessionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DeleteSession request
+	DeleteSession(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetSession request
+	GetSession(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateSessionWithBody request with any body
+	UpdateSessionWithBody(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	UpdateSession(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, body UpdateSessionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CancelSession request
+	CancelSession(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// SendSessionEventsWithBody request with any body
+	SendSessionEventsWithBody(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	SendSessionEvents(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, body SendSessionEventsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// StreamSessionEvents request
+	StreamSessionEvents(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, params *StreamSessionEventsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListSessionMessages request
+	ListSessionMessages(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, params *ListSessionMessagesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// AppendSessionMessagesWithBody request with any body
+	AppendSessionMessagesWithBody(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	AppendSessionMessages(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, body AppendSessionMessagesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListSessionTurns request
+	ListSessionTurns(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetArtifactStorageQuota request
 	GetArtifactStorageQuota(ctx context.Context, projectHandle ProjectHandleParam, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -7612,90 +7864,6 @@ func (c *Client) SaveAgentMessagingBinding(ctx context.Context, projectHandle Pr
 
 func (c *Client) DeleteAgentMessagingBinding(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, bindingId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewDeleteAgentMessagingBindingRequest(c.Server, projectHandle, resourceId, bindingId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) ListAgentSessions(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, params *ListAgentSessionsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListAgentSessionsRequest(c.Server, projectHandle, resourceId, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) GetAgentSession(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, sessionId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetAgentSessionRequest(c.Server, projectHandle, resourceId, sessionId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) StreamSessionEvents(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, sessionId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewStreamSessionEventsRequest(c.Server, projectHandle, resourceId, sessionId)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) ListSessionMessages(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, sessionId string, params *ListSessionMessagesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListSessionMessagesRequest(c.Server, projectHandle, resourceId, sessionId, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) AppendSessionMessagesWithBody(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, sessionId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewAppendSessionMessagesRequestWithBody(c.Server, projectHandle, resourceId, sessionId, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) AppendSessionMessages(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, sessionId string, body AppendSessionMessagesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewAppendSessionMessagesRequest(c.Server, projectHandle, resourceId, sessionId, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) ListSessionTurns(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, sessionId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListSessionTurnsRequest(c.Server, projectHandle, resourceId, sessionId)
 	if err != nil {
 		return nil, err
 	}
@@ -8248,6 +8416,186 @@ func (c *Client) SignalRun(ctx context.Context, projectHandle ProjectHandleParam
 
 func (c *Client) ListRunSteps(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListRunStepsRequest(c.Server, projectHandle, resourceId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListSessions(ctx context.Context, projectHandle ProjectHandleParam, params *ListSessionsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListSessionsRequest(c.Server, projectHandle, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateSessionWithBody(ctx context.Context, projectHandle ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateSessionRequestWithBody(c.Server, projectHandle, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateSession(ctx context.Context, projectHandle ProjectHandleParam, body CreateSessionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateSessionRequest(c.Server, projectHandle, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) DeleteSession(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteSessionRequest(c.Server, projectHandle, resourceId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetSession(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetSessionRequest(c.Server, projectHandle, resourceId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateSessionWithBody(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateSessionRequestWithBody(c.Server, projectHandle, resourceId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateSession(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, body UpdateSessionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateSessionRequest(c.Server, projectHandle, resourceId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CancelSession(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCancelSessionRequest(c.Server, projectHandle, resourceId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) SendSessionEventsWithBody(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSendSessionEventsRequestWithBody(c.Server, projectHandle, resourceId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) SendSessionEvents(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, body SendSessionEventsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSendSessionEventsRequest(c.Server, projectHandle, resourceId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) StreamSessionEvents(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, params *StreamSessionEventsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewStreamSessionEventsRequest(c.Server, projectHandle, resourceId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListSessionMessages(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, params *ListSessionMessagesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListSessionMessagesRequest(c.Server, projectHandle, resourceId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) AppendSessionMessagesWithBody(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAppendSessionMessagesRequestWithBody(c.Server, projectHandle, resourceId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) AppendSessionMessages(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, body AppendSessionMessagesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAppendSessionMessagesRequest(c.Server, projectHandle, resourceId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListSessionTurns(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListSessionTurnsRequest(c.Server, projectHandle, resourceId)
 	if err != nil {
 		return nil, err
 	}
@@ -9918,414 +10266,6 @@ func NewDeleteAgentMessagingBindingRequest(server string, projectHandle ProjectH
 	}
 
 	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewListAgentSessionsRequest generates requests for ListAgentSessions
-func NewListAgentSessionsRequest(server string, projectHandle ProjectHandleParam, resourceId IDParam, params *ListAgentSessionsParams) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project_handle", projectHandle, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "resource_id", resourceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/projects/%s/agents/%s/sessions", pathParam0, pathParam1)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		// queryValues collects non-styled parameters (passthrough, JSON)
-		// that are safe to round-trip through url.Values.Encode().
-		queryValues := queryURL.Query()
-		// rawQueryFragments collects pre-encoded query fragments from
-		// styled parameters, preserving literal commas as delimiters
-		// per the OpenAPI spec (e.g. "color=blue,black,brown").
-		var rawQueryFragments []string
-
-		if params.Status != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "status", *params.Status, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.Scope != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "scope", *params.Scope, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.Provider != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "provider", *params.Provider, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.Since != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "since", *params.Since, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.Limit != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if encoded := queryValues.Encode(); encoded != "" {
-			rawQueryFragments = append(rawQueryFragments, encoded)
-		}
-		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewGetAgentSessionRequest generates requests for GetAgentSession
-func NewGetAgentSessionRequest(server string, projectHandle ProjectHandleParam, resourceId IDParam, sessionId string) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project_handle", projectHandle, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "resource_id", resourceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam2 string
-
-	pathParam2, err = runtime.StyleParamWithOptions("simple", false, "session_id", sessionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/projects/%s/agents/%s/sessions/%s", pathParam0, pathParam1, pathParam2)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewStreamSessionEventsRequest generates requests for StreamSessionEvents
-func NewStreamSessionEventsRequest(server string, projectHandle ProjectHandleParam, resourceId IDParam, sessionId string) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project_handle", projectHandle, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "resource_id", resourceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam2 string
-
-	pathParam2, err = runtime.StyleParamWithOptions("simple", false, "session_id", sessionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/projects/%s/agents/%s/sessions/%s/events.stream", pathParam0, pathParam1, pathParam2)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewListSessionMessagesRequest generates requests for ListSessionMessages
-func NewListSessionMessagesRequest(server string, projectHandle ProjectHandleParam, resourceId IDParam, sessionId string, params *ListSessionMessagesParams) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project_handle", projectHandle, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "resource_id", resourceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam2 string
-
-	pathParam2, err = runtime.StyleParamWithOptions("simple", false, "session_id", sessionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/projects/%s/agents/%s/sessions/%s/messages", pathParam0, pathParam1, pathParam2)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		// queryValues collects non-styled parameters (passthrough, JSON)
-		// that are safe to round-trip through url.Values.Encode().
-		queryValues := queryURL.Query()
-		// rawQueryFragments collects pre-encoded query fragments from
-		// styled parameters, preserving literal commas as delimiters
-		// per the OpenAPI spec (e.g. "color=blue,black,brown").
-		var rawQueryFragments []string
-
-		if params.AfterSequence != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "after_sequence", *params.AfterSequence, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.Limit != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if encoded := queryValues.Encode(); encoded != "" {
-			rawQueryFragments = append(rawQueryFragments, encoded)
-		}
-		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewAppendSessionMessagesRequest calls the generic AppendSessionMessages builder with application/json body
-func NewAppendSessionMessagesRequest(server string, projectHandle ProjectHandleParam, resourceId IDParam, sessionId string, body AppendSessionMessagesJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewAppendSessionMessagesRequestWithBody(server, projectHandle, resourceId, sessionId, "application/json", bodyReader)
-}
-
-// NewAppendSessionMessagesRequestWithBody generates requests for AppendSessionMessages with any type of body
-func NewAppendSessionMessagesRequestWithBody(server string, projectHandle ProjectHandleParam, resourceId IDParam, sessionId string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project_handle", projectHandle, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "resource_id", resourceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam2 string
-
-	pathParam2, err = runtime.StyleParamWithOptions("simple", false, "session_id", sessionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/projects/%s/agents/%s/sessions/%s/messages", pathParam0, pathParam1, pathParam2)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewListSessionTurnsRequest generates requests for ListSessionTurns
-func NewListSessionTurnsRequest(server string, projectHandle ProjectHandleParam, resourceId IDParam, sessionId string) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project_handle", projectHandle, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "resource_id", resourceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam2 string
-
-	pathParam2, err = runtime.StyleParamWithOptions("simple", false, "session_id", sessionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/projects/%s/agents/%s/sessions/%s/turns", pathParam0, pathParam1, pathParam2)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -12328,6 +12268,660 @@ func NewListRunStepsRequest(server string, projectHandle ProjectHandleParam, res
 	}
 
 	operationPath := fmt.Sprintf("/v1/projects/%s/runs/%s/steps", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewListSessionsRequest generates requests for ListSessions
+func NewListSessionsRequest(server string, projectHandle ProjectHandleParam, params *ListSessionsParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project_handle", projectHandle, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/sessions", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.AgentId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "agent_id", *params.AgentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Status != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "status", *params.Status, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Scope != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "scope", *params.Scope, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Provider != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "provider", *params.Provider, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.IntegrationId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "integration_id", *params.IntegrationId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Since != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "since", *params.Since, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCreateSessionRequest calls the generic CreateSession builder with application/json body
+func NewCreateSessionRequest(server string, projectHandle ProjectHandleParam, body CreateSessionJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateSessionRequestWithBody(server, projectHandle, "application/json", bodyReader)
+}
+
+// NewCreateSessionRequestWithBody generates requests for CreateSession with any type of body
+func NewCreateSessionRequestWithBody(server string, projectHandle ProjectHandleParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project_handle", projectHandle, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/sessions", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewDeleteSessionRequest generates requests for DeleteSession
+func NewDeleteSessionRequest(server string, projectHandle ProjectHandleParam, resourceId IDParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project_handle", projectHandle, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "resource_id", resourceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/sessions/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetSessionRequest generates requests for GetSession
+func NewGetSessionRequest(server string, projectHandle ProjectHandleParam, resourceId IDParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project_handle", projectHandle, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "resource_id", resourceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/sessions/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewUpdateSessionRequest calls the generic UpdateSession builder with application/json body
+func NewUpdateSessionRequest(server string, projectHandle ProjectHandleParam, resourceId IDParam, body UpdateSessionJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpdateSessionRequestWithBody(server, projectHandle, resourceId, "application/json", bodyReader)
+}
+
+// NewUpdateSessionRequestWithBody generates requests for UpdateSession with any type of body
+func NewUpdateSessionRequestWithBody(server string, projectHandle ProjectHandleParam, resourceId IDParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project_handle", projectHandle, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "resource_id", resourceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/sessions/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPatch, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewCancelSessionRequest generates requests for CancelSession
+func NewCancelSessionRequest(server string, projectHandle ProjectHandleParam, resourceId IDParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project_handle", projectHandle, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "resource_id", resourceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/sessions/%s/cancel", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewSendSessionEventsRequest calls the generic SendSessionEvents builder with application/json body
+func NewSendSessionEventsRequest(server string, projectHandle ProjectHandleParam, resourceId IDParam, body SendSessionEventsJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewSendSessionEventsRequestWithBody(server, projectHandle, resourceId, "application/json", bodyReader)
+}
+
+// NewSendSessionEventsRequestWithBody generates requests for SendSessionEvents with any type of body
+func NewSendSessionEventsRequestWithBody(server string, projectHandle ProjectHandleParam, resourceId IDParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project_handle", projectHandle, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "resource_id", resourceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/sessions/%s/events", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewStreamSessionEventsRequest generates requests for StreamSessionEvents
+func NewStreamSessionEventsRequest(server string, projectHandle ProjectHandleParam, resourceId IDParam, params *StreamSessionEventsParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project_handle", projectHandle, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "resource_id", resourceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/sessions/%s/events.stream", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.AfterSequence != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "after_sequence", *params.AfterSequence, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewListSessionMessagesRequest generates requests for ListSessionMessages
+func NewListSessionMessagesRequest(server string, projectHandle ProjectHandleParam, resourceId IDParam, params *ListSessionMessagesParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project_handle", projectHandle, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "resource_id", resourceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/sessions/%s/messages", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.AfterSequence != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "after_sequence", *params.AfterSequence, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewAppendSessionMessagesRequest calls the generic AppendSessionMessages builder with application/json body
+func NewAppendSessionMessagesRequest(server string, projectHandle ProjectHandleParam, resourceId IDParam, body AppendSessionMessagesJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewAppendSessionMessagesRequestWithBody(server, projectHandle, resourceId, "application/json", bodyReader)
+}
+
+// NewAppendSessionMessagesRequestWithBody generates requests for AppendSessionMessages with any type of body
+func NewAppendSessionMessagesRequestWithBody(server string, projectHandle ProjectHandleParam, resourceId IDParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project_handle", projectHandle, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "resource_id", resourceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/sessions/%s/messages", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewListSessionTurnsRequest generates requests for ListSessionTurns
+func NewListSessionTurnsRequest(server string, projectHandle ProjectHandleParam, resourceId IDParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project_handle", projectHandle, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "resource_id", resourceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/sessions/%s/turns", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -14426,26 +15020,6 @@ type ClientWithResponsesInterface interface {
 	// DeleteAgentMessagingBindingWithResponse request
 	DeleteAgentMessagingBindingWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, bindingId string, reqEditors ...RequestEditorFn) (*DeleteAgentMessagingBindingResponse, error)
 
-	// ListAgentSessionsWithResponse request
-	ListAgentSessionsWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, params *ListAgentSessionsParams, reqEditors ...RequestEditorFn) (*ListAgentSessionsResponse, error)
-
-	// GetAgentSessionWithResponse request
-	GetAgentSessionWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, sessionId string, reqEditors ...RequestEditorFn) (*GetAgentSessionResponse, error)
-
-	// StreamSessionEventsWithResponse request
-	StreamSessionEventsWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, sessionId string, reqEditors ...RequestEditorFn) (*StreamSessionEventsResponse, error)
-
-	// ListSessionMessagesWithResponse request
-	ListSessionMessagesWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, sessionId string, params *ListSessionMessagesParams, reqEditors ...RequestEditorFn) (*ListSessionMessagesResponse, error)
-
-	// AppendSessionMessagesWithBodyWithResponse request with any body
-	AppendSessionMessagesWithBodyWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, sessionId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AppendSessionMessagesResponse, error)
-
-	AppendSessionMessagesWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, sessionId string, body AppendSessionMessagesJSONRequestBody, reqEditors ...RequestEditorFn) (*AppendSessionMessagesResponse, error)
-
-	// ListSessionTurnsWithResponse request
-	ListSessionTurnsWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, sessionId string, reqEditors ...RequestEditorFn) (*ListSessionTurnsResponse, error)
-
 	// ListAgentSkillAssignmentsWithResponse request
 	ListAgentSkillAssignmentsWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, reqEditors ...RequestEditorFn) (*ListAgentSkillAssignmentsResponse, error)
 
@@ -14573,6 +15147,47 @@ type ClientWithResponsesInterface interface {
 
 	// ListRunStepsWithResponse request
 	ListRunStepsWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, reqEditors ...RequestEditorFn) (*ListRunStepsResponse, error)
+
+	// ListSessionsWithResponse request
+	ListSessionsWithResponse(ctx context.Context, projectHandle ProjectHandleParam, params *ListSessionsParams, reqEditors ...RequestEditorFn) (*ListSessionsResponse, error)
+
+	// CreateSessionWithBodyWithResponse request with any body
+	CreateSessionWithBodyWithResponse(ctx context.Context, projectHandle ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateSessionResponse, error)
+
+	CreateSessionWithResponse(ctx context.Context, projectHandle ProjectHandleParam, body CreateSessionJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateSessionResponse, error)
+
+	// DeleteSessionWithResponse request
+	DeleteSessionWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, reqEditors ...RequestEditorFn) (*DeleteSessionResponse, error)
+
+	// GetSessionWithResponse request
+	GetSessionWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, reqEditors ...RequestEditorFn) (*GetSessionResponse, error)
+
+	// UpdateSessionWithBodyWithResponse request with any body
+	UpdateSessionWithBodyWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateSessionResponse, error)
+
+	UpdateSessionWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, body UpdateSessionJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateSessionResponse, error)
+
+	// CancelSessionWithResponse request
+	CancelSessionWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, reqEditors ...RequestEditorFn) (*CancelSessionResponse, error)
+
+	// SendSessionEventsWithBodyWithResponse request with any body
+	SendSessionEventsWithBodyWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SendSessionEventsResponse, error)
+
+	SendSessionEventsWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, body SendSessionEventsJSONRequestBody, reqEditors ...RequestEditorFn) (*SendSessionEventsResponse, error)
+
+	// StreamSessionEventsWithResponse request
+	StreamSessionEventsWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, params *StreamSessionEventsParams, reqEditors ...RequestEditorFn) (*StreamSessionEventsResponse, error)
+
+	// ListSessionMessagesWithResponse request
+	ListSessionMessagesWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, params *ListSessionMessagesParams, reqEditors ...RequestEditorFn) (*ListSessionMessagesResponse, error)
+
+	// AppendSessionMessagesWithBodyWithResponse request with any body
+	AppendSessionMessagesWithBodyWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AppendSessionMessagesResponse, error)
+
+	AppendSessionMessagesWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, body AppendSessionMessagesJSONRequestBody, reqEditors ...RequestEditorFn) (*AppendSessionMessagesResponse, error)
+
+	// ListSessionTurnsWithResponse request
+	ListSessionTurnsWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, reqEditors ...RequestEditorFn) (*ListSessionTurnsResponse, error)
 
 	// GetArtifactStorageQuotaWithResponse request
 	GetArtifactStorageQuotaWithResponse(ctx context.Context, projectHandle ProjectHandleParam, reqEditors ...RequestEditorFn) (*GetArtifactStorageQuotaResponse, error)
@@ -15398,205 +16013,6 @@ func (r DeleteAgentMessagingBindingResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r DeleteAgentMessagingBindingResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type ListAgentSessionsResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *SessionListResponse
-	JSON401      *Unauthorized
-	JSON403      *Forbidden
-	JSON404      *NotFound
-}
-
-// Status returns HTTPResponse.Status
-func (r ListAgentSessionsResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ListAgentSessionsResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ListAgentSessionsResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type GetAgentSessionResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *Session
-	JSON401      *Unauthorized
-	JSON403      *Forbidden
-	JSON404      *NotFound
-}
-
-// Status returns HTTPResponse.Status
-func (r GetAgentSessionResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetAgentSessionResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r GetAgentSessionResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type StreamSessionEventsResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON401      *Unauthorized
-	JSON403      *Forbidden
-	JSON404      *NotFound
-}
-
-// Status returns HTTPResponse.Status
-func (r StreamSessionEventsResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r StreamSessionEventsResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r StreamSessionEventsResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type ListSessionMessagesResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *SessionMessageListResponse
-	JSON401      *Unauthorized
-	JSON403      *Forbidden
-	JSON404      *NotFound
-}
-
-// Status returns HTTPResponse.Status
-func (r ListSessionMessagesResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ListSessionMessagesResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ListSessionMessagesResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type AppendSessionMessagesResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *Session
-	JSON400      *BadRequest
-	JSON401      *Unauthorized
-	JSON403      *Forbidden
-	JSON404      *NotFound
-	JSON429      *TooManyRequests
-}
-
-// Status returns HTTPResponse.Status
-func (r AppendSessionMessagesResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r AppendSessionMessagesResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r AppendSessionMessagesResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type ListSessionTurnsResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *AgentTurnListResponse
-	JSON401      *Unauthorized
-	JSON403      *Forbidden
-	JSON404      *NotFound
-}
-
-// Status returns HTTPResponse.Status
-func (r ListSessionTurnsResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ListSessionTurnsResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ListSessionTurnsResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -16806,6 +17222,378 @@ func (r ListRunStepsResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r ListRunStepsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ListSessionsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *SessionListResponse
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r ListSessionsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListSessionsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListSessionsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type CreateSessionResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Session
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateSessionResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateSessionResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CreateSessionResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type DeleteSessionResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+	JSON409      *Conflict
+	JSON429      *TooManyRequests
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteSessionResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteSessionResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r DeleteSessionResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetSessionResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Session
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r GetSessionResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetSessionResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetSessionResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type UpdateSessionResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Session
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+	JSON409      *Conflict
+	JSON429      *TooManyRequests
+}
+
+// Status returns HTTPResponse.Status
+func (r UpdateSessionResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpdateSessionResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r UpdateSessionResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type CancelSessionResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Session
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r CancelSessionResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CancelSessionResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CancelSessionResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type SendSessionEventsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON202      *SessionInvocationAck
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+	JSON409      *Conflict
+	JSON429      *TooManyRequests
+}
+
+// Status returns HTTPResponse.Status
+func (r SendSessionEventsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r SendSessionEventsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r SendSessionEventsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type StreamSessionEventsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r StreamSessionEventsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r StreamSessionEventsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r StreamSessionEventsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ListSessionMessagesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *SessionMessageListResponse
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r ListSessionMessagesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListSessionMessagesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListSessionMessagesResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type AppendSessionMessagesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Session
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+	JSON429      *TooManyRequests
+}
+
+// Status returns HTTPResponse.Status
+func (r AppendSessionMessagesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r AppendSessionMessagesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r AppendSessionMessagesResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ListSessionTurnsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *AgentTurnListResponse
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r ListSessionTurnsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListSessionTurnsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListSessionTurnsResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -18321,68 +19109,6 @@ func (c *ClientWithResponses) DeleteAgentMessagingBindingWithResponse(ctx contex
 	return ParseDeleteAgentMessagingBindingResponse(rsp)
 }
 
-// ListAgentSessionsWithResponse request returning *ListAgentSessionsResponse
-func (c *ClientWithResponses) ListAgentSessionsWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, params *ListAgentSessionsParams, reqEditors ...RequestEditorFn) (*ListAgentSessionsResponse, error) {
-	rsp, err := c.ListAgentSessions(ctx, projectHandle, resourceId, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseListAgentSessionsResponse(rsp)
-}
-
-// GetAgentSessionWithResponse request returning *GetAgentSessionResponse
-func (c *ClientWithResponses) GetAgentSessionWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, sessionId string, reqEditors ...RequestEditorFn) (*GetAgentSessionResponse, error) {
-	rsp, err := c.GetAgentSession(ctx, projectHandle, resourceId, sessionId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetAgentSessionResponse(rsp)
-}
-
-// StreamSessionEventsWithResponse request returning *StreamSessionEventsResponse
-func (c *ClientWithResponses) StreamSessionEventsWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, sessionId string, reqEditors ...RequestEditorFn) (*StreamSessionEventsResponse, error) {
-	rsp, err := c.StreamSessionEvents(ctx, projectHandle, resourceId, sessionId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseStreamSessionEventsResponse(rsp)
-}
-
-// ListSessionMessagesWithResponse request returning *ListSessionMessagesResponse
-func (c *ClientWithResponses) ListSessionMessagesWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, sessionId string, params *ListSessionMessagesParams, reqEditors ...RequestEditorFn) (*ListSessionMessagesResponse, error) {
-	rsp, err := c.ListSessionMessages(ctx, projectHandle, resourceId, sessionId, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseListSessionMessagesResponse(rsp)
-}
-
-// AppendSessionMessagesWithBodyWithResponse request with arbitrary body returning *AppendSessionMessagesResponse
-func (c *ClientWithResponses) AppendSessionMessagesWithBodyWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, sessionId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AppendSessionMessagesResponse, error) {
-	rsp, err := c.AppendSessionMessagesWithBody(ctx, projectHandle, resourceId, sessionId, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseAppendSessionMessagesResponse(rsp)
-}
-
-func (c *ClientWithResponses) AppendSessionMessagesWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, sessionId string, body AppendSessionMessagesJSONRequestBody, reqEditors ...RequestEditorFn) (*AppendSessionMessagesResponse, error) {
-	rsp, err := c.AppendSessionMessages(ctx, projectHandle, resourceId, sessionId, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseAppendSessionMessagesResponse(rsp)
-}
-
-// ListSessionTurnsWithResponse request returning *ListSessionTurnsResponse
-func (c *ClientWithResponses) ListSessionTurnsWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, sessionId string, reqEditors ...RequestEditorFn) (*ListSessionTurnsResponse, error) {
-	rsp, err := c.ListSessionTurns(ctx, projectHandle, resourceId, sessionId, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseListSessionTurnsResponse(rsp)
-}
-
 // ListAgentSkillAssignmentsWithResponse request returning *ListAgentSkillAssignmentsResponse
 func (c *ClientWithResponses) ListAgentSkillAssignmentsWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, reqEditors ...RequestEditorFn) (*ListAgentSkillAssignmentsResponse, error) {
 	rsp, err := c.ListAgentSkillAssignments(ctx, projectHandle, resourceId, reqEditors...)
@@ -18785,6 +19511,137 @@ func (c *ClientWithResponses) ListRunStepsWithResponse(ctx context.Context, proj
 		return nil, err
 	}
 	return ParseListRunStepsResponse(rsp)
+}
+
+// ListSessionsWithResponse request returning *ListSessionsResponse
+func (c *ClientWithResponses) ListSessionsWithResponse(ctx context.Context, projectHandle ProjectHandleParam, params *ListSessionsParams, reqEditors ...RequestEditorFn) (*ListSessionsResponse, error) {
+	rsp, err := c.ListSessions(ctx, projectHandle, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListSessionsResponse(rsp)
+}
+
+// CreateSessionWithBodyWithResponse request with arbitrary body returning *CreateSessionResponse
+func (c *ClientWithResponses) CreateSessionWithBodyWithResponse(ctx context.Context, projectHandle ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateSessionResponse, error) {
+	rsp, err := c.CreateSessionWithBody(ctx, projectHandle, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateSessionResponse(rsp)
+}
+
+func (c *ClientWithResponses) CreateSessionWithResponse(ctx context.Context, projectHandle ProjectHandleParam, body CreateSessionJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateSessionResponse, error) {
+	rsp, err := c.CreateSession(ctx, projectHandle, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateSessionResponse(rsp)
+}
+
+// DeleteSessionWithResponse request returning *DeleteSessionResponse
+func (c *ClientWithResponses) DeleteSessionWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, reqEditors ...RequestEditorFn) (*DeleteSessionResponse, error) {
+	rsp, err := c.DeleteSession(ctx, projectHandle, resourceId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteSessionResponse(rsp)
+}
+
+// GetSessionWithResponse request returning *GetSessionResponse
+func (c *ClientWithResponses) GetSessionWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, reqEditors ...RequestEditorFn) (*GetSessionResponse, error) {
+	rsp, err := c.GetSession(ctx, projectHandle, resourceId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetSessionResponse(rsp)
+}
+
+// UpdateSessionWithBodyWithResponse request with arbitrary body returning *UpdateSessionResponse
+func (c *ClientWithResponses) UpdateSessionWithBodyWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateSessionResponse, error) {
+	rsp, err := c.UpdateSessionWithBody(ctx, projectHandle, resourceId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateSessionResponse(rsp)
+}
+
+func (c *ClientWithResponses) UpdateSessionWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, body UpdateSessionJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateSessionResponse, error) {
+	rsp, err := c.UpdateSession(ctx, projectHandle, resourceId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateSessionResponse(rsp)
+}
+
+// CancelSessionWithResponse request returning *CancelSessionResponse
+func (c *ClientWithResponses) CancelSessionWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, reqEditors ...RequestEditorFn) (*CancelSessionResponse, error) {
+	rsp, err := c.CancelSession(ctx, projectHandle, resourceId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCancelSessionResponse(rsp)
+}
+
+// SendSessionEventsWithBodyWithResponse request with arbitrary body returning *SendSessionEventsResponse
+func (c *ClientWithResponses) SendSessionEventsWithBodyWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SendSessionEventsResponse, error) {
+	rsp, err := c.SendSessionEventsWithBody(ctx, projectHandle, resourceId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSendSessionEventsResponse(rsp)
+}
+
+func (c *ClientWithResponses) SendSessionEventsWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, body SendSessionEventsJSONRequestBody, reqEditors ...RequestEditorFn) (*SendSessionEventsResponse, error) {
+	rsp, err := c.SendSessionEvents(ctx, projectHandle, resourceId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSendSessionEventsResponse(rsp)
+}
+
+// StreamSessionEventsWithResponse request returning *StreamSessionEventsResponse
+func (c *ClientWithResponses) StreamSessionEventsWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, params *StreamSessionEventsParams, reqEditors ...RequestEditorFn) (*StreamSessionEventsResponse, error) {
+	rsp, err := c.StreamSessionEvents(ctx, projectHandle, resourceId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseStreamSessionEventsResponse(rsp)
+}
+
+// ListSessionMessagesWithResponse request returning *ListSessionMessagesResponse
+func (c *ClientWithResponses) ListSessionMessagesWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, params *ListSessionMessagesParams, reqEditors ...RequestEditorFn) (*ListSessionMessagesResponse, error) {
+	rsp, err := c.ListSessionMessages(ctx, projectHandle, resourceId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListSessionMessagesResponse(rsp)
+}
+
+// AppendSessionMessagesWithBodyWithResponse request with arbitrary body returning *AppendSessionMessagesResponse
+func (c *ClientWithResponses) AppendSessionMessagesWithBodyWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AppendSessionMessagesResponse, error) {
+	rsp, err := c.AppendSessionMessagesWithBody(ctx, projectHandle, resourceId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAppendSessionMessagesResponse(rsp)
+}
+
+func (c *ClientWithResponses) AppendSessionMessagesWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, body AppendSessionMessagesJSONRequestBody, reqEditors ...RequestEditorFn) (*AppendSessionMessagesResponse, error) {
+	rsp, err := c.AppendSessionMessages(ctx, projectHandle, resourceId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseAppendSessionMessagesResponse(rsp)
+}
+
+// ListSessionTurnsWithResponse request returning *ListSessionTurnsResponse
+func (c *ClientWithResponses) ListSessionTurnsWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, reqEditors ...RequestEditorFn) (*ListSessionTurnsResponse, error) {
+	rsp, err := c.ListSessionTurns(ctx, projectHandle, resourceId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListSessionTurnsResponse(rsp)
 }
 
 // GetArtifactStorageQuotaWithResponse request returning *GetArtifactStorageQuotaResponse
@@ -20358,295 +21215,6 @@ func ParseDeleteAgentMessagingBindingResponse(rsp *http.Response) (*DeleteAgentM
 			return nil, err
 		}
 		response.JSON429 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseListAgentSessionsResponse parses an HTTP response from a ListAgentSessionsWithResponse call
-func ParseListAgentSessionsResponse(rsp *http.Response) (*ListAgentSessionsResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ListAgentSessionsResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest SessionListResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseGetAgentSessionResponse parses an HTTP response from a GetAgentSessionWithResponse call
-func ParseGetAgentSessionResponse(rsp *http.Response) (*GetAgentSessionResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetAgentSessionResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Session
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseStreamSessionEventsResponse parses an HTTP response from a StreamSessionEventsWithResponse call
-func ParseStreamSessionEventsResponse(rsp *http.Response) (*StreamSessionEventsResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &StreamSessionEventsResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseListSessionMessagesResponse parses an HTTP response from a ListSessionMessagesWithResponse call
-func ParseListSessionMessagesResponse(rsp *http.Response) (*ListSessionMessagesResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ListSessionMessagesResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest SessionMessageListResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseAppendSessionMessagesResponse parses an HTTP response from a AppendSessionMessagesWithResponse call
-func ParseAppendSessionMessagesResponse(rsp *http.Response) (*AppendSessionMessagesResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &AppendSessionMessagesResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest Session
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest BadRequest
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
-		var dest TooManyRequests
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON429 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseListSessionTurnsResponse parses an HTTP response from a ListSessionTurnsWithResponse call
-func ParseListSessionTurnsResponse(rsp *http.Response) (*ListSessionTurnsResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ListSessionTurnsResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest AgentTurnListResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
 
 	}
 
@@ -22461,6 +23029,586 @@ func ParseListRunStepsResponse(rsp *http.Response) (*ListRunStepsResponse, error
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest LoopRunStepListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListSessionsResponse parses an HTTP response from a ListSessionsWithResponse call
+func ParseListSessionsResponse(rsp *http.Response) (*ListSessionsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListSessionsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest SessionListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateSessionResponse parses an HTTP response from a CreateSessionWithResponse call
+func ParseCreateSessionResponse(rsp *http.Response) (*CreateSessionResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateSessionResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Session
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDeleteSessionResponse parses an HTTP response from a DeleteSessionWithResponse call
+func ParseDeleteSessionResponse(rsp *http.Response) (*DeleteSessionResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteSessionResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest TooManyRequests
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetSessionResponse parses an HTTP response from a GetSessionWithResponse call
+func ParseGetSessionResponse(rsp *http.Response) (*GetSessionResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetSessionResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Session
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUpdateSessionResponse parses an HTTP response from a UpdateSessionWithResponse call
+func ParseUpdateSessionResponse(rsp *http.Response) (*UpdateSessionResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpdateSessionResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Session
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest TooManyRequests
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCancelSessionResponse parses an HTTP response from a CancelSessionWithResponse call
+func ParseCancelSessionResponse(rsp *http.Response) (*CancelSessionResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CancelSessionResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Session
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseSendSessionEventsResponse parses an HTTP response from a SendSessionEventsWithResponse call
+func ParseSendSessionEventsResponse(rsp *http.Response) (*SendSessionEventsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &SendSessionEventsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+		var dest SessionInvocationAck
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest TooManyRequests
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseStreamSessionEventsResponse parses an HTTP response from a StreamSessionEventsWithResponse call
+func ParseStreamSessionEventsResponse(rsp *http.Response) (*StreamSessionEventsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &StreamSessionEventsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListSessionMessagesResponse parses an HTTP response from a ListSessionMessagesWithResponse call
+func ParseListSessionMessagesResponse(rsp *http.Response) (*ListSessionMessagesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListSessionMessagesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest SessionMessageListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseAppendSessionMessagesResponse parses an HTTP response from a AppendSessionMessagesWithResponse call
+func ParseAppendSessionMessagesResponse(rsp *http.Response) (*AppendSessionMessagesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &AppendSessionMessagesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Session
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest TooManyRequests
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListSessionTurnsResponse parses an HTTP response from a ListSessionTurnsWithResponse call
+func ParseListSessionTurnsResponse(rsp *http.Response) (*ListSessionTurnsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListSessionTurnsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest AgentTurnListResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

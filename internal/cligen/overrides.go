@@ -98,7 +98,7 @@ var overrides = map[string]Override{
 // grammatical shape across entries.
 var groupDescriptions = map[string]string{
 	"actions":      "Actions available to loops and agents",
-	"agents":       "Agents, sessions, and presence",
+	"agents":       "Agent identities, presence, and lifecycle",
 	"api-keys":     "Project and organization API keys",
 	"artifacts":    "Run output artifacts and storage quota",
 	"catalog":      "Available actions and triggerable events",
@@ -106,6 +106,7 @@ var groupDescriptions = map[string]string{
 	"loops":        "Loop definitions, versions, and runs",
 	"projects":     "Projects within the organization",
 	"runs":         "Loop runs",
+	"sessions":     "Conversation sessions, transcripts, and invocation",
 	"skills":       "Skill templates that shape agent behavior and tool access",
 	"tables":       "Project-scoped tables and rows",
 	"toolkits":     "Sets of tools agents can use to take action",

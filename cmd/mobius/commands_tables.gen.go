@@ -64,7 +64,7 @@ func registerTablesCommands(app *cli.App) {
 			cli.String("description", "").Help("Optional human-readable description of the table."),
 			cli.String("instructions", "").Help("Optional author guidance for how this table should be used (e.g. surfaced to agents)."),
 			cli.String("name", "").Help("[required] Table name (lowercase, snake_case); unique within the project."),
-			cli.String("schema", "").Help("[required] Column and index definition for a table. Accepts JSON, @file, or @-."),
+			cli.String("schema", "").Help("[required] Column and index definition for a table. Each table has exactly one required string identity column. Accepts JSON, @file, or @-."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -400,7 +400,7 @@ func registerTablesCommands(app *cli.App) {
 			cli.String("description", "").Help("Optional human-readable description of the table."),
 			cli.String("instructions", "").Help("Optional author guidance for how this table should be used (e.g. surfaced to agents)."),
 			cli.String("name", "").Help("Table name (lowercase, snake_case); unique within the project."),
-			cli.String("schema", "").Help("Column and index definition for a table. Accepts JSON, @file, or @-."),
+			cli.String("schema", "").Help("Column and index definition for a table. Each table has exactly one required string identity column. Accepts JSON, @file, or @-."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -497,8 +497,7 @@ func registerTablesCommands(app *cli.App) {
 		Description("Upsert row").
 		AddArg(&cli.Arg{Name: "table-id", Description: "Table ID.", Required: true}).
 		Flags(
-			cli.String("data", "").Help("[required] Full row data. Must include values for all key_columns. Accepts JSON, @file, or @-."),
-			cli.Strings("key-columns", "").Help("[required] Column names used to match an existing row."),
+			cli.String("data", "").Help("[required] Fields to create or merge into the row. Must include the table's identity column. Accepts JSON, @file, or @-."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -520,14 +519,8 @@ func registerTablesCommands(app *cli.App) {
 					return err
 				}
 			}
-			if ctx.IsSet("key-columns") {
-				body.KeyColumns = ctx.Strings("key-columns")
-			}
 			if ctx.String("file") == "" && !ctx.IsSet("data") {
 				return fmt.Errorf("--data is required (or supply it via --file)")
-			}
-			if len(body.KeyColumns) == 0 {
-				return fmt.Errorf("--key-columns is required (or supply it via --file)")
 			}
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)

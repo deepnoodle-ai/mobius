@@ -45,7 +45,10 @@ tags:
   description: Outgoing webhook subscriptions, tests, and delivery history.
 - name: agents
   x-displayName: Agents
-  description: Agent identities, sessions, presence, and lifecycle administration.
+  description: Agent identities, presence, and lifecycle administration.
+- name: sessions
+  x-displayName: Sessions
+  description: Durable conversation sessions, their transcripts, and direct agent invocation.
 - name: loops
   x-displayName: Loops
   description: Loop definitions, versions, publication, and the triggers that start runs.
@@ -1436,188 +1439,6 @@ paths:
           $ref: '#/components/responses/NotFound'
         '429':
           $ref: '#/components/responses/TooManyRequests'
-  /v1/projects/{project_handle}/agents/{resource_id}/sessions:
-    get:
-      operationId: listAgentSessions
-      tags:
-      - agents
-      summary: List agent sessions
-      description: Returns durable conversation sessions for one agent, newest activity first.
-        Remote workers use this to inspect their own remembered conversations.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      - $ref: '#/components/parameters/IDParam'
-      - name: status
-        in: query
-        description: Filter by session status.
-        schema:
-          $ref: '#/components/schemas/SessionStatus'
-      - name: scope
-        in: query
-        description: Filter by session scope.
-        schema:
-          $ref: '#/components/schemas/SessionScope'
-      - name: provider
-        in: query
-        description: Filter messaging sessions by provider metadata, e.g. `slack` or `telegram`.
-        schema:
-          type: string
-      - name: since
-        in: query
-        description: Only include sessions with activity after this timestamp.
-        schema:
-          type: string
-          format: date-time
-      - $ref: '#/components/parameters/LimitParam'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SessionListResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-  /v1/projects/{project_handle}/agents/{resource_id}/sessions/{session_id}:
-    get:
-      operationId: getAgentSession
-      tags:
-      - agents
-      summary: Get agent session
-      description: Returns one durable conversation session for an agent.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      - $ref: '#/components/parameters/IDParam'
-      - name: session_id
-        in: path
-        required: true
-        description: Session identifier.
-        schema:
-          type: string
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Session'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-  /v1/projects/{project_handle}/agents/{resource_id}/sessions/{session_id}/messages:
-    get:
-      operationId: listSessionMessages
-      tags:
-      - agents
-      summary: List session messages
-      description: Returns raw session messages in sequence order for replay.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      - $ref: '#/components/parameters/IDParam'
-      - name: session_id
-        in: path
-        required: true
-        description: Session identifier.
-        schema:
-          type: string
-      - name: after_sequence
-        in: query
-        description: Only include messages with sequence greater than this value.
-        schema:
-          type: integer
-          minimum: 0
-      - $ref: '#/components/parameters/LimitParam'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SessionMessageListResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-    post:
-      operationId: appendSessionMessages
-      tags:
-      - agents
-      summary: Append session messages
-      description: Appends one or more messages to a durable session and returns the updated
-        session. The service assigns sequence numbers atomically and may append an additional
-        compaction summary when the session crosses its compaction threshold.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      - $ref: '#/components/parameters/IDParam'
-      - name: session_id
-        in: path
-        required: true
-        description: Session identifier.
-        schema:
-          type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AppendSessionMessagesRequest'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Session'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '429':
-          $ref: '#/components/responses/TooManyRequests'
-  /v1/projects/{project_handle}/agents/{resource_id}/sessions/{session_id}/turns:
-    get:
-      operationId: listSessionTurns
-      tags:
-      - agents
-      summary: List session turns
-      description: Returns the session's turns in chronological order. Each turn groups related
-        transcript messages and includes links to any run step or channel exchange that produced
-        it.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      - $ref: '#/components/parameters/IDParam'
-      - name: session_id
-        in: path
-        required: true
-        description: Session identifier.
-        schema:
-          type: string
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AgentTurnListResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
   /v1/projects/{project_handle}/turns/{resource_id}/messages:
     get:
       operationId: listTurnMessages
@@ -1745,40 +1566,6 @@ paths:
           $ref: '#/components/responses/NotFound'
         '429':
           $ref: '#/components/responses/TooManyRequests'
-  /v1/projects/{project_handle}/agents/{resource_id}/sessions/{session_id}/events.stream:
-    get:
-      operationId: streamSessionEvents
-      tags:
-      - agents
-      summary: Stream session events
-      description: Streams live Server-Sent Events for a conversation session. This is a live
-        transport for ephemeral events such as `generation.delta`; durable session transcript
-        state remains available from the messages endpoint.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      - $ref: '#/components/parameters/IDParam'
-      - name: session_id
-        in: path
-        required: true
-        description: Session identifier.
-        schema:
-          type: string
-      responses:
-        '200':
-          description: 'Server-sent event stream of live session activity. Each message is
-            framed as `event: <event type>` (e.g. `generation.delta`) followed by a `data:`
-            line carrying the JSON-encoded event payload (the `SessionStreamEvent` shape,
-            always including `session_id`).'
-          content:
-            text/event-stream:
-              schema:
-                $ref: '#/components/schemas/SessionStreamEvent'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
   /v1/projects/{project_handle}/agents/{resource_id}/toolkit-assignments:
     get:
       operationId: listAgentToolkitAssignments
@@ -1943,6 +1730,373 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /v1/projects/{project_handle}/sessions:
+    get:
+      operationId: listSessions
+      tags:
+      - sessions
+      summary: List sessions
+      description: Returns durable conversation sessions for the project, newest activity
+        first. Pass `agent_id` to scope the list to one agent's remembered conversations.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - name: agent_id
+        in: query
+        description: Filter to sessions owned by this agent.
+        schema:
+          type: string
+      - name: status
+        in: query
+        description: Filter by session status.
+        schema:
+          $ref: '#/components/schemas/SessionStatus'
+      - name: scope
+        in: query
+        description: Filter by session scope.
+        schema:
+          $ref: '#/components/schemas/SessionScope'
+      - name: provider
+        in: query
+        description: Filter messaging sessions by provider metadata, e.g. `slack` or `telegram`.
+        schema:
+          type: string
+      - name: integration_id
+        in: query
+        description: Filter to sessions created by this integration, e.g. agent sessions started
+          from a connected provider.
+        schema:
+          type: string
+      - name: since
+        in: query
+        description: Only include sessions with activity after this timestamp.
+        schema:
+          type: string
+          format: date-time
+      - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      operationId: createSession
+      tags:
+      - sessions
+      summary: Create or resolve a session
+      description: 'Resolves a durable conversation session for an agent by policy and returns
+        it. With `mode: continue_or_create` (the default) an existing session for the given
+        `session_key` is returned, or a new one is created; `mode: new` always creates a fresh
+        session; `mode: continue` resolves an existing session and fails if none exists. This
+        is the entry point an application calls before sending input events.'
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSessionRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Session'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/projects/{project_handle}/sessions/{resource_id}:
+    get:
+      operationId: getSession
+      tags:
+      - sessions
+      summary: Get session
+      description: Returns one durable conversation session.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/IDParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Session'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      operationId: updateSession
+      tags:
+      - sessions
+      summary: Update session
+      description: Updates session display or lifecycle fields. Setting `status` to `archived`
+        hides the session from the current list while keeping it restorable; setting it to
+        `active` restores an archived session. Deleted sessions are retained tombstones and
+        cannot be restored.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/IDParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateSessionRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Session'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+    delete:
+      operationId: deleteSession
+      tags:
+      - sessions
+      summary: Delete session
+      description: Deletes a session from normal product views. The transcript row is retained
+        as a tombstone for audit and retention.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/IDParam'
+      responses:
+        '204':
+          description: No Content
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /v1/projects/{project_handle}/sessions/{resource_id}/messages:
+    get:
+      operationId: listSessionMessages
+      tags:
+      - sessions
+      summary: List session messages
+      description: Returns raw session messages in sequence order for replay.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/IDParam'
+      - name: after_sequence
+        in: query
+        description: Only include messages with sequence greater than this value.
+        schema:
+          type: integer
+          minimum: 0
+      - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionMessageListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      operationId: appendSessionMessages
+      tags:
+      - sessions
+      summary: Append session messages
+      description: Appends one or more messages to a durable session and returns the updated
+        session. The service assigns sequence numbers atomically and may append an additional
+        compaction summary when the session crosses its compaction threshold.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/IDParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AppendSessionMessagesRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Session'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /v1/projects/{project_handle}/sessions/{resource_id}/turns:
+    get:
+      operationId: listSessionTurns
+      tags:
+      - sessions
+      summary: List session turns
+      description: Returns the session's turns in chronological order. Each turn groups related
+        transcript messages and includes links to any run step or channel exchange that produced
+        it.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/IDParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentTurnListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/projects/{project_handle}/sessions/{resource_id}/events.stream:
+    get:
+      operationId: streamSessionEvents
+      tags:
+      - sessions
+      summary: Stream session events
+      description: Streams Server-Sent Events for a conversation session. Durable lifecycle
+        events (`user.message`, `session.status_running`, `agent.message`, `agent.tool_use`,
+        `agent.tool_result`, and the terminal `session.status_*` events) are replayed from
+        the durable log and then tailed live, so a client reconnecting with `?after_sequence=N`
+        (or the `Last-Event-ID` header) resumes exactly where it left off. The stream closes
+        after the terminal event for the active invocation is delivered. Live-only `generation.delta`
+        frames are interleaved best-effort.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/IDParam'
+      - name: after_sequence
+        in: query
+        description: Resume the stream after this durable event sequence number.
+        schema:
+          type: integer
+          format: int64
+          minimum: 0
+      responses:
+        '200':
+          description: 'Server-sent event stream of session activity. Each message is framed
+            as `event: <event type>` followed by a `data:` line carrying the JSON-encoded
+            event payload (the `SessionStreamEvent` shape, always including `session_id`).
+            Durable events also carry an `id:` line with the event sequence number for `Last-Event-ID`
+            resume.'
+          content:
+            text/event-stream:
+              schema:
+                $ref: '#/components/schemas/SessionStreamEvent'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/projects/{project_handle}/sessions/{resource_id}/events:
+    post:
+      operationId: sendSessionEvents
+      tags:
+      - sessions
+      summary: Send input to a session
+      description: Appends one input message to a session and starts an agent invocation to
+        respond, returning `202 Accepted` immediately with a durable `seq` cursor to stream
+        from — the work continues even if the caller disconnects. A repeated send with the
+        same `idempotency_key` returns the existing invocation's cursor without starting a
+        second invocation or appending a second input message. Requires the `mobius.agent.invoke`
+        permission (or the agent's own backing principal).
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/IDParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendSessionEventsRequest'
+      responses:
+        '202':
+          description: The invocation was accepted and is running.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionInvocationAck'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /v1/projects/{project_handle}/sessions/{resource_id}/cancel:
+    post:
+      operationId: cancelSession
+      tags:
+      - sessions
+      summary: Cancel a session's active invocation
+      description: Cancels the session's in-flight invocation. Queued and running grains for
+        the session are marked cancelled and a terminal `session.status_cancelled` event is
+        emitted. Returns the updated session. Requires the `mobius.agent.invoke` permission
+        (or the agent's own backing principal).
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/IDParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Session'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /v1/projects/{project_handle}/loops:
     get:
       operationId: listLoops
@@ -2013,7 +2167,7 @@ paths:
               name: Daily security check
               description: Review open pull requests each morning.
               agent_id: agent_5n8p2q7m4x9r3v6t
-              schema_version: '2'
+              schema_version: '1'
               triggers:
               - name: Weekday morning
                 kind: schedule
@@ -2040,7 +2194,7 @@ paths:
                 description: Review open pull requests each morning.
                 status: active
                 agent_id: agent_5n8p2q7m4x9r3v6t
-                schema_version: '2'
+                schema_version: '1'
                 triggers:
                 - name: Weekday morning
                   kind: schedule
@@ -3032,6 +3186,7 @@ paths:
                   type: string
                 - name: summary
                   type: string
+                identity_column: pull_request_url
       responses:
         '201':
           description: Created
@@ -3052,6 +3207,7 @@ paths:
                     type: string
                   - name: summary
                     type: string
+                  identity_column: pull_request_url
                 created_at: '2026-06-15T14:30:00Z'
                 updated_at: '2026-06-15T14:30:00Z'
         '400':
@@ -3120,10 +3276,12 @@ paths:
                   columns:
                   - name: pull_request_url
                     type: string
+                    required: true
                   - name: severity
                     type: string
                   - name: summary
                     type: string
+                  identity_column: pull_request_url
                 tags:
                   team: product
                 created_at: '2026-06-15T14:30:00Z'
@@ -3354,8 +3512,8 @@ paths:
       tags:
       - tables
       summary: Upsert row
-      description: Inserts or updates a row identified by key columns. Existing rows are patched
-        with supplied fields; missing matches create a new row.
+      description: Inserts or updates a row identified by the table's identity column. Existing
+        rows are patched with supplied fields; missing matches create a new row.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/TableIDParam'
@@ -3366,8 +3524,6 @@ paths:
             schema:
               $ref: '#/components/schemas/UpsertRowRequest'
             example:
-              key_columns:
-              - pull_request_url
               data:
                 pull_request_url: https://github.com/deepnoodle-ai/mobius-cloud/pull/123
                 severity: high
@@ -3885,6 +4041,13 @@ components:
       schema:
         type: string
         pattern: ^ievt_[A-Za-z0-9]+$
+    IntegrationProviderParam:
+      name: provider
+      in: path
+      required: true
+      description: Framework provider identifier from the integration provider catalog.
+      schema:
+        type: string
     TableIDParam:
       name: table_id
       in: path
@@ -4243,6 +4406,13 @@ components:
           type: string
           description: Custom system prompt for platform agents. Empty string uses the generated
             default based on the agent name.
+        timeout_seconds:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Execution timeout, in seconds, for a single turn of this platform agent.
+            `0` (or omitted) uses the platform default (600s / 10 minutes). A loop step's
+            own timeout overrides this for that step.
         status:
           $ref: '#/components/schemas/AgentStatus'
           description: 'Current agent status: `active` or `inactive`.'
@@ -6237,7 +6407,9 @@ components:
       enum:
       - slack
       - telegram
-      description: 'Provider supported by built-in agent messaging: `slack` or `telegram`.'
+      - linear
+      description: 'Provider supported by built-in agent messaging: `slack`, `telegram`, or
+        `linear` (Linear agent sessions).'
     AgentMessagingBinding:
       type: object
       additionalProperties: false
@@ -6374,6 +6546,583 @@ components:
           description: Messaging bindings configured for this agent.
           items:
             $ref: '#/components/schemas/AgentMessagingBinding'
+    ToolkitAssignment:
+      type: object
+      additionalProperties: false
+      description: Assignment linking a toolkit to an agent.
+      required:
+      - agent_id
+      - toolkit_id
+      - position
+      - created_at
+      properties:
+        agent_id:
+          type: string
+          description: Agent the toolkit is assigned to.
+        toolkit_id:
+          type: string
+          description: Toolkit assigned to the agent.
+        toolkit:
+          $ref: '#/components/schemas/Toolkit'
+          description: Expanded toolkit metadata for this assignment.
+        position:
+          type: integer
+          description: Ordering position of this assignment in the agent's toolkit list.
+        created_at:
+          type: string
+          format: date-time
+          description: Record creation timestamp.
+    ReplaceToolkitsRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - toolkit_ids
+      properties:
+        toolkit_ids:
+          type: array
+          description: Full replace-set of toolkit IDs to assign to the agent, in desired
+            order.
+          items:
+            type: string
+    ToolkitAssignmentListResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      properties:
+        items:
+          type: array
+          description: Toolkit assignments for this agent, in position order.
+          items:
+            $ref: '#/components/schemas/ToolkitAssignment'
+    SkillAssignment:
+      type: object
+      additionalProperties: false
+      description: Assignment linking a skill to an agent.
+      required:
+      - agent_id
+      - skill_id
+      - enabled
+      - position
+      - created_at
+      properties:
+        agent_id:
+          type: string
+          description: Agent the skill is assigned to.
+        skill_id:
+          type: string
+          description: Skill assigned to the agent.
+        skill:
+          $ref: '#/components/schemas/Skill'
+          description: Expanded skill metadata for this assignment.
+        enabled:
+          type: boolean
+          description: Whether the assignment is currently active.
+        position:
+          type: integer
+          description: Ordering position of this assignment in the agent's skill list.
+        created_at:
+          type: string
+          format: date-time
+          description: Record creation timestamp.
+    ReplaceSkillsRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - skill_ids
+      properties:
+        skill_ids:
+          type: array
+          description: Full replace-set of skill IDs to assign to the agent, in desired order.
+          items:
+            type: string
+    SkillAssignmentListResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      properties:
+        items:
+          type: array
+          description: Skill assignments for this agent, in position order.
+          items:
+            $ref: '#/components/schemas/SkillAssignment'
+    SkillManifestEntry:
+      type: object
+      additionalProperties: false
+      description: Skill metadata included in a resolved agent tool manifest. Full instructions
+        are loaded at runtime through the invoke_skill tool.
+      required:
+      - id
+      - name
+      - active
+      properties:
+        id:
+          type: string
+          description: Skill ID this manifest entry resolved to.
+        name:
+          type: string
+          description: Display name of the skill.
+        description:
+          type: string
+          description: Markdown description of the skill's purpose.
+        active:
+          type: boolean
+          description: Whether this skill is currently active in the resolved manifest.
+        missing_required:
+          type: array
+          description: Tool selectors the skill requires but that are not available to the
+            agent.
+          items:
+            type: string
+        missing_recommended:
+          type: array
+          description: Tool selectors the skill recommends but that are not available to the
+            agent.
+          items:
+            type: string
+    AgentManifestWarning:
+      type: object
+      additionalProperties: false
+      description: Non-fatal warning produced while resolving an agent tool manifest.
+      required:
+      - code
+      - message
+      properties:
+        code:
+          type: string
+          description: Machine-readable warning code.
+        message:
+          type: string
+          description: Human-readable warning text.
+        skill_id:
+          type: string
+          description: Skill the warning relates to, when applicable.
+        toolkit_id:
+          type: string
+          description: Toolkit the warning relates to, when applicable.
+        tool:
+          type: string
+          description: Tool selector the warning relates to, when applicable.
+        action:
+          type: string
+          description: Action name the warning relates to, when applicable.
+    ResolvedActionGroup:
+      type: object
+      additionalProperties: false
+      description: Action group expanded during manifest resolution.
+      required:
+      - name
+      - members
+      properties:
+        name:
+          type: string
+          description: Canonical group name (e.g. `mobius.table.read`).
+        members:
+          type: array
+          description: Action names the group expanded to during this resolution.
+          items:
+            type: string
+    AgentToolManifest:
+      type: object
+      additionalProperties: false
+      required:
+      - agent_id
+      - policy_hash
+      - toolkit_ids
+      - tools
+      - skills
+      - warnings
+      description: 'The flat, resolved tool set visible to one agent. Replaces the prior Capability/Action
+        split: every entry in `tools` is an action catalog entry the agent can invoke as its
+        own named tool.'
+      properties:
+        agent_id:
+          type: string
+          description: Agent this manifest was resolved for.
+        policy_hash:
+          type: string
+          description: Stable hash over the resolved tool + skill set; bumps when assigned
+            toolkits or skills change.
+        toolkit_ids:
+          type: array
+          description: Toolkit IDs that contributed to the resolved manifest.
+          items:
+            type: string
+        tools:
+          type: array
+          description: Catalog entries the agent can invoke. Each entry surfaces to the LLM
+            as its own named tool. Built-in, integration, loop, and custom-HTTP actions are
+            intermingled here.
+          items:
+            $ref: '#/components/schemas/ActionCatalogEntry'
+        groups_resolved:
+          type: array
+          description: Audit trail of group selectors that contributed to the resolved tool
+            set. Operators see groups; the LLM only sees the flat `tools` list.
+          items:
+            $ref: '#/components/schemas/ResolvedActionGroup'
+        skills:
+          type: array
+          description: Skills active for this agent in the resolved manifest.
+          items:
+            $ref: '#/components/schemas/SkillManifestEntry'
+        warnings:
+          type: array
+          description: Non-fatal issues encountered while resolving the manifest.
+          items:
+            $ref: '#/components/schemas/AgentManifestWarning'
+    CreateAgentRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - name
+      properties:
+        name:
+          type: string
+          description: Unique name for this agent. Free-form human-readable label, 1-63 characters.
+          minLength: 1
+          maxLength: 63
+        description:
+          type: string
+          description: Optional human-readable description.
+          maxLength: 500
+        kind:
+          type: string
+          description: Freeform classification (e.g. "llm", "rpa", "integration").
+        color:
+          type: string
+          description: Display color for this agent (Mantine palette key, e.g. `indigo`).
+            Optional; empty falls back to a hash-derived color.
+          maxLength: 24
+        model:
+          type: string
+          description: Model identifier for platform agents. Any id from `GET /v1/projects/{project_handle}/catalog/models`,
+            optionally `provider/`-prefixed (e.g. `xai/grok-4`); bare known ids (e.g. `claude-sonnet-4-6`)
+            are auto-detected. Empty falls back to the platform default.
+        model_route:
+          $ref: '#/components/schemas/AgentModelRoute'
+          description: Default route for model calls made by this agent.
+        tool_presentation:
+          $ref: '#/components/schemas/AgentToolPresentation'
+          description: Omit to use the create-time default, `flat`.
+        system_prompt:
+          type: string
+          description: Custom system prompt for platform agents. Empty uses the generated
+            default.
+        timeout_seconds:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Per-turn execution timeout in seconds for this platform agent. Omit
+            or `0` to use the platform default (600s / 10 minutes); a loop step's own timeout
+            overrides it for that step.
+        tags:
+          $ref: '#/components/schemas/TagMap'
+          description: Initial labels used for filtering, ownership, or automation.
+      example:
+        name: PR reviewer
+        description: Reviews pull requests for risky changes.
+        kind: llm
+        color: teal
+        model: claude-sonnet-4-6
+        tool_presentation: meta
+        tags:
+          owner: product
+    UpdateAgentRequest:
+      type: object
+      additionalProperties: false
+      description: 'Mutable agent fields. The agent''s backing identity (`principal_id`, the
+        machine principal created atomically with the agent) is intentionally absent: it is
+        immutable. Reassigning identity is delete-and-recreate.'
+      properties:
+        name:
+          type: string
+          description: Free-form human-readable label, 1-63 characters; must be unique within
+            the project.
+          minLength: 1
+          maxLength: 63
+        description:
+          type: string
+          description: Replacement description.
+          maxLength: 500
+        kind:
+          type: string
+          description: Replacement freeform agent classification (e.g. `llm`, `rpa`).
+        color:
+          type: string
+          description: Replacement display color (Mantine palette key, e.g. `indigo`). Pass
+            empty string to clear and fall back to a hash-derived color.
+          maxLength: 24
+        model:
+          type: string
+          description: Replacement model identifier for platform agents (any id from `GET
+            /v1/projects/{project_handle}/catalog/models`, optionally `provider/`-prefixed).
+        model_route:
+          $ref: '#/components/schemas/AgentModelRoute'
+          description: Replacement default route for model calls made by this agent.
+        tool_presentation:
+          $ref: '#/components/schemas/AgentToolPresentation'
+          description: Replacement tool presentation used by loop agent steps and channel
+            replies.
+        system_prompt:
+          type: string
+          description: Replacement system prompt for platform agents.
+        timeout_seconds:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Replacement per-turn execution timeout in seconds for this platform
+            agent. `0` resets to the platform default (600s / 10 minutes); a loop step's own
+            timeout overrides it for that step.
+        status:
+          type: string
+          enum:
+          - active
+          - inactive
+          description: 'Replacement agent status: `active` or `inactive`. Use DELETE to delete
+            the agent.'
+        tags:
+          $ref: '#/components/schemas/TagMap'
+          description: Replacement labels; send an empty object to clear all tags.
+    SessionMessageRole:
+      type: string
+      enum:
+      - system
+      - user
+      - assistant
+      - tool
+      - compaction
+      description: 'Message role: `system`, `user`, `assistant`, `tool`, or `compaction`.'
+    SessionMessageEntryType:
+      type: string
+      enum:
+      - message
+      - compaction
+      description: 'Transcript entry type: `message` or `compaction`.'
+    SessionMessage:
+      type: object
+      additionalProperties: false
+      description: One persisted message or compaction entry in a session transcript.
+      required:
+      - id
+      - session_id
+      - agent_id
+      - role
+      - content
+      - entry_type
+      - sequence
+      - created_at
+      properties:
+        id:
+          type: string
+          description: Stable message identifier.
+        session_id:
+          type: string
+          description: Session this message belongs to.
+        agent_id:
+          type: string
+          description: Agent that owns the parent session.
+        role:
+          $ref: '#/components/schemas/SessionMessageRole'
+          description: Role of this message in the transcript.
+        content:
+          type: array
+          description: Ordered content blocks (text, tool calls, tool results, images).
+          items:
+            type: object
+            additionalProperties: true
+        entry_type:
+          $ref: '#/components/schemas/SessionMessageEntryType'
+          description: Whether this row is a normal message or a compaction summary.
+        covers_through_sequence:
+          type: integer
+          description: For `compaction` messages, the highest sequence number this summary
+            covers.
+        sequence:
+          type: integer
+          description: Monotonic per-session sequence number assigned at append time.
+        turn_id:
+          type: string
+          description: AgentTurn that produced this message. Run, step, and channel identity
+            for the message are read from this turn. Absent for compaction summaries and messages
+            not tied to a turn.
+        metadata:
+          type: object
+          additionalProperties: true
+          description: Free-form caller metadata for this message.
+        created_at:
+          type: string
+          format: date-time
+          description: Server timestamp when the message was appended.
+    SessionMessageListResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      properties:
+        items:
+          type: array
+          description: Messages in this page, ordered by `sequence` ascending.
+          items:
+            $ref: '#/components/schemas/SessionMessage'
+    ToolkitAction:
+      type: object
+      additionalProperties: false
+      required:
+      - selector_type
+      - selector
+      description: Action selector included in a toolkit.
+      properties:
+        selector_type:
+          type: string
+          enum:
+          - exact
+          - group
+          - platform
+          - custom
+          - wildcard
+          description: 'Selector type: `exact`, `group`, `platform`, `custom`, or `wildcard`.'
+        selector:
+          type: string
+          description: 'Selector value. Examples: `github.list_issues`, `github.*`, `platform.github.*`,
+            `custom.*`, or `*`.'
+      example:
+        selector_type: exact
+        selector: github.create_review_comment
+    Toolkit:
+      type: object
+      additionalProperties: false
+      description: Reusable bundle of action selectors assignable to agents.
+      required:
+      - id
+      - name
+      - source
+      - actions
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+          description: Toolkit ID.
+        name:
+          type: string
+          description: Human-readable toolkit name.
+        description:
+          type: string
+          description: Markdown description of the toolkit's purpose.
+        source:
+          type: string
+          enum:
+          - system
+          - project
+          description: Provenance of this toolkit. `system` toolkits are built-in; `project`
+            toolkits are user-authored.
+        tags:
+          $ref: '#/components/schemas/TagMap'
+          description: Labels to apply to the toolkit.
+        actions:
+          type: array
+          description: Action selectors provided by this toolkit. Each entry is matched against
+            the unified action catalog at manifest-resolution time.
+          items:
+            $ref: '#/components/schemas/ToolkitAction'
+        created_by:
+          type: string
+          description: ID of the principal who created this toolkit.
+        updated_by:
+          type: string
+          description: ID of the principal who last updated this toolkit.
+        created_at:
+          type: string
+          format: date-time
+          description: Record creation timestamp.
+        updated_at:
+          type: string
+          format: date-time
+          description: Last update timestamp.
+      example:
+        id: kit_4r8q2m7x9p5v3n6t
+        name: GitHub review
+        description: GitHub actions needed for pull-request review.
+        source: project
+        tags:
+          owner: product
+        actions:
+        - selector_type: exact
+          selector: github.create_review_comment
+        created_by: user_2f9s3k4m5n6p7q8r
+        updated_by: user_2f9s3k4m5n6p7q8r
+        created_at: '2026-06-15T14:30:00Z'
+        updated_at: '2026-06-15T14:30:00Z'
+    Skill:
+      type: object
+      additionalProperties: false
+      description: Reusable instruction bundle assignable to agents.
+      required:
+      - id
+      - name
+      - source
+      - instructions
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+          description: Skill ID.
+        name:
+          type: string
+          description: Human-readable skill name.
+        description:
+          type: string
+          description: Markdown description of the skill's purpose.
+        source:
+          type: string
+          enum:
+          - system
+          - project
+          description: Provenance of this skill. `system` is built-in; `project` is project-local.
+        instructions:
+          type: string
+          description: Markdown instructions loaded when the skill is active.
+        allowed_tools:
+          type: array
+          description: Canonical action names, wildcard selectors, or group references that
+            narrow the agent's effective tool set while this skill is active. Uses the same
+            selector vocabulary as toolkit grants.
+          items:
+            type: string
+        tags:
+          $ref: '#/components/schemas/TagMap'
+          description: Labels to apply to the skill.
+        created_by:
+          type: string
+          description: ID of the principal who created this skill.
+        updated_by:
+          type: string
+          description: ID of the principal who last updated this skill.
+        created_at:
+          type: string
+          format: date-time
+          description: Record creation timestamp.
+        updated_at:
+          type: string
+          format: date-time
+          description: Last update timestamp.
+      example:
+        id: skill_7n4q8x2m9p5v3r6t
+        name: Pull request review
+        description: Review pull requests for correctness and risk.
+        source: project
+        instructions: Check the diff and leave concise findings.
+        allowed_tools:
+        - github.create_review_comment
+        tags:
+          owner: product
+        created_by: user_2f9s3k4m5n6p7q8r
+        updated_by: user_2f9s3k4m5n6p7q8r
+        created_at: '2026-06-15T14:30:00Z'
+        updated_at: '2026-06-15T14:30:00Z'
     SessionStatus:
       type: string
       enum:
@@ -6400,21 +7149,6 @@ components:
       - project
       - private
       description: 'Visibility of the session in project surfaces: `project` or `private`.'
-    SessionMessageRole:
-      type: string
-      enum:
-      - system
-      - user
-      - assistant
-      - tool
-      - compaction
-      description: 'Message role: `system`, `user`, `assistant`, `tool`, or `compaction`.'
-    SessionMessageEntryType:
-      type: string
-      enum:
-      - message
-      - compaction
-      description: 'Transcript entry type: `message` or `compaction`.'
     AgentTurnStatus:
       type: string
       enum:
@@ -6615,6 +7349,18 @@ components:
           description: The list of results for this page.
           items:
             $ref: '#/components/schemas/Session'
+    UpdateSessionRequest:
+      type: object
+      additionalProperties: false
+      description: Mutable display and lifecycle fields for a session.
+      properties:
+        title:
+          type: string
+          description: Human-readable session title.
+        status:
+          $ref: '#/components/schemas/SessionStatus'
+          description: Lifecycle status. `active` restores archived sessions; `deleted` is
+            terminal.
     SessionStreamEvent:
       type: object
       additionalProperties: true
@@ -6627,72 +7373,6 @@ components:
         session_id:
           type: string
           description: The session this event belongs to.
-    SessionMessage:
-      type: object
-      additionalProperties: false
-      description: One persisted message or compaction entry in a session transcript.
-      required:
-      - id
-      - session_id
-      - agent_id
-      - role
-      - content
-      - entry_type
-      - sequence
-      - created_at
-      properties:
-        id:
-          type: string
-          description: Stable message identifier.
-        session_id:
-          type: string
-          description: Session this message belongs to.
-        agent_id:
-          type: string
-          description: Agent that owns the parent session.
-        role:
-          $ref: '#/components/schemas/SessionMessageRole'
-          description: Role of this message in the transcript.
-        content:
-          type: array
-          description: Ordered content blocks (text, tool calls, tool results, images).
-          items:
-            type: object
-            additionalProperties: true
-        entry_type:
-          $ref: '#/components/schemas/SessionMessageEntryType'
-          description: Whether this row is a normal message or a compaction summary.
-        covers_through_sequence:
-          type: integer
-          description: For `compaction` messages, the highest sequence number this summary
-            covers.
-        sequence:
-          type: integer
-          description: Monotonic per-session sequence number assigned at append time.
-        turn_id:
-          type: string
-          description: AgentTurn that produced this message. Run, step, and channel identity
-            for the message are read from this turn. Absent for compaction summaries and messages
-            not tied to a turn.
-        metadata:
-          type: object
-          additionalProperties: true
-          description: Free-form caller metadata for this message.
-        created_at:
-          type: string
-          format: date-time
-          description: Server timestamp when the message was appended.
-    SessionMessageListResponse:
-      type: object
-      additionalProperties: false
-      required:
-      - items
-      properties:
-        items:
-          type: array
-          description: Messages in this page, ordered by `sequence` ascending.
-          items:
-            $ref: '#/components/schemas/SessionMessage'
     AppendSessionMessagesRequest:
       type: object
       additionalProperties: false
@@ -6744,488 +7424,102 @@ components:
           type: string
           format: date-time
           description: Caller-supplied creation timestamp. The server assigns one if absent.
-    ToolkitAssignment:
+    CreateSessionRequest:
       type: object
       additionalProperties: false
-      description: Assignment linking a toolkit to an agent.
+      description: Resolve-or-create policy for a session.
       required:
       - agent_id
-      - toolkit_id
-      - position
-      - created_at
       properties:
         agent_id:
           type: string
-          description: Agent the toolkit is assigned to.
-        toolkit_id:
+          description: Agent that owns the session.
+        mode:
           type: string
-          description: Toolkit assigned to the agent.
-        toolkit:
-          $ref: '#/components/schemas/Toolkit'
-          description: Expanded toolkit metadata for this assignment.
-        position:
-          type: integer
-          description: Ordering position of this assignment in the agent's toolkit list.
-        created_at:
+          enum:
+          - new
+          - continue
+          - continue_or_create
+          description: '`continue_or_create` (default) resolves an existing session for the
+            `session_key` or creates one; `new` always creates a fresh session; `continue`
+            resolves an existing session and fails if none exists.'
+        session_key:
           type: string
-          format: date-time
-          description: Record creation timestamp.
-    ReplaceToolkitsRequest:
-      type: object
-      additionalProperties: false
-      required:
-      - toolkit_ids
-      properties:
-        toolkit_ids:
-          type: array
-          description: Full replace-set of toolkit IDs to assign to the agent, in desired
-            order.
-          items:
-            type: string
-    ToolkitAssignmentListResponse:
-      type: object
-      additionalProperties: false
-      required:
-      - items
-      properties:
-        items:
-          type: array
-          description: Toolkit assignments for this agent, in position order.
-          items:
-            $ref: '#/components/schemas/ToolkitAssignment'
-    SkillAssignment:
-      type: object
-      additionalProperties: false
-      description: Assignment linking a skill to an agent.
-      required:
-      - agent_id
-      - skill_id
-      - enabled
-      - position
-      - created_at
-      properties:
-        agent_id:
+          description: Stable key identifying the conversation within the agent.
+        title:
           type: string
-          description: Agent the skill is assigned to.
-        skill_id:
-          type: string
-          description: Skill assigned to the agent.
-        skill:
-          $ref: '#/components/schemas/Skill'
-          description: Expanded skill metadata for this assignment.
-        enabled:
-          type: boolean
-          description: Whether the assignment is currently active.
-        position:
-          type: integer
-          description: Ordering position of this assignment in the agent's skill list.
-        created_at:
-          type: string
-          format: date-time
-          description: Record creation timestamp.
-    ReplaceSkillsRequest:
-      type: object
-      additionalProperties: false
-      required:
-      - skill_ids
-      properties:
-        skill_ids:
-          type: array
-          description: Full replace-set of skill IDs to assign to the agent, in desired order.
-          items:
-            type: string
-    SkillAssignmentListResponse:
-      type: object
-      additionalProperties: false
-      required:
-      - items
-      properties:
-        items:
-          type: array
-          description: Skill assignments for this agent, in position order.
-          items:
-            $ref: '#/components/schemas/SkillAssignment'
-    SkillManifestEntry:
-      type: object
-      additionalProperties: false
-      description: Skill entry included in a resolved agent tool manifest.
-      required:
-      - id
-      - name
-      - instructions
-      - active
-      properties:
-        id:
-          type: string
-          description: Skill ID this manifest entry resolved to.
-        name:
-          type: string
-          description: Display name of the skill.
-        instructions:
-          type: string
-          description: Markdown instructions loaded for this skill.
-        active:
-          type: boolean
-          description: Whether this skill is currently active in the resolved manifest.
-        missing_required:
-          type: array
-          description: Tool selectors the skill requires but that are not available to the
-            agent.
-          items:
-            type: string
-        missing_recommended:
-          type: array
-          description: Tool selectors the skill recommends but that are not available to the
-            agent.
-          items:
-            type: string
-    AgentManifestWarning:
-      type: object
-      additionalProperties: false
-      description: Non-fatal warning produced while resolving an agent tool manifest.
-      required:
-      - code
-      - message
-      properties:
-        code:
-          type: string
-          description: Machine-readable warning code.
-        message:
-          type: string
-          description: Human-readable warning text.
-        skill_id:
-          type: string
-          description: Skill the warning relates to, when applicable.
-        toolkit_id:
-          type: string
-          description: Toolkit the warning relates to, when applicable.
-        tool:
-          type: string
-          description: Tool selector the warning relates to, when applicable.
-        action:
-          type: string
-          description: Action name the warning relates to, when applicable.
-    ResolvedActionGroup:
-      type: object
-      additionalProperties: false
-      description: Action group expanded during manifest resolution.
-      required:
-      - name
-      - members
-      properties:
-        name:
-          type: string
-          description: Canonical group name (e.g. `mobius.table.read`).
-        members:
-          type: array
-          description: Action names the group expanded to during this resolution.
-          items:
-            type: string
-    AgentToolManifest:
-      type: object
-      additionalProperties: false
-      required:
-      - agent_id
-      - policy_hash
-      - toolkit_ids
-      - tools
-      - skills
-      - warnings
-      description: 'The flat, resolved tool set visible to one agent. Replaces the prior Capability/Action
-        split: every entry in `tools` is an action catalog entry the agent can invoke as its
-        own named tool.'
-      properties:
-        agent_id:
-          type: string
-          description: Agent this manifest was resolved for.
-        policy_hash:
-          type: string
-          description: Stable hash over the resolved tool + skill set; bumps when assigned
-            toolkits or skills change.
-        toolkit_ids:
-          type: array
-          description: Toolkit IDs that contributed to the resolved manifest.
-          items:
-            type: string
-        tools:
-          type: array
-          description: Catalog entries the agent can invoke. Each entry surfaces to the LLM
-            as its own named tool. Built-in, integration, loop, and custom-HTTP actions are
-            intermingled here.
-          items:
-            $ref: '#/components/schemas/ActionCatalogEntry'
-        groups_resolved:
-          type: array
-          description: Audit trail of group selectors that contributed to the resolved tool
-            set. Operators see groups; the LLM only sees the flat `tools` list.
-          items:
-            $ref: '#/components/schemas/ResolvedActionGroup'
-        skills:
-          type: array
-          description: Skills active for this agent in the resolved manifest.
-          items:
-            $ref: '#/components/schemas/SkillManifestEntry'
-        warnings:
-          type: array
-          description: Non-fatal issues encountered while resolving the manifest.
-          items:
-            $ref: '#/components/schemas/AgentManifestWarning'
-    CreateAgentRequest:
-      type: object
-      additionalProperties: false
-      required:
-      - name
-      properties:
-        name:
-          type: string
-          description: Unique name for this agent. Free-form human-readable label, 1-63 characters.
-          minLength: 1
-          maxLength: 63
-        description:
-          type: string
-          description: Optional human-readable description.
-          maxLength: 500
-        kind:
-          type: string
-          description: Freeform classification (e.g. "llm", "rpa", "integration").
-        color:
-          type: string
-          description: Display color for this agent (Mantine palette key, e.g. `indigo`).
-            Optional; empty falls back to a hash-derived color.
-          maxLength: 24
+          description: Human-friendly session title.
+        visibility:
+          $ref: '#/components/schemas/SessionVisibility'
         model:
           type: string
-          description: Model identifier for platform agents. Any id from `GET /v1/projects/{project_handle}/catalog/models`,
-            optionally `provider/`-prefixed (e.g. `xai/grok-4`); bare known ids (e.g. `claude-sonnet-4-6`)
-            are auto-detected. Empty falls back to the platform default.
-        model_route:
-          $ref: '#/components/schemas/AgentModelRoute'
-          description: Default route for model calls made by this agent.
-        tool_presentation:
-          $ref: '#/components/schemas/AgentToolPresentation'
-          description: Omit to use the create-time default, `flat`.
-        system_prompt:
-          type: string
-          description: Custom system prompt for platform agents. Empty uses the generated
-            default.
-        tags:
-          $ref: '#/components/schemas/TagMap'
-          description: Initial labels used for filtering, ownership, or automation.
-      example:
-        name: PR reviewer
-        description: Reviews pull requests for risky changes.
-        kind: llm
-        color: teal
-        model: claude-sonnet-4-6
-        tool_presentation: meta
-        tags:
-          owner: product
-    UpdateAgentRequest:
+          description: Model to record on the session.
+        metadata:
+          type: object
+          additionalProperties: true
+          description: Free-form caller metadata for the session.
+    SendSessionEventInput:
       type: object
       additionalProperties: false
-      description: 'Mutable agent fields. The agent''s backing identity (`principal_id`, the
-        machine principal created atomically with the agent) is intentionally absent: it is
-        immutable. Reassigning identity is delete-and-recreate.'
-      properties:
-        name:
-          type: string
-          description: Free-form human-readable label, 1-63 characters; must be unique within
-            the project.
-          minLength: 1
-          maxLength: 63
-        description:
-          type: string
-          description: Replacement description.
-          maxLength: 500
-        kind:
-          type: string
-          description: Replacement freeform agent classification (e.g. `llm`, `rpa`).
-        color:
-          type: string
-          description: Replacement display color (Mantine palette key, e.g. `indigo`). Pass
-            empty string to clear and fall back to a hash-derived color.
-          maxLength: 24
-        model:
-          type: string
-          description: Replacement model identifier for platform agents (any id from `GET
-            /v1/projects/{project_handle}/catalog/models`, optionally `provider/`-prefixed).
-        model_route:
-          $ref: '#/components/schemas/AgentModelRoute'
-          description: Replacement default route for model calls made by this agent.
-        tool_presentation:
-          $ref: '#/components/schemas/AgentToolPresentation'
-          description: Replacement tool presentation used by loop agent steps and channel
-            replies.
-        system_prompt:
-          type: string
-          description: Replacement system prompt for platform agents.
-        status:
-          type: string
-          enum:
-          - active
-          - inactive
-          description: 'Replacement agent status: `active` or `inactive`. Use DELETE to delete
-            the agent.'
-        tags:
-          $ref: '#/components/schemas/TagMap'
-          description: Replacement labels; send an empty object to clear all tags.
-    ToolkitAction:
-      type: object
-      additionalProperties: false
+      description: One input event in a send. Phase 1 supports a single `user.message`.
       required:
-      - selector_type
-      - selector
-      description: Action selector included in a toolkit.
+      - content
       properties:
-        selector_type:
+        type:
           type: string
           enum:
-          - exact
-          - group
-          - platform
-          - custom
-          - wildcard
-          description: 'Selector type: `exact`, `group`, `platform`, `custom`, or `wildcard`.'
-        selector:
-          type: string
-          description: 'Selector value. Examples: `github.list_issues`, `github.*`, `platform.github.*`,
-            `custom.*`, or `*`.'
-      example:
-        selector_type: exact
-        selector: github.create_review_comment
-    Toolkit:
-      type: object
-      additionalProperties: false
-      description: Reusable bundle of action selectors assignable to agents.
-      required:
-      - id
-      - name
-      - source
-      - actions
-      - created_at
-      - updated_at
-      properties:
-        id:
-          type: string
-          description: Toolkit ID.
-        name:
-          type: string
-          description: Human-readable toolkit name.
-        description:
-          type: string
-          description: Markdown description of the toolkit's purpose.
-        source:
-          type: string
-          enum:
-          - system
-          - project
-          description: Provenance of this toolkit. `system` toolkits are built-in; `project`
-            toolkits are user-authored.
-        tags:
-          $ref: '#/components/schemas/TagMap'
-          description: Labels to apply to the toolkit.
-        actions:
+          - user.message
+          description: Input event type. Defaults to `user.message`.
+        role:
+          $ref: '#/components/schemas/SessionMessageRole'
+          description: Role to store for the input message. Defaults to `user`.
+        content:
           type: array
-          description: Action selectors provided by this toolkit. Each entry is matched against
-            the unified action catalog at manifest-resolution time.
+          minItems: 1
+          description: Ordered content blocks (text, images) for the input message.
           items:
-            $ref: '#/components/schemas/ToolkitAction'
-        created_by:
-          type: string
-          description: ID of the principal who created this toolkit.
-        updated_by:
-          type: string
-          description: ID of the principal who last updated this toolkit.
-        created_at:
-          type: string
-          format: date-time
-          description: Record creation timestamp.
-        updated_at:
-          type: string
-          format: date-time
-          description: Last update timestamp.
-      example:
-        id: kit_4r8q2m7x9p5v3n6t
-        name: GitHub review
-        description: GitHub actions needed for pull-request review.
-        source: project
-        tags:
-          owner: product
-        actions:
-        - selector_type: exact
-          selector: github.create_review_comment
-        created_by: user_2f9s3k4m5n6p7q8r
-        updated_by: user_2f9s3k4m5n6p7q8r
-        created_at: '2026-06-15T14:30:00Z'
-        updated_at: '2026-06-15T14:30:00Z'
-    Skill:
+            type: object
+            additionalProperties: true
+    SendSessionEventsRequest:
       type: object
       additionalProperties: false
-      description: Reusable instruction bundle assignable to agents.
+      description: Caller input to append and run against a session.
       required:
-      - id
-      - name
-      - source
-      - instructions
-      - created_at
-      - updated_at
+      - events
       properties:
-        id:
-          type: string
-          description: Skill ID.
-        name:
-          type: string
-          description: Human-readable skill name.
-        description:
-          type: string
-          description: Markdown description of the skill's purpose.
-        source:
-          type: string
-          enum:
-          - system
-          - project
-          description: Provenance of this skill. `system` is built-in; `project` is project-local.
-        instructions:
-          type: string
-          description: Markdown instructions loaded when the skill is active.
-        allowed_tools:
+        events:
           type: array
-          description: Canonical action names, wildcard selectors, or group references that
-            narrow the agent's effective tool set while this skill is active. Uses the same
-            selector vocabulary as toolkit grants.
+          minItems: 1
+          maxItems: 1
+          description: Input events to send. Phase 1 accepts exactly one `user.message`.
           items:
-            type: string
-        tags:
-          $ref: '#/components/schemas/TagMap'
-          description: Labels to apply to the skill.
-        created_by:
+            $ref: '#/components/schemas/SendSessionEventInput'
+        idempotency_key:
           type: string
-          description: ID of the principal who created this skill.
-        updated_by:
-          type: string
-          description: ID of the principal who last updated this skill.
-        created_at:
-          type: string
-          format: date-time
-          description: Record creation timestamp.
-        updated_at:
-          type: string
-          format: date-time
-          description: Last update timestamp.
-      example:
-        id: skill_7n4q8x2m9p5v3r6t
-        name: Pull request review
-        description: Review pull requests for correctness and risk.
-        source: project
-        instructions: Check the diff and leave concise findings.
-        allowed_tools:
-        - github.create_review_comment
-        tags:
-          owner: product
-        created_by: user_2f9s3k4m5n6p7q8r
-        updated_by: user_2f9s3k4m5n6p7q8r
-        created_at: '2026-06-15T14:30:00Z'
-        updated_at: '2026-06-15T14:30:00Z'
+          description: Dedup key scoped to the session. A repeat send with the same key returns
+            the existing invocation's cursor and writes nothing new.
+        metadata:
+          type: object
+          additionalProperties: true
+          description: Free-form caller metadata attached to the input message.
+    SessionInvocationAck:
+      type: object
+      additionalProperties: false
+      description: Acknowledgement that an invocation started, with a stream cursor.
+      required:
+      - session
+      - seq
+      properties:
+        session:
+          $ref: '#/components/schemas/Session'
+        seq:
+          type: integer
+          format: int64
+          description: The durable event sequence cursor to stream from. Pass it as `after_sequence`
+            to the events stream to follow this invocation.
+        deduped:
+          type: boolean
+          description: True when a repeated idempotency key returned an existing invocation.
     Loop:
       type: object
       additionalProperties: false
@@ -7260,9 +7554,9 @@ components:
         schema_version:
           type: string
           enum:
-          - '2'
-          default: '2'
-          description: Loop authoring schema version. Only schema version 2 is accepted.
+          - '1'
+          default: '1'
+          description: Loop authoring schema version. Only schema version 1 is accepted.
         event:
           type: object
           additionalProperties:
@@ -7346,7 +7640,7 @@ components:
         status: active
         owner: user_2f9s3k4m5n6p7q8r
         agent_id: agent_5n8p2q7m4x9r3v6t
-        schema_version: '2'
+        schema_version: '1'
         default_config:
           repository: deepnoodle-ai/mobius-cloud
         tags:
@@ -7419,9 +7713,9 @@ components:
         schema_version:
           type: string
           enum:
-          - '2'
-          default: '2'
-          description: Loop authoring schema version. Only schema version 2 is accepted.
+          - '1'
+          default: '1'
+          description: Loop authoring schema version. Only schema version 1 is accepted.
         event:
           type: object
           additionalProperties:
@@ -7487,7 +7781,7 @@ components:
         name: Daily security check
         description: Review open pull requests each morning.
         agent_id: agent_5n8p2q7m4x9r3v6t
-        schema_version: '2'
+        schema_version: '1'
         triggers:
         - name: Weekday morning
           kind: schedule
@@ -7525,8 +7819,8 @@ components:
         schema_version:
           type: string
           enum:
-          - '2'
-          description: Loop authoring schema version. Only schema version 2 is accepted.
+          - '1'
+          description: Loop authoring schema version. Only schema version 1 is accepted.
         event:
           type: object
           additionalProperties:
@@ -7590,10 +7884,21 @@ components:
     LoopSpecRepository:
       type: object
       additionalProperties: false
-      description: Source repository target attached to a loop spec.
-      required:
-      - full_name
+      description: Source repository target attached to a loop spec. A `static` repository
+        clones the named `full_name`. A `match` repository resolves the repository from the
+        run's trigger event (for example the base repository of an opened GitHub pull request)
+        and requires the loop to have an event trigger; pull requests opened from a fork are
+        never cloned. `full_name` is required for `static` repositories and ignored for `match`
+        repositories.
       properties:
+        source:
+          type: string
+          enum:
+          - static
+          - match
+          default: static
+          description: How the repository target is resolved. `static` clones `full_name`;
+            `match` clones the repository the trigger event concerns.
         provider:
           type: string
           enum:
@@ -7608,7 +7913,13 @@ components:
           - type: string
         full_name:
           type: string
-          description: Provider repository full name, e.g. `owner/repo`.
+          description: Provider repository full name, e.g. `owner/repo`. Required when `source`
+            is `static`.
+        ref:
+          type: string
+          description: Optional branch, tag, or ref to check out. For `static` repositories
+            it pins the checkout; for `match` repositories it overrides the ref derived from
+            the event. Omitted uses the provider default branch.
         private:
           type: boolean
           description: Whether the provider reports this repository as private.
@@ -7943,12 +8254,12 @@ components:
           type: number
           format: double
           minimum: 0
-          description: Run budget in US dollars (1 credit = $0.01). The run halts with stop
-            reason `budget_exceeded` at the next checkpoint (step boundary or agent tool iteration)
-            once its metered spend reaches the ceiling; a `run.budget_warning` event fires
-            once at 80%. Enforcement granularity is one model call or metered action — a run
-            can overshoot by at most the call in flight. Mutually exclusive with `credit_budget`;
-            values finer than 0.001 credit ($0.00001) are rejected at compile.
+          description: 'Run budget in US dollars (1 credit = $0.01). The budget is a hard
+            limit: the run halts with stop reason `budget_exceeded` at the next checkpoint
+            (step boundary or agent tool iteration) once its metered spend reaches the ceiling.
+            Enforcement granularity is one model call or metered action — a run can overshoot
+            by at most the call in flight. Mutually exclusive with `credit_budget`; values
+            finer than 0.001 credit ($0.00001) are rejected at compile.'
         credit_budget:
           type: integer
           format: int64
@@ -8063,10 +8374,9 @@ components:
             full granted tool set.'
         disable_tools:
           type: boolean
-          description: Disable all tool calls for this agent step. When omitted, prompt-only
-            managed agent steps (no `tool_names`, output schema, or worker model route) default
-            to tool-less execution and skip managed environment allocation. Set `false` explicitly
-            to opt back into the agent's granted tools.
+          description: Disable granted action and memory tools for this agent step. Reserved
+            runtime tools such as `invoke_skill` and structured-output submission may still
+            be present when applicable. When omitted, the agent's granted tools are available.
         output_schema:
           type: object
           additionalProperties: true
@@ -8818,6 +9128,18 @@ components:
           type: string
           nullable: true
           description: Wait record this step is suspended on, when applicable.
+        session_id:
+          type: string
+          description: Session the agent ran in, for `agent`-kind steps. Present once the
+            step has started a turn; links the step to its conversation so the UI can open
+            the transcript with this step's messages highlighted.
+        agent_id:
+          type: string
+          description: Agent that executed this step, for `agent`-kind steps.
+        agent_turn_id:
+          type: string
+          description: Most recent AgentTurn this step ran (its latest attempt), for `agent`-kind
+            steps. Resolves to the step's messages within the session via their `turn_id`.
         error_type:
           type: string
           description: Machine-readable error code populated on failure.
@@ -8908,7 +9230,7 @@ components:
           description: |-
             Event type from the run-stream taxonomy (e.g. `run.started`, `step.completed`, `wait.opened`, `action.called`, `action.completed`, `action.failed`, `artifact.created`, `limit.reached`, `usage.recorded`).
 
-            Guardrail events: `run.budget_warning` fires once when run spend first reaches 80% of the run budget (payload: `credit_budget`, `credit_spent`, `percent`); `run.budget_exceeded` fires when the budget halts the run at a checkpoint (same payload plus the `step` it halted before). `usage.recorded` payloads carry `step_key`, the event's `credit_cost`, its `budget_cost` (rate-card cost counted against the run budget, nonzero even for BYOK), and the cumulative `run_credit_spent`.
+            Guardrail events: `run.budget_exceeded` fires when the budget halts the run at a checkpoint (payload: `credit_budget`, `credit_spent`, `percent_used`, plus the `step` it halted before). `usage.recorded` payloads carry `step_key`, the event's `credit_cost`, its `budget_cost` (rate-card cost counted against the run budget, nonzero even for BYOK), and the cumulative `run_credit_spent`.
         step_id:
           type: string
           nullable: true
@@ -9087,10 +9409,6 @@ components:
           type: boolean
           default: false
           description: Whether inserts must include a non-null value for this column.
-        unique:
-          type: boolean
-          default: false
-          description: Whether the column value must be unique within the table.
         indexed:
           type: boolean
           default: false
@@ -9121,17 +9439,20 @@ components:
           description: Column names included in the index, in order.
           items:
             type: string
-        unique:
-          type: boolean
-          default: false
-          description: Whether the index enforces uniqueness across its columns.
     TableSchema:
       type: object
       required:
       - columns
+      - identity_column
       additionalProperties: false
-      description: Column and index definition for a table.
+      description: Column and index definition for a table. Each table has exactly one required
+        string identity column.
       properties:
+        identity_column:
+          type: string
+          minLength: 1
+          description: Name of the required string column that uniquely identifies one row
+            in this table.
         columns:
           type: array
           description: Ordered list of columns accepted in row data.
@@ -9200,10 +9521,12 @@ components:
           columns:
           - name: pull_request_url
             type: string
+            required: true
           - name: severity
             type: string
           - name: summary
             type: string
+          identity_column: pull_request_url
         tags:
           team: product
         created_by: user_2f9s3k4m5n6p7q8r
@@ -9237,6 +9560,8 @@ components:
             columns:
             - name: pull_request_url
               type: string
+              required: true
+            identity_column: pull_request_url
           created_at: '2026-06-15T14:30:00Z'
           updated_at: '2026-06-15T14:30:00Z'
         has_more: false
@@ -9321,10 +9646,12 @@ components:
           columns:
           - name: pull_request_url
             type: string
+            required: true
           - name: severity
             type: string
           - name: summary
             type: string
+          identity_column: pull_request_url
     UpdateTableRequest:
       type: object
       additionalProperties: false
@@ -9555,25 +9882,18 @@ components:
     UpsertRowRequest:
       type: object
       required:
-      - key_columns
       - data
       additionalProperties: false
       properties:
-        key_columns:
-          type: array
-          items:
-            type: string
-          minItems: 1
-          maxItems: 10
-          description: Column names used to match an existing row.
         data:
           type: object
           additionalProperties: true
-          description: Full row data. Must include values for all key_columns.
+          description: Fields to create or merge into the row. Must include the table's identity
+            column.
     UpsertRowResult:
       type: object
       additionalProperties: false
-      description: Result of inserting or updating a row by key columns.
+      description: Result of inserting or updating a row by the table's identity column.
       required:
       - row
       - created
@@ -9647,6 +9967,10 @@ components:
           type: string
           description: Principal ID of the actor who last updated this artifact. Empty for
             system-initiated writes.
+        thumbnail:
+          $ref: '#/components/schemas/ArtifactThumbnailSummary'
+          description: Thumbnail summary for the default variant, when available. Absent until
+            thumbnail processing has produced a state for the current content.
       example:
         id: art_2m7q9x5v3p8n4r6t
         visibility: shared
@@ -9658,6 +9982,42 @@ components:
         sha256: 8f4c2b9d0e6a1f3c5b7d9e0a2c4f6b8d9e1a3c5f7b9d0e2a4c6f8b0d2e4a6c8
         created_at: '2026-06-15T14:30:00Z'
         created_by: agent_5n8p2q7m4x9r3v6t
+    ArtifactThumbnailSummary:
+      type: object
+      description: Summary of the Mobius-generated thumbnail for an artifact's default variant.
+        The UI uses `status` to decide whether to fetch the thumbnail image, render a placeholder,
+        or show a typed fallback card.
+      required:
+      - status
+      - variant
+      additionalProperties: false
+      properties:
+        status:
+          type: string
+          enum:
+          - queued
+          - processing
+          - available
+          - skipped
+          - failed
+          - stale
+          description: Current thumbnail state for the source artifact's content.
+        variant:
+          type: string
+          description: Variant name this summary describes (e.g. `card`).
+        mime_type:
+          type: string
+          description: Thumbnail image MIME type when available (image/jpeg or image/png).
+        width:
+          type: integer
+          description: Thumbnail pixel width when available.
+        height:
+          type: integer
+          description: Thumbnail pixel height when available.
+        updated_at:
+          type: string
+          format: date-time
+          description: Time this thumbnail state was last updated.
     ArtifactListResponse:
       type: object
       required:
@@ -9762,6 +10122,9 @@ x-tagGroups:
 - name: Agents
   tags:
   - agents
+- name: Sessions
+  tags:
+  - sessions
 - name: Loops
   tags:
   - loops

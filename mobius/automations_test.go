@@ -55,7 +55,7 @@ func TestCreateAutomationWithSpec_HighLevelClient(t *testing.T) {
 		Name:    "research",
 		AgentID: "agent_1",
 		Spec: map[string]any{
-			"schema_version": "2",
+			"schema_version": "1",
 			"steps":          []any{map[string]any{"key": "step_1", "kind": "agent"}},
 		},
 	})
@@ -65,7 +65,7 @@ func TestCreateAutomationWithSpec_HighLevelClient(t *testing.T) {
 	// Explicit options and the inline spec are both sent on the create body.
 	assert.Equal(t, body["name"], "research")
 	assert.Equal(t, body["agent_id"], "agent_1")
-	assert.Equal(t, body["schema_version"], "2")
+	assert.Equal(t, body["schema_version"], "1")
 	steps := body["steps"].([]any)
 	assert.Equal(t, len(steps), 1)
 	assert.Equal(t, steps[0].(map[string]any)["key"], "step_1")

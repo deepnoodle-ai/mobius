@@ -134,7 +134,7 @@ def test_create_automation_sends_inline_spec() -> None:
             name="Research",
             agent_id="agent_1",
             spec={
-                "schema_version": "2",
+                "schema_version": "1",
                 "steps": [{"kind": "agent", "config": {"instructions": "do research"}}],
             },
         )
@@ -145,7 +145,7 @@ def test_create_automation_sends_inline_spec() -> None:
     # Explicit fields and the inline spec are both flattened onto the request.
     assert payload["name"] == "Research"
     assert payload["agent_id"] == "agent_1"
-    assert payload["schema_version"] == "2"
+    assert payload["schema_version"] == "1"
     assert payload["steps"] == [{"kind": "agent", "config": {"instructions": "do research"}}]
 
 
