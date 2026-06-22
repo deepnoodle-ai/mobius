@@ -546,90 +546,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project_handle}/agents/{resource_id}/sessions": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List agent sessions
-         * @description Returns durable conversation sessions for one agent, newest activity first. Remote workers use this to inspect their own remembered conversations.
-         */
-        get: operations["listAgentSessions"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/projects/{project_handle}/agents/{resource_id}/sessions/{session_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get agent session
-         * @description Returns one durable conversation session for an agent.
-         */
-        get: operations["getAgentSession"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/projects/{project_handle}/agents/{resource_id}/sessions/{session_id}/messages": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List session messages
-         * @description Returns raw session messages in sequence order for replay.
-         */
-        get: operations["listSessionMessages"];
-        put?: never;
-        /**
-         * Append session messages
-         * @description Appends one or more messages to a durable session and returns the updated session. The service assigns sequence numbers atomically and may append an additional compaction summary when the session crosses its compaction threshold.
-         */
-        post: operations["appendSessionMessages"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/projects/{project_handle}/agents/{resource_id}/sessions/{session_id}/turns": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List session turns
-         * @description Returns the session's turns in chronological order. Each turn groups related transcript messages and includes links to any run step or channel exchange that produced it.
-         */
-        get: operations["listSessionTurns"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/projects/{project_handle}/turns/{resource_id}/messages": {
         parameters: {
             query?: never;
@@ -689,26 +605,6 @@ export interface paths {
          * @description Deletes one messaging binding from the agent and provider account.
          */
         delete: operations["deleteAgentMessagingBinding"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/projects/{project_handle}/agents/{resource_id}/sessions/{session_id}/events.stream": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Stream session events
-         * @description Streams live Server-Sent Events for a conversation session. This is a live transport for ephemeral events such as `generation.delta`; durable session transcript state remains available from the messages endpoint.
-         */
-        get: operations["streamSessionEvents"];
-        put?: never;
-        post?: never;
-        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -776,6 +672,162 @@ export interface paths {
         get: operations["getAgentTools"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project_handle}/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List sessions
+         * @description Returns durable conversation sessions for the project, newest activity first. Pass `agent_id` to scope the list to one agent's remembered conversations.
+         */
+        get: operations["listSessions"];
+        put?: never;
+        /**
+         * Create or resolve a session
+         * @description Resolves a durable conversation session for an agent by policy and returns it. With `mode: continue_or_create` (the default) an existing session for the given `session_key` is returned, or a new one is created; `mode: new` always creates a fresh session; `mode: continue` resolves an existing session and fails if none exists. This is the entry point an application calls before sending input events.
+         */
+        post: operations["createSession"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project_handle}/sessions/{resource_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get session
+         * @description Returns one durable conversation session.
+         */
+        get: operations["getSession"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete session
+         * @description Deletes a session from normal product views. The transcript row is retained as a tombstone for audit and retention.
+         */
+        delete: operations["deleteSession"];
+        options?: never;
+        head?: never;
+        /**
+         * Update session
+         * @description Updates session display or lifecycle fields. Setting `status` to `archived` hides the session from the current list while keeping it restorable; setting it to `active` restores an archived session. Deleted sessions are retained tombstones and cannot be restored.
+         */
+        patch: operations["updateSession"];
+        trace?: never;
+    };
+    "/v1/projects/{project_handle}/sessions/{resource_id}/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List session messages
+         * @description Returns raw session messages in sequence order for replay.
+         */
+        get: operations["listSessionMessages"];
+        put?: never;
+        /**
+         * Append session messages
+         * @description Appends one or more messages to a durable session and returns the updated session. The service assigns sequence numbers atomically and may append an additional compaction summary when the session crosses its compaction threshold.
+         */
+        post: operations["appendSessionMessages"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project_handle}/sessions/{resource_id}/turns": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List session turns
+         * @description Returns the session's turns in chronological order. Each turn groups related transcript messages and includes links to any run step or channel exchange that produced it.
+         */
+        get: operations["listSessionTurns"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project_handle}/sessions/{resource_id}/events.stream": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Stream session events
+         * @description Streams Server-Sent Events for a conversation session. Durable lifecycle events (`user.message`, `session.status_running`, `agent.message`, `agent.tool_use`, `agent.tool_result`, and the terminal `session.status_*` events) are replayed from the durable log and then tailed live, so a client reconnecting with `?after_sequence=N` (or the `Last-Event-ID` header) resumes exactly where it left off. The stream closes after the terminal event for the active invocation is delivered. Live-only `generation.delta` frames are interleaved best-effort.
+         */
+        get: operations["streamSessionEvents"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project_handle}/sessions/{resource_id}/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Send input to a session
+         * @description Appends one input message to a session and starts an agent invocation to respond, returning `202 Accepted` immediately with a durable `seq` cursor to stream from — the work continues even if the caller disconnects. A repeated send with the same `idempotency_key` returns the existing invocation's cursor without starting a second invocation or appending a second input message. Requires the `mobius.agent.invoke` permission (or the agent's own backing principal).
+         */
+        post: operations["sendSessionEvents"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project_handle}/sessions/{resource_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cancel a session's active invocation
+         * @description Cancels the session's in-flight invocation. Queued and running grains for the session are marked cancelled and a terminal `session.status_cancelled` event is emitted. Returns the updated session. Requires the `mobius.agent.invoke` permission (or the agent's own backing principal).
+         */
+        post: operations["cancelSession"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1281,7 +1333,7 @@ export interface paths {
         put?: never;
         /**
          * Upsert row
-         * @description Inserts or updates a row identified by key columns. Existing rows are patched with supplied fields; missing matches create a new row.
+         * @description Inserts or updates a row identified by the table's identity column. Existing rows are patched with supplied fields; missing matches create a new row.
          */
         post: operations["upsertTableRow"];
         delete?: never;
@@ -1605,6 +1657,11 @@ export interface components {
             tool_presentation?: components["schemas"]["AgentToolPresentation"];
             /** @description Custom system prompt for platform agents. Empty string uses the generated default based on the agent name. */
             system_prompt?: string;
+            /**
+             * Format: int64
+             * @description Execution timeout, in seconds, for a single turn of this platform agent. `0` (or omitted) uses the platform default (600s / 10 minutes). A loop step's own timeout overrides this for that step.
+             */
+            timeout_seconds?: number;
             /** @description Current agent status: `active` or `inactive`. */
             status: components["schemas"]["AgentStatus"];
             /** @description Inbox address provisioned via POST /v1/projects/{project_handle}/agents/{resource_id}/inbox (opt-in; not created automatically at agent creation). The field is populated only after a successful provisioning call. Use this address to add the agent as a member on external platforms (Linear, GitHub, Slack, etc.) so the platform can deliver notifications to the agent. */
@@ -2799,10 +2856,10 @@ export interface components {
          */
         AgentMessagingReplyMode: "auto";
         /**
-         * @description Provider supported by built-in agent messaging: `slack` or `telegram`.
+         * @description Provider supported by built-in agent messaging: `slack`, `telegram`, or `linear` (Linear agent sessions).
          * @enum {string}
          */
-        AgentMessagingProvider: "slack" | "telegram";
+        AgentMessagingProvider: "slack" | "telegram" | "linear";
         /** @description Messaging provider account that an agent can answer from. */
         AgentMessagingBinding: {
             /** @description Messaging binding identifier. */
@@ -2887,226 +2944,6 @@ export interface components {
             /** @description Messaging bindings configured for this agent. */
             items: components["schemas"]["AgentMessagingBinding"][];
         };
-        /**
-         * @description Durable conversation session status: `active`, `archived`, or `deleted`.
-         * @enum {string}
-         */
-        SessionStatus: "active" | "archived" | "deleted";
-        /**
-         * @description Surface that created the session: `manual`, `api`, or `loop`.
-         * @enum {string}
-         */
-        SessionOrigin: "manual" | "api" | "loop";
-        /**
-         * @description Boundary used to resolve named sessions: `agent` or `loop`.
-         * @enum {string}
-         */
-        SessionScope: "agent" | "loop";
-        /**
-         * @description Visibility of the session in project surfaces: `project` or `private`.
-         * @enum {string}
-         */
-        SessionVisibility: "project" | "private";
-        /**
-         * @description Message role: `system`, `user`, `assistant`, `tool`, or `compaction`.
-         * @enum {string}
-         */
-        SessionMessageRole: "system" | "user" | "assistant" | "tool" | "compaction";
-        /**
-         * @description Transcript entry type: `message` or `compaction`.
-         * @enum {string}
-         */
-        SessionMessageEntryType: "message" | "compaction";
-        /**
-         * @description Agent turn lifecycle status: `running`, `waiting`, `completed`, `failed`, or `cancelled`.
-         * @enum {string}
-         */
-        AgentTurnStatus: "running" | "waiting" | "completed" | "failed" | "cancelled";
-        /** @description One attempt of an agent running the agent loop — the unit that produces a transcript. A turn is triggered either by a loop step (run_id + step_id) or an inbound channel message (channel_exchange_id); the two are mutually exclusive. Its messages are read via the turn's transcript endpoint. */
-        AgentTurn: {
-            /** @description Stable turn identifier. */
-            id: string;
-            /** @description Agent that ran this turn. */
-            agent_id: string;
-            /** @description Session this turn's transcript was appended to. */
-            session_id: string;
-            /** @description Loop run that triggered this turn. Absent for messaging turns. */
-            run_id?: string;
-            /** @description Step key (matches LoopRunStep.step_key, not its id) of the loop step that triggered this turn. Absent for messaging turns. */
-            step_key?: string;
-            /** @description Inbound channel exchange that triggered this turn. Absent for loop turns. */
-            channel_exchange_id?: string;
-            /** @description 1-based attempt number for this run-step; retries create new turns. */
-            attempt: number;
-            /** @description Current lifecycle status of the agent turn. */
-            status: components["schemas"]["AgentTurnStatus"];
-            /** @description Per-session ordering hint (cosmetic; turns are ordered by creation time). */
-            seq?: number;
-            /** @description Machine-readable failure category when the turn failed. */
-            error_type?: string;
-            /** @description Human-readable failure detail when the turn failed. */
-            error_message?: string;
-            /**
-             * Format: date-time
-             * @description Time the turn was created.
-             */
-            created_at: string;
-            /**
-             * Format: date-time
-             * @description Time the turn was last updated.
-             */
-            updated_at: string;
-            /**
-             * Format: date-time
-             * @description When the turn reached a terminal status.
-             */
-            completed_at?: string;
-        };
-        AgentTurnListResponse: {
-            /** @description Turns in this session, ordered by creation time. */
-            items: components["schemas"]["AgentTurn"][];
-        };
-        /** @description Durable conversation transcript owned by an agent. */
-        Session: {
-            /** @description Stable session identifier. */
-            id: string;
-            /** @description Agent that owns this session. */
-            agent_id: string;
-            /** @description Human-readable session title. */
-            title: string;
-            /** @description Lifecycle status of the session. */
-            status: components["schemas"]["SessionStatus"];
-            /** @description Surface that created the session. */
-            origin: components["schemas"]["SessionOrigin"];
-            /** @description Boundary used to resolve the session key. */
-            scope: components["schemas"]["SessionScope"];
-            /** @description Identifier of the resource the session is scoped to (e.g. the agent for agent-scoped sessions). */
-            scope_ref_id: string;
-            /** @description Caller-assigned name identifying this conversation within its scope (`scope` + `scope_ref_id`); reused as the session routing key. */
-            scope_name: string;
-            /** @description Stable session routing key used to look up a scoped conversation (mirrors `scope_name`). */
-            session_key: string;
-            /** @description Where the session appears in project UI surfaces. */
-            visibility: components["schemas"]["SessionVisibility"];
-            /** @description Model the session most recently exchanged tokens with. */
-            model?: string;
-            /** @description Provider for the recorded `model`. */
-            model_provider?: string;
-            /** @description Per-session overrides for the message-compaction policy. */
-            compaction_policy?: {
-                [key: string]: unknown;
-            };
-            /** @description Total messages currently in the session, including compaction summaries. */
-            message_count: number;
-            /** @description Lifetime input-token total reported for this session. */
-            token_input_total: number;
-            /** @description Lifetime output-token total reported for this session. */
-            token_output_total: number;
-            /** @description Optimistic-concurrency version. Increments on every mutation. */
-            version: number;
-            /**
-             * Format: date-time
-             * @description Timestamp of the most recent message append; null before any messages are stored.
-             */
-            last_message_at?: string | null;
-            /** @description Source session this one was forked from, if any. */
-            forked_from_session_id?: string;
-            /** @description Sequence number in the source session at which the fork was taken. */
-            forked_from_sequence?: number;
-            /** @description User who created this session, if attribution was captured. */
-            created_by?: string;
-            /** @description Free-form caller metadata. */
-            metadata?: {
-                [key: string]: unknown;
-            };
-            /**
-             * Format: date-time
-             * @description Record creation timestamp.
-             */
-            created_at: string;
-            /**
-             * Format: date-time
-             * @description Last update timestamp.
-             */
-            updated_at: string;
-        };
-        SessionListResponse: {
-            /** @description The list of results for this page. */
-            items: components["schemas"]["Session"][];
-        };
-        /** @description JSON payload of a single `data:` line on the session event stream. The SSE `event:` field carries the event type (e.g. `generation.delta`); this object carries the event-specific fields. Additional fields beyond `session_id` vary by event type. */
-        SessionStreamEvent: {
-            /** @description The session this event belongs to. */
-            session_id: string;
-        } & {
-            [key: string]: unknown;
-        };
-        /** @description One persisted message or compaction entry in a session transcript. */
-        SessionMessage: {
-            /** @description Stable message identifier. */
-            id: string;
-            /** @description Session this message belongs to. */
-            session_id: string;
-            /** @description Agent that owns the parent session. */
-            agent_id: string;
-            /** @description Role of this message in the transcript. */
-            role: components["schemas"]["SessionMessageRole"];
-            /** @description Ordered content blocks (text, tool calls, tool results, images). */
-            content: {
-                [key: string]: unknown;
-            }[];
-            /** @description Whether this row is a normal message or a compaction summary. */
-            entry_type: components["schemas"]["SessionMessageEntryType"];
-            /** @description For `compaction` messages, the highest sequence number this summary covers. */
-            covers_through_sequence?: number;
-            /** @description Monotonic per-session sequence number assigned at append time. */
-            sequence: number;
-            /** @description AgentTurn that produced this message. Run, step, and channel identity for the message are read from this turn. Absent for compaction summaries and messages not tied to a turn. */
-            turn_id?: string;
-            /** @description Free-form caller metadata for this message. */
-            metadata?: {
-                [key: string]: unknown;
-            };
-            /**
-             * Format: date-time
-             * @description Server timestamp when the message was appended.
-             */
-            created_at: string;
-        };
-        SessionMessageListResponse: {
-            /** @description Messages in this page, ordered by `sequence` ascending. */
-            items: components["schemas"]["SessionMessage"][];
-        };
-        AppendSessionMessagesRequest: {
-            /** @description Messages to append to the session, in order. */
-            messages: components["schemas"]["AppendSessionMessage"][];
-            /** @description Updated lifetime input-token total for this session. */
-            token_input_total?: number;
-            /** @description Updated lifetime output-token total for this session. */
-            token_output_total?: number;
-            /** @description Model that produced these messages. */
-            model?: string;
-            /** @description Provider for the supplied `model`. */
-            model_provider?: string;
-        };
-        /** @description Message payload to append to an existing durable session. */
-        AppendSessionMessage: {
-            /** @description Role to store for this appended message. */
-            role: components["schemas"]["SessionMessageRole"];
-            /** @description Ordered content blocks (text, tool calls, tool results, images). */
-            content: {
-                [key: string]: unknown;
-            }[];
-            /** @description Free-form caller metadata for this message. */
-            metadata?: {
-                [key: string]: unknown;
-            };
-            /**
-             * Format: date-time
-             * @description Caller-supplied creation timestamp. The server assigns one if absent.
-             */
-            created_at?: string;
-        };
         /** @description Assignment linking a toolkit to an agent. */
         ToolkitAssignment: {
             /** @description Agent the toolkit is assigned to. */
@@ -3157,14 +2994,14 @@ export interface components {
             /** @description Skill assignments for this agent, in position order. */
             items: components["schemas"]["SkillAssignment"][];
         };
-        /** @description Skill entry included in a resolved agent tool manifest. */
+        /** @description Skill metadata included in a resolved agent tool manifest. Full instructions are loaded at runtime through the invoke_skill tool. */
         SkillManifestEntry: {
             /** @description Skill ID this manifest entry resolved to. */
             id: string;
             /** @description Display name of the skill. */
             name: string;
-            /** @description Markdown instructions loaded for this skill. */
-            instructions: string;
+            /** @description Markdown description of the skill's purpose. */
+            description?: string;
             /** @description Whether this skill is currently active in the resolved manifest. */
             active: boolean;
             /** @description Tool selectors the skill requires but that are not available to the agent. */
@@ -3241,6 +3078,11 @@ export interface components {
             tool_presentation?: components["schemas"]["AgentToolPresentation"];
             /** @description Custom system prompt for platform agents. Empty uses the generated default. */
             system_prompt?: string;
+            /**
+             * Format: int64
+             * @description Per-turn execution timeout in seconds for this platform agent. Omit or `0` to use the platform default (600s / 10 minutes); a loop step's own timeout overrides it for that step.
+             */
+            timeout_seconds?: number;
             /** @description Initial labels used for filtering, ownership, or automation. */
             tags?: components["schemas"]["TagMap"];
         };
@@ -3263,12 +3105,63 @@ export interface components {
             /** @description Replacement system prompt for platform agents. */
             system_prompt?: string;
             /**
+             * Format: int64
+             * @description Replacement per-turn execution timeout in seconds for this platform agent. `0` resets to the platform default (600s / 10 minutes); a loop step's own timeout overrides it for that step.
+             */
+            timeout_seconds?: number;
+            /**
              * @description Replacement agent status: `active` or `inactive`. Use DELETE to delete the agent.
              * @enum {string}
              */
             status?: "active" | "inactive";
             /** @description Replacement labels; send an empty object to clear all tags. */
             tags?: components["schemas"]["TagMap"];
+        };
+        /**
+         * @description Message role: `system`, `user`, `assistant`, `tool`, or `compaction`.
+         * @enum {string}
+         */
+        SessionMessageRole: "system" | "user" | "assistant" | "tool" | "compaction";
+        /**
+         * @description Transcript entry type: `message` or `compaction`.
+         * @enum {string}
+         */
+        SessionMessageEntryType: "message" | "compaction";
+        /** @description One persisted message or compaction entry in a session transcript. */
+        SessionMessage: {
+            /** @description Stable message identifier. */
+            id: string;
+            /** @description Session this message belongs to. */
+            session_id: string;
+            /** @description Agent that owns the parent session. */
+            agent_id: string;
+            /** @description Role of this message in the transcript. */
+            role: components["schemas"]["SessionMessageRole"];
+            /** @description Ordered content blocks (text, tool calls, tool results, images). */
+            content: {
+                [key: string]: unknown;
+            }[];
+            /** @description Whether this row is a normal message or a compaction summary. */
+            entry_type: components["schemas"]["SessionMessageEntryType"];
+            /** @description For `compaction` messages, the highest sequence number this summary covers. */
+            covers_through_sequence?: number;
+            /** @description Monotonic per-session sequence number assigned at append time. */
+            sequence: number;
+            /** @description AgentTurn that produced this message. Run, step, and channel identity for the message are read from this turn. Absent for compaction summaries and messages not tied to a turn. */
+            turn_id?: string;
+            /** @description Free-form caller metadata for this message. */
+            metadata?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Format: date-time
+             * @description Server timestamp when the message was appended.
+             */
+            created_at: string;
+        };
+        SessionMessageListResponse: {
+            /** @description Messages in this page, ordered by `sequence` ascending. */
+            items: components["schemas"]["SessionMessage"][];
         };
         /**
          * @description Action selector included in a toolkit.
@@ -3393,6 +3286,244 @@ export interface components {
             updated_at: string;
         };
         /**
+         * @description Durable conversation session status: `active`, `archived`, or `deleted`.
+         * @enum {string}
+         */
+        SessionStatus: "active" | "archived" | "deleted";
+        /**
+         * @description Surface that created the session: `manual`, `api`, or `loop`.
+         * @enum {string}
+         */
+        SessionOrigin: "manual" | "api" | "loop";
+        /**
+         * @description Boundary used to resolve named sessions: `agent` or `loop`.
+         * @enum {string}
+         */
+        SessionScope: "agent" | "loop";
+        /**
+         * @description Visibility of the session in project surfaces: `project` or `private`.
+         * @enum {string}
+         */
+        SessionVisibility: "project" | "private";
+        /**
+         * @description Agent turn lifecycle status: `running`, `waiting`, `completed`, `failed`, or `cancelled`.
+         * @enum {string}
+         */
+        AgentTurnStatus: "running" | "waiting" | "completed" | "failed" | "cancelled";
+        /** @description One attempt of an agent running the agent loop — the unit that produces a transcript. A turn is triggered either by a loop step (run_id + step_id) or an inbound channel message (channel_exchange_id); the two are mutually exclusive. Its messages are read via the turn's transcript endpoint. */
+        AgentTurn: {
+            /** @description Stable turn identifier. */
+            id: string;
+            /** @description Agent that ran this turn. */
+            agent_id: string;
+            /** @description Session this turn's transcript was appended to. */
+            session_id: string;
+            /** @description Loop run that triggered this turn. Absent for messaging turns. */
+            run_id?: string;
+            /** @description Step key (matches LoopRunStep.step_key, not its id) of the loop step that triggered this turn. Absent for messaging turns. */
+            step_key?: string;
+            /** @description Inbound channel exchange that triggered this turn. Absent for loop turns. */
+            channel_exchange_id?: string;
+            /** @description 1-based attempt number for this run-step; retries create new turns. */
+            attempt: number;
+            /** @description Current lifecycle status of the agent turn. */
+            status: components["schemas"]["AgentTurnStatus"];
+            /** @description Per-session ordering hint (cosmetic; turns are ordered by creation time). */
+            seq?: number;
+            /** @description Machine-readable failure category when the turn failed. */
+            error_type?: string;
+            /** @description Human-readable failure detail when the turn failed. */
+            error_message?: string;
+            /**
+             * Format: date-time
+             * @description Time the turn was created.
+             */
+            created_at: string;
+            /**
+             * Format: date-time
+             * @description Time the turn was last updated.
+             */
+            updated_at: string;
+            /**
+             * Format: date-time
+             * @description When the turn reached a terminal status.
+             */
+            completed_at?: string;
+        };
+        AgentTurnListResponse: {
+            /** @description Turns in this session, ordered by creation time. */
+            items: components["schemas"]["AgentTurn"][];
+        };
+        /** @description Durable conversation transcript owned by an agent. */
+        Session: {
+            /** @description Stable session identifier. */
+            id: string;
+            /** @description Agent that owns this session. */
+            agent_id: string;
+            /** @description Human-readable session title. */
+            title: string;
+            /** @description Lifecycle status of the session. */
+            status: components["schemas"]["SessionStatus"];
+            /** @description Surface that created the session. */
+            origin: components["schemas"]["SessionOrigin"];
+            /** @description Boundary used to resolve the session key. */
+            scope: components["schemas"]["SessionScope"];
+            /** @description Identifier of the resource the session is scoped to (e.g. the agent for agent-scoped sessions). */
+            scope_ref_id: string;
+            /** @description Caller-assigned name identifying this conversation within its scope (`scope` + `scope_ref_id`); reused as the session routing key. */
+            scope_name: string;
+            /** @description Stable session routing key used to look up a scoped conversation (mirrors `scope_name`). */
+            session_key: string;
+            /** @description Where the session appears in project UI surfaces. */
+            visibility: components["schemas"]["SessionVisibility"];
+            /** @description Model the session most recently exchanged tokens with. */
+            model?: string;
+            /** @description Provider for the recorded `model`. */
+            model_provider?: string;
+            /** @description Per-session overrides for the message-compaction policy. */
+            compaction_policy?: {
+                [key: string]: unknown;
+            };
+            /** @description Total messages currently in the session, including compaction summaries. */
+            message_count: number;
+            /** @description Lifetime input-token total reported for this session. */
+            token_input_total: number;
+            /** @description Lifetime output-token total reported for this session. */
+            token_output_total: number;
+            /** @description Optimistic-concurrency version. Increments on every mutation. */
+            version: number;
+            /**
+             * Format: date-time
+             * @description Timestamp of the most recent message append; null before any messages are stored.
+             */
+            last_message_at?: string | null;
+            /** @description Source session this one was forked from, if any. */
+            forked_from_session_id?: string;
+            /** @description Sequence number in the source session at which the fork was taken. */
+            forked_from_sequence?: number;
+            /** @description User who created this session, if attribution was captured. */
+            created_by?: string;
+            /** @description Free-form caller metadata. */
+            metadata?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Format: date-time
+             * @description Record creation timestamp.
+             */
+            created_at: string;
+            /**
+             * Format: date-time
+             * @description Last update timestamp.
+             */
+            updated_at: string;
+        };
+        SessionListResponse: {
+            /** @description The list of results for this page. */
+            items: components["schemas"]["Session"][];
+        };
+        /** @description Mutable display and lifecycle fields for a session. */
+        UpdateSessionRequest: {
+            /** @description Human-readable session title. */
+            title?: string;
+            /** @description Lifecycle status. `active` restores archived sessions; `deleted` is terminal. */
+            status?: components["schemas"]["SessionStatus"];
+        };
+        /** @description JSON payload of a single `data:` line on the session event stream. The SSE `event:` field carries the event type (e.g. `generation.delta`); this object carries the event-specific fields. Additional fields beyond `session_id` vary by event type. */
+        SessionStreamEvent: {
+            /** @description The session this event belongs to. */
+            session_id: string;
+        } & {
+            [key: string]: unknown;
+        };
+        AppendSessionMessagesRequest: {
+            /** @description Messages to append to the session, in order. */
+            messages: components["schemas"]["AppendSessionMessage"][];
+            /** @description Updated lifetime input-token total for this session. */
+            token_input_total?: number;
+            /** @description Updated lifetime output-token total for this session. */
+            token_output_total?: number;
+            /** @description Model that produced these messages. */
+            model?: string;
+            /** @description Provider for the supplied `model`. */
+            model_provider?: string;
+        };
+        /** @description Message payload to append to an existing durable session. */
+        AppendSessionMessage: {
+            /** @description Role to store for this appended message. */
+            role: components["schemas"]["SessionMessageRole"];
+            /** @description Ordered content blocks (text, tool calls, tool results, images). */
+            content: {
+                [key: string]: unknown;
+            }[];
+            /** @description Free-form caller metadata for this message. */
+            metadata?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Format: date-time
+             * @description Caller-supplied creation timestamp. The server assigns one if absent.
+             */
+            created_at?: string;
+        };
+        /** @description Resolve-or-create policy for a session. */
+        CreateSessionRequest: {
+            /** @description Agent that owns the session. */
+            agent_id: string;
+            /**
+             * @description `continue_or_create` (default) resolves an existing session for the `session_key` or creates one; `new` always creates a fresh session; `continue` resolves an existing session and fails if none exists.
+             * @enum {string}
+             */
+            mode?: "new" | "continue" | "continue_or_create";
+            /** @description Stable key identifying the conversation within the agent. */
+            session_key?: string;
+            /** @description Human-friendly session title. */
+            title?: string;
+            visibility?: components["schemas"]["SessionVisibility"];
+            /** @description Model to record on the session. */
+            model?: string;
+            /** @description Free-form caller metadata for the session. */
+            metadata?: {
+                [key: string]: unknown;
+            };
+        };
+        /** @description One input event in a send. Phase 1 supports a single `user.message`. */
+        SendSessionEventInput: {
+            /**
+             * @description Input event type. Defaults to `user.message`.
+             * @enum {string}
+             */
+            type?: "user.message";
+            /** @description Role to store for the input message. Defaults to `user`. */
+            role?: components["schemas"]["SessionMessageRole"];
+            /** @description Ordered content blocks (text, images) for the input message. */
+            content: {
+                [key: string]: unknown;
+            }[];
+        };
+        /** @description Caller input to append and run against a session. */
+        SendSessionEventsRequest: {
+            /** @description Input events to send. Phase 1 accepts exactly one `user.message`. */
+            events: components["schemas"]["SendSessionEventInput"][];
+            /** @description Dedup key scoped to the session. A repeat send with the same key returns the existing invocation's cursor and writes nothing new. */
+            idempotency_key?: string;
+            /** @description Free-form caller metadata attached to the input message. */
+            metadata?: {
+                [key: string]: unknown;
+            };
+        };
+        /** @description Acknowledgement that an invocation started, with a stream cursor. */
+        SessionInvocationAck: {
+            session: components["schemas"]["Session"];
+            /**
+             * Format: int64
+             * @description The durable event sequence cursor to stream from. Pass it as `after_sequence` to the events stream to follow this invocation.
+             */
+            seq: number;
+            /** @description True when a repeated idempotency key returned an existing invocation. */
+            deduped?: boolean;
+        };
+        /**
          * @description A loop and its current authored definition. Updating any authoring field creates an internal revision and makes it runnable immediately.
          * @example {
          *       "id": "loop_9q2m7x5v3p8n4r6t",
@@ -3401,7 +3532,7 @@ export interface components {
          *       "status": "active",
          *       "owner": "user_2f9s3k4m5n6p7q8r",
          *       "agent_id": "agent_5n8p2q7m4x9r3v6t",
-         *       "schema_version": "2",
+         *       "schema_version": "1",
          *       "default_config": {
          *         "repository": "deepnoodle-ai/mobius-cloud"
          *       },
@@ -3447,11 +3578,11 @@ export interface components {
             /** @description Agent associated with this loop. Agent steps use it when they do not pin `config.agent_id`. */
             agent_id?: string;
             /**
-             * @description Loop authoring schema version. Only schema version 2 is accepted.
-             * @default 2
+             * @description Loop authoring schema version. Only schema version 1 is accepted.
+             * @default 1
              * @enum {string}
              */
-            schema_version: "2";
+            schema_version: "1";
             /** @description Declared event fields for this loop. */
             event?: {
                 [key: string]: components["schemas"]["LoopSpecInput"];
@@ -3547,7 +3678,7 @@ export interface components {
          *       "name": "Daily security check",
          *       "description": "Review open pull requests each morning.",
          *       "agent_id": "agent_5n8p2q7m4x9r3v6t",
-         *       "schema_version": "2",
+         *       "schema_version": "1",
          *       "triggers": [
          *         {
          *           "name": "Weekday morning",
@@ -3583,11 +3714,11 @@ export interface components {
             /** @description Agent associated with this loop. Agent steps use it when they do not pin `config.agent_id`. */
             agent_id?: string;
             /**
-             * @description Loop authoring schema version. Only schema version 2 is accepted.
-             * @default 2
+             * @description Loop authoring schema version. Only schema version 1 is accepted.
+             * @default 1
              * @enum {string}
              */
-            schema_version: "2";
+            schema_version: "1";
             /** @description Declared event fields for this loop. */
             event?: {
                 [key: string]: components["schemas"]["LoopSpecInput"];
@@ -3641,10 +3772,10 @@ export interface components {
             /** @description Agent associated with this loop. Agent steps use it when they do not pin `config.agent_id`. */
             agent_id?: string;
             /**
-             * @description Loop authoring schema version. Only schema version 2 is accepted.
+             * @description Loop authoring schema version. Only schema version 1 is accepted.
              * @enum {string}
              */
-            schema_version?: "2";
+            schema_version?: "1";
             /** @description Declared event fields for this loop. */
             event?: {
                 [key: string]: components["schemas"]["LoopSpecInput"];
@@ -3687,8 +3818,14 @@ export interface components {
             /** @description Replacement labels; send an empty object to clear all tags. */
             tags?: components["schemas"]["TagMap"];
         };
-        /** @description Source repository target attached to a loop spec. */
+        /** @description Source repository target attached to a loop spec. A `static` repository clones the named `full_name`. A `match` repository resolves the repository from the run's trigger event (for example the base repository of an opened GitHub pull request) and requires the loop to have an event trigger; pull requests opened from a fork are never cloned. `full_name` is required for `static` repositories and ignored for `match` repositories. */
         LoopSpecRepository: {
+            /**
+             * @description How the repository target is resolved. `static` clones `full_name`; `match` clones the repository the trigger event concerns.
+             * @default static
+             * @enum {string}
+             */
+            source: "static" | "match";
             /**
              * @description Repository provider. GitHub is the only supported provider today.
              * @default github
@@ -3697,8 +3834,10 @@ export interface components {
             provider: "github";
             /** @description Provider-specific repository id. */
             id?: number | string;
-            /** @description Provider repository full name, e.g. `owner/repo`. */
-            full_name: string;
+            /** @description Provider repository full name, e.g. `owner/repo`. Required when `source` is `static`. */
+            full_name?: string;
+            /** @description Optional branch, tag, or ref to check out. For `static` repositories it pins the checkout; for `match` repositories it overrides the ref derived from the event. Omitted uses the provider default branch. */
+            ref?: string;
             /** @description Whether the provider reports this repository as private. */
             private?: boolean;
         };
@@ -3885,7 +4024,7 @@ export interface components {
         LoopSpecLimits: {
             /**
              * Format: double
-             * @description Run budget in US dollars (1 credit = $0.01). The run halts with stop reason `budget_exceeded` at the next checkpoint (step boundary or agent tool iteration) once its metered spend reaches the ceiling; a `run.budget_warning` event fires once at 80%. Enforcement granularity is one model call or metered action — a run can overshoot by at most the call in flight. Mutually exclusive with `credit_budget`; values finer than 0.001 credit ($0.00001) are rejected at compile.
+             * @description Run budget in US dollars (1 credit = $0.01). The budget is a hard limit: the run halts with stop reason `budget_exceeded` at the next checkpoint (step boundary or agent tool iteration) once its metered spend reaches the ceiling. Enforcement granularity is one model call or metered action — a run can overshoot by at most the call in flight. Mutually exclusive with `credit_budget`; values finer than 0.001 credit ($0.00001) are rejected at compile.
              */
             budget_usd?: number;
             /**
@@ -3946,7 +4085,7 @@ export interface components {
             instructions: string;
             /** @description Optional per-step tool allow-list. When omitted, prompt-only managed agent steps default to no tools; set `disable_tools: false` to allow the agent's full granted tool set. */
             tool_names?: string[];
-            /** @description Disable all tool calls for this agent step. When omitted, prompt-only managed agent steps (no `tool_names`, output schema, or worker model route) default to tool-less execution and skip managed environment allocation. Set `false` explicitly to opt back into the agent's granted tools. */
+            /** @description Disable granted action and memory tools for this agent step. Reserved runtime tools such as `invoke_skill` and structured-output submission may still be present when applicable. When omitted, the agent's granted tools are available. */
             disable_tools?: boolean;
             /** @description JSON Schema the agent should satisfy when returning structured output. */
             output_schema?: {
@@ -4442,6 +4581,12 @@ export interface components {
             job_id?: string | null;
             /** @description Wait record this step is suspended on, when applicable. */
             wait_id?: string | null;
+            /** @description Session the agent ran in, for `agent`-kind steps. Present once the step has started a turn; links the step to its conversation so the UI can open the transcript with this step's messages highlighted. */
+            session_id?: string;
+            /** @description Agent that executed this step, for `agent`-kind steps. */
+            agent_id?: string;
+            /** @description Most recent AgentTurn this step ran (its latest attempt), for `agent`-kind steps. Resolves to the step's messages within the session via their `turn_id`. */
+            agent_turn_id?: string;
             /** @description Machine-readable error code populated on failure. */
             error_type?: string;
             /** @description Human-readable error message populated on failure. */
@@ -4508,7 +4653,7 @@ export interface components {
             /**
              * @description Event type from the run-stream taxonomy (e.g. `run.started`, `step.completed`, `wait.opened`, `action.called`, `action.completed`, `action.failed`, `artifact.created`, `limit.reached`, `usage.recorded`).
              *
-             *     Guardrail events: `run.budget_warning` fires once when run spend first reaches 80% of the run budget (payload: `credit_budget`, `credit_spent`, `percent`); `run.budget_exceeded` fires when the budget halts the run at a checkpoint (same payload plus the `step` it halted before). `usage.recorded` payloads carry `step_key`, the event's `credit_cost`, its `budget_cost` (rate-card cost counted against the run budget, nonzero even for BYOK), and the cumulative `run_credit_spent`.
+             *     Guardrail events: `run.budget_exceeded` fires when the budget halts the run at a checkpoint (payload: `credit_budget`, `credit_spent`, `percent_used`, plus the `step` it halted before). `usage.recorded` payloads carry `step_key`, the event's `credit_cost`, its `budget_cost` (rate-card cost counted against the run budget, nonzero even for BYOK), and the cumulative `run_credit_spent`.
              */
             event_type: string;
             /** @description ID of the step this event belongs to, when applicable. */
@@ -4620,11 +4765,6 @@ export interface components {
              */
             required: boolean;
             /**
-             * @description Whether the column value must be unique within the table.
-             * @default false
-             */
-            unique: boolean;
-            /**
              * @description Marks the column as an expected filter/sort field so backends can maintain efficient indexes.
              * @default false
              */
@@ -4645,14 +4785,11 @@ export interface components {
             name: string;
             /** @description Column names included in the index, in order. */
             columns: string[];
-            /**
-             * @description Whether the index enforces uniqueness across its columns.
-             * @default false
-             */
-            unique: boolean;
         };
-        /** @description Column and index definition for a table. */
+        /** @description Column and index definition for a table. Each table has exactly one required string identity column. */
         TableSchema: {
+            /** @description Name of the required string column that uniquely identifies one row in this table. */
+            identity_column: string;
             /** @description Ordered list of columns accepted in row data. */
             columns: components["schemas"]["ColumnDef"][];
             /** @description Optional declared indexes maintained by the backend. */
@@ -4668,7 +4805,8 @@ export interface components {
          *         "columns": [
          *           {
          *             "name": "pull_request_url",
-         *             "type": "string"
+         *             "type": "string",
+         *             "required": true
          *           },
          *           {
          *             "name": "severity",
@@ -4678,7 +4816,8 @@ export interface components {
          *             "name": "summary",
          *             "type": "string"
          *           }
-         *         ]
+         *         ],
+         *         "identity_column": "pull_request_url"
          *       },
          *       "tags": {
          *         "team": "product"
@@ -4728,9 +4867,11 @@ export interface components {
          *             "columns": [
          *               {
          *                 "name": "pull_request_url",
-         *                 "type": "string"
+         *                 "type": "string",
+         *                 "required": true
          *               }
-         *             ]
+         *             ],
+         *             "identity_column": "pull_request_url"
          *           },
          *           "created_at": "2026-06-15T14:30:00Z",
          *           "updated_at": "2026-06-15T14:30:00Z"
@@ -4796,7 +4937,8 @@ export interface components {
          *         "columns": [
          *           {
          *             "name": "pull_request_url",
-         *             "type": "string"
+         *             "type": "string",
+         *             "required": true
          *           },
          *           {
          *             "name": "severity",
@@ -4806,7 +4948,8 @@ export interface components {
          *             "name": "summary",
          *             "type": "string"
          *           }
-         *         ]
+         *         ],
+         *         "identity_column": "pull_request_url"
          *       }
          *     }
          */
@@ -4965,14 +5108,12 @@ export interface components {
             items: components["schemas"]["TableRow"][];
         };
         UpsertRowRequest: {
-            /** @description Column names used to match an existing row. */
-            key_columns: string[];
-            /** @description Full row data. Must include values for all key_columns. */
+            /** @description Fields to create or merge into the row. Must include the table's identity column. */
             data: {
                 [key: string]: unknown;
             };
         };
-        /** @description Result of inserting or updating a row by key columns. */
+        /** @description Result of inserting or updating a row by the table's identity column. */
         UpsertRowResult: {
             /** @description Row after insert or update. */
             row: components["schemas"]["TableRow"];
@@ -5033,6 +5174,29 @@ export interface components {
             updated_at?: string;
             /** @description Principal ID of the actor who last updated this artifact. Empty for system-initiated writes. */
             updated_by?: string;
+            /** @description Thumbnail summary for the default variant, when available. Absent until thumbnail processing has produced a state for the current content. */
+            thumbnail?: components["schemas"]["ArtifactThumbnailSummary"];
+        };
+        /** @description Summary of the Mobius-generated thumbnail for an artifact's default variant. The UI uses `status` to decide whether to fetch the thumbnail image, render a placeholder, or show a typed fallback card. */
+        ArtifactThumbnailSummary: {
+            /**
+             * @description Current thumbnail state for the source artifact's content.
+             * @enum {string}
+             */
+            status: "queued" | "processing" | "available" | "skipped" | "failed" | "stale";
+            /** @description Variant name this summary describes (e.g. `card`). */
+            variant: string;
+            /** @description Thumbnail image MIME type when available (image/jpeg or image/png). */
+            mime_type?: string;
+            /** @description Thumbnail pixel width when available. */
+            width?: number;
+            /** @description Thumbnail pixel height when available. */
+            height?: number;
+            /**
+             * Format: date-time
+             * @description Time this thumbnail state was last updated.
+             */
+            updated_at?: string;
         };
         /**
          * @example {
@@ -5221,6 +5385,8 @@ export interface components {
         IntegrationIDParam: string;
         /** @description Integration event receipt ID. */
         IntegrationEventIDParam: string;
+        /** @description Framework provider identifier from the integration provider catalog. */
+        IntegrationProviderParam: string;
         /** @description Table ID. */
         TableIDParam: string;
         /** @description Filter tables by name. Table names are unique within a project; use this as a discovery filter and use the returned table `id` for follow-up operations. */
@@ -6738,176 +6904,6 @@ export interface operations {
             429: components["responses"]["TooManyRequests"];
         };
     };
-    listAgentSessions: {
-        parameters: {
-            query?: {
-                /** @description Filter by session status. */
-                status?: components["schemas"]["SessionStatus"];
-                /** @description Filter by session scope. */
-                scope?: components["schemas"]["SessionScope"];
-                /** @description Filter messaging sessions by provider metadata, e.g. `slack` or `telegram`. */
-                provider?: string;
-                /** @description Only include sessions with activity after this timestamp. */
-                since?: string;
-                /** @description Maximum number of items to return */
-                limit?: components["parameters"]["LimitParam"];
-            };
-            header?: never;
-            path: {
-                /** @description Project handle */
-                project_handle: components["parameters"]["ProjectHandleParam"];
-                /** @description Resource ID. */
-                resource_id: components["parameters"]["IDParam"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SessionListResponse"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    getAgentSession: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Project handle */
-                project_handle: components["parameters"]["ProjectHandleParam"];
-                /** @description Resource ID. */
-                resource_id: components["parameters"]["IDParam"];
-                /** @description Session identifier. */
-                session_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Session"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    listSessionMessages: {
-        parameters: {
-            query?: {
-                /** @description Only include messages with sequence greater than this value. */
-                after_sequence?: number;
-                /** @description Maximum number of items to return */
-                limit?: components["parameters"]["LimitParam"];
-            };
-            header?: never;
-            path: {
-                /** @description Project handle */
-                project_handle: components["parameters"]["ProjectHandleParam"];
-                /** @description Resource ID. */
-                resource_id: components["parameters"]["IDParam"];
-                /** @description Session identifier. */
-                session_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SessionMessageListResponse"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    appendSessionMessages: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Project handle */
-                project_handle: components["parameters"]["ProjectHandleParam"];
-                /** @description Resource ID. */
-                resource_id: components["parameters"]["IDParam"];
-                /** @description Session identifier. */
-                session_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AppendSessionMessagesRequest"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Session"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            429: components["responses"]["TooManyRequests"];
-        };
-    };
-    listSessionTurns: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Project handle */
-                project_handle: components["parameters"]["ProjectHandleParam"];
-                /** @description Resource ID. */
-                resource_id: components["parameters"]["IDParam"];
-                /** @description Session identifier. */
-                session_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AgentTurnListResponse"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-        };
-    };
     listTurnMessages: {
         parameters: {
             query?: {
@@ -7046,36 +7042,6 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             429: components["responses"]["TooManyRequests"];
-        };
-    };
-    streamSessionEvents: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Project handle */
-                project_handle: components["parameters"]["ProjectHandleParam"];
-                /** @description Resource ID. */
-                resource_id: components["parameters"]["IDParam"];
-                /** @description Session identifier. */
-                session_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Server-sent event stream of live session activity. Each message is framed as `event: <event type>` (e.g. `generation.delta`) followed by a `data:` line carrying the JSON-encoded event payload (the `SessionStreamEvent` shape, always including `session_id`). */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "text/event-stream": components["schemas"]["SessionStreamEvent"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
         };
     };
     listAgentToolkitAssignments: {
@@ -7252,6 +7218,358 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
+    listSessions: {
+        parameters: {
+            query?: {
+                /** @description Filter to sessions owned by this agent. */
+                agent_id?: string;
+                /** @description Filter by session status. */
+                status?: components["schemas"]["SessionStatus"];
+                /** @description Filter by session scope. */
+                scope?: components["schemas"]["SessionScope"];
+                /** @description Filter messaging sessions by provider metadata, e.g. `slack` or `telegram`. */
+                provider?: string;
+                /** @description Filter to sessions created by this integration, e.g. agent sessions started from a connected provider. */
+                integration_id?: string;
+                /** @description Only include sessions with activity after this timestamp. */
+                since?: string;
+                /** @description Maximum number of items to return */
+                limit?: components["parameters"]["LimitParam"];
+            };
+            header?: never;
+            path: {
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionListResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    createSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateSessionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Session"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
+                resource_id: components["parameters"]["IDParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Session"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    deleteSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
+                resource_id: components["parameters"]["IDParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    updateSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
+                resource_id: components["parameters"]["IDParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateSessionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Session"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    listSessionMessages: {
+        parameters: {
+            query?: {
+                /** @description Only include messages with sequence greater than this value. */
+                after_sequence?: number;
+                /** @description Maximum number of items to return */
+                limit?: components["parameters"]["LimitParam"];
+            };
+            header?: never;
+            path: {
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
+                resource_id: components["parameters"]["IDParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionMessageListResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    appendSessionMessages: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
+                resource_id: components["parameters"]["IDParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AppendSessionMessagesRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Session"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    listSessionTurns: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
+                resource_id: components["parameters"]["IDParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentTurnListResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    streamSessionEvents: {
+        parameters: {
+            query?: {
+                /** @description Resume the stream after this durable event sequence number. */
+                after_sequence?: number;
+            };
+            header?: never;
+            path: {
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
+                resource_id: components["parameters"]["IDParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Server-sent event stream of session activity. Each message is framed as `event: <event type>` followed by a `data:` line carrying the JSON-encoded event payload (the `SessionStreamEvent` shape, always including `session_id`). Durable events also carry an `id:` line with the event sequence number for `Last-Event-ID` resume. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/event-stream": components["schemas"]["SessionStreamEvent"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    sendSessionEvents: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
+                resource_id: components["parameters"]["IDParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SendSessionEventsRequest"];
+            };
+        };
+        responses: {
+            /** @description The invocation was accepted and is running. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionInvocationAck"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    cancelSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
+                resource_id: components["parameters"]["IDParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Session"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
     listLoops: {
         parameters: {
             query?: {
@@ -7303,7 +7621,7 @@ export interface operations {
                  *       "name": "Daily security check",
                  *       "description": "Review open pull requests each morning.",
                  *       "agent_id": "agent_5n8p2q7m4x9r3v6t",
-                 *       "schema_version": "2",
+                 *       "schema_version": "1",
                  *       "triggers": [
                  *         {
                  *           "name": "Weekday morning",
@@ -7345,7 +7663,7 @@ export interface operations {
                      *       "description": "Review open pull requests each morning.",
                      *       "status": "active",
                      *       "agent_id": "agent_5n8p2q7m4x9r3v6t",
-                     *       "schema_version": "2",
+                     *       "schema_version": "1",
                      *       "triggers": [
                      *         {
                      *           "name": "Weekday morning",
@@ -8404,7 +8722,8 @@ export interface operations {
                  *             "name": "summary",
                  *             "type": "string"
                  *           }
-                 *         ]
+                 *         ],
+                 *         "identity_column": "pull_request_url"
                  *       }
                  *     }
                  */
@@ -8438,7 +8757,8 @@ export interface operations {
                      *             "name": "summary",
                      *             "type": "string"
                      *           }
-                     *         ]
+                     *         ],
+                     *         "identity_column": "pull_request_url"
                      *       },
                      *       "created_at": "2026-06-15T14:30:00Z",
                      *       "updated_at": "2026-06-15T14:30:00Z"
@@ -8548,7 +8868,8 @@ export interface operations {
                      *         "columns": [
                      *           {
                      *             "name": "pull_request_url",
-                     *             "type": "string"
+                     *             "type": "string",
+                     *             "required": true
                      *           },
                      *           {
                      *             "name": "severity",
@@ -8558,7 +8879,8 @@ export interface operations {
                      *             "name": "summary",
                      *             "type": "string"
                      *           }
-                     *         ]
+                     *         ],
+                     *         "identity_column": "pull_request_url"
                      *       },
                      *       "tags": {
                      *         "team": "product"
@@ -8815,9 +9137,6 @@ export interface operations {
             content: {
                 /**
                  * @example {
-                 *       "key_columns": [
-                 *         "pull_request_url"
-                 *       ],
                  *       "data": {
                  *         "pull_request_url": "https://github.com/deepnoodle-ai/mobius-cloud/pull/123",
                  *         "severity": "high",

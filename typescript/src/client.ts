@@ -264,7 +264,7 @@ export class Client {
 
   async createAutomation(opts: AutomationOptions): Promise<Automation> {
     const body = {
-      schema_version: "2" as const,
+      schema_version: "1" as const,
       ...(opts.spec ?? {}),
       ...removeUndefined({
         name: opts.name,

@@ -35,6 +35,7 @@ func registerGeneratedCommands(app *cli.App) {
 	registerLoopsCommands(app)
 	registerProjectsCommands(app)
 	registerRunsCommands(app)
+	registerSessionsCommands(app)
 	registerSkillsCommands(app)
 	registerTablesCommands(app)
 	registerToolkitsCommands(app)

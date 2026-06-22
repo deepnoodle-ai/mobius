@@ -17,69 +17,8 @@ import (
 
 // registerAgentsCommands registers every generated subcommand in the "agents" group.
 func registerAgentsCommands(app *cli.App) {
-	agentsGrp := app.Group("agents").Description("Agents, sessions, and presence")
+	agentsGrp := app.Group("agents").Description("Agent identities, presence, and lifecycle")
 	agentsGrp.Alias("agent")
-	agentsGrp.Command("append-session-messages").
-		Description("Append session messages").
-		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
-		AddArg(&cli.Arg{Name: "session-id", Description: "Session identifier.", Required: true}).
-		Flags(
-			cli.String("messages", "").Help("[required] Messages to append to the session, in order. Accepts JSON, @file, or @-."),
-			cli.String("model", "").Help("Model that produced these messages."),
-			cli.String("model-provider", "").Help("Provider for the supplied `model`."),
-			cli.Int("token-input-total", "").Help("Updated lifetime input-token total for this session."),
-			cli.Int("token-output-total", "").Help("Updated lifetime output-token total for this session."),
-			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
-			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
-		).
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			p2 := ctx.Arg(1)
-			var body api.AppendSessionMessagesJSONRequestBody
-			if err := readJSONBody(ctx, &body); err != nil {
-				return err
-			}
-			if ctx.IsSet("messages") {
-				if err := decodeFlagJSON(ctx, "messages", ctx.String("messages"), &body.Messages); err != nil {
-					return err
-				}
-			}
-			if ctx.IsSet("model") {
-				v := ctx.String("model")
-				body.Model = &v
-			}
-			if ctx.IsSet("model-provider") {
-				v := ctx.String("model-provider")
-				body.ModelProvider = &v
-			}
-			if ctx.IsSet("token-input-total") {
-				v := ctx.Int("token-input-total")
-				body.TokenInputTotal = &v
-			}
-			if ctx.IsSet("token-output-total") {
-				v := ctx.Int("token-output-total")
-				body.TokenOutputTotal = &v
-			}
-			if ctx.String("file") == "" && !ctx.IsSet("messages") {
-				return fmt.Errorf("--messages is required (or supply it via --file)")
-			}
-			if ctx.Bool("dry-run") {
-				return printDryRun(ctx, body)
-			}
-			resp, err := client.AppendSessionMessagesWithResponse(ctx.Context(), p0, p1, p2, body)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "appendSessionMessages", resp.StatusCode(), resp.Body)
-		})
-
 	agentsGrp.Command("create").
 		Description("Create agent").
 		Flags(
@@ -91,6 +30,7 @@ func registerAgentsCommands(app *cli.App) {
 			cli.String("name", "").Help("[required] Unique name for this agent. Free-form human-readable label, 1-63 characters."),
 			cli.String("system-prompt", "").Help("Custom system prompt for platform agents. Empty uses the generated default."),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
+			cli.Int("timeout-seconds", "").Help("Per-turn execution timeout in seconds for this platform agent. Omit or `0` to use the platform defa…"),
 			cli.String("tool-presentation", "").Help("Controls how granted actions are surfaced to the model in Mobius-hosted agent turns. `meta` (the de…"),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
@@ -140,6 +80,10 @@ func registerAgentsCommands(app *cli.App) {
 			} else if tags != nil {
 				v := api.TagMap(tags)
 				body.Tags = &v
+			}
+			if ctx.IsSet("timeout-seconds") {
+				v := int64(ctx.Int("timeout-seconds"))
+				body.TimeoutSeconds = &v
 			}
 			if ctx.IsSet("tool-presentation") {
 				v := api.AgentToolPresentation(ctx.String("tool-presentation"))
@@ -217,27 +161,6 @@ func registerAgentsCommands(app *cli.App) {
 			return printResponse(ctx, "getAgent", resp.StatusCode(), resp.Body)
 		})
 
-	agentsGrp.Command("get-session").
-		Description("Get agent session").
-		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
-		AddArg(&cli.Arg{Name: "session-id", Description: "Session identifier.", Required: true}).
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			p2 := ctx.Arg(1)
-			resp, err := client.GetAgentSessionWithResponse(ctx.Context(), p0, p1, p2)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "getAgentSession", resp.StatusCode(), resp.Body)
-		})
-
 	agentsGrp.Command("get-tools").
 		Description("Get agent tools").
 		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
@@ -311,40 +234,6 @@ func registerAgentsCommands(app *cli.App) {
 		})
 
 	agentsGrp.Command("list-messages").
-		Description("List session messages").
-		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
-		AddArg(&cli.Arg{Name: "session-id", Description: "Session identifier.", Required: true}).
-		Flags(
-			cli.Int("after-sequence", "").Help("Only include messages with sequence greater than this value."),
-			cli.Int("limit", "").Help("Maximum number of items to return"),
-		).
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			p2 := ctx.Arg(1)
-			params := &api.ListSessionMessagesParams{}
-			if ctx.IsSet("after-sequence") {
-				v := ctx.Int("after-sequence")
-				params.AfterSequence = &v
-			}
-			if ctx.IsSet("limit") {
-				v := api.LimitParam(ctx.Int("limit"))
-				params.Limit = &v
-			}
-			resp, err := client.ListSessionMessagesWithResponse(ctx.Context(), p0, p1, p2, params)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "listSessionMessages", resp.StatusCode(), resp.Body)
-		})
-
-	agentsGrp.Command("list-messages-2").
 		Description("List turn messages").
 		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		Flags(
@@ -395,48 +284,6 @@ func registerAgentsCommands(app *cli.App) {
 			return printResponse(ctx, "listAgentMessagingBindings", resp.StatusCode(), resp.Body)
 		})
 
-	agentsGrp.Command("list-sessions").
-		Description("List agent sessions").
-		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
-		Flags(
-			cli.String("status", "").Help("Filter by session status."),
-			cli.String("scope", "").Help("Filter by session scope."),
-			cli.String("provider", "").Help("Filter messaging sessions by provider metadata, e.g. `slack` or `telegram`."),
-			cli.Int("limit", "").Help("Maximum number of items to return"),
-		).
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			params := &api.ListAgentSessionsParams{}
-			if ctx.IsSet("status") {
-				v := api.SessionStatus(ctx.String("status"))
-				params.Status = &v
-			}
-			if ctx.IsSet("scope") {
-				v := api.SessionScope(ctx.String("scope"))
-				params.Scope = &v
-			}
-			if ctx.IsSet("provider") {
-				v := ctx.String("provider")
-				params.Provider = &v
-			}
-			if ctx.IsSet("limit") {
-				v := api.LimitParam(ctx.Int("limit"))
-				params.Limit = &v
-			}
-			resp, err := client.ListAgentSessionsWithResponse(ctx.Context(), p0, p1, params)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "listAgentSessions", resp.StatusCode(), resp.Body)
-		})
-
 	agentsGrp.Command("list-skill-assignments").
 		Description("List agent skill assignments").
 		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
@@ -473,27 +320,6 @@ func registerAgentsCommands(app *cli.App) {
 				return err
 			}
 			return printResponse(ctx, "listAgentToolkitAssignments", resp.StatusCode(), resp.Body)
-		})
-
-	agentsGrp.Command("list-turns").
-		Description("List session turns").
-		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
-		AddArg(&cli.Arg{Name: "session-id", Description: "Session identifier.", Required: true}).
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			p2 := ctx.Arg(1)
-			resp, err := client.ListSessionTurnsWithResponse(ctx.Context(), p0, p1, p2)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "listSessionTurns", resp.StatusCode(), resp.Body)
 		})
 
 	agentsGrp.Command("provision-inbox").
@@ -601,7 +427,7 @@ func registerAgentsCommands(app *cli.App) {
 			cli.String("integration-id", "").Help("[required] ID of the connected integration that backs this binding."),
 			cli.Bool("mentions", "").Help("Respond when the agent is @-mentioned."),
 			cli.String("model-route", "").Help("Default model route used by built-in messaging and by loop agent steps that do not override the rou… Accepts JSON, @file, or @-."),
-			cli.String("provider", "").Help("[required] Provider supported by built-in agent messaging: `slack` or `telegram`."),
+			cli.String("provider", "").Help("[required] Provider supported by built-in agent messaging: `slack`, `telegram`, or `linear` (Linear agent sess…"),
 			cli.Bool("replace-existing", "").Help("When enabling this binding, disable any other active agent binding for the same provider account."),
 			cli.String("reply-mode", "").Help("Reply mode for built-in messaging; currently `auto`."),
 			cli.Strings("sender-allow", "").Help("Sender IDs allowed to trigger the agent (empty means no allowlist)."),
@@ -684,27 +510,6 @@ func registerAgentsCommands(app *cli.App) {
 			return printResponse(ctx, "saveAgentMessagingBinding", resp.StatusCode(), resp.Body)
 		})
 
-	agentsGrp.Command("stream-session-events").
-		Description("Stream session events").
-		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
-		AddArg(&cli.Arg{Name: "session-id", Description: "Session identifier.", Required: true}).
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			p2 := ctx.Arg(1)
-			resp, err := client.StreamSessionEventsWithResponse(ctx.Context(), p0, p1, p2)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "streamSessionEvents", resp.StatusCode(), resp.Body)
-		})
-
 	agentsGrp.Command("update").
 		Description("Update agent").
 		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
@@ -718,6 +523,7 @@ func registerAgentsCommands(app *cli.App) {
 			cli.String("status", "").Help("Replacement agent status: `active` or `inactive`. Use DELETE to delete the agent."),
 			cli.String("system-prompt", "").Help("Replacement system prompt for platform agents."),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
+			cli.Int("timeout-seconds", "").Help("Replacement per-turn execution timeout in seconds for this platform agent. `0` resets to the platfo…"),
 			cli.String("tool-presentation", "").Help("Controls how granted actions are surfaced to the model in Mobius-hosted agent turns. `meta` (the de…"),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
@@ -774,11 +580,15 @@ func registerAgentsCommands(app *cli.App) {
 				v := api.TagMap(tags)
 				body.Tags = &v
 			}
+			if ctx.IsSet("timeout-seconds") {
+				v := int64(ctx.Int("timeout-seconds"))
+				body.TimeoutSeconds = &v
+			}
 			if ctx.IsSet("tool-presentation") {
 				v := api.AgentToolPresentation(ctx.String("tool-presentation"))
 				body.ToolPresentation = &v
 			}
-			if ctx.String("file") == "" && !ctx.IsSet("color") && !ctx.IsSet("description") && !ctx.IsSet("kind") && !ctx.IsSet("model") && !ctx.IsSet("model-route") && !ctx.IsSet("name") && !ctx.IsSet("status") && !ctx.IsSet("system-prompt") && !ctx.IsSet("tag") && !ctx.IsSet("tool-presentation") {
+			if ctx.String("file") == "" && !ctx.IsSet("color") && !ctx.IsSet("description") && !ctx.IsSet("kind") && !ctx.IsSet("model") && !ctx.IsSet("model-route") && !ctx.IsSet("name") && !ctx.IsSet("status") && !ctx.IsSet("system-prompt") && !ctx.IsSet("tag") && !ctx.IsSet("timeout-seconds") && !ctx.IsSet("tool-presentation") {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
 			if ctx.Bool("dry-run") {
