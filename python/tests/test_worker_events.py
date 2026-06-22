@@ -189,3 +189,133 @@ def test_worker_pool_registers_actions_for_children() -> None:
 
     assert pool.register("demo.action", action) is pool
     assert pool.actions["demo.action"] is action
+
+
+class _ServeSocket:
+    """An async-iterable stand-in for a websockets connection.
+
+    Frames pushed via :meth:`emit` are yielded by ``async for``; :meth:`close`
+    ends the iteration. :meth:`send` records the JSON frames the worker writes.
+    Used to drive :meth:`Worker._serve_socket` deterministically.
+    """
+
+    _STOP = object()
+
+    def __init__(self) -> None:
+        self.sent: list[dict[str, object]] = []
+        self.closed = False
+        self._queue: asyncio.Queue[object] = asyncio.Queue()
+
+    async def send(self, message: str) -> None:
+        self.sent.append(json.loads(message))
+
+    async def close(self) -> None:
+        if not self.closed:
+            self.closed = True
+            await self._queue.put(self._STOP)
+
+    async def emit(self, frame: dict[str, object]) -> None:
+        await self._queue.put(json.dumps(frame))
+
+    def claims(self) -> list[dict[str, object]]:
+        return [f for f in self.sent if f["type"] == "jobs.claim"]
+
+    def __aiter__(self) -> "_ServeSocket":
+        return self
+
+    async def __anext__(self) -> str:
+        item = await self._queue.get()
+        if item is self._STOP:
+            raise StopAsyncIteration
+        return item  # type: ignore[return-value]
+
+
+async def _drain() -> None:
+    # Let the serve loop consume queued frames and run its claim coroutines.
+    for _ in range(10):
+        await asyncio.sleep(0)
+
+
+def _serve_worker(claim_response_timeout: float) -> Worker:
+    worker = Worker(_client(), WorkerConfig(worker_instance_id="worker-1"))
+    worker._claim_response_timeout = claim_response_timeout
+    return worker
+
+
+@pytest.mark.asyncio
+async def test_serve_socket_reconnects_when_claim_unanswered() -> None:
+    worker = _serve_worker(0.02)
+    ws = _ServeSocket()
+    serve = asyncio.create_task(worker._serve_socket(ws))
+
+    await ws.emit({"type": "worker.registered", "worker_session_token": "tok"})
+    # The claim is never answered; the watchdog must close the socket and the
+    # serve loop must raise so run() reconnects.
+    with pytest.raises(RuntimeError, match="went unanswered"):
+        await serve
+    assert len(ws.claims()) == 1
+    assert ws.closed
+
+
+@pytest.mark.asyncio
+async def test_serve_socket_clears_outstanding_claim_on_matching_error() -> None:
+    worker = _serve_worker(5.0)
+    ws = _ServeSocket()
+    serve = asyncio.create_task(worker._serve_socket(ws))
+
+    await ws.emit({"type": "worker.registered", "worker_session_token": "tok"})
+    await _drain()
+    claim_id = ws.claims()[0]["message_id"]
+
+    # A nonterminal error answering the claim clears the outstanding flag, so
+    # the next work.available re-claims.
+    await ws.emit(
+        {"type": "error", "message_id": claim_id, "error": {"code": "claim_failed"}}
+    )
+    await _drain()
+    await ws.emit({"type": "work.available"})
+    await _drain()
+
+    assert len(ws.claims()) == 2
+    await ws.close()
+    await serve
+
+
+@pytest.mark.asyncio
+async def test_serve_socket_keeps_claim_outstanding_on_unmatched_error() -> None:
+    worker = _serve_worker(5.0)
+    ws = _ServeSocket()
+    serve = asyncio.create_task(worker._serve_socket(ws))
+
+    await ws.emit({"type": "worker.registered", "worker_session_token": "tok"})
+    await _drain()
+
+    # An error for some other message must not clear our outstanding claim, so
+    # work.available stays a no-op.
+    await ws.emit(
+        {"type": "error", "message_id": "msg_other", "error": {"code": "claim_failed"}}
+    )
+    await _drain()
+    await ws.emit({"type": "work.available"})
+    await _drain()
+
+    assert len(ws.claims()) == 1
+    await ws.close()
+    await serve
+
+
+@pytest.mark.asyncio
+async def test_serve_socket_does_not_reclaim_after_empty_claimed() -> None:
+    worker = _serve_worker(5.0)
+    ws = _ServeSocket()
+    serve = asyncio.create_task(worker._serve_socket(ws))
+
+    await ws.emit({"type": "worker.registered", "worker_session_token": "tok"})
+    await _drain()
+    await ws.emit({"type": "jobs.claimed", "jobs": []})
+    await _drain()
+
+    # No job ran, so nothing re-claims; an empty response must not hot-poll.
+    assert len(ws.claims()) == 1
+    await ws.close()
+    await serve

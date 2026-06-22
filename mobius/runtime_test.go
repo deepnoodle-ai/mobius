@@ -497,3 +497,167 @@ func readTestFrame(t *testing.T, conn *websocket.Conn) socketEnvelope {
 	env.Raw = append(json.RawMessage(nil), raw...)
 	return env
 }
+
+// TestWorkerRun_ReconnectsWhenClaimGoesUnanswered is the regression for the
+// claim-loop wedge: a single jobs.claim whose response never arrives (lost
+// frame, lost response, or a wedged server-side handler) used to strand the
+// worker forever — claimOutstanding stayed set, the ticker and work.available
+// both no-op'd, no further claims were sent, and the worker's last_seen stopped
+// advancing until the connection's max-age recycled it (~5 min), by which point
+// Mobius Cloud's dead-worker reaper had already failed the run's jobs. The
+// worker must now time the outstanding claim out and reconnect on its own.
+func TestWorkerRun_ReconnectsWhenClaimGoesUnanswered(t *testing.T) {
+	var conns atomic.Int32
+	reconnected := make(chan struct{}, 1)
+	hold := make(chan struct{})
+	t.Cleanup(func() { close(hold) })
+
+	c, _ := newWorkerSocketTestClient(t, func(t *testing.T, conn *websocket.Conn) {
+		switch conns.Add(1) {
+		case 1:
+			// Register, read the worker's claim, then deliberately never answer
+			// it. The worker must abandon this socket once claimResponseTimeout
+			// elapses and reconnect.
+			expectRegister(t, conn, "noop", nil)
+			expectClaim(t, conn)
+			<-hold // keep the connection open (and the claim unanswered)
+		default:
+			// The worker self-healed by reconnecting.
+			expectRegister(t, conn, "noop", nil)
+			select {
+			case reconnected <- struct{}{}:
+			default:
+			}
+			<-hold
+		}
+	})
+
+	worker := c.NewWorker(WorkerConfig{
+		WorkerInstanceID:  "w-claim-timeout",
+		ReconnectDelay:    10 * time.Millisecond,
+		HeartbeatInterval: time.Hour,
+	})
+	worker.claimResponseTimeout = 100 * time.Millisecond
+	worker.Register(ActionFunc("noop", func(ctx Context, params map[string]any) (any, error) { return nil, nil }))
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	done := make(chan error, 1)
+	go func() { done <- worker.Run(ctx) }()
+
+	select {
+	case <-reconnected:
+	case <-time.After(2 * time.Second):
+		t.Fatal("worker did not reconnect after an unanswered claim (wedged)")
+	}
+	cancel()
+	<-done
+}
+
+// TestWorkerRun_DoesNotReclaimAfterEmptyClaimResponse verifies the worker does
+// not immediately re-issue a claim after an empty jobs.claimed — which would
+// hot-poll a server that answers without long-polling. The next claim must come
+// from the periodic ticker instead.
+func TestWorkerRun_DoesNotReclaimAfterEmptyClaimResponse(t *testing.T) {
+	hold := make(chan struct{})
+	t.Cleanup(func() { close(hold) })
+	firstClaim := make(chan struct{}, 1)
+	hotPoll := make(chan struct{}, 1)
+
+	c, _ := newWorkerSocketTestClient(t, func(t *testing.T, conn *websocket.Conn) {
+		expectRegister(t, conn, "noop", nil)
+		expectClaim(t, conn)
+		firstClaim <- struct{}{}
+		sendClaimed(t, conn) // empty response: no work available
+		// Within the window the worker should send nothing (it waits for the 10s
+		// ticker). A jobs.claim here means it hot-polled.
+		_ = conn.SetReadDeadline(time.Now().Add(400 * time.Millisecond))
+		if _, raw, err := conn.ReadMessage(); err == nil {
+			var env socketEnvelope
+			_ = json.Unmarshal(raw, &env)
+			if env.Type == "jobs.claim" {
+				select {
+				case hotPoll <- struct{}{}:
+				default:
+				}
+			}
+		}
+		<-hold
+	})
+
+	worker := c.NewWorker(WorkerConfig{
+		WorkerInstanceID:  "w-empty-claim",
+		ReconnectDelay:    10 * time.Millisecond,
+		HeartbeatInterval: time.Hour,
+	})
+	worker.Register(ActionFunc("noop", func(ctx Context, params map[string]any) (any, error) { return nil, nil }))
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	done := make(chan error, 1)
+	go func() { done <- worker.Run(ctx) }()
+
+	<-firstClaim
+	select {
+	case <-hotPoll:
+		t.Fatal("worker re-claimed immediately after an empty jobs.claimed (hot-poll)")
+	case <-time.After(600 * time.Millisecond):
+	}
+	cancel()
+	<-done
+}
+
+// TestWorkerRun_ClearsOutstandingClaimAfterMatchingError verifies that a
+// nonterminal error answering our claim (matched by message id) clears the
+// outstanding-claim state, so a following work.available can drive a fresh
+// claim instead of being no-op'd forever.
+func TestWorkerRun_ClearsOutstandingClaimAfterMatchingError(t *testing.T) {
+	hold := make(chan struct{})
+	t.Cleanup(func() { close(hold) })
+	secondClaim := make(chan struct{}, 1)
+
+	c, _ := newWorkerSocketTestClient(t, func(t *testing.T, conn *websocket.Conn) {
+		expectRegister(t, conn, "noop", nil)
+		claim1 := expectClaim(t, conn)
+		// Reject the claim with a recoverable error carrying its message id, then
+		// nudge the worker that work is available.
+		assert.NoError(t, conn.WriteJSON(api.WorkerSocketErrorFrame{
+			Type:      api.WorkerSocketErrorFrameTypeError,
+			MessageId: claim1.MessageId,
+			Error:     api.WorkerSocketProtocolError{Code: "temporarily_unavailable", Message: "try again"},
+		}))
+		assert.NoError(t, conn.WriteJSON(api.WorkerSocketWorkAvailableFrame{
+			Type: api.WorkerSocketWorkAvailableFrameTypeWorkAvailable,
+		}))
+		for {
+			if readTestFrame(t, conn).Type == "jobs.claim" {
+				select {
+				case secondClaim <- struct{}{}:
+				default:
+				}
+				break
+			}
+		}
+		<-hold
+	})
+
+	worker := c.NewWorker(WorkerConfig{
+		WorkerInstanceID:  "w-claim-error",
+		ReconnectDelay:    10 * time.Millisecond,
+		HeartbeatInterval: time.Hour,
+	})
+	worker.Register(ActionFunc("noop", func(ctx Context, params map[string]any) (any, error) { return nil, nil }))
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	done := make(chan error, 1)
+	go func() { done <- worker.Run(ctx) }()
+
+	select {
+	case <-secondClaim:
+	case <-time.After(2 * time.Second):
+		t.Fatal("worker did not re-claim after a matching nonterminal error (claim stuck)")
+	}
+	cancel()
+	<-done
+}

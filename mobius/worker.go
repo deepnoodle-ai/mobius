@@ -15,6 +15,11 @@ import (
 
 const defaultWorkerReconnectDelay = 2 * time.Second
 
+// defaultClaimResponseTimeout bounds how long an outstanding jobs.claim may go
+// unanswered before the worker abandons the socket and reconnects. See
+// [Worker.claimResponseTimeout].
+const defaultClaimResponseTimeout = 60 * time.Second
+
 // ModelCapability advertises one customer-managed model a worker can serve.
 type ModelCapability struct {
 	Provider string
@@ -100,6 +105,20 @@ type Worker struct {
 	slotFreed chan struct{} // nudges the run loop to claim after a job finishes
 	wg        sync.WaitGroup
 
+	// claimResponseTimeout bounds how long an outstanding jobs.claim may go
+	// unanswered before the worker treats the socket as a dead work channel and
+	// reconnects. The server answers a claim within its long-poll window (the
+	// heartbeat cadence, on the order of tens of seconds) even when idle —
+	// returning an empty jobs.claimed — so a claim that goes unanswered well past
+	// that means the frame or its response was lost, or a server-side connection
+	// handler wedged. Without this bound a single lost claim/response strands the
+	// worker: claimOutstanding stays set, the periodic ticker and work.available
+	// both no-op, no further claims are sent, the worker's last_seen stops
+	// advancing, and Mobius Cloud's dead-worker reaper fails the run's pending
+	// jobs as environment_worker_unavailable. Must sit above the server's
+	// long-poll window and below that reaper's stale TTL.
+	claimResponseTimeout time.Duration
+
 	mu            sync.Mutex
 	currentSocket *workerSocket     // the live socket, or nil while disconnected
 	socketChanged chan struct{}     // closed+replaced whenever currentSocket changes
@@ -123,15 +142,16 @@ func (c *Client) NewWorker(cfg WorkerConfig) *Worker {
 		cfg.ReconnectDelay = defaultWorkerReconnectDelay
 	}
 	return &Worker{
-		client:        c,
-		config:        cfg,
-		registry:      NewActionRegistry(),
-		generators:    map[string]GenerationFunc{},
-		keepWarm:      detectHold(cfg.Logger),
-		slots:         make(chan struct{}, cfg.Concurrency),
-		slotFreed:     make(chan struct{}, cfg.Concurrency),
-		socketChanged: make(chan struct{}),
-		inflight:      map[string]func(){},
+		client:               c,
+		config:               cfg,
+		registry:             NewActionRegistry(),
+		generators:           map[string]GenerationFunc{},
+		keepWarm:             detectHold(cfg.Logger),
+		slots:                make(chan struct{}, cfg.Concurrency),
+		slotFreed:            make(chan struct{}, cfg.Concurrency),
+		socketChanged:        make(chan struct{}),
+		inflight:             map[string]func(){},
+		claimResponseTimeout: defaultClaimResponseTimeout,
 	}
 }
 
@@ -275,6 +295,34 @@ func (w *Worker) runSocket(ctx context.Context) error {
 
 	claimOutstanding := false
 	draining := false
+	var outstandingClaimID string // message id of the outstanding claim
+
+	// claimDeadline fires when an outstanding claim has gone unanswered for
+	// claimResponseTimeout. It is armed when a claim is sent and disarmed when one
+	// is answered (jobs.claimed or a matching error). It starts stopped.
+	claimDeadline := time.NewTimer(w.claimResponseTimeout)
+	if !claimDeadline.Stop() {
+		<-claimDeadline.C
+	}
+	defer claimDeadline.Stop()
+	armClaimDeadline := func() {
+		if !claimDeadline.Stop() {
+			select {
+			case <-claimDeadline.C:
+			default:
+			}
+		}
+		claimDeadline.Reset(w.claimResponseTimeout)
+	}
+	disarmClaimDeadline := func() {
+		if !claimDeadline.Stop() {
+			select {
+			case <-claimDeadline.C:
+			default:
+			}
+		}
+	}
+
 	claim := func() error {
 		if claimOutstanding || draining {
 			return nil
@@ -283,8 +331,16 @@ func (w *Worker) runSocket(ctx context.Context) error {
 		if available <= 0 {
 			return nil
 		}
+		frame := w.claimFrame(available)
 		claimOutstanding = true
-		return socket.writeJSON(w.claimFrame(available))
+		outstandingClaimID = workerSocketMessageIDValue(frame.MessageId)
+		if err := socket.writeJSON(frame); err != nil {
+			return err
+		}
+		// Bound how long this claim may go unanswered; a lost claim/response
+		// would otherwise strand the worker until the connection's max-age.
+		armClaimDeadline()
+		return nil
 	}
 	if err := claim(); err != nil {
 		return err
@@ -307,6 +363,17 @@ func (w *Worker) runSocket(ctx context.Context) error {
 			// setSocket(nil) unblocks them to wait for the next connection.
 			cancel()
 			return err
+		case <-claimDeadline.C:
+			// The outstanding claim has gone unanswered past claimResponseTimeout:
+			// this socket is no longer a reliable work channel (lost claim frame,
+			// lost response, or a wedged server-side handler). Drop it and
+			// reconnect for a clean slate (re-register + fresh claim) — the same
+			// recovery the connection's max-age eventually forces, but fast enough
+			// to beat Mobius Cloud's dead-worker reaper. In-flight jobs run under
+			// the worker context, not the socket, so they survive the reconnect
+			// and resume on the next connection.
+			cancel()
+			return fmt.Errorf("mobius: jobs.claim went unanswered for %s; reconnecting", w.claimResponseTimeout)
 		case <-ticker.C:
 			if err := claim(); err != nil {
 				return err
@@ -322,6 +389,7 @@ func (w *Worker) runSocket(ctx context.Context) error {
 			switch frame.Type {
 			case "jobs.claimed":
 				claimOutstanding = false
+				disarmClaimDeadline()
 				var claimed api.WorkerSocketJobsClaimedFrame
 				if err := json.Unmarshal(frame.Raw, &claimed); err != nil {
 					return err
@@ -344,8 +412,16 @@ func (w *Worker) runSocket(ctx context.Context) error {
 						w.runJob(ctx, jobCtx, job)
 					}()
 				}
-				if err := claim(); err != nil {
-					return err
+				// Re-claim immediately only when this response actually carried
+				// jobs and spare capacity may remain — chaining claims to drain a
+				// backlog. After an EMPTY response, do not re-claim here: that
+				// would hot-poll if the server ever answers without long-polling.
+				// The periodic ticker, work.available, and slotFreed drive the
+				// next claim instead.
+				if len(claimed.Jobs) > 0 {
+					if err := claim(); err != nil {
+						return err
+					}
 				}
 			case "work.available":
 				if err := claim(); err != nil {
@@ -384,6 +460,16 @@ func (w *Worker) runSocket(ctx context.Context) error {
 				if terminal := w.terminalProtocolError(errFrame.Error); terminal != nil {
 					cancel()
 					return terminal
+				}
+				// If this nonterminal error answers our outstanding claim (matched
+				// by message id), clear claimOutstanding so the next tick or
+				// work.available re-claims. Otherwise a claim that the server
+				// rejects with a recoverable error would stay "in flight" forever
+				// and silently stop the worker from claiming.
+				if claimOutstanding && outstandingClaimID != "" &&
+					workerSocketMessageIDValue(errFrame.MessageId) == outstandingClaimID {
+					claimOutstanding = false
+					disarmClaimDeadline()
 				}
 				w.config.Logger.Error("worker socket protocol error",
 					"code", errFrame.Error.Code,
