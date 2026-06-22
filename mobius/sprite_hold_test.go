@@ -83,6 +83,7 @@ func TestSpriteHoldEstablishesAndReleases(t *testing.T) {
 		t.Fatal("expected a hold for a real socket, got nil")
 	}
 	h.interval = 50 * time.Millisecond
+	h.releaseGrace = 20 * time.Millisecond // release promptly once idle
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -92,9 +93,43 @@ func TestSpriteHoldEstablishesAndReleases(t *testing.T) {
 	h.acquire()
 	waitFor(t, func() bool { return rec.seen(http.MethodPut) }, "PUT on acquire")
 
-	// The job finishes: the worker is idle, so the hold must be released (DELETE).
+	// The job finishes: after the release grace elapses with no new work, the
+	// hold must be released (DELETE).
 	h.release()
-	waitFor(t, func() bool { return rec.seen(http.MethodDelete) }, "DELETE on release")
+	waitFor(t, func() bool { return rec.seen(http.MethodDelete) }, "DELETE after release grace")
+}
+
+// TestSpriteHoldGraceBridgesInterJobGap proves the H-2 fix: a job finishing does
+// not immediately drop the hold. A next job arriving within the release grace
+// keeps the Sprite warm (no DELETE), so a reused environment doesn't pause in
+// the agent's inter-tool-call think-gap and strand the next job.
+func TestSpriteHoldGraceBridgesInterJobGap(t *testing.T) {
+	rec := &taskRecorder{}
+	sock := serveTaskSocket(t, rec)
+
+	h := newSpriteHoldWithPath(sock, slog.Default())
+	if h == nil {
+		t.Fatal("expected a hold for a real socket, got nil")
+	}
+	h.interval = time.Hour       // don't let refresh interfere
+	h.releaseGrace = time.Second // long enough to re-acquire within
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go h.run(ctx)
+
+	h.acquire() // job 1 starts
+	waitFor(t, func() bool { return rec.seen(http.MethodPut) }, "PUT on first acquire")
+
+	h.release() // job 1 finishes; grace window opens
+	h.acquire() // job 2 (next tool call) arrives within the grace
+	h.release() // job 2 finishes
+
+	// The hold must NOT have been released while work kept arriving within grace.
+	time.Sleep(200 * time.Millisecond)
+	if rec.seen(http.MethodDelete) {
+		t.Fatal("hold was released during the inter-job gap; the Sprite could pause and strand the next job")
+	}
 }
 
 func TestNewSpriteHoldOffSprite(t *testing.T) {

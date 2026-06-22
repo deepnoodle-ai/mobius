@@ -159,6 +159,13 @@ func (w *Worker) Run(ctx context.Context) error {
 		// Never released explicitly: the maintainer deletes the hold when holdCtx
 		// is cancelled on worker shutdown.
 		w.keepWarm.acquire()
+		// Establish it synchronously so the environment is warm before we start
+		// claiming work, rather than racing the maintainer's first async refresh
+		// (a sub-second boot window in which the Sprite could pause). Best-effort:
+		// the maintainer retries on its interval if this first attempt fails.
+		if !w.keepWarm.ensure(holdCtx) {
+			w.config.Logger.Warn("worker keep-warm: initial lifetime hold not established; retrying on the maintainer interval")
+		}
 	}
 	// In-flight jobs run under ctx (not the socket), so cancelling ctx aborts
 	// them; wait for those goroutines to unwind before Run returns. This defer

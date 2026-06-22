@@ -23,6 +23,12 @@ type hold interface {
 	release()
 	// run maintains the hold until ctx is cancelled.
 	run(ctx context.Context)
+	// ensure synchronously establishes the hold now (best-effort) and reports
+	// whether it is held. Used at startup for a lifetime-pinned hold so the
+	// environment is warm before the worker begins claiming work, closing the
+	// gap before the maintainer goroutine's first asynchronous refresh. The
+	// no-op hold reports true.
+	ensure(ctx context.Context) bool
 }
 
 // detectHold selects the keep-warm strategy for the current environment,
@@ -38,6 +44,7 @@ func detectHold(logger *slog.Logger) hold {
 // noopHold is the hold used when the environment needs no keep-warm behaviour.
 type noopHold struct{}
 
-func (noopHold) acquire()            {}
-func (noopHold) release()            {}
-func (noopHold) run(context.Context) {}
+func (noopHold) acquire()                    {}
+func (noopHold) release()                    {}
+func (noopHold) run(context.Context)         {}
+func (noopHold) ensure(context.Context) bool { return true }

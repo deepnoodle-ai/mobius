@@ -27,6 +27,14 @@ const (
 	spriteTaskExpire        = "5m"
 	spriteHeartbeatInterval = 60 * time.Second
 	spriteRequestTimeout    = 10 * time.Second
+	// spriteReleaseGrace keeps the hold alive for a short window after the worker
+	// goes idle, so the Sprite stays warm across an agent step's inter-tool-call
+	// think-time (a job completes, the LLM reasons, the next tool-call job
+	// arrives). Without it a reused (lease/explicit) environment pauses the
+	// instant a job finishes and strands the next job — the #1028 wedge. Each new
+	// job resets the window, so an active session never pauses; the Sprite only
+	// hibernates after the grace elapses with no work, so idle billing is bounded.
+	spriteReleaseGrace = 2 * time.Minute
 )
 
 var _ hold = (*spriteHold)(nil)
@@ -47,14 +55,16 @@ var _ hold = (*spriteHold)(nil)
 // active work rather than the worker's whole lifetime, so reused (lease/explicit
 // lifetime) environments still hibernate between jobs.
 type spriteHold struct {
-	client   *http.Client
-	taskName string
-	logger   *slog.Logger
-	interval time.Duration
+	client       *http.Client
+	taskName     string
+	logger       *slog.Logger
+	interval     time.Duration
+	releaseGrace time.Duration
 
-	mu    sync.Mutex
-	count int
-	wake  chan struct{} // coalesced signal that count changed
+	mu       sync.Mutex
+	count    int
+	degraded bool          // last refresh failed; tracked to log transitions once
+	wake     chan struct{} // coalesced signal that count changed
 }
 
 // newSpriteHold returns a [spriteHold] when the process is running inside a
@@ -81,10 +91,11 @@ func newSpriteHoldWithPath(socketPath string, logger *slog.Logger) *spriteHold {
 				},
 			},
 		},
-		taskName: spriteTaskName,
-		logger:   logger,
-		interval: spriteHeartbeatInterval,
-		wake:     make(chan struct{}, 1),
+		taskName:     spriteTaskName,
+		logger:       logger,
+		interval:     spriteHeartbeatInterval,
+		releaseGrace: spriteReleaseGrace,
+		wake:         make(chan struct{}, 1),
 	}
 }
 
@@ -134,12 +145,23 @@ func (h *spriteHold) signal() {
 // run maintains the Sprite task for the worker's lifetime. A single goroutine
 // owns all task I/O, so there is no create/delete race between concurrent jobs:
 // it creates the task when work first appears, refreshes it on h.interval, and
-// deletes it when the worker goes idle or ctx is cancelled.
+// releases it once the worker has been idle for releaseGrace (so it bridges the
+// inter-tool-call think-gap) or when ctx is cancelled.
 func (h *spriteHold) run(ctx context.Context) {
 	t := time.NewTicker(h.interval)
 	defer t.Stop()
+	var grace *time.Timer
+	var graceC <-chan time.Time
+	stopGrace := func() {
+		if grace != nil {
+			grace.Stop()
+			grace = nil
+			graceC = nil
+		}
+	}
 	held := false
 	defer func() {
+		stopGrace()
 		if held {
 			h.deleteTask()
 		}
@@ -147,10 +169,17 @@ func (h *spriteHold) run(ctx context.Context) {
 	for {
 		switch active := h.active(); {
 		case active && !held:
+			stopGrace()
 			held = h.putTask(ctx)
-		case !active && held:
-			h.deleteTask()
-			held = false
+		case active && held:
+			// Work resumed (or never stopped) within the grace window — keep the
+			// hold and cancel any pending release.
+			stopGrace()
+		case !active && held && grace == nil:
+			// Idle: arm the release grace instead of dropping the hold now, so a
+			// next-tool-call job arriving in the think-gap still finds it warm.
+			grace = time.NewTimer(h.releaseGrace)
+			graceC = grace.C
 		}
 		select {
 		case <-ctx.Done():
@@ -160,13 +189,46 @@ func (h *spriteHold) run(ctx context.Context) {
 			if held {
 				h.putTask(ctx)
 			}
+		case <-graceC:
+			stopGrace()
+			if !h.active() && held {
+				h.deleteTask()
+				held = false
+			}
 		}
 	}
 }
 
-// putTask creates or refreshes the hold. Best-effort: a failure is logged at
-// debug and retried on the next tick, never surfaced to job execution.
+// ensure synchronously establishes the hold now and reports whether it is held.
+// The caller (worker startup, for a lifetime-pinned hold) has already recorded
+// its job via acquire; this lands the Tasks-API PUT before the worker begins
+// claiming work, rather than waiting for the maintainer goroutine's first
+// asynchronous pass. Best-effort: a failure is surfaced by putTask and retried
+// on the interval.
+func (h *spriteHold) ensure(ctx context.Context) bool {
+	return h.putTask(ctx)
+}
+
+// putTask creates or refreshes the hold and records whether it succeeded so the
+// degraded↔healthy transition is logged once (not on every interval). A failure
+// means the Sprite can pause mid-work, so it is surfaced at Warn — but never to
+// job execution. The job keeps running; the hold is retried on the next tick.
 func (h *spriteHold) putTask(ctx context.Context) bool {
+	ok := h.doPutTask(ctx)
+	h.mu.Lock()
+	switch {
+	case !ok && !h.degraded:
+		h.degraded = true
+		h.logger.Warn("sprite keep-warm: hold refresh failing; the environment may pause mid-work", "task", h.taskName)
+	case ok && h.degraded:
+		h.degraded = false
+		h.logger.Info("sprite keep-warm: hold refresh recovered", "task", h.taskName)
+	}
+	h.mu.Unlock()
+	return ok
+}
+
+func (h *spriteHold) doPutTask(ctx context.Context) bool {
 	body := fmt.Sprintf(`{"expire":%q}`, spriteTaskExpire)
 	req, err := http.NewRequestWithContext(ctx, http.MethodPut,
 		"http://sprite/v1/tasks/"+h.taskName, bytes.NewReader([]byte(body)))
