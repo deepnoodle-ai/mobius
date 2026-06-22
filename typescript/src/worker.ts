@@ -156,6 +156,18 @@ export class Worker {
   private stopping = false;
   private readonly stopController = new AbortController();
 
+  // claimResponseTimeoutMs bounds how long an outstanding jobs.claim may go
+  // unanswered before the worker abandons the socket and reconnects. The server
+  // answers a claim within its long-poll window (tens of seconds) even when
+  // idle — returning an empty jobs.claimed — so a claim unanswered well past
+  // that means the frame or its response was lost, or a server-side handler
+  // wedged. Without this bound a single lost claim/response strands the worker:
+  // claimOutstanding stays set, work.available and post-job re-claims both
+  // no-op, no further claims are sent, and Mobius Cloud's dead-worker reaper
+  // eventually fails the run's pending jobs as environment_worker_unavailable.
+  // Overridable in tests.
+  private claimResponseTimeoutMs = 60_000;
+
   constructor(
     private readonly client: Client,
     private readonly config: WorkerConfig = {},
@@ -211,71 +223,153 @@ export class Worker {
     }
   }
 
+  // openSocket dials the worker WebSocket. Isolated so tests can substitute a
+  // fake socket and drive the frame loop deterministically.
+  protected openSocket(): WebSocket {
+    return new WebSocket(this.client.workerSocketURL());
+  }
+
   private async runSocket(signal?: AbortSignal): Promise<void> {
-    const ws = new WebSocket(this.client.workerSocketURL());
+    const ws = this.openSocket();
     const concurrency = this.config.concurrency && this.config.concurrency > 0
       ? this.config.concurrency
       : 1;
     const running = new Map<string, AbortController>();
     let claimOutstanding = false;
+    let outstandingClaimId: string | undefined;
 
-    await waitForOpen(ws, signal);
-    ws.send(JSON.stringify(this.registerFrame(concurrency)));
+    // claimDeadline drops the socket when an outstanding jobs.claim goes
+    // unanswered for claimResponseTimeoutMs, forcing run() to reconnect for a
+    // clean slate (re-register + fresh claim). See the field doc.
+    let claimTimer: ReturnType<typeof setTimeout> | undefined;
+    let claimTimedOut = false;
+    const disarmClaimDeadline = () => {
+      if (claimTimer !== undefined) {
+        clearTimeout(claimTimer);
+        claimTimer = undefined;
+      }
+    };
+    const armClaimDeadline = () => {
+      disarmClaimDeadline();
+      claimTimer = setTimeout(() => {
+        claimTimer = undefined;
+        claimTimedOut = true;
+        try {
+          ws.close();
+        } catch {
+          // ignore
+        }
+      }, this.claimResponseTimeoutMs);
+    };
 
-    for await (const frame of socketFrames(ws, signal)) {
-      switch (frame.type) {
-        case "worker.registered":
-          this.sessionToken = String(frame.worker_session_token ?? "");
-          this.claim(ws, concurrency, running.size, claimOutstanding);
-          claimOutstanding = true;
-          break;
-        case "jobs.claimed":
-          claimOutstanding = false;
-          for (const job of (frame.jobs ?? []) as WorkerSocketClaimedJob[]) {
-            if (running.size >= concurrency) break;
-            const ctrl = new AbortController();
-            running.set(job.id, ctrl);
-            void this.executeJob(ws, job, ctrl.signal).finally(() => {
-              running.delete(job.id);
-              this.claim(ws, concurrency, running.size, claimOutstanding);
-              claimOutstanding = true;
-            });
+    const claim = () => {
+      if (claimOutstanding || this.stopping) return;
+      const available = concurrency - running.size;
+      if (available <= 0) return;
+      const messageId = msgID();
+      const actions = this.config.actions?.length
+        ? this.config.actions
+        : [...this.actions.keys()].sort();
+      const frame: WorkerSocketJobsClaimFrame = removeUndefined({
+        type: "jobs.claim",
+        message_id: messageId,
+        available_slots: available,
+        queues: this.config.queues?.length ? this.config.queues : undefined,
+        action_names: actions.length ? actions : undefined,
+        models: this.modelCapabilities(),
+      }) as WorkerSocketJobsClaimFrame;
+      claimOutstanding = true;
+      outstandingClaimId = messageId;
+      ws.send(JSON.stringify(frame));
+      // Bound how long this claim may go unanswered; a lost claim/response
+      // would otherwise strand the worker until the connection's max-age.
+      armClaimDeadline();
+    };
+
+    try {
+      await waitForOpen(ws, signal);
+      ws.send(JSON.stringify(this.registerFrame(concurrency)));
+
+      for await (const frame of socketFrames(ws, signal)) {
+        switch (frame.type) {
+          case "worker.registered":
+            this.sessionToken = String(frame.worker_session_token ?? "");
+            claim();
+            break;
+          case "jobs.claimed":
+            claimOutstanding = false;
+            disarmClaimDeadline();
+            for (const job of (frame.jobs ?? []) as WorkerSocketClaimedJob[]) {
+              if (running.size >= concurrency) break;
+              const ctrl = new AbortController();
+              running.set(job.id, ctrl);
+              void this.executeJob(ws, job, ctrl.signal).finally(() => {
+                running.delete(job.id);
+                claim();
+              });
+            }
+            // An empty jobs.claimed does not re-claim here: the per-job
+            // re-claim above drains any backlog, and there is no hot-poll to
+            // guard against (cf. the Go worker's ticker-driven claim loop).
+            break;
+          case "work.available":
+            claim();
+            break;
+          case "job.cancel": {
+            const ctrl = running.get(String(frame.job_id));
+            ctrl?.abort();
+            break;
           }
-          break;
-        case "work.available":
-          this.claim(ws, concurrency, running.size, claimOutstanding);
-          claimOutstanding = true;
-          break;
-        case "job.cancel": {
-          const ctrl = running.get(String(frame.job_id));
-          ctrl?.abort();
-          break;
+          case "job.heartbeat.ack": {
+            const cancel = frame.cancel as { job_id?: string } | undefined;
+            if (cancel?.job_id) running.get(cancel.job_id)?.abort();
+            break;
+          }
+          case "worker.drain":
+            this.stopping = true;
+            ws.send(JSON.stringify({ type: "worker.draining", message_id: msgID() }));
+            break;
+          case "keepalive":
+            ws.send(JSON.stringify({ type: "keepalive", message_id: msgID() }));
+            break;
+          case "error": {
+            const terminal = this.terminalProtocolError(
+              frame.error as { code?: string; message?: string } | undefined,
+            );
+            if (terminal) throw terminal;
+            // If this nonterminal error answers our outstanding claim (matched
+            // by message id), clear claimOutstanding so the next work.available
+            // or post-job re-claim issues a fresh claim. Otherwise a claim the
+            // server rejects with a recoverable error would stay "in flight"
+            // forever and silently stop the worker from claiming.
+            if (
+              claimOutstanding &&
+              outstandingClaimId &&
+              String(frame.message_id ?? "") === outstandingClaimId
+            ) {
+              claimOutstanding = false;
+              disarmClaimDeadline();
+            }
+            this.logger.error("[mobius] worker socket protocol error", frame.error);
+            break;
+          }
         }
-        case "job.heartbeat.ack": {
-          const cancel = frame.cancel as { job_id?: string } | undefined;
-          if (cancel?.job_id) running.get(cancel.job_id)?.abort();
-          break;
-        }
-        case "worker.drain":
-          this.stopping = true;
-          ws.send(JSON.stringify({ type: "worker.draining", message_id: msgID() }));
-          break;
-        case "keepalive":
-          ws.send(JSON.stringify({ type: "keepalive", message_id: msgID() }));
-          break;
-        case "error": {
-          const terminal = this.terminalProtocolError(
-            frame.error as { code?: string; message?: string } | undefined,
-          );
-          if (terminal) throw terminal;
-          this.logger.error("[mobius] worker socket protocol error", frame.error);
-          break;
+        if (this.stopping && running.size === 0) {
+          ws.close();
+          return;
         }
       }
-      if (this.stopping && running.size === 0) {
-        ws.close();
-        return;
-      }
+    } finally {
+      disarmClaimDeadline();
+    }
+
+    // A fired claim deadline means this socket is a dead work channel; surface
+    // it as an error so run() logs and reconnects, rather than treating the
+    // closed socket as a clean shutdown.
+    if (claimTimedOut && !this.stopping && !signal?.aborted) {
+      throw new Error(
+        `[mobius] jobs.claim went unanswered for ${this.claimResponseTimeoutMs}ms; reconnecting`,
+      );
     }
   }
 
@@ -318,29 +412,6 @@ export class Worker {
       action_names: actions.length ? actions : undefined,
       models: this.modelCapabilities(),
     }) as WorkerSocketRegisterFrame;
-  }
-
-  private claim(
-    ws: WebSocket,
-    concurrency: number,
-    running: number,
-    outstanding: boolean,
-  ): void {
-    if (outstanding || this.stopping) return;
-    const available = concurrency - running;
-    if (available <= 0) return;
-    const actions = this.config.actions?.length
-      ? this.config.actions
-      : [...this.actions.keys()].sort();
-    const frame: WorkerSocketJobsClaimFrame = removeUndefined({
-      type: "jobs.claim",
-      message_id: msgID(),
-      available_slots: available,
-      queues: this.config.queues?.length ? this.config.queues : undefined,
-      action_names: actions.length ? actions : undefined,
-      models: this.modelCapabilities(),
-    }) as WorkerSocketJobsClaimFrame;
-    ws.send(JSON.stringify(frame));
   }
 
   private modelCapabilities(): WorkerSocketModelCapability[] | undefined {

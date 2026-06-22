@@ -93,6 +93,17 @@ class Worker:
         self.session_token = ""
         self._stopping = False
         self._claim_outstanding = False
+        # _claim_response_timeout bounds how long an outstanding jobs.claim may
+        # go unanswered before the worker abandons the socket and reconnects.
+        # The server answers a claim within its long-poll window (tens of
+        # seconds) even when idle — returning an empty jobs.claimed — so a claim
+        # unanswered well past that means the frame or its response was lost, or
+        # a server-side handler wedged. Without this bound a single lost
+        # claim/response strands the worker: _claim_outstanding stays set,
+        # work.available and post-job re-claims both no-op, no further claims are
+        # sent, and Mobius Cloud's dead-worker reaper eventually fails the run's
+        # pending jobs as environment_worker_unavailable. Overridable in tests.
+        self._claim_response_timeout = 60.0
         self.logger = self.config.logger or logging.getLogger("mobius.worker")
 
     def register(self, name: str, fn: ActionFunc) -> Worker:
@@ -133,24 +144,89 @@ class Worker:
 
         headers = {"Authorization": f"Bearer {self.client.api_key}"}
         async with websockets.connect(self.client.worker_socket_url(), additional_headers=headers) as ws:
-            await ws.send(self._register_frame().model_dump_json(exclude_none=True))
-            running: dict[str, asyncio.Task[None]] = {}
-            self._claim_outstanding = False
+            await self._serve_socket(ws)
 
-            def _on_job_done(task: asyncio.Task[None], job_id: str) -> None:
-                running.pop(job_id, None)
-                if self._stopping:
-                    return
-                asyncio.create_task(self._reclaim_after_done(ws, running))
+    async def _serve_socket(self, ws: Any) -> None:
+        """Register, then claim and execute jobs over an open socket ``ws``.
 
+        Split out from :meth:`_run_socket` so tests can drive the frame loop
+        with a fake socket. Raises on a fired claim deadline so :meth:`run`
+        reconnects.
+        """
+        await ws.send(self._register_frame().model_dump_json(exclude_none=True))
+        running: dict[str, asyncio.Task[None]] = {}
+        self._claim_outstanding = False
+        outstanding_claim_id: str | None = None
+        claim_timed_out = False
+        claim_watchdog: asyncio.Task[None] | None = None
+
+        def disarm() -> None:
+            nonlocal claim_watchdog
+            if claim_watchdog is not None:
+                claim_watchdog.cancel()
+                claim_watchdog = None
+
+        async def watchdog() -> None:
+            # Drop the socket when an outstanding claim goes unanswered: a lost
+            # claim or response would otherwise strand the worker until the
+            # connection's max-age. Closing ends the ``async for`` below; the
+            # claim_timed_out flag turns that into a reconnect.
+            nonlocal claim_timed_out
+            try:
+                await asyncio.sleep(self._claim_response_timeout)
+            except asyncio.CancelledError:
+                return
+            claim_timed_out = True
+            try:
+                await ws.close()
+            except Exception:
+                pass
+
+        def arm() -> None:
+            nonlocal claim_watchdog
+            disarm()
+            claim_watchdog = asyncio.create_task(watchdog())
+
+        async def claim() -> None:
+            nonlocal outstanding_claim_id
+            if self._claim_outstanding or self._stopping:
+                return
+            available = max(1, self.config.concurrency) - len(running)
+            if available <= 0:
+                return
+            message_id = _msg_id()
+            frame = WorkerSocketJobsClaimFrame(
+                type="jobs.claim",
+                message_id=message_id,
+                available_slots=available,
+                queues=self.config.queues or None,
+                action_names=(self.config.actions or sorted(self.actions)) or None,
+                models=[m.__dict__ for m in self.config.models] or None,
+            )
+            self._claim_outstanding = True
+            outstanding_claim_id = message_id
+            await ws.send(frame.model_dump_json(exclude_none=True))
+            # Bound how long this claim may go unanswered before reconnecting.
+            arm()
+
+        def _on_job_done(task: asyncio.Task[None], job_id: str) -> None:
+            running.pop(job_id, None)
+            if self._stopping:
+                return
+            # Re-claim now that a slot is free. An empty jobs.claimed never
+            # re-claims (no hot-poll to guard, unlike the Go worker's ticker).
+            asyncio.create_task(claim())
+
+        try:
             async for raw in ws:
                 frame = json.loads(raw)
                 kind = frame.get("type")
                 if kind == "worker.registered":
                     self.session_token = frame["worker_session_token"]
-                    self._claim_outstanding = await self._claim(ws, running, self._claim_outstanding)
+                    await claim()
                 elif kind == "jobs.claimed":
                     self._claim_outstanding = False
+                    disarm()
                     for raw_job in frame.get("jobs", []):
                         if len(running) >= max(1, self.config.concurrency):
                             break
@@ -159,7 +235,7 @@ class Worker:
                         running[job.id] = task
                         task.add_done_callback(lambda t, job_id=job.id: _on_job_done(t, job_id))
                 elif kind == "work.available":
-                    self._claim_outstanding = await self._claim(ws, running, self._claim_outstanding)
+                    await claim()
                 elif kind == "job.heartbeat.ack":
                     cancel = frame.get("cancel")
                     task = running.get(frame.get("job_id")) if cancel else None
@@ -173,12 +249,32 @@ class Worker:
                     self._stopping = True
                     await ws.send(json.dumps({"type": "worker.draining", "message_id": _msg_id()}))
                 elif kind == "error":
-                    terminal = self._terminal_protocol_error(frame.get("error") or {})
+                    error = frame.get("error") or {}
+                    terminal = self._terminal_protocol_error(error)
                     if terminal is not None:
                         raise terminal
-                    self.logger.error("worker socket protocol error: %s", frame.get("error"))
+                    # If this nonterminal error answers our outstanding claim
+                    # (matched by message id), clear the flag so the next
+                    # work.available or post-job re-claim issues a fresh claim;
+                    # otherwise a server-rejected claim would stay "in flight"
+                    # forever and silently stop the worker from claiming.
+                    if (
+                        self._claim_outstanding
+                        and outstanding_claim_id is not None
+                        and frame.get("message_id") == outstanding_claim_id
+                    ):
+                        self._claim_outstanding = False
+                        disarm()
+                    self.logger.error("worker socket protocol error: %s", error)
                 if self._stopping and not running:
                     return
+        finally:
+            disarm()
+
+        if claim_timed_out and not self._stopping:
+            raise RuntimeError(
+                f"worker jobs.claim went unanswered for {self._claim_response_timeout}s; reconnecting"
+            )
 
     def _terminal_protocol_error(self, error: dict[str, Any]) -> Exception | None:
         """Map a worker-socket protocol error frame to a terminal error.
@@ -216,28 +312,6 @@ class Worker:
             action_names=action_names or None,
             models=[m.__dict__ for m in self.config.models] or None,
         )
-
-    async def _reclaim_after_done(self, ws: Any, running: dict[str, asyncio.Task[None]]) -> None:
-        if self._claim_outstanding or self._stopping:
-            return
-        self._claim_outstanding = await self._claim(ws, running, self._claim_outstanding)
-
-    async def _claim(self, ws: Any, running: dict[str, asyncio.Task[None]], outstanding: bool) -> bool:
-        if outstanding or self._stopping:
-            return outstanding
-        available = max(1, self.config.concurrency) - len(running)
-        if available <= 0:
-            return False
-        frame = WorkerSocketJobsClaimFrame(
-            type="jobs.claim",
-            message_id=_msg_id(),
-            available_slots=available,
-            queues=self.config.queues or None,
-            action_names=(self.config.actions or sorted(self.actions)) or None,
-            models=[m.__dict__ for m in self.config.models] or None,
-        )
-        await ws.send(frame.model_dump_json(exclude_none=True))
-        return True
 
     async def _execute_job(self, ws: Any, job: WorkerSocketClaimedJob) -> None:
         hb = asyncio.create_task(self._heartbeat_loop(ws, job))
