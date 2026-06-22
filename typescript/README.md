@@ -19,7 +19,7 @@ npm install @deepnoodle/mobius
 pnpm add @deepnoodle/mobius
 ```
 
-Requires Node.js 18+.
+Requires Node.js 22+ (the worker uses the global `WebSocket`, stable since Node 22).
 
 ## Quick start
 

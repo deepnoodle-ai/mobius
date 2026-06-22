@@ -609,7 +609,10 @@ function mergeSignals(...signals: (AbortSignal | undefined)[]): AbortSignal {
 
 function waitForOpen(ws: WebSocket, signal?: AbortSignal): Promise<void> {
   return new Promise((resolve, reject) => {
-    if (ws.readyState === WebSocket.OPEN) {
+    // Use the instance OPEN constant, not the global WebSocket.OPEN: the global
+    // WebSocket is not defined on Node < 22, which would throw a ReferenceError
+    // here (and breaks tests that substitute a fake socket via openSocket).
+    if (ws.readyState === ws.OPEN) {
       resolve();
       return;
     }
