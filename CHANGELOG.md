@@ -6,6 +6,29 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 
 ## [Unreleased]
 
+## [0.0.28] - 2026-06-22
+
+Reliability release for the environment worker, across all three workers (Go
+managed worker, TypeScript and Python SDKs).
+
+### Fixed
+
+- Workers (Go / TypeScript / Python): self-heal the job-claim loop instead of
+  wedging on a lost claim. An outstanding `jobs.claim` was cleared only by a
+  `jobs.claimed` reply, with no timeout — so a single lost claim or lost
+  response could silently stop a worker from claiming until its connection
+  reached max-age (~5 min). On managed runs this also froze the worker's
+  `last_seen`, so the dead-worker reaper failed the run's pending jobs as
+  `environment_worker_unavailable`. Workers now bound an unanswered claim with
+  a 60s timeout and reconnect, and clear the outstanding claim when a matching
+  nonterminal `error` frame answers it.
+
+### Changed
+
+- TypeScript SDK: the minimum supported Node version is now 22. The worker
+  uses the global `WebSocket`, stable since Node 22; Node 18 and 20 are
+  end-of-life. `engines` and the README are updated to match.
+
 ## [0.0.27] - 2026-06-22
 
 Worker/CLI release (no SDK API changes; the npm and PyPI packages are
