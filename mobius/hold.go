@@ -14,21 +14,25 @@ import (
 // The lifecycle is: run in its own goroutine for the worker's lifetime, and
 // bracket each job with acquire/release. Implementations refcount concurrent
 // jobs and establish the hold on the first, releasing it once the worker is
-// idle. All methods are safe for concurrent use and best-effort: a hold failure
-// must never surface to job execution.
+// idle. Per-job holds are best-effort; a lifetime-pinned hold is required and
+// reports refresh failures so the worker can fail closed under its supervisor.
 type hold interface {
 	// acquire records one more in-flight job.
 	acquire()
 	// release records one fewer in-flight job.
 	release()
-	// run maintains the hold until ctx is cancelled.
-	run(ctx context.Context)
+	// run maintains the hold until ctx is cancelled or a required hold fails.
+	run(ctx context.Context, opts holdRunOptions) error
 	// ensure synchronously establishes the hold now (best-effort) and reports
 	// whether it is held. Used at startup for a lifetime-pinned hold so the
 	// environment is warm before the worker begins claiming work, closing the
 	// gap before the maintainer goroutine's first asynchronous refresh. The
 	// no-op hold reports true.
 	ensure(ctx context.Context) bool
+}
+
+type holdRunOptions struct {
+	Required bool
 }
 
 // detectHold selects the keep-warm strategy for the current environment,
@@ -44,7 +48,10 @@ func detectHold(logger *slog.Logger) hold {
 // noopHold is the hold used when the environment needs no keep-warm behaviour.
 type noopHold struct{}
 
-func (noopHold) acquire()                    {}
-func (noopHold) release()                    {}
-func (noopHold) run(context.Context)         {}
+func (noopHold) acquire() {}
+func (noopHold) release() {}
+func (noopHold) run(ctx context.Context, _ holdRunOptions) error {
+	<-ctx.Done()
+	return ctx.Err()
+}
 func (noopHold) ensure(context.Context) bool { return true }

@@ -17,12 +17,18 @@ import (
 type taskRecorder struct {
 	mu      sync.Mutex
 	methods []string
+	status  int
 }
 
 func (r *taskRecorder) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	r.mu.Lock()
 	r.methods = append(r.methods, req.Method)
+	status := r.status
 	r.mu.Unlock()
+	if status != 0 {
+		w.WriteHeader(status)
+		return
+	}
 	switch req.Method {
 	case http.MethodDelete:
 		w.WriteHeader(http.StatusNoContent)
@@ -40,6 +46,12 @@ func (r *taskRecorder) seen(method string) bool {
 		}
 	}
 	return false
+}
+
+func (r *taskRecorder) setStatus(status int) {
+	r.mu.Lock()
+	r.status = status
+	r.mu.Unlock()
 }
 
 // serveTaskSocket starts an HTTP server on a Unix socket and returns its path.
@@ -87,7 +99,7 @@ func TestSpriteHoldEstablishesAndReleases(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	go h.run(ctx)
+	go func() { _ = h.run(ctx, holdRunOptions{}) }()
 
 	// A job starts: the hold must establish the task (PUT).
 	h.acquire()
@@ -116,7 +128,7 @@ func TestSpriteHoldGraceBridgesInterJobGap(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	go h.run(ctx)
+	go func() { _ = h.run(ctx, holdRunOptions{}) }()
 
 	h.acquire() // job 1 starts
 	waitFor(t, func() bool { return rec.seen(http.MethodPut) }, "PUT on first acquire")
@@ -129,6 +141,59 @@ func TestSpriteHoldGraceBridgesInterJobGap(t *testing.T) {
 	time.Sleep(200 * time.Millisecond)
 	if rec.seen(http.MethodDelete) {
 		t.Fatal("hold was released during the inter-job gap; the Sprite could pause and strand the next job")
+	}
+}
+
+func TestSpriteHoldRequiredFailsClosedWhenTaskCannotBeEstablished(t *testing.T) {
+	rec := &taskRecorder{status: http.StatusInternalServerError}
+	sock := serveTaskSocket(t, rec)
+
+	h := newSpriteHoldWithPath(sock, slog.Default())
+	if h == nil {
+		t.Fatal("expected a hold for a real socket, got nil")
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	h.acquire()
+	err := h.run(ctx, holdRunOptions{Required: true})
+	if err == nil {
+		t.Fatal("required hold returned nil error")
+	}
+	if !rec.seen(http.MethodPut) {
+		t.Fatal("required hold did not try to establish the Sprite task")
+	}
+}
+
+func TestSpriteHoldRequiredRefreshFailureDoesNotDeleteExistingTask(t *testing.T) {
+	rec := &taskRecorder{}
+	sock := serveTaskSocket(t, rec)
+
+	h := newSpriteHoldWithPath(sock, slog.Default())
+	if h == nil {
+		t.Fatal("expected a hold for a real socket, got nil")
+	}
+	h.interval = 20 * time.Millisecond
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	errc := make(chan error, 1)
+	go func() { errc <- h.run(ctx, holdRunOptions{Required: true}) }()
+
+	h.acquire()
+	waitFor(t, func() bool { return rec.seen(http.MethodPut) }, "initial PUT")
+	rec.setStatus(http.StatusInternalServerError)
+
+	select {
+	case err := <-errc:
+		if err == nil {
+			t.Fatal("required hold returned nil error")
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("timed out waiting for required refresh failure")
+	}
+	if rec.seen(http.MethodDelete) {
+		t.Fatal("required refresh failure deleted an existing task instead of leaving its remaining expiry for service restart")
 	}
 }
 
@@ -158,5 +223,5 @@ func TestDetectHoldDefaultsToNoop(t *testing.T) {
 	h.release()
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	h.run(ctx) // returns immediately
+	_ = h.run(ctx, holdRunOptions{}) // returns immediately
 }

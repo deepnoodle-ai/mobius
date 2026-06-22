@@ -150,9 +150,18 @@ func (w *Worker) RegisterGenerator(provider, model string, fn GenerationFunc) {
 func (w *Worker) Run(ctx context.Context) error {
 	// Maintain the Sprite keep-warm hold for the worker's lifetime; the
 	// maintainer reacts to per-job acquire/release and is a no-op off-Sprite.
-	holdCtx, cancelHold := context.WithCancel(ctx)
+	runCtx, cancelRun := context.WithCancel(ctx)
+	defer cancelRun()
+	holdCtx, cancelHold := context.WithCancel(runCtx)
 	defer cancelHold()
-	go w.keepWarm.run(holdCtx)
+	holdErr := make(chan error, 1)
+	go func() {
+		err := w.keepWarm.run(holdCtx, holdRunOptions{Required: w.config.KeepWarmForLifetime})
+		if err != nil && w.config.KeepWarmForLifetime && !contextDoneError(err) {
+			cancelRun()
+		}
+		holdErr <- err
+	}()
 	if w.config.KeepWarmForLifetime {
 		// Pin a baseline hold so the environment stays warm across the idle gaps
 		// between this run's jobs (e.g. agent-loop think-time between tool calls).
@@ -161,10 +170,15 @@ func (w *Worker) Run(ctx context.Context) error {
 		w.keepWarm.acquire()
 		// Establish it synchronously so the environment is warm before we start
 		// claiming work, rather than racing the maintainer's first async refresh
-		// (a sub-second boot window in which the Sprite could pause). Best-effort:
-		// the maintainer retries on its interval if this first attempt fails.
+		// (a sub-second boot window in which the Sprite could pause). This is
+		// fail-closed in lifetime mode: Mobius Cloud runs the worker as a Sprite
+		// Service, so a failed hold should restart the worker instead of letting it
+		// claim jobs while the Sprite is free to hibernate.
 		if !w.keepWarm.ensure(holdCtx) {
-			w.config.Logger.Warn("worker keep-warm: initial lifetime hold not established; retrying on the maintainer interval")
+			if err := runCtx.Err(); err != nil {
+				return err
+			}
+			return fmt.Errorf("mobius: required keep-warm hold was not established")
 		}
 	}
 	// In-flight jobs run under ctx (not the socket), so cancelling ctx aborts
@@ -173,12 +187,18 @@ func (w *Worker) Run(ctx context.Context) error {
 	// all draining jobs have unwound.
 	defer w.wg.Wait()
 	for {
+		if err := takeHoldError(holdErr); err != nil {
+			return err
+		}
 		if w.authRevoked.Load() {
 			return ErrAuthRevoked
 		}
-		if err := w.runSocket(ctx); err != nil {
-			if ctx.Err() != nil {
-				return ctx.Err()
+		if err := w.runSocket(runCtx); err != nil {
+			if runCtx.Err() != nil {
+				if holdErr := takeHoldError(holdErr); holdErr != nil {
+					return holdErr
+				}
+				return runCtx.Err()
 			}
 			// Terminal protocol failures must not reconnect: a revoked
 			// credential needs a fresh process, and a duplicate
@@ -191,10 +211,28 @@ func (w *Worker) Run(ctx context.Context) error {
 			}
 			w.config.Logger.Warn("worker socket disconnected; reconnecting", "error", err)
 		}
-		if err := sleepContext(ctx, w.config.ReconnectDelay); err != nil {
+		if err := sleepContext(runCtx, w.config.ReconnectDelay); err != nil {
+			if holdErr := takeHoldError(holdErr); holdErr != nil {
+				return holdErr
+			}
 			return err
 		}
 	}
+}
+
+func takeHoldError(ch <-chan error) error {
+	select {
+	case err := <-ch:
+		if err != nil && !contextDoneError(err) {
+			return err
+		}
+	default:
+	}
+	return nil
+}
+
+func contextDoneError(err error) bool {
+	return errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded)
 }
 
 func (w *Worker) runSocket(ctx context.Context) error {

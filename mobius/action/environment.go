@@ -396,7 +396,7 @@ func NewEnvironmentLogsTailAction() mobius.Action {
 	return mobius.NewTypedAction("environment.logs.tail", func(ctx mobius.Context, in LogsTailInput) (any, error) {
 		logName := in.LogName
 		if logName == "" {
-			logName = "stdout"
+			logName = "worker"
 		}
 		tail := in.Tail
 		if tail <= 0 {
