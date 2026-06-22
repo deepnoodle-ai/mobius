@@ -146,8 +146,10 @@ func (h *spriteHold) signal() {
 // owns all task I/O, so there is no create/delete race between concurrent jobs:
 // it creates the task when work first appears, refreshes it on h.interval, and
 // releases it once the worker has been idle for releaseGrace (so it bridges the
-// inter-tool-call think-gap) or when ctx is cancelled.
-func (h *spriteHold) run(ctx context.Context) {
+// inter-tool-call think-gap) or when ctx is cancelled. If opts.Required is set,
+// any failed create/refresh is fatal so the worker exits under its Sprite
+// Service supervisor instead of silently letting the Sprite pause.
+func (h *spriteHold) run(ctx context.Context, opts holdRunOptions) error {
 	t := time.NewTicker(h.interval)
 	defer t.Stop()
 	var grace *time.Timer
@@ -160,9 +162,10 @@ func (h *spriteHold) run(ctx context.Context) {
 		}
 	}
 	held := false
+	releaseOnExit := true
 	defer func() {
 		stopGrace()
-		if held {
+		if held && releaseOnExit {
 			h.deleteTask()
 		}
 	}()
@@ -171,6 +174,10 @@ func (h *spriteHold) run(ctx context.Context) {
 		case active && !held:
 			stopGrace()
 			held = h.putTask(ctx)
+			if !held && opts.Required {
+				releaseOnExit = false
+				return fmt.Errorf("mobius: required Sprite keep-warm hold could not be established for task %q", h.taskName)
+			}
 		case active && held:
 			// Work resumed (or never stopped) within the grace window — keep the
 			// hold and cancel any pending release.
@@ -183,11 +190,17 @@ func (h *spriteHold) run(ctx context.Context) {
 		}
 		select {
 		case <-ctx.Done():
-			return
+			return ctx.Err()
 		case <-h.wake:
 		case <-t.C:
 			if held {
-				h.putTask(ctx)
+				if ok := h.putTask(ctx); !ok && opts.Required {
+					// A failed refresh does not prove the already-created task is
+					// gone. Leave any remaining expiry in place while the Sprite
+					// Service restarts the worker and reacquires the hold.
+					releaseOnExit = false
+					return fmt.Errorf("mobius: required Sprite keep-warm hold refresh failed for task %q", h.taskName)
+				}
 			}
 		case <-graceC:
 			stopGrace()
