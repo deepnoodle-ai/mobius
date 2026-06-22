@@ -6,6 +6,38 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 
 ## [Unreleased]
 
+## [0.0.26] - 2026-06-22
+
+### Added
+
+- CLI / SDKs: sessions are now a top-level `sessions` resource and CLI
+  group, synced from the mobius-cloud spec. Agent-scoped session lookups
+  were removed from the generated surface.
+
+### Changed
+
+- SDKs: loop `schema_version` is now pinned to `"1"`, matching the
+  currently accepted loop authoring schema.
+- SDKs: retry policy now retries transport-level failures for replayable,
+  idempotent requests, sharing the same retry budget and backoff used for
+  `429` / `503` responses.
+
+### Fixed
+
+- Worker: Sprite environments now maintain a Sprites Tasks API hold while
+  jobs are running so the VM does not hibernate during long outbound
+  operations such as repository clones.
+- Worker: run-scoped Sprite workers can pin the keep-warm hold for the
+  worker lifetime via `MOBIUS_WORKER_KEEP_WARM=1`, keeping the Sprite awake
+  across the idle gaps between an agent loop's tool-call jobs.
+- Worker: Sprite keep-warm holds are established synchronously before a
+  lifetime-pinned worker starts claiming work, stay alive briefly across
+  per-job idle gaps, and warn when refreshes degrade.
+- Worker: `MOBIUS_WORKER_KEEP_WARM=1` is now fail-closed: startup or
+  refresh failures for the required Sprite hold cause the worker to exit so
+  the Sprite Service can restart it instead of claiming work while the VM is
+  free to hibernate.
+
 ## [0.0.25] - 2026-06-16
 
 ### Changed
