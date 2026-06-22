@@ -6,6 +6,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 
 ## [Unreleased]
 
+## [0.0.27] - 2026-06-22
+
+Worker/CLI release (no SDK API changes; the npm and PyPI packages are
+unchanged from 0.0.26).
+
+### Changed
+
+- CLI / Worker: a `go install github.com/deepnoodle-ai/mobius/cmd/mobius@<tag>`
+  build — how Mobius Cloud installs the managed environment worker — now
+  reports its real module version instead of `"dev"`, via a
+  `debug.ReadBuildInfo()` fallback when release ldflags are absent. The
+  worker session's reported version is now trustworthy.
+
+### Added
+
+- Worker: managed-environment workers advertise their keep-warm posture as
+  session capabilities (`keep-warm:lifetime` when configured for the
+  worker's lifetime, `keep-warm:established` once the hold is pinned), so the
+  control plane can confirm a run-scoped worker actually kept its Sprite warm.
+
 ## [0.0.26] - 2026-06-22
 
 ### Added
