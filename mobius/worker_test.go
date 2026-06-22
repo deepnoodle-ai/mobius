@@ -14,6 +14,7 @@ type fakeHold struct {
 	mu       sync.Mutex
 	acquires int
 	releases int
+	ensures  int
 	ran      chan struct{}
 }
 
@@ -39,10 +40,23 @@ func (h *fakeHold) run(ctx context.Context) {
 	<-ctx.Done()
 }
 
+func (h *fakeHold) ensure(context.Context) bool {
+	h.mu.Lock()
+	h.ensures++
+	h.mu.Unlock()
+	return true
+}
+
 func (h *fakeHold) acquireCount() int {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	return h.acquires
+}
+
+func (h *fakeHold) ensureCount() int {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	return h.ensures
 }
 
 func newTestWorker(t *testing.T, cfg WorkerConfig) (*Worker, *fakeHold) {
@@ -79,10 +93,12 @@ func TestWorker_KeepWarmForLifetime_PinsHold(t *testing.T) {
 	w, fake := newTestWorker(t, WorkerConfig{KeepWarmForLifetime: true})
 	runUntilReturn(t, w)
 	assert.Equal(t, 1, fake.acquireCount()) // one baseline pin, never released mid-run
+	assert.Equal(t, 1, fake.ensureCount())  // established synchronously at startup
 }
 
 func TestWorker_KeepWarmForLifetime_DefaultLeavesHoldPerJob(t *testing.T) {
 	w, fake := newTestWorker(t, WorkerConfig{})
 	runUntilReturn(t, w)
 	assert.Equal(t, 0, fake.acquireCount()) // no baseline pin; hold stays per-job
+	assert.Equal(t, 0, fake.ensureCount())  // no synchronous pin without lifetime keep-warm
 }
