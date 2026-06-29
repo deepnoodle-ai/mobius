@@ -17,6 +17,10 @@ type SpecOp struct {
 	Summary           string
 	Description       string
 	ParamDescriptions map[string]string // query/path param name → description
+	// BodyRequired mirrors requestBody.required. When false (the OpenAPI
+	// default), a bare invocation with no body is a valid request, so the
+	// generator must not emit a "supply a flag or --file" guard.
+	BodyRequired bool
 }
 
 // openapiRoot is a minimal shape covering the fields we read.
@@ -31,11 +35,18 @@ type specComponents struct {
 }
 
 type specOpRaw struct {
-	OperationID string         `yaml:"operationId"`
-	Tags        []string       `yaml:"tags"`
-	Summary     string         `yaml:"summary"`
-	Description string         `yaml:"description"`
-	Parameters  []specParamRaw `yaml:"parameters"`
+	OperationID string              `yaml:"operationId"`
+	Tags        []string            `yaml:"tags"`
+	Summary     string              `yaml:"summary"`
+	Description string              `yaml:"description"`
+	Parameters  []specParamRaw      `yaml:"parameters"`
+	RequestBody *specRequestBodyRaw `yaml:"requestBody"`
+}
+
+// specRequestBodyRaw covers the one requestBody field the generator needs.
+// An absent `required` key means false per the OpenAPI spec.
+type specRequestBodyRaw struct {
+	Required bool `yaml:"required"`
 }
 
 type specParamRaw struct {
@@ -90,6 +101,7 @@ func parseSpec(path string) (map[string]*SpecOp, error) {
 				Summary:           op.Summary,
 				Description:       op.Description,
 				ParamDescriptions: paramDescs,
+				BodyRequired:      op.RequestBody != nil && op.RequestBody.Required,
 			}
 		}
 	}

@@ -6,7 +6,15 @@ from __future__ import annotations
 from enum import StrEnum
 from typing import Any, Literal
 
-from pydantic import AnyUrl, AwareDatetime, BaseModel, ConfigDict, Field, RootModel
+from pydantic import (
+    AnyUrl,
+    AwareDatetime,
+    BaseModel,
+    ConfigDict,
+    EmailStr,
+    Field,
+    RootModel,
+)
 
 
 class Error(BaseModel):
@@ -37,6 +45,49 @@ class ErrorResponse(BaseModel):
         extra='forbid',
     )
     error: Error = Field(..., description='Error detail.')
+
+
+class GenericEventPayload(BaseModel):
+    """
+    Event-type-specific payload for less common event types.
+    """
+
+    model_config = ConfigDict(
+        extra='allow',
+    )
+
+
+class EventType(StrEnum):
+    generation_delta = 'generation.delta'
+
+
+class GenerationDeltaFrame(BaseModel):
+    """
+    Live-only token preview frame that can appear on run and session SSE streams. It is not persisted, does not carry an SSE `id:`, and cannot be replayed with `after_sequence` or `Last-Event-ID`.
+    """
+
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    event_type: EventType
+    run_id: str | None = None
+    session_id: str | None = None
+    agent_turn_id: str | None = None
+    job_id: str | None = None
+    tool_call_id: str | None = None
+    sequence: int | None = Field(
+        None, description='Publisher-local ordering hint, not a replay cursor.'
+    )
+    delta_sequence: int | None = Field(
+        None,
+        description='Preferred publisher-local ordering hint, not a replay cursor.',
+    )
+    delta: dict[str, Any] = Field(
+        ..., description='Token preview payload, usually `{ "text": "..." }`.'
+    )
+    executor_kind: str | None = None
+    worker_id: str | None = None
+    generation_key: str | None = None
 
 
 class ResourceScope(StrEnum):
@@ -160,12 +211,12 @@ class AgentModelRoute(BaseModel):
     environment_id: str | None = Field(
         None, description='Environment to use for worker-backed model calls.'
     )
-    provider: str | None = Field(None, description='Provider or worker route name.')
+    provider: str | None = Field(
+        None,
+        description='Provider id advertised by a local worker when `mode` is `worker`.',
+    )
     model: str | None = Field(
         None, description='Model identifier to use for this route.'
-    )
-    queue: str | None = Field(
-        None, description='Worker queue for customer-worker model calls.'
     )
 
 
@@ -176,6 +227,39 @@ class AgentToolPresentation(StrEnum):
 
     flat = 'flat'
     meta = 'meta'
+
+
+class Strategy(StrEnum):
+    """
+    `auto` (default) compacts automatically when the transcript crosses `threshold_tokens`. `manual` only compacts on an explicit compact request. `disabled`/`none` never compact.
+    """
+
+    auto = 'auto'
+    manual = 'manual'
+    disabled = 'disabled'
+    none = 'none'
+
+
+class SessionCompactionPolicy(BaseModel):
+    """
+    Controls how a session's transcript is automatically summarized as it grows. On create the supplied fields are merged over the owning agent's default policy and the server defaults; on update they patch the session's current policy. Omitted fields keep their resolved values.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    strategy: Strategy | None = Field(
+        None,
+        description='`auto` (default) compacts automatically when the transcript crosses `threshold_tokens`. `manual` only compacts on an explicit compact request. `disabled`/`none` never compact.',
+    )
+    threshold_tokens: int | None = Field(
+        None,
+        description='Token threshold that triggers automatic compaction under the `auto` strategy.',
+        ge=1,
+    )
+    summary_model: str | None = Field(
+        None, description='Model used to produce compaction summaries.'
+    )
 
 
 class Agent(BaseModel):
@@ -228,6 +312,10 @@ class Agent(BaseModel):
         None,
         description="Execution timeout, in seconds, for a single turn of this platform agent. `0` (or omitted) uses the platform default (600s / 10 minutes). A loop step's own timeout overrides this for that step.",
         ge=0,
+    )
+    compaction_policy: SessionCompactionPolicy | None = Field(
+        None,
+        description='Default session-compaction policy. New sessions opened against this agent inherit it (below server defaults, above explicit per-session overrides). Absent when the agent has no default.',
     )
     status: AgentStatus = Field(
         ..., description='Current agent status: `active` or `inactive`.'
@@ -863,6 +951,23 @@ class ModelOption(BaseModel):
     )
 
 
+class Mode(StrEnum):
+    worker = 'worker'
+
+
+class WorkerModelRoute(BaseModel):
+    """
+    Assign this route to use a local worker model.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    mode: Mode
+    provider: str
+    model: str
+
+
 class EnvironmentProvider(StrEnum):
     """
     Backing provider: `sprites`, `cloudflare_containers`, or `worker`.
@@ -1246,7 +1351,8 @@ class WorkerSocketClaimedJob(BaseModel):
     session_id: str | None = None
     tool_call_id: str | None = None
     spec: dict[str, Any] = Field(
-        ..., description='Worker-specific action or generation payload.'
+        ...,
+        description='Worker-specific action or generation payload. For `kind=llm_generation`, this object follows `WorkerSocketLLMGenerationSpec`.',
     )
     lease_token: str = Field(
         ..., description='Opaque per-job lease fence returned by claim.'
@@ -1331,7 +1437,10 @@ class WorkerSocketJobReportFrame(BaseModel):
         ..., description='Opaque per-job lease fence returned by claim.'
     )
     status: Status1 = 'completed'
-    result: dict[str, Any] | None = None
+    result: dict[str, Any] | None = Field(
+        None,
+        description='Terminal result payload. For `llm_generation` jobs, this object must follow `WorkerSocketLLMGenerationResult`; plain text fallback results are not accepted.',
+    )
     error_type: str | None = None
     error_message: str | None = None
 
@@ -1705,6 +1814,320 @@ class PingWebhookResult(BaseModel):
     )
 
 
+class InteractionMode(StrEnum):
+    """
+    Declarative UI/input primitive for collecting the response. This is a portable rendering contract, not executable code. Values are `confirm`, `select`, `multi_select`, and `input`.
+    """
+
+    confirm = 'confirm'
+    select = 'select'
+    multi_select = 'multi_select'
+    input = 'input'
+
+
+class InteractionOption(BaseModel):
+    """
+    Selectable option for `select` and `multi_select` modes.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    value: str = Field(
+        ..., description='Machine-readable value submitted when this option is chosen.'
+    )
+    label: str = Field(
+        ..., description='Human-readable label displayed for this option.'
+    )
+    description: str | None = Field(
+        None, description='Optional additional context shown beneath the label.'
+    )
+
+
+class InteractionSpec(BaseModel):
+    """
+    Declarative dialog contract for rendering and validating an interaction. Used at both authoring time (inside a loop definition) and runtime (persisted on an interaction). Protocol kind is decoupled from input shape: each kind declares which spec modes are *allowed*, not which is *implied*. An approval may now legitimately use `select` mode (approve/deny/defer), for example.
+
+    Allowed combinations:
+    * `approval` → `confirm`, `select`
+    * `review` → `select`, `input`
+    * `request` → `select`, `multi_select`, `input`
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    mode: InteractionMode = Field(
+        ..., description='UI/input mode used to render and validate the response.'
+    )
+    options: list[InteractionOption] | None = Field(
+        None,
+        description='Required for `select` and `multi_select` modes.',
+        max_length=100,
+    )
+    default_value: str | None = Field(
+        None, description='Default selected option for `select` mode.'
+    )
+    default_values: list[str] | None = Field(
+        None,
+        description='Default selected options for `multi_select` mode.',
+        max_length=100,
+    )
+    default_text: str | None = Field(
+        None, description='Initial text value for `input` mode.'
+    )
+    default_confirmed: bool | None = Field(
+        None, description='Initial yes/no value for `confirm` mode.'
+    )
+    placeholder: str | None = Field(
+        None, description='Hint text shown for `input` mode.'
+    )
+    multiline: bool | None = Field(
+        None, description='When true, render `input` mode as a multiline text area.'
+    )
+
+
+class InteractionKind(StrEnum):
+    """
+    Protocol kind of the interaction. Launch keeps this intentionally
+    small:
+    * `request_information` — a data-collection protocol with structured
+    or free-form input
+    * `request_approval` — a decision protocol (yes/no, optionally
+    yes/no/defer)
+    * `request_review` — a judgment protocol that evaluates supplied
+    material
+    """
+
+    request_information = 'request_information'
+    request_approval = 'request_approval'
+    request_review = 'request_review'
+
+
+class InteractionValue(RootModel[dict[str, Any] | list[Any] | str | float | bool]):
+    root: dict[str, Any] | list[Any] | str | float | bool = Field(
+        ...,
+        description='Free-form JSON payload. Used both for responder-supplied values and for policy-derived values (e.g. `Interaction.outcome`, `ResolutionPolicy.proposal`); each consumer documents which.',
+    )
+
+
+class InteractionResponder(BaseModel):
+    """
+    Identifies the principal who answered an interaction. Agents answer through their agent principal ID.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    user_id: str = Field(..., description='Responder user ID.')
+
+
+class Kind3(StrEnum):
+    external_url = 'external_url'
+    mobius_entity = 'mobius_entity'
+
+
+class InteractionReference(BaseModel):
+    """
+    Pointer to the work item, artifact, external ticket, or Mobius entity this interaction is about.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    kind: Kind3
+    url: AnyUrl | None = Field(
+        None, description='Required when kind is `external_url`.'
+    )
+    entity_type: str | None = Field(
+        None, description='Required when kind is `mobius_entity`.'
+    )
+    entity_id: str | None = Field(
+        None, description='Required when kind is `mobius_entity`.'
+    )
+    relation: str | None = Field(
+        None, description='Relationship such as `subject`, `evidence`, or `related`.'
+    )
+    label: str | None = Field(None, description='User-facing label for display.')
+
+
+class Kind4(StrEnum):
+    inbox_only = 'inbox_only'
+    email = 'email'
+
+
+class EmailDelivery(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    to: list[EmailStr] = Field(..., min_length=1)
+
+
+class Kind5(StrEnum):
+    run = 'run'
+    agent_tool = 'agent_tool'
+    http_subscriber = 'http_subscriber'
+    none = 'none'
+
+
+class RunConsumer(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    run_id: str
+    signal_name: str
+
+
+class AgentToolConsumer(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    invocation_id: str
+    tool_call_id: str
+
+
+class HttpSubscriberConsumer(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    callback_url: AnyUrl = Field(
+        ...,
+        description='Absolute http(s) URL the server POSTs to when the interaction resolves. The body is a JSON object with the interaction id, kind, status, outcome value, comment, responder, and `resolved_by`. Delivery is enqueued as a `source_events` dispatch so the worker can retry failed attempts instead of dropping them inline with interaction resolution.',
+    )
+    secret_ref: str = Field(
+        ...,
+        description="Required reference to a project secret used to sign deliveries with HMAC-SHA256 over the canonical string `v1.{delivery_id}.{unix_timestamp}.{raw_body}`, where `delivery_id` is the value in `X-Mobius-Delivery-Id` and `raw_body` is the exact callback request body bytes. Accepts `<name>` for the latest enabled version or `<name>:<version>` to pin a specific positive-integer version. The plaintext signing bytes are taken from the secret's `signing_key_b64` key, which must base64-decode to exactly 32 bytes. The hex signature is forwarded as `X-Mobius-Signature: sha256=<hex>` alongside `X-Mobius-Secret-Ref`, `X-Mobius-Secret-Version`, `X-Mobius-Signature-Version: v1`, and a unix `X-Mobius-Timestamp`. Consumers should reject stale timestamps (for example, older than five minutes). When `secret_ref` resolution fails the dispatch is retried by the event processor rather than sent unsigned.",
+    )
+
+
+class ResponseKind(StrEnum):
+    """
+    Answer response.
+    """
+
+    response = 'response'
+
+
+class State(StrEnum):
+    """
+    Lifecycle state for this response row.
+    """
+
+    submitted = 'submitted'
+
+
+class InteractionResponse(BaseModel):
+    """
+    One persisted answer artifact for an interaction. The response that triggered resolution is referenced from `Interaction.resolving_response_id`.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str = Field(..., description='Unique identifier for this response.')
+    interaction_id: str = Field(
+        ..., description='ID of the interaction this response belongs to.'
+    )
+    response_kind: ResponseKind = Field(..., description='Answer response.')
+    state: State = Field(..., description='Lifecycle state for this response row.')
+    responder_user_id: str = Field(
+        ..., description='User ID that submitted this response.'
+    )
+    value: InteractionValue = Field(
+        ..., description='JSON value supplied by this participant.'
+    )
+    comment: str | None = Field(
+        None, description='Optional free-text comment from this responder.'
+    )
+    responded_at: AwareDatetime = Field(
+        ..., description='Timestamp when this response was submitted.'
+    )
+    attempt: int | None = Field(
+        None,
+        description='Reserved for future retry-aware response flows; null until attempts are tracked.',
+    )
+    created_at: AwareDatetime
+    updated_at: AwareDatetime
+
+
+class Type18(StrEnum):
+    """
+    Resolution rule. `any_of` resolves on the first acceptable response. `all_of` waits for every assigned participant. `quorum` resolves once `threshold` distinct participants respond.
+    """
+
+    any_of = 'any_of'
+    all_of = 'all_of'
+    quorum = 'quorum'
+
+
+class ResolutionPolicy(BaseModel):
+    """
+    Declarative resolution rule attached to an Interaction. Determines how participant responses become a final outcome.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    type: Type18 = Field(
+        ...,
+        description='Resolution rule. `any_of` resolves on the first acceptable response. `all_of` waits for every assigned participant. `quorum` resolves once `threshold` distinct participants respond.',
+    )
+    threshold: int | None = Field(
+        None,
+        description='Required when `type` is `quorum`. Number of distinct eligible participants that must respond before the interaction resolves. Must be `>= 1` and `<=` the participant count.',
+        ge=1,
+    )
+
+
+class Status2(StrEnum):
+    """
+    Current status of the interaction: pending, completed, expired, or cancelled.
+    """
+
+    pending = 'pending'
+    completed = 'completed'
+    expired = 'expired'
+    cancelled = 'cancelled'
+
+
+class Action1(StrEnum):
+    """
+    Operation to perform through the canonical response endpoint. `submit` answers the interaction.
+    """
+
+    submit = 'submit'
+
+
+class RespondToInteractionRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    action: Action1 | None = Field(
+        None,
+        description='Operation to perform through the canonical response endpoint. `submit` answers the interaction.',
+    )
+    value: InteractionValue | None = Field(
+        None, description='JSON value supplied by the responder. Required for `submit`.'
+    )
+    comment: str | None = Field(
+        None,
+        description='Optional free-text comment accompanying the action. Available on every interaction kind and never gated by the spec; the responder may always attach reasoning, caveats, or follow-up notes alongside `value`.',
+    )
+
+
+class CancelInteractionRequest(BaseModel):
+    """
+    Optional payload accompanying a cancel request. The reason is recorded on the interaction and forwarded in the cancellation signal so loops can route to a fallback.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    reason: str | None = Field(
+        None, description='Free-text reason recorded on the interaction.'
+    )
+
+
 class AgentMessagingDMPolicy(StrEnum):
     """
     Direct-message access policy: `open`, `allowlist`, or `disabled`.
@@ -1965,12 +2388,16 @@ class CreateAgentRequest(BaseModel):
         description="Per-turn execution timeout in seconds for this platform agent. Omit or `0` to use the platform default (600s / 10 minutes); a loop step's own timeout overrides it for that step.",
         ge=0,
     )
+    compaction_policy: SessionCompactionPolicy | None = Field(
+        None,
+        description='Default session-compaction policy new sessions inherit from this agent.',
+    )
     tags: TagMap | None = Field(
         None, description='Initial labels used for filtering, ownership, or automation.'
     )
 
 
-class Status2(StrEnum):
+class Status3(StrEnum):
     """
     Replacement agent status: `active` or `inactive`. Use DELETE to delete the agent.
     """
@@ -2025,12 +2452,117 @@ class UpdateAgentRequest(BaseModel):
         description="Replacement per-turn execution timeout in seconds for this platform agent. `0` resets to the platform default (600s / 10 minutes); a loop step's own timeout overrides it for that step.",
         ge=0,
     )
-    status: Status2 | None = Field(
+    status: Status3 | None = Field(
         None,
         description='Replacement agent status: `active` or `inactive`. Use DELETE to delete the agent.',
     )
+    compaction_policy: SessionCompactionPolicy | None = Field(
+        None,
+        description='Replacement default session-compaction policy. Send an empty object to clear the default and fall back to server defaults.',
+    )
     tags: TagMap | None = Field(
         None, description='Replacement labels; send an empty object to clear all tags.'
+    )
+
+
+class MemoryKind(StrEnum):
+    """
+    Classifies a memory entry. Kinds carry different retention and compaction semantics: facts and preferences are durable, episodes are the primary input to compaction, and a summary is the compacted product of other entries.
+    """
+
+    fact = 'fact'
+    preference = 'preference'
+    episode = 'episode'
+    summary = 'summary'
+
+
+class AgentMemory(BaseModel):
+    """
+    Summary of an agent's private memory: how many entries it holds, a breakdown by kind, and when it last changed.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    agent_id: str = Field(..., description='The agent that owns this memory.')
+    entry_count: int = Field(..., description='Number of entries currently held.')
+    counts_by_kind: dict[str, int] = Field(
+        ..., description='Entry counts keyed by memory kind.'
+    )
+    updated_at: AwareDatetime | None = Field(
+        None, description='When any entry was last changed, when there are entries.'
+    )
+
+
+class AgentMemoryEntry(BaseModel):
+    """
+    A single durable memory in an agent's private memory, identified by a stable key the agent chose.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    key: str = Field(
+        ..., description='Stable identifier the agent chose for this memory.'
+    )
+    kind: MemoryKind
+    content: str | None = Field(None, description='The remembered content.')
+    metadata: dict[str, Any] | None = Field(
+        None,
+        description='Structured metadata stored alongside the memory (provenance, tags, …).',
+    )
+    importance: int = Field(
+        ..., description='Rank from 0 to 100 used by compaction; higher is kept longer.'
+    )
+    pinned: bool = Field(
+        ..., description='Whether the entry is exempt from compaction.'
+    )
+    entry_id: str = Field(..., description='Identifier of this memory entry.')
+    version: int = Field(
+        ..., description='Monotonic version, incremented on each update.'
+    )
+    created_at: AwareDatetime = Field(
+        ..., description='When the entry was first remembered.'
+    )
+    updated_at: AwareDatetime = Field(
+        ..., description='When the entry was last updated.'
+    )
+
+
+class AgentMemoryEntryListResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    items: list[AgentMemoryEntry] = Field(
+        ..., description='Memory entries in the current page.'
+    )
+    has_more: bool = Field(..., description='Whether more entries follow this page.')
+    next_cursor: str | None = Field(
+        None, description='Cursor to fetch the next page, when has_more is true.'
+    )
+
+
+class PutAgentMemoryEntryRequest(BaseModel):
+    """
+    Content for a memory entry. The key comes from the path.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    content: str | None = Field(None, description='The content to remember.')
+    kind: MemoryKind | None = None
+    metadata: dict[str, Any] | None = Field(
+        None, description='Optional structured metadata to store alongside the memory.'
+    )
+    importance: int | None = Field(
+        None,
+        description='Optional importance from 0 to 100; higher is kept longer during compaction.',
+        ge=0,
+        le=100,
+    )
+    pinned: bool | None = Field(
+        None, description='Pin to exempt this memory from compaction.'
     )
 
 
@@ -2102,6 +2634,18 @@ class SessionMessageListResponse(BaseModel):
     )
     items: list[SessionMessage] = Field(
         ..., description='Messages in this page, ordered by `sequence` ascending.'
+    )
+    has_more: bool | None = Field(
+        None,
+        description="True when more messages exist past this page in the query's scan direction.",
+    )
+    next_sequence: int | None = Field(
+        None,
+        description='Sequence of the last (highest) item — pass back as `after_sequence` to page forward (newer).',
+    )
+    prev_sequence: int | None = Field(
+        None,
+        description='Sequence of the first (lowest) item — pass back as `before_sequence` with `order=desc` to page backward (older).',
     )
 
 
@@ -2260,9 +2804,10 @@ class SessionVisibility(StrEnum):
 
 class AgentTurnStatus(StrEnum):
     """
-    Agent turn lifecycle status: `running`, `waiting`, `completed`, `failed`, or `cancelled`.
+    Agent turn lifecycle status: `queued`, `running`, `waiting`, `completed`, `failed`, or `cancelled`.
     """
 
+    queued = 'queued'
     running = 'running'
     waiting = 'waiting'
     completed = 'completed'
@@ -2272,7 +2817,7 @@ class AgentTurnStatus(StrEnum):
 
 class AgentTurn(BaseModel):
     """
-    One attempt of an agent running the agent loop — the unit that produces a transcript. A turn is triggered either by a loop step (run_id + step_id) or an inbound channel message (channel_exchange_id); the two are mutually exclusive. Its messages are read via the turn's transcript endpoint.
+    One attempt of an agent running the agent loop — the unit that produces a transcript. A turn is triggered by a direct send to the session, a loop step (run_id + step_key), or an inbound channel message (channel_exchange_id). Its messages are read via the turn's transcript endpoint.
     """
 
     model_config = ConfigDict(
@@ -2328,87 +2873,13 @@ class AgentTurnListResponse(BaseModel):
     items: list[AgentTurn] = Field(
         ..., description='Turns in this session, ordered by creation time.'
     )
-
-
-class Session(BaseModel):
-    """
-    Durable conversation transcript owned by an agent.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
+    has_more: bool | None = Field(
+        None, description='True when more turns exist past this page.'
     )
-    id: str = Field(..., description='Stable session identifier.')
-    agent_id: str = Field(..., description='Agent that owns this session.')
-    title: str = Field(..., description='Human-readable session title.')
-    status: SessionStatus = Field(..., description='Lifecycle status of the session.')
-    origin: SessionOrigin = Field(..., description='Surface that created the session.')
-    scope: SessionScope = Field(
-        ..., description='Boundary used to resolve the session key.'
-    )
-    scope_ref_id: str = Field(
-        ...,
-        description='Identifier of the resource the session is scoped to (e.g. the agent for agent-scoped sessions).',
-    )
-    scope_name: str = Field(
-        ...,
-        description='Caller-assigned name identifying this conversation within its scope (`scope` + `scope_ref_id`); reused as the session routing key.',
-    )
-    session_key: str = Field(
-        ...,
-        description='Stable session routing key used to look up a scoped conversation (mirrors `scope_name`).',
-    )
-    visibility: SessionVisibility = Field(
-        ..., description='Where the session appears in project UI surfaces.'
-    )
-    model: str | None = Field(
-        None, description='Model the session most recently exchanged tokens with.'
-    )
-    model_provider: str | None = Field(
-        None, description='Provider for the recorded `model`.'
-    )
-    compaction_policy: dict[str, Any] | None = Field(
-        None, description='Per-session overrides for the message-compaction policy.'
-    )
-    message_count: int = Field(
-        ...,
-        description='Total messages currently in the session, including compaction summaries.',
-    )
-    token_input_total: int = Field(
-        ..., description='Lifetime input-token total reported for this session.'
-    )
-    token_output_total: int = Field(
-        ..., description='Lifetime output-token total reported for this session.'
-    )
-    version: int = Field(
-        ..., description='Optimistic-concurrency version. Increments on every mutation.'
-    )
-    last_message_at: AwareDatetime | None = Field(
+    next_cursor: str | None = Field(
         None,
-        description='Timestamp of the most recent message append; null before any messages are stored.',
+        description='Opaque cursor to pass as `cursor` on the next request. Null when `has_more` is false.',
     )
-    forked_from_session_id: str | None = Field(
-        None, description='Source session this one was forked from, if any.'
-    )
-    forked_from_sequence: int | None = Field(
-        None,
-        description='Sequence number in the source session at which the fork was taken.',
-    )
-    created_by: str | None = Field(
-        None, description='User who created this session, if attribution was captured.'
-    )
-    metadata: dict[str, Any] | None = Field(
-        None, description='Free-form caller metadata.'
-    )
-    created_at: AwareDatetime = Field(..., description='Record creation timestamp.')
-    updated_at: AwareDatetime = Field(..., description='Last update timestamp.')
-
-
-class SessionListResponse(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    items: list[Session] = Field(..., description='The list of results for this page.')
 
 
 class UpdateSessionRequest(BaseModel):
@@ -2424,17 +2895,111 @@ class UpdateSessionRequest(BaseModel):
         None,
         description='Lifecycle status. `active` restores archived sessions; `deleted` is terminal.',
     )
+    compaction_policy: SessionCompactionPolicy | None = Field(
+        None,
+        description="Partial patch to the session's compaction policy. Only the supplied fields change; omitted fields keep their current values.",
+    )
 
 
-class SessionStreamEvent(BaseModel):
+class SessionUserMessagePayload(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    message: dict[str, Any] | None = None
+    content: list[dict[str, Any]] | None = None
+    turn_id: str | None = None
+
+
+class TurnStartedPayload(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    turn_id: str | None = None
+    input: dict[str, Any] | None = None
+
+
+class AgentMessagePayload(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    message: dict[str, Any] | None = None
+    output: dict[str, Any] | None = None
+    content: list[dict[str, Any]] | None = None
+
+
+class ToolCallPayload(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    tool_call_id: str | None = None
+    name: str | None = None
+    arguments: dict[str, Any] | None = None
+
+
+class ToolResultPayload(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    tool_call_id: str | None = None
+    name: str | None = None
+    result: dict[str, Any] | None = None
+    error: str | None = None
+
+
+class TurnWaitingPayload(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    turn_id: str | None = None
+    reason: str | None = None
+    wait: dict[str, Any] | None = None
+
+
+class TurnCompletedPayload(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    output: dict[str, Any] | None = None
+    usage: dict[str, Any] | None = None
+
+
+class TurnFailedPayload(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    error: str | None = None
+    error_type: str | None = None
+
+
+class TurnCancelledPayload(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    reason: str | None = None
+
+
+class CompactionCreatedPayload(BaseModel):
     """
-    JSON payload of a single `data:` line on the session event stream. The SSE `event:` field carries the event type (e.g. `generation.delta`); this object carries the event-specific fields. Additional fields beyond `session_id` vary by event type.
+    Payload of a `compaction.created` event, emitted when the session transcript is summarized. The event is non-terminal: it never closes the session stream, so a live consumer observes a compaction landing inline.
     """
 
     model_config = ConfigDict(
         extra='allow',
     )
-    session_id: str = Field(..., description='The session this event belongs to.')
+    message_id: str | None = Field(
+        None,
+        description='Id of the compaction summary message appended to the transcript.',
+    )
+    covers_through_sequence: int | None = Field(
+        None,
+        description='Highest message sequence the new summary covers — the before/after boundary.',
+    )
+    message_count: int | None = Field(
+        None, description='Number of transcript messages folded into this summary.'
+    )
+    summary_model: str | None = Field(
+        None, description='Model that produced the summary.'
+    )
 
 
 class AppendSessionMessage(BaseModel):
@@ -2461,7 +3026,27 @@ class AppendSessionMessage(BaseModel):
     )
 
 
-class Mode(StrEnum):
+class SessionCompactionBoundary(BaseModel):
+    """
+    Pointer to the latest compaction marker in a session's transcript. The marker is itself a transcript message (role `compaction`); everything at or below `covers_through_sequence` is summarized history.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    message_id: str = Field(
+        ..., description='Id of the compaction summary message in the transcript.'
+    )
+    sequence: int = Field(
+        ..., description='Transcript sequence of the compaction marker itself.'
+    )
+    covers_through_sequence: int = Field(
+        ...,
+        description='Highest message sequence this summary covers — the before/after boundary.',
+    )
+
+
+class Mode1(StrEnum):
     """
     `continue_or_create` (default) resolves an existing session for the `session_key` or creates one; `new` always creates a fresh session; `continue` resolves an existing session and fails if none exists.
     """
@@ -2480,7 +3065,7 @@ class CreateSessionRequest(BaseModel):
         extra='forbid',
     )
     agent_id: str = Field(..., description='Agent that owns the session.')
-    mode: Mode | None = Field(
+    mode: Mode1 | None = Field(
         None,
         description='`continue_or_create` (default) resolves an existing session for the `session_key` or creates one; `new` always creates a fresh session; `continue` resolves an existing session and fails if none exists.',
     )
@@ -2490,79 +3075,46 @@ class CreateSessionRequest(BaseModel):
     title: str | None = Field(None, description='Human-friendly session title.')
     visibility: SessionVisibility | None = None
     model: str | None = Field(None, description='Model to record on the session.')
+    compaction_policy: SessionCompactionPolicy | None = Field(
+        None,
+        description="Per-session compaction overrides applied when the session is first created. Merged over the agent's default policy and server defaults. Ignored when an existing session is resolved.",
+    )
     metadata: dict[str, Any] | None = Field(
         None, description='Free-form caller metadata for the session.'
     )
 
 
-class Type18(StrEnum):
+class Role(StrEnum):
     """
-    Input event type. Defaults to `user.message`.
+    Role of the input message. A turn carries caller input, so only `user` is accepted; defaults to `user` when omitted.
     """
 
-    user_message = 'user.message'
+    user = 'user'
 
 
-class SendSessionEventInput(BaseModel):
+class StartTurnRequest(BaseModel):
     """
-    One input event in a send. Phase 1 supports a single `user.message`.
+    Caller input that starts an agent turn in a session.
     """
 
     model_config = ConfigDict(
         extra='forbid',
     )
-    type: Type18 | None = Field(
-        None, description='Input event type. Defaults to `user.message`.'
-    )
-    role: SessionMessageRole | None = Field(
-        None, description='Role to store for the input message. Defaults to `user`.'
+    role: Role = Field(
+        'user',
+        description='Role of the input message. A turn carries caller input, so only `user` is accepted; defaults to `user` when omitted.',
     )
     content: list[dict[str, Any]] = Field(
         ...,
         description='Ordered content blocks (text, images) for the input message.',
         min_length=1,
     )
-
-
-class SendSessionEventsRequest(BaseModel):
-    """
-    Caller input to append and run against a session.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    events: list[SendSessionEventInput] = Field(
-        ...,
-        description='Input events to send. Phase 1 accepts exactly one `user.message`.',
-        max_length=1,
-        min_length=1,
-    )
     idempotency_key: str | None = Field(
         None,
-        description="Dedup key scoped to the session. A repeat send with the same key returns the existing invocation's cursor and writes nothing new.",
+        description='Dedup key scoped to the session. A repeat call with the same key resumes the existing turn and writes nothing new.',
     )
     metadata: dict[str, Any] | None = Field(
         None, description='Free-form caller metadata attached to the input message.'
-    )
-
-
-class SessionInvocationAck(BaseModel):
-    """
-    Acknowledgement that an invocation started, with a stream cursor.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    session: Session
-    seq: int = Field(
-        ...,
-        description='The durable event sequence cursor to stream from. Pass it as `after_sequence` to the events stream to follow this invocation.',
-    )
-    deduped: bool | None = Field(
-        None,
-        description='True when a repeated idempotency key returned an existing invocation.',
     )
 
 
@@ -2667,7 +3219,7 @@ class LoopSpecInput(BaseModel):
     )
 
 
-class Kind3(StrEnum):
+class Kind6(StrEnum):
     """
     Trigger mechanism: `http`, `schedule`, `event`, or `manual`.
     """
@@ -2745,7 +3297,7 @@ class EventTriggerConfig(BaseModel):
     )
 
 
-class Kind4(StrEnum):
+class Kind7(StrEnum):
     """
     Step discriminator value; always `agent`.
     """
@@ -2753,7 +3305,7 @@ class Kind4(StrEnum):
     agent = 'agent'
 
 
-class Kind5(StrEnum):
+class Kind8(StrEnum):
     """
     Step discriminator value; always `action`.
     """
@@ -2761,7 +3313,7 @@ class Kind5(StrEnum):
     action = 'action'
 
 
-class Kind6(StrEnum):
+class Kind9(StrEnum):
     """
     Step discriminator value; always `sleep`.
     """
@@ -2769,7 +3321,7 @@ class Kind6(StrEnum):
     sleep = 'sleep'
 
 
-class Kind7(StrEnum):
+class Kind10(StrEnum):
     """
     Step discriminator value; always `wait_for_event`.
     """
@@ -2777,7 +3329,7 @@ class Kind7(StrEnum):
     wait_for_event = 'wait_for_event'
 
 
-class Kind8(StrEnum):
+class Kind11(StrEnum):
     """
     Step discriminator value; always `loop`.
     """
@@ -2785,7 +3337,7 @@ class Kind8(StrEnum):
     loop = 'loop'
 
 
-class Kind9(StrEnum):
+class Kind12(StrEnum):
     """
     Step discriminator value; always `check`.
     """
@@ -2888,7 +3440,7 @@ class Scope(StrEnum):
     agent = 'agent'
 
 
-class Strategy(StrEnum):
+class Strategy1(StrEnum):
     """
     Compaction strategy: `auto`, `manual`, `disabled`, or `none`.
     """
@@ -2907,7 +3459,7 @@ class CompactionPolicy(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    strategy: Strategy | None = Field(
+    strategy: Strategy1 | None = Field(
         None,
         description='Compaction strategy: `auto`, `manual`, `disabled`, or `none`.',
     )
@@ -2958,7 +3510,7 @@ class LoopAgentSessionPolicy(BaseModel):
     )
 
 
-class Mode1(StrEnum):
+class Mode2(StrEnum):
     """
     Model route mode: `managed` or `worker`.
     """
@@ -2975,15 +3527,15 @@ class LoopModelRoute(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    mode: Mode1 = Field(..., description='Model route mode: `managed` or `worker`.')
+    mode: Mode2 = Field(..., description='Model route mode: `managed` or `worker`.')
     environment_id: str | None = Field(
         None, description='Managed environment to route worker-backed model calls to.'
     )
-    provider: str | None = Field(None, description='Provider or worker route name.')
-    model: str | None = Field(None, description='Model identifier for this route.')
-    queue: str | None = Field(
-        None, description='Worker queue for customer-worker model calls.'
+    provider: str | None = Field(
+        None,
+        description='Provider id advertised by a local worker when `mode` is `worker`.',
     )
+    model: str | None = Field(None, description='Model identifier for this route.')
 
 
 class ExecutionLocation(StrEnum):
@@ -3093,7 +3645,7 @@ class OnFail(StrEnum):
     gate = 'gate'
 
 
-class Kind10(StrEnum):
+class Kind13(StrEnum):
     """
     `expr` evaluates a deterministic predicate with the same language as step conditions and event waits. `agent` runs a bounded judge turn returning a strict `{pass, reason}` verdict; its spend counts against the run budget and it consumes one run agent turn.
     """
@@ -3113,7 +3665,7 @@ class LoopCheckAssertion(BaseModel):
     name: str = Field(
         ..., description='Unique assertion name shown on the timeline proof row.'
     )
-    kind: Kind10 = Field(
+    kind: Kind13 = Field(
         ...,
         description='`expr` evaluates a deterministic predicate with the same language as step conditions and event waits. `agent` runs a bounded judge turn returning a strict `{pass, reason}` verdict; its spend counts against the run budget and it consumes one run agent turn.',
     )
@@ -3208,7 +3760,7 @@ class HTTPTriggerDeliveryRequest(BaseModel):
     )
 
 
-class Status3(StrEnum):
+class Status4(StrEnum):
     """
     Acceptance status of the source-event row. The only synchronous success value is `accepted`; processing happens asynchronously after the source event is durable.
     """
@@ -3228,7 +3780,7 @@ class HTTPTriggerDeliveryResult(BaseModel):
         ...,
         description='Durable source-event id (also the `dedup_key` seed). Stable across retries with the same `Idempotency-Key`.',
     )
-    status: Status3 = Field(
+    status: Status4 = Field(
         ...,
         description='Acceptance status of the source-event row. The only synchronous success value is `accepted`; processing happens asynchronously after the source event is durable.',
     )
@@ -3466,54 +4018,231 @@ class LoopRunStepListResponse(BaseModel):
     )
 
 
-class LoopRunEvent(BaseModel):
-    """
-    One durable event emitted while a loop run progresses.
-    """
-
+class RunStartedPayload(BaseModel):
     model_config = ConfigDict(
-        extra='forbid',
+        extra='allow',
     )
-    id: str = Field(..., description='Stable event identifier.')
-    run_id: str = Field(..., description='Run this event belongs to.')
-    sequence: int = Field(
-        ...,
-        description='Monotonic per-run sequence number used for ordering and resume.',
-    )
-    event_type: str = Field(
-        ...,
-        description="Event type from the run-stream taxonomy (e.g. `run.started`, `step.completed`, `wait.opened`, `action.called`, `action.completed`, `action.failed`, `artifact.created`, `limit.reached`, `usage.recorded`).\n\nGuardrail events: `run.budget_exceeded` fires when the budget halts the run at a checkpoint (payload: `credit_budget`, `credit_spent`, `percent_used`, plus the `step` it halted before). `usage.recorded` payloads carry `step_key`, the event's `credit_cost`, its `budget_cost` (rate-card cost counted against the run budget, nonzero even for BYOK), and the cumulative `run_credit_spent`.",
-    )
-    step_id: str | None = Field(
-        None, description='ID of the step this event belongs to, when applicable.'
-    )
-    step_key: str | None = Field(
-        None,
-        description='Legacy alias for the loop step ID this event belongs to, when applicable.',
-    )
-    payload: dict[str, Any] | None = Field(
-        None,
-        description='Event-type-specific payload. See the run-event taxonomy for shapes.',
-    )
-    created_at: AwareDatetime = Field(
-        ..., description='Server timestamp when the event was recorded.'
-    )
+    loop_id: str | None = None
+    loop_version_id: str | None = None
+    source_event_id: str | None = None
+    trigger_id: str | None = None
 
 
-class LoopRunEventListResponse(BaseModel):
+class RunResumedPayload(BaseModel):
     model_config = ConfigDict(
-        extra='forbid',
+        extra='allow',
     )
-    items: list[LoopRunEvent] = Field(
-        ..., description='Run events in this page, ordered by `sequence` ascending.'
+    step: str | None = None
+    reason: str | None = None
+
+
+class RunCompletedPayload(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
     )
-    next_sequence: int | None = Field(
-        None,
-        description='Sequence number of the most recent event in `items`; clients can pass this back as `after_sequence` on the next poll.',
+    output: dict[str, Any] | None = None
+
+
+class RunFailedPayload(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
     )
-    has_more: bool | None = Field(
-        None, description='True when more events exist after the returned page.'
+    error: str | None = None
+    error_type: str | None = None
+    step: str | None = None
+
+
+class RunCancelledPayload(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
     )
+    reason: str | None = None
+
+
+class StepStartedPayload(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    step: str | None = None
+    kind: str | None = None
+    agent_id: str | None = None
+
+
+class StepCompletedPayload(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    step: str | None = None
+    output: dict[str, Any] | None = None
+
+
+class StepFailedPayload(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    step: str | None = None
+    error: str | None = None
+    error_type: str | None = None
+
+
+class StepRetriedPayload(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    step: str | None = None
+    attempt: int | None = None
+    max_attempts: int | None = None
+    error: str | None = None
+
+
+class StepResumedPayload(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    step: str | None = None
+    kind: str | None = None
+
+
+class StepSkippedPayload(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    step: str | None = None
+    kind: str | None = None
+    reason: str | None = None
+
+
+class ActionCalledPayload(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    action: str | None = None
+    step: str | None = None
+    parameters: dict[str, Any] | None = None
+
+
+class ActionCompletedPayload(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    action: str | None = None
+    step: str | None = None
+    result: dict[str, Any] | None = None
+
+
+class ActionFailedPayload(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    action: str | None = None
+    step: str | None = None
+    error: str | None = None
+    error_type: str | None = None
+
+
+class ActionRetriedPayload(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    action: str | None = None
+    attempt: int | None = None
+    max_attempts: int | None = None
+
+
+class ActionResultPayload(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    action: str | None = None
+    result: dict[str, Any] | None = None
+
+
+class CheckVerdictPayload(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    step: str | None = None
+    verdict: str | None = None
+    on_fail: str | None = None
+    failed: list[str] | None = None
+
+
+class InteractionRespondedPayload(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    interaction_id: str | None = None
+    response: dict[str, Any] | None = None
+    responder: dict[str, Any] | None = None
+
+
+class WaitPayload(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    step: str | None = None
+    wait_id: str | None = None
+    wait_kind: str | None = None
+    deadline: AwareDatetime | None = None
+    subject: dict[str, Any] | None = None
+
+
+class WaitResumedPayload(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    step: str | None = None
+    wait_id: str | None = None
+    payload: dict[str, Any] | None = None
+
+
+class WaitTimedOutPayload(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    step: str | None = None
+    wait_id: str | None = None
+    reason: str | None = None
+
+
+class BudgetExceededPayload(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    step: str | None = None
+    credit_spent: float | None = None
+    credit_budget: float | None = None
+    percent_used: int | None = None
+
+
+class ProgressStalledPayload(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    step: str | None = None
+    tool: str | None = None
+    duplicate_calls: int | None = None
+    limit: int | None = None
+
+
+class LimitReachedPayload(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    step: str | None = None
+    limit_kind: str | None = None
+    used: int | None = None
+    limit: int | None = None
+
+
+class ArtifactCreatedPayload(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    artifact_id: str | None = None
+    name: str | None = None
+    content_type: str | None = None
+    step: str | None = None
 
 
 class ToolkitRequest(BaseModel):
@@ -3614,7 +4343,8 @@ class ColumnDef(BaseModel):
     )
     indexed: bool = Field(
         False,
-        description='Marks the column as an expected filter/sort field so backends can maintain efficient indexes.',
+        deprecated=True,
+        description='Compatibility hint retained for older schemas. It does not create a physical database index.',
     )
     default: Any | None = Field(
         None, description='Default value applied when column is absent on insert'
@@ -3629,7 +4359,7 @@ class ColumnDef(BaseModel):
 
 class IndexDef(BaseModel):
     """
-    Declared index over one or more table columns.
+    Compatibility metadata for older table schemas. Declared indexes do not create physical database indexes.
     """
 
     model_config = ConfigDict(
@@ -3645,7 +4375,7 @@ class IndexDef(BaseModel):
 
 class TableSchema(BaseModel):
     """
-    Column and index definition for a table. Each table has exactly one required string identity column.
+    Column definition for a virtual table. Each table has exactly one required string identity column and may nominate one optional string secondary key column.
     """
 
     model_config = ConfigDict(
@@ -3656,6 +4386,10 @@ class TableSchema(BaseModel):
         description='Name of the required string column that uniquely identifies one row in this table.',
         min_length=1,
     )
+    secondary_key_column: str | None = Field(
+        None,
+        description='Optional string column projected into the fixed physical `sk` column for efficient secondary lookups. It cannot be changed after creation.',
+    )
     columns: list[ColumnDef] = Field(
         ...,
         description='Ordered list of columns accepted in row data.',
@@ -3664,8 +4398,13 @@ class TableSchema(BaseModel):
     )
     indexes: list[IndexDef] | None = Field(
         None,
-        description='Optional declared indexes maintained by the backend.',
+        deprecated=True,
+        description='Compatibility metadata retained for older schemas. Index declarations do not create physical database indexes.',
         max_length=20,
+    )
+    open: bool = Field(
+        False,
+        description='Allows rows to include undeclared keys while declared columns continue to be validated.',
     )
 
 
@@ -3741,16 +4480,18 @@ class TableStats(BaseModel):
         ..., description='Approximate bytes used by table data.'
     )
     approx_index_bytes: int = Field(
-        ..., description='Approximate bytes used by table indexes.'
+        ...,
+        description='Approximate proportional share of fixed table_rows index bytes.',
     )
     indexed_column_count: int = Field(
-        ..., description='Number of columns with backend-maintained indexes.'
+        ..., description='Number of schema columns projected into fixed physical keys.'
     )
     declared_index_count: int = Field(
-        ..., description='Number of indexes declared in the table schema.'
+        ...,
+        description='Number of compatibility index declarations stored in the table schema.',
     )
     search_index_present: bool = Field(
-        ..., description='Whether a full-text search index is present for the table.'
+        ..., description='Whether the fixed shared full-text search index is present.'
     )
     generated_at: AwareDatetime = Field(
         ..., description='Time this statistics snapshot was generated.'
@@ -3812,7 +4553,9 @@ class UpdateTableRequest(BaseModel):
         max_length=2000,
     )
     schema_: TableSchema | None = Field(
-        None, alias='schema', description='Replacement column and index definition.'
+        None,
+        alias='schema',
+        description='Replacement column and index definition. The identity column and required column settings are immutable after creation; newly added columns must be optional.',
     )
 
 
@@ -3914,18 +4657,32 @@ class TableRowQueryListResponse(BaseModel):
     )
 
 
+class Mode3(StrEnum):
+    """
+    Search mode. `keyword` uses token-prefix full-text search, `semantic` uses sidecar embedding similarity, and `hybrid` combines both.
+    """
+
+    keyword = 'keyword'
+    semantic = 'semantic'
+    hybrid = 'hybrid'
+
+
 class SearchRowsRequest(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
     query: str = Field(
         ...,
-        description='Token-prefix search query. Hyphens and other punctuation split terms.',
+        description='Search query. Hyphens and other punctuation split terms for keyword matching.',
         min_length=1,
+    )
+    mode: Mode3 = Field(
+        'keyword',
+        description='Search mode. `keyword` uses token-prefix full-text search, `semantic` uses sidecar embedding similarity, and `hybrid` combines both.',
     )
     filter: dict[str, Any] | None = Field(
         None,
-        description='Optional column equality or operator filter applied before text search.',
+        description='Optional column equality or operator filter applied before search.',
     )
     limit: int = Field(
         20,
@@ -4014,7 +4771,7 @@ class ArtifactVisibility(StrEnum):
     shared = 'shared'
 
 
-class Status4(StrEnum):
+class Status5(StrEnum):
     """
     Current thumbnail state for the source artifact's content.
     """
@@ -4035,7 +4792,7 @@ class ArtifactThumbnailSummary(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    status: Status4 = Field(
+    status: Status5 = Field(
         ..., description="Current thumbnail state for the source artifact's content."
     )
     variant: str = Field(
@@ -4234,6 +4991,30 @@ class ModelProviderGroup(BaseModel):
     )
 
 
+class WorkerModelCatalogItem(BaseModel):
+    """
+    One exact local model route available through online workers.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    provider: str = Field(
+        ...,
+        description='Worker-advertised provider id, matched exactly by `model_route.provider`.',
+    )
+    model: str = Field(
+        ...,
+        description='Worker-advertised model id, matched exactly by `model_route.model`.',
+    )
+    worker_count: int = Field(
+        ...,
+        description='Number of online workers currently advertising this exact provider/model pair.',
+        ge=1,
+    )
+    route: WorkerModelRoute
+
+
 class WorkerSocketFrame(
     RootModel[
         WorkerSocketRegisterFrame
@@ -4278,6 +5059,44 @@ class WorkerSocketFrame(
     ) = Field(
         ...,
         description='Typed JSON frame exchanged over `/workers/socket`. WebSocket traffic is not ordinary request/response HTTP, but the frame schemas are included in the public OpenAPI contract so SDKs can share a wire format.',
+    )
+
+
+class DeliveryChannel(BaseModel):
+    """
+    A single delivery destination. `inbox_only` carries no payload; `email` requires the `email` variant.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    kind: Kind4
+    email: EmailDelivery | None = Field(
+        None,
+        description='Email delivery payload when `kind=email`; null for inbox-only delivery.',
+    )
+
+
+class Consumer(BaseModel):
+    """
+    Polymorphic identifier of what is waiting on this interaction's resolution. Replaces the previously special-cased `run_id` + `signal_name` pair. When `kind=run`, the legacy fields are also populated for compatibility. `http_subscriber` requires `secret_ref` and enqueues a durable callback dispatch to `callback_url` when the interaction resolves; the canonical string `v1.{delivery_id}.{unix_timestamp}.{raw_body}` is signed with HMAC-SHA256 against the resolved project signing key and the signed dispatch carries `X-Mobius-Signature`, `X-Mobius-Secret-Ref`, `X-Mobius-Secret-Version`, and `X-Mobius-Timestamp`. Signed dispatches also carry `X-Mobius-Signature-Version: v1`. Every durable dispatch also carries the stable outbox row id in `X-Mobius-Delivery-Id` and `Idempotency-Key`; retries reuse the same value. Verifiers should recompute the signature over the exact raw body, reject stale timestamps (for example, older than five minutes), deduplicate by delivery id, and check the signing headers.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    kind: Kind5
+    run: RunConsumer | None = Field(
+        None,
+        description='Run resume target when `kind=run`; null for other consumer kinds.',
+    )
+    agent_tool: AgentToolConsumer | None = Field(
+        None,
+        description='Agent tool continuation target when `kind=agent_tool`; null for other consumer kinds.',
+    )
+    http_subscriber: HttpSubscriberConsumer | None = Field(
+        None,
+        description='HTTP callback target when `kind=http_subscriber`; null for other consumer kinds.',
     )
 
 
@@ -4374,6 +5193,129 @@ class AgentToolManifest(BaseModel):
     )
 
 
+class Session(BaseModel):
+    """
+    Durable conversation transcript owned by an agent.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str = Field(..., description='Stable session identifier.')
+    agent_id: str = Field(..., description='Agent that owns this session.')
+    title: str = Field(..., description='Human-readable session title.')
+    status: SessionStatus = Field(..., description='Lifecycle status of the session.')
+    origin: SessionOrigin = Field(..., description='Surface that created the session.')
+    scope: SessionScope = Field(
+        ..., description='Boundary used to resolve the session key.'
+    )
+    scope_ref_id: str = Field(
+        ...,
+        description='Identifier of the resource the session is scoped to (e.g. the agent for agent-scoped sessions).',
+    )
+    scope_name: str = Field(
+        ...,
+        description='Caller-assigned name identifying this conversation within its scope (`scope` + `scope_ref_id`); reused as the session routing key.',
+    )
+    session_key: str = Field(
+        ...,
+        description='Stable session routing key used to look up a scoped conversation (mirrors `scope_name`).',
+    )
+    visibility: SessionVisibility = Field(
+        ..., description='Where the session appears in project UI surfaces.'
+    )
+    model: str | None = Field(
+        None, description='Model the session most recently exchanged tokens with.'
+    )
+    model_provider: str | None = Field(
+        None, description='Provider for the recorded `model`.'
+    )
+    compaction_policy: SessionCompactionPolicy | None = Field(
+        None,
+        description='Resolved message-compaction policy in effect for this session.',
+    )
+    latest_compaction: SessionCompactionBoundary | None = Field(
+        None,
+        description='The most recent compaction marker in the transcript, or null when the session has never been compacted. Delineates summarized history (sequences at or below `covers_through_sequence`) from the live tail. Returned on the single-session read; absent from list entries.',
+    )
+    message_count: int = Field(
+        ...,
+        description='Total messages currently in the session, including compaction summaries.',
+    )
+    token_input_total: int = Field(
+        ..., description='Lifetime input-token total reported for this session.'
+    )
+    token_output_total: int = Field(
+        ..., description='Lifetime output-token total reported for this session.'
+    )
+    version: int = Field(
+        ..., description='Optimistic-concurrency version. Increments on every mutation.'
+    )
+    last_message_at: AwareDatetime | None = Field(
+        None,
+        description='Timestamp of the most recent message append; null before any messages are stored.',
+    )
+    forked_from_session_id: str | None = Field(
+        None, description='Source session this one was forked from, if any.'
+    )
+    forked_from_sequence: int | None = Field(
+        None,
+        description='Sequence number in the source session at which the fork was taken.',
+    )
+    created_by: str | None = Field(
+        None, description='User who created this session, if attribution was captured.'
+    )
+    metadata: dict[str, Any] | None = Field(
+        None, description='Free-form caller metadata.'
+    )
+    created_at: AwareDatetime = Field(..., description='Record creation timestamp.')
+    updated_at: AwareDatetime = Field(..., description='Last update timestamp.')
+
+
+class SessionListResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    items: list[Session] = Field(..., description='The list of results for this page.')
+    has_more: bool | None = Field(
+        None, description='True when more sessions exist past this page.'
+    )
+    next_cursor: str | None = Field(
+        None,
+        description='Opaque cursor for the next page — pass back as `cursor`. Null when `has_more` is false.',
+    )
+
+
+class SessionEventPayload(
+    RootModel[
+        SessionUserMessagePayload
+        | TurnStartedPayload
+        | AgentMessagePayload
+        | ToolCallPayload
+        | ToolResultPayload
+        | TurnWaitingPayload
+        | TurnCompletedPayload
+        | TurnFailedPayload
+        | TurnCancelledPayload
+        | CompactionCreatedPayload
+        | GenericEventPayload
+    ]
+):
+    root: (
+        SessionUserMessagePayload
+        | TurnStartedPayload
+        | AgentMessagePayload
+        | ToolCallPayload
+        | ToolResultPayload
+        | TurnWaitingPayload
+        | TurnCompletedPayload
+        | TurnFailedPayload
+        | TurnCancelledPayload
+        | CompactionCreatedPayload
+        | GenericEventPayload
+    ) = Field(..., description='Typed payloads for common durable session event types.')
+
+
 class AppendSessionMessagesRequest(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
@@ -4393,6 +5335,26 @@ class AppendSessionMessagesRequest(BaseModel):
     )
 
 
+class TurnAck(BaseModel):
+    """
+    Acknowledgement that a turn started, with a stream cursor.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    session: Session
+    turn: AgentTurn
+    after_sequence: int = Field(
+        ...,
+        description='The durable event sequence cursor to stream from. Pass it as `after_sequence` to `GET .../events` to follow this turn.',
+    )
+    deduped: bool | None = Field(
+        None,
+        description='True when a repeated idempotency key resumed an existing turn.',
+    )
+
+
 class LoopSpecTrigger(BaseModel):
     """
     One trigger declaration inside a loop spec.
@@ -4405,7 +5367,7 @@ class LoopSpecTrigger(BaseModel):
         None, description='Stable user-authored trigger key within the spec.'
     )
     name: str | None = Field(None, description='Human-readable trigger name.')
-    kind: Kind3 = Field(
+    kind: Kind6 = Field(
         ..., description='Trigger mechanism: `http`, `schedule`, `event`, or `manual`.'
     )
     enabled: bool | None = Field(
@@ -4778,6 +5740,66 @@ class LoopRunListResponse(BaseModel):
     )
 
 
+class RunEventPayload(
+    RootModel[
+        RunStartedPayload
+        | WaitPayload
+        | RunResumedPayload
+        | RunCompletedPayload
+        | RunFailedPayload
+        | RunCancelledPayload
+        | StepStartedPayload
+        | StepCompletedPayload
+        | StepFailedPayload
+        | StepRetriedPayload
+        | StepResumedPayload
+        | StepSkippedPayload
+        | ActionCalledPayload
+        | ActionCompletedPayload
+        | ActionFailedPayload
+        | ActionRetriedPayload
+        | ActionResultPayload
+        | CheckVerdictPayload
+        | InteractionRespondedPayload
+        | WaitResumedPayload
+        | WaitTimedOutPayload
+        | BudgetExceededPayload
+        | ProgressStalledPayload
+        | LimitReachedPayload
+        | ArtifactCreatedPayload
+        | GenericEventPayload
+    ]
+):
+    root: (
+        RunStartedPayload
+        | WaitPayload
+        | RunResumedPayload
+        | RunCompletedPayload
+        | RunFailedPayload
+        | RunCancelledPayload
+        | StepStartedPayload
+        | StepCompletedPayload
+        | StepFailedPayload
+        | StepRetriedPayload
+        | StepResumedPayload
+        | StepSkippedPayload
+        | ActionCalledPayload
+        | ActionCompletedPayload
+        | ActionFailedPayload
+        | ActionRetriedPayload
+        | ActionResultPayload
+        | CheckVerdictPayload
+        | InteractionRespondedPayload
+        | WaitResumedPayload
+        | WaitTimedOutPayload
+        | BudgetExceededPayload
+        | ProgressStalledPayload
+        | LimitReachedPayload
+        | ArtifactCreatedPayload
+        | GenericEventPayload
+    ) = Field(..., description='Typed payloads for common durable run event types.')
+
+
 class Artifact(BaseModel):
     """
     Stored file or generated artifact metadata.
@@ -4878,6 +5900,323 @@ class ModelCatalogResponse(BaseModel):
     )
 
 
+class WorkerModelCatalogResponse(BaseModel):
+    """
+    Local LLM models advertised by online project workers.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    items: list[WorkerModelCatalogItem]
+
+
+class Delivery(BaseModel):
+    """
+    Optional per-interaction delivery override. When absent, each participant is notified via the app inbox only.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    channels: list[DeliveryChannel] = Field(..., min_length=1)
+
+
+class Interaction(BaseModel):
+    """
+    Human or agent interaction request and its current response state.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str = Field(..., description='Unique identifier for this interaction.')
+    run_id: str | None = Field(
+        None, description='Originating loop run when the interaction is run-backed.'
+    )
+    signal_name: str | None = Field(
+        None,
+        description='Signal name used to resume the originating run when run-backed.',
+    )
+    created_by: str | None = Field(
+        None,
+        description='Canonical principal ID of the human or agent that created the interaction; null for legacy/system-created rows.',
+    )
+    kind: InteractionKind = Field(..., description='Protocol kind of the interaction.')
+    status: Status2 = Field(
+        ...,
+        description='Current status of the interaction: pending, completed, expired, or cancelled.',
+    )
+    title: str = Field(
+        ..., description='Short non-empty title shown to the responder.', min_length=1
+    )
+    description: str | None = Field(
+        None, description='Optional longer responder-facing detail or instructions.'
+    )
+    subject: InteractionReference | None = Field(
+        None,
+        description='Primary work item or artifact the interaction is about; null when no subject was supplied.',
+    )
+    references: list[InteractionReference] | None = Field(
+        None, description='Supporting links and related entities.'
+    )
+    context: dict[str, Any] | None = Field(
+        None,
+        description='Additional key-value context surfaced in the UI alongside the title and description when supplied.',
+    )
+    tags: TagMap | None = None
+    properties: dict[str, Any] | None = Field(
+        None,
+        description='Free-form structured metadata attached to the interaction; null when no metadata is attached.',
+    )
+    spec: InteractionSpec | None = Field(
+        None,
+        description='Response controls and validation rules rendered to the recipient.',
+    )
+    target_user_ids: list[str] = Field(
+        ..., description='Resolved user IDs targeted by the interaction.'
+    )
+    responder: InteractionResponder | None = Field(
+        None,
+        description='User or agent that completed the interaction; null until completion.',
+    )
+    resolving_response_id: str | None = Field(
+        None,
+        description='ID of the response that triggered resolution. Null while the interaction is pending, cancelled, or expired. Look up the response in `responses` for the full payload.',
+    )
+    responses: list[InteractionResponse] | None = Field(
+        None,
+        description='All response artifacts recorded against this interaction in arrival order.',
+    )
+    expires_at: AwareDatetime | None = Field(
+        None, description='Timestamp when this interaction expires if not responded to.'
+    )
+    completed_at: AwareDatetime | None = Field(
+        None, description='Timestamp when the interaction received a terminal response.'
+    )
+    created_at: AwareDatetime = Field(
+        ..., description='Timestamp when this interaction was created.'
+    )
+    updated_at: AwareDatetime = Field(
+        ..., description='Timestamp when this interaction was last updated.'
+    )
+    require_all: bool | None = Field(
+        None, description='When true, all target users must respond before completion.'
+    )
+    resolution_policy: ResolutionPolicy | None = Field(
+        None,
+        description='Declarative resolution rule attached at creation time. Legacy `require_all` inputs are synthesized into an equivalent policy at create time when present. Newer rows typically include this field; nullability covers historical rows and callers that omit it.',
+    )
+    consumer: Consumer | None = Field(
+        None,
+        description="Polymorphic identifier of what is waiting on this interaction's resolution. Replaces the special-cased `run_id`/`signal_name` pair; the latter remain populated when `consumer.kind=run`.",
+    )
+    delivery: Delivery | None = Field(
+        None,
+        description='Optional per-interaction delivery override. When absent, the dispatcher delivers to the app inbox only.',
+    )
+    outcome: InteractionValue | None = Field(
+        None,
+        description='Final outcome selected by the resolution policy. Omitted while the interaction is still pending.',
+    )
+    resolved_by: str | None = Field(
+        None,
+        description='Short audit string identifying which policy rule fired. Null until the interaction reaches a resolved state.',
+    )
+    cancel_reason: str | None = Field(
+        None, description='Reason recorded when the interaction was cancelled.'
+    )
+
+
+class InteractionListResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    items: list[Interaction] = Field(
+        ..., description='The list of results for this page.'
+    )
+    has_more: bool | None = Field(
+        None, description='Whether additional pages are available.'
+    )
+    next_cursor: str | None = Field(
+        None,
+        description='Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.',
+    )
+
+
+class CreateStandaloneInteractionRequest(BaseModel):
+    """
+    Creates a standalone interaction. Completion records the response but does not deliver a loop signal.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    target_user_ids: list[str] | None = Field(
+        None,
+        description='Resolved user IDs to target directly. Agents use their agent principal IDs.',
+    )
+    kind: InteractionKind = Field(..., description='Protocol kind.')
+    title: str = Field(
+        ..., description='Short non-empty title shown to the responder.', min_length=1
+    )
+    description: str | None = Field(
+        None, description='Optional longer responder-facing detail or instructions.'
+    )
+    subject: InteractionReference | None = Field(
+        None, description='Primary work item or artifact the interaction is about.'
+    )
+    references: list[InteractionReference] | None = Field(
+        None, description='Supporting links and related entities.'
+    )
+    context: dict[str, Any] | None = Field(
+        None,
+        description='Additional key-value context surfaced in the UI alongside the title and description.',
+    )
+    tags: TagMap | None = None
+    properties: dict[str, Any] | None = Field(
+        None, description='Free-form structured metadata to attach to the interaction.'
+    )
+    spec: InteractionSpec | None = Field(
+        None,
+        description='Response controls and validation rules rendered to the recipient.',
+    )
+    require_all: bool | None = Field(
+        None,
+        description='When true, all target users must respond before the interaction is considered complete. Defaults to false when omitted. Mutually exclusive with `resolution_policy`; prefer the policy form for new code.',
+    )
+    resolution_policy: ResolutionPolicy | None = Field(
+        None,
+        description='Declarative resolution rule. When supplied the policy evaluator drives completion.',
+    )
+    consumer: Consumer | None = Field(
+        None,
+        description="Polymorphic identifier of what is waiting on this interaction's resolution. When omitted on a run-backed create request, the server derives a `kind=run` consumer from `run_id` and `signal_name`.",
+    )
+    delivery: Delivery | None = Field(
+        None, description='Optional per-interaction delivery override.'
+    )
+    expires_at: AwareDatetime | None = Field(
+        None,
+        description='Timestamp after which this interaction expires if not responded to.',
+    )
+
+
+class CreateRunBackedInteractionRequest(BaseModel):
+    """
+    Creates an interaction linked to a loop run for audit. The server derives a `kind=run` consumer from `run_id` and `signal_name`.
+
+    This is an audit-only link: creating an interaction here does not suspend the run, and resolving it does not by itself resume a run. A run only blocks on, and resumes from, human input when the loop definition declares an interaction step — that step creates the interaction and registers the matching wait atomically. Use this endpoint to record a human decision against a run, not to drive run control flow.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    run_id: str = Field(
+        ...,
+        description='ID of the loop run to resume when this interaction is completed.',
+    )
+    signal_name: str = Field(
+        ...,
+        description='Signal name the interaction will complete against when run-backed.',
+    )
+    target_user_ids: list[str] | None = Field(
+        None,
+        description='Resolved user IDs to target directly. Agents use their agent principal IDs.',
+    )
+    kind: InteractionKind = Field(..., description='Protocol kind.')
+    title: str = Field(
+        ..., description='Short non-empty title shown to the responder.', min_length=1
+    )
+    description: str | None = Field(
+        None, description='Optional longer responder-facing detail or instructions.'
+    )
+    subject: InteractionReference | None = Field(
+        None, description='Primary work item or artifact the interaction is about.'
+    )
+    references: list[InteractionReference] | None = Field(
+        None, description='Supporting links and related entities.'
+    )
+    context: dict[str, Any] | None = Field(
+        None,
+        description='Additional key-value context surfaced in the UI alongside the title and description.',
+    )
+    tags: TagMap | None = None
+    properties: dict[str, Any] | None = Field(
+        None, description='Free-form structured metadata to attach to the interaction.'
+    )
+    spec: InteractionSpec | None = Field(
+        None,
+        description='Response controls and validation rules rendered to the recipient.',
+    )
+    require_all: bool | None = Field(
+        None,
+        description='When true, all target users must respond before the interaction is considered complete. Defaults to false when omitted. Mutually exclusive with `resolution_policy`; prefer the policy form for new code.',
+    )
+    resolution_policy: ResolutionPolicy | None = Field(
+        None,
+        description='Declarative resolution rule. When supplied the policy evaluator drives completion.',
+    )
+    consumer: Consumer | None = Field(
+        None,
+        description="Polymorphic identifier of what is waiting on this interaction's resolution. When omitted on a run-backed create request, the server derives a `kind=run` consumer from `run_id` and `signal_name`.",
+    )
+    delivery: Delivery | None = Field(
+        None, description='Optional per-interaction delivery override.'
+    )
+    expires_at: AwareDatetime | None = Field(
+        None,
+        description='Timestamp after which this interaction expires if not responded to.',
+    )
+
+
+class SessionEvent(BaseModel):
+    """
+    One durable, per-session lifecycle event in the session event log.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    session_id: str = Field(..., description='Session this event belongs to.')
+    agent_turn_id: str | None = Field(
+        None, description='Turn that produced this event, when set.'
+    )
+    event_type: str = Field(
+        ...,
+        description='Lifecycle event type, e.g. `user.message`, `tool.call`, or `turn.completed`.',
+    )
+    sequence: int = Field(
+        ...,
+        description='Monotonic per-session sequence number; pass as `after_sequence` to resume.',
+    )
+    seq: int = Field(
+        ...,
+        deprecated=True,
+        description='Deprecated alias for `sequence`, kept for v1 compatibility.',
+    )
+    payload: SessionEventPayload | None = None
+    created_at: AwareDatetime = Field(
+        ..., description='Server timestamp when the event was recorded.'
+    )
+
+
+class SessionEventListResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    items: list[SessionEvent] = Field(
+        ..., description='Session events in this page, ordered by `sequence` ascending.'
+    )
+    has_more: bool | None = Field(
+        None, description='True when more events exist past this page.'
+    )
+    next_sequence: int | None = Field(
+        None,
+        description='Sequence of the last item — pass back as `after_sequence` to continue.',
+    )
+
+
 class LoopAgentStepSpec(BaseModel):
     """
     Agent step entry inside `LoopSpec.steps`.
@@ -4935,6 +6274,90 @@ class LoopCheckStepSpec(BaseModel):
     )
     timeout: LoopTimeoutPolicy | None = Field(
         None, description='Timeout policy for this step.'
+    )
+
+
+class LoopRunEvent(BaseModel):
+    """
+    One durable event emitted while a loop run progresses.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str = Field(..., description='Stable event identifier.')
+    run_id: str = Field(..., description='Run this event belongs to.')
+    sequence: int = Field(
+        ...,
+        description='Monotonic per-run sequence number used for ordering and resume.',
+    )
+    event_type: str = Field(
+        ...,
+        description="Event type from the run-stream taxonomy (e.g. `run.started`, `step.completed`, `wait.opened`, `action.called`, `action.completed`, `action.failed`, `artifact.created`, `limit.reached`).\n\nGuardrail events: `run.budget_exceeded` fires when the budget halts the run at a checkpoint (payload: `credit_budget`, `credit_spent`, `percent_used`, plus the `step` it halted before). Metered spend is recorded in the billing ledger and denormalized onto the run's `credit_spent`; it is not represented as a timeline event.",
+    )
+    step_id: str | None = Field(
+        None, description='ID of the step this event belongs to, when applicable.'
+    )
+    step_key: str | None = Field(
+        None,
+        description='Legacy alias for the loop step ID this event belongs to, when applicable.',
+    )
+    payload: RunEventPayload | None = None
+    created_at: AwareDatetime = Field(
+        ..., description='Server timestamp when the event was recorded.'
+    )
+
+
+class LoopRunLifecycleFrame(LoopRunEvent):
+    """
+    Durable run lifecycle frame. SSE messages carrying this shape include `id: <sequence>`, and that value is the only cursor clients should persist for `after_sequence` or `Last-Event-ID` resume.
+    """
+
+
+class LoopRunStreamFrame(RootModel[LoopRunLifecycleFrame | GenerationDeltaFrame]):
+    root: LoopRunLifecycleFrame | GenerationDeltaFrame = Field(
+        ...,
+        description='JSON payload of a single `data:` line on the run event SSE stream. Durable lifecycle frames are replayable and carry an SSE `id:`; `generation.delta` frames are live-only previews and do not.',
+    )
+
+
+class LoopRunEventListResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    items: list[LoopRunEvent] = Field(
+        ..., description='Run events in this page, ordered by `sequence` ascending.'
+    )
+    next_sequence: int | None = Field(
+        None,
+        description='Sequence number of the most recent event in `items`; clients can pass this back as `after_sequence` on the next poll.',
+    )
+    has_more: bool | None = Field(
+        None, description='True when more events exist after the returned page.'
+    )
+
+
+class CreateInteractionRequest(
+    RootModel[CreateStandaloneInteractionRequest | CreateRunBackedInteractionRequest]
+):
+    root: CreateStandaloneInteractionRequest | CreateRunBackedInteractionRequest = (
+        Field(
+            ...,
+            description='Creates an interaction directly. Use the standalone variant with no loop-run side effect, or the run-backed variant that requires both `run_id` and `signal_name` so completion can resume the run. For worker/job usage, prefer the job-scoped route so the server can derive the owning run from the claimed job context.',
+        )
+    )
+
+
+class SessionLifecycleFrame(SessionEvent):
+    """
+    Durable session lifecycle frame. SSE messages carrying this shape include `id: <sequence>`, and that value is the only cursor clients should persist for `after_sequence` or `Last-Event-ID` resume.
+    """
+
+
+class SessionStreamFrame(RootModel[SessionLifecycleFrame | GenerationDeltaFrame]):
+    root: SessionLifecycleFrame | GenerationDeltaFrame = Field(
+        ...,
+        description='JSON payload of a single `data:` line on the session event SSE stream. Durable lifecycle frames are replayable and carry an SSE `id:`; `generation.delta` frames are live-only previews and do not.',
     )
 
 

@@ -23,6 +23,7 @@ func registerAgentsCommands(app *cli.App) {
 		Description("Create agent").
 		Flags(
 			cli.String("color", "").Help("Display color for this agent (Mantine palette key, e.g. `indigo`). Optional; empty falls back to a …"),
+			cli.String("compaction-policy", "").Help("Controls how a session's transcript is automatically summarized as it grows. On create the supplied… Accepts JSON, @file, or @-."),
 			cli.String("description", "").Help("Optional human-readable description."),
 			cli.String("kind", "").Help("Freeform classification (e.g. \"llm\", \"rpa\", \"integration\")."),
 			cli.String("model", "").Help("Model identifier for platform agents. Any id from `GET /v1/projects/{project_handle}/catalog/models…"),
@@ -50,6 +51,11 @@ func registerAgentsCommands(app *cli.App) {
 			if ctx.IsSet("color") {
 				v := ctx.String("color")
 				body.Color = &v
+			}
+			if ctx.IsSet("compaction-policy") {
+				if err := decodeFlagJSON(ctx, "compaction-policy", ctx.String("compaction-policy"), &body.CompactionPolicy); err != nil {
+					return err
+				}
 			}
 			if ctx.IsSet("description") {
 				v := ctx.String("description")
@@ -121,6 +127,27 @@ func registerAgentsCommands(app *cli.App) {
 			return printResponse(ctx, "deleteAgent", resp.StatusCode(), resp.Body)
 		})
 
+	agentsGrp.Command("delete-memory-entry").
+		Description("Delete a memory entry").
+		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
+		AddArg(&cli.Arg{Name: "memory-key", Description: "The key identifying a memory entry. Restricted to a path-safe character set (letters, numbers, and …", Required: true}).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			p1 := ctx.Arg(0)
+			p2 := ctx.Arg(1)
+			resp, err := client.DeleteAgentMemoryEntryWithResponse(ctx.Context(), p0, p1, p2)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "deleteAgentMemoryEntry", resp.StatusCode(), resp.Body)
+		})
+
 	agentsGrp.Command("delete-messaging-binding").
 		Description("Delete agent messaging binding").
 		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
@@ -159,6 +186,25 @@ func registerAgentsCommands(app *cli.App) {
 				return err
 			}
 			return printResponse(ctx, "getAgent", resp.StatusCode(), resp.Body)
+		})
+
+	agentsGrp.Command("get-memory").
+		Description("Get agent memory").
+		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			p1 := ctx.Arg(0)
+			resp, err := client.GetAgentMemoryWithResponse(ctx.Context(), p0, p1)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "getAgentMemory", resp.StatusCode(), resp.Body)
 		})
 
 	agentsGrp.Command("get-tools").
@@ -233,11 +279,53 @@ func registerAgentsCommands(app *cli.App) {
 			return printResponse(ctx, "listAgents", resp.StatusCode(), resp.Body)
 		})
 
-	agentsGrp.Command("list-messages").
-		Description("List turn messages").
+	agentsGrp.Command("list-memory-entries").
+		Description("List agent memory entries").
 		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		Flags(
-			cli.Int("after-sequence", "").Help("Only include messages with sequence greater than this value."),
+			cli.String("query", "").Help("Optional keyword search over entry keys and content. Omit to list."),
+			cli.String("kind", "").Help("Optional filter to a single memory kind."),
+			cli.String("cursor", "").Help("Cursor for pagination (opaque string from previous response)"),
+			cli.Int("limit", "").Help("Maximum number of items to return"),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			p1 := ctx.Arg(0)
+			params := &api.ListAgentMemoryEntriesParams{}
+			if ctx.IsSet("query") {
+				v := ctx.String("query")
+				params.Query = &v
+			}
+			if ctx.IsSet("kind") {
+				v := api.MemoryKind(ctx.String("kind"))
+				params.Kind = &v
+			}
+			if ctx.IsSet("cursor") {
+				v := api.CursorParam(ctx.String("cursor"))
+				params.Cursor = &v
+			}
+			if ctx.IsSet("limit") {
+				v := api.LimitParam(ctx.Int("limit"))
+				params.Limit = &v
+			}
+			resp, err := client.ListAgentMemoryEntriesWithResponse(ctx.Context(), p0, p1, params)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "listAgentMemoryEntries", resp.StatusCode(), resp.Body)
+		})
+
+	agentsGrp.Command("list-messages").
+		Description("List turn messages").
+		AddArg(&cli.Arg{Name: "turn-id", Description: "Identifier of a turn within a session.", Required: true}).
+		Flags(
+			cli.Int("after-sequence", "").Help("Continuation cursor for sequence-ordered lists. Only include rows whose monotonic per-resource sequ…"),
 			cli.Int("limit", "").Help("Maximum number of items to return"),
 		).
 		Use(requireAuth()).
@@ -251,7 +339,7 @@ func registerAgentsCommands(app *cli.App) {
 			p1 := ctx.Arg(0)
 			params := &api.ListTurnMessagesParams{}
 			if ctx.IsSet("after-sequence") {
-				v := ctx.Int("after-sequence")
+				v := api.AfterSequenceParam(int64(ctx.Int("after-sequence")))
 				params.AfterSequence = &v
 			}
 			if ctx.IsSet("limit") {
@@ -339,6 +427,67 @@ func registerAgentsCommands(app *cli.App) {
 				return err
 			}
 			return printResponse(ctx, "provisionAgentInbox", resp.StatusCode(), resp.Body)
+		})
+
+	agentsGrp.Command("put-agent-memory-entry").
+		Description("Create or update a memory entry").
+		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
+		AddArg(&cli.Arg{Name: "memory-key", Description: "The key identifying a memory entry. Restricted to a path-safe character set (letters, numbers, and …", Required: true}).
+		Flags(
+			cli.String("content", "").Help("The content to remember."),
+			cli.Int("importance", "").Help("Optional importance from 0 to 100; higher is kept longer during compaction."),
+			cli.String("kind", "").Help("Classifies a memory entry. Kinds carry different retention and compaction semantics: facts and pref…"),
+			cli.String("metadata", "").Help("Optional structured metadata to store alongside the memory. Accepts JSON, @file, or @-."),
+			cli.Bool("pinned", "").Help("Pin to exempt this memory from compaction."),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			p1 := ctx.Arg(0)
+			p2 := ctx.Arg(1)
+			var body api.PutAgentMemoryEntryJSONRequestBody
+			if err := readJSONBody(ctx, &body); err != nil {
+				return err
+			}
+			if ctx.IsSet("content") {
+				v := ctx.String("content")
+				body.Content = &v
+			}
+			if ctx.IsSet("importance") {
+				v := ctx.Int("importance")
+				body.Importance = &v
+			}
+			if ctx.IsSet("kind") {
+				v := api.MemoryKind(ctx.String("kind"))
+				body.Kind = &v
+			}
+			if ctx.IsSet("metadata") {
+				if err := decodeFlagJSON(ctx, "metadata", ctx.String("metadata"), &body.Metadata); err != nil {
+					return err
+				}
+			}
+			if ctx.IsSet("pinned") {
+				v := ctx.Bool("pinned")
+				body.Pinned = &v
+			}
+			if ctx.String("file") == "" && !ctx.IsSet("content") && !ctx.IsSet("importance") && !ctx.IsSet("kind") && !ctx.IsSet("metadata") && !ctx.IsSet("pinned") {
+				return fmt.Errorf("at least one flag or --file is required")
+			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
+			}
+			resp, err := client.PutAgentMemoryEntryWithResponse(ctx.Context(), p0, p1, p2, body)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "putAgentMemoryEntry", resp.StatusCode(), resp.Body)
 		})
 
 	agentsGrp.Command("replace-skill-assignments").
@@ -515,6 +664,7 @@ func registerAgentsCommands(app *cli.App) {
 		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		Flags(
 			cli.String("color", "").Help("Replacement display color (Mantine palette key, e.g. `indigo`). Pass empty string to clear and fall…"),
+			cli.String("compaction-policy", "").Help("Controls how a session's transcript is automatically summarized as it grows. On create the supplied… Accepts JSON, @file, or @-."),
 			cli.String("description", "").Help("Replacement description."),
 			cli.String("kind", "").Help("Replacement freeform agent classification (e.g. `llm`, `rpa`)."),
 			cli.String("model", "").Help("Replacement model identifier for platform agents (any id from `GET /v1/projects/{project_handle}/ca…"),
@@ -544,6 +694,11 @@ func registerAgentsCommands(app *cli.App) {
 			if ctx.IsSet("color") {
 				v := ctx.String("color")
 				body.Color = &v
+			}
+			if ctx.IsSet("compaction-policy") {
+				if err := decodeFlagJSON(ctx, "compaction-policy", ctx.String("compaction-policy"), &body.CompactionPolicy); err != nil {
+					return err
+				}
 			}
 			if ctx.IsSet("description") {
 				v := ctx.String("description")
@@ -588,7 +743,7 @@ func registerAgentsCommands(app *cli.App) {
 				v := api.AgentToolPresentation(ctx.String("tool-presentation"))
 				body.ToolPresentation = &v
 			}
-			if ctx.String("file") == "" && !ctx.IsSet("color") && !ctx.IsSet("description") && !ctx.IsSet("kind") && !ctx.IsSet("model") && !ctx.IsSet("model-route") && !ctx.IsSet("name") && !ctx.IsSet("status") && !ctx.IsSet("system-prompt") && !ctx.IsSet("tag") && !ctx.IsSet("timeout-seconds") && !ctx.IsSet("tool-presentation") {
+			if ctx.String("file") == "" && !ctx.IsSet("color") && !ctx.IsSet("compaction-policy") && !ctx.IsSet("description") && !ctx.IsSet("kind") && !ctx.IsSet("model") && !ctx.IsSet("model-route") && !ctx.IsSet("name") && !ctx.IsSet("status") && !ctx.IsSet("system-prompt") && !ctx.IsSet("tag") && !ctx.IsSet("timeout-seconds") && !ctx.IsSet("tool-presentation") {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
 			if ctx.Bool("dry-run") {

@@ -545,7 +545,7 @@ func fetchCLICredentials(ctx *cli.Context) ([]cliCredential, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
 		return nil, fmt.Errorf("list CLI credentials: HTTP %d: %s", resp.StatusCode, string(body))
@@ -657,7 +657,7 @@ func runAuthRevoke(ctx *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		body, _ := io.ReadAll(resp.Body)
 		return fmt.Errorf("revoke CLI credential: HTTP %d: %s", resp.StatusCode, string(body))
@@ -704,7 +704,7 @@ func verifyAuthenticatedRequest(ctx *cli.Context) (authProbeResult, error) {
 	if err != nil {
 		return result, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	_, _ = io.Copy(io.Discard, resp.Body)
 	result.Status = resp.StatusCode
 	return result, nil

@@ -84,7 +84,7 @@ export interface paths {
         post?: never;
         /**
          * Delete action
-         * @description Deletes a project-owned custom action definition. Loops that still reference the action block deletion until the reference is removed.
+         * @description Deletes a project-owned custom action definition. Runnable loop specs that still reference the action block deletion with `409 Conflict` until the reference is removed.
          */
         delete: operations["deleteAction"];
         options?: never;
@@ -228,6 +228,26 @@ export interface paths {
          * @description Returns assignable agent models grouped by provider. Providers appear only when the project has usable credentials, either from BYOK integration state or platform-managed configuration.
          */
         get: operations["listCatalogModels"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project_handle}/catalog/worker-models": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List worker models
+         * @description Returns local LLM models currently advertised by online project workers. Each item includes the exact `model_route` object to assign to an agent or loop step. Matching is exact on `provider` and `model`; queues are not part of the standard local LLM path.
+         */
+        get: operations["listCatalogWorkerModels"];
         put?: never;
         post?: never;
         delete?: never;
@@ -474,6 +494,96 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/projects/{project_handle}/interactions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List interactions
+         * @description Returns interactions newest-first, optionally filtered by kind, status, run, target, or the current caller's inbox. Inbox filtering includes direct targets.
+         */
+        get: operations["listInteractions"];
+        put?: never;
+        /**
+         * Create interaction
+         * @description Creates a standalone or run-backed interaction. Run-backed interactions emit an `interaction.responded` event when completed; omit `run_id` and `signal_name` for interactions with no loop-run side effect.
+         */
+        post: operations["createInteraction"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project_handle}/interactions/{resource_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get interaction
+         * @description Returns one interaction with target, response, and completion metadata. Run-backed interactions include the run and signal identifiers used to resume loop execution.
+         */
+        get: operations["getInteraction"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete interaction
+         * @description Deletes an interaction so it disappears from inbox and project listings. The row is retained for audit history. Only terminal interactions (`completed`, `cancelled`, `expired`) may be deleted; pending or in-review interactions must be cancelled first so any waiting loop run can route to a fallback.
+         */
+        delete: operations["deleteInteraction"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project_handle}/interactions/{resource_id}/respond": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Respond to interaction
+         * @description Canonical response endpoint for every interaction kind. `action` defaults to `submit`; lifecycle operations beyond submit are not part of the launch model.
+         *
+         *     The request body is intentionally the same envelope for every kind: `action`, `value`, and `comment`. Kind-specific behavior is selected from the interaction itself, not from separate request-body shapes.
+         */
+        post: operations["respondToInteraction"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project_handle}/interactions/{resource_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cancel open interaction
+         * @description Cancels an open interaction, recording who cancelled and an optional reason. Run-backed interactions resume the waiting loop step with a `{status: cancelled, reason}` signal payload so loops can route to a fallback. Only humans may cancel by default — agents must request cancellation through an interaction.
+         */
+        post: operations["cancelInteraction"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/projects/{project_handle}/agents": {
         parameters: {
             query?: never;
@@ -514,7 +624,7 @@ export interface paths {
         post?: never;
         /**
          * Delete agent
-         * @description Deletes the agent from normal use. The agent record is retained for audit and attribution history, but the agent is excluded from all listings and lookups. The agent's machine principal is disabled. In-flight jobs claiming this agent are not automatically cancelled.
+         * @description Deletes the agent from normal use. The agent record is retained for audit and attribution history, but the agent is excluded from all listings and lookups. The agent's backing machine principal is archived for attribution history. In-flight jobs claiming this agent are not automatically cancelled.
          */
         delete: operations["deleteAgent"];
         options?: never;
@@ -546,7 +656,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project_handle}/turns/{resource_id}/messages": {
+    "/v1/projects/{project_handle}/turns/{turn_id}/messages": {
         parameters: {
             query?: never;
             header?: never;
@@ -678,6 +788,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/projects/{project_handle}/agents/{resource_id}/memory": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get agent memory
+         * @description Returns a summary of the agent's private memory: how many entries it holds, a breakdown by kind, and when it last changed. Each agent has its own durable memory; only that agent reads or writes it during runs, but project members can observe and edit it here.
+         */
+        get: operations["getAgentMemory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project_handle}/agents/{resource_id}/memory/entries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List agent memory entries
+         * @description Lists the entries in an agent's private memory, each a keyed, durable memory the agent remembered. Pass `query` to keyword-search over keys and content, and `kind` to filter to one kind. Returns an empty page when the agent has no memory yet.
+         */
+        get: operations["listAgentMemoryEntries"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project_handle}/agents/{resource_id}/memory/entries/{memory_key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Create or update a memory entry
+         * @description Creates or updates the memory entry identified by `memory_key`. Editing an agent's memory here is equivalent to the agent calling `mobius.memory.remember`. Provisions the store on first write.
+         */
+        put: operations["putAgentMemoryEntry"];
+        post?: never;
+        /**
+         * Delete a memory entry
+         * @description Deletes the memory entry identified by `memory_key`, equivalent to the agent calling `mobius.memory.forget`. Idempotent: succeeds even if no such entry exists.
+         */
+        delete: operations["deleteAgentMemoryEntry"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/projects/{project_handle}/sessions": {
         parameters: {
             query?: never;
@@ -702,7 +876,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project_handle}/sessions/{resource_id}": {
+    "/v1/projects/{project_handle}/sessions/{session_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -730,7 +904,7 @@ export interface paths {
         patch: operations["updateSession"];
         trace?: never;
     };
-    "/v1/projects/{project_handle}/sessions/{resource_id}/messages": {
+    "/v1/projects/{project_handle}/sessions/{session_id}/messages": {
         parameters: {
             query?: never;
             header?: never;
@@ -739,7 +913,7 @@ export interface paths {
         };
         /**
          * List session messages
-         * @description Returns raw session messages in sequence order for replay.
+         * @description Returns a page of session transcript messages. The page is sequence-anchored and bidirectional: `after_sequence` pages forward (newer), `before_sequence` pages backward (older), and `order=desc` fetches the newest messages — the tail of a long session — in a single request. Items are always returned ascending by `sequence`; the response carries both `next_sequence` (forward cursor) and `prev_sequence` (backward cursor).
          */
         get: operations["listSessionMessages"];
         put?: never;
@@ -754,7 +928,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project_handle}/sessions/{resource_id}/turns": {
+    "/v1/projects/{project_handle}/sessions/{session_id}/turns": {
         parameters: {
             query?: never;
             header?: never;
@@ -763,18 +937,22 @@ export interface paths {
         };
         /**
          * List session turns
-         * @description Returns the session's turns in chronological order. Each turn groups related transcript messages and includes links to any run step or channel exchange that produced it.
+         * @description Returns the session's turns, the spine the turn-grouped transcript is built on. Each turn groups related transcript messages and includes links to any run step or channel exchange that produced it. Turns are ordered by creation time; `order=desc` returns the newest turns (the tail) first, and long sessions are walked page-by-page via the `next_cursor` returned in the response. Pass `ids` to fetch exactly a known set of turns in one bounded request — the join a transcript view uses to resolve a loaded message window's `turn_id`s to their headers; when `ids` is set the cursor and order parameters are ignored.
          */
         get: operations["listSessionTurns"];
         put?: never;
-        post?: never;
+        /**
+         * Start an agent turn
+         * @description Appends one caller input message to the session and starts an agent turn to respond. By default returns `202 Accepted` immediately with a durable `after_sequence` cursor to stream from. The turn keeps running even if the caller disconnects. When the request sets `Accept: text/event-stream`, the response is `200 OK` and the turn's activity is streamed inline on the same connection, equivalent to opening `GET .../events` at the returned cursor. A repeated call with the same `idempotency_key` resumes the existing turn rather than starting a second one. Requires the `mobius.agent.invoke` permission (or the agent's own backing principal).
+         */
+        post: operations["startTurn"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project_handle}/sessions/{resource_id}/events.stream": {
+    "/v1/projects/{project_handle}/sessions/{session_id}/turns/{turn_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -782,10 +960,10 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Stream session events
-         * @description Streams Server-Sent Events for a conversation session. Durable lifecycle events (`user.message`, `session.status_running`, `agent.message`, `agent.tool_use`, `agent.tool_result`, and the terminal `session.status_*` events) are replayed from the durable log and then tailed live, so a client reconnecting with `?after_sequence=N` (or the `Last-Event-ID` header) resumes exactly where it left off. The stream closes after the terminal event for the active invocation is delivered. Live-only `generation.delta` frames are interleaved best-effort.
+         * Get a session turn
+         * @description Returns one agent turn in the session.
          */
-        get: operations["streamSessionEvents"];
+        get: operations["getSessionTurn"];
         put?: never;
         post?: never;
         delete?: never;
@@ -794,7 +972,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project_handle}/sessions/{resource_id}/events": {
+    "/v1/projects/{project_handle}/sessions/{session_id}/turns/{turn_id}/cancel": {
         parameters: {
             query?: never;
             header?: never;
@@ -804,17 +982,39 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Send input to a session
-         * @description Appends one input message to a session and starts an agent invocation to respond, returning `202 Accepted` immediately with a durable `seq` cursor to stream from — the work continues even if the caller disconnects. A repeated send with the same `idempotency_key` returns the existing invocation's cursor without starting a second invocation or appending a second input message. Requires the `mobius.agent.invoke` permission (or the agent's own backing principal).
+         * Cancel a session turn
+         * @description Cancels one agent turn in the session if it is still active. The turn is marked cancelled and a terminal `turn.cancelled` event is emitted. Returns the updated turn. Requires the `mobius.agent.invoke` permission (or the agent's own backing principal).
          */
-        post: operations["sendSessionEvents"];
+        post: operations["cancelTurn"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project_handle}/sessions/{resource_id}/cancel": {
+    "/v1/projects/{project_handle}/sessions/{session_id}/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List or stream session events
+         * @description Returns the durable lifecycle event log for a conversation session, ordered by sequence number. Use `after_sequence` to page only events recorded after the last sequence the client has observed.
+         *
+         *     Content-negotiated: with `Accept: text/event-stream` this opens a long-lived Server-Sent Events stream instead of returning a JSON page. Durable events (`user.message`, `turn.started`, `agent.message`, `tool.call`, `tool.result`, the non-terminal `compaction.created` event, and the terminal `turn.completed` / `turn.failed` / `turn.cancelled` events) are replayed from `after_sequence` and then tailed live, so a client reconnecting with `?after_sequence=N` (or the `Last-Event-ID` header) resumes exactly where it left off. The stream follows the current active tail of the session and closes when the latest durable event at the head of the log is terminal (`compaction.created` is non-terminal and never closes the stream). A later turn is a new activity tail; clients should open a new stream for the new turn or use the streaming `POST .../turns` response. Live-only `generation.delta` frames are interleaved best-effort on the stream.
+         */
+        get: operations["listSessionEvents"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project_handle}/sessions/{session_id}/cancel": {
         parameters: {
             query?: never;
             header?: never;
@@ -824,10 +1024,30 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Cancel a session's active invocation
-         * @description Cancels the session's in-flight invocation. Queued and running grains for the session are marked cancelled and a terminal `session.status_cancelled` event is emitted. Returns the updated session. Requires the `mobius.agent.invoke` permission (or the agent's own backing principal).
+         * Cancel the session's active turn
+         * @description Cancels whichever turn is currently active in the session. Queued and running turns for the session are marked cancelled and a terminal `turn.cancelled` event is emitted. Returns the updated session. Requires the `mobius.agent.invoke` permission (or the agent's own backing principal).
          */
         post: operations["cancelSession"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project_handle}/sessions/{session_id}/compact": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Compact the session transcript now
+         * @description Forces a compaction pass immediately, summarizing every message appended since the last compaction regardless of the session's configured strategy or token threshold. This is the manual counterpart to the `auto` strategy and the way to drive the `manual` strategy. It is a no-op when there is nothing new to compact. Returns the updated session. Requires the `mobius.agent.invoke` permission (or the agent's own backing principal).
+         */
+        post: operations["compactSession"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1014,30 +1234,12 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List run events
+         * List or stream run events
          * @description Returns the durable event log for one run, ordered by sequence number. Use `after_sequence` to poll only events recorded after the last sequence the client has observed.
+         *
+         *     Content-negotiated: with `Accept: text/event-stream` this opens a long-lived Server-Sent Events stream instead of returning a JSON page: durable events are replayed from `after_sequence` and then tailed live, and the stream closes after the run is terminal and the server has drained all durable events committed before or with that terminal state. Reconnect with `?after_sequence=N` (or the `Last-Event-ID` header) to resume.
          */
         get: operations["listRunEvents"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/projects/{project_handle}/runs/{resource_id}/events.stream": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Stream run events
-         * @description Long-lived SSE stream of run events ordered by sequence number. Each `data:` frame is a JSON-encoded `LoopRunEvent`. The stream terminates when the run reaches a terminal status. Clients that disconnect should reconnect using `?after_sequence=N` (or the SSE `Last-Event-ID` header set to the last sequence) to resume without gaps.
-         */
-        get: operations["streamRunEvents"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1237,7 +1439,7 @@ export interface paths {
         head?: never;
         /**
          * Update table
-         * @description Updates table metadata or schema and resyncs declared indexes.
+         * @description Updates table metadata or schema. A table's identity column, secondary key column, and required column settings are immutable after creation.
          */
         patch: operations["updateTable"];
         trace?: never;
@@ -1313,7 +1515,7 @@ export interface paths {
         put?: never;
         /**
          * Search rows
-         * @description Token-prefix search over row data within one table. Punctuation, including hyphens, splits terms: searching `from-ui` matches a value like `from-ui-insert` because the `from` and `ui` tokens match. Optional field filters use the same syntax as row queries and are applied before text search.
+         * @description Search rows within one table using keyword, semantic, or hybrid mode. Keyword matching is token-prefix based. Punctuation, including hyphens, splits terms: searching `from-ui` matches a value like `from-ui-insert` because the `from` and `ui` tokens match. Optional field filters use the same syntax as row queries and are applied before search.
          */
         post: operations["searchTableRows"];
         delete?: never;
@@ -1512,6 +1714,39 @@ export interface components {
                 };
             };
         };
+        /** @description Event-type-specific payload for less common event types. */
+        GenericEventPayload: {
+            [key: string]: unknown;
+        };
+        /** @description Live-only token preview frame that can appear on run and session SSE streams. It is not persisted, does not carry an SSE `id:`, and cannot be replayed with `after_sequence` or `Last-Event-ID`. */
+        GenerationDeltaFrame: {
+            /** @enum {string} */
+            event_type: "generation.delta";
+            run_id?: string | null;
+            session_id?: string | null;
+            agent_turn_id?: string | null;
+            job_id?: string | null;
+            tool_call_id?: string | null;
+            /**
+             * Format: int64
+             * @description Publisher-local ordering hint, not a replay cursor.
+             */
+            sequence?: number | null;
+            /**
+             * Format: int64
+             * @description Preferred publisher-local ordering hint, not a replay cursor.
+             */
+            delta_sequence?: number | null;
+            /** @description Token preview payload, usually `{ "text": "..." }`. */
+            delta: {
+                [key: string]: unknown;
+            };
+            executor_kind?: string | null;
+            worker_id?: string | null;
+            generation_key?: string | null;
+        } & {
+            [key: string]: unknown;
+        };
         /**
          * @description Optional namespace for named runtime resources. Omitted/null means the project/default scope; `owner` means names are unique within `(project, owned_by)`.
          * @enum {string}
@@ -1603,18 +1838,35 @@ export interface components {
             mode: components["schemas"]["AgentModelRouteMode"];
             /** @description Environment to use for worker-backed model calls. */
             environment_id?: string;
-            /** @description Provider or worker route name. */
+            /** @description Provider id advertised by a local worker when `mode` is `worker`. */
             provider?: string;
             /** @description Model identifier to use for this route. */
             model?: string;
-            /** @description Worker queue for customer-worker model calls. */
-            queue?: string;
         };
         /**
          * @description Controls how granted actions are surfaced to the model in Mobius-hosted agent turns. `meta` (the default) groups related actions behind compact command routers, while `flat` exposes one tool per action.
          * @enum {string}
          */
         AgentToolPresentation: "flat" | "meta";
+        /**
+         * @description Controls how a session's transcript is automatically summarized as it grows. On create the supplied fields are merged over the owning agent's default policy and the server defaults; on update they patch the session's current policy. Omitted fields keep their resolved values.
+         * @example {
+         *       "strategy": "auto",
+         *       "threshold_tokens": 25000,
+         *       "summary_model": "claude-haiku-4-5-20251001"
+         *     }
+         */
+        SessionCompactionPolicy: {
+            /**
+             * @description `auto` (default) compacts automatically when the transcript crosses `threshold_tokens`. `manual` only compacts on an explicit compact request. `disabled`/`none` never compact.
+             * @enum {string}
+             */
+            strategy?: "auto" | "manual" | "disabled" | "none";
+            /** @description Token threshold that triggers automatic compaction under the `auto` strategy. */
+            threshold_tokens?: number;
+            /** @description Model used to produce compaction summaries. */
+            summary_model?: string;
+        };
         /**
          * @description AI actor identity. An agent IS a principal (its permissions are role grants on that principal); agents are useful when loops need a named actor with instructions, configuration, and session presence.
          * @example {
@@ -1662,6 +1914,8 @@ export interface components {
              * @description Execution timeout, in seconds, for a single turn of this platform agent. `0` (or omitted) uses the platform default (600s / 10 minutes). A loop step's own timeout overrides this for that step.
              */
             timeout_seconds?: number;
+            /** @description Default session-compaction policy. New sessions opened against this agent inherit it (below server defaults, above explicit per-session overrides). Absent when the agent has no default. */
+            compaction_policy?: components["schemas"]["SessionCompactionPolicy"];
             /** @description Current agent status: `active` or `inactive`. */
             status: components["schemas"]["AgentStatus"];
             /** @description Inbox address provisioned via POST /v1/projects/{project_handle}/agents/{resource_id}/inbox (opt-in; not created automatically at agent creation). The field is populated only after a successful provisioning call. Use this address to add the agent as a member on external platforms (Linear, GitHub, Slack, etc.) so the platform can deliver notifications to the agent. */
@@ -2289,6 +2543,27 @@ export interface components {
             /** @description Whether this is the suggested default for its provider. */
             recommended?: boolean;
         };
+        /** @description Local LLM models advertised by online project workers. */
+        WorkerModelCatalogResponse: {
+            items: components["schemas"]["WorkerModelCatalogItem"][];
+        };
+        /** @description One exact local model route available through online workers. */
+        WorkerModelCatalogItem: {
+            /** @description Worker-advertised provider id, matched exactly by `model_route.provider`. */
+            provider: string;
+            /** @description Worker-advertised model id, matched exactly by `model_route.model`. */
+            model: string;
+            /** @description Number of online workers currently advertising this exact provider/model pair. */
+            worker_count: number;
+            route: components["schemas"]["WorkerModelRoute"];
+        };
+        /** @description Assign this route to use a local worker model. */
+        WorkerModelRoute: {
+            /** @enum {string} */
+            mode: "worker";
+            provider: string;
+            model: string;
+        };
         /**
          * @description Backing provider: `sprites`, `cloudflare_containers`, or `worker`.
          * @enum {string}
@@ -2500,7 +2775,7 @@ export interface components {
             agent_turn_id?: string;
             session_id?: string;
             tool_call_id?: string;
-            /** @description Worker-specific action or generation payload. */
+            /** @description Worker-specific action or generation payload. For `kind=llm_generation`, this object follows `WorkerSocketLLMGenerationSpec`. */
             spec: {
                 [key: string]: unknown;
             };
@@ -2547,6 +2822,7 @@ export interface components {
              * @enum {string}
              */
             status: "completed" | "failed" | "cancelled";
+            /** @description Terminal result payload. For `llm_generation` jobs, this object must follow `WorkerSocketLLMGenerationResult`; plain text fallback results are not accepted. */
             result?: {
                 [key: string]: unknown;
             };
@@ -2846,6 +3122,362 @@ export interface components {
             latency_ms?: number;
         };
         /**
+         * @description Declarative UI/input primitive for collecting the response. This is a portable rendering contract, not executable code. Values are `confirm`, `select`, `multi_select`, and `input`.
+         * @enum {string}
+         */
+        InteractionMode: "confirm" | "select" | "multi_select" | "input";
+        /** @description Selectable option for `select` and `multi_select` modes. */
+        InteractionOption: {
+            /** @description Machine-readable value submitted when this option is chosen. */
+            value: string;
+            /** @description Human-readable label displayed for this option. */
+            label: string;
+            /** @description Optional additional context shown beneath the label. */
+            description?: string;
+        };
+        /**
+         * @description Declarative dialog contract for rendering and validating an interaction. Used at both authoring time (inside a loop definition) and runtime (persisted on an interaction). Protocol kind is decoupled from input shape: each kind declares which spec modes are *allowed*, not which is *implied*. An approval may now legitimately use `select` mode (approve/deny/defer), for example.
+         *
+         *     Allowed combinations:
+         *     * `approval` → `confirm`, `select`
+         *     * `review` → `select`, `input`
+         *     * `request` → `select`, `multi_select`, `input`
+         */
+        InteractionSpec: {
+            /** @description UI/input mode used to render and validate the response. */
+            mode: components["schemas"]["InteractionMode"];
+            /** @description Required for `select` and `multi_select` modes. */
+            options?: components["schemas"]["InteractionOption"][];
+            /** @description Default selected option for `select` mode. */
+            default_value?: string;
+            /** @description Default selected options for `multi_select` mode. */
+            default_values?: string[];
+            /** @description Initial text value for `input` mode. */
+            default_text?: string;
+            /** @description Initial yes/no value for `confirm` mode. */
+            default_confirmed?: boolean;
+            /** @description Hint text shown for `input` mode. */
+            placeholder?: string;
+            /** @description When true, render `input` mode as a multiline text area. */
+            multiline?: boolean;
+        };
+        /**
+         * @description Protocol kind of the interaction. Launch keeps this intentionally
+         *     small:
+         *     * `request_information` — a data-collection protocol with structured
+         *     or free-form input
+         *     * `request_approval` — a decision protocol (yes/no, optionally
+         *     yes/no/defer)
+         *     * `request_review` — a judgment protocol that evaluates supplied
+         *     material
+         * @enum {string}
+         */
+        InteractionKind: "request_information" | "request_approval" | "request_review";
+        /** @description Free-form JSON payload. Used both for responder-supplied values and for policy-derived values (e.g. `Interaction.outcome`, `ResolutionPolicy.proposal`); each consumer documents which. */
+        InteractionValue: ({
+            [key: string]: unknown;
+        } | null) | unknown[] | string | number | boolean;
+        /** @description Identifies the principal who answered an interaction. Agents answer through their agent principal ID. */
+        InteractionResponder: {
+            /** @description Responder user ID. */
+            user_id: string;
+        };
+        /** @description Pointer to the work item, artifact, external ticket, or Mobius entity this interaction is about. */
+        InteractionReference: {
+            /** @enum {string} */
+            kind: "external_url" | "mobius_entity";
+            /**
+             * Format: uri
+             * @description Required when kind is `external_url`.
+             */
+            url?: string;
+            /** @description Required when kind is `mobius_entity`. */
+            entity_type?: string;
+            /** @description Required when kind is `mobius_entity`. */
+            entity_id?: string;
+            /** @description Relationship such as `subject`, `evidence`, or `related`. */
+            relation?: string;
+            /** @description User-facing label for display. */
+            label?: string;
+        };
+        /** @description Optional per-interaction delivery override. When absent, each participant is notified via the app inbox only. */
+        Delivery: {
+            channels: components["schemas"]["DeliveryChannel"][];
+        };
+        /** @description A single delivery destination. `inbox_only` carries no payload; `email` requires the `email` variant. */
+        DeliveryChannel: {
+            /** @enum {string} */
+            kind: "inbox_only" | "email";
+            /** @description Email delivery payload when `kind=email`; null for inbox-only delivery. */
+            email?: components["schemas"]["EmailDelivery"] | null;
+        };
+        EmailDelivery: {
+            to: string[];
+        };
+        /** @description Polymorphic identifier of what is waiting on this interaction's resolution. Replaces the previously special-cased `run_id` + `signal_name` pair. When `kind=run`, the legacy fields are also populated for compatibility. `http_subscriber` requires `secret_ref` and enqueues a durable callback dispatch to `callback_url` when the interaction resolves; the canonical string `v1.{delivery_id}.{unix_timestamp}.{raw_body}` is signed with HMAC-SHA256 against the resolved project signing key and the signed dispatch carries `X-Mobius-Signature`, `X-Mobius-Secret-Ref`, `X-Mobius-Secret-Version`, and `X-Mobius-Timestamp`. Signed dispatches also carry `X-Mobius-Signature-Version: v1`. Every durable dispatch also carries the stable outbox row id in `X-Mobius-Delivery-Id` and `Idempotency-Key`; retries reuse the same value. Verifiers should recompute the signature over the exact raw body, reject stale timestamps (for example, older than five minutes), deduplicate by delivery id, and check the signing headers. */
+        Consumer: {
+            /** @enum {string} */
+            kind: "run" | "agent_tool" | "http_subscriber" | "none";
+            /** @description Run resume target when `kind=run`; null for other consumer kinds. */
+            run?: components["schemas"]["RunConsumer"] | null;
+            /** @description Agent tool continuation target when `kind=agent_tool`; null for other consumer kinds. */
+            agent_tool?: components["schemas"]["AgentToolConsumer"] | null;
+            /** @description HTTP callback target when `kind=http_subscriber`; null for other consumer kinds. */
+            http_subscriber?: components["schemas"]["HttpSubscriberConsumer"] | null;
+        };
+        RunConsumer: {
+            run_id: string;
+            signal_name: string;
+        };
+        AgentToolConsumer: {
+            invocation_id: string;
+            tool_call_id: string;
+        };
+        HttpSubscriberConsumer: {
+            /**
+             * Format: uri
+             * @description Absolute http(s) URL the server POSTs to when the interaction resolves. The body is a JSON object with the interaction id, kind, status, outcome value, comment, responder, and `resolved_by`. Delivery is enqueued as a `source_events` dispatch so the worker can retry failed attempts instead of dropping them inline with interaction resolution.
+             */
+            callback_url: string;
+            /** @description Required reference to a project secret used to sign deliveries with HMAC-SHA256 over the canonical string `v1.{delivery_id}.{unix_timestamp}.{raw_body}`, where `delivery_id` is the value in `X-Mobius-Delivery-Id` and `raw_body` is the exact callback request body bytes. Accepts `<name>` for the latest enabled version or `<name>:<version>` to pin a specific positive-integer version. The plaintext signing bytes are taken from the secret's `signing_key_b64` key, which must base64-decode to exactly 32 bytes. The hex signature is forwarded as `X-Mobius-Signature: sha256=<hex>` alongside `X-Mobius-Secret-Ref`, `X-Mobius-Secret-Version`, `X-Mobius-Signature-Version: v1`, and a unix `X-Mobius-Timestamp`. Consumers should reject stale timestamps (for example, older than five minutes). When `secret_ref` resolution fails the dispatch is retried by the event processor rather than sent unsigned. */
+            secret_ref: string;
+        };
+        /** @description One persisted answer artifact for an interaction. The response that triggered resolution is referenced from `Interaction.resolving_response_id`. */
+        InteractionResponse: {
+            /** @description Unique identifier for this response. */
+            id: string;
+            /** @description ID of the interaction this response belongs to. */
+            interaction_id: string;
+            /**
+             * @description Answer response.
+             * @enum {string}
+             */
+            response_kind: "response";
+            /**
+             * @description Lifecycle state for this response row.
+             * @enum {string}
+             */
+            state: "submitted";
+            /** @description User ID that submitted this response. */
+            responder_user_id: string;
+            /** @description JSON value supplied by this participant. */
+            value: components["schemas"]["InteractionValue"];
+            /** @description Optional free-text comment from this responder. */
+            comment?: string | null;
+            /**
+             * Format: date-time
+             * @description Timestamp when this response was submitted.
+             */
+            responded_at: string;
+            /** @description Reserved for future retry-aware response flows; null until attempts are tracked. */
+            attempt?: number | null;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        /** @description Declarative resolution rule attached to an Interaction. Determines how participant responses become a final outcome. */
+        ResolutionPolicy: {
+            /**
+             * @description Resolution rule. `any_of` resolves on the first acceptable response. `all_of` waits for every assigned participant. `quorum` resolves once `threshold` distinct participants respond.
+             * @enum {string}
+             */
+            type: "any_of" | "all_of" | "quorum";
+            /** @description Required when `type` is `quorum`. Number of distinct eligible participants that must respond before the interaction resolves. Must be `>= 1` and `<=` the participant count. */
+            threshold?: number;
+        };
+        /** @description Human or agent interaction request and its current response state. */
+        Interaction: {
+            /** @description Unique identifier for this interaction. */
+            id: string;
+            /** @description Originating loop run when the interaction is run-backed. */
+            run_id?: string | null;
+            /** @description Signal name used to resume the originating run when run-backed. */
+            signal_name?: string | null;
+            /** @description Canonical principal ID of the human or agent that created the interaction; null for legacy/system-created rows. */
+            created_by?: string | null;
+            /** @description Protocol kind of the interaction. */
+            kind: components["schemas"]["InteractionKind"];
+            /**
+             * @description Current status of the interaction: pending, completed, expired, or cancelled.
+             * @enum {string}
+             */
+            status: "pending" | "completed" | "expired" | "cancelled";
+            /** @description Short non-empty title shown to the responder. */
+            title: string;
+            /** @description Optional longer responder-facing detail or instructions. */
+            description?: string | null;
+            /** @description Primary work item or artifact the interaction is about; null when no subject was supplied. */
+            subject?: components["schemas"]["InteractionReference"] | null;
+            /** @description Supporting links and related entities. */
+            references?: components["schemas"]["InteractionReference"][];
+            /** @description Additional key-value context surfaced in the UI alongside the title and description when supplied. */
+            context?: {
+                [key: string]: unknown;
+            } | null;
+            tags?: components["schemas"]["TagMap"];
+            /** @description Free-form structured metadata attached to the interaction; null when no metadata is attached. */
+            properties?: {
+                [key: string]: unknown;
+            } | null;
+            /** @description Response controls and validation rules rendered to the recipient. */
+            spec?: components["schemas"]["InteractionSpec"];
+            /** @description Resolved user IDs targeted by the interaction. */
+            target_user_ids: string[];
+            /** @description User or agent that completed the interaction; null until completion. */
+            responder?: components["schemas"]["InteractionResponder"] | null;
+            /** @description ID of the response that triggered resolution. Null while the interaction is pending, cancelled, or expired. Look up the response in `responses` for the full payload. */
+            resolving_response_id?: string | null;
+            /** @description All response artifacts recorded against this interaction in arrival order. */
+            responses?: components["schemas"]["InteractionResponse"][];
+            /**
+             * Format: date-time
+             * @description Timestamp when this interaction expires if not responded to.
+             */
+            expires_at?: string | null;
+            /**
+             * Format: date-time
+             * @description Timestamp when the interaction received a terminal response.
+             */
+            completed_at?: string | null;
+            /**
+             * Format: date-time
+             * @description Timestamp when this interaction was created.
+             */
+            created_at: string;
+            /**
+             * Format: date-time
+             * @description Timestamp when this interaction was last updated.
+             */
+            updated_at: string;
+            /** @description When true, all target users must respond before completion. */
+            require_all?: boolean;
+            /** @description Declarative resolution rule attached at creation time. Legacy `require_all` inputs are synthesized into an equivalent policy at create time when present. Newer rows typically include this field; nullability covers historical rows and callers that omit it. */
+            resolution_policy?: components["schemas"]["ResolutionPolicy"] | null;
+            /** @description Polymorphic identifier of what is waiting on this interaction's resolution. Replaces the special-cased `run_id`/`signal_name` pair; the latter remain populated when `consumer.kind=run`. */
+            consumer?: components["schemas"]["Consumer"] | null;
+            /** @description Optional per-interaction delivery override. When absent, the dispatcher delivers to the app inbox only. */
+            delivery?: components["schemas"]["Delivery"] | null;
+            /** @description Final outcome selected by the resolution policy. Omitted while the interaction is still pending. */
+            outcome?: components["schemas"]["InteractionValue"];
+            /** @description Short audit string identifying which policy rule fired. Null until the interaction reaches a resolved state. */
+            resolved_by?: string | null;
+            /** @description Reason recorded when the interaction was cancelled. */
+            cancel_reason?: string | null;
+        };
+        InteractionListResponse: {
+            /** @description The list of results for this page. */
+            items: components["schemas"]["Interaction"][];
+            /** @description Whether additional pages are available. */
+            has_more?: boolean;
+            /** @description Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false. */
+            next_cursor?: string;
+        };
+        /** @description Creates an interaction directly. Use the standalone variant with no loop-run side effect, or the run-backed variant that requires both `run_id` and `signal_name` so completion can resume the run. For worker/job usage, prefer the job-scoped route so the server can derive the owning run from the claimed job context. */
+        CreateInteractionRequest: components["schemas"]["CreateStandaloneInteractionRequest"] | components["schemas"]["CreateRunBackedInteractionRequest"];
+        /** @description Creates a standalone interaction. Completion records the response but does not deliver a loop signal. */
+        CreateStandaloneInteractionRequest: {
+            /** @description Resolved user IDs to target directly. Agents use their agent principal IDs. */
+            target_user_ids?: string[];
+            /** @description Protocol kind. */
+            kind: components["schemas"]["InteractionKind"];
+            /** @description Short non-empty title shown to the responder. */
+            title: string;
+            /** @description Optional longer responder-facing detail or instructions. */
+            description?: string;
+            /** @description Primary work item or artifact the interaction is about. */
+            subject?: components["schemas"]["InteractionReference"];
+            /** @description Supporting links and related entities. */
+            references?: components["schemas"]["InteractionReference"][];
+            /** @description Additional key-value context surfaced in the UI alongside the title and description. */
+            context?: {
+                [key: string]: unknown;
+            };
+            tags?: components["schemas"]["TagMap"];
+            /** @description Free-form structured metadata to attach to the interaction. */
+            properties?: {
+                [key: string]: unknown;
+            };
+            /** @description Response controls and validation rules rendered to the recipient. */
+            spec?: components["schemas"]["InteractionSpec"];
+            /** @description When true, all target users must respond before the interaction is considered complete. Defaults to false when omitted. Mutually exclusive with `resolution_policy`; prefer the policy form for new code. */
+            require_all?: boolean;
+            /** @description Declarative resolution rule. When supplied the policy evaluator drives completion. */
+            resolution_policy?: components["schemas"]["ResolutionPolicy"];
+            /** @description Polymorphic identifier of what is waiting on this interaction's resolution. When omitted on a run-backed create request, the server derives a `kind=run` consumer from `run_id` and `signal_name`. */
+            consumer?: components["schemas"]["Consumer"];
+            /** @description Optional per-interaction delivery override. */
+            delivery?: components["schemas"]["Delivery"];
+            /**
+             * Format: date-time
+             * @description Timestamp after which this interaction expires if not responded to.
+             */
+            expires_at?: string;
+        };
+        /**
+         * @description Creates an interaction linked to a loop run for audit. The server derives a `kind=run` consumer from `run_id` and `signal_name`.
+         *
+         *     This is an audit-only link: creating an interaction here does not suspend the run, and resolving it does not by itself resume a run. A run only blocks on, and resumes from, human input when the loop definition declares an interaction step — that step creates the interaction and registers the matching wait atomically. Use this endpoint to record a human decision against a run, not to drive run control flow.
+         */
+        CreateRunBackedInteractionRequest: {
+            /** @description ID of the loop run to resume when this interaction is completed. */
+            run_id: string;
+            /** @description Signal name the interaction will complete against when run-backed. */
+            signal_name: string;
+            /** @description Resolved user IDs to target directly. Agents use their agent principal IDs. */
+            target_user_ids?: string[];
+            /** @description Protocol kind. */
+            kind: components["schemas"]["InteractionKind"];
+            /** @description Short non-empty title shown to the responder. */
+            title: string;
+            /** @description Optional longer responder-facing detail or instructions. */
+            description?: string;
+            /** @description Primary work item or artifact the interaction is about. */
+            subject?: components["schemas"]["InteractionReference"];
+            /** @description Supporting links and related entities. */
+            references?: components["schemas"]["InteractionReference"][];
+            /** @description Additional key-value context surfaced in the UI alongside the title and description. */
+            context?: {
+                [key: string]: unknown;
+            };
+            tags?: components["schemas"]["TagMap"];
+            /** @description Free-form structured metadata to attach to the interaction. */
+            properties?: {
+                [key: string]: unknown;
+            };
+            /** @description Response controls and validation rules rendered to the recipient. */
+            spec?: components["schemas"]["InteractionSpec"];
+            /** @description When true, all target users must respond before the interaction is considered complete. Defaults to false when omitted. Mutually exclusive with `resolution_policy`; prefer the policy form for new code. */
+            require_all?: boolean;
+            /** @description Declarative resolution rule. When supplied the policy evaluator drives completion. */
+            resolution_policy?: components["schemas"]["ResolutionPolicy"];
+            /** @description Polymorphic identifier of what is waiting on this interaction's resolution. When omitted on a run-backed create request, the server derives a `kind=run` consumer from `run_id` and `signal_name`. */
+            consumer?: components["schemas"]["Consumer"];
+            /** @description Optional per-interaction delivery override. */
+            delivery?: components["schemas"]["Delivery"];
+            /**
+             * Format: date-time
+             * @description Timestamp after which this interaction expires if not responded to.
+             */
+            expires_at?: string;
+        };
+        RespondToInteractionRequest: {
+            /**
+             * @description Operation to perform through the canonical response endpoint. `submit` answers the interaction.
+             * @enum {string}
+             */
+            action?: "submit";
+            /** @description JSON value supplied by the responder. Required for `submit`. */
+            value?: components["schemas"]["InteractionValue"];
+            /** @description Optional free-text comment accompanying the action. Available on every interaction kind and never gated by the spec; the responder may always attach reasoning, caveats, or follow-up notes alongside `value`. */
+            comment?: string;
+        };
+        /** @description Optional payload accompanying a cancel request. The reason is recorded on the interaction and forwarded in the cancellation signal so loops can route to a fallback. */
+        CancelInteractionRequest: {
+            /** @description Free-text reason recorded on the interaction. */
+            reason?: string;
+        };
+        /**
          * @description Direct-message access policy: `open`, `allowlist`, or `disabled`.
          * @enum {string}
          */
@@ -3083,6 +3715,8 @@ export interface components {
              * @description Per-turn execution timeout in seconds for this platform agent. Omit or `0` to use the platform default (600s / 10 minutes); a loop step's own timeout overrides it for that step.
              */
             timeout_seconds?: number;
+            /** @description Default session-compaction policy new sessions inherit from this agent. */
+            compaction_policy?: components["schemas"]["SessionCompactionPolicy"];
             /** @description Initial labels used for filtering, ownership, or automation. */
             tags?: components["schemas"]["TagMap"];
         };
@@ -3114,8 +3748,83 @@ export interface components {
              * @enum {string}
              */
             status?: "active" | "inactive";
+            /** @description Replacement default session-compaction policy. Send an empty object to clear the default and fall back to server defaults. */
+            compaction_policy?: components["schemas"]["SessionCompactionPolicy"];
             /** @description Replacement labels; send an empty object to clear all tags. */
             tags?: components["schemas"]["TagMap"];
+        };
+        /**
+         * @description Classifies a memory entry. Kinds carry different retention and compaction semantics: facts and preferences are durable, episodes are the primary input to compaction, and a summary is the compacted product of other entries.
+         * @enum {string}
+         */
+        MemoryKind: "fact" | "preference" | "episode" | "summary";
+        /** @description Summary of an agent's private memory: how many entries it holds, a breakdown by kind, and when it last changed. */
+        AgentMemory: {
+            /** @description The agent that owns this memory. */
+            agent_id: string;
+            /** @description Number of entries currently held. */
+            entry_count: number;
+            /** @description Entry counts keyed by memory kind. */
+            counts_by_kind: {
+                [key: string]: number;
+            };
+            /**
+             * Format: date-time
+             * @description When any entry was last changed, when there are entries.
+             */
+            updated_at?: string;
+        };
+        /** @description A single durable memory in an agent's private memory, identified by a stable key the agent chose. */
+        AgentMemoryEntry: {
+            /** @description Stable identifier the agent chose for this memory. */
+            key: string;
+            kind: components["schemas"]["MemoryKind"];
+            /** @description The remembered content. */
+            content?: string;
+            /** @description Structured metadata stored alongside the memory (provenance, tags, …). */
+            metadata?: {
+                [key: string]: unknown;
+            };
+            /** @description Rank from 0 to 100 used by compaction; higher is kept longer. */
+            importance: number;
+            /** @description Whether the entry is exempt from compaction. */
+            pinned: boolean;
+            /** @description Identifier of this memory entry. */
+            entry_id: string;
+            /** @description Monotonic version, incremented on each update. */
+            version: number;
+            /**
+             * Format: date-time
+             * @description When the entry was first remembered.
+             */
+            created_at: string;
+            /**
+             * Format: date-time
+             * @description When the entry was last updated.
+             */
+            updated_at: string;
+        };
+        AgentMemoryEntryListResponse: {
+            /** @description Memory entries in the current page. */
+            items: components["schemas"]["AgentMemoryEntry"][];
+            /** @description Whether more entries follow this page. */
+            has_more: boolean;
+            /** @description Cursor to fetch the next page, when has_more is true. */
+            next_cursor?: string;
+        };
+        /** @description Content for a memory entry. The key comes from the path. */
+        PutAgentMemoryEntryRequest: {
+            /** @description The content to remember. */
+            content?: string;
+            kind?: components["schemas"]["MemoryKind"];
+            /** @description Optional structured metadata to store alongside the memory. */
+            metadata?: {
+                [key: string]: unknown;
+            };
+            /** @description Optional importance from 0 to 100; higher is kept longer during compaction. */
+            importance?: number;
+            /** @description Pin to exempt this memory from compaction. */
+            pinned?: boolean;
         };
         /**
          * @description Message role: `system`, `user`, `assistant`, `tool`, or `compaction`.
@@ -3162,6 +3871,18 @@ export interface components {
         SessionMessageListResponse: {
             /** @description Messages in this page, ordered by `sequence` ascending. */
             items: components["schemas"]["SessionMessage"][];
+            /** @description True when more messages exist past this page in the query's scan direction. */
+            has_more?: boolean;
+            /**
+             * Format: int64
+             * @description Sequence of the last (highest) item — pass back as `after_sequence` to page forward (newer).
+             */
+            next_sequence?: number;
+            /**
+             * Format: int64
+             * @description Sequence of the first (lowest) item — pass back as `before_sequence` with `order=desc` to page backward (older).
+             */
+            prev_sequence?: number;
         };
         /**
          * @description Action selector included in a toolkit.
@@ -3306,11 +4027,11 @@ export interface components {
          */
         SessionVisibility: "project" | "private";
         /**
-         * @description Agent turn lifecycle status: `running`, `waiting`, `completed`, `failed`, or `cancelled`.
+         * @description Agent turn lifecycle status: `queued`, `running`, `waiting`, `completed`, `failed`, or `cancelled`.
          * @enum {string}
          */
-        AgentTurnStatus: "running" | "waiting" | "completed" | "failed" | "cancelled";
-        /** @description One attempt of an agent running the agent loop — the unit that produces a transcript. A turn is triggered either by a loop step (run_id + step_id) or an inbound channel message (channel_exchange_id); the two are mutually exclusive. Its messages are read via the turn's transcript endpoint. */
+        AgentTurnStatus: "queued" | "running" | "waiting" | "completed" | "failed" | "cancelled";
+        /** @description One attempt of an agent running the agent loop — the unit that produces a transcript. A turn is triggered by a direct send to the session, a loop step (run_id + step_key), or an inbound channel message (channel_exchange_id). Its messages are read via the turn's transcript endpoint. */
         AgentTurn: {
             /** @description Stable turn identifier. */
             id: string;
@@ -3353,6 +4074,10 @@ export interface components {
         AgentTurnListResponse: {
             /** @description Turns in this session, ordered by creation time. */
             items: components["schemas"]["AgentTurn"][];
+            /** @description True when more turns exist past this page. */
+            has_more?: boolean;
+            /** @description Opaque cursor to pass as `cursor` on the next request. Null when `has_more` is false. */
+            next_cursor?: string | null;
         };
         /** @description Durable conversation transcript owned by an agent. */
         Session: {
@@ -3380,10 +4105,10 @@ export interface components {
             model?: string;
             /** @description Provider for the recorded `model`. */
             model_provider?: string;
-            /** @description Per-session overrides for the message-compaction policy. */
-            compaction_policy?: {
-                [key: string]: unknown;
-            };
+            /** @description Resolved message-compaction policy in effect for this session. */
+            compaction_policy?: components["schemas"]["SessionCompactionPolicy"];
+            /** @description The most recent compaction marker in the transcript, or null when the session has never been compacted. Delineates summarized history (sequences at or below `covers_through_sequence`) from the live tail. Returned on the single-session read; absent from list entries. */
+            latest_compaction?: components["schemas"]["SessionCompactionBoundary"];
             /** @description Total messages currently in the session, including compaction summaries. */
             message_count: number;
             /** @description Lifetime input-token total reported for this session. */
@@ -3421,6 +4146,10 @@ export interface components {
         SessionListResponse: {
             /** @description The list of results for this page. */
             items: components["schemas"]["Session"][];
+            /** @description True when more sessions exist past this page. */
+            has_more?: boolean;
+            /** @description Opaque cursor for the next page — pass back as `cursor`. Null when `has_more` is false. */
+            next_cursor?: string | null;
         };
         /** @description Mutable display and lifecycle fields for a session. */
         UpdateSessionRequest: {
@@ -3428,13 +4157,145 @@ export interface components {
             title?: string;
             /** @description Lifecycle status. `active` restores archived sessions; `deleted` is terminal. */
             status?: components["schemas"]["SessionStatus"];
+            /** @description Partial patch to the session's compaction policy. Only the supplied fields change; omitted fields keep their current values. */
+            compaction_policy?: components["schemas"]["SessionCompactionPolicy"];
         };
-        /** @description JSON payload of a single `data:` line on the session event stream. The SSE `event:` field carries the event type (e.g. `generation.delta`); this object carries the event-specific fields. Additional fields beyond `session_id` vary by event type. */
-        SessionStreamEvent: {
-            /** @description The session this event belongs to. */
+        /** @description Durable session lifecycle frame. SSE messages carrying this shape include `id: <sequence>`, and that value is the only cursor clients should persist for `after_sequence` or `Last-Event-ID` resume. */
+        SessionLifecycleFrame: components["schemas"]["SessionEvent"];
+        /** @description JSON payload of a single `data:` line on the session event SSE stream. Durable lifecycle frames are replayable and carry an SSE `id:`; `generation.delta` frames are live-only previews and do not. */
+        SessionStreamFrame: components["schemas"]["SessionLifecycleFrame"] | components["schemas"]["GenerationDeltaFrame"];
+        /** @description One durable, per-session lifecycle event in the session event log. */
+        SessionEvent: {
+            /** @description Session this event belongs to. */
             session_id: string;
+            /** @description Turn that produced this event, when set. */
+            agent_turn_id?: string;
+            /** @description Lifecycle event type, e.g. `user.message`, `tool.call`, or `turn.completed`. */
+            event_type: string;
+            /**
+             * Format: int64
+             * @description Monotonic per-session sequence number; pass as `after_sequence` to resume.
+             */
+            sequence: number;
+            /**
+             * Format: int64
+             * @deprecated
+             * @description Deprecated alias for `sequence`, kept for v1 compatibility.
+             */
+            seq: number;
+            payload?: components["schemas"]["SessionEventPayload"];
+            /**
+             * Format: date-time
+             * @description Server timestamp when the event was recorded.
+             */
+            created_at: string;
+        };
+        /** @description Typed payloads for common durable session event types. */
+        SessionEventPayload: components["schemas"]["SessionUserMessagePayload"] | components["schemas"]["TurnStartedPayload"] | components["schemas"]["AgentMessagePayload"] | components["schemas"]["ToolCallPayload"] | components["schemas"]["ToolResultPayload"] | components["schemas"]["TurnWaitingPayload"] | components["schemas"]["TurnCompletedPayload"] | components["schemas"]["TurnFailedPayload"] | components["schemas"]["TurnCancelledPayload"] | components["schemas"]["CompactionCreatedPayload"] | components["schemas"]["GenericEventPayload"];
+        SessionUserMessagePayload: {
+            message?: {
+                [key: string]: unknown;
+            };
+            content?: {
+                [key: string]: unknown;
+            }[];
+            turn_id?: string;
         } & {
             [key: string]: unknown;
+        };
+        TurnStartedPayload: {
+            turn_id?: string;
+            input?: {
+                [key: string]: unknown;
+            };
+        } & {
+            [key: string]: unknown;
+        };
+        AgentMessagePayload: {
+            message?: {
+                [key: string]: unknown;
+            };
+            output?: {
+                [key: string]: unknown;
+            };
+            content?: {
+                [key: string]: unknown;
+            }[];
+        } & {
+            [key: string]: unknown;
+        };
+        ToolCallPayload: {
+            tool_call_id?: string;
+            name?: string;
+            arguments?: {
+                [key: string]: unknown;
+            };
+        } & {
+            [key: string]: unknown;
+        };
+        ToolResultPayload: {
+            tool_call_id?: string;
+            name?: string;
+            result?: {
+                [key: string]: unknown;
+            };
+            error?: string;
+        } & {
+            [key: string]: unknown;
+        };
+        TurnWaitingPayload: {
+            turn_id?: string;
+            reason?: string;
+            wait?: {
+                [key: string]: unknown;
+            };
+        } & {
+            [key: string]: unknown;
+        };
+        TurnCompletedPayload: {
+            output?: {
+                [key: string]: unknown;
+            };
+            usage?: {
+                [key: string]: unknown;
+            };
+        } & {
+            [key: string]: unknown;
+        };
+        TurnFailedPayload: {
+            error?: string;
+            error_type?: string;
+        } & {
+            [key: string]: unknown;
+        };
+        TurnCancelledPayload: {
+            reason?: string;
+        } & {
+            [key: string]: unknown;
+        };
+        /** @description Payload of a `compaction.created` event, emitted when the session transcript is summarized. The event is non-terminal: it never closes the session stream, so a live consumer observes a compaction landing inline. */
+        CompactionCreatedPayload: {
+            /** @description Id of the compaction summary message appended to the transcript. */
+            message_id?: string;
+            /** @description Highest message sequence the new summary covers — the before/after boundary. */
+            covers_through_sequence?: number;
+            /** @description Number of transcript messages folded into this summary. */
+            message_count?: number;
+            /** @description Model that produced the summary. */
+            summary_model?: string;
+        } & {
+            [key: string]: unknown;
+        };
+        SessionEventListResponse: {
+            /** @description Session events in this page, ordered by `sequence` ascending. */
+            items: components["schemas"]["SessionEvent"][];
+            /** @description True when more events exist past this page. */
+            has_more?: boolean;
+            /**
+             * Format: int64
+             * @description Sequence of the last item — pass back as `after_sequence` to continue.
+             */
+            next_sequence?: number;
         };
         AppendSessionMessagesRequest: {
             /** @description Messages to append to the session, in order. */
@@ -3466,6 +4327,15 @@ export interface components {
              */
             created_at?: string;
         };
+        /** @description Pointer to the latest compaction marker in a session's transcript. The marker is itself a transcript message (role `compaction`); everything at or below `covers_through_sequence` is summarized history. */
+        SessionCompactionBoundary: {
+            /** @description Id of the compaction summary message in the transcript. */
+            message_id: string;
+            /** @description Transcript sequence of the compaction marker itself. */
+            sequence: number;
+            /** @description Highest message sequence this summary covers — the before/after boundary. */
+            covers_through_sequence: number;
+        };
         /** @description Resolve-or-create policy for a session. */
         CreateSessionRequest: {
             /** @description Agent that owns the session. */
@@ -3482,45 +4352,42 @@ export interface components {
             visibility?: components["schemas"]["SessionVisibility"];
             /** @description Model to record on the session. */
             model?: string;
+            /** @description Per-session compaction overrides applied when the session is first created. Merged over the agent's default policy and server defaults. Ignored when an existing session is resolved. */
+            compaction_policy?: components["schemas"]["SessionCompactionPolicy"];
             /** @description Free-form caller metadata for the session. */
             metadata?: {
                 [key: string]: unknown;
             };
         };
-        /** @description One input event in a send. Phase 1 supports a single `user.message`. */
-        SendSessionEventInput: {
+        /** @description Caller input that starts an agent turn in a session. */
+        StartTurnRequest: {
             /**
-             * @description Input event type. Defaults to `user.message`.
+             * @description Role of the input message. A turn carries caller input, so only `user` is accepted; defaults to `user` when omitted.
+             * @default user
              * @enum {string}
              */
-            type?: "user.message";
-            /** @description Role to store for the input message. Defaults to `user`. */
-            role?: components["schemas"]["SessionMessageRole"];
+            role: "user";
             /** @description Ordered content blocks (text, images) for the input message. */
             content: {
                 [key: string]: unknown;
             }[];
-        };
-        /** @description Caller input to append and run against a session. */
-        SendSessionEventsRequest: {
-            /** @description Input events to send. Phase 1 accepts exactly one `user.message`. */
-            events: components["schemas"]["SendSessionEventInput"][];
-            /** @description Dedup key scoped to the session. A repeat send with the same key returns the existing invocation's cursor and writes nothing new. */
+            /** @description Dedup key scoped to the session. A repeat call with the same key resumes the existing turn and writes nothing new. */
             idempotency_key?: string;
             /** @description Free-form caller metadata attached to the input message. */
             metadata?: {
                 [key: string]: unknown;
             };
         };
-        /** @description Acknowledgement that an invocation started, with a stream cursor. */
-        SessionInvocationAck: {
+        /** @description Acknowledgement that a turn started, with a stream cursor. */
+        TurnAck: {
             session: components["schemas"]["Session"];
+            turn: components["schemas"]["AgentTurn"];
             /**
              * Format: int64
-             * @description The durable event sequence cursor to stream from. Pass it as `after_sequence` to the events stream to follow this invocation.
+             * @description The durable event sequence cursor to stream from. Pass it as `after_sequence` to `GET .../events` to follow this turn.
              */
-            seq: number;
-            /** @description True when a repeated idempotency key returned an existing invocation. */
+            after_sequence: number;
+            /** @description True when a repeated idempotency key resumed an existing turn. */
             deduped?: boolean;
         };
         /**
@@ -4142,12 +5009,10 @@ export interface components {
             mode: "managed" | "worker";
             /** @description Managed environment to route worker-backed model calls to. */
             environment_id?: string;
-            /** @description Provider or worker route name. */
+            /** @description Provider id advertised by a local worker when `mode` is `worker`. */
             provider?: string;
             /** @description Model identifier for this route. */
             model?: string;
-            /** @description Worker queue for customer-worker model calls. */
-            queue?: string;
         };
         /** @description Action step configuration recognised inside `LoopSpec.steps[].config`. */
         LoopActionStep: {
@@ -4651,24 +5516,223 @@ export interface components {
              */
             sequence: number;
             /**
-             * @description Event type from the run-stream taxonomy (e.g. `run.started`, `step.completed`, `wait.opened`, `action.called`, `action.completed`, `action.failed`, `artifact.created`, `limit.reached`, `usage.recorded`).
+             * @description Event type from the run-stream taxonomy (e.g. `run.started`, `step.completed`, `wait.opened`, `action.called`, `action.completed`, `action.failed`, `artifact.created`, `limit.reached`).
              *
-             *     Guardrail events: `run.budget_exceeded` fires when the budget halts the run at a checkpoint (payload: `credit_budget`, `credit_spent`, `percent_used`, plus the `step` it halted before). `usage.recorded` payloads carry `step_key`, the event's `credit_cost`, its `budget_cost` (rate-card cost counted against the run budget, nonzero even for BYOK), and the cumulative `run_credit_spent`.
+             *     Guardrail events: `run.budget_exceeded` fires when the budget halts the run at a checkpoint (payload: `credit_budget`, `credit_spent`, `percent_used`, plus the `step` it halted before). Metered spend is recorded in the billing ledger and denormalized onto the run's `credit_spent`; it is not represented as a timeline event.
              */
             event_type: string;
             /** @description ID of the step this event belongs to, when applicable. */
             step_id?: string | null;
             /** @description Legacy alias for the loop step ID this event belongs to, when applicable. */
             step_key?: string | null;
-            /** @description Event-type-specific payload. See the run-event taxonomy for shapes. */
-            payload?: {
-                [key: string]: unknown;
-            };
+            payload?: components["schemas"]["RunEventPayload"];
             /**
              * Format: date-time
              * @description Server timestamp when the event was recorded.
              */
             created_at: string;
+        };
+        /** @description Durable run lifecycle frame. SSE messages carrying this shape include `id: <sequence>`, and that value is the only cursor clients should persist for `after_sequence` or `Last-Event-ID` resume. */
+        LoopRunLifecycleFrame: components["schemas"]["LoopRunEvent"];
+        /** @description JSON payload of a single `data:` line on the run event SSE stream. Durable lifecycle frames are replayable and carry an SSE `id:`; `generation.delta` frames are live-only previews and do not. */
+        LoopRunStreamFrame: components["schemas"]["LoopRunLifecycleFrame"] | components["schemas"]["GenerationDeltaFrame"];
+        /** @description Typed payloads for common durable run event types. */
+        RunEventPayload: components["schemas"]["RunStartedPayload"] | components["schemas"]["WaitPayload"] | components["schemas"]["RunResumedPayload"] | components["schemas"]["RunCompletedPayload"] | components["schemas"]["RunFailedPayload"] | components["schemas"]["RunCancelledPayload"] | components["schemas"]["StepStartedPayload"] | components["schemas"]["StepCompletedPayload"] | components["schemas"]["StepFailedPayload"] | components["schemas"]["StepRetriedPayload"] | components["schemas"]["StepResumedPayload"] | components["schemas"]["StepSkippedPayload"] | components["schemas"]["ActionCalledPayload"] | components["schemas"]["ActionCompletedPayload"] | components["schemas"]["ActionFailedPayload"] | components["schemas"]["ActionRetriedPayload"] | components["schemas"]["ActionResultPayload"] | components["schemas"]["CheckVerdictPayload"] | components["schemas"]["InteractionRespondedPayload"] | components["schemas"]["WaitResumedPayload"] | components["schemas"]["WaitTimedOutPayload"] | components["schemas"]["BudgetExceededPayload"] | components["schemas"]["ProgressStalledPayload"] | components["schemas"]["LimitReachedPayload"] | components["schemas"]["ArtifactCreatedPayload"] | components["schemas"]["GenericEventPayload"];
+        RunStartedPayload: {
+            loop_id?: string;
+            loop_version_id?: string;
+            source_event_id?: string;
+            trigger_id?: string;
+        } & {
+            [key: string]: unknown;
+        };
+        RunResumedPayload: {
+            step?: string;
+            reason?: string;
+        } & {
+            [key: string]: unknown;
+        };
+        RunCompletedPayload: {
+            output?: {
+                [key: string]: unknown;
+            };
+        } & {
+            [key: string]: unknown;
+        };
+        RunFailedPayload: {
+            error?: string;
+            error_type?: string;
+            step?: string;
+        } & {
+            [key: string]: unknown;
+        };
+        RunCancelledPayload: {
+            reason?: string;
+        } & {
+            [key: string]: unknown;
+        };
+        StepStartedPayload: {
+            step?: string;
+            kind?: string;
+            agent_id?: string;
+        } & {
+            [key: string]: unknown;
+        };
+        StepCompletedPayload: {
+            step?: string;
+            output?: {
+                [key: string]: unknown;
+            };
+        } & {
+            [key: string]: unknown;
+        };
+        StepFailedPayload: {
+            step?: string;
+            error?: string;
+            error_type?: string;
+        } & {
+            [key: string]: unknown;
+        };
+        StepRetriedPayload: {
+            step?: string;
+            attempt?: number;
+            max_attempts?: number;
+            error?: string;
+        } & {
+            [key: string]: unknown;
+        };
+        StepResumedPayload: {
+            step?: string;
+            kind?: string;
+        } & {
+            [key: string]: unknown;
+        };
+        StepSkippedPayload: {
+            step?: string;
+            kind?: string;
+            reason?: string;
+        } & {
+            [key: string]: unknown;
+        };
+        ActionCalledPayload: {
+            action?: string;
+            step?: string;
+            parameters?: {
+                [key: string]: unknown;
+            };
+        } & {
+            [key: string]: unknown;
+        };
+        ActionCompletedPayload: {
+            action?: string;
+            step?: string;
+            result?: {
+                [key: string]: unknown;
+            };
+        } & {
+            [key: string]: unknown;
+        };
+        ActionFailedPayload: {
+            action?: string;
+            step?: string;
+            error?: string;
+            error_type?: string;
+        } & {
+            [key: string]: unknown;
+        };
+        ActionRetriedPayload: {
+            action?: string;
+            attempt?: number;
+            max_attempts?: number;
+        } & {
+            [key: string]: unknown;
+        };
+        ActionResultPayload: {
+            action?: string;
+            result?: {
+                [key: string]: unknown;
+            };
+        } & {
+            [key: string]: unknown;
+        };
+        CheckVerdictPayload: {
+            step?: string;
+            verdict?: string;
+            on_fail?: string;
+            failed?: string[];
+        } & {
+            [key: string]: unknown;
+        };
+        InteractionRespondedPayload: {
+            interaction_id?: string;
+            response?: {
+                [key: string]: unknown;
+            };
+            responder?: {
+                [key: string]: unknown;
+            };
+        } & {
+            [key: string]: unknown;
+        };
+        WaitPayload: {
+            step?: string;
+            wait_id?: string;
+            wait_kind?: string;
+            /** Format: date-time */
+            deadline?: string;
+            subject?: {
+                [key: string]: unknown;
+            };
+        } & {
+            [key: string]: unknown;
+        };
+        WaitResumedPayload: {
+            step?: string;
+            wait_id?: string;
+            payload?: {
+                [key: string]: unknown;
+            };
+        } & {
+            [key: string]: unknown;
+        };
+        WaitTimedOutPayload: {
+            step?: string;
+            wait_id?: string;
+            reason?: string;
+        } & {
+            [key: string]: unknown;
+        };
+        BudgetExceededPayload: {
+            step?: string;
+            credit_spent?: number;
+            credit_budget?: number;
+            percent_used?: number;
+        } & {
+            [key: string]: unknown;
+        };
+        ProgressStalledPayload: {
+            step?: string;
+            tool?: string;
+            duplicate_calls?: number;
+            limit?: number;
+        } & {
+            [key: string]: unknown;
+        };
+        LimitReachedPayload: {
+            step?: string;
+            limit_kind?: string;
+            used?: number;
+            limit?: number;
+        } & {
+            [key: string]: unknown;
+        };
+        ArtifactCreatedPayload: {
+            artifact_id?: string;
+            name?: string;
+            content_type?: string;
+            step?: string;
+        } & {
+            [key: string]: unknown;
         };
         LoopRunEventListResponse: {
             /** @description Run events in this page, ordered by `sequence` ascending. */
@@ -4765,7 +5829,8 @@ export interface components {
              */
             required: boolean;
             /**
-             * @description Marks the column as an expected filter/sort field so backends can maintain efficient indexes.
+             * @deprecated
+             * @description Compatibility hint retained for older schemas. It does not create a physical database index.
              * @default false
              */
             indexed: boolean;
@@ -4779,21 +5844,31 @@ export interface components {
              */
             deprecated: boolean;
         };
-        /** @description Declared index over one or more table columns. */
+        /** @description Compatibility metadata for older table schemas. Declared indexes do not create physical database indexes. */
         IndexDef: {
             /** @description Stable index name unique within the table schema. */
             name: string;
             /** @description Column names included in the index, in order. */
             columns: string[];
         };
-        /** @description Column and index definition for a table. Each table has exactly one required string identity column. */
+        /** @description Column definition for a virtual table. Each table has exactly one required string identity column and may nominate one optional string secondary key column. */
         TableSchema: {
             /** @description Name of the required string column that uniquely identifies one row in this table. */
             identity_column: string;
+            /** @description Optional string column projected into the fixed physical `sk` column for efficient secondary lookups. It cannot be changed after creation. */
+            secondary_key_column?: string;
             /** @description Ordered list of columns accepted in row data. */
             columns: components["schemas"]["ColumnDef"][];
-            /** @description Optional declared indexes maintained by the backend. */
+            /**
+             * @deprecated
+             * @description Compatibility metadata retained for older schemas. Index declarations do not create physical database indexes.
+             */
             indexes?: components["schemas"]["IndexDef"][];
+            /**
+             * @description Allows rows to include undeclared keys while declared columns continue to be validated.
+             * @default false
+             */
+            open: boolean;
         };
         /**
          * @description Project table metadata and schema.
@@ -4904,14 +5979,14 @@ export interface components {
             approx_data_bytes: number;
             /**
              * Format: int64
-             * @description Approximate bytes used by table indexes.
+             * @description Approximate proportional share of fixed table_rows index bytes.
              */
             approx_index_bytes: number;
-            /** @description Number of columns with backend-maintained indexes. */
+            /** @description Number of schema columns projected into fixed physical keys. */
             indexed_column_count: number;
-            /** @description Number of indexes declared in the table schema. */
+            /** @description Number of compatibility index declarations stored in the table schema. */
             declared_index_count: number;
-            /** @description Whether a full-text search index is present for the table. */
+            /** @description Whether the fixed shared full-text search index is present. */
             search_index_present: boolean;
             /**
              * Format: date-time
@@ -4970,7 +6045,7 @@ export interface components {
             description?: string;
             /** @description Optional author guidance for how this table should be used (e.g. surfaced to agents). */
             instructions?: string;
-            /** @description Replacement column and index definition. */
+            /** @description Replacement column and index definition. The identity column and required column settings are immutable after creation; newly added columns must be optional. */
             schema?: components["schemas"]["TableSchema"];
         };
         /**
@@ -5069,9 +6144,15 @@ export interface components {
             next_cursor?: string;
         };
         SearchRowsRequest: {
-            /** @description Token-prefix search query. Hyphens and other punctuation split terms. */
+            /** @description Search query. Hyphens and other punctuation split terms for keyword matching. */
             query: string;
-            /** @description Optional column equality or operator filter applied before text search. */
+            /**
+             * @description Search mode. `keyword` uses token-prefix full-text search, `semantic` uses sidecar embedding similarity, and `hybrid` combines both.
+             * @default keyword
+             * @enum {string}
+             */
+            mode: "keyword" | "semantic" | "hybrid";
+            /** @description Optional column equality or operator filter applied before search. */
             filter?: {
                 [key: string]: unknown;
             };
@@ -5363,6 +6444,10 @@ export interface components {
         ProjectHandleParam: string;
         /** @description Resource ID. */
         IDParam: string;
+        /** @description Identifier of the conversation session. */
+        SessionIdParam: string;
+        /** @description Identifier of a turn within a session. */
+        TurnIdParam: string;
         /** @description Action name used in loop step definitions. */
         ActionNameParam: string;
         /** @description Principal ID. */
@@ -5371,6 +6456,14 @@ export interface components {
         CursorParam: string;
         /** @description Maximum number of items to return */
         LimitParam: number;
+        /** @description Continuation cursor for sequence-ordered lists. Only include rows whose monotonic per-resource sequence is strictly greater than this value. Pass the `next_sequence` from the previous response to fetch the next page. */
+        AfterSequenceParam: number;
+        /** @description Backward continuation cursor for sequence-ordered lists. Only include rows whose monotonic per-resource sequence is strictly less than this value. Combine with `order=desc` to page toward older rows from a known position; pass the `prev_sequence` from the previous response to fetch the next older page. */
+        BeforeSequenceParam: number;
+        /** @description Scan direction for the page. `asc` (the default) returns oldest-first; `desc` returns newest-first — the way to fetch the latest rows of a long list (the tail) in a single request. Items in the response are always ordered ascending regardless of this value; `order` only selects which end of the list the page is taken from. */
+        OrderParam: "asc" | "desc";
+        /** @description SSE reconnect cursor. The browser EventSource API replays the last event's `id` in this header on automatic reconnect; the server resumes the stream after that sequence number. When both this header and the `after_sequence` query parameter are supplied, the larger sequence wins, so an explicit `after_sequence` never rewinds a live reconnect. Ignored for non-streaming (JSON) requests. */
+        LastEventIDParam: number;
         /** @description ID of the target organization for the admin operation. */
         AdminOrgIDParam: string;
         /** @description Environment ID. */
@@ -5387,6 +6480,8 @@ export interface components {
         IntegrationEventIDParam: string;
         /** @description Framework provider identifier from the integration provider catalog. */
         IntegrationProviderParam: string;
+        /** @description The key identifying a memory entry. Restricted to a path-safe character set (letters, numbers, and `. _ : -`) so it stays reliably addressable. */
+        MemoryKeyParam: string;
         /** @description Table ID. */
         TableIDParam: string;
         /** @description Filter tables by name. Table names are unique within a project; use this as a discovery filter and use the returned table `id` for follow-up operations. */
@@ -5938,6 +7033,32 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ModelCatalogResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listCatalogWorkerModels: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkerModelCatalogResponse"];
                 };
             };
             401: components["responses"]["Unauthorized"];
@@ -6677,6 +7798,296 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
+    listInteractions: {
+        parameters: {
+            query?: {
+                /** @description Filter by status */
+                status?: "pending" | "completed" | "expired" | "cancelled";
+                /** @description Filter by interaction protocol kind */
+                kind?: components["schemas"]["InteractionKind"];
+                /** @description Filter by originating run ID */
+                run_id?: string;
+                /** @description Filter by resolved target user ID. */
+                target_user_id?: string;
+                /** @description When true, returns only interactions visible to the authenticated user. */
+                inbox?: boolean;
+                /** @description Cursor for pagination (opaque string from previous response) */
+                cursor?: components["parameters"]["CursorParam"];
+                /** @description Maximum number of items to return */
+                limit?: components["parameters"]["LimitParam"];
+            };
+            header?: never;
+            path: {
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InteractionListResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    createInteraction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "run_id": "run_8q5m2x9v7p3n4r6t",
+                 *       "signal_name": "manager_approval",
+                 *       "target_user_ids": [
+                 *         "user_2f9s3k4m5n6p7q8r"
+                 *       ],
+                 *       "kind": "request_approval",
+                 *       "title": "Approve publishing the April billing report?",
+                 *       "context": {
+                 *         "report_id": "rpt_2026_04",
+                 *         "amount_usd": 12850
+                 *       },
+                 *       "spec": {
+                 *         "mode": "confirm",
+                 *         "default_confirmed": false
+                 *       },
+                 *       "require_all": false,
+                 *       "expires_at": "2026-04-25T14:30:00Z"
+                 *     }
+                 */
+                "application/json": components["schemas"]["CreateInteractionRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "iact_6x2m8q5v9p3n7r4t",
+                     *       "run_id": "run_8q5m2x9v7p3n4r6t",
+                     *       "signal_name": "manager_approval",
+                     *       "kind": "request_approval",
+                     *       "status": "pending",
+                     *       "title": "Approve publishing the April billing report?",
+                     *       "context": {
+                     *         "report_id": "rpt_2026_04",
+                     *         "amount_usd": 12850
+                     *       },
+                     *       "spec": {
+                     *         "mode": "confirm",
+                     *         "default_confirmed": false
+                     *       },
+                     *       "target_user_ids": [
+                     *         "user_2f9s3k4m5n6p7q8r"
+                     *       ],
+                     *       "expires_at": "2026-04-25T14:30:00Z",
+                     *       "created_at": "2026-04-24T14:30:00Z",
+                     *       "updated_at": "2026-04-24T14:30:00Z",
+                     *       "require_all": false
+                     *     }
+                     */
+                    "application/json": components["schemas"]["Interaction"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getInteraction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
+                resource_id: components["parameters"]["IDParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Interaction"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    deleteInteraction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
+                resource_id: components["parameters"]["IDParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    respondToInteraction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
+                resource_id: components["parameters"]["IDParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RespondToInteractionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "iact_6x2m8q5v9p3n7r4t",
+                     *       "run_id": "run_8q5m2x9v7p3n4r6t",
+                     *       "signal_name": "manager_approval",
+                     *       "kind": "request_approval",
+                     *       "status": "completed",
+                     *       "title": "Approve publishing the April billing report?",
+                     *       "context": {
+                     *         "report_id": "rpt_2026_04",
+                     *         "amount_usd": 12850
+                     *       },
+                     *       "spec": {
+                     *         "mode": "confirm",
+                     *         "default_confirmed": false
+                     *       },
+                     *       "target_user_ids": [
+                     *         "user_2f9s3k4m5n6p7q8r"
+                     *       ],
+                     *       "responder": {
+                     *         "user_id": "user_2f9s3k4m5n6p7q8r"
+                     *       },
+                     *       "resolving_response_id": "iresp_3v7q2m9x5p8n4r6t",
+                     *       "responses": [
+                     *         {
+                     *           "id": "iresp_3v7q2m9x5p8n4r6t",
+                     *           "interaction_id": "iact_6x2m8q5v9p3n7r4t",
+                     *           "response_kind": "response",
+                     *           "state": "submitted",
+                     *           "responder_user_id": "user_2f9s3k4m5n6p7q8r",
+                     *           "value": true,
+                     *           "comment": "Approved for publication.",
+                     *           "responded_at": "2026-04-24T14:42:00Z",
+                     *           "created_at": "2026-04-24T14:42:00Z",
+                     *           "updated_at": "2026-04-24T14:42:00Z"
+                     *         }
+                     *       ],
+                     *       "outcome": true,
+                     *       "resolved_by": "any_of",
+                     *       "expires_at": "2026-04-25T14:30:00Z",
+                     *       "completed_at": "2026-04-24T14:42:00Z",
+                     *       "created_at": "2026-04-24T14:30:00Z",
+                     *       "updated_at": "2026-04-24T14:42:00Z",
+                     *       "require_all": false
+                     *     }
+                     */
+                    "application/json": components["schemas"]["Interaction"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    cancelInteraction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
+                resource_id: components["parameters"]["IDParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                /**
+                 * @example {
+                 *       "reason": "Superseded by a revised approval request."
+                 *     }
+                 */
+                "application/json": components["schemas"]["CancelInteractionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Interaction"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
     listAgents: {
         parameters: {
             query?: {
@@ -6907,8 +8318,8 @@ export interface operations {
     listTurnMessages: {
         parameters: {
             query?: {
-                /** @description Only include messages with sequence greater than this value. */
-                after_sequence?: number;
+                /** @description Continuation cursor for sequence-ordered lists. Only include rows whose monotonic per-resource sequence is strictly greater than this value. Pass the `next_sequence` from the previous response to fetch the next page. */
+                after_sequence?: components["parameters"]["AfterSequenceParam"];
                 /** @description Maximum number of items to return */
                 limit?: components["parameters"]["LimitParam"];
             };
@@ -6916,8 +8327,8 @@ export interface operations {
             path: {
                 /** @description Project handle */
                 project_handle: components["parameters"]["ProjectHandleParam"];
-                /** @description Resource ID. */
-                resource_id: components["parameters"]["IDParam"];
+                /** @description Identifier of a turn within a session. */
+                turn_id: components["parameters"]["TurnIdParam"];
             };
             cookie?: never;
         };
@@ -7218,6 +8629,143 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
+    getAgentMemory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
+                resource_id: components["parameters"]["IDParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentMemory"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listAgentMemoryEntries: {
+        parameters: {
+            query?: {
+                /** @description Optional keyword search over entry keys and content. Omit to list. */
+                query?: string;
+                /** @description Optional filter to a single memory kind. */
+                kind?: components["schemas"]["MemoryKind"];
+                /** @description Cursor for pagination (opaque string from previous response) */
+                cursor?: components["parameters"]["CursorParam"];
+                /** @description Maximum number of items to return */
+                limit?: components["parameters"]["LimitParam"];
+            };
+            header?: never;
+            path: {
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
+                resource_id: components["parameters"]["IDParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentMemoryEntryListResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    putAgentMemoryEntry: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
+                resource_id: components["parameters"]["IDParam"];
+                /** @description The key identifying a memory entry. Restricted to a path-safe character set (letters, numbers, and `. _ : -`) so it stays reliably addressable. */
+                memory_key: components["parameters"]["MemoryKeyParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PutAgentMemoryEntryRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentMemoryEntry"];
+                };
+            };
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentMemoryEntry"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    deleteAgentMemoryEntry: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
+                resource_id: components["parameters"]["IDParam"];
+                /** @description The key identifying a memory entry. Restricted to a path-safe character set (letters, numbers, and `. _ : -`) so it stays reliably addressable. */
+                memory_key: components["parameters"]["MemoryKeyParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
     listSessions: {
         parameters: {
             query?: {
@@ -7233,6 +8781,8 @@ export interface operations {
                 integration_id?: string;
                 /** @description Only include sessions with activity after this timestamp. */
                 since?: string;
+                /** @description Cursor for pagination (opaque string from previous response) */
+                cursor?: components["parameters"]["CursorParam"];
                 /** @description Maximum number of items to return */
                 limit?: components["parameters"]["LimitParam"];
             };
@@ -7297,8 +8847,8 @@ export interface operations {
             path: {
                 /** @description Project handle */
                 project_handle: components["parameters"]["ProjectHandleParam"];
-                /** @description Resource ID. */
-                resource_id: components["parameters"]["IDParam"];
+                /** @description Identifier of the conversation session. */
+                session_id: components["parameters"]["SessionIdParam"];
             };
             cookie?: never;
         };
@@ -7325,8 +8875,8 @@ export interface operations {
             path: {
                 /** @description Project handle */
                 project_handle: components["parameters"]["ProjectHandleParam"];
-                /** @description Resource ID. */
-                resource_id: components["parameters"]["IDParam"];
+                /** @description Identifier of the conversation session. */
+                session_id: components["parameters"]["SessionIdParam"];
             };
             cookie?: never;
         };
@@ -7353,8 +8903,8 @@ export interface operations {
             path: {
                 /** @description Project handle */
                 project_handle: components["parameters"]["ProjectHandleParam"];
-                /** @description Resource ID. */
-                resource_id: components["parameters"]["IDParam"];
+                /** @description Identifier of the conversation session. */
+                session_id: components["parameters"]["SessionIdParam"];
             };
             cookie?: never;
         };
@@ -7384,8 +8934,12 @@ export interface operations {
     listSessionMessages: {
         parameters: {
             query?: {
-                /** @description Only include messages with sequence greater than this value. */
-                after_sequence?: number;
+                /** @description Continuation cursor for sequence-ordered lists. Only include rows whose monotonic per-resource sequence is strictly greater than this value. Pass the `next_sequence` from the previous response to fetch the next page. */
+                after_sequence?: components["parameters"]["AfterSequenceParam"];
+                /** @description Backward continuation cursor for sequence-ordered lists. Only include rows whose monotonic per-resource sequence is strictly less than this value. Combine with `order=desc` to page toward older rows from a known position; pass the `prev_sequence` from the previous response to fetch the next older page. */
+                before_sequence?: components["parameters"]["BeforeSequenceParam"];
+                /** @description Scan direction for the page. `asc` (the default) returns oldest-first; `desc` returns newest-first — the way to fetch the latest rows of a long list (the tail) in a single request. Items in the response are always ordered ascending regardless of this value; `order` only selects which end of the list the page is taken from. */
+                order?: components["parameters"]["OrderParam"];
                 /** @description Maximum number of items to return */
                 limit?: components["parameters"]["LimitParam"];
             };
@@ -7393,8 +8947,8 @@ export interface operations {
             path: {
                 /** @description Project handle */
                 project_handle: components["parameters"]["ProjectHandleParam"];
-                /** @description Resource ID. */
-                resource_id: components["parameters"]["IDParam"];
+                /** @description Identifier of the conversation session. */
+                session_id: components["parameters"]["SessionIdParam"];
             };
             cookie?: never;
         };
@@ -7421,8 +8975,8 @@ export interface operations {
             path: {
                 /** @description Project handle */
                 project_handle: components["parameters"]["ProjectHandleParam"];
-                /** @description Resource ID. */
-                resource_id: components["parameters"]["IDParam"];
+                /** @description Identifier of the conversation session. */
+                session_id: components["parameters"]["SessionIdParam"];
             };
             cookie?: never;
         };
@@ -7450,13 +9004,22 @@ export interface operations {
     };
     listSessionTurns: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Return exactly the turns with these ids (the transcript-join primitive). When set, pagination and ordering are ignored and the named turns are returned in chronological order. */
+                ids?: string[];
+                /** @description Scan direction for the page. `asc` (the default) returns oldest-first; `desc` returns newest-first — the way to fetch the latest rows of a long list (the tail) in a single request. Items in the response are always ordered ascending regardless of this value; `order` only selects which end of the list the page is taken from. */
+                order?: components["parameters"]["OrderParam"];
+                /** @description Cursor for pagination (opaque string from previous response) */
+                cursor?: components["parameters"]["CursorParam"];
+                /** @description Maximum number of items to return */
+                limit?: components["parameters"]["LimitParam"];
+            };
             header?: never;
             path: {
                 /** @description Project handle */
                 project_handle: components["parameters"]["ProjectHandleParam"];
-                /** @description Resource ID. */
-                resource_id: components["parameters"]["IDParam"];
+                /** @description Identifier of the conversation session. */
+                session_id: components["parameters"]["SessionIdParam"];
             };
             cookie?: never;
         };
@@ -7476,62 +9039,40 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
-    streamSessionEvents: {
-        parameters: {
-            query?: {
-                /** @description Resume the stream after this durable event sequence number. */
-                after_sequence?: number;
-            };
-            header?: never;
-            path: {
-                /** @description Project handle */
-                project_handle: components["parameters"]["ProjectHandleParam"];
-                /** @description Resource ID. */
-                resource_id: components["parameters"]["IDParam"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Server-sent event stream of session activity. Each message is framed as `event: <event type>` followed by a `data:` line carrying the JSON-encoded event payload (the `SessionStreamEvent` shape, always including `session_id`). Durable events also carry an `id:` line with the event sequence number for `Last-Event-ID` resume. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "text/event-stream": components["schemas"]["SessionStreamEvent"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    sendSessionEvents: {
+    startTurn: {
         parameters: {
             query?: never;
             header?: never;
             path: {
                 /** @description Project handle */
                 project_handle: components["parameters"]["ProjectHandleParam"];
-                /** @description Resource ID. */
-                resource_id: components["parameters"]["IDParam"];
+                /** @description Identifier of the conversation session. */
+                session_id: components["parameters"]["SessionIdParam"];
             };
             cookie?: never;
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["SendSessionEventsRequest"];
+                "application/json": components["schemas"]["StartTurnRequest"];
             };
         };
         responses: {
-            /** @description The invocation was accepted and is running. */
+            /** @description Server-sent event stream of the turn's activity, returned when the request sets `Accept: text/event-stream`. Framing matches `GET .../events`. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/event-stream": components["schemas"]["SessionStreamFrame"];
+                };
+            };
+            /** @description The turn was accepted and is running. */
             202: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SessionInvocationAck"];
+                    "application/json": components["schemas"]["TurnAck"];
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -7542,6 +9083,103 @@ export interface operations {
             429: components["responses"]["TooManyRequests"];
         };
     };
+    getSessionTurn: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
+                /** @description Identifier of the conversation session. */
+                session_id: components["parameters"]["SessionIdParam"];
+                /** @description Identifier of a turn within a session. */
+                turn_id: components["parameters"]["TurnIdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentTurn"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    cancelTurn: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
+                /** @description Identifier of the conversation session. */
+                session_id: components["parameters"]["SessionIdParam"];
+                /** @description Identifier of a turn within a session. */
+                turn_id: components["parameters"]["TurnIdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentTurn"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listSessionEvents: {
+        parameters: {
+            query?: {
+                /** @description Continuation cursor for sequence-ordered lists. Only include rows whose monotonic per-resource sequence is strictly greater than this value. Pass the `next_sequence` from the previous response to fetch the next page. */
+                after_sequence?: components["parameters"]["AfterSequenceParam"];
+                /** @description Maximum number of items to return */
+                limit?: components["parameters"]["LimitParam"];
+            };
+            header?: {
+                /** @description SSE reconnect cursor. The browser EventSource API replays the last event's `id` in this header on automatic reconnect; the server resumes the stream after that sequence number. When both this header and the `after_sequence` query parameter are supplied, the larger sequence wins, so an explicit `after_sequence` never rewinds a live reconnect. Ignored for non-streaming (JSON) requests. */
+                "Last-Event-ID"?: components["parameters"]["LastEventIDParam"];
+            };
+            path: {
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
+                /** @description Identifier of the conversation session. */
+                session_id: components["parameters"]["SessionIdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A JSON page of session events, or, when the request sets `Accept: text/event-stream`, a Server-Sent Events stream of session activity. On the stream each message is framed as `event: <event type>` followed by a `data:` line carrying the JSON-encoded event payload. Durable events carry an `id:` line with the event sequence number for `Last-Event-ID` resume; live-only `generation.delta` frames do not carry `id:` and cannot be replayed. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionEventListResponse"];
+                    "text/event-stream": components["schemas"]["SessionStreamFrame"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
     cancelSession: {
         parameters: {
             query?: never;
@@ -7549,8 +9187,8 @@ export interface operations {
             path: {
                 /** @description Project handle */
                 project_handle: components["parameters"]["ProjectHandleParam"];
-                /** @description Resource ID. */
-                resource_id: components["parameters"]["IDParam"];
+                /** @description Identifier of the conversation session. */
+                session_id: components["parameters"]["SessionIdParam"];
             };
             cookie?: never;
         };
@@ -7568,6 +9206,35 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+        };
+    };
+    compactSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
+                /** @description Identifier of the conversation session. */
+                session_id: components["parameters"]["SessionIdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Session"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
         };
     };
     listLoops: {
@@ -8102,7 +9769,10 @@ export interface operations {
                 /** @description Maximum number of items to return */
                 limit?: components["parameters"]["LimitParam"];
             };
-            header?: never;
+            header?: {
+                /** @description SSE reconnect cursor. The browser EventSource API replays the last event's `id` in this header on automatic reconnect; the server resumes the stream after that sequence number. When both this header and the `after_sequence` query parameter are supplied, the larger sequence wins, so an explicit `after_sequence` never rewinds a live reconnect. Ignored for non-streaming (JSON) requests. */
+                "Last-Event-ID"?: components["parameters"]["LastEventIDParam"];
+            };
             path: {
                 /** @description Project handle */
                 project_handle: components["parameters"]["ProjectHandleParam"];
@@ -8113,44 +9783,14 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description OK */
+            /** @description A JSON page of run events, or, when the request sets `Accept: text/event-stream`, a Server-Sent Events stream where each durable message is framed as `id: <sequence>`, `event: <run-event type>`, and a `data:` line carrying the JSON-encoded `LoopRunEvent`. Live-only `generation.delta` frames may be interleaved without an `id:` line; they are not persisted and cannot be replayed. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["LoopRunEventListResponse"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    streamRunEvents: {
-        parameters: {
-            query?: {
-                /** @description Stream events with sequence > after_sequence. */
-                after_sequence?: number;
-            };
-            header?: never;
-            path: {
-                /** @description Project handle */
-                project_handle: components["parameters"]["ProjectHandleParam"];
-                /** @description Resource ID. */
-                resource_id: components["parameters"]["IDParam"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Server-sent event stream. Each message is framed as `event: <run-event type>` followed by a `data:` line carrying the JSON-encoded run event (the `LoopRunEvent` shape). The stream ends when the run reaches a terminal status; reconnect with `after_sequence` (or the `Last-Event-ID` header) to resume. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "text/event-stream": components["schemas"]["LoopRunEvent"];
+                    "text/event-stream": components["schemas"]["LoopRunStreamFrame"];
                 };
             };
             401: components["responses"]["Unauthorized"];

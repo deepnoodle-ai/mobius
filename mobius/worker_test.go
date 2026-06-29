@@ -151,3 +151,40 @@ func TestWorker_KeepWarmForLifetime_ReturnsRequiredHoldFailure(t *testing.T) {
 	assert.Equal(t, 1, fake.acquireCount())
 	assert.Equal(t, 1, fake.ensureCount())
 }
+
+func noopGenerator(Context, GenerationJob, GenerationEmitter) (map[string]any, error) {
+	return nil, nil
+}
+
+func TestWorker_AdvertisedModels_RegisteredGeneratorIsAdvertised(t *testing.T) {
+	// A registered concrete generator is advertised even without a matching
+	// WorkerConfig.Models entry, so the catalog can never list a model the
+	// worker can't serve.
+	w, _ := newTestWorker(t, WorkerConfig{})
+	w.RegisterGenerator("ollama", "llama3", noopGenerator)
+	assert.Equal(t, []ModelCapability{{Provider: "ollama", Model: "llama3"}}, w.advertisedModels())
+}
+
+func TestWorker_AdvertisedModels_MergesConfigAndDedupes(t *testing.T) {
+	// config.Models comes first; a generator for the same pair does not produce
+	// a duplicate, and a distinct registered generator is appended.
+	w, _ := newTestWorker(t, WorkerConfig{
+		Models: []ModelCapability{{Provider: "ollama", Model: "llama3"}},
+	})
+	w.RegisterGenerator("ollama", "llama3", noopGenerator)
+	w.RegisterGenerator("ollama", "qwen2", noopGenerator)
+	assert.Equal(t, []ModelCapability{
+		{Provider: "ollama", Model: "llama3"},
+		{Provider: "ollama", Model: "qwen2"},
+	}, w.advertisedModels())
+}
+
+func TestWorker_AdvertisedModels_WildcardNotAdvertised(t *testing.T) {
+	// A "*" wildcard generator has no concrete model id to advertise, so it is
+	// excluded; only the explicit config entry is announced.
+	w, _ := newTestWorker(t, WorkerConfig{
+		Models: []ModelCapability{{Provider: "ollama", Model: "llama3"}},
+	})
+	w.RegisterGenerator("ollama", "*", noopGenerator)
+	assert.Equal(t, []ModelCapability{{Provider: "ollama", Model: "llama3"}}, w.advertisedModels())
+}

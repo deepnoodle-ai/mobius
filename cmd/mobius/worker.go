@@ -55,6 +55,13 @@ func registerWorkerCommand(app *cli.App) {
 			cli.Bool("keep-warm-for-lifetime", "").
 				Env("MOBIUS_WORKER_KEEP_WARM").
 				Help("Keep the environment warm for the worker's whole lifetime, not just while a job runs (set for run-scoped environments so the VM doesn't hibernate between an agent's tool calls)"),
+			cli.Bool("ollama", "").
+				Env("MOBIUS_WORKER_OLLAMA").
+				Help("Serve local Ollama models: advertise installed models to Mobius and handle llm_generation jobs from a local Ollama server"),
+			cli.String("ollama-url", "").
+				Default(defaultOllamaURL).
+				Env("MOBIUS_OLLAMA_URL").
+				Help("Base URL of the local Ollama server"),
 		).
 		Run(func(ctx *cli.Context) error {
 			client, err := clientFromContext(ctx)
@@ -71,6 +78,8 @@ func registerWorkerCommand(app *cli.App) {
 			concurrency := ctx.Int("concurrency")
 			workers := ctx.Int("workers")
 			keepWarmForLifetime := ctx.Bool("keep-warm-for-lifetime")
+			ollamaEnabled := ctx.Bool("ollama")
+			ollamaURL := ctx.String("ollama-url")
 
 			if workers > 0 && concurrency > 1 {
 				return fmt.Errorf(
@@ -93,6 +102,23 @@ func registerWorkerCommand(app *cli.App) {
 				Logger:              logger,
 			}
 
+			// When --ollama is set, advertise the models the local Ollama
+			// server currently has installed so they appear in the worker-model
+			// catalog and become routable. The generation handler is registered
+			// on the worker/pool below.
+			if ollamaEnabled {
+				discovered, err := discoverOllamaModels(ctx.Context(), ollamaURL)
+				if err != nil {
+					return fmt.Errorf("ollama: %w", err)
+				}
+				baseConfig.Models = append(baseConfig.Models, discovered...)
+				if len(discovered) == 0 {
+					logger.Warn("ollama enabled but no models are installed; run `ollama pull <model>`", "ollama_url", ollamaURL)
+				} else {
+					logger.Info("ollama generation enabled", "ollama_url", ollamaURL, "models", ollamaModelNames(discovered))
+				}
+			}
+
 			auth := authFor(ctx)
 			logger.Info("starting worker",
 				"name", name,
@@ -112,12 +138,18 @@ func registerWorkerCommand(app *cli.App) {
 					Count:        workers,
 				})
 				registerStockActions(pool)
+				if ollamaEnabled {
+					pool.RegisterGenerator(ollamaProvider, "*", newOllamaGenerator(ollamaURL))
+				}
 				if err := pool.Run(ctx.Context()); err != nil && !isContextCanceled(err) {
 					return fmt.Errorf("worker pool exited: %w", err)
 				}
 			} else {
 				worker := client.NewWorker(baseConfig)
 				registerStockActions(worker)
+				if ollamaEnabled {
+					worker.RegisterGenerator(ollamaProvider, "*", newOllamaGenerator(ollamaURL))
+				}
 				if err := worker.Run(ctx.Context()); err != nil && !isContextCanceled(err) {
 					return fmt.Errorf("worker exited: %w", err)
 				}

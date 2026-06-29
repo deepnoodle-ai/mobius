@@ -84,6 +84,11 @@ type Worker struct {
 	config     WorkerConfig
 	registry   *ActionRegistry
 	generators map[string]GenerationFunc
+	// registeredModels accumulates the concrete provider/model pairs passed to
+	// RegisterGenerator (wildcards excluded). They are merged with config.Models
+	// when advertising so a registered generator is always announced — the
+	// advertised set and the handler set cannot drift.
+	registeredModels []ModelCapability
 
 	sessionToken string
 	authRevoked  atomic.Bool
@@ -165,11 +170,48 @@ func (c *Client) newWorkerWithRegistry(cfg WorkerConfig, registry *ActionRegistr
 
 // RegisterGenerator registers a local model-generation handler. Use model "*"
 // to match any model for the provider.
+//
+// A concrete provider/model is automatically advertised to Mobius Cloud (as if
+// added to WorkerConfig.Models), so it shows up in the worker-model catalog and
+// is eligible for routing — registering a handler and advertising a model can't
+// fall out of sync. A "*" wildcard has no concrete model id to advertise, so
+// pair it with an explicit WorkerConfig.Models entry to make it routable.
 func (w *Worker) RegisterGenerator(provider, model string, fn GenerationFunc) {
 	if provider == "" || model == "" || fn == nil {
 		panic("mobius: RegisterGenerator requires provider, model, and function")
 	}
 	w.generators[generationKey(provider, model)] = fn
+	if model != "*" {
+		w.registeredModels = append(w.registeredModels, ModelCapability{Provider: provider, Model: model})
+	}
+}
+
+// advertisedModels is the set of models the worker announces to Mobius Cloud:
+// the explicit WorkerConfig.Models plus every concrete model registered via
+// RegisterGenerator, deduplicated and with wildcards excluded. Advertising a
+// registered generator keeps the catalog and routing consistent with what the
+// worker can actually serve.
+func (w *Worker) advertisedModels() []ModelCapability {
+	seen := make(map[string]bool)
+	out := make([]ModelCapability, 0, len(w.config.Models)+len(w.registeredModels))
+	add := func(m ModelCapability) {
+		if m.Provider == "" || m.Model == "" || m.Model == "*" {
+			return
+		}
+		key := generationKey(m.Provider, m.Model)
+		if seen[key] {
+			return
+		}
+		seen[key] = true
+		out = append(out, m)
+	}
+	for _, m := range w.config.Models {
+		add(m)
+	}
+	for _, m := range w.registeredModels {
+		add(m)
+	}
+	return out
 }
 
 // Run keeps the worker connected until ctx is cancelled or credentials are
@@ -519,7 +561,7 @@ func (w *Worker) register(ctx context.Context, socket *workerSocket) error {
 		ActionNames:        stringSlicePtr(w.actionNames()),
 		Queues:             stringSlicePtr(w.config.Queues),
 		Capabilities:       stringSlicePtr(w.capabilities()),
-		Models:             modelCapabilitiesPtr(w.config.Models),
+		Models:             modelCapabilitiesPtr(w.advertisedModels()),
 		EnvironmentId:      strPtr(w.config.EnvironmentID),
 		Name:               strPtr(w.config.Name),
 		Version:            strPtr(w.config.Version),
@@ -570,7 +612,7 @@ func (w *Worker) claimFrame(available int) api.WorkerSocketJobsClaimFrame {
 		AvailableSlots: &available,
 		ActionNames:    stringSlicePtr(w.actionNames()),
 		Queues:         stringSlicePtr(w.config.Queues),
-		Models:         modelCapabilitiesPtr(w.config.Models),
+		Models:         modelCapabilitiesPtr(w.advertisedModels()),
 	}
 }
 

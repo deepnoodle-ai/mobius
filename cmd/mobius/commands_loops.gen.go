@@ -195,9 +195,6 @@ func registerLoopsCommands(app *cli.App) {
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
 			}
-			if ctx.String("file") == "" {
-				return fmt.Errorf("--file is required")
-			}
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}

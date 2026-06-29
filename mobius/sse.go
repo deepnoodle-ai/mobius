@@ -26,9 +26,9 @@ const sseReadBufferSize = 8 << 20
 // to replay durable events recorded after that sequence before switching to
 // live updates.
 func (c *Client) WatchRun(ctx context.Context, runID string, since int64) (<-chan RunEvent, error) {
-	resp, err := c.ac.StreamRunEvents(ctx, api.ProjectHandleParam(c.projectHandle), api.IDParam(runID), &api.StreamRunEventsParams{
+	resp, err := c.ac.ListRunEvents(ctx, api.ProjectHandleParam(c.projectHandle), api.IDParam(runID), &api.ListRunEventsParams{
 		AfterSequence: sinceSequenceParam(since),
-	})
+	}, acceptEventStream)
 	if err != nil {
 		return nil, fmt.Errorf("mobius: open run stream: %w", err)
 	}
@@ -40,6 +40,14 @@ func (c *Client) WatchRun(ctx context.Context, runID string, since int64) (<-cha
 	ch := make(chan RunEvent)
 	go c.readSSEStream(ctx, resp.Body, ch)
 	return ch, nil
+}
+
+// acceptEventStream opts the run-events request into Server-Sent Events. The
+// endpoint is content-negotiated and returns a JSON page by default, so the
+// stream is only opened when the request advertises text/event-stream.
+func acceptEventStream(_ context.Context, req *http.Request) error {
+	req.Header.Set("Accept", "text/event-stream")
+	return nil
 }
 
 // sinceSequenceParam returns nil for zero so the request omits

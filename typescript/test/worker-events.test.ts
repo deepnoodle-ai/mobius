@@ -34,6 +34,27 @@ test("worker: registers action functions fluently", () => {
   );
 });
 
+test("worker: registerGenerator advertises the concrete model, not wildcards", () => {
+  const worker = new Worker(testClient(), {
+    logger: null,
+    models: [{ provider: "ollama", model: "llama3" }],
+  });
+  // Same pair as config.models -> deduped; a distinct concrete model is added;
+  // a "*" wildcard is not advertised.
+  worker.registerGenerator("ollama", "llama3", async () => ({}));
+  worker.registerGenerator("ollama", "qwen2", async () => ({}));
+  worker.registerGenerator("ollama", "*", async () => ({}));
+  const models = (
+    worker as unknown as {
+      modelCapabilities(): Array<{ provider: string; model: string }> | undefined;
+    }
+  ).modelCapabilities();
+  assert.deepEqual(models, [
+    { provider: "ollama", model: "llama3" },
+    { provider: "ollama", model: "qwen2" },
+  ]);
+});
+
 test("worker: classifies terminal protocol error codes", () => {
   const worker = new Worker(testClient(), {
     workerInstanceId: "dup",

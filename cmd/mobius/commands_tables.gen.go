@@ -64,7 +64,7 @@ func registerTablesCommands(app *cli.App) {
 			cli.String("description", "").Help("Optional human-readable description of the table."),
 			cli.String("instructions", "").Help("Optional author guidance for how this table should be used (e.g. surfaced to agents)."),
 			cli.String("name", "").Help("[required] Table name (lowercase, snake_case); unique within the project."),
-			cli.String("schema", "").Help("[required] Column and index definition for a table. Each table has exactly one required string identity column. Accepts JSON, @file, or @-."),
+			cli.String("schema", "").Help("[required] Column definition for a virtual table. Each table has exactly one required string identity column a… Accepts JSON, @file, or @-."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -327,9 +327,6 @@ func registerTablesCommands(app *cli.App) {
 					return err
 				}
 			}
-			if ctx.String("file") == "" && !ctx.IsSet("cursor") && !ctx.IsSet("filter") && !ctx.IsSet("limit") && !ctx.IsSet("sort") {
-				return fmt.Errorf("at least one flag or --file is required")
-			}
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
@@ -345,9 +342,10 @@ func registerTablesCommands(app *cli.App) {
 		AddArg(&cli.Arg{Name: "table-id", Description: "Table ID.", Required: true}).
 		Flags(
 			cli.String("cursor", "").Help("Opaque cursor from a prior search response."),
-			cli.String("filter", "").Help("Optional column equality or operator filter applied before text search. Accepts JSON, @file, or @-."),
+			cli.String("filter", "").Help("Optional column equality or operator filter applied before search. Accepts JSON, @file, or @-."),
 			cli.Int("limit", "").Help("Maximum number of rows to return (1–100, default 20)."),
-			cli.String("query", "").Help("[required] Token-prefix search query. Hyphens and other punctuation split terms."),
+			cli.String("mode", "").Help("Search mode. `keyword` uses token-prefix full-text search, `semantic` uses sidecar embedding simila…"),
+			cli.String("query", "").Help("[required] Search query. Hyphens and other punctuation split terms for keyword matching."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -377,6 +375,10 @@ func registerTablesCommands(app *cli.App) {
 				v := ctx.Int("limit")
 				body.Limit = &v
 			}
+			if ctx.IsSet("mode") {
+				v := api.SearchRowsRequestMode(ctx.String("mode"))
+				body.Mode = &v
+			}
 			if ctx.IsSet("query") {
 				body.Query = ctx.String("query")
 			}
@@ -400,7 +402,7 @@ func registerTablesCommands(app *cli.App) {
 			cli.String("description", "").Help("Optional human-readable description of the table."),
 			cli.String("instructions", "").Help("Optional author guidance for how this table should be used (e.g. surfaced to agents)."),
 			cli.String("name", "").Help("Table name (lowercase, snake_case); unique within the project."),
-			cli.String("schema", "").Help("Column and index definition for a table. Each table has exactly one required string identity column. Accepts JSON, @file, or @-."),
+			cli.String("schema", "").Help("Column definition for a virtual table. Each table has exactly one required string identity column a… Accepts JSON, @file, or @-."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).

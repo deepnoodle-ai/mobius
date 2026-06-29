@@ -44,9 +44,6 @@ func registerRunsCommands(app *cli.App) {
 				v := ctx.String("reason")
 				body.Reason = &v
 			}
-			if ctx.String("file") == "" && !ctx.IsSet("reason") {
-				return fmt.Errorf("at least one flag or --file is required")
-			}
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
@@ -122,11 +119,12 @@ func registerRunsCommands(app *cli.App) {
 		})
 
 	runsGrp.Command("list-events").
-		Description("List run events").
+		Description("List or stream run events").
 		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		Flags(
 			cli.Int("after-sequence", "").Help("Return events with sequence > after_sequence."),
 			cli.Int("limit", "").Help("Maximum number of items to return"),
+			cli.Int("last-event-id", "").Help("SSE reconnect cursor. The browser EventSource API replays the last event's `id` in this header on a…"),
 		).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -145,6 +143,10 @@ func registerRunsCommands(app *cli.App) {
 			if ctx.IsSet("limit") {
 				v := api.LimitParam(ctx.Int("limit"))
 				params.Limit = &v
+			}
+			if ctx.IsSet("last-event-id") {
+				v := api.LastEventIDParam(int64(ctx.Int("last-event-id")))
+				params.LastEventID = &v
 			}
 			resp, err := client.ListRunEventsWithResponse(ctx.Context(), p0, p1, params)
 			if err != nil {
@@ -275,9 +277,6 @@ func registerRunsCommands(app *cli.App) {
 					return err
 				}
 			}
-			if ctx.String("file") == "" && !ctx.IsSet("budget-usd") && !ctx.IsSet("config") && !ctx.IsSet("credit-budget") && !ctx.IsSet("event") && !ctx.IsSet("idempotency-key") && !ctx.IsSet("meta") && !ctx.IsSet("source") {
-				return fmt.Errorf("at least one flag or --file is required")
-			}
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
@@ -286,33 +285,6 @@ func registerRunsCommands(app *cli.App) {
 				return err
 			}
 			return printResponse(ctx, "startRun", resp.StatusCode(), resp.Body)
-		})
-
-	runsGrp.Command("stream").
-		Description("Stream run events").
-		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
-		Flags(
-			cli.Int("after-sequence", "").Help("Stream events with sequence > after_sequence."),
-		).
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			params := &api.StreamRunEventsParams{}
-			if ctx.IsSet("after-sequence") {
-				v := int64(ctx.Int("after-sequence"))
-				params.AfterSequence = &v
-			}
-			resp, err := client.StreamRunEventsWithResponse(ctx.Context(), p0, p1, params)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "streamRunEvents", resp.StatusCode(), resp.Body)
 		})
 
 }

@@ -10,6 +10,7 @@ from deepnoodle.mobius import Client, ClientOptions
 from deepnoodle.mobius._api.models import WorkerSocketClaimedJob
 from deepnoodle.mobius.errors import AuthRevokedError, WorkerInstanceConflictError
 from deepnoodle.mobius.worker import (
+    ModelCapability,
     Worker,
     WorkerConfig,
     WorkerPool,
@@ -70,6 +71,28 @@ def test_register_frame_uses_configured_capacity_and_registered_actions() -> Non
     assert frame["available_slots"] == 8
     assert frame["queues"] == ["gpu"]
     assert frame["action_names"] == ["demo.action"]
+
+
+def test_register_frame_advertises_registered_generators() -> None:
+    worker = Worker(
+        _client(),
+        WorkerConfig(
+            worker_instance_id="worker-1",
+            models=[ModelCapability(provider="ollama", model="llama3")],
+        ),
+    )
+    # Same pair as config.models -> deduped; a distinct concrete model is added;
+    # a "*" wildcard is not advertised.
+    worker.register_generator("ollama", "llama3", lambda ctx, job, emit: {})
+    worker.register_generator("ollama", "qwen2", lambda ctx, job, emit: {})
+    worker.register_generator("ollama", "*", lambda ctx, job, emit: {})
+
+    frame = worker._register_frame().model_dump(mode="json", exclude_none=True)
+
+    assert frame["models"] == [
+        {"provider": "ollama", "model": "llama3"},
+        {"provider": "ollama", "model": "qwen2"},
+    ]
 
 
 @pytest.mark.asyncio

@@ -31,9 +31,19 @@ type WorkerPoolConfig struct {
 // WorkerPool runs multiple worker instances in one process. Prefer
 // [WorkerConfig.Concurrency] on a single [Worker] for raw throughput.
 type WorkerPool struct {
-	client   *Client
-	config   WorkerPoolConfig
-	registry *ActionRegistry
+	client     *Client
+	config     WorkerPoolConfig
+	registry   *ActionRegistry
+	generators []poolGenerator
+}
+
+// poolGenerator records a model-generation handler to register on every worker
+// the pool spawns. Provider and model are kept as separate fields (not a single
+// "provider/model" key) so a model id containing a slash round-trips intact.
+type poolGenerator struct {
+	provider string
+	model    string
+	fn       GenerationFunc
 }
 
 // NewWorkerPool creates a pool of worker instances bound to the client.
@@ -67,6 +77,17 @@ func (p *WorkerPool) Register(a Action) {
 	p.registry.MustRegister(a)
 }
 
+// RegisterGenerator attaches a local model-generation handler to every worker
+// the pool spawns, mirroring [Worker.RegisterGenerator] (including the
+// auto-advertisement of concrete provider/model pairs). Use model "*" to match
+// any model for the provider.
+func (p *WorkerPool) RegisterGenerator(provider, model string, fn GenerationFunc) {
+	if provider == "" || model == "" || fn == nil {
+		panic("mobius: RegisterGenerator requires provider, model, and function")
+	}
+	p.generators = append(p.generators, poolGenerator{provider: provider, model: model, fn: fn})
+}
+
 // Run starts every worker in the pool and blocks until ctx is cancelled or
 // any worker observes credential revocation.
 func (p *WorkerPool) Run(ctx context.Context) error {
@@ -79,6 +100,9 @@ func (p *WorkerPool) Run(ctx context.Context) error {
 		cfg := p.config.WorkerConfig
 		cfg.WorkerInstanceID = fmt.Sprintf("%s-%d", p.config.WorkerInstanceIDPrefix, i)
 		worker := p.client.newWorkerWithRegistry(cfg, p.registry)
+		for _, g := range p.generators {
+			worker.RegisterGenerator(g.provider, g.model, g.fn)
+		}
 
 		wg.Add(1)
 		go func() {
