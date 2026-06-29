@@ -157,11 +157,7 @@ func (c *Client) WaitRun(ctx context.Context, runID string, opts *WaitRunOptions
 			if ev.Sequence > since {
 				since = ev.Sequence
 			}
-			if ev.Payload == nil {
-				continue
-			}
-			status, _ := (*ev.Payload)["status"].(string)
-			if isTerminalStatusString(status) {
+			if isTerminalRunEventType(ev.EventType) {
 				return c.GetRun(ctx, runID)
 			}
 		}
@@ -232,10 +228,16 @@ func unexpectedRunStatus(op, status string, body []byte) error {
 	return fmt.Errorf("mobius: %s: unexpected status %s", op, status)
 }
 
-func isTerminalStatusString(status string) bool {
-	return status == string(api.LoopRunStatusCompleted) ||
-		status == string(api.LoopRunStatusFailed) ||
-		status == string(api.LoopRunStatusCancelled)
+// isTerminalRunEventType reports whether a run-stream event marks the run as
+// finished. The durable payload no longer carries a status field, so terminal
+// state is detected from the event type instead.
+func isTerminalRunEventType(eventType string) bool {
+	switch eventType {
+	case "run.completed", "run.failed", "run.cancelled":
+		return true
+	default:
+		return false
+	}
 }
 
 func sleepContext(ctx context.Context, d time.Duration) error {

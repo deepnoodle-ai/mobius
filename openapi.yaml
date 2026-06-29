@@ -43,6 +43,10 @@ tags:
 - name: webhooks
   x-displayName: Webhooks
   description: Outgoing webhook subscriptions, tests, and delivery history.
+- name: interactions
+  x-displayName: Interactions
+  description: Structured requests between users and agents (request information, approval,
+    review).
 - name: agents
   x-displayName: Agents
   description: Agent identities, presence, and lifecycle administration.
@@ -309,8 +313,9 @@ paths:
       tags:
       - actions
       summary: Delete action
-      description: Deletes a project-owned custom action definition. Loops that still reference
-        the action block deletion until the reference is removed.
+      description: Deletes a project-owned custom action definition. Runnable loop specs that
+        still reference the action block deletion with `409 Conflict` until the reference
+        is removed.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/ActionNameParam'
@@ -545,6 +550,31 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ModelCatalogResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/projects/{project_handle}/catalog/worker-models:
+    get:
+      operationId: listCatalogWorkerModels
+      tags:
+      - catalog
+      summary: List worker models
+      description: Returns local LLM models currently advertised by online project workers.
+        Each item includes the exact `model_route` object to assign to an agent or loop step.
+        Matching is exact on `provider` and `model`; queues are not part of the standard local
+        LLM path.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkerModelCatalogResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -1229,6 +1259,287 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /v1/projects/{project_handle}/interactions:
+    post:
+      operationId: createInteraction
+      tags:
+      - interactions
+      summary: Create interaction
+      description: Creates a standalone or run-backed interaction. Run-backed interactions
+        emit an `interaction.responded` event when completed; omit `run_id` and `signal_name`
+        for interactions with no loop-run side effect.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateInteractionRequest'
+            example:
+              run_id: run_8q5m2x9v7p3n4r6t
+              signal_name: manager_approval
+              target_user_ids:
+              - user_2f9s3k4m5n6p7q8r
+              kind: request_approval
+              title: Approve publishing the April billing report?
+              context:
+                report_id: rpt_2026_04
+                amount_usd: 12850
+              spec:
+                mode: confirm
+                default_confirmed: false
+              require_all: false
+              expires_at: '2026-04-25T14:30:00Z'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Interaction'
+              example:
+                id: iact_6x2m8q5v9p3n7r4t
+                run_id: run_8q5m2x9v7p3n4r6t
+                signal_name: manager_approval
+                kind: request_approval
+                status: pending
+                title: Approve publishing the April billing report?
+                context:
+                  report_id: rpt_2026_04
+                  amount_usd: 12850
+                spec:
+                  mode: confirm
+                  default_confirmed: false
+                target_user_ids:
+                - user_2f9s3k4m5n6p7q8r
+                expires_at: '2026-04-25T14:30:00Z'
+                created_at: '2026-04-24T14:30:00Z'
+                updated_at: '2026-04-24T14:30:00Z'
+                require_all: false
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    get:
+      operationId: listInteractions
+      tags:
+      - interactions
+      summary: List interactions
+      description: Returns interactions newest-first, optionally filtered by kind, status,
+        run, target, or the current caller's inbox. Inbox filtering includes direct targets.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - name: status
+        in: query
+        schema:
+          type: string
+          enum:
+          - pending
+          - completed
+          - expired
+          - cancelled
+        description: Filter by status
+      - name: kind
+        in: query
+        schema:
+          $ref: '#/components/schemas/InteractionKind'
+        description: Filter by interaction protocol kind
+      - name: run_id
+        in: query
+        schema:
+          type: string
+        description: Filter by originating run ID
+      - name: target_user_id
+        in: query
+        schema:
+          type: string
+        description: Filter by resolved target user ID.
+      - name: inbox
+        in: query
+        schema:
+          type: boolean
+        description: When true, returns only interactions visible to the authenticated user.
+      - $ref: '#/components/parameters/CursorParam'
+      - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InteractionListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /v1/projects/{project_handle}/interactions/{resource_id}:
+    get:
+      operationId: getInteraction
+      tags:
+      - interactions
+      summary: Get interaction
+      description: Returns one interaction with target, response, and completion metadata.
+        Run-backed interactions include the run and signal identifiers used to resume loop
+        execution.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/IDParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Interaction'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      operationId: deleteInteraction
+      tags:
+      - interactions
+      summary: Delete interaction
+      description: Deletes an interaction so it disappears from inbox and project listings.
+        The row is retained for audit history. Only terminal interactions (`completed`, `cancelled`,
+        `expired`) may be deleted; pending or in-review interactions must be cancelled first
+        so any waiting loop run can route to a fallback.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/IDParam'
+      responses:
+        '204':
+          description: No Content
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/projects/{project_handle}/interactions/{resource_id}/respond:
+    post:
+      operationId: respondToInteraction
+      tags:
+      - interactions
+      summary: Respond to interaction
+      description: |-
+        Canonical response endpoint for every interaction kind. `action` defaults to `submit`; lifecycle operations beyond submit are not part of the launch model.
+
+        The request body is intentionally the same envelope for every kind: `action`, `value`, and `comment`. Kind-specific behavior is selected from the interaction itself, not from separate request-body shapes.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/IDParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RespondToInteractionRequest'
+            examples:
+              approval:
+                summary: Approve interaction
+                value:
+                  action: submit
+                  value: true
+                  comment: Approved for publication.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Interaction'
+              example:
+                id: iact_6x2m8q5v9p3n7r4t
+                run_id: run_8q5m2x9v7p3n4r6t
+                signal_name: manager_approval
+                kind: request_approval
+                status: completed
+                title: Approve publishing the April billing report?
+                context:
+                  report_id: rpt_2026_04
+                  amount_usd: 12850
+                spec:
+                  mode: confirm
+                  default_confirmed: false
+                target_user_ids:
+                - user_2f9s3k4m5n6p7q8r
+                responder:
+                  user_id: user_2f9s3k4m5n6p7q8r
+                resolving_response_id: iresp_3v7q2m9x5p8n4r6t
+                responses:
+                - id: iresp_3v7q2m9x5p8n4r6t
+                  interaction_id: iact_6x2m8q5v9p3n7r4t
+                  response_kind: response
+                  state: submitted
+                  responder_user_id: user_2f9s3k4m5n6p7q8r
+                  value: true
+                  comment: Approved for publication.
+                  responded_at: '2026-04-24T14:42:00Z'
+                  created_at: '2026-04-24T14:42:00Z'
+                  updated_at: '2026-04-24T14:42:00Z'
+                outcome: true
+                resolved_by: any_of
+                expires_at: '2026-04-25T14:30:00Z'
+                completed_at: '2026-04-24T14:42:00Z'
+                created_at: '2026-04-24T14:30:00Z'
+                updated_at: '2026-04-24T14:42:00Z'
+                require_all: false
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /v1/projects/{project_handle}/interactions/{resource_id}/cancel:
+    post:
+      operationId: cancelInteraction
+      tags:
+      - interactions
+      summary: Cancel open interaction
+      description: 'Cancels an open interaction, recording who cancelled and an optional reason.
+        Run-backed interactions resume the waiting loop step with a `{status: cancelled, reason}`
+        signal payload so loops can route to a fallback. Only humans may cancel by default
+        — agents must request cancellation through an interaction.'
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/IDParam'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CancelInteractionRequest'
+            example:
+              reason: Superseded by a revised approval request.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Interaction'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /v1/projects/{project_handle}/agents:
     post:
       operationId: createAgent
@@ -1396,8 +1707,8 @@ paths:
       summary: Delete agent
       description: Deletes the agent from normal use. The agent record is retained for audit
         and attribution history, but the agent is excluded from all listings and lookups.
-        The agent's machine principal is disabled. In-flight jobs claiming this agent are
-        not automatically cancelled.
+        The agent's backing machine principal is archived for attribution history. In-flight
+        jobs claiming this agent are not automatically cancelled.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/IDParam'
@@ -1439,7 +1750,7 @@ paths:
           $ref: '#/components/responses/NotFound'
         '429':
           $ref: '#/components/responses/TooManyRequests'
-  /v1/projects/{project_handle}/turns/{resource_id}/messages:
+  /v1/projects/{project_handle}/turns/{turn_id}/messages:
     get:
       operationId: listTurnMessages
       tags:
@@ -1450,13 +1761,8 @@ paths:
         read the full session transcript.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
-      - $ref: '#/components/parameters/IDParam'
-      - name: after_sequence
-        in: query
-        description: Only include messages with sequence greater than this value.
-        schema:
-          type: integer
-          minimum: 0
+      - $ref: '#/components/parameters/TurnIdParam'
+      - $ref: '#/components/parameters/AfterSequenceParam'
       - $ref: '#/components/parameters/LimitParam'
       responses:
         '200':
@@ -1730,6 +2036,129 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /v1/projects/{project_handle}/agents/{resource_id}/memory:
+    get:
+      operationId: getAgentMemory
+      tags:
+      - agents
+      summary: Get agent memory
+      description: 'Returns a summary of the agent''s private memory: how many entries it
+        holds, a breakdown by kind, and when it last changed. Each agent has its own durable
+        memory; only that agent reads or writes it during runs, but project members can observe
+        and edit it here.'
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/IDParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentMemory'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/projects/{project_handle}/agents/{resource_id}/memory/entries:
+    get:
+      operationId: listAgentMemoryEntries
+      tags:
+      - agents
+      summary: List agent memory entries
+      description: Lists the entries in an agent's private memory, each a keyed, durable memory
+        the agent remembered. Pass `query` to keyword-search over keys and content, and `kind`
+        to filter to one kind. Returns an empty page when the agent has no memory yet.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/IDParam'
+      - name: query
+        in: query
+        description: Optional keyword search over entry keys and content. Omit to list.
+        schema:
+          type: string
+      - name: kind
+        in: query
+        description: Optional filter to a single memory kind.
+        schema:
+          $ref: '#/components/schemas/MemoryKind'
+      - $ref: '#/components/parameters/CursorParam'
+      - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentMemoryEntryListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/projects/{project_handle}/agents/{resource_id}/memory/entries/{memory_key}:
+    put:
+      operationId: putAgentMemoryEntry
+      tags:
+      - agents
+      summary: Create or update a memory entry
+      description: Creates or updates the memory entry identified by `memory_key`. Editing
+        an agent's memory here is equivalent to the agent calling `mobius.memory.remember`.
+        Provisions the store on first write.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/IDParam'
+      - $ref: '#/components/parameters/MemoryKeyParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PutAgentMemoryEntryRequest'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentMemoryEntry'
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentMemoryEntry'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      operationId: deleteAgentMemoryEntry
+      tags:
+      - agents
+      summary: Delete a memory entry
+      description: 'Deletes the memory entry identified by `memory_key`, equivalent to the
+        agent calling `mobius.memory.forget`. Idempotent: succeeds even if no such entry exists.'
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/IDParam'
+      - $ref: '#/components/parameters/MemoryKeyParam'
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /v1/projects/{project_handle}/sessions:
     get:
       operationId: listSessions
@@ -1772,6 +2201,7 @@ paths:
         schema:
           type: string
           format: date-time
+      - $ref: '#/components/parameters/CursorParam'
       - $ref: '#/components/parameters/LimitParam'
       responses:
         '200':
@@ -1819,7 +2249,7 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-  /v1/projects/{project_handle}/sessions/{resource_id}:
+  /v1/projects/{project_handle}/sessions/{session_id}:
     get:
       operationId: getSession
       tags:
@@ -1828,7 +2258,7 @@ paths:
       description: Returns one durable conversation session.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
-      - $ref: '#/components/parameters/IDParam'
+      - $ref: '#/components/parameters/SessionIdParam'
       responses:
         '200':
           description: OK
@@ -1853,7 +2283,7 @@ paths:
         cannot be restored.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
-      - $ref: '#/components/parameters/IDParam'
+      - $ref: '#/components/parameters/SessionIdParam'
       requestBody:
         required: true
         content:
@@ -1888,7 +2318,7 @@ paths:
         as a tombstone for audit and retention.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
-      - $ref: '#/components/parameters/IDParam'
+      - $ref: '#/components/parameters/SessionIdParam'
       responses:
         '204':
           description: No Content
@@ -1902,22 +2332,24 @@ paths:
           $ref: '#/components/responses/Conflict'
         '429':
           $ref: '#/components/responses/TooManyRequests'
-  /v1/projects/{project_handle}/sessions/{resource_id}/messages:
+  /v1/projects/{project_handle}/sessions/{session_id}/messages:
     get:
       operationId: listSessionMessages
       tags:
       - sessions
       summary: List session messages
-      description: Returns raw session messages in sequence order for replay.
+      description: 'Returns a page of session transcript messages. The page is sequence-anchored
+        and bidirectional: `after_sequence` pages forward (newer), `before_sequence` pages
+        backward (older), and `order=desc` fetches the newest messages — the tail of a long
+        session — in a single request. Items are always returned ascending by `sequence`;
+        the response carries both `next_sequence` (forward cursor) and `prev_sequence` (backward
+        cursor).'
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
-      - $ref: '#/components/parameters/IDParam'
-      - name: after_sequence
-        in: query
-        description: Only include messages with sequence greater than this value.
-        schema:
-          type: integer
-          minimum: 0
+      - $ref: '#/components/parameters/SessionIdParam'
+      - $ref: '#/components/parameters/AfterSequenceParam'
+      - $ref: '#/components/parameters/BeforeSequenceParam'
+      - $ref: '#/components/parameters/OrderParam'
       - $ref: '#/components/parameters/LimitParam'
       responses:
         '200':
@@ -1942,7 +2374,7 @@ paths:
         compaction summary when the session crosses its compaction threshold.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
-      - $ref: '#/components/parameters/IDParam'
+      - $ref: '#/components/parameters/SessionIdParam'
       requestBody:
         required: true
         content:
@@ -1966,18 +2398,37 @@ paths:
           $ref: '#/components/responses/NotFound'
         '429':
           $ref: '#/components/responses/TooManyRequests'
-  /v1/projects/{project_handle}/sessions/{resource_id}/turns:
+  /v1/projects/{project_handle}/sessions/{session_id}/turns:
     get:
       operationId: listSessionTurns
       tags:
       - sessions
       summary: List session turns
-      description: Returns the session's turns in chronological order. Each turn groups related
-        transcript messages and includes links to any run step or channel exchange that produced
-        it.
+      description: Returns the session's turns, the spine the turn-grouped transcript is built
+        on. Each turn groups related transcript messages and includes links to any run step
+        or channel exchange that produced it. Turns are ordered by creation time; `order=desc`
+        returns the newest turns (the tail) first, and long sessions are walked page-by-page
+        via the `next_cursor` returned in the response. Pass `ids` to fetch exactly a known
+        set of turns in one bounded request — the join a transcript view uses to resolve a
+        loaded message window's `turn_id`s to their headers; when `ids` is set the cursor
+        and order parameters are ignored.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
-      - $ref: '#/components/parameters/IDParam'
+      - $ref: '#/components/parameters/SessionIdParam'
+      - name: ids
+        in: query
+        description: Return exactly the turns with these ids (the transcript-join primitive).
+          When set, pagination and ordering are ignored and the named turns are returned in
+          chronological order.
+        schema:
+          type: array
+          items:
+            type: string
+        style: form
+        explode: false
+      - $ref: '#/components/parameters/OrderParam'
+      - $ref: '#/components/parameters/CursorParam'
+      - $ref: '#/components/parameters/LimitParam'
       responses:
         '200':
           description: OK
@@ -1991,74 +2442,42 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-  /v1/projects/{project_handle}/sessions/{resource_id}/events.stream:
-    get:
-      operationId: streamSessionEvents
-      tags:
-      - sessions
-      summary: Stream session events
-      description: Streams Server-Sent Events for a conversation session. Durable lifecycle
-        events (`user.message`, `session.status_running`, `agent.message`, `agent.tool_use`,
-        `agent.tool_result`, and the terminal `session.status_*` events) are replayed from
-        the durable log and then tailed live, so a client reconnecting with `?after_sequence=N`
-        (or the `Last-Event-ID` header) resumes exactly where it left off. The stream closes
-        after the terminal event for the active invocation is delivered. Live-only `generation.delta`
-        frames are interleaved best-effort.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      - $ref: '#/components/parameters/IDParam'
-      - name: after_sequence
-        in: query
-        description: Resume the stream after this durable event sequence number.
-        schema:
-          type: integer
-          format: int64
-          minimum: 0
-      responses:
-        '200':
-          description: 'Server-sent event stream of session activity. Each message is framed
-            as `event: <event type>` followed by a `data:` line carrying the JSON-encoded
-            event payload (the `SessionStreamEvent` shape, always including `session_id`).
-            Durable events also carry an `id:` line with the event sequence number for `Last-Event-ID`
-            resume.'
-          content:
-            text/event-stream:
-              schema:
-                $ref: '#/components/schemas/SessionStreamEvent'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-  /v1/projects/{project_handle}/sessions/{resource_id}/events:
     post:
-      operationId: sendSessionEvents
+      operationId: startTurn
       tags:
       - sessions
-      summary: Send input to a session
-      description: Appends one input message to a session and starts an agent invocation to
-        respond, returning `202 Accepted` immediately with a durable `seq` cursor to stream
-        from — the work continues even if the caller disconnects. A repeated send with the
-        same `idempotency_key` returns the existing invocation's cursor without starting a
-        second invocation or appending a second input message. Requires the `mobius.agent.invoke`
-        permission (or the agent's own backing principal).
+      summary: Start an agent turn
+      description: 'Appends one caller input message to the session and starts an agent turn
+        to respond. By default returns `202 Accepted` immediately with a durable `after_sequence`
+        cursor to stream from. The turn keeps running even if the caller disconnects. When
+        the request sets `Accept: text/event-stream`, the response is `200 OK` and the turn''s
+        activity is streamed inline on the same connection, equivalent to opening `GET .../events`
+        at the returned cursor. A repeated call with the same `idempotency_key` resumes the
+        existing turn rather than starting a second one. Requires the `mobius.agent.invoke`
+        permission (or the agent''s own backing principal).'
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
-      - $ref: '#/components/parameters/IDParam'
+      - $ref: '#/components/parameters/SessionIdParam'
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SendSessionEventsRequest'
+              $ref: '#/components/schemas/StartTurnRequest'
       responses:
+        '200':
+          description: 'Server-sent event stream of the turn''s activity, returned when the
+            request sets `Accept: text/event-stream`. Framing matches `GET .../events`.'
+          content:
+            text/event-stream:
+              schema:
+                $ref: '#/components/schemas/SessionStreamFrame'
         '202':
-          description: The invocation was accepted and is running.
+          description: The turn was accepted and is running.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SessionInvocationAck'
+                $ref: '#/components/schemas/TurnAck'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -2071,19 +2490,106 @@ paths:
           $ref: '#/components/responses/Conflict'
         '429':
           $ref: '#/components/responses/TooManyRequests'
-  /v1/projects/{project_handle}/sessions/{resource_id}/cancel:
+  /v1/projects/{project_handle}/sessions/{session_id}/turns/{turn_id}:
+    get:
+      operationId: getSessionTurn
+      tags:
+      - sessions
+      summary: Get a session turn
+      description: Returns one agent turn in the session.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/SessionIdParam'
+      - $ref: '#/components/parameters/TurnIdParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentTurn'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/projects/{project_handle}/sessions/{session_id}/turns/{turn_id}/cancel:
+    post:
+      operationId: cancelTurn
+      tags:
+      - sessions
+      summary: Cancel a session turn
+      description: Cancels one agent turn in the session if it is still active. The turn is
+        marked cancelled and a terminal `turn.cancelled` event is emitted. Returns the updated
+        turn. Requires the `mobius.agent.invoke` permission (or the agent's own backing principal).
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/SessionIdParam'
+      - $ref: '#/components/parameters/TurnIdParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentTurn'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/projects/{project_handle}/sessions/{session_id}/events:
+    get:
+      operationId: listSessionEvents
+      tags:
+      - sessions
+      summary: List or stream session events
+      description: |-
+        Returns the durable lifecycle event log for a conversation session, ordered by sequence number. Use `after_sequence` to page only events recorded after the last sequence the client has observed.
+
+        Content-negotiated: with `Accept: text/event-stream` this opens a long-lived Server-Sent Events stream instead of returning a JSON page. Durable events (`user.message`, `turn.started`, `agent.message`, `tool.call`, `tool.result`, the non-terminal `compaction.created` event, and the terminal `turn.completed` / `turn.failed` / `turn.cancelled` events) are replayed from `after_sequence` and then tailed live, so a client reconnecting with `?after_sequence=N` (or the `Last-Event-ID` header) resumes exactly where it left off. The stream follows the current active tail of the session and closes when the latest durable event at the head of the log is terminal (`compaction.created` is non-terminal and never closes the stream). A later turn is a new activity tail; clients should open a new stream for the new turn or use the streaming `POST .../turns` response. Live-only `generation.delta` frames are interleaved best-effort on the stream.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/SessionIdParam'
+      - $ref: '#/components/parameters/AfterSequenceParam'
+      - $ref: '#/components/parameters/LastEventIDParam'
+      - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: 'A JSON page of session events, or, when the request sets `Accept:
+            text/event-stream`, a Server-Sent Events stream of session activity. On the stream
+            each message is framed as `event: <event type>` followed by a `data:` line carrying
+            the JSON-encoded event payload. Durable events carry an `id:` line with the event
+            sequence number for `Last-Event-ID` resume; live-only `generation.delta` frames
+            do not carry `id:` and cannot be replayed.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionEventListResponse'
+            text/event-stream:
+              schema:
+                $ref: '#/components/schemas/SessionStreamFrame'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/projects/{project_handle}/sessions/{session_id}/cancel:
     post:
       operationId: cancelSession
       tags:
       - sessions
-      summary: Cancel a session's active invocation
-      description: Cancels the session's in-flight invocation. Queued and running grains for
-        the session are marked cancelled and a terminal `session.status_cancelled` event is
+      summary: Cancel the session's active turn
+      description: Cancels whichever turn is currently active in the session. Queued and running
+        turns for the session are marked cancelled and a terminal `turn.cancelled` event is
         emitted. Returns the updated session. Requires the `mobius.agent.invoke` permission
         (or the agent's own backing principal).
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
-      - $ref: '#/components/parameters/IDParam'
+      - $ref: '#/components/parameters/SessionIdParam'
       responses:
         '200':
           description: OK
@@ -2097,6 +2603,36 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /v1/projects/{project_handle}/sessions/{session_id}/compact:
+    post:
+      operationId: compactSession
+      tags:
+      - sessions
+      summary: Compact the session transcript now
+      description: Forces a compaction pass immediately, summarizing every message appended
+        since the last compaction regardless of the session's configured strategy or token
+        threshold. This is the manual counterpart to the `auto` strategy and the way to drive
+        the `manual` strategy. It is a no-op when there is nothing new to compact. Returns
+        the updated session. Requires the `mobius.agent.invoke` permission (or the agent's
+        own backing principal).
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/SessionIdParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Session'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
   /v1/projects/{project_handle}/loops:
     get:
       operationId: listLoops
@@ -2602,10 +3138,11 @@ paths:
       operationId: listRunEvents
       tags:
       - runs
-      summary: List run events
-      description: Returns the durable event log for one run, ordered by sequence number.
-        Use `after_sequence` to poll only events recorded after the last sequence the client
-        has observed.
+      summary: List or stream run events
+      description: |-
+        Returns the durable event log for one run, ordered by sequence number. Use `after_sequence` to poll only events recorded after the last sequence the client has observed.
+
+        Content-negotiated: with `Accept: text/event-stream` this opens a long-lived Server-Sent Events stream instead of returning a JSON page: durable events are replayed from `after_sequence` and then tailed live, and the stream closes after the run is terminal and the server has drained all durable events committed before or with that terminal state. Reconnect with `?after_sequence=N` (or the `Last-Event-ID` header) to resume.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/IDParam'
@@ -2617,51 +3154,22 @@ paths:
           type: integer
           format: int64
           minimum: 0
+      - $ref: '#/components/parameters/LastEventIDParam'
       - $ref: '#/components/parameters/LimitParam'
       responses:
         '200':
-          description: OK
+          description: 'A JSON page of run events, or, when the request sets `Accept: text/event-stream`,
+            a Server-Sent Events stream where each durable message is framed as `id: <sequence>`,
+            `event: <run-event type>`, and a `data:` line carrying the JSON-encoded `LoopRunEvent`.
+            Live-only `generation.delta` frames may be interleaved without an `id:` line;
+            they are not persisted and cannot be replayed.'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/LoopRunEventListResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-  /v1/projects/{project_handle}/runs/{resource_id}/events.stream:
-    get:
-      operationId: streamRunEvents
-      tags:
-      - runs
-      summary: Stream run events
-      description: Long-lived SSE stream of run events ordered by sequence number. Each `data:`
-        frame is a JSON-encoded `LoopRunEvent`. The stream terminates when the run reaches
-        a terminal status. Clients that disconnect should reconnect using `?after_sequence=N`
-        (or the SSE `Last-Event-ID` header set to the last sequence) to resume without gaps.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      - $ref: '#/components/parameters/IDParam'
-      - name: after_sequence
-        in: query
-        description: Stream events with sequence > after_sequence.
-        required: false
-        schema:
-          type: integer
-          format: int64
-          minimum: 0
-      responses:
-        '200':
-          description: 'Server-sent event stream. Each message is framed as `event: <run-event
-            type>` followed by a `data:` line carrying the JSON-encoded run event (the `LoopRunEvent`
-            shape). The stream ends when the run reaches a terminal status; reconnect with
-            `after_sequence` (or the `Last-Event-ID` header) to resume.'
-          content:
             text/event-stream:
               schema:
-                $ref: '#/components/schemas/LoopRunEvent'
+                $ref: '#/components/schemas/LoopRunStreamFrame'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -3248,7 +3756,8 @@ paths:
       tags:
       - tables
       summary: Update table
-      description: Updates table metadata or schema and resyncs declared indexes.
+      description: Updates table metadata or schema. A table's identity column, secondary
+        key column, and required column settings are immutable after creation.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/TableIDParam'
@@ -3458,10 +3967,11 @@ paths:
       tags:
       - tables
       summary: Search rows
-      description: 'Token-prefix search over row data within one table. Punctuation, including
-        hyphens, splits terms: searching `from-ui` matches a value like `from-ui-insert` because
-        the `from` and `ui` tokens match. Optional field filters use the same syntax as row
-        queries and are applied before text search.'
+      description: 'Search rows within one table using keyword, semantic, or hybrid mode.
+        Keyword matching is token-prefix based. Punctuation, including hyphens, splits terms:
+        searching `from-ui` matches a value like `from-ui-insert` because the `from` and `ui`
+        tokens match. Optional field filters use the same syntax as row queries and are applied
+        before search.'
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/TableIDParam'
@@ -3961,6 +4471,20 @@ components:
       description: Resource ID.
       schema:
         type: string
+    SessionIdParam:
+      name: session_id
+      in: path
+      required: true
+      description: Identifier of the conversation session.
+      schema:
+        type: string
+    TurnIdParam:
+      name: turn_id
+      in: path
+      required: true
+      description: Identifier of a turn within a session.
+      schema:
+        type: string
     ActionNameParam:
       name: action_name
       in: path
@@ -3990,6 +4514,53 @@ components:
         default: 20
         minimum: 1
         maximum: 100
+    AfterSequenceParam:
+      name: after_sequence
+      in: query
+      description: Continuation cursor for sequence-ordered lists. Only include rows whose
+        monotonic per-resource sequence is strictly greater than this value. Pass the `next_sequence`
+        from the previous response to fetch the next page.
+      schema:
+        type: integer
+        format: int64
+        minimum: 0
+    BeforeSequenceParam:
+      name: before_sequence
+      in: query
+      description: Backward continuation cursor for sequence-ordered lists. Only include rows
+        whose monotonic per-resource sequence is strictly less than this value. Combine with
+        `order=desc` to page toward older rows from a known position; pass the `prev_sequence`
+        from the previous response to fetch the next older page.
+      schema:
+        type: integer
+        format: int64
+        minimum: 1
+    OrderParam:
+      name: order
+      in: query
+      description: Scan direction for the page. `asc` (the default) returns oldest-first;
+        `desc` returns newest-first — the way to fetch the latest rows of a long list (the
+        tail) in a single request. Items in the response are always ordered ascending regardless
+        of this value; `order` only selects which end of the list the page is taken from.
+      schema:
+        type: string
+        enum:
+        - asc
+        - desc
+        default: asc
+    LastEventIDParam:
+      name: Last-Event-ID
+      in: header
+      required: false
+      description: SSE reconnect cursor. The browser EventSource API replays the last event's
+        `id` in this header on automatic reconnect; the server resumes the stream after that
+        sequence number. When both this header and the `after_sequence` query parameter are
+        supplied, the larger sequence wins, so an explicit `after_sequence` never rewinds
+        a live reconnect. Ignored for non-streaming (JSON) requests.
+      schema:
+        type: integer
+        format: int64
+        minimum: 0
     AdminOrgIDParam:
       name: org_id
       in: path
@@ -4048,6 +4619,17 @@ components:
       description: Framework provider identifier from the integration provider catalog.
       schema:
         type: string
+    MemoryKeyParam:
+      name: memory_key
+      in: path
+      required: true
+      description: 'The key identifying a memory entry. Restricted to a path-safe character
+        set (letters, numbers, and `. _ : -`) so it stays reliably addressable.'
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 256
+        pattern: ^[A-Za-z0-9._:-]+$
     TableIDParam:
       name: table_id
       in: path
@@ -4186,6 +4768,62 @@ components:
               description: Optional structured details specific to a `code`. Endpoints that
                 set this document the per-code shape inline. Absent for codes whose `code`
                 + `message` are sufficient.
+    GenericEventPayload:
+      type: object
+      additionalProperties: true
+      description: Event-type-specific payload for less common event types.
+    GenerationDeltaFrame:
+      type: object
+      additionalProperties: true
+      required:
+      - event_type
+      - delta
+      description: Live-only token preview frame that can appear on run and session SSE streams.
+        It is not persisted, does not carry an SSE `id:`, and cannot be replayed with `after_sequence`
+        or `Last-Event-ID`.
+      properties:
+        event_type:
+          type: string
+          enum:
+          - generation.delta
+        run_id:
+          type: string
+          nullable: true
+        session_id:
+          type: string
+          nullable: true
+        agent_turn_id:
+          type: string
+          nullable: true
+        job_id:
+          type: string
+          nullable: true
+        tool_call_id:
+          type: string
+          nullable: true
+        sequence:
+          type: integer
+          format: int64
+          nullable: true
+          description: Publisher-local ordering hint, not a replay cursor.
+        delta_sequence:
+          type: integer
+          format: int64
+          nullable: true
+          description: Preferred publisher-local ordering hint, not a replay cursor.
+        delta:
+          type: object
+          additionalProperties: true
+          description: 'Token preview payload, usually `{ "text": "..." }`.'
+        executor_kind:
+          type: string
+          nullable: true
+        worker_id:
+          type: string
+          nullable: true
+        generation_key:
+          type: string
+          nullable: true
     ResourceScope:
       type: string
       enum:
@@ -4332,13 +4970,10 @@ components:
           description: Environment to use for worker-backed model calls.
         provider:
           type: string
-          description: Provider or worker route name.
+          description: Provider id advertised by a local worker when `mode` is `worker`.
         model:
           type: string
           description: Model identifier to use for this route.
-        queue:
-          type: string
-          description: Worker queue for customer-worker model calls.
     AgentToolPresentation:
       type: string
       enum:
@@ -4347,6 +4982,36 @@ components:
       description: Controls how granted actions are surfaced to the model in Mobius-hosted
         agent turns. `meta` (the default) groups related actions behind compact command routers,
         while `flat` exposes one tool per action.
+    SessionCompactionPolicy:
+      type: object
+      additionalProperties: false
+      description: Controls how a session's transcript is automatically summarized as it grows.
+        On create the supplied fields are merged over the owning agent's default policy and
+        the server defaults; on update they patch the session's current policy. Omitted fields
+        keep their resolved values.
+      properties:
+        strategy:
+          type: string
+          enum:
+          - auto
+          - manual
+          - disabled
+          - none
+          description: '`auto` (default) compacts automatically when the transcript crosses
+            `threshold_tokens`. `manual` only compacts on an explicit compact request. `disabled`/`none`
+            never compact.'
+        threshold_tokens:
+          type: integer
+          minimum: 1
+          description: Token threshold that triggers automatic compaction under the `auto`
+            strategy.
+        summary_model:
+          type: string
+          description: Model used to produce compaction summaries.
+      example:
+        strategy: auto
+        threshold_tokens: 25000
+        summary_model: claude-haiku-4-5-20251001
     Agent:
       type: object
       additionalProperties: false
@@ -4413,6 +5078,11 @@ components:
           description: Execution timeout, in seconds, for a single turn of this platform agent.
             `0` (or omitted) uses the platform default (600s / 10 minutes). A loop step's
             own timeout overrides this for that step.
+        compaction_policy:
+          $ref: '#/components/schemas/SessionCompactionPolicy'
+          description: Default session-compaction policy. New sessions opened against this
+            agent inherit it (below server defaults, above explicit per-session overrides).
+            Absent when the agent has no default.
         status:
           $ref: '#/components/schemas/AgentStatus'
           description: 'Current agent status: `active` or `inactive`.'
@@ -5344,6 +6014,57 @@ components:
         recommended:
           type: boolean
           description: Whether this is the suggested default for its provider.
+    WorkerModelCatalogResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      description: Local LLM models advertised by online project workers.
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkerModelCatalogItem'
+    WorkerModelCatalogItem:
+      type: object
+      additionalProperties: false
+      required:
+      - provider
+      - model
+      - worker_count
+      - route
+      description: One exact local model route available through online workers.
+      properties:
+        provider:
+          type: string
+          description: Worker-advertised provider id, matched exactly by `model_route.provider`.
+        model:
+          type: string
+          description: Worker-advertised model id, matched exactly by `model_route.model`.
+        worker_count:
+          type: integer
+          minimum: 1
+          description: Number of online workers currently advertising this exact provider/model
+            pair.
+        route:
+          $ref: '#/components/schemas/WorkerModelRoute'
+    WorkerModelRoute:
+      type: object
+      additionalProperties: false
+      required:
+      - mode
+      - provider
+      - model
+      description: Assign this route to use a local worker model.
+      properties:
+        mode:
+          type: string
+          enum:
+          - worker
+        provider:
+          type: string
+        model:
+          type: string
     EnvironmentProvider:
       type: string
       enum:
@@ -5808,7 +6529,8 @@ components:
         spec:
           type: object
           additionalProperties: true
-          description: Worker-specific action or generation payload.
+          description: Worker-specific action or generation payload. For `kind=llm_generation`,
+            this object follows `WorkerSocketLLMGenerationSpec`.
         lease_token:
           type: string
           description: Opaque per-job lease fence returned by claim.
@@ -5913,6 +6635,9 @@ components:
         result:
           type: object
           additionalProperties: true
+          description: Terminal result payload. For `llm_generation` jobs, this object must
+            follow `WorkerSocketLLMGenerationResult`; plain text fallback results are not
+            accepted.
         error_type:
           type: string
         error_message:
@@ -6390,6 +7115,723 @@ components:
         latency_ms:
           type: integer
           description: Round-trip latency in milliseconds.
+    InteractionMode:
+      type: string
+      enum:
+      - confirm
+      - select
+      - multi_select
+      - input
+      description: Declarative UI/input primitive for collecting the response. This is a portable
+        rendering contract, not executable code. Values are `confirm`, `select`, `multi_select`,
+        and `input`.
+    InteractionOption:
+      type: object
+      required:
+      - value
+      - label
+      additionalProperties: false
+      description: Selectable option for `select` and `multi_select` modes.
+      properties:
+        value:
+          type: string
+          description: Machine-readable value submitted when this option is chosen.
+        label:
+          type: string
+          description: Human-readable label displayed for this option.
+        description:
+          type: string
+          description: Optional additional context shown beneath the label.
+    InteractionSpec:
+      type: object
+      required:
+      - mode
+      additionalProperties: false
+      description: |-
+        Declarative dialog contract for rendering and validating an interaction. Used at both authoring time (inside a loop definition) and runtime (persisted on an interaction). Protocol kind is decoupled from input shape: each kind declares which spec modes are *allowed*, not which is *implied*. An approval may now legitimately use `select` mode (approve/deny/defer), for example.
+
+        Allowed combinations:
+        * `approval` → `confirm`, `select`
+        * `review` → `select`, `input`
+        * `request` → `select`, `multi_select`, `input`
+      properties:
+        mode:
+          $ref: '#/components/schemas/InteractionMode'
+          description: UI/input mode used to render and validate the response.
+        options:
+          type: array
+          maxItems: 100
+          description: Required for `select` and `multi_select` modes.
+          items:
+            $ref: '#/components/schemas/InteractionOption'
+        default_value:
+          type: string
+          description: Default selected option for `select` mode.
+        default_values:
+          type: array
+          maxItems: 100
+          description: Default selected options for `multi_select` mode.
+          items:
+            type: string
+        default_text:
+          type: string
+          description: Initial text value for `input` mode.
+        default_confirmed:
+          type: boolean
+          description: Initial yes/no value for `confirm` mode.
+        placeholder:
+          type: string
+          description: Hint text shown for `input` mode.
+        multiline:
+          type: boolean
+          description: When true, render `input` mode as a multiline text area.
+    InteractionKind:
+      type: string
+      enum:
+      - request_information
+      - request_approval
+      - request_review
+      description: |-
+        Protocol kind of the interaction. Launch keeps this intentionally
+        small:
+        * `request_information` — a data-collection protocol with structured
+        or free-form input
+        * `request_approval` — a decision protocol (yes/no, optionally
+        yes/no/defer)
+        * `request_review` — a judgment protocol that evaluates supplied
+        material
+    InteractionValue:
+      description: Free-form JSON payload. Used both for responder-supplied values and for
+        policy-derived values (e.g. `Interaction.outcome`, `ResolutionPolicy.proposal`); each
+        consumer documents which.
+      anyOf:
+      - type: object
+        nullable: true
+        description: Null when no interaction value has been supplied yet.
+        additionalProperties: true
+      - type: array
+        items: {}
+      - type: string
+      - type: number
+      - type: boolean
+    InteractionResponder:
+      type: object
+      required:
+      - user_id
+      additionalProperties: false
+      description: Identifies the principal who answered an interaction. Agents answer through
+        their agent principal ID.
+      properties:
+        user_id:
+          type: string
+          description: Responder user ID.
+    InteractionReference:
+      type: object
+      additionalProperties: false
+      required:
+      - kind
+      description: Pointer to the work item, artifact, external ticket, or Mobius entity this
+        interaction is about.
+      properties:
+        kind:
+          type: string
+          enum:
+          - external_url
+          - mobius_entity
+        url:
+          type: string
+          format: uri
+          description: Required when kind is `external_url`.
+        entity_type:
+          type: string
+          description: Required when kind is `mobius_entity`.
+        entity_id:
+          type: string
+          description: Required when kind is `mobius_entity`.
+        relation:
+          type: string
+          description: Relationship such as `subject`, `evidence`, or `related`.
+        label:
+          type: string
+          description: User-facing label for display.
+    Delivery:
+      type: object
+      additionalProperties: false
+      required:
+      - channels
+      description: Optional per-interaction delivery override. When absent, each participant
+        is notified via the app inbox only.
+      properties:
+        channels:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/DeliveryChannel'
+    DeliveryChannel:
+      type: object
+      additionalProperties: false
+      required:
+      - kind
+      description: A single delivery destination. `inbox_only` carries no payload; `email`
+        requires the `email` variant.
+      properties:
+        kind:
+          type: string
+          enum:
+          - inbox_only
+          - email
+        email:
+          type: object
+          allOf:
+          - $ref: '#/components/schemas/EmailDelivery'
+          nullable: true
+          description: Email delivery payload when `kind=email`; null for inbox-only delivery.
+    EmailDelivery:
+      type: object
+      additionalProperties: false
+      required:
+      - to
+      properties:
+        to:
+          type: array
+          minItems: 1
+          items:
+            type: string
+            format: email
+    Consumer:
+      type: object
+      additionalProperties: false
+      required:
+      - kind
+      description: 'Polymorphic identifier of what is waiting on this interaction''s resolution.
+        Replaces the previously special-cased `run_id` + `signal_name` pair. When `kind=run`,
+        the legacy fields are also populated for compatibility. `http_subscriber` requires
+        `secret_ref` and enqueues a durable callback dispatch to `callback_url` when the interaction
+        resolves; the canonical string `v1.{delivery_id}.{unix_timestamp}.{raw_body}` is signed
+        with HMAC-SHA256 against the resolved project signing key and the signed dispatch
+        carries `X-Mobius-Signature`, `X-Mobius-Secret-Ref`, `X-Mobius-Secret-Version`, and
+        `X-Mobius-Timestamp`. Signed dispatches also carry `X-Mobius-Signature-Version: v1`.
+        Every durable dispatch also carries the stable outbox row id in `X-Mobius-Delivery-Id`
+        and `Idempotency-Key`; retries reuse the same value. Verifiers should recompute the
+        signature over the exact raw body, reject stale timestamps (for example, older than
+        five minutes), deduplicate by delivery id, and check the signing headers.'
+      properties:
+        kind:
+          type: string
+          enum:
+          - run
+          - agent_tool
+          - http_subscriber
+          - none
+        run:
+          type: object
+          allOf:
+          - $ref: '#/components/schemas/RunConsumer'
+          nullable: true
+          description: Run resume target when `kind=run`; null for other consumer kinds.
+        agent_tool:
+          type: object
+          allOf:
+          - $ref: '#/components/schemas/AgentToolConsumer'
+          nullable: true
+          description: Agent tool continuation target when `kind=agent_tool`; null for other
+            consumer kinds.
+        http_subscriber:
+          type: object
+          allOf:
+          - $ref: '#/components/schemas/HttpSubscriberConsumer'
+          nullable: true
+          description: HTTP callback target when `kind=http_subscriber`; null for other consumer
+            kinds.
+    RunConsumer:
+      type: object
+      additionalProperties: false
+      required:
+      - run_id
+      - signal_name
+      properties:
+        run_id:
+          type: string
+        signal_name:
+          type: string
+    AgentToolConsumer:
+      type: object
+      additionalProperties: false
+      required:
+      - invocation_id
+      - tool_call_id
+      properties:
+        invocation_id:
+          type: string
+        tool_call_id:
+          type: string
+    HttpSubscriberConsumer:
+      type: object
+      additionalProperties: false
+      required:
+      - callback_url
+      - secret_ref
+      properties:
+        callback_url:
+          type: string
+          format: uri
+          description: Absolute http(s) URL the server POSTs to when the interaction resolves.
+            The body is a JSON object with the interaction id, kind, status, outcome value,
+            comment, responder, and `resolved_by`. Delivery is enqueued as a `source_events`
+            dispatch so the worker can retry failed attempts instead of dropping them inline
+            with interaction resolution.
+        secret_ref:
+          type: string
+          description: 'Required reference to a project secret used to sign deliveries with
+            HMAC-SHA256 over the canonical string `v1.{delivery_id}.{unix_timestamp}.{raw_body}`,
+            where `delivery_id` is the value in `X-Mobius-Delivery-Id` and `raw_body` is the
+            exact callback request body bytes. Accepts `<name>` for the latest enabled version
+            or `<name>:<version>` to pin a specific positive-integer version. The plaintext
+            signing bytes are taken from the secret''s `signing_key_b64` key, which must base64-decode
+            to exactly 32 bytes. The hex signature is forwarded as `X-Mobius-Signature: sha256=<hex>`
+            alongside `X-Mobius-Secret-Ref`, `X-Mobius-Secret-Version`, `X-Mobius-Signature-Version:
+            v1`, and a unix `X-Mobius-Timestamp`. Consumers should reject stale timestamps
+            (for example, older than five minutes). When `secret_ref` resolution fails the
+            dispatch is retried by the event processor rather than sent unsigned.'
+    InteractionResponse:
+      type: object
+      additionalProperties: false
+      description: One persisted answer artifact for an interaction. The response that triggered
+        resolution is referenced from `Interaction.resolving_response_id`.
+      required:
+      - id
+      - interaction_id
+      - response_kind
+      - state
+      - responder_user_id
+      - value
+      - responded_at
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+          description: Unique identifier for this response.
+        interaction_id:
+          type: string
+          description: ID of the interaction this response belongs to.
+        response_kind:
+          type: string
+          enum:
+          - response
+          description: Answer response.
+        state:
+          type: string
+          enum:
+          - submitted
+          description: Lifecycle state for this response row.
+        responder_user_id:
+          type: string
+          description: User ID that submitted this response.
+        value:
+          $ref: '#/components/schemas/InteractionValue'
+          description: JSON value supplied by this participant.
+        comment:
+          type: string
+          nullable: true
+          description: Optional free-text comment from this responder.
+        responded_at:
+          type: string
+          format: date-time
+          description: Timestamp when this response was submitted.
+        attempt:
+          type: integer
+          nullable: true
+          description: Reserved for future retry-aware response flows; null until attempts
+            are tracked.
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    ResolutionPolicy:
+      type: object
+      additionalProperties: false
+      required:
+      - type
+      description: Declarative resolution rule attached to an Interaction. Determines how
+        participant responses become a final outcome.
+      properties:
+        type:
+          type: string
+          enum:
+          - any_of
+          - all_of
+          - quorum
+          description: Resolution rule. `any_of` resolves on the first acceptable response.
+            `all_of` waits for every assigned participant. `quorum` resolves once `threshold`
+            distinct participants respond.
+        threshold:
+          type: integer
+          minimum: 1
+          description: Required when `type` is `quorum`. Number of distinct eligible participants
+            that must respond before the interaction resolves. Must be `>= 1` and `<=` the
+            participant count.
+    Interaction:
+      type: object
+      additionalProperties: false
+      description: Human or agent interaction request and its current response state.
+      required:
+      - id
+      - kind
+      - status
+      - title
+      - target_user_ids
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+          description: Unique identifier for this interaction.
+        run_id:
+          type: string
+          nullable: true
+          description: Originating loop run when the interaction is run-backed.
+        signal_name:
+          type: string
+          nullable: true
+          description: Signal name used to resume the originating run when run-backed.
+        created_by:
+          type: string
+          nullable: true
+          description: Canonical principal ID of the human or agent that created the interaction;
+            null for legacy/system-created rows.
+        kind:
+          $ref: '#/components/schemas/InteractionKind'
+          description: Protocol kind of the interaction.
+        status:
+          type: string
+          enum:
+          - pending
+          - completed
+          - expired
+          - cancelled
+          description: 'Current status of the interaction: pending, completed, expired, or
+            cancelled.'
+        title:
+          type: string
+          minLength: 1
+          description: Short non-empty title shown to the responder.
+        description:
+          type: string
+          nullable: true
+          description: Optional longer responder-facing detail or instructions.
+        subject:
+          type: object
+          allOf:
+          - $ref: '#/components/schemas/InteractionReference'
+          nullable: true
+          description: Primary work item or artifact the interaction is about; null when no
+            subject was supplied.
+        references:
+          type: array
+          items:
+            $ref: '#/components/schemas/InteractionReference'
+          description: Supporting links and related entities.
+        context:
+          type: object
+          additionalProperties: true
+          nullable: true
+          description: Additional key-value context surfaced in the UI alongside the title
+            and description when supplied.
+        tags:
+          $ref: '#/components/schemas/TagMap'
+        properties:
+          type: object
+          additionalProperties: true
+          nullable: true
+          description: Free-form structured metadata attached to the interaction; null when
+            no metadata is attached.
+        spec:
+          $ref: '#/components/schemas/InteractionSpec'
+          description: Response controls and validation rules rendered to the recipient.
+        target_user_ids:
+          type: array
+          items:
+            type: string
+          description: Resolved user IDs targeted by the interaction.
+        responder:
+          type: object
+          allOf:
+          - $ref: '#/components/schemas/InteractionResponder'
+          nullable: true
+          description: User or agent that completed the interaction; null until completion.
+        resolving_response_id:
+          type: string
+          nullable: true
+          description: ID of the response that triggered resolution. Null while the interaction
+            is pending, cancelled, or expired. Look up the response in `responses` for the
+            full payload.
+        responses:
+          type: array
+          items:
+            $ref: '#/components/schemas/InteractionResponse'
+          description: All response artifacts recorded against this interaction in arrival
+            order.
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Timestamp when this interaction expires if not responded to.
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Timestamp when the interaction received a terminal response.
+        created_at:
+          type: string
+          format: date-time
+          description: Timestamp when this interaction was created.
+        updated_at:
+          type: string
+          format: date-time
+          description: Timestamp when this interaction was last updated.
+        require_all:
+          type: boolean
+          description: When true, all target users must respond before completion.
+        resolution_policy:
+          type: object
+          allOf:
+          - $ref: '#/components/schemas/ResolutionPolicy'
+          nullable: true
+          description: Declarative resolution rule attached at creation time. Legacy `require_all`
+            inputs are synthesized into an equivalent policy at create time when present.
+            Newer rows typically include this field; nullability covers historical rows and
+            callers that omit it.
+        consumer:
+          type: object
+          allOf:
+          - $ref: '#/components/schemas/Consumer'
+          nullable: true
+          description: Polymorphic identifier of what is waiting on this interaction's resolution.
+            Replaces the special-cased `run_id`/`signal_name` pair; the latter remain populated
+            when `consumer.kind=run`.
+        delivery:
+          type: object
+          allOf:
+          - $ref: '#/components/schemas/Delivery'
+          nullable: true
+          description: Optional per-interaction delivery override. When absent, the dispatcher
+            delivers to the app inbox only.
+        outcome:
+          $ref: '#/components/schemas/InteractionValue'
+          description: Final outcome selected by the resolution policy. Omitted while the
+            interaction is still pending.
+        resolved_by:
+          type: string
+          nullable: true
+          description: Short audit string identifying which policy rule fired. Null until
+            the interaction reaches a resolved state.
+        cancel_reason:
+          type: string
+          nullable: true
+          description: Reason recorded when the interaction was cancelled.
+    InteractionListResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      properties:
+        items:
+          type: array
+          description: The list of results for this page.
+          items:
+            $ref: '#/components/schemas/Interaction'
+        has_more:
+          type: boolean
+          description: Whether additional pages are available.
+        next_cursor:
+          type: string
+          description: Opaque cursor to pass as `cursor` on the next request. Absent when
+            `has_more` is false.
+    CreateInteractionRequest:
+      description: Creates an interaction directly. Use the standalone variant with no loop-run
+        side effect, or the run-backed variant that requires both `run_id` and `signal_name`
+        so completion can resume the run. For worker/job usage, prefer the job-scoped route
+        so the server can derive the owning run from the claimed job context.
+      oneOf:
+      - $ref: '#/components/schemas/CreateStandaloneInteractionRequest'
+      - $ref: '#/components/schemas/CreateRunBackedInteractionRequest'
+    CreateStandaloneInteractionRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - kind
+      - title
+      description: Creates a standalone interaction. Completion records the response but does
+        not deliver a loop signal.
+      properties:
+        target_user_ids:
+          type: array
+          items:
+            type: string
+          description: Resolved user IDs to target directly. Agents use their agent principal
+            IDs.
+        kind:
+          $ref: '#/components/schemas/InteractionKind'
+          description: Protocol kind.
+        title:
+          type: string
+          minLength: 1
+          description: Short non-empty title shown to the responder.
+        description:
+          type: string
+          description: Optional longer responder-facing detail or instructions.
+        subject:
+          $ref: '#/components/schemas/InteractionReference'
+          description: Primary work item or artifact the interaction is about.
+        references:
+          type: array
+          items:
+            $ref: '#/components/schemas/InteractionReference'
+          description: Supporting links and related entities.
+        context:
+          type: object
+          additionalProperties: true
+          description: Additional key-value context surfaced in the UI alongside the title
+            and description.
+        tags:
+          $ref: '#/components/schemas/TagMap'
+        properties:
+          type: object
+          additionalProperties: true
+          description: Free-form structured metadata to attach to the interaction.
+        spec:
+          $ref: '#/components/schemas/InteractionSpec'
+          description: Response controls and validation rules rendered to the recipient.
+        require_all:
+          type: boolean
+          description: When true, all target users must respond before the interaction is
+            considered complete. Defaults to false when omitted. Mutually exclusive with `resolution_policy`;
+            prefer the policy form for new code.
+        resolution_policy:
+          $ref: '#/components/schemas/ResolutionPolicy'
+          description: Declarative resolution rule. When supplied the policy evaluator drives
+            completion.
+        consumer:
+          $ref: '#/components/schemas/Consumer'
+          description: Polymorphic identifier of what is waiting on this interaction's resolution.
+            When omitted on a run-backed create request, the server derives a `kind=run` consumer
+            from `run_id` and `signal_name`.
+        delivery:
+          $ref: '#/components/schemas/Delivery'
+          description: Optional per-interaction delivery override.
+        expires_at:
+          type: string
+          format: date-time
+          description: Timestamp after which this interaction expires if not responded to.
+    CreateRunBackedInteractionRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - run_id
+      - signal_name
+      - kind
+      - title
+      description: |-
+        Creates an interaction linked to a loop run for audit. The server derives a `kind=run` consumer from `run_id` and `signal_name`.
+
+        This is an audit-only link: creating an interaction here does not suspend the run, and resolving it does not by itself resume a run. A run only blocks on, and resumes from, human input when the loop definition declares an interaction step — that step creates the interaction and registers the matching wait atomically. Use this endpoint to record a human decision against a run, not to drive run control flow.
+      properties:
+        run_id:
+          type: string
+          description: ID of the loop run to resume when this interaction is completed.
+        signal_name:
+          type: string
+          description: Signal name the interaction will complete against when run-backed.
+        target_user_ids:
+          type: array
+          items:
+            type: string
+          description: Resolved user IDs to target directly. Agents use their agent principal
+            IDs.
+        kind:
+          $ref: '#/components/schemas/InteractionKind'
+          description: Protocol kind.
+        title:
+          type: string
+          minLength: 1
+          description: Short non-empty title shown to the responder.
+        description:
+          type: string
+          description: Optional longer responder-facing detail or instructions.
+        subject:
+          $ref: '#/components/schemas/InteractionReference'
+          description: Primary work item or artifact the interaction is about.
+        references:
+          type: array
+          items:
+            $ref: '#/components/schemas/InteractionReference'
+          description: Supporting links and related entities.
+        context:
+          type: object
+          additionalProperties: true
+          description: Additional key-value context surfaced in the UI alongside the title
+            and description.
+        tags:
+          $ref: '#/components/schemas/TagMap'
+        properties:
+          type: object
+          additionalProperties: true
+          description: Free-form structured metadata to attach to the interaction.
+        spec:
+          $ref: '#/components/schemas/InteractionSpec'
+          description: Response controls and validation rules rendered to the recipient.
+        require_all:
+          type: boolean
+          description: When true, all target users must respond before the interaction is
+            considered complete. Defaults to false when omitted. Mutually exclusive with `resolution_policy`;
+            prefer the policy form for new code.
+        resolution_policy:
+          $ref: '#/components/schemas/ResolutionPolicy'
+          description: Declarative resolution rule. When supplied the policy evaluator drives
+            completion.
+        consumer:
+          $ref: '#/components/schemas/Consumer'
+          description: Polymorphic identifier of what is waiting on this interaction's resolution.
+            When omitted on a run-backed create request, the server derives a `kind=run` consumer
+            from `run_id` and `signal_name`.
+        delivery:
+          $ref: '#/components/schemas/Delivery'
+          description: Optional per-interaction delivery override.
+        expires_at:
+          type: string
+          format: date-time
+          description: Timestamp after which this interaction expires if not responded to.
+    RespondToInteractionRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        action:
+          type: string
+          enum:
+          - submit
+          description: Operation to perform through the canonical response endpoint. `submit`
+            answers the interaction.
+        value:
+          $ref: '#/components/schemas/InteractionValue'
+          description: JSON value supplied by the responder. Required for `submit`.
+        comment:
+          type: string
+          description: Optional free-text comment accompanying the action. Available on every
+            interaction kind and never gated by the spec; the responder may always attach
+            reasoning, caveats, or follow-up notes alongside `value`.
+    CancelInteractionRequest:
+      type: object
+      additionalProperties: false
+      description: Optional payload accompanying a cancel request. The reason is recorded
+        on the interaction and forwarded in the cancellation signal so loops can route to
+        a fallback.
+      properties:
+        reason:
+          type: string
+          description: Free-text reason recorded on the interaction.
     AgentMessagingDMPolicy:
       type: string
       enum:
@@ -6817,6 +8259,9 @@ components:
           description: Per-turn execution timeout in seconds for this platform agent. Omit
             or `0` to use the platform default (600s / 10 minutes); a loop step's own timeout
             overrides it for that step.
+        compaction_policy:
+          $ref: '#/components/schemas/SessionCompactionPolicy'
+          description: Default session-compaction policy new sessions inherit from this agent.
         tags:
           $ref: '#/components/schemas/TagMap'
           description: Initial labels used for filtering, ownership, or automation.
@@ -6882,9 +8327,136 @@ components:
           - inactive
           description: 'Replacement agent status: `active` or `inactive`. Use DELETE to delete
             the agent.'
+        compaction_policy:
+          $ref: '#/components/schemas/SessionCompactionPolicy'
+          description: Replacement default session-compaction policy. Send an empty object
+            to clear the default and fall back to server defaults.
         tags:
           $ref: '#/components/schemas/TagMap'
           description: Replacement labels; send an empty object to clear all tags.
+    MemoryKind:
+      type: string
+      enum:
+      - fact
+      - preference
+      - episode
+      - summary
+      description: 'Classifies a memory entry. Kinds carry different retention and compaction
+        semantics: facts and preferences are durable, episodes are the primary input to compaction,
+        and a summary is the compacted product of other entries.'
+    AgentMemory:
+      type: object
+      additionalProperties: false
+      description: 'Summary of an agent''s private memory: how many entries it holds, a breakdown
+        by kind, and when it last changed.'
+      required:
+      - agent_id
+      - entry_count
+      - counts_by_kind
+      properties:
+        agent_id:
+          type: string
+          description: The agent that owns this memory.
+        entry_count:
+          type: integer
+          description: Number of entries currently held.
+        counts_by_kind:
+          type: object
+          additionalProperties:
+            type: integer
+          description: Entry counts keyed by memory kind.
+        updated_at:
+          type: string
+          format: date-time
+          description: When any entry was last changed, when there are entries.
+    AgentMemoryEntry:
+      type: object
+      additionalProperties: false
+      description: A single durable memory in an agent's private memory, identified by a stable
+        key the agent chose.
+      required:
+      - key
+      - kind
+      - entry_id
+      - importance
+      - pinned
+      - version
+      - created_at
+      - updated_at
+      properties:
+        key:
+          type: string
+          description: Stable identifier the agent chose for this memory.
+        kind:
+          $ref: '#/components/schemas/MemoryKind'
+        content:
+          type: string
+          description: The remembered content.
+        metadata:
+          type: object
+          additionalProperties: true
+          description: Structured metadata stored alongside the memory (provenance, tags,
+            …).
+        importance:
+          type: integer
+          description: Rank from 0 to 100 used by compaction; higher is kept longer.
+        pinned:
+          type: boolean
+          description: Whether the entry is exempt from compaction.
+        entry_id:
+          type: string
+          description: Identifier of this memory entry.
+        version:
+          type: integer
+          description: Monotonic version, incremented on each update.
+        created_at:
+          type: string
+          format: date-time
+          description: When the entry was first remembered.
+        updated_at:
+          type: string
+          format: date-time
+          description: When the entry was last updated.
+    AgentMemoryEntryListResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - has_more
+      properties:
+        items:
+          type: array
+          description: Memory entries in the current page.
+          items:
+            $ref: '#/components/schemas/AgentMemoryEntry'
+        has_more:
+          type: boolean
+          description: Whether more entries follow this page.
+        next_cursor:
+          type: string
+          description: Cursor to fetch the next page, when has_more is true.
+    PutAgentMemoryEntryRequest:
+      type: object
+      additionalProperties: false
+      description: Content for a memory entry. The key comes from the path.
+      properties:
+        content:
+          type: string
+          description: The content to remember.
+        kind:
+          $ref: '#/components/schemas/MemoryKind'
+        metadata:
+          type: object
+          additionalProperties: true
+          description: Optional structured metadata to store alongside the memory.
+        importance:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: Optional importance from 0 to 100; higher is kept longer during compaction.
+        pinned:
+          type: boolean
+          description: Pin to exempt this memory from compaction.
     SessionMessageRole:
       type: string
       enum:
@@ -6966,6 +8538,19 @@ components:
           description: Messages in this page, ordered by `sequence` ascending.
           items:
             $ref: '#/components/schemas/SessionMessage'
+        has_more:
+          type: boolean
+          description: True when more messages exist past this page in the query's scan direction.
+        next_sequence:
+          type: integer
+          format: int64
+          description: Sequence of the last (highest) item — pass back as `after_sequence`
+            to page forward (newer).
+        prev_sequence:
+          type: integer
+          format: int64
+          description: Sequence of the first (lowest) item — pass back as `before_sequence`
+            with `order=desc` to page backward (older).
     ToolkitAction:
       type: object
       additionalProperties: false
@@ -7152,20 +8737,21 @@ components:
     AgentTurnStatus:
       type: string
       enum:
+      - queued
       - running
       - waiting
       - completed
       - failed
       - cancelled
-      description: 'Agent turn lifecycle status: `running`, `waiting`, `completed`, `failed`,
-        or `cancelled`.'
+      description: 'Agent turn lifecycle status: `queued`, `running`, `waiting`, `completed`,
+        `failed`, or `cancelled`.'
     AgentTurn:
       type: object
       additionalProperties: false
       description: One attempt of an agent running the agent loop — the unit that produces
-        a transcript. A turn is triggered either by a loop step (run_id + step_id) or an inbound
-        channel message (channel_exchange_id); the two are mutually exclusive. Its messages
-        are read via the turn's transcript endpoint.
+        a transcript. A turn is triggered by a direct send to the session, a loop step (run_id
+        + step_key), or an inbound channel message (channel_exchange_id). Its messages are
+        read via the turn's transcript endpoint.
       required:
       - id
       - agent_id
@@ -7234,6 +8820,14 @@ components:
           description: Turns in this session, ordered by creation time.
           items:
             $ref: '#/components/schemas/AgentTurn'
+        has_more:
+          type: boolean
+          description: True when more turns exist past this page.
+        next_cursor:
+          type: string
+          nullable: true
+          description: Opaque cursor to pass as `cursor` on the next request. Null when `has_more`
+            is false.
     Session:
       type: object
       additionalProperties: false
@@ -7296,9 +8890,15 @@ components:
           type: string
           description: Provider for the recorded `model`.
         compaction_policy:
-          type: object
-          additionalProperties: true
-          description: Per-session overrides for the message-compaction policy.
+          $ref: '#/components/schemas/SessionCompactionPolicy'
+          description: Resolved message-compaction policy in effect for this session.
+        latest_compaction:
+          $ref: '#/components/schemas/SessionCompactionBoundary'
+          nullable: true
+          description: The most recent compaction marker in the transcript, or null when the
+            session has never been compacted. Delineates summarized history (sequences at
+            or below `covers_through_sequence`) from the live tail. Returned on the single-session
+            read; absent from list entries.
         message_count:
           type: integer
           description: Total messages currently in the session, including compaction summaries.
@@ -7349,6 +8949,14 @@ components:
           description: The list of results for this page.
           items:
             $ref: '#/components/schemas/Session'
+        has_more:
+          type: boolean
+          description: True when more sessions exist past this page.
+        next_cursor:
+          type: string
+          nullable: true
+          description: Opaque cursor for the next page — pass back as `cursor`. Null when
+            `has_more` is false.
     UpdateSessionRequest:
       type: object
       additionalProperties: false
@@ -7361,18 +8969,208 @@ components:
           $ref: '#/components/schemas/SessionStatus'
           description: Lifecycle status. `active` restores archived sessions; `deleted` is
             terminal.
-    SessionStreamEvent:
+        compaction_policy:
+          $ref: '#/components/schemas/SessionCompactionPolicy'
+          description: Partial patch to the session's compaction policy. Only the supplied
+            fields change; omitted fields keep their current values.
+    SessionLifecycleFrame:
+      allOf:
+      - $ref: '#/components/schemas/SessionEvent'
+      description: 'Durable session lifecycle frame. SSE messages carrying this shape include
+        `id: <sequence>`, and that value is the only cursor clients should persist for `after_sequence`
+        or `Last-Event-ID` resume.'
+    SessionStreamFrame:
+      oneOf:
+      - $ref: '#/components/schemas/SessionLifecycleFrame'
+      - $ref: '#/components/schemas/GenerationDeltaFrame'
+      description: JSON payload of a single `data:` line on the session event SSE stream.
+        Durable lifecycle frames are replayable and carry an SSE `id:`; `generation.delta`
+        frames are live-only previews and do not.
+    SessionEvent:
       type: object
-      additionalProperties: true
+      additionalProperties: false
+      description: One durable, per-session lifecycle event in the session event log.
       required:
       - session_id
-      description: JSON payload of a single `data:` line on the session event stream. The
-        SSE `event:` field carries the event type (e.g. `generation.delta`); this object carries
-        the event-specific fields. Additional fields beyond `session_id` vary by event type.
+      - event_type
+      - sequence
+      - seq
+      - created_at
       properties:
         session_id:
           type: string
-          description: The session this event belongs to.
+          description: Session this event belongs to.
+        agent_turn_id:
+          type: string
+          description: Turn that produced this event, when set.
+        event_type:
+          type: string
+          description: Lifecycle event type, e.g. `user.message`, `tool.call`, or `turn.completed`.
+        sequence:
+          type: integer
+          format: int64
+          description: Monotonic per-session sequence number; pass as `after_sequence` to
+            resume.
+        seq:
+          type: integer
+          format: int64
+          deprecated: true
+          description: Deprecated alias for `sequence`, kept for v1 compatibility.
+        payload:
+          $ref: '#/components/schemas/SessionEventPayload'
+        created_at:
+          type: string
+          format: date-time
+          description: Server timestamp when the event was recorded.
+    SessionEventPayload:
+      anyOf:
+      - $ref: '#/components/schemas/SessionUserMessagePayload'
+      - $ref: '#/components/schemas/TurnStartedPayload'
+      - $ref: '#/components/schemas/AgentMessagePayload'
+      - $ref: '#/components/schemas/ToolCallPayload'
+      - $ref: '#/components/schemas/ToolResultPayload'
+      - $ref: '#/components/schemas/TurnWaitingPayload'
+      - $ref: '#/components/schemas/TurnCompletedPayload'
+      - $ref: '#/components/schemas/TurnFailedPayload'
+      - $ref: '#/components/schemas/TurnCancelledPayload'
+      - $ref: '#/components/schemas/CompactionCreatedPayload'
+      - $ref: '#/components/schemas/GenericEventPayload'
+      description: Typed payloads for common durable session event types.
+    SessionUserMessagePayload:
+      type: object
+      additionalProperties: true
+      properties:
+        message:
+          type: object
+          additionalProperties: true
+        content:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        turn_id:
+          type: string
+    TurnStartedPayload:
+      type: object
+      additionalProperties: true
+      properties:
+        turn_id:
+          type: string
+        input:
+          type: object
+          additionalProperties: true
+    AgentMessagePayload:
+      type: object
+      additionalProperties: true
+      properties:
+        message:
+          type: object
+          additionalProperties: true
+        output:
+          type: object
+          additionalProperties: true
+        content:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+    ToolCallPayload:
+      type: object
+      additionalProperties: true
+      properties:
+        tool_call_id:
+          type: string
+        name:
+          type: string
+        arguments:
+          type: object
+          additionalProperties: true
+    ToolResultPayload:
+      type: object
+      additionalProperties: true
+      properties:
+        tool_call_id:
+          type: string
+        name:
+          type: string
+        result:
+          type: object
+          additionalProperties: true
+        error:
+          type: string
+    TurnWaitingPayload:
+      type: object
+      additionalProperties: true
+      properties:
+        turn_id:
+          type: string
+        reason:
+          type: string
+        wait:
+          type: object
+          additionalProperties: true
+    TurnCompletedPayload:
+      type: object
+      additionalProperties: true
+      properties:
+        output:
+          type: object
+          additionalProperties: true
+        usage:
+          type: object
+          additionalProperties: true
+    TurnFailedPayload:
+      type: object
+      additionalProperties: true
+      properties:
+        error:
+          type: string
+        error_type:
+          type: string
+    TurnCancelledPayload:
+      type: object
+      additionalProperties: true
+      properties:
+        reason:
+          type: string
+    CompactionCreatedPayload:
+      type: object
+      additionalProperties: true
+      description: 'Payload of a `compaction.created` event, emitted when the session transcript
+        is summarized. The event is non-terminal: it never closes the session stream, so a
+        live consumer observes a compaction landing inline.'
+      properties:
+        message_id:
+          type: string
+          description: Id of the compaction summary message appended to the transcript.
+        covers_through_sequence:
+          type: integer
+          description: Highest message sequence the new summary covers — the before/after
+            boundary.
+        message_count:
+          type: integer
+          description: Number of transcript messages folded into this summary.
+        summary_model:
+          type: string
+          description: Model that produced the summary.
+    SessionEventListResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      properties:
+        items:
+          type: array
+          description: Session events in this page, ordered by `sequence` ascending.
+          items:
+            $ref: '#/components/schemas/SessionEvent'
+        has_more:
+          type: boolean
+          description: True when more events exist past this page.
+        next_sequence:
+          type: integer
+          format: int64
+          description: Sequence of the last item — pass back as `after_sequence` to continue.
     AppendSessionMessagesRequest:
       type: object
       additionalProperties: false
@@ -7424,6 +9222,26 @@ components:
           type: string
           format: date-time
           description: Caller-supplied creation timestamp. The server assigns one if absent.
+    SessionCompactionBoundary:
+      type: object
+      additionalProperties: false
+      description: Pointer to the latest compaction marker in a session's transcript. The
+        marker is itself a transcript message (role `compaction`); everything at or below
+        `covers_through_sequence` is summarized history.
+      required:
+      - message_id
+      - sequence
+      - covers_through_sequence
+      properties:
+        message_id:
+          type: string
+          description: Id of the compaction summary message in the transcript.
+        sequence:
+          type: integer
+          description: Transcript sequence of the compaction marker itself.
+        covers_through_sequence:
+          type: integer
+          description: Highest message sequence this summary covers — the before/after boundary.
     CreateSessionRequest:
       type: object
       additionalProperties: false
@@ -7454,25 +9272,29 @@ components:
         model:
           type: string
           description: Model to record on the session.
+        compaction_policy:
+          $ref: '#/components/schemas/SessionCompactionPolicy'
+          description: Per-session compaction overrides applied when the session is first
+            created. Merged over the agent's default policy and server defaults. Ignored when
+            an existing session is resolved.
         metadata:
           type: object
           additionalProperties: true
           description: Free-form caller metadata for the session.
-    SendSessionEventInput:
+    StartTurnRequest:
       type: object
       additionalProperties: false
-      description: One input event in a send. Phase 1 supports a single `user.message`.
+      description: Caller input that starts an agent turn in a session.
       required:
       - content
       properties:
-        type:
+        role:
           type: string
           enum:
-          - user.message
-          description: Input event type. Defaults to `user.message`.
-        role:
-          $ref: '#/components/schemas/SessionMessageRole'
-          description: Role to store for the input message. Defaults to `user`.
+          - user
+          default: user
+          description: Role of the input message. A turn carries caller input, so only `user`
+            is accepted; defaults to `user` when omitted.
         content:
           type: array
           minItems: 1
@@ -7480,46 +9302,35 @@ components:
           items:
             type: object
             additionalProperties: true
-    SendSessionEventsRequest:
-      type: object
-      additionalProperties: false
-      description: Caller input to append and run against a session.
-      required:
-      - events
-      properties:
-        events:
-          type: array
-          minItems: 1
-          maxItems: 1
-          description: Input events to send. Phase 1 accepts exactly one `user.message`.
-          items:
-            $ref: '#/components/schemas/SendSessionEventInput'
         idempotency_key:
           type: string
-          description: Dedup key scoped to the session. A repeat send with the same key returns
-            the existing invocation's cursor and writes nothing new.
+          description: Dedup key scoped to the session. A repeat call with the same key resumes
+            the existing turn and writes nothing new.
         metadata:
           type: object
           additionalProperties: true
           description: Free-form caller metadata attached to the input message.
-    SessionInvocationAck:
+    TurnAck:
       type: object
       additionalProperties: false
-      description: Acknowledgement that an invocation started, with a stream cursor.
+      description: Acknowledgement that a turn started, with a stream cursor.
       required:
       - session
-      - seq
+      - turn
+      - after_sequence
       properties:
         session:
           $ref: '#/components/schemas/Session'
-        seq:
+        turn:
+          $ref: '#/components/schemas/AgentTurn'
+        after_sequence:
           type: integer
           format: int64
           description: The durable event sequence cursor to stream from. Pass it as `after_sequence`
-            to the events stream to follow this invocation.
+            to `GET .../events` to follow this turn.
         deduped:
           type: boolean
-          description: True when a repeated idempotency key returned an existing invocation.
+          description: True when a repeated idempotency key resumed an existing turn.
     Loop:
       type: object
       additionalProperties: false
@@ -8465,13 +10276,10 @@ components:
           description: Managed environment to route worker-backed model calls to.
         provider:
           type: string
-          description: Provider or worker route name.
+          description: Provider id advertised by a local worker when `mode` is `worker`.
         model:
           type: string
           description: Model identifier for this route.
-        queue:
-          type: string
-          description: Worker queue for customer-worker model calls.
     LoopActionStep:
       type: object
       additionalProperties: false
@@ -9228,9 +11036,9 @@ components:
         event_type:
           type: string
           description: |-
-            Event type from the run-stream taxonomy (e.g. `run.started`, `step.completed`, `wait.opened`, `action.called`, `action.completed`, `action.failed`, `artifact.created`, `limit.reached`, `usage.recorded`).
+            Event type from the run-stream taxonomy (e.g. `run.started`, `step.completed`, `wait.opened`, `action.called`, `action.completed`, `action.failed`, `artifact.created`, `limit.reached`).
 
-            Guardrail events: `run.budget_exceeded` fires when the budget halts the run at a checkpoint (payload: `credit_budget`, `credit_spent`, `percent_used`, plus the `step` it halted before). `usage.recorded` payloads carry `step_key`, the event's `credit_cost`, its `budget_cost` (rate-card cost counted against the run budget, nonzero even for BYOK), and the cumulative `run_credit_spent`.
+            Guardrail events: `run.budget_exceeded` fires when the budget halts the run at a checkpoint (payload: `credit_budget`, `credit_spent`, `percent_used`, plus the `step` it halted before). Metered spend is recorded in the billing ledger and denormalized onto the run's `credit_spent`; it is not represented as a timeline event.
         step_id:
           type: string
           nullable: true
@@ -9240,9 +11048,7 @@ components:
           nullable: true
           description: Legacy alias for the loop step ID this event belongs to, when applicable.
         payload:
-          type: object
-          additionalProperties: true
-          description: Event-type-specific payload. See the run-event taxonomy for shapes.
+          $ref: '#/components/schemas/RunEventPayload'
         created_at:
           type: string
           format: date-time
@@ -9257,6 +11063,314 @@ components:
         payload:
           agent_id: agent_5n8p2q7m4x9r3v6t
         created_at: '2026-06-15T14:30:10Z'
+    LoopRunLifecycleFrame:
+      allOf:
+      - $ref: '#/components/schemas/LoopRunEvent'
+      description: 'Durable run lifecycle frame. SSE messages carrying this shape include
+        `id: <sequence>`, and that value is the only cursor clients should persist for `after_sequence`
+        or `Last-Event-ID` resume.'
+    LoopRunStreamFrame:
+      oneOf:
+      - $ref: '#/components/schemas/LoopRunLifecycleFrame'
+      - $ref: '#/components/schemas/GenerationDeltaFrame'
+      description: JSON payload of a single `data:` line on the run event SSE stream. Durable
+        lifecycle frames are replayable and carry an SSE `id:`; `generation.delta` frames
+        are live-only previews and do not.
+    RunEventPayload:
+      anyOf:
+      - $ref: '#/components/schemas/RunStartedPayload'
+      - $ref: '#/components/schemas/WaitPayload'
+      - $ref: '#/components/schemas/RunResumedPayload'
+      - $ref: '#/components/schemas/RunCompletedPayload'
+      - $ref: '#/components/schemas/RunFailedPayload'
+      - $ref: '#/components/schemas/RunCancelledPayload'
+      - $ref: '#/components/schemas/StepStartedPayload'
+      - $ref: '#/components/schemas/StepCompletedPayload'
+      - $ref: '#/components/schemas/StepFailedPayload'
+      - $ref: '#/components/schemas/StepRetriedPayload'
+      - $ref: '#/components/schemas/StepResumedPayload'
+      - $ref: '#/components/schemas/StepSkippedPayload'
+      - $ref: '#/components/schemas/ActionCalledPayload'
+      - $ref: '#/components/schemas/ActionCompletedPayload'
+      - $ref: '#/components/schemas/ActionFailedPayload'
+      - $ref: '#/components/schemas/ActionRetriedPayload'
+      - $ref: '#/components/schemas/ActionResultPayload'
+      - $ref: '#/components/schemas/CheckVerdictPayload'
+      - $ref: '#/components/schemas/InteractionRespondedPayload'
+      - $ref: '#/components/schemas/WaitResumedPayload'
+      - $ref: '#/components/schemas/WaitTimedOutPayload'
+      - $ref: '#/components/schemas/BudgetExceededPayload'
+      - $ref: '#/components/schemas/ProgressStalledPayload'
+      - $ref: '#/components/schemas/LimitReachedPayload'
+      - $ref: '#/components/schemas/ArtifactCreatedPayload'
+      - $ref: '#/components/schemas/GenericEventPayload'
+      description: Typed payloads for common durable run event types.
+    RunStartedPayload:
+      type: object
+      additionalProperties: true
+      properties:
+        loop_id:
+          type: string
+        loop_version_id:
+          type: string
+        source_event_id:
+          type: string
+        trigger_id:
+          type: string
+    RunResumedPayload:
+      type: object
+      additionalProperties: true
+      properties:
+        step:
+          type: string
+        reason:
+          type: string
+    RunCompletedPayload:
+      type: object
+      additionalProperties: true
+      properties:
+        output:
+          type: object
+          additionalProperties: true
+    RunFailedPayload:
+      type: object
+      additionalProperties: true
+      properties:
+        error:
+          type: string
+        error_type:
+          type: string
+        step:
+          type: string
+    RunCancelledPayload:
+      type: object
+      additionalProperties: true
+      properties:
+        reason:
+          type: string
+    StepStartedPayload:
+      type: object
+      additionalProperties: true
+      properties:
+        step:
+          type: string
+        kind:
+          type: string
+        agent_id:
+          type: string
+    StepCompletedPayload:
+      type: object
+      additionalProperties: true
+      properties:
+        step:
+          type: string
+        output:
+          type: object
+          additionalProperties: true
+    StepFailedPayload:
+      type: object
+      additionalProperties: true
+      properties:
+        step:
+          type: string
+        error:
+          type: string
+        error_type:
+          type: string
+    StepRetriedPayload:
+      type: object
+      additionalProperties: true
+      properties:
+        step:
+          type: string
+        attempt:
+          type: integer
+        max_attempts:
+          type: integer
+        error:
+          type: string
+    StepResumedPayload:
+      type: object
+      additionalProperties: true
+      properties:
+        step:
+          type: string
+        kind:
+          type: string
+    StepSkippedPayload:
+      type: object
+      additionalProperties: true
+      properties:
+        step:
+          type: string
+        kind:
+          type: string
+        reason:
+          type: string
+    ActionCalledPayload:
+      type: object
+      additionalProperties: true
+      properties:
+        action:
+          type: string
+        step:
+          type: string
+        parameters:
+          type: object
+          additionalProperties: true
+    ActionCompletedPayload:
+      type: object
+      additionalProperties: true
+      properties:
+        action:
+          type: string
+        step:
+          type: string
+        result:
+          type: object
+          additionalProperties: true
+    ActionFailedPayload:
+      type: object
+      additionalProperties: true
+      properties:
+        action:
+          type: string
+        step:
+          type: string
+        error:
+          type: string
+        error_type:
+          type: string
+    ActionRetriedPayload:
+      type: object
+      additionalProperties: true
+      properties:
+        action:
+          type: string
+        attempt:
+          type: integer
+        max_attempts:
+          type: integer
+    ActionResultPayload:
+      type: object
+      additionalProperties: true
+      properties:
+        action:
+          type: string
+        result:
+          type: object
+          additionalProperties: true
+    CheckVerdictPayload:
+      type: object
+      additionalProperties: true
+      properties:
+        step:
+          type: string
+        verdict:
+          type: string
+        on_fail:
+          type: string
+        failed:
+          type: array
+          items:
+            type: string
+    InteractionRespondedPayload:
+      type: object
+      additionalProperties: true
+      properties:
+        interaction_id:
+          type: string
+        response:
+          type: object
+          additionalProperties: true
+        responder:
+          type: object
+          additionalProperties: true
+    WaitPayload:
+      type: object
+      additionalProperties: true
+      properties:
+        step:
+          type: string
+        wait_id:
+          type: string
+        wait_kind:
+          type: string
+        deadline:
+          type: string
+          format: date-time
+        subject:
+          type: object
+          additionalProperties: true
+    WaitResumedPayload:
+      type: object
+      additionalProperties: true
+      properties:
+        step:
+          type: string
+        wait_id:
+          type: string
+        payload:
+          type: object
+          additionalProperties: true
+    WaitTimedOutPayload:
+      type: object
+      additionalProperties: true
+      properties:
+        step:
+          type: string
+        wait_id:
+          type: string
+        reason:
+          type: string
+    BudgetExceededPayload:
+      type: object
+      additionalProperties: true
+      properties:
+        step:
+          type: string
+        credit_spent:
+          type: number
+        credit_budget:
+          type: number
+        percent_used:
+          type: integer
+    ProgressStalledPayload:
+      type: object
+      additionalProperties: true
+      properties:
+        step:
+          type: string
+        tool:
+          type: string
+        duplicate_calls:
+          type: integer
+        limit:
+          type: integer
+    LimitReachedPayload:
+      type: object
+      additionalProperties: true
+      properties:
+        step:
+          type: string
+        limit_kind:
+          type: string
+        used:
+          type: integer
+        limit:
+          type: integer
+    ArtifactCreatedPayload:
+      type: object
+      additionalProperties: true
+      properties:
+        artifact_id:
+          type: string
+        name:
+          type: string
+        content_type:
+          type: string
+        step:
+          type: string
     LoopRunEventListResponse:
       type: object
       additionalProperties: false
@@ -9412,8 +11526,9 @@ components:
         indexed:
           type: boolean
           default: false
-          description: Marks the column as an expected filter/sort field so backends can maintain
-            efficient indexes.
+          deprecated: true
+          description: Compatibility hint retained for older schemas. It does not create a
+            physical database index.
         default:
           description: Default value applied when column is absent on insert
         description:
@@ -9429,7 +11544,8 @@ components:
       required:
       - name
       - columns
-      description: Declared index over one or more table columns.
+      description: Compatibility metadata for older table schemas. Declared indexes do not
+        create physical database indexes.
       properties:
         name:
           type: string
@@ -9445,14 +11561,18 @@ components:
       - columns
       - identity_column
       additionalProperties: false
-      description: Column and index definition for a table. Each table has exactly one required
-        string identity column.
+      description: Column definition for a virtual table. Each table has exactly one required
+        string identity column and may nominate one optional string secondary key column.
       properties:
         identity_column:
           type: string
           minLength: 1
           description: Name of the required string column that uniquely identifies one row
             in this table.
+        secondary_key_column:
+          type: string
+          description: Optional string column projected into the fixed physical `sk` column
+            for efficient secondary lookups. It cannot be changed after creation.
         columns:
           type: array
           description: Ordered list of columns accepted in row data.
@@ -9462,10 +11582,17 @@ components:
           maxItems: 200
         indexes:
           type: array
-          description: Optional declared indexes maintained by the backend.
+          deprecated: true
+          description: Compatibility metadata retained for older schemas. Index declarations
+            do not create physical database indexes.
           items:
             $ref: '#/components/schemas/IndexDef'
           maxItems: 20
+        open:
+          type: boolean
+          default: false
+          description: Allows rows to include undeclared keys while declared columns continue
+            to be validated.
     Table:
       type: object
       additionalProperties: false
@@ -9593,16 +11720,16 @@ components:
         approx_index_bytes:
           type: integer
           format: int64
-          description: Approximate bytes used by table indexes.
+          description: Approximate proportional share of fixed table_rows index bytes.
         indexed_column_count:
           type: integer
-          description: Number of columns with backend-maintained indexes.
+          description: Number of schema columns projected into fixed physical keys.
         declared_index_count:
           type: integer
-          description: Number of indexes declared in the table schema.
+          description: Number of compatibility index declarations stored in the table schema.
         search_index_present:
           type: boolean
-          description: Whether a full-text search index is present for the table.
+          description: Whether the fixed shared full-text search index is present.
         generated_at:
           type: string
           format: date-time
@@ -9672,7 +11799,8 @@ components:
             to agents).
         schema:
           $ref: '#/components/schemas/TableSchema'
-          description: Replacement column and index definition.
+          description: Replacement column and index definition. The identity column and required
+            column settings are immutable after creation; newly added columns must be optional.
     TableRow:
       type: object
       additionalProperties: false
@@ -9813,11 +11941,21 @@ components:
         query:
           type: string
           minLength: 1
-          description: Token-prefix search query. Hyphens and other punctuation split terms.
+          description: Search query. Hyphens and other punctuation split terms for keyword
+            matching.
+        mode:
+          type: string
+          enum:
+          - keyword
+          - semantic
+          - hybrid
+          default: keyword
+          description: Search mode. `keyword` uses token-prefix full-text search, `semantic`
+            uses sidecar embedding similarity, and `hybrid` combines both.
         filter:
           type: object
           additionalProperties: true
-          description: Optional column equality or operator filter applied before text search.
+          description: Optional column equality or operator filter applied before search.
         limit:
           type: integer
           minimum: 1
@@ -10119,6 +12257,9 @@ x-tagGroups:
 - name: Webhooks
   tags:
   - webhooks
+- name: Interactions
+  tags:
+  - interactions
 - name: Agents
   tags:
   - agents

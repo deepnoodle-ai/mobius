@@ -255,7 +255,7 @@ func (h *spriteHold) doPutTask(ctx context.Context) bool {
 		h.logger.Debug("sprite keep-warm: PUT failed", "error", err)
 		return false
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	_, _ = io.Copy(io.Discard, resp.Body)
 	if resp.StatusCode >= 300 {
 		h.logger.Debug("sprite keep-warm: PUT unexpected status", "status", resp.StatusCode)
@@ -281,6 +281,6 @@ func (h *spriteHold) deleteTask() {
 		h.logger.Debug("sprite keep-warm: DELETE failed", "error", err)
 		return
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	_, _ = io.Copy(io.Discard, resp.Body)
 }

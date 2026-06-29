@@ -21,7 +21,7 @@ func registerSessionsCommands(app *cli.App) {
 	sessionsGrp.Alias("session")
 	sessionsGrp.Command("append-session-messages").
 		Description("Append session messages").
-		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
+		AddArg(&cli.Arg{Name: "session-id", Description: "Identifier of the conversation session.", Required: true}).
 		Flags(
 			cli.String("messages", "").Help("[required] Messages to append to the session, in order. Accepts JSON, @file, or @-."),
 			cli.String("model", "").Help("Model that produced these messages."),
@@ -79,8 +79,8 @@ func registerSessionsCommands(app *cli.App) {
 		})
 
 	sessionsGrp.Command("cancel").
-		Description("Cancel a session's active invocation").
-		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
+		Description("Cancel the session's active turn").
+		AddArg(&cli.Arg{Name: "session-id", Description: "Identifier of the conversation session.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -97,10 +97,51 @@ func registerSessionsCommands(app *cli.App) {
 			return printResponse(ctx, "cancelSession", resp.StatusCode(), resp.Body)
 		})
 
+	sessionsGrp.Command("cancel-2").
+		Description("Cancel a session turn").
+		AddArg(&cli.Arg{Name: "session-id", Description: "Identifier of the conversation session.", Required: true}).
+		AddArg(&cli.Arg{Name: "turn-id", Description: "Identifier of a turn within a session.", Required: true}).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			p1 := ctx.Arg(0)
+			p2 := ctx.Arg(1)
+			resp, err := client.CancelTurnWithResponse(ctx.Context(), p0, p1, p2)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "cancelTurn", resp.StatusCode(), resp.Body)
+		})
+
+	sessionsGrp.Command("compact-session").
+		Description("Compact the session transcript now").
+		AddArg(&cli.Arg{Name: "session-id", Description: "Identifier of the conversation session.", Required: true}).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			p1 := ctx.Arg(0)
+			resp, err := client.CompactSessionWithResponse(ctx.Context(), p0, p1)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "compactSession", resp.StatusCode(), resp.Body)
+		})
+
 	sessionsGrp.Command("create").
 		Description("Create or resolve a session").
 		Flags(
 			cli.String("agent-id", "").Help("[required] Agent that owns the session."),
+			cli.String("compaction-policy", "").Help("Controls how a session's transcript is automatically summarized as it grows. On create the supplied… Accepts JSON, @file, or @-."),
 			cli.String("metadata", "").Help("Free-form caller metadata for the session. Accepts JSON, @file, or @-."),
 			cli.String("mode", "").Help("`continue_or_create` (default) resolves an existing session for the `session_key` or creates one; `…"),
 			cli.String("model", "").Help("Model to record on the session."),
@@ -124,6 +165,11 @@ func registerSessionsCommands(app *cli.App) {
 			}
 			if ctx.IsSet("agent-id") {
 				body.AgentId = ctx.String("agent-id")
+			}
+			if ctx.IsSet("compaction-policy") {
+				if err := decodeFlagJSON(ctx, "compaction-policy", ctx.String("compaction-policy"), &body.CompactionPolicy); err != nil {
+					return err
+				}
 			}
 			if ctx.IsSet("metadata") {
 				if err := decodeFlagJSON(ctx, "metadata", ctx.String("metadata"), &body.Metadata); err != nil {
@@ -165,7 +211,7 @@ func registerSessionsCommands(app *cli.App) {
 
 	sessionsGrp.Command("delete").
 		Description("Delete session").
-		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
+		AddArg(&cli.Arg{Name: "session-id", Description: "Identifier of the conversation session.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -184,7 +230,7 @@ func registerSessionsCommands(app *cli.App) {
 
 	sessionsGrp.Command("get").
 		Description("Get session").
-		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
+		AddArg(&cli.Arg{Name: "session-id", Description: "Identifier of the conversation session.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -201,6 +247,27 @@ func registerSessionsCommands(app *cli.App) {
 			return printResponse(ctx, "getSession", resp.StatusCode(), resp.Body)
 		})
 
+	sessionsGrp.Command("get-turn").
+		Description("Get a session turn").
+		AddArg(&cli.Arg{Name: "session-id", Description: "Identifier of the conversation session.", Required: true}).
+		AddArg(&cli.Arg{Name: "turn-id", Description: "Identifier of a turn within a session.", Required: true}).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			p1 := ctx.Arg(0)
+			p2 := ctx.Arg(1)
+			resp, err := client.GetSessionTurnWithResponse(ctx.Context(), p0, p1, p2)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "getSessionTurn", resp.StatusCode(), resp.Body)
+		})
+
 	sessionsGrp.Command("list").
 		Description("List sessions").
 		Flags(
@@ -209,6 +276,7 @@ func registerSessionsCommands(app *cli.App) {
 			cli.String("scope", "").Help("Filter by session scope."),
 			cli.String("provider", "").Help("Filter messaging sessions by provider metadata, e.g. `slack` or `telegram`."),
 			cli.String("integration-id", "").Help("Filter to sessions created by this integration, e.g. agent sessions started from a connected provid…"),
+			cli.String("cursor", "").Help("Cursor for pagination (opaque string from previous response)"),
 			cli.Int("limit", "").Help("Maximum number of items to return"),
 		).
 		Use(requireAuth()).
@@ -240,6 +308,10 @@ func registerSessionsCommands(app *cli.App) {
 				v := ctx.String("integration-id")
 				params.IntegrationId = &v
 			}
+			if ctx.IsSet("cursor") {
+				v := api.CursorParam(ctx.String("cursor"))
+				params.Cursor = &v
+			}
 			if ctx.IsSet("limit") {
 				v := api.LimitParam(ctx.Int("limit"))
 				params.Limit = &v
@@ -251,11 +323,50 @@ func registerSessionsCommands(app *cli.App) {
 			return printResponse(ctx, "listSessions", resp.StatusCode(), resp.Body)
 		})
 
+	sessionsGrp.Command("list-events").
+		Description("List or stream session events").
+		AddArg(&cli.Arg{Name: "session-id", Description: "Identifier of the conversation session.", Required: true}).
+		Flags(
+			cli.Int("after-sequence", "").Help("Continuation cursor for sequence-ordered lists. Only include rows whose monotonic per-resource sequ…"),
+			cli.Int("limit", "").Help("Maximum number of items to return"),
+			cli.Int("last-event-id", "").Help("SSE reconnect cursor. The browser EventSource API replays the last event's `id` in this header on a…"),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			p1 := ctx.Arg(0)
+			params := &api.ListSessionEventsParams{}
+			if ctx.IsSet("after-sequence") {
+				v := api.AfterSequenceParam(int64(ctx.Int("after-sequence")))
+				params.AfterSequence = &v
+			}
+			if ctx.IsSet("limit") {
+				v := api.LimitParam(ctx.Int("limit"))
+				params.Limit = &v
+			}
+			if ctx.IsSet("last-event-id") {
+				v := api.LastEventIDParam(int64(ctx.Int("last-event-id")))
+				params.LastEventID = &v
+			}
+			resp, err := client.ListSessionEventsWithResponse(ctx.Context(), p0, p1, params)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "listSessionEvents", resp.StatusCode(), resp.Body)
+		})
+
 	sessionsGrp.Command("list-messages").
 		Description("List session messages").
-		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
+		AddArg(&cli.Arg{Name: "session-id", Description: "Identifier of the conversation session.", Required: true}).
 		Flags(
-			cli.Int("after-sequence", "").Help("Only include messages with sequence greater than this value."),
+			cli.Int("after-sequence", "").Help("Continuation cursor for sequence-ordered lists. Only include rows whose monotonic per-resource sequ…"),
+			cli.Int("before-sequence", "").Help("Backward continuation cursor for sequence-ordered lists. Only include rows whose monotonic per-reso…"),
+			cli.String("order", "").Help("Scan direction for the page. `asc` (the default) returns oldest-first; `desc` returns newest-first …"),
 			cli.Int("limit", "").Help("Maximum number of items to return"),
 		).
 		Use(requireAuth()).
@@ -269,8 +380,16 @@ func registerSessionsCommands(app *cli.App) {
 			p1 := ctx.Arg(0)
 			params := &api.ListSessionMessagesParams{}
 			if ctx.IsSet("after-sequence") {
-				v := ctx.Int("after-sequence")
+				v := api.AfterSequenceParam(int64(ctx.Int("after-sequence")))
 				params.AfterSequence = &v
+			}
+			if ctx.IsSet("before-sequence") {
+				v := api.BeforeSequenceParam(int64(ctx.Int("before-sequence")))
+				params.BeforeSequence = &v
+			}
+			if ctx.IsSet("order") {
+				v := api.ListSessionMessagesParamsOrder(ctx.String("order"))
+				params.Order = &v
 			}
 			if ctx.IsSet("limit") {
 				v := api.LimitParam(ctx.Int("limit"))
@@ -285,7 +404,13 @@ func registerSessionsCommands(app *cli.App) {
 
 	sessionsGrp.Command("list-turns").
 		Description("List session turns").
-		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
+		AddArg(&cli.Arg{Name: "session-id", Description: "Identifier of the conversation session.", Required: true}).
+		Flags(
+			cli.Strings("ids", "").Help("Return exactly the turns with these ids (the transcript-join primitive). When set, pagination and o…"),
+			cli.String("order", "").Help("Scan direction for the page. `asc` (the default) returns oldest-first; `desc` returns newest-first …"),
+			cli.String("cursor", "").Help("Cursor for pagination (opaque string from previous response)"),
+			cli.Int("limit", "").Help("Maximum number of items to return"),
+		).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -295,20 +420,38 @@ func registerSessionsCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			resp, err := client.ListSessionTurnsWithResponse(ctx.Context(), p0, p1)
+			params := &api.ListSessionTurnsParams{}
+			if ctx.IsSet("ids") {
+				v := ctx.Strings("ids")
+				params.Ids = &v
+			}
+			if ctx.IsSet("order") {
+				v := api.ListSessionTurnsParamsOrder(ctx.String("order"))
+				params.Order = &v
+			}
+			if ctx.IsSet("cursor") {
+				v := api.CursorParam(ctx.String("cursor"))
+				params.Cursor = &v
+			}
+			if ctx.IsSet("limit") {
+				v := api.LimitParam(ctx.Int("limit"))
+				params.Limit = &v
+			}
+			resp, err := client.ListSessionTurnsWithResponse(ctx.Context(), p0, p1, params)
 			if err != nil {
 				return err
 			}
 			return printResponse(ctx, "listSessionTurns", resp.StatusCode(), resp.Body)
 		})
 
-	sessionsGrp.Command("send-events").
-		Description("Send input to a session").
-		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
+	sessionsGrp.Command("start-turn").
+		Description("Start an agent turn").
+		AddArg(&cli.Arg{Name: "session-id", Description: "Identifier of the conversation session.", Required: true}).
 		Flags(
-			cli.String("events", "").Help("[required] Input events to send. Phase 1 accepts exactly one `user.message`. Accepts JSON, @file, or @-."),
-			cli.String("idempotency-key", "").Help("Dedup key scoped to the session. A repeat send with the same key returns the existing invocation's …"),
+			cli.String("content", "").Help("[required] Ordered content blocks (text, images) for the input message. Accepts JSON, @file, or @-."),
+			cli.String("idempotency-key", "").Help("Dedup key scoped to the session. A repeat call with the same key resumes the existing turn and writ…"),
 			cli.String("metadata", "").Help("Free-form caller metadata attached to the input message. Accepts JSON, @file, or @-."),
+			cli.String("role", "").Help("Role of the input message. A turn carries caller input, so only `user` is accepted; defaults to `us…"),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -321,12 +464,12 @@ func registerSessionsCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			p1 := ctx.Arg(0)
-			var body api.SendSessionEventsJSONRequestBody
+			var body api.StartTurnJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
 			}
-			if ctx.IsSet("events") {
-				if err := decodeFlagJSON(ctx, "events", ctx.String("events"), &body.Events); err != nil {
+			if ctx.IsSet("content") {
+				if err := decodeFlagJSON(ctx, "content", ctx.String("content"), &body.Content); err != nil {
 					return err
 				}
 			}
@@ -339,50 +482,28 @@ func registerSessionsCommands(app *cli.App) {
 					return err
 				}
 			}
-			if ctx.String("file") == "" && !ctx.IsSet("events") {
-				return fmt.Errorf("--events is required (or supply it via --file)")
+			if ctx.IsSet("role") {
+				v := api.StartTurnRequestRole(ctx.String("role"))
+				body.Role = &v
+			}
+			if ctx.String("file") == "" && !ctx.IsSet("content") {
+				return fmt.Errorf("--content is required (or supply it via --file)")
 			}
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.SendSessionEventsWithResponse(ctx.Context(), p0, p1, body)
+			resp, err := client.StartTurnWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, "sendSessionEvents", resp.StatusCode(), resp.Body)
-		})
-
-	sessionsGrp.Command("stream-session-events").
-		Description("Stream session events").
-		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
-		Flags(
-			cli.Int("after-sequence", "").Help("Resume the stream after this durable event sequence number."),
-		).
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			params := &api.StreamSessionEventsParams{}
-			if ctx.IsSet("after-sequence") {
-				v := int64(ctx.Int("after-sequence"))
-				params.AfterSequence = &v
-			}
-			resp, err := client.StreamSessionEventsWithResponse(ctx.Context(), p0, p1, params)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "streamSessionEvents", resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "startTurn", resp.StatusCode(), resp.Body)
 		})
 
 	sessionsGrp.Command("update").
 		Description("Update session").
-		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
+		AddArg(&cli.Arg{Name: "session-id", Description: "Identifier of the conversation session.", Required: true}).
 		Flags(
+			cli.String("compaction-policy", "").Help("Controls how a session's transcript is automatically summarized as it grows. On create the supplied… Accepts JSON, @file, or @-."),
 			cli.String("status", "").Help("Durable conversation session status: `active`, `archived`, or `deleted`."),
 			cli.String("title", "").Help("Human-readable session title."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
@@ -401,6 +522,11 @@ func registerSessionsCommands(app *cli.App) {
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
 			}
+			if ctx.IsSet("compaction-policy") {
+				if err := decodeFlagJSON(ctx, "compaction-policy", ctx.String("compaction-policy"), &body.CompactionPolicy); err != nil {
+					return err
+				}
+			}
 			if ctx.IsSet("status") {
 				v := api.SessionStatus(ctx.String("status"))
 				body.Status = &v
@@ -409,7 +535,7 @@ func registerSessionsCommands(app *cli.App) {
 				v := ctx.String("title")
 				body.Title = &v
 			}
-			if ctx.String("file") == "" && !ctx.IsSet("status") && !ctx.IsSet("title") {
+			if ctx.String("file") == "" && !ctx.IsSet("compaction-policy") && !ctx.IsSet("status") && !ctx.IsSet("title") {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
 			if ctx.Bool("dry-run") {

@@ -63,11 +63,11 @@ func authMiddleware() cli.Middleware {
 
 		if auth.Source == authSourceProfile {
 			if warning, err := authstore.PermissionWarning(); err == nil && warning != "" {
-				fmt.Fprintf(ctx.Stderr(), "mobius: warning: credentials file %s\n", warning)
+				_, _ = fmt.Fprintf(ctx.Stderr(), "mobius: warning: credentials file %s\n", warning)
 			}
 			if auth.Profile != nil && auth.Profile.Name != "" {
 				if err := authstore.TouchProfile(auth.Profile.Name, time.Now().UTC().Format(time.RFC3339)); err != nil {
-					fmt.Fprintf(ctx.Stderr(), "mobius: warning: update profile last-used: %v\n", err)
+					_, _ = fmt.Fprintf(ctx.Stderr(), "mobius: warning: update profile last-used: %v\n", err)
 				}
 			}
 		}

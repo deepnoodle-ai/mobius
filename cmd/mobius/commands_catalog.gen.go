@@ -84,4 +84,21 @@ func registerCatalogCommands(app *cli.App) {
 			return printResponse(ctx, "listCatalogModels", resp.StatusCode(), resp.Body)
 		})
 
+	catalogGrp.Command("list-worker-models").
+		Description("List worker models").
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			resp, err := client.ListCatalogWorkerModelsWithResponse(ctx.Context(), p0)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "listCatalogWorkerModels", resp.StatusCode(), resp.Body)
+		})
+
 }

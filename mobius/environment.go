@@ -182,7 +182,7 @@ func (c *Client) createArtifactFromFile(ctx context.Context, upload artifactUplo
 }
 
 func writeArtifactMultipart(writer *multipart.Writer, file *os.File, info os.FileInfo, upload artifactUploadRequest, name string) error {
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 	part, err := writer.CreateFormFile("file", filepath.Base(upload.Path))
 	if err != nil {
 		return err
@@ -242,7 +242,7 @@ func (c *Client) DownloadArtifactToFile(ctx context.Context, artifactID, path st
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		payload, _ := io.ReadAll(resp.Body)
 		return nil, fmt.Errorf("mobius: GET %s failed: %s: %s", reqPath, resp.Status, strings.TrimSpace(string(payload)))
@@ -285,10 +285,6 @@ func (c *Client) doJSON(ctx context.Context, method, path string, body any, out 
 	return c.do(ctx, method, path, "application/json", bytes.NewReader(raw), out)
 }
 
-func (c *Client) doMultipart(ctx context.Context, method, path, contentType string, body io.Reader, out any) error {
-	return c.doWithHeaders(ctx, method, path, contentType, body, nil, out)
-}
-
 func (c *Client) do(ctx context.Context, method, path, contentType string, body io.Reader, out any) error {
 	return c.doWithHeaders(ctx, method, path, contentType, body, nil, out)
 }
@@ -318,7 +314,7 @@ func (c *Client) doWithHeaders(ctx context.Context, method, path, contentType st
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	payload, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return err

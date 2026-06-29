@@ -31,7 +31,7 @@ func NewPrintActionTo(w io.Writer) mobius.Action {
 	}
 	return mobius.NewTypedAction("print", func(ctx mobius.Context, params PrintInput) (string, error) {
 		message := fmt.Sprintf(params.Message, params.Args...)
-		fmt.Fprintln(w, message)
+		_, _ = fmt.Fprintln(w, message)
 		return message, nil
 	})
 }

@@ -142,7 +142,7 @@ func NewEnvironmentFileReadAction() mobius.Action {
 		if err != nil {
 			return nil, err
 		}
-		defer file.Close()
+		defer func() { _ = file.Close() }()
 		data, err := io.ReadAll(io.LimitReader(file, int64(limit+1)))
 		if err != nil {
 			return nil, err
@@ -183,7 +183,7 @@ func NewEnvironmentFileWriteAction() mobius.Action {
 		if err != nil {
 			return nil, err
 		}
-		defer file.Close()
+		defer func() { _ = file.Close() }()
 		n, err := file.WriteString(in.Content)
 		if err != nil {
 			return nil, err
@@ -341,7 +341,7 @@ func NewEnvironmentGitDiffAction() mobius.Action {
 }
 
 func NewEnvironmentArtifactPublishAction() mobius.Action {
-	return mobius.NewTypedAction("environment.artifacts.publish", func(ctx mobius.Context, in ArtifactPublishInput) (any, error) {
+	return mobius.NewTypedAction("environment.artifact.publish", func(ctx mobius.Context, in ArtifactPublishInput) (any, error) {
 		path, err := workspacePath(in.Path)
 		if err != nil {
 			return nil, err
@@ -368,7 +368,7 @@ func NewEnvironmentArtifactPublishAction() mobius.Action {
 }
 
 func NewEnvironmentArtifactDownloadAction() mobius.Action {
-	return mobius.NewTypedAction("environment.artifacts.download", func(ctx mobius.Context, in ArtifactDownloadInput) (any, error) {
+	return mobius.NewTypedAction("environment.artifact.download", func(ctx mobius.Context, in ArtifactDownloadInput) (any, error) {
 		if strings.TrimSpace(in.ArtifactID) == "" {
 			return nil, fmt.Errorf("artifact_id is required")
 		}
@@ -541,7 +541,7 @@ func runGitWithCredential(ctx mobius.Context, repoFullName, operation, dir strin
 	if err != nil {
 		return nil, err
 	}
-	defer os.RemoveAll(filepath.Dir(askpass))
+	defer func() { _ = os.RemoveAll(filepath.Dir(askpass)) }()
 	cmd := exec.CommandContext(ctx, "git", args...)
 	if dir != "" {
 		cmd.Dir = dir
@@ -568,7 +568,7 @@ func writeGitAskpass(username, token string) (string, error) {
 	path := filepath.Join(dir, "askpass.sh")
 	script := "#!/bin/sh\ncase \"$1\" in\n*Username*) printf '%s\\n' \"$MOBIUS_GIT_USERNAME\" ;;\n*) printf '%s\\n' \"$MOBIUS_GIT_TOKEN\" ;;\nesac\n"
 	if err := os.WriteFile(path, []byte(script), 0o700); err != nil {
-		os.RemoveAll(dir)
+		_ = os.RemoveAll(dir)
 		return "", err
 	}
 	return path, nil
@@ -619,7 +619,7 @@ func (b *limitedBuffer) Write(p []byte) (int, error) {
 	if b.limit <= 0 {
 		return len(p), nil
 	}
-	remaining := b.limit - b.Buffer.Len()
+	remaining := b.limit - b.Len()
 	if remaining <= 0 {
 		b.truncated = true
 		return len(p), nil

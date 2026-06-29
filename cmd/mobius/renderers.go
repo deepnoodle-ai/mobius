@@ -92,7 +92,7 @@ func renderRunDetail(ctx *cli.Context, body []byte) error {
 	if err := tui.Print(stack, tui.PrintConfig{Output: ctx.Stdout()}); err != nil {
 		return err
 	}
-	fmt.Fprintln(ctx.Stdout())
+	_, _ = fmt.Fprintln(ctx.Stdout())
 	return nil
 }
 
@@ -192,11 +192,4 @@ func asString(v any) string {
 	default:
 		return fmt.Sprintf("%v", x)
 	}
-}
-
-func orDash(s string) string {
-	if s == "" {
-		return "—"
-	}
-	return s
 }

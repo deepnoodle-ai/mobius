@@ -37,7 +37,7 @@ func renderPretty(ctx *cli.Context, body []byte, fields ...string) error {
 	}
 	var v any
 	if err := json.Unmarshal(body, &v); err != nil {
-		fmt.Fprintln(ctx.Stdout(), string(body))
+		_, _ = fmt.Fprintln(ctx.Stdout(), string(body))
 		return nil
 	}
 	obj, ok := v.(map[string]any)
@@ -80,7 +80,7 @@ var preferredColumnOrder = []string{
 // fields become the columns instead — that's the --fields projection.
 func renderListTable(ctx *cli.Context, items []any, hasMore bool, nextCursor string, explicitFields []string) error {
 	if len(items) == 0 {
-		fmt.Fprintln(ctx.Stdout(), "(no results)")
+		_, _ = fmt.Fprintln(ctx.Stdout(), "(no results)")
 		return nil
 	}
 	cols := explicitFields
@@ -113,7 +113,7 @@ func renderListTable(ctx *cli.Context, items []any, hasMore bool, nextCursor str
 	if err := tui.Print(stack, tui.PrintConfig{Output: ctx.Stdout()}); err != nil {
 		return err
 	}
-	fmt.Fprintln(ctx.Stdout())
+	_, _ = fmt.Fprintln(ctx.Stdout())
 	return nil
 }
 
@@ -177,14 +177,14 @@ func renderResourceView(ctx *cli.Context, obj map[string]any, explicitFields []s
 		rows = append(rows, tui.KeyValue(k, formatCell(v)))
 	}
 	if len(rows) == 0 {
-		fmt.Fprintln(ctx.Stdout(), "(empty)")
+		_, _ = fmt.Fprintln(ctx.Stdout(), "(empty)")
 		return nil
 	}
 	view := tui.Stack(rows...)
 	if err := tui.Print(view, tui.PrintConfig{Output: ctx.Stdout()}); err != nil {
 		return err
 	}
-	fmt.Fprintln(ctx.Stdout())
+	_, _ = fmt.Fprintln(ctx.Stdout())
 	return nil
 }
 
@@ -259,13 +259,13 @@ func truncate(s string, max int) string {
 func printJSONFallback(ctx *cli.Context, body []byte) error {
 	var tmp any
 	if err := json.Unmarshal(body, &tmp); err != nil {
-		fmt.Fprintln(ctx.Stdout(), strings.TrimRight(string(body), "\n"))
+		_, _ = fmt.Fprintln(ctx.Stdout(), strings.TrimRight(string(body), "\n"))
 		return nil
 	}
 	pretty, err := json.MarshalIndent(tmp, "", "  ")
 	if err != nil {
 		return err
 	}
-	fmt.Fprintln(ctx.Stdout(), string(pretty))
+	_, _ = fmt.Fprintln(ctx.Stdout(), string(pretty))
 	return nil
 }
