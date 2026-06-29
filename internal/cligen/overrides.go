@@ -38,6 +38,10 @@ var overrides = map[string]Override{
 	// (the group name already carries it).
 	"provisionAgentInbox":       {Command: "provision-inbox"},
 	"saveAgentMessagingBinding": {Command: "save-messaging-binding"},
+	// `put` isn't in the verb list, so the auto-derive keeps the redundant
+	// `agent` token; strip it so the leaf matches its siblings
+	// `get-memory`/`list-memory-entries`/`delete-memory-entry`.
+	"putAgentMemoryEntry": {Command: "put-memory-entry"},
 	// `replaceAgentSkillAssignments`/`replaceAgentToolkitAssignments` keep a
 	// redundant `agent` token the auto-derivation can't strip (the group
 	// already carries it); the matching list ops derive cleanly to
@@ -49,6 +53,11 @@ var overrides = map[string]Override{
 	// `import` isn't in the verb list, so the auto-derive keeps the
 	// redundant `-skill` suffix; strip it.
 	"importSkill": {Command: "import"},
+
+	// --- interactions -----------------------------------------------------
+	// `respond` isn't in the verb list, so the auto-derive keeps the
+	// redundant `-interaction` suffix; strip it (the group already carries it).
+	"respondToInteraction": {Command: "respond"},
 
 	// --- api-keys ---------------------------------------------------------
 	// Drop the redundant `key` token; the group name already carries it.
@@ -72,9 +81,18 @@ var overrides = map[string]Override{
 
 	// --- runs -------------------------------------------------------------
 	// The group name already says "runs"; keep the leaf names verb-first.
-	"signalRun":       {Command: "signal"},
-	"startRun":        {Command: "start"},
-	"streamRunEvents": {Command: "stream"},
+	"signalRun": {Command: "signal"},
+	"startRun":  {Command: "start"},
+
+	// --- sessions ---------------------------------------------------------
+	// `cancelTurn` and `cancelSession` both auto-derive to `cancel` (the
+	// trailing resource word is stripped), so one would land as `cancel-2`.
+	// Name the turn-scoped op explicitly so it joins the turn family
+	// (`get-turn`/`start-turn`/`list-turns`); `cancelSession` keeps `cancel`.
+	"cancelTurn": {Command: "cancel-turn"},
+	// `compact` isn't in the verb list, so the auto-derive keeps the
+	// redundant `-session` suffix; strip it (the group already carries it).
+	"compactSession": {Command: "compact"},
 
 	// --- tables -----------------------------------------------------------
 	// Row operations use verbs the auto-derivation doesn't recognise
@@ -103,6 +121,7 @@ var groupDescriptions = map[string]string{
 	"artifacts":    "Run output artifacts and storage quota",
 	"catalog":      "Available actions and triggerable events",
 	"environments": "Managed execution environments",
+	"interactions": "Information, approval, and review requests between users and agents",
 	"loops":        "Loop definitions, versions, and runs",
 	"projects":     "Projects within the organization",
 	"runs":         "Loop runs",

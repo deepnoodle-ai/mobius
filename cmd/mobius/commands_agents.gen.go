@@ -22,17 +22,17 @@ func registerAgentsCommands(app *cli.App) {
 	agentsGrp.Command("create").
 		Description("Create agent").
 		Flags(
-			cli.String("color", "").Help("Display color for this agent (Mantine palette key, e.g. `indigo`). Optional; empty falls back to a …"),
-			cli.String("compaction-policy", "").Help("Controls how a session's transcript is automatically summarized as it grows. On create the supplied… Accepts JSON, @file, or @-."),
+			cli.String("color", "").Help("Display color for this agent (Mantine palette key, e.g. `indigo`). Optional; empty falls back to a hash-derived color."),
+			cli.String("compaction-policy", "").Help("Controls how a session's transcript is automatically summarized as it grows. On create the supplied fields are merged over the owning… Accepts JSON, @file, or @-."),
 			cli.String("description", "").Help("Optional human-readable description."),
 			cli.String("kind", "").Help("Freeform classification (e.g. \"llm\", \"rpa\", \"integration\")."),
-			cli.String("model", "").Help("Model identifier for platform agents. Any id from `GET /v1/projects/{project_handle}/catalog/models…"),
-			cli.String("model-route", "").Help("Default model route used by built-in messaging and by loop agent steps that do not override the rou… Accepts JSON, @file, or @-."),
+			cli.String("model", "").Help("Model identifier for platform agents. Any id from `GET /v1/projects/{project_handle}/catalog/models`, optionally `provider/`-prefixed (e.g…"),
+			cli.String("model-route", "").Help("Default model route used by built-in messaging and by loop agent steps that do not override the route. Accepts JSON, @file, or @-."),
 			cli.String("name", "").Help("[required] Unique name for this agent. Free-form human-readable label, 1-63 characters."),
 			cli.String("system-prompt", "").Help("Custom system prompt for platform agents. Empty uses the generated default."),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
-			cli.Int("timeout-seconds", "").Help("Per-turn execution timeout in seconds for this platform agent. Omit or `0` to use the platform defa…"),
-			cli.String("tool-presentation", "").Help("Controls how granted actions are surfaced to the model in Mobius-hosted agent turns. `meta` (the de…"),
+			cli.Int("timeout-seconds", "").Help("Per-turn execution timeout in seconds for this platform agent. Omit or `0` to use the platform default (600s / 10 minutes); a loop step's…"),
+			cli.String("tool-presentation", "").Help("Controls how granted actions are surfaced to the model in Mobius-hosted agent turns. `meta` (the default) groups related actions behind…"),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -130,7 +130,7 @@ func registerAgentsCommands(app *cli.App) {
 	agentsGrp.Command("delete-memory-entry").
 		Description("Delete a memory entry").
 		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
-		AddArg(&cli.Arg{Name: "memory-key", Description: "The key identifying a memory entry. Restricted to a path-safe character set (letters, numbers, and …", Required: true}).
+		AddArg(&cli.Arg{Name: "memory-key", Description: "The key identifying a memory entry. Restricted to a path-safe character set (letters, numbers, and `. _ : -`) so it stays reliably…", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -213,7 +213,7 @@ func registerAgentsCommands(app *cli.App) {
 		Flags(
 			cli.String("toolkit-ids", "").Help("Optional comma-separated toolkit subset to apply."),
 			cli.String("skill-name", "").Help("Optional assigned skill name to preselect as active."),
-			cli.String("allowed-tools", "").Help("Optional comma-separated canonical action names, wildcard selectors, or group references to apply a…"),
+			cli.String("allowed-tools", "").Help("Optional comma-separated canonical action names, wildcard selectors, or group references to apply as a per-invocation filter against the…"),
 		).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -325,7 +325,7 @@ func registerAgentsCommands(app *cli.App) {
 		Description("List turn messages").
 		AddArg(&cli.Arg{Name: "turn-id", Description: "Identifier of a turn within a session.", Required: true}).
 		Flags(
-			cli.Int("after-sequence", "").Help("Continuation cursor for sequence-ordered lists. Only include rows whose monotonic per-resource sequ…"),
+			cli.Int("after-sequence", "").Help("Continuation cursor for sequence-ordered lists. Only include rows whose monotonic per-resource sequence is strictly greater than this…"),
 			cli.Int("limit", "").Help("Maximum number of items to return"),
 		).
 		Use(requireAuth()).
@@ -429,14 +429,14 @@ func registerAgentsCommands(app *cli.App) {
 			return printResponse(ctx, "provisionAgentInbox", resp.StatusCode(), resp.Body)
 		})
 
-	agentsGrp.Command("put-agent-memory-entry").
+	agentsGrp.Command("put-memory-entry").
 		Description("Create or update a memory entry").
 		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
-		AddArg(&cli.Arg{Name: "memory-key", Description: "The key identifying a memory entry. Restricted to a path-safe character set (letters, numbers, and …", Required: true}).
+		AddArg(&cli.Arg{Name: "memory-key", Description: "The key identifying a memory entry. Restricted to a path-safe character set (letters, numbers, and `. _ : -`) so it stays reliably…", Required: true}).
 		Flags(
 			cli.String("content", "").Help("The content to remember."),
 			cli.Int("importance", "").Help("Optional importance from 0 to 100; higher is kept longer during compaction."),
-			cli.String("kind", "").Help("Classifies a memory entry. Kinds carry different retention and compaction semantics: facts and pref…"),
+			cli.String("kind", "").Help("Classifies a memory entry. Kinds carry different retention and compaction semantics: facts and preferences are durable, episodes are the…"),
 			cli.String("metadata", "").Help("Optional structured metadata to store alongside the memory. Accepts JSON, @file, or @-."),
 			cli.Bool("pinned", "").Help("Pin to exempt this memory from compaction."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
@@ -575,8 +575,8 @@ func registerAgentsCommands(app *cli.App) {
 			cli.Bool("enabled", "").Help("Whether the binding is active and the agent responds on this provider."),
 			cli.String("integration-id", "").Help("[required] ID of the connected integration that backs this binding."),
 			cli.Bool("mentions", "").Help("Respond when the agent is @-mentioned."),
-			cli.String("model-route", "").Help("Default model route used by built-in messaging and by loop agent steps that do not override the rou… Accepts JSON, @file, or @-."),
-			cli.String("provider", "").Help("[required] Provider supported by built-in agent messaging: `slack`, `telegram`, or `linear` (Linear agent sess…"),
+			cli.String("model-route", "").Help("Default model route used by built-in messaging and by loop agent steps that do not override the route. Accepts JSON, @file, or @-."),
+			cli.String("provider", "").Help("[required] Provider supported by built-in agent messaging: `slack`, `telegram`, or `linear` (Linear agent sessions)."),
 			cli.Bool("replace-existing", "").Help("When enabling this binding, disable any other active agent binding for the same provider account."),
 			cli.String("reply-mode", "").Help("Reply mode for built-in messaging; currently `auto`."),
 			cli.Strings("sender-allow", "").Help("Sender IDs allowed to trigger the agent (empty means no allowlist)."),
@@ -663,18 +663,18 @@ func registerAgentsCommands(app *cli.App) {
 		Description("Update agent").
 		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		Flags(
-			cli.String("color", "").Help("Replacement display color (Mantine palette key, e.g. `indigo`). Pass empty string to clear and fall…"),
-			cli.String("compaction-policy", "").Help("Controls how a session's transcript is automatically summarized as it grows. On create the supplied… Accepts JSON, @file, or @-."),
+			cli.String("color", "").Help("Replacement display color (Mantine palette key, e.g. `indigo`). Pass empty string to clear and fall back to a hash-derived color."),
+			cli.String("compaction-policy", "").Help("Controls how a session's transcript is automatically summarized as it grows. On create the supplied fields are merged over the owning… Accepts JSON, @file, or @-."),
 			cli.String("description", "").Help("Replacement description."),
 			cli.String("kind", "").Help("Replacement freeform agent classification (e.g. `llm`, `rpa`)."),
-			cli.String("model", "").Help("Replacement model identifier for platform agents (any id from `GET /v1/projects/{project_handle}/ca…"),
-			cli.String("model-route", "").Help("Default model route used by built-in messaging and by loop agent steps that do not override the rou… Accepts JSON, @file, or @-."),
+			cli.String("model", "").Help("Replacement model identifier for platform agents (any id from `GET /v1/projects/{project_handle}/catalog/models`, optionally…"),
+			cli.String("model-route", "").Help("Default model route used by built-in messaging and by loop agent steps that do not override the route. Accepts JSON, @file, or @-."),
 			cli.String("name", "").Help("Free-form human-readable label, 1-63 characters; must be unique within the project."),
 			cli.String("status", "").Help("Replacement agent status: `active` or `inactive`. Use DELETE to delete the agent."),
 			cli.String("system-prompt", "").Help("Replacement system prompt for platform agents."),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
-			cli.Int("timeout-seconds", "").Help("Replacement per-turn execution timeout in seconds for this platform agent. `0` resets to the platfo…"),
-			cli.String("tool-presentation", "").Help("Controls how granted actions are surfaced to the model in Mobius-hosted agent turns. `meta` (the de…"),
+			cli.Int("timeout-seconds", "").Help("Replacement per-turn execution timeout in seconds for this platform agent. `0` resets to the platform default (600s / 10 minutes); a loop…"),
+			cli.String("tool-presentation", "").Help("Controls how granted actions are surfaced to the model in Mobius-hosted agent turns. `meta` (the default) groups related actions behind…"),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).

@@ -318,9 +318,14 @@ func isBuiltin(t string) bool {
 
 // summarizeHelp turns a verbose OpenAPI description into a one-line CLI
 // help string. It takes the first paragraph (up to a blank line, the
-// schema-doc convention for "short summary"), collapses whitespace, and
-// hard-caps the result so wonton's non-wrapping help renderer doesn't
-// truncate it at the terminal edge.
+// schema-doc convention for "short summary") and collapses whitespace.
+//
+// wonton's help renderer prints the string verbatim and lets the terminal
+// soft-wrap, so a full sentence or two is fine; we only shorten genuinely
+// long descriptions. When we do, we break on a word boundary rather than a
+// fixed offset so we never sever a word, an enum value, or a `code span`
+// mid-token (the old fixed 100-char cut left dangling fragments like
+// "tooling t…" and hid trailing enum values).
 func summarizeHelp(s string) string {
 	s = strings.TrimSpace(s)
 	if s == "" {
@@ -330,11 +335,15 @@ func summarizeHelp(s string) string {
 		s = s[:idx]
 	}
 	s = strings.Join(strings.Fields(s), " ")
-	const maxHelpLen = 100
-	if len(s) > maxHelpLen {
-		s = s[:maxHelpLen-1] + "…"
+	const maxHelpLen = 140
+	if len(s) <= maxHelpLen {
+		return s
 	}
-	return s
+	cut := strings.LastIndexByte(s[:maxHelpLen], ' ')
+	if cut <= 0 {
+		cut = maxHelpLen - 1
+	}
+	return strings.TrimRight(s[:cut], " ,;:.") + "…"
 }
 
 // isReservedFlag reports whether a body-field flag name would collide with a

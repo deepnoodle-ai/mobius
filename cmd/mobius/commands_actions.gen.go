@@ -22,12 +22,12 @@ func registerActionsCommands(app *cli.App) {
 	actionsGrp.Command("create").
 		Description("Create action").
 		Flags(
-			cli.String("annotations", "").Help("Request hints that describe the safe-use properties of the action. Used by the engine and tooling t… Accepts JSON, @file, or @-."),
+			cli.String("annotations", "").Help("Request hints that describe the safe-use properties of the action. Used by the engine and tooling to decide retry behavior, dry-run… Accepts JSON, @file, or @-."),
 			cli.String("description", "").Help("Markdown-safe description of what the action does."),
-			cli.String("endpoint-kind", "").Help("Backing kind for the action. `http` actions POST to `endpoint_url` with a Mobius signature. `worker…"),
+			cli.String("endpoint-kind", "").Help("Backing kind for the action. `http` actions POST to `endpoint_url` with a Mobius signature. `worker` actions are dispatched through jobs to…"),
 			cli.String("endpoint-url", "").Help("Required when endpoint_kind is `http`; omitted for worker actions."),
 			cli.String("input-schema", "").Help("JSON Schema describing the expected input parameters. Accepts JSON, @file, or @-."),
-			cli.String("name", "").Help("[required] Identifier used in loop step definitions. Lowercase alphanumeric + hyphens, e.g. \"send-email\". Must…"),
+			cli.String("name", "").Help("[required] Identifier used in loop step definitions. Lowercase alphanumeric + hyphens, e.g. \"send-email\". Must be unique within the project. Cannot…"),
 			cli.String("output-schema", "").Help("JSON Schema describing the expected output shape. Accepts JSON, @file, or @-."),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
 			cli.String("title", "").Help("Human-readable display name shown in the UI and catalog."),

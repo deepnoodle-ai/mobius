@@ -24,8 +24,8 @@ func registerEnvironmentsCommands(app *cli.App) {
 		Flags(
 			cli.String("name", "").Help("Human-readable environment name."),
 			cli.String("owned-by", "").Help("Canonical user owner ID. Defaults to the authenticated user."),
-			cli.String("provider", "").Help("Providers the control plane can provision on demand: `sprites` or `cloudflare_containers`. Excludes…"),
-			cli.String("scope", "").Help("Optional namespace for named runtime resources. Omitted/null means the project/default scope; `owne…"),
+			cli.String("provider", "").Help("Providers the control plane can provision on demand: `sprites` or `cloudflare_containers`. Excludes `worker`: worker-provided environments…"),
+			cli.String("scope", "").Help("Optional namespace for named runtime resources. Omitted/null means the project/default scope; `owner` means names are unique within…"),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
 			cli.String("template-id", "").Help("V1 supports only coding-default."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
@@ -127,7 +127,7 @@ func registerEnvironmentsCommands(app *cli.App) {
 			cli.Int("limit", "").Help("Maximum number of items to return"),
 			cli.String("status", "").Help("Filter by environment lifecycle status."),
 			cli.String("run-id", "").Help("Filter to environments created for the given run."),
-			cli.Bool("include-destroyed", "").Help("Include destroyed environments in the result. By default destroyed rows are excluded; set this to t…"),
+			cli.Bool("include-destroyed", "").Help("Include destroyed environments in the result. By default destroyed rows are excluded; set this to true (or pass status=destroyed) to see…"),
 		).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {

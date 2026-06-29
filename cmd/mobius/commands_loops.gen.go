@@ -27,15 +27,15 @@ func registerLoopsCommands(app *cli.App) {
 			cli.String("concurrency", "").Help("Concurrency behavior: `allow`, `queue`, `skip`, or `replace`."),
 			cli.String("config", "").Help("Declared run config fields for this loop. Accepts JSON, @file, or @-."),
 			cli.String("default-config", "").Help("Default config values used when a run is started without overrides. Accepts JSON, @file, or @-."),
-			cli.String("defaults", "").Help("Run-level defaults inside the loop spec. Lives at `spec.defaults` in the JSON the engine compiles. … Accepts JSON, @file, or @-."),
+			cli.String("defaults", "").Help("Run-level defaults inside the loop spec. Lives at `spec.defaults` in the JSON the engine compiles. The run wall-clock limit moved to… Accepts JSON, @file, or @-."),
 			cli.String("description", "").Help("Markdown description of the loop's purpose."),
 			cli.String("event", "").Help("Declared event fields for this loop. Accepts JSON, @file, or @-."),
-			cli.String("limits", "").Help("Run guardrails. Lives at `spec.limits` in the JSON the engine compiles. Every limit is optional; ab… Accepts JSON, @file, or @-."),
+			cli.String("limits", "").Help("Run guardrails. Lives at `spec.limits` in the JSON the engine compiles. Every limit is optional; absent or zero means unbounded (plan-level… Accepts JSON, @file, or @-."),
 			cli.String("name", "").Help("[required] Human-readable display name."),
 			cli.String("repositories", "").Help("Source repositories the loop targets. Accepts JSON, @file, or @-."),
 			cli.String("schema-version", "").Help("Loop authoring schema version. Only schema version 1 is accepted."),
 			cli.String("settings", "").Help("Free-form loop-level settings consumed by the engine. Accepts JSON, @file, or @-."),
-			cli.String("steps", "").Help("Ordered user-authored steps to execute for each run. When present, the definition is runnable immed… Accepts JSON, @file, or @-."),
+			cli.String("steps", "").Help("Ordered user-authored steps to execute for each run. When present, the definition is runnable immediately. Accepts JSON, @file, or @-."),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
 			cli.String("triggers", "").Help("Authored trigger declarations for this loop. Accepts JSON, @file, or @-."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
@@ -162,11 +162,11 @@ func registerLoopsCommands(app *cli.App) {
 
 	loopsGrp.Command("deliver-http-trigger").
 		Description("Deliver trigger").
-		AddArg(&cli.Arg{Name: "http-handle", Description: "Globally unique identifier for the trigger. The endpoint carries no project context, so the handle …", Required: true}).
+		AddArg(&cli.Arg{Name: "http-handle", Description: "Globally unique identifier for the trigger. The endpoint carries no project context, so the handle is resolved on its own; it defaults to…", Required: true}).
 		Flags(
 			cli.String("idempotency-key", "").Help("Optional idempotency key (also accepted via the X-Idempotency-Key header)."),
-			cli.String("x-idempotency-key", "").Help("Alternative to the `idempotency_key` query parameter. When both are present the query parameter win…"),
-			cli.String("x-mobius-signature", "").Help("HMAC-SHA256 signature of the raw request body under the trigger's signing secret, formatted as `sha…"),
+			cli.String("x-idempotency-key", "").Help("Alternative to the `idempotency_key` query parameter. When both are present the query parameter wins. Repeats with the same key return the…"),
+			cli.String("x-mobius-signature", "").Help("HMAC-SHA256 signature of the raw request body under the trigger's signing secret, formatted as `sha256=<hex>`. Required only when the HTTP…"),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -227,7 +227,7 @@ func registerLoopsCommands(app *cli.App) {
 	loopsGrp.Command("list").
 		Description("List loops").
 		Flags(
-			cli.String("status", "").Help("Filter by lifecycle status. Omit to return the normal loop list, or pass a visible status to filter…"),
+			cli.String("status", "").Help("Filter by lifecycle status. Omit to return the normal loop list, or pass a visible status to filter to it exactly."),
 			cli.String("agent-id", "").Help("Return only loops associated with this agent."),
 			cli.String("cursor", "").Help("Opaque pagination cursor from a prior response."),
 			cli.Int("limit", "").Help("Maximum number of items to return."),
@@ -273,10 +273,10 @@ func registerLoopsCommands(app *cli.App) {
 			cli.String("concurrency", "").Help("Concurrency behavior: `allow`, `queue`, `skip`, or `replace`."),
 			cli.String("config", "").Help("Declared run config fields for this loop. Accepts JSON, @file, or @-."),
 			cli.String("default-config", "").Help("Default config values used when a run is started without overrides. Accepts JSON, @file, or @-."),
-			cli.String("defaults", "").Help("Run-level defaults inside the loop spec. Lives at `spec.defaults` in the JSON the engine compiles. … Accepts JSON, @file, or @-."),
+			cli.String("defaults", "").Help("Run-level defaults inside the loop spec. Lives at `spec.defaults` in the JSON the engine compiles. The run wall-clock limit moved to… Accepts JSON, @file, or @-."),
 			cli.String("description", "").Help("Markdown description of the loop's purpose."),
 			cli.String("event", "").Help("Declared event fields for this loop. Accepts JSON, @file, or @-."),
-			cli.String("limits", "").Help("Run guardrails. Lives at `spec.limits` in the JSON the engine compiles. Every limit is optional; ab… Accepts JSON, @file, or @-."),
+			cli.String("limits", "").Help("Run guardrails. Lives at `spec.limits` in the JSON the engine compiles. Every limit is optional; absent or zero means unbounded (plan-level… Accepts JSON, @file, or @-."),
 			cli.String("name", "").Help("Human-readable display name."),
 			cli.String("repositories", "").Help("Replacement source repositories the loop targets. Accepts JSON, @file, or @-."),
 			cli.String("schema-version", "").Help("Loop authoring schema version. Only schema version 1 is accepted."),
