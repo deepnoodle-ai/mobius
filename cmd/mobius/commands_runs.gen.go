@@ -44,9 +44,6 @@ func registerRunsCommands(app *cli.App) {
 				v := ctx.String("reason")
 				body.Reason = &v
 			}
-			if ctx.String("file") == "" && !ctx.IsSet("reason") {
-				return fmt.Errorf("at least one flag or --file is required")
-			}
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
@@ -279,9 +276,6 @@ func registerRunsCommands(app *cli.App) {
 				if err := decodeFlagJSON(ctx, "source", ctx.String("source"), &body.Source); err != nil {
 					return err
 				}
-			}
-			if ctx.String("file") == "" && !ctx.IsSet("budget-usd") && !ctx.IsSet("config") && !ctx.IsSet("credit-budget") && !ctx.IsSet("event") && !ctx.IsSet("idempotency-key") && !ctx.IsSet("meta") && !ctx.IsSet("source") {
-				return fmt.Errorf("at least one flag or --file is required")
 			}
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)

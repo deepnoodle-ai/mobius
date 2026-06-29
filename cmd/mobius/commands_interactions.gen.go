@@ -44,9 +44,6 @@ func registerInteractionsCommands(app *cli.App) {
 				v := ctx.String("reason")
 				body.Reason = &v
 			}
-			if ctx.String("file") == "" && !ctx.IsSet("reason") {
-				return fmt.Errorf("at least one flag or --file is required")
-			}
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}

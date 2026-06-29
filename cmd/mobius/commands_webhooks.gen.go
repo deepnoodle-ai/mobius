@@ -208,9 +208,6 @@ func registerWebhooksCommands(app *cli.App) {
 				v := ctx.String("url")
 				body.Url = &v
 			}
-			if ctx.String("file") == "" && !ctx.IsSet("url") {
-				return fmt.Errorf("at least one flag or --file is required")
-			}
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}

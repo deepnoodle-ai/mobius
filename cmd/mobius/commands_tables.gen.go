@@ -327,9 +327,6 @@ func registerTablesCommands(app *cli.App) {
 					return err
 				}
 			}
-			if ctx.String("file") == "" && !ctx.IsSet("cursor") && !ctx.IsSet("filter") && !ctx.IsSet("limit") && !ctx.IsSet("sort") {
-				return fmt.Errorf("at least one flag or --file is required")
-			}
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}

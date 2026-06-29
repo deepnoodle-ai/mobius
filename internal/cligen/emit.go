@@ -60,6 +60,7 @@ type BodyArg struct {
 	GoName   string      // signature argument name (e.g. "body")
 	TypeName string      // e.g. "CreateChannelJSONRequestBody"
 	Fields   []BodyField // per-field flags extracted from the underlying request struct
+	Required bool        // mirrors requestBody.required; false ⇒ a bodyless call is valid
 }
 
 // BodyField is one field of a JSON request body, surfaced as a CLI flag.
@@ -121,6 +122,9 @@ func buildPlan(client *ClientInfo, spec map[string]*SpecOp, overrides map[string
 		if !ok {
 			warns = append(warns, fmt.Sprintf("skip %s: %s", name, reason))
 			continue
+		}
+		if pc.Body != nil {
+			pc.Body.Required = op.BodyRequired
 		}
 		if pc.QueryBlock != nil && op != nil {
 			for i := range pc.QueryBlock.Fields {
@@ -920,7 +924,10 @@ func renderCommand(b *bytes.Buffer, group string, c PlannedCommand) error {
 		}
 		// No-required-field commands (typically update/patch) should reject a
 		// call with no flags and no --file so a bare invocation doesn't
-		// silently no-op.
+		// silently no-op. Skip this guard when the requestBody is optional
+		// (requestBody.required: false) — there a bodyless call is a valid
+		// request (e.g. `interactions cancel <id>` with no reason), so forcing
+		// a flag would wrongly reject it.
 		hasRequired := false
 		for _, f := range c.Body.Fields {
 			if f.Required && !isReservedFlag(f.FlagName) {
@@ -928,7 +935,7 @@ func renderCommand(b *bytes.Buffer, group string, c PlannedCommand) error {
 				break
 			}
 		}
-		if !hasRequired {
+		if !hasRequired && c.Body.Required {
 			conds := []string{`ctx.String("file") == ""`}
 			for _, f := range c.Body.Fields {
 				if f.Kind == "skip" || isReservedFlag(f.FlagName) {
