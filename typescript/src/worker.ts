@@ -152,6 +152,11 @@ export class Worker {
   private readonly logger: Logger;
   private readonly actions = new Map<string, ActionFn>();
   private readonly generators = new Map<string, GenerationFn>();
+  // Concrete provider/model pairs passed to registerGenerator (wildcards
+  // excluded). Merged with config.models when advertising so a registered
+  // generator is always announced — the advertised set and the handler set
+  // cannot drift.
+  private readonly registeredModels: ModelCapability[] = [];
   private sessionToken = "";
   private stopping = false;
   private readonly stopController = new AbortController();
@@ -187,6 +192,13 @@ export class Worker {
 
   registerGenerator(provider: string, model: string, fn: GenerationFn): this {
     this.generators.set(`${provider}/${model}`, fn);
+    // A concrete provider/model is advertised automatically (as if added to
+    // config.models) so it appears in the worker-model catalog and is routable.
+    // A "*" wildcard has no concrete model id to advertise; pair it with an
+    // explicit config.models entry to make it routable.
+    if (model !== "*") {
+      this.registeredModels.push({ provider, model });
+    }
     return this;
   }
 
@@ -414,11 +426,20 @@ export class Worker {
     }) as WorkerSocketRegisterFrame;
   }
 
+  // modelCapabilities is the set of models the worker announces to Mobius Cloud:
+  // the explicit config.models plus every concrete model registered via
+  // registerGenerator, deduplicated and with wildcards excluded.
   private modelCapabilities(): WorkerSocketModelCapability[] | undefined {
-    const models = this.config.models
-      ?.filter((m) => m.provider && m.model)
-      .map((m) => ({ provider: m.provider, model: m.model }));
-    return models && models.length > 0 ? models : undefined;
+    const seen = new Set<string>();
+    const models: WorkerSocketModelCapability[] = [];
+    for (const m of [...(this.config.models ?? []), ...this.registeredModels]) {
+      if (!m.provider || !m.model || m.model === "*") continue;
+      const key = `${m.provider}/${m.model}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      models.push({ provider: m.provider, model: m.model });
+    }
+    return models.length > 0 ? models : undefined;
   }
 
   private async executeJob(
@@ -559,7 +580,11 @@ export class WorkerPool {
         this.actions,
       );
       for (const [key, fn] of this.generators) {
-        const [provider, model] = key.split("/", 2);
+        // Split on the first "/" only: model ids may contain slashes
+        // (e.g. "meta-llama/Llama-3"), which "/".split(key, 2) would truncate.
+        const slash = key.indexOf("/");
+        const provider = key.slice(0, slash);
+        const model = key.slice(slash + 1);
         worker.registerGenerator(provider, model, fn);
       }
       return worker.run(signal);

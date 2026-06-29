@@ -90,6 +90,11 @@ class Worker:
         self.config = config or WorkerConfig()
         self.actions: dict[str, ActionFunc] = actions or {}
         self.generators: dict[str, GenerationFunc] = {}
+        # Concrete provider/model pairs passed to register_generator (wildcards
+        # excluded). Merged with config.models when advertising so a registered
+        # generator is always announced — the advertised set and the handler set
+        # cannot drift.
+        self.registered_models: list[ModelCapability] = []
         self.session_token = ""
         self._stopping = False
         self._claim_outstanding = False
@@ -112,7 +117,29 @@ class Worker:
 
     def register_generator(self, provider: str, model: str, fn: GenerationFunc) -> Worker:
         self.generators[f"{provider}/{model}"] = fn
+        # A concrete provider/model is advertised automatically (as if added to
+        # config.models) so it appears in the worker-model catalog and is
+        # routable. A "*" wildcard has no concrete model id to advertise; pair it
+        # with an explicit config.models entry to make it routable.
+        if model != "*":
+            self.registered_models.append(ModelCapability(provider=provider, model=model))
         return self
+
+    def _model_capabilities(self) -> list[dict[str, str]] | None:
+        """Models announced to Mobius Cloud: the explicit config.models plus
+        every concrete model registered via register_generator, deduplicated
+        and with wildcards excluded."""
+        seen: set[str] = set()
+        out: list[dict[str, str]] = []
+        for m in [*self.config.models, *self.registered_models]:
+            if not m.provider or not m.model or m.model == "*":
+                continue
+            key = f"{m.provider}/{m.model}"
+            if key in seen:
+                continue
+            seen.add(key)
+            out.append({"provider": m.provider, "model": m.model})
+        return out or None
 
     def stop(self) -> None:
         self._stopping = True
@@ -201,7 +228,7 @@ class Worker:
                 available_slots=available,
                 queues=self.config.queues or None,
                 action_names=(self.config.actions or sorted(self.actions)) or None,
-                models=[m.__dict__ for m in self.config.models] or None,
+                models=self._model_capabilities(),
             )
             self._claim_outstanding = True
             outstanding_claim_id = message_id
@@ -310,7 +337,7 @@ class Worker:
             version=self.config.version,
             queues=self.config.queues or None,
             action_names=action_names or None,
-            models=[m.__dict__ for m in self.config.models] or None,
+            models=self._model_capabilities(),
         )
 
     async def _execute_job(self, ws: Any, job: WorkerSocketClaimedJob) -> None:
