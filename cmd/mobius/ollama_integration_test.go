@@ -83,14 +83,17 @@ func TestOllamaLive_Generate(t *testing.T) {
 		Provider: ollamaProvider,
 		Model:    model,
 		Spec: map[string]any{
-			"model": model,
-			"messages": []map[string]any{
-				{"role": "user", "content": []map[string]any{
-					{"type": "text", "text": "Reply with exactly the word: pong"},
-				}},
+			"route": map[string]any{"mode": "worker", "provider": ollamaProvider, "model": model},
+			"request": map[string]any{
+				"model": model,
+				"messages": []map[string]any{
+					{"role": "user", "content": []map[string]any{
+						{"type": "text", "text": "Reply with exactly the word: pong"},
+					}},
+				},
+				"system":     []map[string]any{{"type": "text", "text": "You are a terse test fixture. Follow instructions exactly."}},
+				"max_tokens": float64(64),
 			},
-			"system":     []map[string]any{{"type": "text", "text": "You are a terse test fixture. Follow instructions exactly."}},
-			"max_tokens": float64(64),
 		},
 	}
 
@@ -148,25 +151,28 @@ func TestOllamaLive_GenerateWithTool(t *testing.T) {
 		Provider: ollamaProvider,
 		Model:    model,
 		Spec: map[string]any{
-			"model": model,
-			"messages": []map[string]any{
-				{"role": "user", "content": []map[string]any{
-					{"type": "text", "text": "What is the weather in Paris? Use the tool."},
-				}},
-			},
-			"max_tokens": float64(512),
-			"tools": []map[string]any{
-				{
-					"name":        "get_weather",
-					"description": "Get the current weather for a city.",
-					"input_schema": map[string]any{
-						"type":       "object",
-						"properties": map[string]any{"city": map[string]any{"type": "string"}},
-						"required":   []string{"city"},
+			"route": map[string]any{"mode": "worker", "provider": ollamaProvider, "model": model},
+			"request": map[string]any{
+				"model": model,
+				"messages": []map[string]any{
+					{"role": "user", "content": []map[string]any{
+						{"type": "text", "text": "What is the weather in Paris? Use the tool."},
+					}},
+				},
+				"max_tokens": float64(512),
+				"tools": []map[string]any{
+					{
+						"name":        "get_weather",
+						"description": "Get the current weather for a city.",
+						"input_schema": map[string]any{
+							"type":       "object",
+							"properties": map[string]any{"city": map[string]any{"type": "string"}},
+							"required":   []string{"city"},
+						},
 					},
 				},
+				"tool_choice": map[string]any{"type": "auto"},
 			},
-			"tool_choice": map[string]any{"type": "auto"},
 		},
 	}
 

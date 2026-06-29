@@ -11,25 +11,31 @@ import (
 )
 
 // sampleGenerationSpec mirrors the shape Mobius Cloud sends for an
-// llm_generation job (Dive's request encoding): messages as content-block
-// arrays, a system block array, and tool definitions.
+// llm_generation job: the WorkerSocketLLMGenerationSpec envelope with the
+// Dive/Anthropic request nested under "request" (alongside "route" and
+// "mobius"), messages as content-block arrays, a system block array, and tool
+// definitions.
 func sampleGenerationSpec() map[string]any {
 	return map[string]any{
-		"model": "llama3",
-		"messages": []map[string]any{
-			{"role": "user", "content": []map[string]any{{"type": "text", "text": "hello"}}},
-		},
-		"system":      []map[string]any{{"type": "text", "text": "be brief"}},
-		"max_tokens":  float64(256),
-		"temperature": float64(0.5),
-		"tools": []map[string]any{
-			{
-				"name":         "get_weather",
-				"description":  "Get the weather",
-				"input_schema": map[string]any{"type": "object", "properties": map[string]any{"city": map[string]any{"type": "string"}}},
+		"route":  map[string]any{"mode": "worker", "provider": "ollama", "model": "llama3"},
+		"mobius": map[string]any{"org_id": "org_1", "project_id": "proj_1"},
+		"request": map[string]any{
+			"model": "llama3",
+			"messages": []map[string]any{
+				{"role": "user", "content": []map[string]any{{"type": "text", "text": "hello"}}},
 			},
+			"system":      []map[string]any{{"type": "text", "text": "be brief"}},
+			"max_tokens":  float64(256),
+			"temperature": float64(0.5),
+			"tools": []map[string]any{
+				{
+					"name":         "get_weather",
+					"description":  "Get the weather",
+					"input_schema": map[string]any{"type": "object", "properties": map[string]any{"city": map[string]any{"type": "string"}}},
+				},
+			},
+			"tool_choice": map[string]any{"type": "auto"},
 		},
-		"tool_choice": map[string]any{"type": "auto"},
 	}
 }
 
@@ -59,10 +65,17 @@ func TestOllamaGenerateOptions_ReconstructsRequest(t *testing.T) {
 }
 
 func TestOllamaGenerateOptions_RequiresMessages(t *testing.T) {
-	_, err := ollamaGenerateOptions(map[string]any{"model": "llama3"})
+	// Nested request with no messages.
+	_, err := ollamaGenerateOptions(map[string]any{"request": map[string]any{"model": "llama3"}})
 	assert.Error(t, err)
 
-	_, err = ollamaGenerateOptions(map[string]any{"messages": []map[string]any{}})
+	// Nested request with empty messages.
+	_, err = ollamaGenerateOptions(map[string]any{"request": map[string]any{"messages": []map[string]any{}}})
+	assert.Error(t, err)
+
+	// A spec missing the "request" envelope entirely must still fail clearly
+	// rather than silently producing an empty generation.
+	_, err = ollamaGenerateOptions(map[string]any{"route": map[string]any{"mode": "worker"}})
 	assert.Error(t, err)
 }
 
