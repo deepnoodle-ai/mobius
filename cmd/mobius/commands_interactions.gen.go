@@ -17,7 +17,7 @@ import (
 
 // registerInteractionsCommands registers every generated subcommand in the "interactions" group.
 func registerInteractionsCommands(app *cli.App) {
-	interactionsGrp := app.Group("interactions")
+	interactionsGrp := app.Group("interactions").Description("Information, approval, and review requests between users and agents")
 	interactionsGrp.Alias("interaction")
 	interactionsGrp.Command("cancel").
 		Description("Cancel open interaction").
@@ -178,13 +178,13 @@ func registerInteractionsCommands(app *cli.App) {
 			return printResponse(ctx, "listInteractions", resp.StatusCode(), resp.Body)
 		})
 
-	interactionsGrp.Command("respond-to-interaction").
+	interactionsGrp.Command("respond").
 		Description("Respond to interaction").
 		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		Flags(
 			cli.String("action", "").Help("Operation to perform through the canonical response endpoint. `submit` answers the interaction."),
-			cli.String("comment", "").Help("Optional free-text comment accompanying the action. Available on every interaction kind and never g…"),
-			cli.String("value", "").Help("Free-form JSON payload. Used both for responder-supplied values and for policy-derived values (e.g.… Accepts JSON, @file, or @-."),
+			cli.String("comment", "").Help("Optional free-text comment accompanying the action. Available on every interaction kind and never gated by the spec; the responder may…"),
+			cli.String("value", "").Help("Free-form JSON payload. Used both for responder-supplied values and for policy-derived values (e.g. `Interaction.outcome`… Accepts JSON, @file, or @-."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).

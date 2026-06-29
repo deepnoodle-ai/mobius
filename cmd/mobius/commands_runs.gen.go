@@ -78,7 +78,7 @@ func registerRunsCommands(app *cli.App) {
 		Flags(
 			cli.String("status", "").Help("Filter to one status."),
 			cli.String("loop-id", "").Help("Filter to one loop's runs."),
-			cli.String("source-event-id", "").Help("Filter to runs originating from a single source event. Pass the `source_event_id` returned by the H…"),
+			cli.String("source-event-id", "").Help("Filter to runs originating from a single source event. Pass the `source_event_id` returned by the HTTP-trigger delivery endpoint to…"),
 			cli.String("cursor", "").Help("Opaque pagination cursor from a prior response."),
 			cli.Int("limit", "").Help("Maximum number of items to return."),
 		).
@@ -124,7 +124,7 @@ func registerRunsCommands(app *cli.App) {
 		Flags(
 			cli.Int("after-sequence", "").Help("Return events with sequence > after_sequence."),
 			cli.Int("limit", "").Help("Maximum number of items to return"),
-			cli.Int("last-event-id", "").Help("SSE reconnect cursor. The browser EventSource API replays the last event's `id` in this header on a…"),
+			cli.Int("last-event-id", "").Help("SSE reconnect cursor. The browser EventSource API replays the last event's `id` in this header on automatic reconnect; the server resumes…"),
 		).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -179,7 +179,7 @@ func registerRunsCommands(app *cli.App) {
 		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		Flags(
 			cli.String("result", "").Help("Free-form payload saved as the resumed step's output. Accepts JSON, @file, or @-."),
-			cli.String("step-key", "").Help("[required] Step key currently in `suspended` state that should resume. Must match a step declared in the run's…"),
+			cli.String("step-key", "").Help("[required] Step key currently in `suspended` state that should resume. Must match a step declared in the run's loop version spec."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -221,13 +221,13 @@ func registerRunsCommands(app *cli.App) {
 		Description("Start run").
 		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		Flags(
-			cli.String("budget-usd", "").Help("Per-run budget override in US dollars (1 credit = $0.01). Overrides the loop spec's `limits` budget… Accepts JSON, @file, or @-."),
-			cli.String("config", "").Help("Optional static or caller-provided configuration for handling the event. Templates reference it via… Accepts JSON, @file, or @-."),
-			cli.Int("credit-budget", "").Help("Per-run budget override in whole credits (1 credit = $0.01). Same ceiling semantics as `budget_usd`…"),
-			cli.String("event", "").Help("Exact event object that starts the run. Manual/API starts use this object the same way integration,… Accepts JSON, @file, or @-."),
-			cli.String("idempotency-key", "").Help("Caller-supplied idempotency key, scoped to (org, project). Repeat calls with the same `idempotency_…"),
-			cli.String("meta", "").Help("Optional event metadata supplied by the caller. Mobius also adds provenance such as run, loop, sour… Accepts JSON, @file, or @-."),
-			cli.String("source", "").Help("Optional attribution for the call that started this run. Triggers and HTTP trigger dispatch populat… Accepts JSON, @file, or @-."),
+			cli.String("budget-usd", "").Help("Per-run budget override in US dollars (1 credit = $0.01). Overrides the loop spec's `limits` budget for this run only. Mutually exclusive… Accepts JSON, @file, or @-."),
+			cli.String("config", "").Help("Optional static or caller-provided configuration for handling the event. Templates reference it via `config.*`. Accepts JSON, @file, or @-."),
+			cli.Int("credit-budget", "").Help("Per-run budget override in whole credits (1 credit = $0.01). Same ceiling semantics as `budget_usd`; set exactly one."),
+			cli.String("event", "").Help("Exact event object that starts the run. Manual/API starts use this object the same way integration, HTTP, and schedule triggers do… Accepts JSON, @file, or @-."),
+			cli.String("idempotency-key", "").Help("Caller-supplied idempotency key, scoped to (org, project). Repeat calls with the same `idempotency_key` while the prior run is still…"),
+			cli.String("meta", "").Help("Optional event metadata supplied by the caller. Mobius also adds provenance such as run, loop, source, trigger, and source-event ids. Accepts JSON, @file, or @-."),
+			cli.String("source", "").Help("Optional attribution for the call that started this run. Triggers and HTTP trigger dispatch populate `trigger_id` and `trigger_fire_id`… Accepts JSON, @file, or @-."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).

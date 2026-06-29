@@ -97,7 +97,7 @@ func registerSessionsCommands(app *cli.App) {
 			return printResponse(ctx, "cancelSession", resp.StatusCode(), resp.Body)
 		})
 
-	sessionsGrp.Command("cancel-2").
+	sessionsGrp.Command("cancel-turn").
 		Description("Cancel a session turn").
 		AddArg(&cli.Arg{Name: "session-id", Description: "Identifier of the conversation session.", Required: true}).
 		AddArg(&cli.Arg{Name: "turn-id", Description: "Identifier of a turn within a session.", Required: true}).
@@ -118,7 +118,7 @@ func registerSessionsCommands(app *cli.App) {
 			return printResponse(ctx, "cancelTurn", resp.StatusCode(), resp.Body)
 		})
 
-	sessionsGrp.Command("compact-session").
+	sessionsGrp.Command("compact").
 		Description("Compact the session transcript now").
 		AddArg(&cli.Arg{Name: "session-id", Description: "Identifier of the conversation session.", Required: true}).
 		Use(requireAuth()).
@@ -141,9 +141,9 @@ func registerSessionsCommands(app *cli.App) {
 		Description("Create or resolve a session").
 		Flags(
 			cli.String("agent-id", "").Help("[required] Agent that owns the session."),
-			cli.String("compaction-policy", "").Help("Controls how a session's transcript is automatically summarized as it grows. On create the supplied… Accepts JSON, @file, or @-."),
+			cli.String("compaction-policy", "").Help("Controls how a session's transcript is automatically summarized as it grows. On create the supplied fields are merged over the owning… Accepts JSON, @file, or @-."),
 			cli.String("metadata", "").Help("Free-form caller metadata for the session. Accepts JSON, @file, or @-."),
-			cli.String("mode", "").Help("`continue_or_create` (default) resolves an existing session for the `session_key` or creates one; `…"),
+			cli.String("mode", "").Help("`continue_or_create` (default) resolves an existing session for the `session_key` or creates one; `new` always creates a fresh session…"),
 			cli.String("model", "").Help("Model to record on the session."),
 			cli.String("session-key", "").Help("Stable key identifying the conversation within the agent."),
 			cli.String("title", "").Help("Human-friendly session title."),
@@ -275,7 +275,7 @@ func registerSessionsCommands(app *cli.App) {
 			cli.String("status", "").Help("Filter by session status."),
 			cli.String("scope", "").Help("Filter by session scope."),
 			cli.String("provider", "").Help("Filter messaging sessions by provider metadata, e.g. `slack` or `telegram`."),
-			cli.String("integration-id", "").Help("Filter to sessions created by this integration, e.g. agent sessions started from a connected provid…"),
+			cli.String("integration-id", "").Help("Filter to sessions created by this integration, e.g. agent sessions started from a connected provider."),
 			cli.String("cursor", "").Help("Cursor for pagination (opaque string from previous response)"),
 			cli.Int("limit", "").Help("Maximum number of items to return"),
 		).
@@ -327,9 +327,9 @@ func registerSessionsCommands(app *cli.App) {
 		Description("List or stream session events").
 		AddArg(&cli.Arg{Name: "session-id", Description: "Identifier of the conversation session.", Required: true}).
 		Flags(
-			cli.Int("after-sequence", "").Help("Continuation cursor for sequence-ordered lists. Only include rows whose monotonic per-resource sequ…"),
+			cli.Int("after-sequence", "").Help("Continuation cursor for sequence-ordered lists. Only include rows whose monotonic per-resource sequence is strictly greater than this…"),
 			cli.Int("limit", "").Help("Maximum number of items to return"),
-			cli.Int("last-event-id", "").Help("SSE reconnect cursor. The browser EventSource API replays the last event's `id` in this header on a…"),
+			cli.Int("last-event-id", "").Help("SSE reconnect cursor. The browser EventSource API replays the last event's `id` in this header on automatic reconnect; the server resumes…"),
 		).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -364,9 +364,9 @@ func registerSessionsCommands(app *cli.App) {
 		Description("List session messages").
 		AddArg(&cli.Arg{Name: "session-id", Description: "Identifier of the conversation session.", Required: true}).
 		Flags(
-			cli.Int("after-sequence", "").Help("Continuation cursor for sequence-ordered lists. Only include rows whose monotonic per-resource sequ…"),
-			cli.Int("before-sequence", "").Help("Backward continuation cursor for sequence-ordered lists. Only include rows whose monotonic per-reso…"),
-			cli.String("order", "").Help("Scan direction for the page. `asc` (the default) returns oldest-first; `desc` returns newest-first …"),
+			cli.Int("after-sequence", "").Help("Continuation cursor for sequence-ordered lists. Only include rows whose monotonic per-resource sequence is strictly greater than this…"),
+			cli.Int("before-sequence", "").Help("Backward continuation cursor for sequence-ordered lists. Only include rows whose monotonic per-resource sequence is strictly less than this…"),
+			cli.String("order", "").Help("Scan direction for the page. `asc` (the default) returns oldest-first; `desc` returns newest-first — the way to fetch the latest rows of…"),
 			cli.Int("limit", "").Help("Maximum number of items to return"),
 		).
 		Use(requireAuth()).
@@ -406,8 +406,8 @@ func registerSessionsCommands(app *cli.App) {
 		Description("List session turns").
 		AddArg(&cli.Arg{Name: "session-id", Description: "Identifier of the conversation session.", Required: true}).
 		Flags(
-			cli.Strings("ids", "").Help("Return exactly the turns with these ids (the transcript-join primitive). When set, pagination and o…"),
-			cli.String("order", "").Help("Scan direction for the page. `asc` (the default) returns oldest-first; `desc` returns newest-first …"),
+			cli.Strings("ids", "").Help("Return exactly the turns with these ids (the transcript-join primitive). When set, pagination and ordering are ignored and the named turns…"),
+			cli.String("order", "").Help("Scan direction for the page. `asc` (the default) returns oldest-first; `desc` returns newest-first — the way to fetch the latest rows of…"),
 			cli.String("cursor", "").Help("Cursor for pagination (opaque string from previous response)"),
 			cli.Int("limit", "").Help("Maximum number of items to return"),
 		).
@@ -449,9 +449,9 @@ func registerSessionsCommands(app *cli.App) {
 		AddArg(&cli.Arg{Name: "session-id", Description: "Identifier of the conversation session.", Required: true}).
 		Flags(
 			cli.String("content", "").Help("[required] Ordered content blocks (text, images) for the input message. Accepts JSON, @file, or @-."),
-			cli.String("idempotency-key", "").Help("Dedup key scoped to the session. A repeat call with the same key resumes the existing turn and writ…"),
+			cli.String("idempotency-key", "").Help("Dedup key scoped to the session. A repeat call with the same key resumes the existing turn and writes nothing new."),
 			cli.String("metadata", "").Help("Free-form caller metadata attached to the input message. Accepts JSON, @file, or @-."),
-			cli.String("role", "").Help("Role of the input message. A turn carries caller input, so only `user` is accepted; defaults to `us…"),
+			cli.String("role", "").Help("Role of the input message. A turn carries caller input, so only `user` is accepted; defaults to `user` when omitted."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -503,7 +503,7 @@ func registerSessionsCommands(app *cli.App) {
 		Description("Update session").
 		AddArg(&cli.Arg{Name: "session-id", Description: "Identifier of the conversation session.", Required: true}).
 		Flags(
-			cli.String("compaction-policy", "").Help("Controls how a session's transcript is automatically summarized as it grows. On create the supplied… Accepts JSON, @file, or @-."),
+			cli.String("compaction-policy", "").Help("Controls how a session's transcript is automatically summarized as it grows. On create the supplied fields are merged over the owning… Accepts JSON, @file, or @-."),
 			cli.String("status", "").Help("Durable conversation session status: `active`, `archived`, or `deleted`."),
 			cli.String("title", "").Help("Human-readable session title."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),

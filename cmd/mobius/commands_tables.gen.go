@@ -64,7 +64,7 @@ func registerTablesCommands(app *cli.App) {
 			cli.String("description", "").Help("Optional human-readable description of the table."),
 			cli.String("instructions", "").Help("Optional author guidance for how this table should be used (e.g. surfaced to agents)."),
 			cli.String("name", "").Help("[required] Table name (lowercase, snake_case); unique within the project."),
-			cli.String("schema", "").Help("[required] Column definition for a virtual table. Each table has exactly one required string identity column a… Accepts JSON, @file, or @-."),
+			cli.String("schema", "").Help("[required] Column definition for a virtual table. Each table has exactly one required string identity column and may nominate one optional string… Accepts JSON, @file, or @-."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -255,7 +255,7 @@ func registerTablesCommands(app *cli.App) {
 		Flags(
 			cli.String("cursor", "").Help("Cursor for pagination (opaque string from previous response)"),
 			cli.Int("limit", "").Help("Maximum number of items to return"),
-			cli.String("name", "").Help("Filter tables by name. Table names are unique within a project; use this as a discovery filter and …"),
+			cli.String("name", "").Help("Filter tables by name. Table names are unique within a project; use this as a discovery filter and use the returned table `id` for…"),
 		).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -344,7 +344,7 @@ func registerTablesCommands(app *cli.App) {
 			cli.String("cursor", "").Help("Opaque cursor from a prior search response."),
 			cli.String("filter", "").Help("Optional column equality or operator filter applied before search. Accepts JSON, @file, or @-."),
 			cli.Int("limit", "").Help("Maximum number of rows to return (1–100, default 20)."),
-			cli.String("mode", "").Help("Search mode. `keyword` uses token-prefix full-text search, `semantic` uses sidecar embedding simila…"),
+			cli.String("mode", "").Help("Search mode. `keyword` uses token-prefix full-text search, `semantic` uses sidecar embedding similarity, and `hybrid` combines both."),
 			cli.String("query", "").Help("[required] Search query. Hyphens and other punctuation split terms for keyword matching."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
@@ -402,7 +402,7 @@ func registerTablesCommands(app *cli.App) {
 			cli.String("description", "").Help("Optional human-readable description of the table."),
 			cli.String("instructions", "").Help("Optional author guidance for how this table should be used (e.g. surfaced to agents)."),
 			cli.String("name", "").Help("Table name (lowercase, snake_case); unique within the project."),
-			cli.String("schema", "").Help("Column definition for a virtual table. Each table has exactly one required string identity column a… Accepts JSON, @file, or @-."),
+			cli.String("schema", "").Help("Column definition for a virtual table. Each table has exactly one required string identity column and may nominate one optional string… Accepts JSON, @file, or @-."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).

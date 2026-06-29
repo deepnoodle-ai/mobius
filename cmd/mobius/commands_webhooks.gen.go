@@ -23,10 +23,10 @@ func registerWebhooksCommands(app *cli.App) {
 		Description("Create webhook").
 		Flags(
 			cli.Bool("enabled", "").Help("Whether the webhook starts enabled. Defaults to true when omitted."),
-			cli.Strings("events", "").Help("[required] Event types to subscribe to. Use wildcards for broad subscriptions, e.g. `[\"run.*\"]` for all run ev…"),
+			cli.Strings("events", "").Help("[required] Event types to subscribe to. Use wildcards for broad subscriptions, e.g. `[\"run.*\"]` for all run events. An empty list subscribes to all…"),
 			cli.String("name", "").Help("[required] Human-readable name, unique within the project."),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
-			cli.String("url", "").Help("The endpoint Mobius will POST event payloads to. May be left empty at creation time so a candidate …"),
+			cli.String("url", "").Help("The endpoint Mobius will POST event payloads to. May be left empty at creation time so a candidate URL can be tested via the ping endpoint…"),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -187,7 +187,7 @@ func registerWebhooksCommands(app *cli.App) {
 		Description("Test webhook URL").
 		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		Flags(
-			cli.String("url", "").Help("URL to test. When supplied, the ping is sent to this URL instead of the webhook's saved URL — use…"),
+			cli.String("url", "").Help("URL to test. When supplied, the ping is sent to this URL instead of the webhook's saved URL — use this to validate a candidate URL before…"),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -242,7 +242,7 @@ func registerWebhooksCommands(app *cli.App) {
 		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		Flags(
 			cli.Bool("enabled", "").Help("Set to false to disable delivery without deleting the webhook."),
-			cli.Strings("events", "").Help("Replacement event subscriptions. Replaces the entire current list; an empty list subscribes to all …"),
+			cli.Strings("events", "").Help("Replacement event subscriptions. Replaces the entire current list; an empty list subscribes to all event types."),
 			cli.String("name", "").Help("Replacement human-readable name."),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
 			cli.String("url", "").Help("Replacement endpoint URL."),
