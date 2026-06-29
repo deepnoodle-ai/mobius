@@ -4,7 +4,7 @@ go 1.26.1
 
 require (
 	github.com/deepnoodle-ai/dive v1.10.0
-	github.com/deepnoodle-ai/wonton v0.0.36
+	github.com/deepnoodle-ai/wonton v0.0.37
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/websocket v1.5.3
 	github.com/oapi-codegen/runtime v1.4.0
