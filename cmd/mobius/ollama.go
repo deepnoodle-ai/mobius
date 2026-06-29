@@ -148,12 +148,14 @@ func llmResponseEnvelope(resp *llm.Response) (map[string]any, error) {
 }
 
 // ollamaGenerateOptions reconstructs Dive LLM options from a worker generation
-// spec. The spec is the map the server produced from the agent's request, so
-// the fields mirror Dive's request encoding. Only fields a local model can act
+// spec. Mobius Cloud nests the Anthropic Messages-shaped model request under
+// "request" (alongside "route" and "mobius") per WorkerSocketLLMGenerationSpec,
+// so the request fields are pulled from there. Only fields a local model can act
 // on are mapped; provider-specific extras (metadata, stop sequences, reasoning
 // budgets) are ignored.
 func ollamaGenerateOptions(spec map[string]any) ([]llm.Option, error) {
-	rawMessages, ok := spec["messages"]
+	request := llmGenerationRequest(spec)
+	rawMessages, ok := request["messages"]
 	if !ok {
 		return nil, fmt.Errorf("messages is required")
 	}
@@ -166,29 +168,29 @@ func ollamaGenerateOptions(spec map[string]any) ([]llm.Option, error) {
 	}
 	opts := []llm.Option{llm.WithMessages(messages...)}
 
-	if system, ok := spec["system"]; ok {
+	if system, ok := request["system"]; ok {
 		if text := systemPromptText(system); text != "" {
 			opts = append(opts, llm.WithSystemPrompt(text))
 		}
 	}
-	if v, ok := spec["max_tokens"]; ok {
+	if v, ok := request["max_tokens"]; ok {
 		if n, ok := toInt(v); ok {
 			opts = append(opts, llm.WithMaxTokens(n))
 		}
 	}
-	if v, ok := spec["temperature"]; ok {
+	if v, ok := request["temperature"]; ok {
 		if f, ok := toFloat(v); ok {
 			opts = append(opts, llm.WithTemperature(f))
 		}
 	}
-	if v, ok := spec["reasoning_effort"]; ok {
+	if v, ok := request["reasoning_effort"]; ok {
 		if s, ok := v.(string); ok && s != "" {
 			if effort := llm.ReasoningEffort(s); effort.IsValid() {
 				opts = append(opts, llm.WithReasoningEffort(effort))
 			}
 		}
 	}
-	if v, ok := spec["tools"]; ok {
+	if v, ok := request["tools"]; ok {
 		tools, err := decodeTools(v)
 		if err != nil {
 			return nil, fmt.Errorf("tools: %w", err)
@@ -197,7 +199,7 @@ func ollamaGenerateOptions(spec map[string]any) ([]llm.Option, error) {
 			opts = append(opts, llm.WithTools(tools...))
 		}
 	}
-	if v, ok := spec["tool_choice"]; ok {
+	if v, ok := request["tool_choice"]; ok {
 		tc, err := decodeJSON[*llm.ToolChoice](v)
 		if err != nil {
 			return nil, fmt.Errorf("tool_choice: %w", err)
@@ -207,6 +209,17 @@ func ollamaGenerateOptions(spec map[string]any) ([]llm.Option, error) {
 		}
 	}
 	return opts, nil
+}
+
+// llmGenerationRequest pulls the Anthropic Messages-shaped model request out of
+// a worker generation spec. Mobius Cloud nests it under "request" per
+// WorkerSocketLLMGenerationSpec; a spec that already carries the request fields
+// at the top level (older callers, hand-built specs) is honored as-is.
+func llmGenerationRequest(spec map[string]any) map[string]any {
+	if req, ok := spec["request"].(map[string]any); ok {
+		return req
+	}
+	return spec
 }
 
 // systemPromptText extracts the system prompt from a spec value that is either a
