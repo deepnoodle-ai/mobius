@@ -110,7 +110,7 @@ func renderListTable(ctx *cli.Context, items []any, hasMore bool, nextCursor str
 		}
 	}
 	stack := tui.Stack(view, tui.Text("%s", footer).Dim()).Gap(1)
-	if err := tui.Print(stack, tui.PrintConfig{Output: ctx.Stdout()}); err != nil {
+	if err := tui.Print(stack, tui.WithOutput(ctx.Stdout())); err != nil {
 		return err
 	}
 	_, _ = fmt.Fprintln(ctx.Stdout())
@@ -181,7 +181,7 @@ func renderResourceView(ctx *cli.Context, obj map[string]any, explicitFields []s
 		return nil
 	}
 	view := tui.Stack(rows...)
-	if err := tui.Print(view, tui.PrintConfig{Output: ctx.Stdout()}); err != nil {
+	if err := tui.Print(view, tui.WithOutput(ctx.Stdout())); err != nil {
 		return err
 	}
 	_, _ = fmt.Fprintln(ctx.Stdout())

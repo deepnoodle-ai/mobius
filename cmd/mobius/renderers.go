@@ -89,7 +89,7 @@ func renderRunDetail(ctx *cli.Context, body []byte) error {
 	}
 
 	stack := tui.Stack(views...).Gap(1)
-	if err := tui.Print(stack, tui.PrintConfig{Output: ctx.Stdout()}); err != nil {
+	if err := tui.Print(stack, tui.WithOutput(ctx.Stdout())); err != nil {
 		return err
 	}
 	_, _ = fmt.Fprintln(ctx.Stdout())
