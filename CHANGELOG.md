@@ -6,6 +6,59 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 
 ## [Unreleased]
 
+Session transcript rework, synced from the mobius-cloud spec.
+`session_messages` is now the single durable conversation log; live streaming
+is ephemeral (never persisted) — the stream is a view over the durable log
+spliced with a live channel, keyed by one cursor.
+
+### Added
+
+- SDKs: loop run records expose `queue_reason` and `plan_concurrency_limit`.
+  `queue_reason` (new `LoopRunQueueReason` enum: `plan_concurrency`,
+  `loop_policy`, `trigger_concurrency`) is present only while `status` is
+  `queued` and says which gate placed the run in the durable queue;
+  `plan_concurrency_limit` is the org-wide concurrent-run ceiling stamped at
+  run start, present when the run was evaluated against a plan limit.
+
+### Changed
+
+- SDKs / CLI (BREAKING): the session events endpoint
+  `GET …/sessions/{id}/events` is renamed to `GET …/sessions/{id}/stream`
+  (operation `streamSession`) and is SSE-only — the JSON (non-streaming)
+  response branch and its `limit` parameter are gone. The cursor is
+  `after_sequence` (query) / `Last-Event-ID` (header), both in message
+  sequence space; one primitive covers initial join, forward streaming, and
+  resume. Read `…/messages` first and feed its tail sequence into `…/stream`
+  to resume without overlap or gap. The `mobius sessions list-events` CLI
+  command is now `mobius sessions stream` (flags `--after-sequence` /
+  `--last-event-id`).
+- SDKs (BREAKING): session message content is now a frozen typed
+  `SessionContentBlock` union (`SessionTextBlock`, `SessionThinkingBlock`,
+  `SessionToolUseBlock`, `SessionToolResultBlock`, `SessionImageBlock`),
+  typing the content of `SessionMessage`, `SessionMessagePreviewFrame`,
+  `SessionUserMessagePayload`, `AgentMessagePayload`, and
+  `CompactionCreatedPayload`. Each variant keeps an open
+  (`additionalProperties`) map so unknown fields round-trip losslessly.
+  Request bodies stay lenient — only response/frame content is frozen. The
+  live `tool.result` frame (`ToolResultPayload.content`) now carries the same
+  typed blocks as the durable record, and message-role fields are tightened
+  (`AgentMessagePayload.role` is the `assistant` literal;
+  `SessionUserMessagePayload.role` is `SessionMessageRole`, never `assistant`).
+- SDKs: the session SSE stream-frame union (`SessionStreamFrame`) is
+  reference-only — several payloads are structurally identical
+  (`user.message` vs `agent.message`) or open objects, so the `data:` body
+  cannot be shape-matched to one variant. Consumers MUST dispatch on the SSE
+  `event:` name and decode the body as the corresponding payload.
+
+### Removed
+
+- SDKs (BREAKING): the durable `session_events` resource is gone. Removed
+  schemas: `SessionEvent`, `SessionEventListResponse`, `SessionEventPayload`,
+  and `SessionLifecycleFrame`. There is no event-list resource to page
+  anymore — lifecycle pulses (`turn.*`, `agent.message`,
+  `compaction.created`, tool activity) still arrive as live frames on
+  `…/stream`, they just aren't persisted or independently listable.
+
 ## [0.0.28] - 2026-06-22
 
 Reliability release for the environment worker, across all three workers (Go

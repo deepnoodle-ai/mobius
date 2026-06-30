@@ -167,6 +167,21 @@ func (e ActionInvocationResultStatus) Valid() bool {
 	}
 }
 
+// Defines values for AgentMessagePayloadRole.
+const (
+	AgentMessagePayloadRoleAssistant AgentMessagePayloadRole = "assistant"
+)
+
+// Valid indicates whether the value is a known member of the AgentMessagePayloadRole enum.
+func (e AgentMessagePayloadRole) Valid() bool {
+	switch e {
+	case AgentMessagePayloadRoleAssistant:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for AgentMessagingDMPolicy.
 const (
 	AgentMessagingDMPolicyAllowlist AgentMessagingDMPolicy = "allowlist"
@@ -980,30 +995,6 @@ func (e LoopActionStepSpecKind) Valid() bool {
 	}
 }
 
-// Defines values for LoopAgentSessionPolicyCompactionPolicyStrategy.
-const (
-	LoopAgentSessionPolicyCompactionPolicyStrategyAuto     LoopAgentSessionPolicyCompactionPolicyStrategy = "auto"
-	LoopAgentSessionPolicyCompactionPolicyStrategyDisabled LoopAgentSessionPolicyCompactionPolicyStrategy = "disabled"
-	LoopAgentSessionPolicyCompactionPolicyStrategyManual   LoopAgentSessionPolicyCompactionPolicyStrategy = "manual"
-	LoopAgentSessionPolicyCompactionPolicyStrategyNone     LoopAgentSessionPolicyCompactionPolicyStrategy = "none"
-)
-
-// Valid indicates whether the value is a known member of the LoopAgentSessionPolicyCompactionPolicyStrategy enum.
-func (e LoopAgentSessionPolicyCompactionPolicyStrategy) Valid() bool {
-	switch e {
-	case LoopAgentSessionPolicyCompactionPolicyStrategyAuto:
-		return true
-	case LoopAgentSessionPolicyCompactionPolicyStrategyDisabled:
-		return true
-	case LoopAgentSessionPolicyCompactionPolicyStrategyManual:
-		return true
-	case LoopAgentSessionPolicyCompactionPolicyStrategyNone:
-		return true
-	default:
-		return false
-	}
-}
-
 // Defines values for LoopAgentSessionPolicyScope.
 const (
 	LoopAgentSessionPolicyScopeAgent LoopAgentSessionPolicyScope = "agent"
@@ -1106,6 +1097,27 @@ func (e LoopModelRouteMode) Valid() bool {
 	case LoopModelRouteModeManaged:
 		return true
 	case LoopModelRouteModeWorker:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LoopRunQueueReason.
+const (
+	LoopRunQueueReasonLoopPolicy         LoopRunQueueReason = "loop_policy"
+	LoopRunQueueReasonPlanConcurrency    LoopRunQueueReason = "plan_concurrency"
+	LoopRunQueueReasonTriggerConcurrency LoopRunQueueReason = "trigger_concurrency"
+)
+
+// Valid indicates whether the value is a known member of the LoopRunQueueReason enum.
+func (e LoopRunQueueReason) Valid() bool {
+	switch e {
+	case LoopRunQueueReasonLoopPolicy:
+		return true
+	case LoopRunQueueReasonPlanConcurrency:
+		return true
+	case LoopRunQueueReasonTriggerConcurrency:
 		return true
 	default:
 		return false
@@ -1673,6 +1685,48 @@ func (e SessionCompactionPolicyStrategy) Valid() bool {
 	}
 }
 
+// Defines values for SessionCompactionThreshold.
+const (
+	SessionCompactionThresholdLg SessionCompactionThreshold = "lg"
+	SessionCompactionThresholdMd SessionCompactionThreshold = "md"
+	SessionCompactionThresholdSm SessionCompactionThreshold = "sm"
+	SessionCompactionThresholdXl SessionCompactionThreshold = "xl"
+	SessionCompactionThresholdXs SessionCompactionThreshold = "xs"
+)
+
+// Valid indicates whether the value is a known member of the SessionCompactionThreshold enum.
+func (e SessionCompactionThreshold) Valid() bool {
+	switch e {
+	case SessionCompactionThresholdLg:
+		return true
+	case SessionCompactionThresholdMd:
+		return true
+	case SessionCompactionThresholdSm:
+		return true
+	case SessionCompactionThresholdXl:
+		return true
+	case SessionCompactionThresholdXs:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SessionImageBlockType.
+const (
+	SessionImageBlockTypeImage SessionImageBlockType = "image"
+)
+
+// Valid indicates whether the value is a known member of the SessionImageBlockType enum.
+func (e SessionImageBlockType) Valid() bool {
+	switch e {
+	case SessionImageBlockTypeImage:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for SessionMessageEntryType.
 const (
 	SessionMessageEntryTypeCompaction SessionMessageEntryType = "compaction"
@@ -1685,6 +1739,21 @@ func (e SessionMessageEntryType) Valid() bool {
 	case SessionMessageEntryTypeCompaction:
 		return true
 	case SessionMessageEntryTypeMessage:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SessionMessagePreviewFrameEventType.
+const (
+	SessionMessagePreviewFrameEventTypeSessionMessagePreview SessionMessagePreviewFrameEventType = "session.message.preview"
+)
+
+// Valid indicates whether the value is a known member of the SessionMessagePreviewFrameEventType enum.
+func (e SessionMessagePreviewFrameEventType) Valid() bool {
+	switch e {
+	case SessionMessagePreviewFrameEventTypeSessionMessagePreview:
 		return true
 	default:
 		return false
@@ -1739,6 +1808,21 @@ func (e SessionOrigin) Valid() bool {
 	}
 }
 
+// Defines values for SessionResyncFrameEventType.
+const (
+	SessionResyncFrameEventTypeSessionResync SessionResyncFrameEventType = "session.resync"
+)
+
+// Valid indicates whether the value is a known member of the SessionResyncFrameEventType enum.
+func (e SessionResyncFrameEventType) Valid() bool {
+	switch e {
+	case SessionResyncFrameEventTypeSessionResync:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for SessionScope.
 const (
 	SessionScopeAgent SessionScope = "agent"
@@ -1772,6 +1856,66 @@ func (e SessionStatus) Valid() bool {
 	case SessionStatusArchived:
 		return true
 	case SessionStatusDeleted:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SessionTextBlockType.
+const (
+	SessionTextBlockTypeText SessionTextBlockType = "text"
+)
+
+// Valid indicates whether the value is a known member of the SessionTextBlockType enum.
+func (e SessionTextBlockType) Valid() bool {
+	switch e {
+	case SessionTextBlockTypeText:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SessionThinkingBlockType.
+const (
+	SessionThinkingBlockTypeThinking SessionThinkingBlockType = "thinking"
+)
+
+// Valid indicates whether the value is a known member of the SessionThinkingBlockType enum.
+func (e SessionThinkingBlockType) Valid() bool {
+	switch e {
+	case SessionThinkingBlockTypeThinking:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SessionToolResultBlockType.
+const (
+	SessionToolResultBlockTypeToolResult SessionToolResultBlockType = "tool_result"
+)
+
+// Valid indicates whether the value is a known member of the SessionToolResultBlockType enum.
+func (e SessionToolResultBlockType) Valid() bool {
+	switch e {
+	case SessionToolResultBlockTypeToolResult:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SessionToolUseBlockType.
+const (
+	SessionToolUseBlockTypeToolUse SessionToolUseBlockType = "tool_use"
+)
+
+// Valid indicates whether the value is a known member of the SessionToolUseBlockType enum.
+func (e SessionToolUseBlockType) Valid() bool {
+	switch e {
+	case SessionToolUseBlockTypeToolUse:
 		return true
 	default:
 		return false
@@ -2805,7 +2949,7 @@ type Agent struct {
 	// Kind Freeform agent classification for tooling and filtering (e.g. "llm", "rpa").
 	Kind *string `json:"kind,omitempty"`
 
-	// Model Model identifier for platform agents. Accepts any id returned by `GET /v1/projects/{project_handle}/catalog/models`, optionally `provider/`-prefixed (e.g. `xai/grok-4`); bare known ids (e.g. `claude-sonnet-4-6`) are auto-detected to their provider. Empty string falls back to the platform default.
+	// Model Model identifier for platform agents. Accepts any id returned by `GET /v1/projects/{project_handle}/catalog/models` (including slash-bearing OpenRouter catalog ids), optionally `provider/`-prefixed (e.g. `xai/grok-4`); bare known ids (e.g. `claude-sonnet-4-6`) are auto-detected to their provider. Empty string falls back to the platform default.
 	Model *string `json:"model,omitempty"`
 
 	// ModelRoute Default model route used by built-in messaging and by loop agent steps that do not override the route.
@@ -2892,7 +3036,7 @@ type AgentMemoryEntry struct {
 	// EntryId Identifier of this memory entry.
 	EntryId string `json:"entry_id"`
 
-	// Importance Rank from 0 to 100 used by compaction; higher is kept longer.
+	// Importance Rank from 0 to 100; higher ranks sooner in recall and is kept longer under the memory cap.
 	Importance int `json:"importance"`
 
 	// Key Stable identifier the agent chose for this memory.
@@ -2904,8 +3048,14 @@ type AgentMemoryEntry struct {
 	// Metadata Structured metadata stored alongside the memory (provenance, tags, …).
 	Metadata *map[string]interface{} `json:"metadata,omitempty"`
 
-	// Pinned Whether the entry is exempt from compaction.
+	// Pinned Whether the entry is guaranteed in the memory index and exempt from the memory cap.
 	Pinned bool `json:"pinned"`
+
+	// SourceRunId Identifier of the loop run that last wrote this memory, when known.
+	SourceRunId *string `json:"source_run_id,omitempty"`
+
+	// Summary Short one-line summary shown in the agent's memory index.
+	Summary *string `json:"summary,omitempty"`
 
 	// UpdatedAt When the entry was last updated.
 	UpdatedAt time.Time `json:"updated_at"`
@@ -2926,13 +3076,27 @@ type AgentMemoryEntryListResponse struct {
 	NextCursor *string `json:"next_cursor,omitempty"`
 }
 
-// AgentMessagePayload defines model for AgentMessagePayload.
+// AgentMessagePayload Payload of an `agent.message` content event: the durable encoding of one assistant transcript message. Carries the message's full structured content (text, thinking, tool_use) plus the message identity (`message_id` + `sequence`). Replaying these events reconstructs the same view as reading the messages API.
 type AgentMessagePayload struct {
-	Content              *[]map[string]interface{} `json:"content,omitempty"`
-	Message              *map[string]interface{}   `json:"message,omitempty"`
-	Output               *map[string]interface{}   `json:"output,omitempty"`
-	AdditionalProperties map[string]interface{}    `json:"-"`
+	// Content The assistant message's full canonical content blocks (text, thinking, tool_use).
+	Content []SessionContentBlock `json:"content"`
+
+	// MessageId Id of the transcript message this event mirrors.
+	MessageId string `json:"message_id"`
+
+	// Role Always `assistant`.
+	Role AgentMessagePayloadRole `json:"role"`
+
+	// Sequence The mirrored message's per-session transcript sequence.
+	Sequence int64 `json:"sequence"`
+
+	// TurnId The agent turn that produced this message.
+	TurnId               *string                `json:"turn_id,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
 }
+
+// AgentMessagePayloadRole Always `assistant`.
+type AgentMessagePayloadRole string
 
 // AgentMessagingBinding Messaging provider account that an agent can answer from.
 type AgentMessagingBinding struct {
@@ -2944,6 +3108,9 @@ type AgentMessagingBinding struct {
 
 	// Channels Optional provider conversation allowlist. Empty means any conversation on the integration.
 	Channels []string `json:"channels"`
+
+	// CompactionPolicy Controls how a session's transcript is automatically summarized as it grows. On create the supplied fields are merged over the owning agent's default policy and the server defaults; on update they patch the session's current policy. Omitted fields keep their resolved values.
+	CompactionPolicy *SessionCompactionPolicy `json:"compaction_policy,omitempty"`
 
 	// CreatedAt Time the binding was created.
 	CreatedAt time.Time `json:"created_at"`
@@ -2995,6 +3162,9 @@ type AgentMessagingBindingRequest struct {
 
 	// Channels Channel IDs the binding is scoped to (empty means all channels).
 	Channels *[]string `json:"channels,omitempty"`
+
+	// CompactionPolicy Controls how a session's transcript is automatically summarized as it grows. On create the supplied fields are merged over the owning agent's default policy and the server defaults; on update they patch the session's current policy. Omitted fields keep their resolved values.
+	CompactionPolicy *SessionCompactionPolicy `json:"compaction_policy,omitempty"`
 
 	// DmPolicy Direct-message access policy: `open`, `allowlist`, or `disabled`.
 	DmPolicy *AgentMessagingDMPolicy `json:"dm_policy,omitempty"`
@@ -3387,6 +3557,9 @@ type ColumnType string
 
 // CompactionCreatedPayload Payload of a `compaction.created` event, emitted when the session transcript is summarized. The event is non-terminal: it never closes the session stream, so a live consumer observes a compaction landing inline.
 type CompactionCreatedPayload struct {
+	// Content The summary's full canonical content blocks, so replaying the stream reconstructs the compaction entry exactly.
+	Content *[]SessionContentBlock `json:"content,omitempty"`
+
 	// CoversThroughSequence Highest message sequence the new summary covers — the before/after boundary.
 	CoversThroughSequence *int `json:"covers_through_sequence,omitempty"`
 
@@ -3395,6 +3568,12 @@ type CompactionCreatedPayload struct {
 
 	// MessageId Id of the compaction summary message appended to the transcript.
 	MessageId *string `json:"message_id,omitempty"`
+
+	// Role Transcript role of the summary entry.
+	Role *string `json:"role,omitempty"`
+
+	// Sequence The summary message's per-session transcript sequence.
+	Sequence *int64 `json:"sequence,omitempty"`
 
 	// SummaryModel Model that produced the summary.
 	SummaryModel         *string                `json:"summary_model,omitempty"`
@@ -3476,7 +3655,7 @@ type CreateAgentRequest struct {
 	// Kind Freeform classification (e.g. "llm", "rpa", "integration").
 	Kind *string `json:"kind,omitempty"`
 
-	// Model Model identifier for platform agents. Any id from `GET /v1/projects/{project_handle}/catalog/models`, optionally `provider/`-prefixed (e.g. `xai/grok-4`); bare known ids (e.g. `claude-sonnet-4-6`) are auto-detected. Empty falls back to the platform default.
+	// Model Model identifier for platform agents. Any id from `GET /v1/projects/{project_handle}/catalog/models`, including slash-bearing OpenRouter catalog ids, or an optionally `provider/`-prefixed id (e.g. `xai/grok-4`); bare known ids (e.g. `claude-sonnet-4-6`) are auto-detected. Empty falls back to the platform default.
 	Model *string `json:"model,omitempty"`
 
 	// ModelRoute Default model route used by built-in messaging and by loop agent steps that do not override the route.
@@ -3983,23 +4162,26 @@ type EventTriggerConfig struct {
 
 // GenerationDeltaFrame Live-only token preview frame that can appear on run and session SSE streams. It is not persisted, does not carry an SSE `id:`, and cannot be replayed with `after_sequence` or `Last-Event-ID`.
 type GenerationDeltaFrame struct {
-	AgentTurnId *string `json:"agent_turn_id,omitempty"`
-
 	// Delta Token preview payload, usually `{ "text": "..." }`.
 	Delta map[string]interface{} `json:"delta"`
 
-	// DeltaSequence Preferred publisher-local ordering hint, not a replay cursor.
-	DeltaSequence *int64                        `json:"delta_sequence,omitempty"`
-	EventType     GenerationDeltaFrameEventType `json:"event_type"`
-	ExecutorKind  *string                       `json:"executor_kind,omitempty"`
-	GenerationKey *string                       `json:"generation_key,omitempty"`
-	JobId         *string                       `json:"job_id,omitempty"`
-	RunId         *string                       `json:"run_id,omitempty"`
+	// DeltaSequence Publisher-local ordering hint for deltas within a turn, not a replay cursor.
+	DeltaSequence *int64 `json:"delta_sequence,omitempty"`
 
-	// Sequence Publisher-local ordering hint, not a replay cursor.
-	Sequence             *int64                 `json:"sequence,omitempty"`
+	// EmittedAt Server timestamp when this live preview frame was emitted.
+	EmittedAt *time.Time                    `json:"emitted_at,omitempty"`
+	EventType GenerationDeltaFrameEventType `json:"event_type"`
+	JobId     *string                       `json:"job_id,omitempty"`
+
+	// LiveSequence Monotonic per-turn sequence across all live-only session frames; use to detect dropped live frames.
+	LiveSequence *int64 `json:"live_sequence,omitempty"`
+
+	// Model Model producing the generation, e.g. `claude-sonnet-4-6`.
+	Model                *string                `json:"model,omitempty"`
+	RunId                *string                `json:"run_id,omitempty"`
 	SessionId            *string                `json:"session_id,omitempty"`
 	ToolCallId           *string                `json:"tool_call_id,omitempty"`
+	TurnId               *string                `json:"turn_id,omitempty"`
 	WorkerId             *string                `json:"worker_id,omitempty"`
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
@@ -4484,19 +4666,10 @@ type LoopActionStepSpecKind string
 
 // LoopAgentSessionPolicy Durable conversation-session policy for loop agent steps. Omit to enable the product default: loop-scoped sessions keyed from the triggering conversation when Mobius can identify one, such as a Telegram chat ID.
 type LoopAgentSessionPolicy struct {
-	// CompactionPolicy Optional per-session compaction policy merged with server defaults when the session is first created. Existing sessions keep their current compaction policy unless edited through a session-specific operation.
-	CompactionPolicy *struct {
-		// Strategy Compaction strategy: `auto`, `manual`, `disabled`, or `none`.
-		Strategy *LoopAgentSessionPolicyCompactionPolicyStrategy `json:"strategy,omitempty"`
+	// CompactionPolicy Controls how a session's transcript is automatically summarized as it grows. On create the supplied fields are merged over the owning agent's default policy and the server defaults; on update they patch the session's current policy. Omitted fields keep their resolved values.
+	CompactionPolicy *SessionCompactionPolicy `json:"compaction_policy,omitempty"`
 
-		// SummaryModel Model used to produce compaction summaries.
-		SummaryModel *string `json:"summary_model,omitempty"`
-
-		// ThresholdTokens Token threshold that triggers automatic compaction.
-		ThresholdTokens *int `json:"threshold_tokens,omitempty"`
-	} `json:"compaction_policy,omitempty"`
-
-	// Disabled Disable durable session context and transcript writes for the affected agent step(s).
+	// Disabled Reserved for internal synthesized agent executions. Authored loop agent steps are session-backed; setting this to `true` is rejected.
 	Disabled *bool `json:"disabled,omitempty"`
 
 	// Name Optional Go-template string rendered against `event`, `meta`, `config`, `context`, `agent`, `loop`, `run`, `source`, and `step`. When omitted, Mobius derives a stable name from the event payload, falling back to the trigger or `default`.
@@ -4511,9 +4684,6 @@ type LoopAgentSessionPolicy struct {
 	// Visibility Visibility of the session in project surfaces: `project` or `private`.
 	Visibility *SessionVisibility `json:"visibility,omitempty"`
 }
-
-// LoopAgentSessionPolicyCompactionPolicyStrategy Compaction strategy: `auto`, `manual`, `disabled`, or `none`.
-type LoopAgentSessionPolicyCompactionPolicyStrategy string
 
 // LoopAgentSessionPolicyScope Named-session boundary. `auto` and omitted use `loop`. `agent` intentionally shares the named session across loops using the same agent.
 type LoopAgentSessionPolicyScope string
@@ -4772,6 +4942,12 @@ type LoopRun struct {
 	// ParentStepKey Step key within the parent run's loop that triggered this run. Present only on child runs.
 	ParentStepKey *string `json:"parent_step_key,omitempty"`
 
+	// PlanConcurrencyLimit Org-wide concurrent-run ceiling stamped at run start. Present when the run was evaluated against a plan concurrency limit.
+	PlanConcurrencyLimit *int `json:"plan_concurrency_limit,omitempty"`
+
+	// QueueReason Why a run is waiting in the queue. `plan_concurrency` means the organization's current plan has no active-run capacity available. `loop_policy` and `trigger_concurrency` mean authored concurrency policy deferred the run.
+	QueueReason *LoopRunQueueReason `json:"queue_reason,omitempty"`
+
 	// Result Final result payload. When the loop declares an `output:` block this is that block rendered at completion; otherwise it is the run's accumulated step outputs, keyed by step id. Absent until the run terminates successfully.
 	Result *map[string]interface{} `json:"result,omitempty"`
 
@@ -4812,7 +4988,7 @@ type LoopRunEvent struct {
 	// Id Stable event identifier.
 	Id string `json:"id"`
 
-	// Payload Typed payloads for common durable run event types.
+	// Payload Typed payloads for common durable run event types. The containing `LoopRunEvent.event_type` selects the payload shape; payload objects do not duplicate that discriminator because some payloads use fields such as `event_type` for their own lifecycle data (for example, the external matcher recorded by `wait.opened`).
 	Payload *RunEventPayload `json:"payload,omitempty"`
 
 	// RunId Run this event belongs to.
@@ -4854,6 +5030,9 @@ type LoopRunListResponse struct {
 	// NextCursor Opaque cursor for the next page; absent when no more results.
 	NextCursor *string `json:"next_cursor,omitempty"`
 }
+
+// LoopRunQueueReason Why a run is waiting in the queue. `plan_concurrency` means the organization's current plan has no active-run capacity available. `loop_policy` and `trigger_concurrency` mean authored concurrency policy deferred the run.
+type LoopRunQueueReason string
 
 // LoopRunSource Optional attribution for the call that started this run. Triggers and HTTP trigger dispatch populate `trigger_id` and `trigger_fire_id`. API callers usually only set `type` and `id`.
 type LoopRunSource struct {
@@ -4974,10 +5153,8 @@ type LoopRunStepStatus string
 // Grouping: `completed` is the success terminal. `step_failed`, `check_failed`, and `gate_rejected` mean the work failed (an error, a failed verification, or a human rejection at a gate). `budget_exceeded`, `turn_limit_reached`, `wall_clock_exceeded`, `step_limit_reached`, and `progress_stalled` mean a configured guardrail halted the run — the limit worked; the loop did not break. `cancelled` and `replaced` mean somebody (or a concurrency policy) chose to stop it.
 type LoopRunStopReason string
 
-// LoopRunStreamFrame JSON payload of a single `data:` line on the run event SSE stream. Durable lifecycle frames are replayable and carry an SSE `id:`; `generation.delta` frames are live-only previews and do not.
-type LoopRunStreamFrame struct {
-	union json.RawMessage
-}
+// LoopRunStreamFrame Durable run lifecycle frame. SSE messages carrying this shape include `id: <sequence>`, and that value is the only cursor clients should persist for `after_sequence` or `Last-Event-ID` resume.
+type LoopRunStreamFrame = LoopRunLifecycleFrame
 
 // LoopSleepStep Sleep step configuration recognised inside `LoopSpec.steps[].config`.
 type LoopSleepStep struct {
@@ -5269,7 +5446,7 @@ type ModelOption struct {
 	// Description Short guidance about when to use this model.
 	Description *string `json:"description,omitempty"`
 
-	// Id Bare model id assigned to an agent's `model` field.
+	// Id Model id assigned to an agent's `model` field. Some catalog ids, such as OpenRouter slugs, include `/`.
 	Id string `json:"id"`
 
 	// Label Human-readable model label for UI.
@@ -5290,7 +5467,7 @@ type ModelProviderGroup struct {
 	// Models Models offered by this provider in display order.
 	Models []ModelOption `json:"models"`
 
-	// Provider Canonical provider id (`anthropic`, `openai`, `gemini`, `xai`).
+	// Provider Canonical provider id (`anthropic`, `openai`, `openrouter`, `gemini`, `xai`).
 	Provider string `json:"provider"`
 
 	// Source Where credentials come from — a project integration (`byok`) or a platform-managed key (`platform`).
@@ -5388,6 +5565,9 @@ type PutAgentMemoryEntryRequest struct {
 
 	// Pinned Pin to exempt this memory from compaction.
 	Pinned *bool `json:"pinned,omitempty"`
+
+	// Summary Optional short one-line summary (≤140 chars) shown in the memory index.
+	Summary *string `json:"summary,omitempty"`
 }
 
 // QueryRowsRequest defines model for QueryRowsRequest.
@@ -5495,7 +5675,7 @@ type RunConsumer struct {
 	SignalName string `json:"signal_name"`
 }
 
-// RunEventPayload Typed payloads for common durable run event types.
+// RunEventPayload Typed payloads for common durable run event types. The containing `LoopRunEvent.event_type` selects the payload shape; payload objects do not duplicate that discriminator because some payloads use fields such as `event_type` for their own lifecycle data (for example, the external matcher recorded by `wait.opened`).
 type RunEventPayload struct {
 	union json.RawMessage
 }
@@ -5649,63 +5829,37 @@ type SessionCompactionBoundary struct {
 
 // SessionCompactionPolicy Controls how a session's transcript is automatically summarized as it grows. On create the supplied fields are merged over the owning agent's default policy and the server defaults; on update they patch the session's current policy. Omitted fields keep their resolved values.
 type SessionCompactionPolicy struct {
-	// Strategy `auto` (default) compacts automatically when the transcript crosses `threshold_tokens`. `manual` only compacts on an explicit compact request. `disabled`/`none` never compact.
+	// Strategy `auto` (default) compacts automatically when the transcript crosses the `threshold` size. `manual` only compacts on an explicit compact request. `disabled` (alias `none`) never compacts.
 	Strategy *SessionCompactionPolicyStrategy `json:"strategy,omitempty"`
 
 	// SummaryModel Model used to produce compaction summaries.
 	SummaryModel *string `json:"summary_model,omitempty"`
 
-	// ThresholdTokens Token threshold that triggers automatic compaction under the `auto` strategy.
-	ThresholdTokens *int `json:"threshold_tokens,omitempty"`
+	// Threshold T-shirt size selecting when `auto` compaction triggers, smallest (`xs`, compact very early) to largest (`xl`, compact very late). The server maps each size to a token estimate; `sm` is the default.
+	Threshold *SessionCompactionThreshold `json:"threshold,omitempty"`
 }
 
-// SessionCompactionPolicyStrategy `auto` (default) compacts automatically when the transcript crosses `threshold_tokens`. `manual` only compacts on an explicit compact request. `disabled`/`none` never compact.
+// SessionCompactionPolicyStrategy `auto` (default) compacts automatically when the transcript crosses the `threshold` size. `manual` only compacts on an explicit compact request. `disabled` (alias `none`) never compacts.
 type SessionCompactionPolicyStrategy string
 
-// SessionEvent One durable, per-session lifecycle event in the session event log.
-type SessionEvent struct {
-	// AgentTurnId Turn that produced this event, when set.
-	AgentTurnId *string `json:"agent_turn_id,omitempty"`
+// SessionCompactionThreshold T-shirt size selecting when `auto` compaction triggers, smallest (`xs`, compact very early) to largest (`xl`, compact very late). The server maps each size to a token estimate; `sm` is the default.
+type SessionCompactionThreshold string
 
-	// CreatedAt Server timestamp when the event was recorded.
-	CreatedAt time.Time `json:"created_at"`
-
-	// EventType Lifecycle event type, e.g. `user.message`, `tool.call`, or `turn.completed`.
-	EventType string `json:"event_type"`
-
-	// Payload Typed payloads for common durable session event types.
-	Payload *SessionEventPayload `json:"payload,omitempty"`
-
-	// Seq Deprecated alias for `sequence`, kept for v1 compatibility.
-	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
-	Seq int64 `json:"seq"`
-
-	// Sequence Monotonic per-session sequence number; pass as `after_sequence` to resume.
-	Sequence int64 `json:"sequence"`
-
-	// SessionId Session this event belongs to.
-	SessionId string `json:"session_id"`
-}
-
-// SessionEventListResponse defines model for SessionEventListResponse.
-type SessionEventListResponse struct {
-	// HasMore True when more events exist past this page.
-	HasMore *bool `json:"has_more,omitempty"`
-
-	// Items Session events in this page, ordered by `sequence` ascending.
-	Items []SessionEvent `json:"items"`
-
-	// NextSequence Sequence of the last item — pass back as `after_sequence` to continue.
-	NextSequence *int64 `json:"next_sequence,omitempty"`
-}
-
-// SessionEventPayload Typed payloads for common durable session event types.
-type SessionEventPayload struct {
+// SessionContentBlock One content block in a session transcript message — the canonical, frozen JSON shape Mobius persists and replays, discriminated by `type`. The variants are `text`, `thinking`, `tool_use`, `tool_result`, and `image`. Each variant permits provider-specific extra fields (citations, signatures, cache hints, and the like), and unknown fields are preserved rather than rejected, so the transcript round-trips losslessly across providers.
+type SessionContentBlock struct {
 	union json.RawMessage
 }
 
-// SessionLifecycleFrame One durable, per-session lifecycle event in the session event log.
-type SessionLifecycleFrame = SessionEvent
+// SessionImageBlock An image block, e.g. multimodal caller input.
+type SessionImageBlock struct {
+	// Source Provider-specific image source descriptor.
+	Source               *map[string]interface{} `json:"source,omitempty"`
+	Type                 SessionImageBlockType   `json:"type"`
+	AdditionalProperties map[string]interface{}  `json:"-"`
+}
+
+// SessionImageBlockType defines model for SessionImageBlock.Type.
+type SessionImageBlockType string
 
 // SessionListResponse defines model for SessionListResponse.
 type SessionListResponse struct {
@@ -5719,13 +5873,27 @@ type SessionListResponse struct {
 	NextCursor *string `json:"next_cursor,omitempty"`
 }
 
+// SessionLiveSnapshot Ephemeral, process-local live transcript snapshot for an in-flight turn.
+type SessionLiveSnapshot struct {
+	// Frames Live-only frame payloads in live_sequence order. Each item has the same shape as its SSE `data:` payload.
+	Frames []map[string]interface{} `json:"frames"`
+
+	// LastLiveSequence Highest live_sequence included in `frames`, or 0 when no live frames are available.
+	LastLiveSequence int64  `json:"last_live_sequence"`
+	SessionId        string `json:"session_id"`
+	TurnId           string `json:"turn_id"`
+
+	// UpdatedAt Server timestamp when the snapshot was last updated.
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
 // SessionMessage One persisted message or compaction entry in a session transcript.
 type SessionMessage struct {
 	// AgentId Agent that owns the parent session.
 	AgentId string `json:"agent_id"`
 
-	// Content Ordered content blocks (text, tool calls, tool results, images).
-	Content []map[string]interface{} `json:"content"`
+	// Content Ordered canonical content blocks (text, thinking, tool_use, tool_result, image).
+	Content []SessionContentBlock `json:"content"`
 
 	// CoversThroughSequence For `compaction` messages, the highest sequence number this summary covers.
 	CoversThroughSequence *int `json:"covers_through_sequence,omitempty"`
@@ -5769,9 +5937,50 @@ type SessionMessageListResponse struct {
 	// NextSequence Sequence of the last (highest) item — pass back as `after_sequence` to page forward (newer).
 	NextSequence *int64 `json:"next_sequence,omitempty"`
 
-	// PrevSequence Sequence of the first (lowest) item — pass back as `before_sequence` with `order=desc` to page backward (older).
+	// PrevSequence Sequence of the first (lowest) item — pass back as `before_sequence` with `order=desc` to page backward (older). After paginating history, open the stream with `after_sequence=next_sequence` to receive the in-flight turn and everything after it — the stream and the messages API share one `sequence` cursor, so there is no overlap and no gap.
 	PrevSequence *int64 `json:"prev_sequence,omitempty"`
 }
+
+// SessionMessagePreviewFrame Live-only, SessionMessage-compatible transcript preview for an in-flight agent response segment. It carries no durable `seq`, transcript `sequence`, or stable `message_id`; the committed row later replaces it by `turn_id` plus `metadata.response_message_index`.
+type SessionMessagePreviewFrame struct {
+	// AgentId Agent that owns the parent session, when known.
+	AgentId *string `json:"agent_id,omitempty"`
+
+	// Content Ordered content blocks using the same canonical block shape as SessionMessage.
+	Content []SessionContentBlock `json:"content"`
+
+	// EmittedAt Server timestamp when this live preview frame was emitted.
+	EmittedAt *time.Time `json:"emitted_at,omitempty"`
+
+	// EntryType Transcript entry type: `message` or `compaction`.
+	EntryType SessionMessageEntryType             `json:"entry_type"`
+	EventType SessionMessagePreviewFrameEventType `json:"event_type"`
+
+	// Id Provisional live id. Do not persist or use as the durable message id.
+	Id string `json:"id"`
+
+	// LiveSequence Monotonic per-turn sequence across all live-only session frames; use to detect dropped live frames.
+	LiveSequence *int64 `json:"live_sequence,omitempty"`
+
+	// Metadata Must include `response_message_index`, the handoff key shared with the durable transcript row.
+	Metadata map[string]interface{} `json:"metadata"`
+
+	// Role Message role: `system`, `user`, `assistant`, `tool`, or `compaction`.
+	Role SessionMessageRole `json:"role"`
+
+	// RunId Loop run that produced the preview, when applicable.
+	RunId *string `json:"run_id,omitempty"`
+
+	// SessionId Session this preview belongs to.
+	SessionId string `json:"session_id"`
+
+	// TurnId Agent turn that produced the preview.
+	TurnId               string                 `json:"turn_id"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// SessionMessagePreviewFrameEventType defines model for SessionMessagePreviewFrame.EventType.
+type SessionMessagePreviewFrameEventType string
 
 // SessionMessageRole Message role: `system`, `user`, `assistant`, `tool`, or `compaction`.
 type SessionMessageRole string
@@ -5779,23 +5988,120 @@ type SessionMessageRole string
 // SessionOrigin Surface that created the session: `manual`, `api`, or `loop`.
 type SessionOrigin string
 
+// SessionResyncFrame Live-only marker asking the client to reconcile the active turn from the live snapshot endpoint.
+type SessionResyncFrame struct {
+	EventType SessionResyncFrameEventType `json:"event_type"`
+
+	// Reason Machine-readable resync reason, e.g. `subscriber_overflow`.
+	Reason    string `json:"reason"`
+	SessionId string `json:"session_id"`
+}
+
+// SessionResyncFrameEventType defines model for SessionResyncFrame.EventType.
+type SessionResyncFrameEventType string
+
 // SessionScope Boundary used to resolve named sessions: `agent` or `loop`.
 type SessionScope string
 
 // SessionStatus Durable conversation session status: `active`, `archived`, or `deleted`.
 type SessionStatus string
 
-// SessionStreamFrame JSON payload of a single `data:` line on the session event SSE stream. Durable lifecycle frames are replayable and carry an SSE `id:`; `generation.delta` frames are live-only previews and do not.
+// SessionStreamFrame JSON payload of a single `data:` line on the session SSE stream, paired with an `event: <event type>` line.
+//
+// The `event:` line is the authoritative frame selector. This union is reference-only: several payloads are structurally identical (e.g. `user.message` and `agent.message`) or permissive open objects, so the `data:` body alone cannot be shape-matched to a single variant. Consumers MUST dispatch on the `event:` name and decode the body as the corresponding payload — never validate the bare body against the union.
+//
+// Durable message frames (`user.message`, `agent.message`, `compaction.created`) are replayed from the transcript and carry an SSE `id: <sequence>` — that `sequence` is the only cursor a client persists for `after_sequence` / `Last-Event-ID` resume. Terminal `turn.*` frames mark the active turn settling. `session.message.preview`, `session.resync`, `tool.call`, `tool.result`, and `generation.delta` frames are live-only and carry no `id:`.
 type SessionStreamFrame struct {
 	union json.RawMessage
 }
 
-// SessionUserMessagePayload defines model for SessionUserMessagePayload.
+// SessionTextBlock Assistant or caller text.
+type SessionTextBlock struct {
+	// Text The text content.
+	Text                 string                 `json:"text"`
+	Type                 SessionTextBlockType   `json:"type"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// SessionTextBlockType defines model for SessionTextBlock.Type.
+type SessionTextBlockType string
+
+// SessionThinkingBlock An extended-reasoning block produced by a reasoning model.
+type SessionThinkingBlock struct {
+	// Signature Provider signature for the reasoning block, when present.
+	Signature *string `json:"signature,omitempty"`
+
+	// Thinking The reasoning text.
+	Thinking             string                   `json:"thinking"`
+	Type                 SessionThinkingBlockType `json:"type"`
+	AdditionalProperties map[string]interface{}   `json:"-"`
+}
+
+// SessionThinkingBlockType defines model for SessionThinkingBlock.Type.
+type SessionThinkingBlockType string
+
+// SessionToolResultBlock The result of a tool call.
+type SessionToolResultBlock struct {
+	// Content Result payload — a string, or an array of typed sub-blocks using the same canonical block shape as a transcript message.
+	Content *SessionToolResultBlock_Content `json:"content,omitempty"`
+
+	// IsError True when the tool reported a failure.
+	IsError *bool `json:"is_error,omitempty"`
+
+	// ToolUseId The tool_use id this result answers.
+	ToolUseId            string                     `json:"tool_use_id"`
+	Type                 SessionToolResultBlockType `json:"type"`
+	AdditionalProperties map[string]interface{}     `json:"-"`
+}
+
+// SessionToolResultBlockContent0 defines model for .
+type SessionToolResultBlockContent0 = string
+
+// SessionToolResultBlockContent1 defines model for .
+type SessionToolResultBlockContent1 = []SessionContentBlock
+
+// SessionToolResultBlock_Content Result payload — a string, or an array of typed sub-blocks using the same canonical block shape as a transcript message.
+type SessionToolResultBlock_Content struct {
+	union json.RawMessage
+}
+
+// SessionToolResultBlockType defines model for SessionToolResultBlock.Type.
+type SessionToolResultBlockType string
+
+// SessionToolUseBlock A tool call the agent issued.
+type SessionToolUseBlock struct {
+	// Id Tool-call id; the matching tool_result references it.
+	Id string `json:"id"`
+
+	// Input Tool input arguments.
+	Input map[string]interface{} `json:"input"`
+
+	// Name Tool name.
+	Name                 string                  `json:"name"`
+	Type                 SessionToolUseBlockType `json:"type"`
+	AdditionalProperties map[string]interface{}  `json:"-"`
+}
+
+// SessionToolUseBlockType defines model for SessionToolUseBlock.Type.
+type SessionToolUseBlockType string
+
+// SessionUserMessagePayload Payload of a `user.message` content event: the durable encoding of one non-assistant transcript message — caller input, or a user-role message carrying tool results. It mirrors the transcript row exactly, carrying the message identity (`message_id` + `sequence`) and full content. Replaying these events reconstructs the same view as reading the messages API.
 type SessionUserMessagePayload struct {
-	Content              *[]map[string]interface{} `json:"content,omitempty"`
-	Message              *map[string]interface{}   `json:"message,omitempty"`
-	TurnId               *string                   `json:"turn_id,omitempty"`
-	AdditionalProperties map[string]interface{}    `json:"-"`
+	// Content The message's full canonical content blocks (text, tool_result, …).
+	Content []SessionContentBlock `json:"content"`
+
+	// MessageId Id of the transcript message this event mirrors.
+	MessageId string `json:"message_id"`
+
+	// Role Message role: `system`, `user`, `assistant`, `tool`, or `compaction`.
+	Role SessionMessageRole `json:"role"`
+
+	// Sequence The mirrored message's per-session transcript sequence.
+	Sequence int64 `json:"sequence"`
+
+	// TurnId The agent turn that produced this message, when applicable.
+	TurnId               *string                `json:"turn_id,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
 // SessionVisibility Visibility of the session in project surfaces: `project` or `private`.
@@ -6161,21 +6467,35 @@ type TableStats struct {
 // TagMap Key/value tags for organizing and filtering resources. Up to 8 per resource; keys 1–128 characters, values up to 256. Keys prefixed `mobius:` are system-managed and cannot be set by callers.
 type TagMap map[string]string
 
-// ToolCallPayload defines model for ToolCallPayload.
+// ToolCallPayload Payload of a live-only `tool.call` frame — an in-flight preview that a tool was invoked during the active turn. Never persisted and carries no sequence: the durable record of the call is the `tool_use` content block of the assistant message, delivered as an `agent.message` event when the turn commits.
 type ToolCallPayload struct {
-	Arguments            *map[string]interface{} `json:"arguments,omitempty"`
-	Name                 *string                 `json:"name,omitempty"`
-	ToolCallId           *string                 `json:"tool_call_id,omitempty"`
-	AdditionalProperties map[string]interface{}  `json:"-"`
+	// EmittedAt Server timestamp when this live preview frame was emitted.
+	EmittedAt *time.Time              `json:"emitted_at,omitempty"`
+	Input     *map[string]interface{} `json:"input,omitempty"`
+
+	// LiveSequence Monotonic per-turn sequence across all live-only session frames; use to detect dropped live frames.
+	LiveSequence         *int64                 `json:"live_sequence,omitempty"`
+	ToolCallId           *string                `json:"tool_call_id,omitempty"`
+	ToolName             *string                `json:"tool_name,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
-// ToolResultPayload defines model for ToolResultPayload.
+// ToolResultPayload Payload of a live-only `tool.result` frame — an in-flight preview that a tool returned during the active turn. Never persisted and carries no sequence: the durable record is the `tool_result` content block of the following transcript message, delivered as a `user.message` event when the turn commits.
 type ToolResultPayload struct {
-	Error                *string                 `json:"error,omitempty"`
-	Name                 *string                 `json:"name,omitempty"`
-	Result               *map[string]interface{} `json:"result,omitempty"`
-	ToolCallId           *string                 `json:"tool_call_id,omitempty"`
-	AdditionalProperties map[string]interface{}  `json:"-"`
+	// Content The tool result as canonical content blocks (e.g. `[{ "type": "text", "text": "…" }]`), the same `SessionContentBlock` shape as the `tool_result` content of the durable transcript message — so the live preview and the committed record read identically. In practice the server collapses the result to a single `text` block.
+	Content *[]SessionContentBlock `json:"content,omitempty"`
+	Display *string                `json:"display,omitempty"`
+
+	// EmittedAt Server timestamp when this live preview frame was emitted.
+	EmittedAt *time.Time `json:"emitted_at,omitempty"`
+	Error     *string    `json:"error,omitempty"`
+	IsError   *bool      `json:"is_error,omitempty"`
+
+	// LiveSequence Monotonic per-turn sequence across all live-only session frames; use to detect dropped live frames.
+	LiveSequence         *int64                 `json:"live_sequence,omitempty"`
+	ToolCallId           *string                `json:"tool_call_id,omitempty"`
+	ToolName             *string                `json:"tool_name,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
 // Toolkit Reusable bundle of action selectors assignable to agents.
@@ -6273,7 +6593,7 @@ type ToolkitRequest struct {
 
 // TurnAck Acknowledgement that a turn started, with a stream cursor.
 type TurnAck struct {
-	// AfterSequence The durable event sequence cursor to stream from. Pass it as `after_sequence` to `GET .../events` to follow this turn.
+	// AfterSequence The transcript message `sequence` cursor to stream from. Pass it as `after_sequence` to `GET .../stream` to follow this turn.
 	AfterSequence int64 `json:"after_sequence"`
 
 	// Deduped True when a repeated idempotency key resumed an existing turn.
@@ -6292,9 +6612,8 @@ type TurnCancelledPayload struct {
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
-// TurnCompletedPayload defines model for TurnCompletedPayload.
+// TurnCompletedPayload Payload of a `turn.completed` event — the terminal idle marker carrying token usage. The assistant output is not duplicated here; it is delivered as `agent.message` content events when the transcript commits.
 type TurnCompletedPayload struct {
-	Output               *map[string]interface{} `json:"output,omitempty"`
 	Usage                *map[string]interface{} `json:"usage,omitempty"`
 	AdditionalProperties map[string]interface{}  `json:"-"`
 }
@@ -6306,12 +6625,8 @@ type TurnFailedPayload struct {
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
-// TurnStartedPayload defines model for TurnStartedPayload.
-type TurnStartedPayload struct {
-	Input                *map[string]interface{} `json:"input,omitempty"`
-	TurnId               *string                 `json:"turn_id,omitempty"`
-	AdditionalProperties map[string]interface{}  `json:"-"`
-}
+// TurnStartedPayload Payload of a `turn.started` event. Empty: the turn is identified by the envelope `turn_id`, so nothing is duplicated in the payload.
+type TurnStartedPayload map[string]interface{}
 
 // TurnWaitingPayload defines model for TurnWaitingPayload.
 type TurnWaitingPayload struct {
@@ -6359,7 +6674,7 @@ type UpdateAgentRequest struct {
 	// Kind Replacement freeform agent classification (e.g. `llm`, `rpa`).
 	Kind *string `json:"kind,omitempty"`
 
-	// Model Replacement model identifier for platform agents (any id from `GET /v1/projects/{project_handle}/catalog/models`, optionally `provider/`-prefixed).
+	// Model Replacement model identifier for platform agents (any id from `GET /v1/projects/{project_handle}/catalog/models`, including slash-bearing OpenRouter catalog ids, or an optionally `provider/`-prefixed id).
 	Model *string `json:"model,omitempty"`
 
 	// ModelRoute Default model route used by built-in messaging and by loop agent steps that do not override the route.
@@ -6551,7 +6866,19 @@ type UpsertRowResult struct {
 
 // WaitPayload defines model for WaitPayload.
 type WaitPayload struct {
-	Deadline             *time.Time              `json:"deadline,omitempty"`
+	Deadline *time.Time `json:"deadline,omitempty"`
+
+	// EventType Source event type or pattern this wait is listening for.
+	EventType *string `json:"event_type,omitempty"`
+
+	// ExpiresAt Wall-clock expiry for the wait, when bounded.
+	ExpiresAt *time.Time `json:"expires_at,omitempty"`
+
+	// Match Optional matcher fields required on the source event.
+	Match *map[string]interface{} `json:"match,omitempty"`
+
+	// SourceId Optional source identifier that scopes event matching.
+	SourceId             *string                 `json:"source_id,omitempty"`
 	Step                 *string                 `json:"step,omitempty"`
 	Subject              *map[string]interface{} `json:"subject,omitempty"`
 	WaitId               *string                 `json:"wait_id,omitempty"`
@@ -7349,18 +7676,6 @@ type ListSessionsParams struct {
 	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
-// ListSessionEventsParams defines parameters for ListSessionEvents.
-type ListSessionEventsParams struct {
-	// AfterSequence Continuation cursor for sequence-ordered lists. Only include rows whose monotonic per-resource sequence is strictly greater than this value. Pass the `next_sequence` from the previous response to fetch the next page.
-	AfterSequence *AfterSequenceParam `form:"after_sequence,omitempty" json:"after_sequence,omitempty"`
-
-	// Limit Maximum number of items to return
-	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
-
-	// LastEventID SSE reconnect cursor. The browser EventSource API replays the last event's `id` in this header on automatic reconnect; the server resumes the stream after that sequence number. When both this header and the `after_sequence` query parameter are supplied, the larger sequence wins, so an explicit `after_sequence` never rewinds a live reconnect. Ignored for non-streaming (JSON) requests.
-	LastEventID *LastEventIDParam `json:"Last-Event-ID,omitempty"`
-}
-
 // ListSessionMessagesParams defines parameters for ListSessionMessages.
 type ListSessionMessagesParams struct {
 	// AfterSequence Continuation cursor for sequence-ordered lists. Only include rows whose monotonic per-resource sequence is strictly greater than this value. Pass the `next_sequence` from the previous response to fetch the next page.
@@ -7378,6 +7693,15 @@ type ListSessionMessagesParams struct {
 
 // ListSessionMessagesParamsOrder defines parameters for ListSessionMessages.
 type ListSessionMessagesParamsOrder string
+
+// StreamSessionParams defines parameters for StreamSession.
+type StreamSessionParams struct {
+	// AfterSequence Continuation cursor for sequence-ordered lists. Only include rows whose monotonic per-resource sequence is strictly greater than this value. Pass the `next_sequence` from the previous response to fetch the next page.
+	AfterSequence *AfterSequenceParam `form:"after_sequence,omitempty" json:"after_sequence,omitempty"`
+
+	// LastEventID SSE reconnect cursor. The browser EventSource API replays the last event's `id` in this header on automatic reconnect; the server resumes the stream after that sequence number. When both this header and the `after_sequence` query parameter are supplied, the larger sequence wins, so an explicit `after_sequence` never rewinds a live reconnect. Ignored for non-streaming (JSON) requests.
+	LastEventID *LastEventIDParam `json:"Last-Event-ID,omitempty"`
+}
 
 // ListSessionTurnsParams defines parameters for ListSessionTurns.
 type ListSessionTurnsParams struct {
@@ -8213,20 +8537,36 @@ func (a *AgentMessagePayload) UnmarshalJSON(b []byte) error {
 		delete(object, "content")
 	}
 
-	if raw, found := object["message"]; found {
-		err = json.Unmarshal(raw, &a.Message)
+	if raw, found := object["message_id"]; found {
+		err = json.Unmarshal(raw, &a.MessageId)
 		if err != nil {
-			return fmt.Errorf("error reading 'message': %w", err)
+			return fmt.Errorf("error reading 'message_id': %w", err)
 		}
-		delete(object, "message")
+		delete(object, "message_id")
 	}
 
-	if raw, found := object["output"]; found {
-		err = json.Unmarshal(raw, &a.Output)
+	if raw, found := object["role"]; found {
+		err = json.Unmarshal(raw, &a.Role)
 		if err != nil {
-			return fmt.Errorf("error reading 'output': %w", err)
+			return fmt.Errorf("error reading 'role': %w", err)
 		}
-		delete(object, "output")
+		delete(object, "role")
+	}
+
+	if raw, found := object["sequence"]; found {
+		err = json.Unmarshal(raw, &a.Sequence)
+		if err != nil {
+			return fmt.Errorf("error reading 'sequence': %w", err)
+		}
+		delete(object, "sequence")
+	}
+
+	if raw, found := object["turn_id"]; found {
+		err = json.Unmarshal(raw, &a.TurnId)
+		if err != nil {
+			return fmt.Errorf("error reading 'turn_id': %w", err)
+		}
+		delete(object, "turn_id")
 	}
 
 	if len(object) != 0 {
@@ -8255,17 +8595,25 @@ func (a AgentMessagePayload) MarshalJSON() ([]byte, error) {
 		}
 	}
 
-	if a.Message != nil {
-		object["message"], err = json.Marshal(a.Message)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'message': %w", err)
-		}
+	object["message_id"], err = json.Marshal(a.MessageId)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'message_id': %w", err)
 	}
 
-	if a.Output != nil {
-		object["output"], err = json.Marshal(a.Output)
+	object["role"], err = json.Marshal(a.Role)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'role': %w", err)
+	}
+
+	object["sequence"], err = json.Marshal(a.Sequence)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'sequence': %w", err)
+	}
+
+	if a.TurnId != nil {
+		object["turn_id"], err = json.Marshal(a.TurnId)
 		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'output': %w", err)
+			return nil, fmt.Errorf("error marshaling 'turn_id': %w", err)
 		}
 	}
 
@@ -8642,6 +8990,14 @@ func (a *CompactionCreatedPayload) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
+	if raw, found := object["content"]; found {
+		err = json.Unmarshal(raw, &a.Content)
+		if err != nil {
+			return fmt.Errorf("error reading 'content': %w", err)
+		}
+		delete(object, "content")
+	}
+
 	if raw, found := object["covers_through_sequence"]; found {
 		err = json.Unmarshal(raw, &a.CoversThroughSequence)
 		if err != nil {
@@ -8664,6 +9020,22 @@ func (a *CompactionCreatedPayload) UnmarshalJSON(b []byte) error {
 			return fmt.Errorf("error reading 'message_id': %w", err)
 		}
 		delete(object, "message_id")
+	}
+
+	if raw, found := object["role"]; found {
+		err = json.Unmarshal(raw, &a.Role)
+		if err != nil {
+			return fmt.Errorf("error reading 'role': %w", err)
+		}
+		delete(object, "role")
+	}
+
+	if raw, found := object["sequence"]; found {
+		err = json.Unmarshal(raw, &a.Sequence)
+		if err != nil {
+			return fmt.Errorf("error reading 'sequence': %w", err)
+		}
+		delete(object, "sequence")
 	}
 
 	if raw, found := object["summary_model"]; found {
@@ -8693,6 +9065,13 @@ func (a CompactionCreatedPayload) MarshalJSON() ([]byte, error) {
 	var err error
 	object := make(map[string]json.RawMessage)
 
+	if a.Content != nil {
+		object["content"], err = json.Marshal(a.Content)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'content': %w", err)
+		}
+	}
+
 	if a.CoversThroughSequence != nil {
 		object["covers_through_sequence"], err = json.Marshal(a.CoversThroughSequence)
 		if err != nil {
@@ -8711,6 +9090,20 @@ func (a CompactionCreatedPayload) MarshalJSON() ([]byte, error) {
 		object["message_id"], err = json.Marshal(a.MessageId)
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'message_id': %w", err)
+		}
+	}
+
+	if a.Role != nil {
+		object["role"], err = json.Marshal(a.Role)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'role': %w", err)
+		}
+	}
+
+	if a.Sequence != nil {
+		object["sequence"], err = json.Marshal(a.Sequence)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'sequence': %w", err)
 		}
 	}
 
@@ -8755,14 +9148,6 @@ func (a *GenerationDeltaFrame) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
-	if raw, found := object["agent_turn_id"]; found {
-		err = json.Unmarshal(raw, &a.AgentTurnId)
-		if err != nil {
-			return fmt.Errorf("error reading 'agent_turn_id': %w", err)
-		}
-		delete(object, "agent_turn_id")
-	}
-
 	if raw, found := object["delta"]; found {
 		err = json.Unmarshal(raw, &a.Delta)
 		if err != nil {
@@ -8779,28 +9164,20 @@ func (a *GenerationDeltaFrame) UnmarshalJSON(b []byte) error {
 		delete(object, "delta_sequence")
 	}
 
+	if raw, found := object["emitted_at"]; found {
+		err = json.Unmarshal(raw, &a.EmittedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'emitted_at': %w", err)
+		}
+		delete(object, "emitted_at")
+	}
+
 	if raw, found := object["event_type"]; found {
 		err = json.Unmarshal(raw, &a.EventType)
 		if err != nil {
 			return fmt.Errorf("error reading 'event_type': %w", err)
 		}
 		delete(object, "event_type")
-	}
-
-	if raw, found := object["executor_kind"]; found {
-		err = json.Unmarshal(raw, &a.ExecutorKind)
-		if err != nil {
-			return fmt.Errorf("error reading 'executor_kind': %w", err)
-		}
-		delete(object, "executor_kind")
-	}
-
-	if raw, found := object["generation_key"]; found {
-		err = json.Unmarshal(raw, &a.GenerationKey)
-		if err != nil {
-			return fmt.Errorf("error reading 'generation_key': %w", err)
-		}
-		delete(object, "generation_key")
 	}
 
 	if raw, found := object["job_id"]; found {
@@ -8811,20 +9188,28 @@ func (a *GenerationDeltaFrame) UnmarshalJSON(b []byte) error {
 		delete(object, "job_id")
 	}
 
+	if raw, found := object["live_sequence"]; found {
+		err = json.Unmarshal(raw, &a.LiveSequence)
+		if err != nil {
+			return fmt.Errorf("error reading 'live_sequence': %w", err)
+		}
+		delete(object, "live_sequence")
+	}
+
+	if raw, found := object["model"]; found {
+		err = json.Unmarshal(raw, &a.Model)
+		if err != nil {
+			return fmt.Errorf("error reading 'model': %w", err)
+		}
+		delete(object, "model")
+	}
+
 	if raw, found := object["run_id"]; found {
 		err = json.Unmarshal(raw, &a.RunId)
 		if err != nil {
 			return fmt.Errorf("error reading 'run_id': %w", err)
 		}
 		delete(object, "run_id")
-	}
-
-	if raw, found := object["sequence"]; found {
-		err = json.Unmarshal(raw, &a.Sequence)
-		if err != nil {
-			return fmt.Errorf("error reading 'sequence': %w", err)
-		}
-		delete(object, "sequence")
 	}
 
 	if raw, found := object["session_id"]; found {
@@ -8841,6 +9226,14 @@ func (a *GenerationDeltaFrame) UnmarshalJSON(b []byte) error {
 			return fmt.Errorf("error reading 'tool_call_id': %w", err)
 		}
 		delete(object, "tool_call_id")
+	}
+
+	if raw, found := object["turn_id"]; found {
+		err = json.Unmarshal(raw, &a.TurnId)
+		if err != nil {
+			return fmt.Errorf("error reading 'turn_id': %w", err)
+		}
+		delete(object, "turn_id")
 	}
 
 	if raw, found := object["worker_id"]; found {
@@ -8870,13 +9263,6 @@ func (a GenerationDeltaFrame) MarshalJSON() ([]byte, error) {
 	var err error
 	object := make(map[string]json.RawMessage)
 
-	if a.AgentTurnId != nil {
-		object["agent_turn_id"], err = json.Marshal(a.AgentTurnId)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'agent_turn_id': %w", err)
-		}
-	}
-
 	if a.Delta != nil {
 		object["delta"], err = json.Marshal(a.Delta)
 		if err != nil {
@@ -8891,23 +9277,16 @@ func (a GenerationDeltaFrame) MarshalJSON() ([]byte, error) {
 		}
 	}
 
+	if a.EmittedAt != nil {
+		object["emitted_at"], err = json.Marshal(a.EmittedAt)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'emitted_at': %w", err)
+		}
+	}
+
 	object["event_type"], err = json.Marshal(a.EventType)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling 'event_type': %w", err)
-	}
-
-	if a.ExecutorKind != nil {
-		object["executor_kind"], err = json.Marshal(a.ExecutorKind)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'executor_kind': %w", err)
-		}
-	}
-
-	if a.GenerationKey != nil {
-		object["generation_key"], err = json.Marshal(a.GenerationKey)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'generation_key': %w", err)
-		}
 	}
 
 	if a.JobId != nil {
@@ -8917,17 +9296,24 @@ func (a GenerationDeltaFrame) MarshalJSON() ([]byte, error) {
 		}
 	}
 
+	if a.LiveSequence != nil {
+		object["live_sequence"], err = json.Marshal(a.LiveSequence)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'live_sequence': %w", err)
+		}
+	}
+
+	if a.Model != nil {
+		object["model"], err = json.Marshal(a.Model)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'model': %w", err)
+		}
+	}
+
 	if a.RunId != nil {
 		object["run_id"], err = json.Marshal(a.RunId)
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'run_id': %w", err)
-		}
-	}
-
-	if a.Sequence != nil {
-		object["sequence"], err = json.Marshal(a.Sequence)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'sequence': %w", err)
 		}
 	}
 
@@ -8942,6 +9328,13 @@ func (a GenerationDeltaFrame) MarshalJSON() ([]byte, error) {
 		object["tool_call_id"], err = json.Marshal(a.ToolCallId)
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'tool_call_id': %w", err)
+		}
+	}
+
+	if a.TurnId != nil {
+		object["turn_id"], err = json.Marshal(a.TurnId)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'turn_id': %w", err)
 		}
 	}
 
@@ -9715,6 +10108,697 @@ func (a RunStartedPayload) MarshalJSON() ([]byte, error) {
 	return json.Marshal(object)
 }
 
+// Getter for additional properties for SessionImageBlock. Returns the specified
+// element and whether it was found
+func (a SessionImageBlock) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for SessionImageBlock
+func (a *SessionImageBlock) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for SessionImageBlock to handle AdditionalProperties
+func (a *SessionImageBlock) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["source"]; found {
+		err = json.Unmarshal(raw, &a.Source)
+		if err != nil {
+			return fmt.Errorf("error reading 'source': %w", err)
+		}
+		delete(object, "source")
+	}
+
+	if raw, found := object["type"]; found {
+		err = json.Unmarshal(raw, &a.Type)
+		if err != nil {
+			return fmt.Errorf("error reading 'type': %w", err)
+		}
+		delete(object, "type")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for SessionImageBlock to handle AdditionalProperties
+func (a SessionImageBlock) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Source != nil {
+		object["source"], err = json.Marshal(a.Source)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'source': %w", err)
+		}
+	}
+
+	object["type"], err = json.Marshal(a.Type)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'type': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for SessionMessagePreviewFrame. Returns the specified
+// element and whether it was found
+func (a SessionMessagePreviewFrame) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for SessionMessagePreviewFrame
+func (a *SessionMessagePreviewFrame) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for SessionMessagePreviewFrame to handle AdditionalProperties
+func (a *SessionMessagePreviewFrame) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["agent_id"]; found {
+		err = json.Unmarshal(raw, &a.AgentId)
+		if err != nil {
+			return fmt.Errorf("error reading 'agent_id': %w", err)
+		}
+		delete(object, "agent_id")
+	}
+
+	if raw, found := object["content"]; found {
+		err = json.Unmarshal(raw, &a.Content)
+		if err != nil {
+			return fmt.Errorf("error reading 'content': %w", err)
+		}
+		delete(object, "content")
+	}
+
+	if raw, found := object["emitted_at"]; found {
+		err = json.Unmarshal(raw, &a.EmittedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'emitted_at': %w", err)
+		}
+		delete(object, "emitted_at")
+	}
+
+	if raw, found := object["entry_type"]; found {
+		err = json.Unmarshal(raw, &a.EntryType)
+		if err != nil {
+			return fmt.Errorf("error reading 'entry_type': %w", err)
+		}
+		delete(object, "entry_type")
+	}
+
+	if raw, found := object["event_type"]; found {
+		err = json.Unmarshal(raw, &a.EventType)
+		if err != nil {
+			return fmt.Errorf("error reading 'event_type': %w", err)
+		}
+		delete(object, "event_type")
+	}
+
+	if raw, found := object["id"]; found {
+		err = json.Unmarshal(raw, &a.Id)
+		if err != nil {
+			return fmt.Errorf("error reading 'id': %w", err)
+		}
+		delete(object, "id")
+	}
+
+	if raw, found := object["live_sequence"]; found {
+		err = json.Unmarshal(raw, &a.LiveSequence)
+		if err != nil {
+			return fmt.Errorf("error reading 'live_sequence': %w", err)
+		}
+		delete(object, "live_sequence")
+	}
+
+	if raw, found := object["metadata"]; found {
+		err = json.Unmarshal(raw, &a.Metadata)
+		if err != nil {
+			return fmt.Errorf("error reading 'metadata': %w", err)
+		}
+		delete(object, "metadata")
+	}
+
+	if raw, found := object["role"]; found {
+		err = json.Unmarshal(raw, &a.Role)
+		if err != nil {
+			return fmt.Errorf("error reading 'role': %w", err)
+		}
+		delete(object, "role")
+	}
+
+	if raw, found := object["run_id"]; found {
+		err = json.Unmarshal(raw, &a.RunId)
+		if err != nil {
+			return fmt.Errorf("error reading 'run_id': %w", err)
+		}
+		delete(object, "run_id")
+	}
+
+	if raw, found := object["session_id"]; found {
+		err = json.Unmarshal(raw, &a.SessionId)
+		if err != nil {
+			return fmt.Errorf("error reading 'session_id': %w", err)
+		}
+		delete(object, "session_id")
+	}
+
+	if raw, found := object["turn_id"]; found {
+		err = json.Unmarshal(raw, &a.TurnId)
+		if err != nil {
+			return fmt.Errorf("error reading 'turn_id': %w", err)
+		}
+		delete(object, "turn_id")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for SessionMessagePreviewFrame to handle AdditionalProperties
+func (a SessionMessagePreviewFrame) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.AgentId != nil {
+		object["agent_id"], err = json.Marshal(a.AgentId)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'agent_id': %w", err)
+		}
+	}
+
+	if a.Content != nil {
+		object["content"], err = json.Marshal(a.Content)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'content': %w", err)
+		}
+	}
+
+	if a.EmittedAt != nil {
+		object["emitted_at"], err = json.Marshal(a.EmittedAt)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'emitted_at': %w", err)
+		}
+	}
+
+	object["entry_type"], err = json.Marshal(a.EntryType)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'entry_type': %w", err)
+	}
+
+	object["event_type"], err = json.Marshal(a.EventType)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'event_type': %w", err)
+	}
+
+	object["id"], err = json.Marshal(a.Id)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'id': %w", err)
+	}
+
+	if a.LiveSequence != nil {
+		object["live_sequence"], err = json.Marshal(a.LiveSequence)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'live_sequence': %w", err)
+		}
+	}
+
+	if a.Metadata != nil {
+		object["metadata"], err = json.Marshal(a.Metadata)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'metadata': %w", err)
+		}
+	}
+
+	object["role"], err = json.Marshal(a.Role)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'role': %w", err)
+	}
+
+	if a.RunId != nil {
+		object["run_id"], err = json.Marshal(a.RunId)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'run_id': %w", err)
+		}
+	}
+
+	object["session_id"], err = json.Marshal(a.SessionId)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'session_id': %w", err)
+	}
+
+	object["turn_id"], err = json.Marshal(a.TurnId)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'turn_id': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for SessionTextBlock. Returns the specified
+// element and whether it was found
+func (a SessionTextBlock) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for SessionTextBlock
+func (a *SessionTextBlock) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for SessionTextBlock to handle AdditionalProperties
+func (a *SessionTextBlock) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["text"]; found {
+		err = json.Unmarshal(raw, &a.Text)
+		if err != nil {
+			return fmt.Errorf("error reading 'text': %w", err)
+		}
+		delete(object, "text")
+	}
+
+	if raw, found := object["type"]; found {
+		err = json.Unmarshal(raw, &a.Type)
+		if err != nil {
+			return fmt.Errorf("error reading 'type': %w", err)
+		}
+		delete(object, "type")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for SessionTextBlock to handle AdditionalProperties
+func (a SessionTextBlock) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["text"], err = json.Marshal(a.Text)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'text': %w", err)
+	}
+
+	object["type"], err = json.Marshal(a.Type)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'type': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for SessionThinkingBlock. Returns the specified
+// element and whether it was found
+func (a SessionThinkingBlock) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for SessionThinkingBlock
+func (a *SessionThinkingBlock) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for SessionThinkingBlock to handle AdditionalProperties
+func (a *SessionThinkingBlock) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["signature"]; found {
+		err = json.Unmarshal(raw, &a.Signature)
+		if err != nil {
+			return fmt.Errorf("error reading 'signature': %w", err)
+		}
+		delete(object, "signature")
+	}
+
+	if raw, found := object["thinking"]; found {
+		err = json.Unmarshal(raw, &a.Thinking)
+		if err != nil {
+			return fmt.Errorf("error reading 'thinking': %w", err)
+		}
+		delete(object, "thinking")
+	}
+
+	if raw, found := object["type"]; found {
+		err = json.Unmarshal(raw, &a.Type)
+		if err != nil {
+			return fmt.Errorf("error reading 'type': %w", err)
+		}
+		delete(object, "type")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for SessionThinkingBlock to handle AdditionalProperties
+func (a SessionThinkingBlock) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Signature != nil {
+		object["signature"], err = json.Marshal(a.Signature)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'signature': %w", err)
+		}
+	}
+
+	object["thinking"], err = json.Marshal(a.Thinking)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'thinking': %w", err)
+	}
+
+	object["type"], err = json.Marshal(a.Type)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'type': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for SessionToolResultBlock. Returns the specified
+// element and whether it was found
+func (a SessionToolResultBlock) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for SessionToolResultBlock
+func (a *SessionToolResultBlock) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for SessionToolResultBlock to handle AdditionalProperties
+func (a *SessionToolResultBlock) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["content"]; found {
+		err = json.Unmarshal(raw, &a.Content)
+		if err != nil {
+			return fmt.Errorf("error reading 'content': %w", err)
+		}
+		delete(object, "content")
+	}
+
+	if raw, found := object["is_error"]; found {
+		err = json.Unmarshal(raw, &a.IsError)
+		if err != nil {
+			return fmt.Errorf("error reading 'is_error': %w", err)
+		}
+		delete(object, "is_error")
+	}
+
+	if raw, found := object["tool_use_id"]; found {
+		err = json.Unmarshal(raw, &a.ToolUseId)
+		if err != nil {
+			return fmt.Errorf("error reading 'tool_use_id': %w", err)
+		}
+		delete(object, "tool_use_id")
+	}
+
+	if raw, found := object["type"]; found {
+		err = json.Unmarshal(raw, &a.Type)
+		if err != nil {
+			return fmt.Errorf("error reading 'type': %w", err)
+		}
+		delete(object, "type")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for SessionToolResultBlock to handle AdditionalProperties
+func (a SessionToolResultBlock) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Content != nil {
+		object["content"], err = json.Marshal(a.Content)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'content': %w", err)
+		}
+	}
+
+	if a.IsError != nil {
+		object["is_error"], err = json.Marshal(a.IsError)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'is_error': %w", err)
+		}
+	}
+
+	object["tool_use_id"], err = json.Marshal(a.ToolUseId)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'tool_use_id': %w", err)
+	}
+
+	object["type"], err = json.Marshal(a.Type)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'type': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for SessionToolUseBlock. Returns the specified
+// element and whether it was found
+func (a SessionToolUseBlock) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for SessionToolUseBlock
+func (a *SessionToolUseBlock) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for SessionToolUseBlock to handle AdditionalProperties
+func (a *SessionToolUseBlock) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["id"]; found {
+		err = json.Unmarshal(raw, &a.Id)
+		if err != nil {
+			return fmt.Errorf("error reading 'id': %w", err)
+		}
+		delete(object, "id")
+	}
+
+	if raw, found := object["input"]; found {
+		err = json.Unmarshal(raw, &a.Input)
+		if err != nil {
+			return fmt.Errorf("error reading 'input': %w", err)
+		}
+		delete(object, "input")
+	}
+
+	if raw, found := object["name"]; found {
+		err = json.Unmarshal(raw, &a.Name)
+		if err != nil {
+			return fmt.Errorf("error reading 'name': %w", err)
+		}
+		delete(object, "name")
+	}
+
+	if raw, found := object["type"]; found {
+		err = json.Unmarshal(raw, &a.Type)
+		if err != nil {
+			return fmt.Errorf("error reading 'type': %w", err)
+		}
+		delete(object, "type")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for SessionToolUseBlock to handle AdditionalProperties
+func (a SessionToolUseBlock) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["id"], err = json.Marshal(a.Id)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'id': %w", err)
+	}
+
+	if a.Input != nil {
+		object["input"], err = json.Marshal(a.Input)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'input': %w", err)
+		}
+	}
+
+	object["name"], err = json.Marshal(a.Name)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'name': %w", err)
+	}
+
+	object["type"], err = json.Marshal(a.Type)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'type': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
 // Getter for additional properties for SessionUserMessagePayload. Returns the specified
 // element and whether it was found
 func (a SessionUserMessagePayload) Get(fieldName string) (value interface{}, found bool) {
@@ -9748,12 +10832,28 @@ func (a *SessionUserMessagePayload) UnmarshalJSON(b []byte) error {
 		delete(object, "content")
 	}
 
-	if raw, found := object["message"]; found {
-		err = json.Unmarshal(raw, &a.Message)
+	if raw, found := object["message_id"]; found {
+		err = json.Unmarshal(raw, &a.MessageId)
 		if err != nil {
-			return fmt.Errorf("error reading 'message': %w", err)
+			return fmt.Errorf("error reading 'message_id': %w", err)
 		}
-		delete(object, "message")
+		delete(object, "message_id")
+	}
+
+	if raw, found := object["role"]; found {
+		err = json.Unmarshal(raw, &a.Role)
+		if err != nil {
+			return fmt.Errorf("error reading 'role': %w", err)
+		}
+		delete(object, "role")
+	}
+
+	if raw, found := object["sequence"]; found {
+		err = json.Unmarshal(raw, &a.Sequence)
+		if err != nil {
+			return fmt.Errorf("error reading 'sequence': %w", err)
+		}
+		delete(object, "sequence")
 	}
 
 	if raw, found := object["turn_id"]; found {
@@ -9790,11 +10890,19 @@ func (a SessionUserMessagePayload) MarshalJSON() ([]byte, error) {
 		}
 	}
 
-	if a.Message != nil {
-		object["message"], err = json.Marshal(a.Message)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'message': %w", err)
-		}
+	object["message_id"], err = json.Marshal(a.MessageId)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'message_id': %w", err)
+	}
+
+	object["role"], err = json.Marshal(a.Role)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'role': %w", err)
+	}
+
+	object["sequence"], err = json.Marshal(a.Sequence)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'sequence': %w", err)
 	}
 
 	if a.TurnId != nil {
@@ -10411,20 +11519,28 @@ func (a *ToolCallPayload) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
-	if raw, found := object["arguments"]; found {
-		err = json.Unmarshal(raw, &a.Arguments)
+	if raw, found := object["emitted_at"]; found {
+		err = json.Unmarshal(raw, &a.EmittedAt)
 		if err != nil {
-			return fmt.Errorf("error reading 'arguments': %w", err)
+			return fmt.Errorf("error reading 'emitted_at': %w", err)
 		}
-		delete(object, "arguments")
+		delete(object, "emitted_at")
 	}
 
-	if raw, found := object["name"]; found {
-		err = json.Unmarshal(raw, &a.Name)
+	if raw, found := object["input"]; found {
+		err = json.Unmarshal(raw, &a.Input)
 		if err != nil {
-			return fmt.Errorf("error reading 'name': %w", err)
+			return fmt.Errorf("error reading 'input': %w", err)
 		}
-		delete(object, "name")
+		delete(object, "input")
+	}
+
+	if raw, found := object["live_sequence"]; found {
+		err = json.Unmarshal(raw, &a.LiveSequence)
+		if err != nil {
+			return fmt.Errorf("error reading 'live_sequence': %w", err)
+		}
+		delete(object, "live_sequence")
 	}
 
 	if raw, found := object["tool_call_id"]; found {
@@ -10433,6 +11549,14 @@ func (a *ToolCallPayload) UnmarshalJSON(b []byte) error {
 			return fmt.Errorf("error reading 'tool_call_id': %w", err)
 		}
 		delete(object, "tool_call_id")
+	}
+
+	if raw, found := object["tool_name"]; found {
+		err = json.Unmarshal(raw, &a.ToolName)
+		if err != nil {
+			return fmt.Errorf("error reading 'tool_name': %w", err)
+		}
+		delete(object, "tool_name")
 	}
 
 	if len(object) != 0 {
@@ -10454,17 +11578,24 @@ func (a ToolCallPayload) MarshalJSON() ([]byte, error) {
 	var err error
 	object := make(map[string]json.RawMessage)
 
-	if a.Arguments != nil {
-		object["arguments"], err = json.Marshal(a.Arguments)
+	if a.EmittedAt != nil {
+		object["emitted_at"], err = json.Marshal(a.EmittedAt)
 		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'arguments': %w", err)
+			return nil, fmt.Errorf("error marshaling 'emitted_at': %w", err)
 		}
 	}
 
-	if a.Name != nil {
-		object["name"], err = json.Marshal(a.Name)
+	if a.Input != nil {
+		object["input"], err = json.Marshal(a.Input)
 		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'name': %w", err)
+			return nil, fmt.Errorf("error marshaling 'input': %w", err)
+		}
+	}
+
+	if a.LiveSequence != nil {
+		object["live_sequence"], err = json.Marshal(a.LiveSequence)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'live_sequence': %w", err)
 		}
 	}
 
@@ -10472,6 +11603,13 @@ func (a ToolCallPayload) MarshalJSON() ([]byte, error) {
 		object["tool_call_id"], err = json.Marshal(a.ToolCallId)
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'tool_call_id': %w", err)
+		}
+	}
+
+	if a.ToolName != nil {
+		object["tool_name"], err = json.Marshal(a.ToolName)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'tool_name': %w", err)
 		}
 	}
 
@@ -10509,6 +11647,30 @@ func (a *ToolResultPayload) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
+	if raw, found := object["content"]; found {
+		err = json.Unmarshal(raw, &a.Content)
+		if err != nil {
+			return fmt.Errorf("error reading 'content': %w", err)
+		}
+		delete(object, "content")
+	}
+
+	if raw, found := object["display"]; found {
+		err = json.Unmarshal(raw, &a.Display)
+		if err != nil {
+			return fmt.Errorf("error reading 'display': %w", err)
+		}
+		delete(object, "display")
+	}
+
+	if raw, found := object["emitted_at"]; found {
+		err = json.Unmarshal(raw, &a.EmittedAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'emitted_at': %w", err)
+		}
+		delete(object, "emitted_at")
+	}
+
 	if raw, found := object["error"]; found {
 		err = json.Unmarshal(raw, &a.Error)
 		if err != nil {
@@ -10517,20 +11679,20 @@ func (a *ToolResultPayload) UnmarshalJSON(b []byte) error {
 		delete(object, "error")
 	}
 
-	if raw, found := object["name"]; found {
-		err = json.Unmarshal(raw, &a.Name)
+	if raw, found := object["is_error"]; found {
+		err = json.Unmarshal(raw, &a.IsError)
 		if err != nil {
-			return fmt.Errorf("error reading 'name': %w", err)
+			return fmt.Errorf("error reading 'is_error': %w", err)
 		}
-		delete(object, "name")
+		delete(object, "is_error")
 	}
 
-	if raw, found := object["result"]; found {
-		err = json.Unmarshal(raw, &a.Result)
+	if raw, found := object["live_sequence"]; found {
+		err = json.Unmarshal(raw, &a.LiveSequence)
 		if err != nil {
-			return fmt.Errorf("error reading 'result': %w", err)
+			return fmt.Errorf("error reading 'live_sequence': %w", err)
 		}
-		delete(object, "result")
+		delete(object, "live_sequence")
 	}
 
 	if raw, found := object["tool_call_id"]; found {
@@ -10539,6 +11701,14 @@ func (a *ToolResultPayload) UnmarshalJSON(b []byte) error {
 			return fmt.Errorf("error reading 'tool_call_id': %w", err)
 		}
 		delete(object, "tool_call_id")
+	}
+
+	if raw, found := object["tool_name"]; found {
+		err = json.Unmarshal(raw, &a.ToolName)
+		if err != nil {
+			return fmt.Errorf("error reading 'tool_name': %w", err)
+		}
+		delete(object, "tool_name")
 	}
 
 	if len(object) != 0 {
@@ -10560,6 +11730,27 @@ func (a ToolResultPayload) MarshalJSON() ([]byte, error) {
 	var err error
 	object := make(map[string]json.RawMessage)
 
+	if a.Content != nil {
+		object["content"], err = json.Marshal(a.Content)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'content': %w", err)
+		}
+	}
+
+	if a.Display != nil {
+		object["display"], err = json.Marshal(a.Display)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'display': %w", err)
+		}
+	}
+
+	if a.EmittedAt != nil {
+		object["emitted_at"], err = json.Marshal(a.EmittedAt)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'emitted_at': %w", err)
+		}
+	}
+
 	if a.Error != nil {
 		object["error"], err = json.Marshal(a.Error)
 		if err != nil {
@@ -10567,17 +11758,17 @@ func (a ToolResultPayload) MarshalJSON() ([]byte, error) {
 		}
 	}
 
-	if a.Name != nil {
-		object["name"], err = json.Marshal(a.Name)
+	if a.IsError != nil {
+		object["is_error"], err = json.Marshal(a.IsError)
 		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'name': %w", err)
+			return nil, fmt.Errorf("error marshaling 'is_error': %w", err)
 		}
 	}
 
-	if a.Result != nil {
-		object["result"], err = json.Marshal(a.Result)
+	if a.LiveSequence != nil {
+		object["live_sequence"], err = json.Marshal(a.LiveSequence)
 		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'result': %w", err)
+			return nil, fmt.Errorf("error marshaling 'live_sequence': %w", err)
 		}
 	}
 
@@ -10585,6 +11776,13 @@ func (a ToolResultPayload) MarshalJSON() ([]byte, error) {
 		object["tool_call_id"], err = json.Marshal(a.ToolCallId)
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'tool_call_id': %w", err)
+		}
+	}
+
+	if a.ToolName != nil {
+		object["tool_name"], err = json.Marshal(a.ToolName)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'tool_name': %w", err)
 		}
 	}
 
@@ -10690,14 +11888,6 @@ func (a *TurnCompletedPayload) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
-	if raw, found := object["output"]; found {
-		err = json.Unmarshal(raw, &a.Output)
-		if err != nil {
-			return fmt.Errorf("error reading 'output': %w", err)
-		}
-		delete(object, "output")
-	}
-
 	if raw, found := object["usage"]; found {
 		err = json.Unmarshal(raw, &a.Usage)
 		if err != nil {
@@ -10724,13 +11914,6 @@ func (a *TurnCompletedPayload) UnmarshalJSON(b []byte) error {
 func (a TurnCompletedPayload) MarshalJSON() ([]byte, error) {
 	var err error
 	object := make(map[string]json.RawMessage)
-
-	if a.Output != nil {
-		object["output"], err = json.Marshal(a.Output)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'output': %w", err)
-		}
-	}
 
 	if a.Usage != nil {
 		object["usage"], err = json.Marshal(a.Usage)
@@ -10819,89 +12002,6 @@ func (a TurnFailedPayload) MarshalJSON() ([]byte, error) {
 		object["error_type"], err = json.Marshal(a.ErrorType)
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'error_type': %w", err)
-		}
-	}
-
-	for fieldName, field := range a.AdditionalProperties {
-		object[fieldName], err = json.Marshal(field)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
-		}
-	}
-	return json.Marshal(object)
-}
-
-// Getter for additional properties for TurnStartedPayload. Returns the specified
-// element and whether it was found
-func (a TurnStartedPayload) Get(fieldName string) (value interface{}, found bool) {
-	if a.AdditionalProperties != nil {
-		value, found = a.AdditionalProperties[fieldName]
-	}
-	return
-}
-
-// Setter for additional properties for TurnStartedPayload
-func (a *TurnStartedPayload) Set(fieldName string, value interface{}) {
-	if a.AdditionalProperties == nil {
-		a.AdditionalProperties = make(map[string]interface{})
-	}
-	a.AdditionalProperties[fieldName] = value
-}
-
-// Override default JSON handling for TurnStartedPayload to handle AdditionalProperties
-func (a *TurnStartedPayload) UnmarshalJSON(b []byte) error {
-	object := make(map[string]json.RawMessage)
-	err := json.Unmarshal(b, &object)
-	if err != nil {
-		return err
-	}
-
-	if raw, found := object["input"]; found {
-		err = json.Unmarshal(raw, &a.Input)
-		if err != nil {
-			return fmt.Errorf("error reading 'input': %w", err)
-		}
-		delete(object, "input")
-	}
-
-	if raw, found := object["turn_id"]; found {
-		err = json.Unmarshal(raw, &a.TurnId)
-		if err != nil {
-			return fmt.Errorf("error reading 'turn_id': %w", err)
-		}
-		delete(object, "turn_id")
-	}
-
-	if len(object) != 0 {
-		a.AdditionalProperties = make(map[string]interface{})
-		for fieldName, fieldBuf := range object {
-			var fieldVal interface{}
-			err := json.Unmarshal(fieldBuf, &fieldVal)
-			if err != nil {
-				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
-			}
-			a.AdditionalProperties[fieldName] = fieldVal
-		}
-	}
-	return nil
-}
-
-// Override default JSON handling for TurnStartedPayload to handle AdditionalProperties
-func (a TurnStartedPayload) MarshalJSON() ([]byte, error) {
-	var err error
-	object := make(map[string]json.RawMessage)
-
-	if a.Input != nil {
-		object["input"], err = json.Marshal(a.Input)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'input': %w", err)
-		}
-	}
-
-	if a.TurnId != nil {
-		object["turn_id"], err = json.Marshal(a.TurnId)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'turn_id': %w", err)
 		}
 	}
 
@@ -11045,6 +12145,38 @@ func (a *WaitPayload) UnmarshalJSON(b []byte) error {
 		delete(object, "deadline")
 	}
 
+	if raw, found := object["event_type"]; found {
+		err = json.Unmarshal(raw, &a.EventType)
+		if err != nil {
+			return fmt.Errorf("error reading 'event_type': %w", err)
+		}
+		delete(object, "event_type")
+	}
+
+	if raw, found := object["expires_at"]; found {
+		err = json.Unmarshal(raw, &a.ExpiresAt)
+		if err != nil {
+			return fmt.Errorf("error reading 'expires_at': %w", err)
+		}
+		delete(object, "expires_at")
+	}
+
+	if raw, found := object["match"]; found {
+		err = json.Unmarshal(raw, &a.Match)
+		if err != nil {
+			return fmt.Errorf("error reading 'match': %w", err)
+		}
+		delete(object, "match")
+	}
+
+	if raw, found := object["source_id"]; found {
+		err = json.Unmarshal(raw, &a.SourceId)
+		if err != nil {
+			return fmt.Errorf("error reading 'source_id': %w", err)
+		}
+		delete(object, "source_id")
+	}
+
 	if raw, found := object["step"]; found {
 		err = json.Unmarshal(raw, &a.Step)
 		if err != nil {
@@ -11100,6 +12232,34 @@ func (a WaitPayload) MarshalJSON() ([]byte, error) {
 		object["deadline"], err = json.Marshal(a.Deadline)
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'deadline': %w", err)
+		}
+	}
+
+	if a.EventType != nil {
+		object["event_type"], err = json.Marshal(a.EventType)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'event_type': %w", err)
+		}
+	}
+
+	if a.ExpiresAt != nil {
+		object["expires_at"], err = json.Marshal(a.ExpiresAt)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'expires_at': %w", err)
+		}
+	}
+
+	if a.Match != nil {
+		object["match"], err = json.Marshal(a.Match)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'match': %w", err)
+		}
+	}
+
+	if a.SourceId != nil {
+		object["source_id"], err = json.Marshal(a.SourceId)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'source_id': %w", err)
 		}
 	}
 
@@ -11534,68 +12694,6 @@ func (t InteractionValue) MarshalJSON() ([]byte, error) {
 }
 
 func (t *InteractionValue) UnmarshalJSON(b []byte) error {
-	err := t.union.UnmarshalJSON(b)
-	return err
-}
-
-// AsLoopRunLifecycleFrame returns the union data inside the LoopRunStreamFrame as a LoopRunLifecycleFrame
-func (t LoopRunStreamFrame) AsLoopRunLifecycleFrame() (LoopRunLifecycleFrame, error) {
-	var body LoopRunLifecycleFrame
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromLoopRunLifecycleFrame overwrites any union data inside the LoopRunStreamFrame as the provided LoopRunLifecycleFrame
-func (t *LoopRunStreamFrame) FromLoopRunLifecycleFrame(v LoopRunLifecycleFrame) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeLoopRunLifecycleFrame performs a merge with any union data inside the LoopRunStreamFrame, using the provided LoopRunLifecycleFrame
-func (t *LoopRunStreamFrame) MergeLoopRunLifecycleFrame(v LoopRunLifecycleFrame) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsGenerationDeltaFrame returns the union data inside the LoopRunStreamFrame as a GenerationDeltaFrame
-func (t LoopRunStreamFrame) AsGenerationDeltaFrame() (GenerationDeltaFrame, error) {
-	var body GenerationDeltaFrame
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromGenerationDeltaFrame overwrites any union data inside the LoopRunStreamFrame as the provided GenerationDeltaFrame
-func (t *LoopRunStreamFrame) FromGenerationDeltaFrame(v GenerationDeltaFrame) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeGenerationDeltaFrame performs a merge with any union data inside the LoopRunStreamFrame, using the provided GenerationDeltaFrame
-func (t *LoopRunStreamFrame) MergeGenerationDeltaFrame(v GenerationDeltaFrame) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-func (t LoopRunStreamFrame) MarshalJSON() ([]byte, error) {
-	b, err := t.union.MarshalJSON()
-	return b, err
-}
-
-func (t *LoopRunStreamFrame) UnmarshalJSON(b []byte) error {
 	err := t.union.UnmarshalJSON(b)
 	return err
 }
@@ -12645,22 +13743,162 @@ func (t *RunEventPayload) UnmarshalJSON(b []byte) error {
 	return err
 }
 
-// AsSessionUserMessagePayload returns the union data inside the SessionEventPayload as a SessionUserMessagePayload
-func (t SessionEventPayload) AsSessionUserMessagePayload() (SessionUserMessagePayload, error) {
+// AsSessionTextBlock returns the union data inside the SessionContentBlock as a SessionTextBlock
+func (t SessionContentBlock) AsSessionTextBlock() (SessionTextBlock, error) {
+	var body SessionTextBlock
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSessionTextBlock overwrites any union data inside the SessionContentBlock as the provided SessionTextBlock
+func (t *SessionContentBlock) FromSessionTextBlock(v SessionTextBlock) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSessionTextBlock performs a merge with any union data inside the SessionContentBlock, using the provided SessionTextBlock
+func (t *SessionContentBlock) MergeSessionTextBlock(v SessionTextBlock) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSessionThinkingBlock returns the union data inside the SessionContentBlock as a SessionThinkingBlock
+func (t SessionContentBlock) AsSessionThinkingBlock() (SessionThinkingBlock, error) {
+	var body SessionThinkingBlock
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSessionThinkingBlock overwrites any union data inside the SessionContentBlock as the provided SessionThinkingBlock
+func (t *SessionContentBlock) FromSessionThinkingBlock(v SessionThinkingBlock) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSessionThinkingBlock performs a merge with any union data inside the SessionContentBlock, using the provided SessionThinkingBlock
+func (t *SessionContentBlock) MergeSessionThinkingBlock(v SessionThinkingBlock) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSessionToolUseBlock returns the union data inside the SessionContentBlock as a SessionToolUseBlock
+func (t SessionContentBlock) AsSessionToolUseBlock() (SessionToolUseBlock, error) {
+	var body SessionToolUseBlock
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSessionToolUseBlock overwrites any union data inside the SessionContentBlock as the provided SessionToolUseBlock
+func (t *SessionContentBlock) FromSessionToolUseBlock(v SessionToolUseBlock) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSessionToolUseBlock performs a merge with any union data inside the SessionContentBlock, using the provided SessionToolUseBlock
+func (t *SessionContentBlock) MergeSessionToolUseBlock(v SessionToolUseBlock) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSessionToolResultBlock returns the union data inside the SessionContentBlock as a SessionToolResultBlock
+func (t SessionContentBlock) AsSessionToolResultBlock() (SessionToolResultBlock, error) {
+	var body SessionToolResultBlock
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSessionToolResultBlock overwrites any union data inside the SessionContentBlock as the provided SessionToolResultBlock
+func (t *SessionContentBlock) FromSessionToolResultBlock(v SessionToolResultBlock) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSessionToolResultBlock performs a merge with any union data inside the SessionContentBlock, using the provided SessionToolResultBlock
+func (t *SessionContentBlock) MergeSessionToolResultBlock(v SessionToolResultBlock) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSessionImageBlock returns the union data inside the SessionContentBlock as a SessionImageBlock
+func (t SessionContentBlock) AsSessionImageBlock() (SessionImageBlock, error) {
+	var body SessionImageBlock
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSessionImageBlock overwrites any union data inside the SessionContentBlock as the provided SessionImageBlock
+func (t *SessionContentBlock) FromSessionImageBlock(v SessionImageBlock) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSessionImageBlock performs a merge with any union data inside the SessionContentBlock, using the provided SessionImageBlock
+func (t *SessionContentBlock) MergeSessionImageBlock(v SessionImageBlock) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t SessionContentBlock) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *SessionContentBlock) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsSessionUserMessagePayload returns the union data inside the SessionStreamFrame as a SessionUserMessagePayload
+func (t SessionStreamFrame) AsSessionUserMessagePayload() (SessionUserMessagePayload, error) {
 	var body SessionUserMessagePayload
 	err := json.Unmarshal(t.union, &body)
 	return body, err
 }
 
-// FromSessionUserMessagePayload overwrites any union data inside the SessionEventPayload as the provided SessionUserMessagePayload
-func (t *SessionEventPayload) FromSessionUserMessagePayload(v SessionUserMessagePayload) error {
+// FromSessionUserMessagePayload overwrites any union data inside the SessionStreamFrame as the provided SessionUserMessagePayload
+func (t *SessionStreamFrame) FromSessionUserMessagePayload(v SessionUserMessagePayload) error {
 	b, err := json.Marshal(v)
 	t.union = b
 	return err
 }
 
-// MergeSessionUserMessagePayload performs a merge with any union data inside the SessionEventPayload, using the provided SessionUserMessagePayload
-func (t *SessionEventPayload) MergeSessionUserMessagePayload(v SessionUserMessagePayload) error {
+// MergeSessionUserMessagePayload performs a merge with any union data inside the SessionStreamFrame, using the provided SessionUserMessagePayload
+func (t *SessionStreamFrame) MergeSessionUserMessagePayload(v SessionUserMessagePayload) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -12671,48 +13909,22 @@ func (t *SessionEventPayload) MergeSessionUserMessagePayload(v SessionUserMessag
 	return err
 }
 
-// AsTurnStartedPayload returns the union data inside the SessionEventPayload as a TurnStartedPayload
-func (t SessionEventPayload) AsTurnStartedPayload() (TurnStartedPayload, error) {
-	var body TurnStartedPayload
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromTurnStartedPayload overwrites any union data inside the SessionEventPayload as the provided TurnStartedPayload
-func (t *SessionEventPayload) FromTurnStartedPayload(v TurnStartedPayload) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeTurnStartedPayload performs a merge with any union data inside the SessionEventPayload, using the provided TurnStartedPayload
-func (t *SessionEventPayload) MergeTurnStartedPayload(v TurnStartedPayload) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsAgentMessagePayload returns the union data inside the SessionEventPayload as a AgentMessagePayload
-func (t SessionEventPayload) AsAgentMessagePayload() (AgentMessagePayload, error) {
+// AsAgentMessagePayload returns the union data inside the SessionStreamFrame as a AgentMessagePayload
+func (t SessionStreamFrame) AsAgentMessagePayload() (AgentMessagePayload, error) {
 	var body AgentMessagePayload
 	err := json.Unmarshal(t.union, &body)
 	return body, err
 }
 
-// FromAgentMessagePayload overwrites any union data inside the SessionEventPayload as the provided AgentMessagePayload
-func (t *SessionEventPayload) FromAgentMessagePayload(v AgentMessagePayload) error {
+// FromAgentMessagePayload overwrites any union data inside the SessionStreamFrame as the provided AgentMessagePayload
+func (t *SessionStreamFrame) FromAgentMessagePayload(v AgentMessagePayload) error {
 	b, err := json.Marshal(v)
 	t.union = b
 	return err
 }
 
-// MergeAgentMessagePayload performs a merge with any union data inside the SessionEventPayload, using the provided AgentMessagePayload
-func (t *SessionEventPayload) MergeAgentMessagePayload(v AgentMessagePayload) error {
+// MergeAgentMessagePayload performs a merge with any union data inside the SessionStreamFrame, using the provided AgentMessagePayload
+func (t *SessionStreamFrame) MergeAgentMessagePayload(v AgentMessagePayload) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -12723,178 +13935,22 @@ func (t *SessionEventPayload) MergeAgentMessagePayload(v AgentMessagePayload) er
 	return err
 }
 
-// AsToolCallPayload returns the union data inside the SessionEventPayload as a ToolCallPayload
-func (t SessionEventPayload) AsToolCallPayload() (ToolCallPayload, error) {
-	var body ToolCallPayload
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromToolCallPayload overwrites any union data inside the SessionEventPayload as the provided ToolCallPayload
-func (t *SessionEventPayload) FromToolCallPayload(v ToolCallPayload) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeToolCallPayload performs a merge with any union data inside the SessionEventPayload, using the provided ToolCallPayload
-func (t *SessionEventPayload) MergeToolCallPayload(v ToolCallPayload) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsToolResultPayload returns the union data inside the SessionEventPayload as a ToolResultPayload
-func (t SessionEventPayload) AsToolResultPayload() (ToolResultPayload, error) {
-	var body ToolResultPayload
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromToolResultPayload overwrites any union data inside the SessionEventPayload as the provided ToolResultPayload
-func (t *SessionEventPayload) FromToolResultPayload(v ToolResultPayload) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeToolResultPayload performs a merge with any union data inside the SessionEventPayload, using the provided ToolResultPayload
-func (t *SessionEventPayload) MergeToolResultPayload(v ToolResultPayload) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsTurnWaitingPayload returns the union data inside the SessionEventPayload as a TurnWaitingPayload
-func (t SessionEventPayload) AsTurnWaitingPayload() (TurnWaitingPayload, error) {
-	var body TurnWaitingPayload
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromTurnWaitingPayload overwrites any union data inside the SessionEventPayload as the provided TurnWaitingPayload
-func (t *SessionEventPayload) FromTurnWaitingPayload(v TurnWaitingPayload) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeTurnWaitingPayload performs a merge with any union data inside the SessionEventPayload, using the provided TurnWaitingPayload
-func (t *SessionEventPayload) MergeTurnWaitingPayload(v TurnWaitingPayload) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsTurnCompletedPayload returns the union data inside the SessionEventPayload as a TurnCompletedPayload
-func (t SessionEventPayload) AsTurnCompletedPayload() (TurnCompletedPayload, error) {
-	var body TurnCompletedPayload
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromTurnCompletedPayload overwrites any union data inside the SessionEventPayload as the provided TurnCompletedPayload
-func (t *SessionEventPayload) FromTurnCompletedPayload(v TurnCompletedPayload) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeTurnCompletedPayload performs a merge with any union data inside the SessionEventPayload, using the provided TurnCompletedPayload
-func (t *SessionEventPayload) MergeTurnCompletedPayload(v TurnCompletedPayload) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsTurnFailedPayload returns the union data inside the SessionEventPayload as a TurnFailedPayload
-func (t SessionEventPayload) AsTurnFailedPayload() (TurnFailedPayload, error) {
-	var body TurnFailedPayload
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromTurnFailedPayload overwrites any union data inside the SessionEventPayload as the provided TurnFailedPayload
-func (t *SessionEventPayload) FromTurnFailedPayload(v TurnFailedPayload) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeTurnFailedPayload performs a merge with any union data inside the SessionEventPayload, using the provided TurnFailedPayload
-func (t *SessionEventPayload) MergeTurnFailedPayload(v TurnFailedPayload) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsTurnCancelledPayload returns the union data inside the SessionEventPayload as a TurnCancelledPayload
-func (t SessionEventPayload) AsTurnCancelledPayload() (TurnCancelledPayload, error) {
-	var body TurnCancelledPayload
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromTurnCancelledPayload overwrites any union data inside the SessionEventPayload as the provided TurnCancelledPayload
-func (t *SessionEventPayload) FromTurnCancelledPayload(v TurnCancelledPayload) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeTurnCancelledPayload performs a merge with any union data inside the SessionEventPayload, using the provided TurnCancelledPayload
-func (t *SessionEventPayload) MergeTurnCancelledPayload(v TurnCancelledPayload) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsCompactionCreatedPayload returns the union data inside the SessionEventPayload as a CompactionCreatedPayload
-func (t SessionEventPayload) AsCompactionCreatedPayload() (CompactionCreatedPayload, error) {
+// AsCompactionCreatedPayload returns the union data inside the SessionStreamFrame as a CompactionCreatedPayload
+func (t SessionStreamFrame) AsCompactionCreatedPayload() (CompactionCreatedPayload, error) {
 	var body CompactionCreatedPayload
 	err := json.Unmarshal(t.union, &body)
 	return body, err
 }
 
-// FromCompactionCreatedPayload overwrites any union data inside the SessionEventPayload as the provided CompactionCreatedPayload
-func (t *SessionEventPayload) FromCompactionCreatedPayload(v CompactionCreatedPayload) error {
+// FromCompactionCreatedPayload overwrites any union data inside the SessionStreamFrame as the provided CompactionCreatedPayload
+func (t *SessionStreamFrame) FromCompactionCreatedPayload(v CompactionCreatedPayload) error {
 	b, err := json.Marshal(v)
 	t.union = b
 	return err
 }
 
-// MergeCompactionCreatedPayload performs a merge with any union data inside the SessionEventPayload, using the provided CompactionCreatedPayload
-func (t *SessionEventPayload) MergeCompactionCreatedPayload(v CompactionCreatedPayload) error {
+// MergeCompactionCreatedPayload performs a merge with any union data inside the SessionStreamFrame, using the provided CompactionCreatedPayload
+func (t *SessionStreamFrame) MergeCompactionCreatedPayload(v CompactionCreatedPayload) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -12905,22 +13961,22 @@ func (t *SessionEventPayload) MergeCompactionCreatedPayload(v CompactionCreatedP
 	return err
 }
 
-// AsGenericEventPayload returns the union data inside the SessionEventPayload as a GenericEventPayload
-func (t SessionEventPayload) AsGenericEventPayload() (GenericEventPayload, error) {
-	var body GenericEventPayload
+// AsTurnStartedPayload returns the union data inside the SessionStreamFrame as a TurnStartedPayload
+func (t SessionStreamFrame) AsTurnStartedPayload() (TurnStartedPayload, error) {
+	var body TurnStartedPayload
 	err := json.Unmarshal(t.union, &body)
 	return body, err
 }
 
-// FromGenericEventPayload overwrites any union data inside the SessionEventPayload as the provided GenericEventPayload
-func (t *SessionEventPayload) FromGenericEventPayload(v GenericEventPayload) error {
+// FromTurnStartedPayload overwrites any union data inside the SessionStreamFrame as the provided TurnStartedPayload
+func (t *SessionStreamFrame) FromTurnStartedPayload(v TurnStartedPayload) error {
 	b, err := json.Marshal(v)
 	t.union = b
 	return err
 }
 
-// MergeGenericEventPayload performs a merge with any union data inside the SessionEventPayload, using the provided GenericEventPayload
-func (t *SessionEventPayload) MergeGenericEventPayload(v GenericEventPayload) error {
+// MergeTurnStartedPayload performs a merge with any union data inside the SessionStreamFrame, using the provided TurnStartedPayload
+func (t *SessionStreamFrame) MergeTurnStartedPayload(v TurnStartedPayload) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -12931,32 +13987,204 @@ func (t *SessionEventPayload) MergeGenericEventPayload(v GenericEventPayload) er
 	return err
 }
 
-func (t SessionEventPayload) MarshalJSON() ([]byte, error) {
-	b, err := t.union.MarshalJSON()
-	return b, err
-}
-
-func (t *SessionEventPayload) UnmarshalJSON(b []byte) error {
-	err := t.union.UnmarshalJSON(b)
-	return err
-}
-
-// AsSessionLifecycleFrame returns the union data inside the SessionStreamFrame as a SessionLifecycleFrame
-func (t SessionStreamFrame) AsSessionLifecycleFrame() (SessionLifecycleFrame, error) {
-	var body SessionLifecycleFrame
+// AsTurnWaitingPayload returns the union data inside the SessionStreamFrame as a TurnWaitingPayload
+func (t SessionStreamFrame) AsTurnWaitingPayload() (TurnWaitingPayload, error) {
+	var body TurnWaitingPayload
 	err := json.Unmarshal(t.union, &body)
 	return body, err
 }
 
-// FromSessionLifecycleFrame overwrites any union data inside the SessionStreamFrame as the provided SessionLifecycleFrame
-func (t *SessionStreamFrame) FromSessionLifecycleFrame(v SessionLifecycleFrame) error {
+// FromTurnWaitingPayload overwrites any union data inside the SessionStreamFrame as the provided TurnWaitingPayload
+func (t *SessionStreamFrame) FromTurnWaitingPayload(v TurnWaitingPayload) error {
 	b, err := json.Marshal(v)
 	t.union = b
 	return err
 }
 
-// MergeSessionLifecycleFrame performs a merge with any union data inside the SessionStreamFrame, using the provided SessionLifecycleFrame
-func (t *SessionStreamFrame) MergeSessionLifecycleFrame(v SessionLifecycleFrame) error {
+// MergeTurnWaitingPayload performs a merge with any union data inside the SessionStreamFrame, using the provided TurnWaitingPayload
+func (t *SessionStreamFrame) MergeTurnWaitingPayload(v TurnWaitingPayload) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsTurnCompletedPayload returns the union data inside the SessionStreamFrame as a TurnCompletedPayload
+func (t SessionStreamFrame) AsTurnCompletedPayload() (TurnCompletedPayload, error) {
+	var body TurnCompletedPayload
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromTurnCompletedPayload overwrites any union data inside the SessionStreamFrame as the provided TurnCompletedPayload
+func (t *SessionStreamFrame) FromTurnCompletedPayload(v TurnCompletedPayload) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeTurnCompletedPayload performs a merge with any union data inside the SessionStreamFrame, using the provided TurnCompletedPayload
+func (t *SessionStreamFrame) MergeTurnCompletedPayload(v TurnCompletedPayload) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsTurnFailedPayload returns the union data inside the SessionStreamFrame as a TurnFailedPayload
+func (t SessionStreamFrame) AsTurnFailedPayload() (TurnFailedPayload, error) {
+	var body TurnFailedPayload
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromTurnFailedPayload overwrites any union data inside the SessionStreamFrame as the provided TurnFailedPayload
+func (t *SessionStreamFrame) FromTurnFailedPayload(v TurnFailedPayload) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeTurnFailedPayload performs a merge with any union data inside the SessionStreamFrame, using the provided TurnFailedPayload
+func (t *SessionStreamFrame) MergeTurnFailedPayload(v TurnFailedPayload) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsTurnCancelledPayload returns the union data inside the SessionStreamFrame as a TurnCancelledPayload
+func (t SessionStreamFrame) AsTurnCancelledPayload() (TurnCancelledPayload, error) {
+	var body TurnCancelledPayload
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromTurnCancelledPayload overwrites any union data inside the SessionStreamFrame as the provided TurnCancelledPayload
+func (t *SessionStreamFrame) FromTurnCancelledPayload(v TurnCancelledPayload) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeTurnCancelledPayload performs a merge with any union data inside the SessionStreamFrame, using the provided TurnCancelledPayload
+func (t *SessionStreamFrame) MergeTurnCancelledPayload(v TurnCancelledPayload) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSessionMessagePreviewFrame returns the union data inside the SessionStreamFrame as a SessionMessagePreviewFrame
+func (t SessionStreamFrame) AsSessionMessagePreviewFrame() (SessionMessagePreviewFrame, error) {
+	var body SessionMessagePreviewFrame
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSessionMessagePreviewFrame overwrites any union data inside the SessionStreamFrame as the provided SessionMessagePreviewFrame
+func (t *SessionStreamFrame) FromSessionMessagePreviewFrame(v SessionMessagePreviewFrame) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSessionMessagePreviewFrame performs a merge with any union data inside the SessionStreamFrame, using the provided SessionMessagePreviewFrame
+func (t *SessionStreamFrame) MergeSessionMessagePreviewFrame(v SessionMessagePreviewFrame) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSessionResyncFrame returns the union data inside the SessionStreamFrame as a SessionResyncFrame
+func (t SessionStreamFrame) AsSessionResyncFrame() (SessionResyncFrame, error) {
+	var body SessionResyncFrame
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSessionResyncFrame overwrites any union data inside the SessionStreamFrame as the provided SessionResyncFrame
+func (t *SessionStreamFrame) FromSessionResyncFrame(v SessionResyncFrame) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSessionResyncFrame performs a merge with any union data inside the SessionStreamFrame, using the provided SessionResyncFrame
+func (t *SessionStreamFrame) MergeSessionResyncFrame(v SessionResyncFrame) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsToolCallPayload returns the union data inside the SessionStreamFrame as a ToolCallPayload
+func (t SessionStreamFrame) AsToolCallPayload() (ToolCallPayload, error) {
+	var body ToolCallPayload
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromToolCallPayload overwrites any union data inside the SessionStreamFrame as the provided ToolCallPayload
+func (t *SessionStreamFrame) FromToolCallPayload(v ToolCallPayload) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeToolCallPayload performs a merge with any union data inside the SessionStreamFrame, using the provided ToolCallPayload
+func (t *SessionStreamFrame) MergeToolCallPayload(v ToolCallPayload) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsToolResultPayload returns the union data inside the SessionStreamFrame as a ToolResultPayload
+func (t SessionStreamFrame) AsToolResultPayload() (ToolResultPayload, error) {
+	var body ToolResultPayload
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromToolResultPayload overwrites any union data inside the SessionStreamFrame as the provided ToolResultPayload
+func (t *SessionStreamFrame) FromToolResultPayload(v ToolResultPayload) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeToolResultPayload performs a merge with any union data inside the SessionStreamFrame, using the provided ToolResultPayload
+func (t *SessionStreamFrame) MergeToolResultPayload(v ToolResultPayload) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -12999,6 +14227,68 @@ func (t SessionStreamFrame) MarshalJSON() ([]byte, error) {
 }
 
 func (t *SessionStreamFrame) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsSessionToolResultBlockContent0 returns the union data inside the SessionToolResultBlock_Content as a SessionToolResultBlockContent0
+func (t SessionToolResultBlock_Content) AsSessionToolResultBlockContent0() (SessionToolResultBlockContent0, error) {
+	var body SessionToolResultBlockContent0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSessionToolResultBlockContent0 overwrites any union data inside the SessionToolResultBlock_Content as the provided SessionToolResultBlockContent0
+func (t *SessionToolResultBlock_Content) FromSessionToolResultBlockContent0(v SessionToolResultBlockContent0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSessionToolResultBlockContent0 performs a merge with any union data inside the SessionToolResultBlock_Content, using the provided SessionToolResultBlockContent0
+func (t *SessionToolResultBlock_Content) MergeSessionToolResultBlockContent0(v SessionToolResultBlockContent0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSessionToolResultBlockContent1 returns the union data inside the SessionToolResultBlock_Content as a SessionToolResultBlockContent1
+func (t SessionToolResultBlock_Content) AsSessionToolResultBlockContent1() (SessionToolResultBlockContent1, error) {
+	var body SessionToolResultBlockContent1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSessionToolResultBlockContent1 overwrites any union data inside the SessionToolResultBlock_Content as the provided SessionToolResultBlockContent1
+func (t *SessionToolResultBlock_Content) FromSessionToolResultBlockContent1(v SessionToolResultBlockContent1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSessionToolResultBlockContent1 performs a merge with any union data inside the SessionToolResultBlock_Content, using the provided SessionToolResultBlockContent1
+func (t *SessionToolResultBlock_Content) MergeSessionToolResultBlockContent1(v SessionToolResultBlockContent1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t SessionToolResultBlock_Content) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *SessionToolResultBlock_Content) UnmarshalJSON(b []byte) error {
 	err := t.union.UnmarshalJSON(b)
 	return err
 }
@@ -13821,9 +15111,6 @@ type ClientInterface interface {
 	// CompactSession request
 	CompactSession(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// ListSessionEvents request
-	ListSessionEvents(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, params *ListSessionEventsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
-
 	// ListSessionMessages request
 	ListSessionMessages(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, params *ListSessionMessagesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -13831,6 +15118,9 @@ type ClientInterface interface {
 	AppendSessionMessagesWithBody(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	AppendSessionMessages(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, body AppendSessionMessagesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// StreamSession request
+	StreamSession(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, params *StreamSessionParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListSessionTurns request
 	ListSessionTurns(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, params *ListSessionTurnsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -13845,6 +15135,9 @@ type ClientInterface interface {
 
 	// CancelTurn request
 	CancelTurn(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, turnId TurnIdParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetSessionTurnLive request
+	GetSessionTurnLive(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, turnId TurnIdParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetArtifactStorageQuota request
 	GetArtifactStorageQuota(ctx context.Context, projectHandle ProjectHandleParam, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -15156,18 +16449,6 @@ func (c *Client) CompactSession(ctx context.Context, projectHandle ProjectHandle
 	return c.Client.Do(req)
 }
 
-func (c *Client) ListSessionEvents(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, params *ListSessionEventsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewListSessionEventsRequest(c.Server, projectHandle, sessionId, params)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
 func (c *Client) ListSessionMessages(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, params *ListSessionMessagesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListSessionMessagesRequest(c.Server, projectHandle, sessionId, params)
 	if err != nil {
@@ -15194,6 +16475,18 @@ func (c *Client) AppendSessionMessagesWithBody(ctx context.Context, projectHandl
 
 func (c *Client) AppendSessionMessages(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, body AppendSessionMessagesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewAppendSessionMessagesRequest(c.Server, projectHandle, sessionId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) StreamSession(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, params *StreamSessionParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewStreamSessionRequest(c.Server, projectHandle, sessionId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -15254,6 +16547,18 @@ func (c *Client) GetSessionTurn(ctx context.Context, projectHandle ProjectHandle
 
 func (c *Client) CancelTurn(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, turnId TurnIdParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewCancelTurnRequest(c.Server, projectHandle, sessionId, turnId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetSessionTurnLive(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, turnId TurnIdParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetSessionTurnLiveRequest(c.Server, projectHandle, sessionId, turnId)
 	if err != nil {
 		return nil, err
 	}
@@ -19958,101 +21263,6 @@ func NewCompactSessionRequest(server string, projectHandle ProjectHandleParam, s
 	return req, nil
 }
 
-// NewListSessionEventsRequest generates requests for ListSessionEvents
-func NewListSessionEventsRequest(server string, projectHandle ProjectHandleParam, sessionId SessionIdParam, params *ListSessionEventsParams) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project_handle", projectHandle, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "session_id", sessionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/projects/%s/sessions/%s/events", pathParam0, pathParam1)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-		// queryValues collects non-styled parameters (passthrough, JSON)
-		// that are safe to round-trip through url.Values.Encode().
-		queryValues := queryURL.Query()
-		// rawQueryFragments collects pre-encoded query fragments from
-		// styled parameters, preserving literal commas as delimiters
-		// per the OpenAPI spec (e.g. "color=blue,black,brown").
-		var rawQueryFragments []string
-
-		if params.AfterSequence != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "after_sequence", *params.AfterSequence, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.Limit != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if encoded := queryValues.Encode(); encoded != "" {
-			rawQueryFragments = append(rawQueryFragments, encoded)
-		}
-		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	if params != nil {
-
-		if params.LastEventID != nil {
-			var headerParam0 string
-
-			headerParam0, err = runtime.StyleParamWithOptions("simple", false, "Last-Event-ID", *params.LastEventID, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "integer", Format: "int64"})
-			if err != nil {
-				return nil, err
-			}
-
-			req.Header.Set("Last-Event-ID", headerParam0)
-		}
-
-	}
-
-	return req, nil
-}
-
 // NewListSessionMessagesRequest generates requests for ListSessionMessages
 func NewListSessionMessagesRequest(server string, projectHandle ProjectHandleParam, sessionId SessionIdParam, params *ListSessionMessagesParams) (*http.Request, error) {
 	var err error
@@ -20207,6 +21417,89 @@ func NewAppendSessionMessagesRequestWithBody(server string, projectHandle Projec
 	}
 
 	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewStreamSessionRequest generates requests for StreamSession
+func NewStreamSessionRequest(server string, projectHandle ProjectHandleParam, sessionId SessionIdParam, params *StreamSessionParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project_handle", projectHandle, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "session_id", sessionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/sessions/%s/stream", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.AfterSequence != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "after_sequence", *params.AfterSequence, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+
+		if params.LastEventID != nil {
+			var headerParam0 string
+
+			headerParam0, err = runtime.StyleParamWithOptions("simple", false, "Last-Event-ID", *params.LastEventID, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "integer", Format: "int64"})
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("Last-Event-ID", headerParam0)
+		}
+
+	}
 
 	return req, nil
 }
@@ -20458,6 +21751,54 @@ func NewCancelTurnRequest(server string, projectHandle ProjectHandleParam, sessi
 	}
 
 	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetSessionTurnLiveRequest generates requests for GetSessionTurnLive
+func NewGetSessionTurnLiveRequest(server string, projectHandle ProjectHandleParam, sessionId SessionIdParam, turnId TurnIdParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project_handle", projectHandle, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "session_id", sessionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam2 string
+
+	pathParam2, err = runtime.StyleParamWithOptions("simple", false, "turn_id", turnId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/sessions/%s/turns/%s/live", pathParam0, pathParam1, pathParam2)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -22737,9 +24078,6 @@ type ClientWithResponsesInterface interface {
 	// CompactSessionWithResponse request
 	CompactSessionWithResponse(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, reqEditors ...RequestEditorFn) (*CompactSessionResponse, error)
 
-	// ListSessionEventsWithResponse request
-	ListSessionEventsWithResponse(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, params *ListSessionEventsParams, reqEditors ...RequestEditorFn) (*ListSessionEventsResponse, error)
-
 	// ListSessionMessagesWithResponse request
 	ListSessionMessagesWithResponse(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, params *ListSessionMessagesParams, reqEditors ...RequestEditorFn) (*ListSessionMessagesResponse, error)
 
@@ -22747,6 +24085,9 @@ type ClientWithResponsesInterface interface {
 	AppendSessionMessagesWithBodyWithResponse(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AppendSessionMessagesResponse, error)
 
 	AppendSessionMessagesWithResponse(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, body AppendSessionMessagesJSONRequestBody, reqEditors ...RequestEditorFn) (*AppendSessionMessagesResponse, error)
+
+	// StreamSessionWithResponse request
+	StreamSessionWithResponse(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, params *StreamSessionParams, reqEditors ...RequestEditorFn) (*StreamSessionResponse, error)
 
 	// ListSessionTurnsWithResponse request
 	ListSessionTurnsWithResponse(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, params *ListSessionTurnsParams, reqEditors ...RequestEditorFn) (*ListSessionTurnsResponse, error)
@@ -22761,6 +24102,9 @@ type ClientWithResponsesInterface interface {
 
 	// CancelTurnWithResponse request
 	CancelTurnWithResponse(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, turnId TurnIdParam, reqEditors ...RequestEditorFn) (*CancelTurnResponse, error)
+
+	// GetSessionTurnLiveWithResponse request
+	GetSessionTurnLiveWithResponse(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, turnId TurnIdParam, reqEditors ...RequestEditorFn) (*GetSessionTurnLiveResponse, error)
 
 	// GetArtifactStorageQuotaWithResponse request
 	GetArtifactStorageQuotaWithResponse(ctx context.Context, projectHandle ProjectHandleParam, reqEditors ...RequestEditorFn) (*GetArtifactStorageQuotaResponse, error)
@@ -25373,39 +26717,6 @@ func (r CompactSessionResponse) ContentType() string {
 	return ""
 }
 
-type ListSessionEventsResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *SessionEventListResponse
-	JSON401      *Unauthorized
-	JSON403      *Forbidden
-	JSON404      *NotFound
-}
-
-// Status returns HTTPResponse.Status
-func (r ListSessionEventsResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ListSessionEventsResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ListSessionEventsResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
 type ListSessionMessagesResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -25468,6 +26779,38 @@ func (r AppendSessionMessagesResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r AppendSessionMessagesResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type StreamSessionResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r StreamSessionResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r StreamSessionResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r StreamSessionResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -25603,6 +26946,39 @@ func (r CancelTurnResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r CancelTurnResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetSessionTurnLiveResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *SessionLiveSnapshot
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r GetSessionTurnLiveResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetSessionTurnLiveResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetSessionTurnLiveResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -27723,15 +29099,6 @@ func (c *ClientWithResponses) CompactSessionWithResponse(ctx context.Context, pr
 	return ParseCompactSessionResponse(rsp)
 }
 
-// ListSessionEventsWithResponse request returning *ListSessionEventsResponse
-func (c *ClientWithResponses) ListSessionEventsWithResponse(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, params *ListSessionEventsParams, reqEditors ...RequestEditorFn) (*ListSessionEventsResponse, error) {
-	rsp, err := c.ListSessionEvents(ctx, projectHandle, sessionId, params, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseListSessionEventsResponse(rsp)
-}
-
 // ListSessionMessagesWithResponse request returning *ListSessionMessagesResponse
 func (c *ClientWithResponses) ListSessionMessagesWithResponse(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, params *ListSessionMessagesParams, reqEditors ...RequestEditorFn) (*ListSessionMessagesResponse, error) {
 	rsp, err := c.ListSessionMessages(ctx, projectHandle, sessionId, params, reqEditors...)
@@ -27756,6 +29123,15 @@ func (c *ClientWithResponses) AppendSessionMessagesWithResponse(ctx context.Cont
 		return nil, err
 	}
 	return ParseAppendSessionMessagesResponse(rsp)
+}
+
+// StreamSessionWithResponse request returning *StreamSessionResponse
+func (c *ClientWithResponses) StreamSessionWithResponse(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, params *StreamSessionParams, reqEditors ...RequestEditorFn) (*StreamSessionResponse, error) {
+	rsp, err := c.StreamSession(ctx, projectHandle, sessionId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseStreamSessionResponse(rsp)
 }
 
 // ListSessionTurnsWithResponse request returning *ListSessionTurnsResponse
@@ -27800,6 +29176,15 @@ func (c *ClientWithResponses) CancelTurnWithResponse(ctx context.Context, projec
 		return nil, err
 	}
 	return ParseCancelTurnResponse(rsp)
+}
+
+// GetSessionTurnLiveWithResponse request returning *GetSessionTurnLiveResponse
+func (c *ClientWithResponses) GetSessionTurnLiveWithResponse(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, turnId TurnIdParam, reqEditors ...RequestEditorFn) (*GetSessionTurnLiveResponse, error) {
+	rsp, err := c.GetSessionTurnLive(ctx, projectHandle, sessionId, turnId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetSessionTurnLiveResponse(rsp)
 }
 
 // GetArtifactStorageQuotaWithResponse request returning *GetArtifactStorageQuotaResponse
@@ -32097,56 +33482,6 @@ func ParseCompactSessionResponse(rsp *http.Response) (*CompactSessionResponse, e
 	return response, nil
 }
 
-// ParseListSessionEventsResponse parses an HTTP response from a ListSessionEventsWithResponse call
-func ParseListSessionEventsResponse(rsp *http.Response) (*ListSessionEventsResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ListSessionEventsResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest SessionEventListResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	case rsp.StatusCode == 200:
-		// Content-type (text/event-stream) unsupported
-
-	}
-
-	return response, nil
-}
-
 // ParseListSessionMessagesResponse parses an HTTP response from a ListSessionMessagesWithResponse call
 func ParseListSessionMessagesResponse(rsp *http.Response) (*ListSessionMessagesResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -32249,6 +33584,46 @@ func ParseAppendSessionMessagesResponse(rsp *http.Response) (*AppendSessionMessa
 			return nil, err
 		}
 		response.JSON429 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseStreamSessionResponse parses an HTTP response from a StreamSessionWithResponse call
+func ParseStreamSessionResponse(rsp *http.Response) (*StreamSessionResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &StreamSessionResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
 
 	}
 
@@ -32433,6 +33808,53 @@ func ParseCancelTurnResponse(rsp *http.Response) (*CancelTurnResponse, error) {
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest AgentTurn
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetSessionTurnLiveResponse parses an HTTP response from a GetSessionTurnLiveWithResponse call
+func ParseGetSessionTurnLiveResponse(rsp *http.Response) (*GetSessionTurnLiveResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetSessionTurnLiveResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest SessionLiveSnapshot
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
