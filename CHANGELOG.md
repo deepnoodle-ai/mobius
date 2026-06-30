@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 
 ## [Unreleased]
 
+## [0.0.29] - 2026-06-30
+
 Session transcript rework, synced from the mobius-cloud spec.
 `session_messages` is now the single durable conversation log; live streaming
 is ephemeral (never persisted) — the stream is a view over the durable log
@@ -13,6 +15,22 @@ spliced with a live channel, keyed by one cursor.
 
 ### Added
 
+- SDKs / CLI: a new compound `invokeAgent` endpoint
+  (`POST …/agents/invoke`) resolves or creates a session, appends the
+  caller's input message, and starts a turn in a single retryable call —
+  collapsing the create-or-resolve-session + start-turn sequence for a
+  product backend (an embedded app, a Slack handler, a Telegram bot) calling
+  per inbound message. Returns `202 Accepted` with a durable
+  `after_sequence` stream cursor by default; sending `Accept:
+  text/event-stream` streams the turn's activity inline instead, framed
+  like `GET …/sessions/{id}/stream`. A repeated call with the same
+  `input.idempotency_key` resolves the same session and resumes the
+  existing turn rather than starting a second one. New CLI command:
+  `mobius sessions invoke-agent`.
+- SDKs / CLI: `listSessions` gains a `session_key` filter for a read-only
+  deterministic session lookup that avoids a create-or-resolve round trip
+  (requires `agent_id`, since session keys are scoped to an agent).
+  `mobius sessions list --session-key`.
 - SDKs: loop run records expose `queue_reason` and `plan_concurrency_limit`.
   `queue_reason` (new `LoopRunQueueReason` enum: `plan_concurrency`,
   `loop_policy`, `trigger_concurrency`) is present only while `status` is
