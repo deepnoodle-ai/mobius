@@ -289,10 +289,69 @@ func registerSessionsCommands(app *cli.App) {
 			return printResponse(ctx, "getSessionTurnLive", resp.StatusCode(), resp.Body)
 		})
 
+	sessionsGrp.Command("invoke-agent").
+		Description("Invoke an agent").
+		Flags(
+			cli.String("agent-ref", "").Help("[required] Reference to an agent in this project. Supply exactly one of `id` (the agent identifier) or `name` (the project-unique agent name). A… Accepts JSON, @file, or @-."),
+			cli.String("channel-context", "").Help("Optional messaging provider/channel routing context (Slack, Telegram, …). Persisted on the started turn's input-message metadata under a… Accepts JSON, @file, or @-."),
+			cli.String("input", "").Help("[required] The caller input message that starts the agent turn. Accepts JSON, @file, or @-."),
+			cli.String("session", "").Help("How to resolve or create the session this invocation runs in. Mirrors the create-session policy: `mode` + `session_key` resolve a durable… Accepts JSON, @file, or @-."),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			var body api.InvokeAgentJSONRequestBody
+			if err := readJSONBody(ctx, &body); err != nil {
+				return err
+			}
+			if ctx.IsSet("agent-ref") {
+				if err := decodeFlagJSON(ctx, "agent-ref", ctx.String("agent-ref"), &body.AgentRef); err != nil {
+					return err
+				}
+			}
+			if ctx.IsSet("channel-context") {
+				if err := decodeFlagJSON(ctx, "channel-context", ctx.String("channel-context"), &body.ChannelContext); err != nil {
+					return err
+				}
+			}
+			if ctx.IsSet("input") {
+				if err := decodeFlagJSON(ctx, "input", ctx.String("input"), &body.Input); err != nil {
+					return err
+				}
+			}
+			if ctx.IsSet("session") {
+				if err := decodeFlagJSON(ctx, "session", ctx.String("session"), &body.Session); err != nil {
+					return err
+				}
+			}
+			if ctx.String("file") == "" && !ctx.IsSet("agent-ref") {
+				return fmt.Errorf("--agent-ref is required (or supply it via --file)")
+			}
+			if ctx.String("file") == "" && !ctx.IsSet("input") {
+				return fmt.Errorf("--input is required (or supply it via --file)")
+			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
+			}
+			resp, err := client.InvokeAgentWithResponse(ctx.Context(), p0, body)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "invokeAgent", resp.StatusCode(), resp.Body)
+		})
+
 	sessionsGrp.Command("list").
 		Description("List sessions").
 		Flags(
 			cli.String("agent-id", "").Help("Filter to sessions owned by this agent."),
+			cli.String("session-key", "").Help("Look up the session with this exact routing key — a read-only deterministic lookup that avoids a create-or-resolve round trip, returning…"),
 			cli.String("status", "").Help("Filter by session status."),
 			cli.String("scope", "").Help("Filter by session scope."),
 			cli.String("provider", "").Help("Filter messaging sessions by provider metadata, e.g. `slack` or `telegram`."),
@@ -312,6 +371,10 @@ func registerSessionsCommands(app *cli.App) {
 			if ctx.IsSet("agent-id") {
 				v := ctx.String("agent-id")
 				params.AgentId = &v
+			}
+			if ctx.IsSet("session-key") {
+				v := ctx.String("session-key")
+				params.SessionKey = &v
 			}
 			if ctx.IsSet("status") {
 				v := api.SessionStatus(ctx.String("status"))

@@ -2159,6 +2159,70 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /v1/projects/{project_handle}/agents/invoke:
+    post:
+      operationId: invokeAgent
+      tags:
+      - sessions
+      summary: Invoke an agent
+      description: |-
+        One compound runtime call for hosted apps: it resolves an agent, resolves or creates a session by `session_key`, appends the caller's input message, and starts an agent turn — collapsing the create-or-resolve-session plus start-turn sequence into a single retryable request. This is the entry point a product backend (an embedded app, a Slack handler, a Telegram bot) calls per inbound message; the lower-level session and turn APIs remain available for finer control.
+
+        By default it returns `202 Accepted` immediately with a durable `after_sequence` stream cursor; the turn keeps running even if the caller disconnects. When the request sets `Accept: text/event-stream`, the response is `200 OK` and the turn's activity is streamed inline on the same connection, identical to the `POST /v1/projects/{project_handle}/sessions/{session_id}/turns` stream. A repeated call with the same `input.idempotency_key` resolves the same session and resumes the existing turn rather than starting a second one, so a webhook handler can acknowledge fast and retry safely. Requires the `mobius.agent.invoke` permission (or the agent's own backing principal).
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InvokeAgentRequest'
+            example:
+              agent_ref:
+                id: agent_5n8p2q7m4x9r3v6t
+              session:
+                mode: continue_or_create
+                session_key: app:acct_123:user_456:slack:support:thread_789
+                title: Support in Slack
+                metadata:
+                  account_id: acct_123
+                  user_id: user_456
+              input:
+                content:
+                - type: text
+                  text: Can you summarize my open tickets?
+                idempotency_key: slack:evt_0a1b2c3d
+              channel_context:
+                provider: slack
+                workspace_id: T123
+                channel_id: C123
+                thread_id: '1700000000.123'
+      responses:
+        '200':
+          description: 'Server-sent event stream of the turn''s activity, returned when the
+            request sets `Accept: text/event-stream`. Framing matches `GET /v1/projects/{project_handle}/sessions/{session_id}/stream`.'
+          content:
+            text/event-stream:
+              schema:
+                $ref: '#/components/schemas/SessionStreamFrame'
+        '202':
+          description: The turn was accepted and is running.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TurnAck'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
   /v1/projects/{project_handle}/sessions:
     get:
       operationId: listSessions
@@ -2172,6 +2236,13 @@ paths:
       - name: agent_id
         in: query
         description: Filter to sessions owned by this agent.
+        schema:
+          type: string
+      - name: session_key
+        in: query
+        description: Look up the session with this exact routing key — a read-only deterministic
+          lookup that avoids a create-or-resolve round trip, returning the one matching session
+          or an empty list. Requires `agent_id`, since session keys are scoped to an agent.
         schema:
           type: string
       - name: status
@@ -9556,6 +9627,115 @@ components:
         covers_through_sequence:
           type: integer
           description: Highest message sequence this summary covers — the before/after boundary.
+    InvokeAgentRequest:
+      type: object
+      additionalProperties: false
+      description: 'A single compound invocation: which agent to run, how to resolve the session,
+        the caller''s input message, and optional channel routing context.'
+      required:
+      - agent_ref
+      - input
+      properties:
+        agent_ref:
+          $ref: '#/components/schemas/AgentRef'
+        session:
+          $ref: '#/components/schemas/InvokeSessionSpec'
+        input:
+          $ref: '#/components/schemas/InvokeInput'
+        channel_context:
+          $ref: '#/components/schemas/ChannelContext'
+    AgentRef:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      description: Reference to an agent in this project. Supply exactly one of `id` (the
+        agent identifier) or `name` (the project-unique agent name). A blueprint-binding reference
+        form is reserved for a later release and is not resolvable yet.
+      properties:
+        id:
+          type: string
+          description: Agent identifier.
+        name:
+          type: string
+          description: Project-unique agent name.
+    InvokeSessionSpec:
+      type: object
+      additionalProperties: false
+      description: 'How to resolve or create the session this invocation runs in. Mirrors
+        the create-session policy: `mode` + `session_key` resolve a durable conversation for
+        the agent, and the remaining fields seed a session that does not already exist (they
+        are ignored when an existing session is resolved). Omit the whole object to use a
+        single default session per agent in `continue_or_create` mode.'
+      properties:
+        mode:
+          type: string
+          enum:
+          - new
+          - continue
+          - continue_or_create
+          description: '`continue_or_create` (default) resolves an existing session for the
+            `session_key` or creates one; `new` always creates a fresh session; `continue`
+            resolves an existing session and fails if none exists.'
+        session_key:
+          type: string
+          description: Stable key identifying the conversation within the agent.
+        title:
+          type: string
+          description: Human-friendly title for a newly created session.
+        visibility:
+          $ref: '#/components/schemas/SessionVisibility'
+        compaction_policy:
+          $ref: '#/components/schemas/SessionCompactionPolicy'
+          description: Per-session compaction overrides applied when the session is first
+            created. Merged over the agent's default policy and server defaults. Ignored when
+            an existing session is resolved.
+        metadata:
+          type: object
+          additionalProperties: true
+          description: Free-form caller metadata stored on a newly created session.
+    InvokeInput:
+      type: object
+      additionalProperties: false
+      description: The caller input message that starts the agent turn.
+      required:
+      - content
+      properties:
+        content:
+          type: array
+          minItems: 1
+          description: Ordered content blocks (text, images) for the input message.
+          items:
+            type: object
+            additionalProperties: true
+        idempotency_key:
+          type: string
+          description: Dedup key scoped to the resolved session. A repeat call with the same
+            key resumes the existing turn and writes nothing new — derive it from the provider
+            event id for Slack/Telegram webhook retries.
+        metadata:
+          type: object
+          additionalProperties: true
+          description: Free-form caller metadata attached to the input message.
+    ChannelContext:
+      type: object
+      additionalProperties: false
+      description: Optional messaging provider/channel routing context (Slack, Telegram, …).
+        Persisted on the started turn's input-message metadata under a `channel_context` key
+        so chat history and support views can trace a turn back to the provider thread it
+        came from.
+      properties:
+        provider:
+          type: string
+          description: Messaging provider, e.g. `slack` or `telegram`.
+        workspace_id:
+          type: string
+          description: Provider workspace/team identifier.
+        channel_id:
+          type: string
+          description: Provider channel or chat identifier.
+        thread_id:
+          type: string
+          description: Provider thread identifier within the channel.
     CreateSessionRequest:
       type: object
       additionalProperties: false

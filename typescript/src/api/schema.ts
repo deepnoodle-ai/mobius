@@ -852,6 +852,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/projects/{project_handle}/agents/invoke": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Invoke an agent
+         * @description One compound runtime call for hosted apps: it resolves an agent, resolves or creates a session by `session_key`, appends the caller's input message, and starts an agent turn — collapsing the create-or-resolve-session plus start-turn sequence into a single retryable request. This is the entry point a product backend (an embedded app, a Slack handler, a Telegram bot) calls per inbound message; the lower-level session and turn APIs remain available for finer control.
+         *
+         *     By default it returns `202 Accepted` immediately with a durable `after_sequence` stream cursor; the turn keeps running even if the caller disconnects. When the request sets `Accept: text/event-stream`, the response is `200 OK` and the turn's activity is streamed inline on the same connection, identical to the `POST /v1/projects/{project_handle}/sessions/{session_id}/turns` stream. A repeated call with the same `input.idempotency_key` resolves the same session and resumes the existing turn rather than starting a second one, so a webhook handler can acknowledge fast and retry safely. Requires the `mobius.agent.invoke` permission (or the agent's own backing principal).
+         */
+        post: operations["invokeAgent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/projects/{project_handle}/sessions": {
         parameters: {
             query?: never;
@@ -4506,6 +4528,63 @@ export interface components {
             sequence: number;
             /** @description Highest message sequence this summary covers — the before/after boundary. */
             covers_through_sequence: number;
+        };
+        /** @description A single compound invocation: which agent to run, how to resolve the session, the caller's input message, and optional channel routing context. */
+        InvokeAgentRequest: {
+            agent_ref: components["schemas"]["AgentRef"];
+            session?: components["schemas"]["InvokeSessionSpec"];
+            input: components["schemas"]["InvokeInput"];
+            channel_context?: components["schemas"]["ChannelContext"];
+        };
+        /** @description Reference to an agent in this project. Supply exactly one of `id` (the agent identifier) or `name` (the project-unique agent name). A blueprint-binding reference form is reserved for a later release and is not resolvable yet. */
+        AgentRef: {
+            /** @description Agent identifier. */
+            id?: string;
+            /** @description Project-unique agent name. */
+            name?: string;
+        };
+        /** @description How to resolve or create the session this invocation runs in. Mirrors the create-session policy: `mode` + `session_key` resolve a durable conversation for the agent, and the remaining fields seed a session that does not already exist (they are ignored when an existing session is resolved). Omit the whole object to use a single default session per agent in `continue_or_create` mode. */
+        InvokeSessionSpec: {
+            /**
+             * @description `continue_or_create` (default) resolves an existing session for the `session_key` or creates one; `new` always creates a fresh session; `continue` resolves an existing session and fails if none exists.
+             * @enum {string}
+             */
+            mode?: "new" | "continue" | "continue_or_create";
+            /** @description Stable key identifying the conversation within the agent. */
+            session_key?: string;
+            /** @description Human-friendly title for a newly created session. */
+            title?: string;
+            visibility?: components["schemas"]["SessionVisibility"];
+            /** @description Per-session compaction overrides applied when the session is first created. Merged over the agent's default policy and server defaults. Ignored when an existing session is resolved. */
+            compaction_policy?: components["schemas"]["SessionCompactionPolicy"];
+            /** @description Free-form caller metadata stored on a newly created session. */
+            metadata?: {
+                [key: string]: unknown;
+            };
+        };
+        /** @description The caller input message that starts the agent turn. */
+        InvokeInput: {
+            /** @description Ordered content blocks (text, images) for the input message. */
+            content: {
+                [key: string]: unknown;
+            }[];
+            /** @description Dedup key scoped to the resolved session. A repeat call with the same key resumes the existing turn and writes nothing new — derive it from the provider event id for Slack/Telegram webhook retries. */
+            idempotency_key?: string;
+            /** @description Free-form caller metadata attached to the input message. */
+            metadata?: {
+                [key: string]: unknown;
+            };
+        };
+        /** @description Optional messaging provider/channel routing context (Slack, Telegram, …). Persisted on the started turn's input-message metadata under a `channel_context` key so chat history and support views can trace a turn back to the provider thread it came from. */
+        ChannelContext: {
+            /** @description Messaging provider, e.g. `slack` or `telegram`. */
+            provider?: string;
+            /** @description Provider workspace/team identifier. */
+            workspace_id?: string;
+            /** @description Provider channel or chat identifier. */
+            channel_id?: string;
+            /** @description Provider thread identifier within the channel. */
+            thread_id?: string;
         };
         /** @description Resolve-or-create policy for a session. */
         CreateSessionRequest: {
@@ -8942,11 +9021,86 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
+    invokeAgent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "agent_ref": {
+                 *         "id": "agent_5n8p2q7m4x9r3v6t"
+                 *       },
+                 *       "session": {
+                 *         "mode": "continue_or_create",
+                 *         "session_key": "app:acct_123:user_456:slack:support:thread_789",
+                 *         "title": "Support in Slack",
+                 *         "metadata": {
+                 *           "account_id": "acct_123",
+                 *           "user_id": "user_456"
+                 *         }
+                 *       },
+                 *       "input": {
+                 *         "content": [
+                 *           {
+                 *             "type": "text",
+                 *             "text": "Can you summarize my open tickets?"
+                 *           }
+                 *         ],
+                 *         "idempotency_key": "slack:evt_0a1b2c3d"
+                 *       },
+                 *       "channel_context": {
+                 *         "provider": "slack",
+                 *         "workspace_id": "T123",
+                 *         "channel_id": "C123",
+                 *         "thread_id": "1700000000.123"
+                 *       }
+                 *     }
+                 */
+                "application/json": components["schemas"]["InvokeAgentRequest"];
+            };
+        };
+        responses: {
+            /** @description Server-sent event stream of the turn's activity, returned when the request sets `Accept: text/event-stream`. Framing matches `GET /v1/projects/{project_handle}/sessions/{session_id}/stream`. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/event-stream": components["schemas"]["SessionStreamFrame"];
+                };
+            };
+            /** @description The turn was accepted and is running. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TurnAck"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
     listSessions: {
         parameters: {
             query?: {
                 /** @description Filter to sessions owned by this agent. */
                 agent_id?: string;
+                /** @description Look up the session with this exact routing key — a read-only deterministic lookup that avoids a create-or-resolve round trip, returning the one matching session or an empty list. Requires `agent_id`, since session keys are scoped to an agent. */
+                session_key?: string;
                 /** @description Filter by session status. */
                 status?: components["schemas"]["SessionStatus"];
                 /** @description Filter by session scope. */
