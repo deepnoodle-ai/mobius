@@ -937,13 +937,13 @@ export interface paths {
         };
         /**
          * List session turns
-         * @description Returns the session's turns, the spine the turn-grouped transcript is built on. Each turn groups related transcript messages and includes links to any run step or channel exchange that produced it. Turns are ordered by creation time; `order=desc` returns the newest turns (the tail) first, and long sessions are walked page-by-page via the `next_cursor` returned in the response. Pass `ids` to fetch exactly a known set of turns in one bounded request — the join a transcript view uses to resolve a loaded message window's `turn_id`s to their headers; when `ids` is set the cursor and order parameters are ignored.
+         * @description Returns the session's turns, the structure the turn-grouped transcript is built on. Each turn groups related transcript messages and includes links to any run step or channel exchange that produced it. Turns are ordered by creation time; `order=desc` returns the newest turns (the tail) first, and long sessions are walked page-by-page via the `next_cursor` returned in the response. Pass `ids` to fetch exactly a known set of turns in one bounded request — the join a transcript view uses to resolve a loaded message window's `turn_id`s to their headers; when `ids` is set the cursor and order parameters are ignored.
          */
         get: operations["listSessionTurns"];
         put?: never;
         /**
          * Start an agent turn
-         * @description Appends one caller input message to the session and starts an agent turn to respond. By default returns `202 Accepted` immediately with a durable `after_sequence` cursor to stream from. The turn keeps running even if the caller disconnects. When the request sets `Accept: text/event-stream`, the response is `200 OK` and the turn's activity is streamed inline on the same connection, equivalent to opening `GET .../events` at the returned cursor. A repeated call with the same `idempotency_key` resumes the existing turn rather than starting a second one. Requires the `mobius.agent.invoke` permission (or the agent's own backing principal).
+         * @description Appends one caller input message to the session and starts an agent turn to respond. By default returns `202 Accepted` immediately with a durable `after_sequence` cursor (a message `sequence`) to stream from. The turn keeps running even if the caller disconnects. When the request sets `Accept: text/event-stream`, the response is `200 OK` and the turn's activity is streamed inline on the same connection, equivalent to opening `GET .../stream` at the returned cursor. A repeated call with the same `idempotency_key` resumes the existing turn rather than starting a second one. Requires the `mobius.agent.invoke` permission (or the agent's own backing principal).
          */
         post: operations["startTurn"];
         delete?: never;
@@ -972,6 +972,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/projects/{project_handle}/sessions/{session_id}/turns/{turn_id}/live": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get live session turn snapshot
+         * @description Returns the process-local, live-only transcript preview frames currently known for an in-flight turn. This is an ephemeral recovery primitive for SSE reconnects and `live_sequence` gaps; it is not a durable event log replay endpoint and may return an empty frame list after process handoff or once the durable transcript has caught up.
+         */
+        get: operations["getSessionTurnLive"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/projects/{project_handle}/sessions/{session_id}/turns/{turn_id}/cancel": {
         parameters: {
             query?: never;
@@ -992,7 +1012,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/projects/{project_handle}/sessions/{session_id}/events": {
+    "/v1/projects/{project_handle}/sessions/{session_id}/stream": {
         parameters: {
             query?: never;
             header?: never;
@@ -1000,12 +1020,16 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List or stream session events
-         * @description Returns the durable lifecycle event log for a conversation session, ordered by sequence number. Use `after_sequence` to page only events recorded after the last sequence the client has observed.
+         * Stream a session's activity
+         * @description Opens a long-lived Server-Sent Events stream that is a live view over the session's one durable conversation log (its transcript messages). It is the single streaming surface for a session.
          *
-         *     Content-negotiated: with `Accept: text/event-stream` this opens a long-lived Server-Sent Events stream instead of returning a JSON page. Durable events (`user.message`, `turn.started`, `agent.message`, `tool.call`, `tool.result`, the non-terminal `compaction.created` event, and the terminal `turn.completed` / `turn.failed` / `turn.cancelled` events) are replayed from `after_sequence` and then tailed live, so a client reconnecting with `?after_sequence=N` (or the `Last-Event-ID` header) resumes exactly where it left off. The stream follows the current active tail of the session and closes when the latest durable event at the head of the log is terminal (`compaction.created` is non-terminal and never closes the stream). A later turn is a new activity tail; clients should open a new stream for the new turn or use the streaming `POST .../turns` response. Live-only `generation.delta` frames are interleaved best-effort on the stream.
+         *     The transcript messages with `sequence > after_sequence` are replayed first — covering any turn that committed between the client's last read and the stream open — then the in-flight turn is tailed live. Each committed message is framed as `event: <type>` (`user.message`, `agent.message`, or the non-terminal `compaction.created`) with a `data:` line carrying the message payload and an `id:` line carrying the message `sequence`. The cursor is therefore the same `sequence` the messages API uses: reconnect with `?after_sequence=N` (or the `Last-Event-ID` header) to resume exactly where you left off, with no separate event cursor.
+         *
+         *     The stream follows the session's active turn and closes once the session is idle — no queued or running turn — after the active turn's committed rows and a terminal `turn.completed` / `turn.failed` / `turn.cancelled` frame have been delivered. A later turn is a new activity tail; open a new stream for it or use the streaming `POST .../turns` response.
+         *
+         *     Live-only `generation.delta`, `session.message.preview`, `tool.call`, and `tool.result` frames carry no `id:`, are interleaved best-effort for low-latency rendering, and are never persisted or replayed — on reconnect the durable message frames are the source of truth.
          */
-        get: operations["listSessionEvents"];
+        get: operations["streamSession"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1724,26 +1748,31 @@ export interface components {
             event_type: "generation.delta";
             run_id?: string | null;
             session_id?: string | null;
-            agent_turn_id?: string | null;
+            turn_id?: string | null;
             job_id?: string | null;
             tool_call_id?: string | null;
             /**
              * Format: int64
-             * @description Publisher-local ordering hint, not a replay cursor.
+             * @description Monotonic per-turn sequence across all live-only session frames; use to detect dropped live frames.
              */
-            sequence?: number | null;
+            live_sequence?: number | null;
             /**
              * Format: int64
-             * @description Preferred publisher-local ordering hint, not a replay cursor.
+             * @description Publisher-local ordering hint for deltas within a turn, not a replay cursor.
              */
             delta_sequence?: number | null;
+            /**
+             * Format: date-time
+             * @description Server timestamp when this live preview frame was emitted.
+             */
+            emitted_at?: string | null;
             /** @description Token preview payload, usually `{ "text": "..." }`. */
             delta: {
                 [key: string]: unknown;
             };
-            executor_kind?: string | null;
             worker_id?: string | null;
-            generation_key?: string | null;
+            /** @description Model producing the generation, e.g. `claude-sonnet-4-6`. */
+            model?: string | null;
         } & {
             [key: string]: unknown;
         };
@@ -1849,21 +1878,26 @@ export interface components {
          */
         AgentToolPresentation: "flat" | "meta";
         /**
+         * @description T-shirt size selecting when `auto` compaction triggers, smallest (`xs`, compact very early) to largest (`xl`, compact very late). The server maps each size to a token estimate; `sm` is the default.
+         * @enum {string}
+         */
+        SessionCompactionThreshold: "xs" | "sm" | "md" | "lg" | "xl";
+        /**
          * @description Controls how a session's transcript is automatically summarized as it grows. On create the supplied fields are merged over the owning agent's default policy and the server defaults; on update they patch the session's current policy. Omitted fields keep their resolved values.
          * @example {
          *       "strategy": "auto",
-         *       "threshold_tokens": 25000,
+         *       "threshold": "sm",
          *       "summary_model": "claude-haiku-4-5-20251001"
          *     }
          */
         SessionCompactionPolicy: {
             /**
-             * @description `auto` (default) compacts automatically when the transcript crosses `threshold_tokens`. `manual` only compacts on an explicit compact request. `disabled`/`none` never compact.
+             * @description `auto` (default) compacts automatically when the transcript crosses the `threshold` size. `manual` only compacts on an explicit compact request. `disabled` (alias `none`) never compacts.
              * @enum {string}
              */
             strategy?: "auto" | "manual" | "disabled" | "none";
-            /** @description Token threshold that triggers automatic compaction under the `auto` strategy. */
-            threshold_tokens?: number;
+            /** @description Size at which `auto` compacts. A t-shirt size (`xs`–`xl`) rather than a raw token count, because the transcript size it gates on is an estimate. The size → token mapping is server-owned; `sm` is the default and the per-size token estimate is documented separately. */
+            threshold?: components["schemas"]["SessionCompactionThreshold"];
             /** @description Model used to produce compaction summaries. */
             summary_model?: string;
         };
@@ -1901,7 +1935,7 @@ export interface components {
             kind?: string;
             /** @description Display color for this agent in UI surfaces. One of the Mantine color palette keys (e.g. `indigo`, `teal`, `grape`); empty string falls back to a hash-derived color. */
             color?: string;
-            /** @description Model identifier for platform agents. Accepts any id returned by `GET /v1/projects/{project_handle}/catalog/models`, optionally `provider/`-prefixed (e.g. `xai/grok-4`); bare known ids (e.g. `claude-sonnet-4-6`) are auto-detected to their provider. Empty string falls back to the platform default. */
+            /** @description Model identifier for platform agents. Accepts any id returned by `GET /v1/projects/{project_handle}/catalog/models` (including slash-bearing OpenRouter catalog ids), optionally `provider/`-prefixed (e.g. `xai/grok-4`); bare known ids (e.g. `claude-sonnet-4-6`) are auto-detected to their provider. Empty string falls back to the platform default. */
             model?: string;
             /** @description Default route for model calls made by this agent. */
             model_route?: components["schemas"]["AgentModelRoute"];
@@ -2518,7 +2552,7 @@ export interface components {
         };
         /** @description Available model choices for one provider. */
         ModelProviderGroup: {
-            /** @description Canonical provider id (`anthropic`, `openai`, `gemini`, `xai`). */
+            /** @description Canonical provider id (`anthropic`, `openai`, `openrouter`, `gemini`, `xai`). */
             provider: string;
             /** @description Human-readable provider label. */
             display_name: string;
@@ -2532,7 +2566,7 @@ export interface components {
         };
         /** @description One selectable LLM model in the project model catalog. */
         ModelOption: {
-            /** @description Bare model id assigned to an agent's `model` field. */
+            /** @description Model id assigned to an agent's `model` field. Some catalog ids, such as OpenRouter slugs, include `/`. */
             id: string;
             /** @description Canonical provider id this model belongs to. */
             provider: string;
@@ -3520,6 +3554,8 @@ export interface components {
             reply_mode: components["schemas"]["AgentMessagingReplyMode"];
             /** @description Optional model route override used for replies through this binding. */
             model_route?: components["schemas"]["AgentModelRoute"];
+            /** @description Optional compaction policy applied to sessions created from this binding. Unset inherits the agent default. */
+            compaction_policy?: components["schemas"]["SessionCompactionPolicy"];
             /**
              * Format: date-time
              * @description Time the binding was created.
@@ -3571,6 +3607,8 @@ export interface components {
             reply_mode?: components["schemas"]["AgentMessagingReplyMode"];
             /** @description Optional model route override used for replies through this binding. */
             model_route?: components["schemas"]["AgentModelRoute"];
+            /** @description Optional compaction policy applied to sessions created from this binding. Unset inherits the agent default. */
+            compaction_policy?: components["schemas"]["SessionCompactionPolicy"];
         };
         AgentMessagingBindingListResponse: {
             /** @description Messaging bindings configured for this agent. */
@@ -3702,7 +3740,7 @@ export interface components {
             kind?: string;
             /** @description Display color for this agent (Mantine palette key, e.g. `indigo`). Optional; empty falls back to a hash-derived color. */
             color?: string;
-            /** @description Model identifier for platform agents. Any id from `GET /v1/projects/{project_handle}/catalog/models`, optionally `provider/`-prefixed (e.g. `xai/grok-4`); bare known ids (e.g. `claude-sonnet-4-6`) are auto-detected. Empty falls back to the platform default. */
+            /** @description Model identifier for platform agents. Any id from `GET /v1/projects/{project_handle}/catalog/models`, including slash-bearing OpenRouter catalog ids, or an optionally `provider/`-prefixed id (e.g. `xai/grok-4`); bare known ids (e.g. `claude-sonnet-4-6`) are auto-detected. Empty falls back to the platform default. */
             model?: string;
             /** @description Default route for model calls made by this agent. */
             model_route?: components["schemas"]["AgentModelRoute"];
@@ -3730,7 +3768,7 @@ export interface components {
             kind?: string;
             /** @description Replacement display color (Mantine palette key, e.g. `indigo`). Pass empty string to clear and fall back to a hash-derived color. */
             color?: string;
-            /** @description Replacement model identifier for platform agents (any id from `GET /v1/projects/{project_handle}/catalog/models`, optionally `provider/`-prefixed). */
+            /** @description Replacement model identifier for platform agents (any id from `GET /v1/projects/{project_handle}/catalog/models`, including slash-bearing OpenRouter catalog ids, or an optionally `provider/`-prefixed id). */
             model?: string;
             /** @description Replacement default route for model calls made by this agent. */
             model_route?: components["schemas"]["AgentModelRoute"];
@@ -3779,16 +3817,20 @@ export interface components {
             /** @description Stable identifier the agent chose for this memory. */
             key: string;
             kind: components["schemas"]["MemoryKind"];
+            /** @description Short one-line summary shown in the agent's memory index. */
+            summary?: string;
             /** @description The remembered content. */
             content?: string;
             /** @description Structured metadata stored alongside the memory (provenance, tags, …). */
             metadata?: {
                 [key: string]: unknown;
             };
-            /** @description Rank from 0 to 100 used by compaction; higher is kept longer. */
+            /** @description Rank from 0 to 100; higher ranks sooner in recall and is kept longer under the memory cap. */
             importance: number;
-            /** @description Whether the entry is exempt from compaction. */
+            /** @description Whether the entry is guaranteed in the memory index and exempt from the memory cap. */
             pinned: boolean;
+            /** @description Identifier of the loop run that last wrote this memory, when known. */
+            source_run_id?: string;
             /** @description Identifier of this memory entry. */
             entry_id: string;
             /** @description Monotonic version, incremented on each update. */
@@ -3816,6 +3858,8 @@ export interface components {
         PutAgentMemoryEntryRequest: {
             /** @description The content to remember. */
             content?: string;
+            /** @description Optional short one-line summary (≤140 chars) shown in the memory index. */
+            summary?: string;
             kind?: components["schemas"]["MemoryKind"];
             /** @description Optional structured metadata to store alongside the memory. */
             metadata?: {
@@ -3831,6 +3875,67 @@ export interface components {
          * @enum {string}
          */
         SessionMessageRole: "system" | "user" | "assistant" | "tool" | "compaction";
+        /** @description Assistant or caller text. */
+        SessionTextBlock: {
+            /** @enum {string} */
+            type: "text";
+            /** @description The text content. */
+            text: string;
+        } & {
+            [key: string]: unknown;
+        };
+        /** @description An extended-reasoning block produced by a reasoning model. */
+        SessionThinkingBlock: {
+            /** @enum {string} */
+            type: "thinking";
+            /** @description The reasoning text. */
+            thinking: string;
+            /** @description Provider signature for the reasoning block, when present. */
+            signature?: string;
+        } & {
+            [key: string]: unknown;
+        };
+        /** @description A tool call the agent issued. */
+        SessionToolUseBlock: {
+            /** @enum {string} */
+            type: "tool_use";
+            /** @description Tool-call id; the matching tool_result references it. */
+            id: string;
+            /** @description Tool name. */
+            name: string;
+            /** @description Tool input arguments. */
+            input: {
+                [key: string]: unknown;
+            };
+        } & {
+            [key: string]: unknown;
+        };
+        /** @description The result of a tool call. */
+        SessionToolResultBlock: {
+            /** @enum {string} */
+            type: "tool_result";
+            /** @description The tool_use id this result answers. */
+            tool_use_id: string;
+            /** @description Result payload — a string or an array of typed sub-blocks (the same block shape as a transcript message). */
+            content?: unknown;
+            /** @description True when the tool reported a failure. */
+            is_error?: boolean;
+        } & {
+            [key: string]: unknown;
+        };
+        /** @description An image block, e.g. multimodal caller input. */
+        SessionImageBlock: {
+            /** @enum {string} */
+            type: "image";
+            /** @description Provider-specific image source descriptor. */
+            source?: {
+                [key: string]: unknown;
+            };
+        } & {
+            [key: string]: unknown;
+        };
+        /** @description One content block in a session transcript message — the canonical, frozen JSON shape Mobius persists and replays, discriminated by `type`. The variants are `text`, `thinking`, `tool_use`, `tool_result`, and `image`. Each variant permits provider-specific extra fields (citations, signatures, cache hints, and the like), and unknown fields are preserved rather than rejected, so the transcript round-trips losslessly across providers. */
+        SessionContentBlock: components["schemas"]["SessionTextBlock"] | components["schemas"]["SessionThinkingBlock"] | components["schemas"]["SessionToolUseBlock"] | components["schemas"]["SessionToolResultBlock"] | components["schemas"]["SessionImageBlock"];
         /**
          * @description Transcript entry type: `message` or `compaction`.
          * @enum {string}
@@ -3846,10 +3951,8 @@ export interface components {
             agent_id: string;
             /** @description Role of this message in the transcript. */
             role: components["schemas"]["SessionMessageRole"];
-            /** @description Ordered content blocks (text, tool calls, tool results, images). */
-            content: {
-                [key: string]: unknown;
-            }[];
+            /** @description Ordered canonical content blocks (text, thinking, tool_use, tool_result, image). */
+            content: components["schemas"]["SessionContentBlock"][];
             /** @description Whether this row is a normal message or a compaction summary. */
             entry_type: components["schemas"]["SessionMessageEntryType"];
             /** @description For `compaction` messages, the highest sequence number this summary covers. */
@@ -3880,7 +3983,7 @@ export interface components {
             next_sequence?: number;
             /**
              * Format: int64
-             * @description Sequence of the first (lowest) item — pass back as `before_sequence` with `order=desc` to page backward (older).
+             * @description Sequence of the first (lowest) item — pass back as `before_sequence` with `order=desc` to page backward (older). After paginating history, open the stream with `after_sequence=next_sequence` to receive the in-flight turn and everything after it — the stream and the messages API share one `sequence` cursor, so there is no overlap and no gap.
              */
             prev_sequence?: number;
         };
@@ -4160,86 +4263,151 @@ export interface components {
             /** @description Partial patch to the session's compaction policy. Only the supplied fields change; omitted fields keep their current values. */
             compaction_policy?: components["schemas"]["SessionCompactionPolicy"];
         };
-        /** @description Durable session lifecycle frame. SSE messages carrying this shape include `id: <sequence>`, and that value is the only cursor clients should persist for `after_sequence` or `Last-Event-ID` resume. */
-        SessionLifecycleFrame: components["schemas"]["SessionEvent"];
-        /** @description JSON payload of a single `data:` line on the session event SSE stream. Durable lifecycle frames are replayable and carry an SSE `id:`; `generation.delta` frames are live-only previews and do not. */
-        SessionStreamFrame: components["schemas"]["SessionLifecycleFrame"] | components["schemas"]["GenerationDeltaFrame"];
-        /** @description One durable, per-session lifecycle event in the session event log. */
-        SessionEvent: {
-            /** @description Session this event belongs to. */
+        /** @description JSON payload of a single `data:` line on the session SSE stream, paired with an `event: <event type>` line. Durable message frames (`user.message`, `agent.message`, `compaction.created`) are replayed from the transcript and carry an SSE `id: <sequence>` — that `sequence` is the only cursor a client persists for `after_sequence` / `Last-Event-ID` resume. Terminal `turn.*` frames mark the active turn settling. `session.message.preview`, `session.resync`, `tool.call`, `tool.result`, and `generation.delta` frames are live-only and carry no `id:`. */
+        SessionStreamFrame: components["schemas"]["SessionUserMessagePayload"] | components["schemas"]["AgentMessagePayload"] | components["schemas"]["CompactionCreatedPayload"] | components["schemas"]["TurnStartedPayload"] | components["schemas"]["TurnWaitingPayload"] | components["schemas"]["TurnCompletedPayload"] | components["schemas"]["TurnFailedPayload"] | components["schemas"]["TurnCancelledPayload"] | components["schemas"]["SessionMessagePreviewFrame"] | components["schemas"]["SessionResyncFrame"] | components["schemas"]["ToolCallPayload"] | components["schemas"]["ToolResultPayload"] | components["schemas"]["GenerationDeltaFrame"];
+        /** @description Live-only, SessionMessage-compatible transcript preview for an in-flight agent response segment. It carries no durable `seq`, transcript `sequence`, or stable `message_id`; the committed row later replaces it by `turn_id` plus `metadata.response_message_index`. */
+        SessionMessagePreviewFrame: {
+            /** @enum {string} */
+            event_type: "session.message.preview";
+            /** @description Provisional live id. Do not persist or use as the durable message id. */
+            id: string;
+            /** @description Session this preview belongs to. */
             session_id: string;
-            /** @description Turn that produced this event, when set. */
-            agent_turn_id?: string;
-            /** @description Lifecycle event type, e.g. `user.message`, `tool.call`, or `turn.completed`. */
-            event_type: string;
+            /** @description Agent that owns the parent session, when known. */
+            agent_id?: string;
+            /** @description Loop run that produced the preview, when applicable. */
+            run_id?: string;
+            /** @description Agent turn that produced the preview. */
+            turn_id: string;
             /**
              * Format: int64
-             * @description Monotonic per-session sequence number; pass as `after_sequence` to resume.
+             * @description Monotonic per-turn sequence across all live-only session frames; use to detect dropped live frames.
              */
-            sequence: number;
-            /**
-             * Format: int64
-             * @deprecated
-             * @description Deprecated alias for `sequence`, kept for v1 compatibility.
-             */
-            seq: number;
-            payload?: components["schemas"]["SessionEventPayload"];
-            /**
-             * Format: date-time
-             * @description Server timestamp when the event was recorded.
-             */
-            created_at: string;
-        };
-        /** @description Typed payloads for common durable session event types. */
-        SessionEventPayload: components["schemas"]["SessionUserMessagePayload"] | components["schemas"]["TurnStartedPayload"] | components["schemas"]["AgentMessagePayload"] | components["schemas"]["ToolCallPayload"] | components["schemas"]["ToolResultPayload"] | components["schemas"]["TurnWaitingPayload"] | components["schemas"]["TurnCompletedPayload"] | components["schemas"]["TurnFailedPayload"] | components["schemas"]["TurnCancelledPayload"] | components["schemas"]["CompactionCreatedPayload"] | components["schemas"]["GenericEventPayload"];
-        SessionUserMessagePayload: {
-            message?: {
+            live_sequence?: number;
+            role: components["schemas"]["SessionMessageRole"];
+            entry_type: components["schemas"]["SessionMessageEntryType"];
+            /** @description Ordered content blocks using the same canonical block shape as SessionMessage. */
+            content: components["schemas"]["SessionContentBlock"][];
+            /** @description Must include `response_message_index`, the handoff key shared with the durable transcript row. */
+            metadata: {
                 [key: string]: unknown;
             };
-            content?: {
+            /**
+             * Format: date-time
+             * @description Server timestamp when this live preview frame was emitted.
+             */
+            emitted_at?: string;
+        } & {
+            [key: string]: unknown;
+        };
+        /** @description Ephemeral, process-local live transcript snapshot for an in-flight turn. */
+        SessionLiveSnapshot: {
+            session_id: string;
+            turn_id: string;
+            /** @description Live-only frame payloads in live_sequence order. Each item has the same shape as its SSE `data:` payload. */
+            frames: {
                 [key: string]: unknown;
             }[];
+            /**
+             * Format: int64
+             * @description Highest live_sequence included in `frames`, or 0 when no live frames are available.
+             */
+            last_live_sequence: number;
+            /**
+             * Format: date-time
+             * @description Server timestamp when the snapshot was last updated.
+             */
+            updated_at: string;
+        };
+        /** @description Live-only marker asking the client to reconcile the active turn from the live snapshot endpoint. */
+        SessionResyncFrame: {
+            /** @enum {string} */
+            event_type: "session.resync";
+            session_id: string;
+            /** @description Machine-readable resync reason, e.g. `subscriber_overflow`. */
+            reason: string;
+        };
+        /** @description Payload of a `user.message` content event: the durable encoding of one non-assistant transcript message — caller input, or a user-role message carrying tool results. It mirrors the transcript row exactly, carrying the message identity (`message_id` + `sequence`) and full content. Replaying these events reconstructs the same view as reading the messages API. */
+        SessionUserMessagePayload: {
+            /** @description Id of the transcript message this event mirrors. */
+            message_id: string;
+            /**
+             * Format: int64
+             * @description The mirrored message's per-session transcript sequence.
+             */
+            sequence: number;
+            /** @description Transcript role of the message (e.g. `user`, `system`, or a user-role message carrying tool results). */
+            role: string;
+            /** @description The message's full canonical content blocks (text, tool_result, …). */
+            content: components["schemas"]["SessionContentBlock"][];
+            /** @description The agent turn that produced this message, when applicable. */
             turn_id?: string;
         } & {
             [key: string]: unknown;
         };
+        /** @description Payload of a `turn.started` event. Empty: the turn is identified by the envelope `turn_id`, so nothing is duplicated in the payload. */
         TurnStartedPayload: {
+            [key: string]: unknown;
+        };
+        /** @description Payload of an `agent.message` content event: the durable encoding of one assistant transcript message. Carries the message's full structured content (text, thinking, tool_use) plus the message identity (`message_id` + `sequence`). Replaying these events reconstructs the same view as reading the messages API. */
+        AgentMessagePayload: {
+            /** @description Id of the transcript message this event mirrors. */
+            message_id: string;
+            /**
+             * Format: int64
+             * @description The mirrored message's per-session transcript sequence.
+             */
+            sequence: number;
+            /** @description Always `assistant`. */
+            role: string;
+            /** @description The assistant message's full canonical content blocks (text, thinking, tool_use). */
+            content: components["schemas"]["SessionContentBlock"][];
+            /** @description The agent turn that produced this message. */
             turn_id?: string;
+        } & {
+            [key: string]: unknown;
+        };
+        /** @description Payload of a live-only `tool.call` frame — an in-flight preview that a tool was invoked during the active turn. Never persisted and carries no sequence: the durable record of the call is the `tool_use` content block of the assistant message, delivered as an `agent.message` event when the turn commits. */
+        ToolCallPayload: {
+            tool_call_id?: string;
+            tool_name?: string;
             input?: {
                 [key: string]: unknown;
             };
+            /**
+             * Format: int64
+             * @description Monotonic per-turn sequence across all live-only session frames; use to detect dropped live frames.
+             */
+            live_sequence?: number;
+            /**
+             * Format: date-time
+             * @description Server timestamp when this live preview frame was emitted.
+             */
+            emitted_at?: string;
         } & {
             [key: string]: unknown;
         };
-        AgentMessagePayload: {
-            message?: {
-                [key: string]: unknown;
-            };
-            output?: {
-                [key: string]: unknown;
-            };
+        /** @description Payload of a live-only `tool.result` frame — an in-flight preview that a tool returned during the active turn. Never persisted and carries no sequence: the durable record is the `tool_result` content block of the following transcript message, delivered as a `user.message` event when the turn commits. */
+        ToolResultPayload: {
+            tool_call_id?: string;
+            tool_name?: string;
+            /** @description The tool result as structured content blocks (e.g. `[{ "type": "text", "text": "…" }]`), the same shape as the `tool_result` content of the durable transcript message — so the live preview and the committed record read identically. */
             content?: {
                 [key: string]: unknown;
             }[];
-        } & {
-            [key: string]: unknown;
-        };
-        ToolCallPayload: {
-            tool_call_id?: string;
-            name?: string;
-            arguments?: {
-                [key: string]: unknown;
-            };
-        } & {
-            [key: string]: unknown;
-        };
-        ToolResultPayload: {
-            tool_call_id?: string;
-            name?: string;
-            result?: {
-                [key: string]: unknown;
-            };
+            display?: string;
+            is_error?: boolean;
             error?: string;
+            /**
+             * Format: int64
+             * @description Monotonic per-turn sequence across all live-only session frames; use to detect dropped live frames.
+             */
+            live_sequence?: number;
+            /**
+             * Format: date-time
+             * @description Server timestamp when this live preview frame was emitted.
+             */
+            emitted_at?: string;
         } & {
             [key: string]: unknown;
         };
@@ -4252,10 +4420,8 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /** @description Payload of a `turn.completed` event — the terminal idle marker carrying token usage. The assistant output is not duplicated here; it is delivered as `agent.message` content events when the transcript commits. */
         TurnCompletedPayload: {
-            output?: {
-                [key: string]: unknown;
-            };
             usage?: {
                 [key: string]: unknown;
             };
@@ -4277,6 +4443,15 @@ export interface components {
         CompactionCreatedPayload: {
             /** @description Id of the compaction summary message appended to the transcript. */
             message_id?: string;
+            /**
+             * Format: int64
+             * @description The summary message's per-session transcript sequence.
+             */
+            sequence?: number;
+            /** @description Transcript role of the summary entry. */
+            role?: string;
+            /** @description The summary's full canonical content blocks, so replaying the stream reconstructs the compaction entry exactly. */
+            content?: components["schemas"]["SessionContentBlock"][];
             /** @description Highest message sequence the new summary covers — the before/after boundary. */
             covers_through_sequence?: number;
             /** @description Number of transcript messages folded into this summary. */
@@ -4285,17 +4460,6 @@ export interface components {
             summary_model?: string;
         } & {
             [key: string]: unknown;
-        };
-        SessionEventListResponse: {
-            /** @description Session events in this page, ordered by `sequence` ascending. */
-            items: components["schemas"]["SessionEvent"][];
-            /** @description True when more events exist past this page. */
-            has_more?: boolean;
-            /**
-             * Format: int64
-             * @description Sequence of the last item — pass back as `after_sequence` to continue.
-             */
-            next_sequence?: number;
         };
         AppendSessionMessagesRequest: {
             /** @description Messages to append to the session, in order. */
@@ -4384,7 +4548,7 @@ export interface components {
             turn: components["schemas"]["AgentTurn"];
             /**
              * Format: int64
-             * @description The durable event sequence cursor to stream from. Pass it as `after_sequence` to `GET .../events` to follow this turn.
+             * @description The transcript message `sequence` cursor to stream from. Pass it as `after_sequence` to `GET .../stream` to follow this turn.
              */
             after_sequence: number;
             /** @description True when a repeated idempotency key resumed an existing turn. */
@@ -4967,7 +5131,7 @@ export interface components {
         };
         /** @description Durable conversation-session policy for loop agent steps. Omit to enable the product default: loop-scoped sessions keyed from the triggering conversation when Mobius can identify one, such as a Telegram chat ID. */
         LoopAgentSessionPolicy: {
-            /** @description Disable durable session context and transcript writes for the affected agent step(s). */
+            /** @description Reserved for internal synthesized agent executions. Authored loop agent steps are session-backed; setting this to `true` is rejected. */
             disabled?: boolean;
             /**
              * @description Named-session boundary. `auto` and omitted use `loop`. `agent` intentionally shares the named session across loops using the same agent.
@@ -4980,25 +5144,8 @@ export interface components {
             title?: string;
             /** @description Visibility for durable sessions created from this policy. */
             visibility?: components["schemas"]["SessionVisibility"];
-            /**
-             * @description Optional per-session compaction policy merged with server defaults when the session is first created. Existing sessions keep their current compaction policy unless edited through a session-specific operation.
-             * @example {
-             *       "strategy": "auto",
-             *       "threshold_tokens": 25000,
-             *       "summary_model": "claude-haiku-4-5-20251001"
-             *     }
-             */
-            compaction_policy?: {
-                /**
-                 * @description Compaction strategy: `auto`, `manual`, `disabled`, or `none`.
-                 * @enum {string}
-                 */
-                strategy?: "auto" | "manual" | "disabled" | "none";
-                /** @description Token threshold that triggers automatic compaction. */
-                threshold_tokens?: number;
-                /** @description Model used to produce compaction summaries. */
-                summary_model?: string;
-            };
+            /** @description Optional per-session compaction policy merged with server defaults when the session is first created. Existing sessions keep their current compaction policy unless edited through a session-specific operation. */
+            compaction_policy?: components["schemas"]["SessionCompactionPolicy"];
         };
         /** @description Model-routing override for an agent step. */
         LoopModelRoute: {
@@ -5534,9 +5681,9 @@ export interface components {
         };
         /** @description Durable run lifecycle frame. SSE messages carrying this shape include `id: <sequence>`, and that value is the only cursor clients should persist for `after_sequence` or `Last-Event-ID` resume. */
         LoopRunLifecycleFrame: components["schemas"]["LoopRunEvent"];
-        /** @description JSON payload of a single `data:` line on the run event SSE stream. Durable lifecycle frames are replayable and carry an SSE `id:`; `generation.delta` frames are live-only previews and do not. */
-        LoopRunStreamFrame: components["schemas"]["LoopRunLifecycleFrame"] | components["schemas"]["GenerationDeltaFrame"];
-        /** @description Typed payloads for common durable run event types. */
+        /** @description JSON payload of a single `data:` line on the run event SSE stream. Run stream frames are lifecycle/observability events and are replayable with an SSE `id:`. Agent transcript content is delivered by the referenced session stream. */
+        LoopRunStreamFrame: components["schemas"]["LoopRunLifecycleFrame"];
+        /** @description Typed payloads for common durable run event types. The containing `LoopRunEvent.event_type` selects the payload shape; payload objects do not duplicate that discriminator because some payloads use fields such as `event_type` for their own lifecycle data (for example, the external matcher recorded by `wait.opened`). */
         RunEventPayload: components["schemas"]["RunStartedPayload"] | components["schemas"]["WaitPayload"] | components["schemas"]["RunResumedPayload"] | components["schemas"]["RunCompletedPayload"] | components["schemas"]["RunFailedPayload"] | components["schemas"]["RunCancelledPayload"] | components["schemas"]["StepStartedPayload"] | components["schemas"]["StepCompletedPayload"] | components["schemas"]["StepFailedPayload"] | components["schemas"]["StepRetriedPayload"] | components["schemas"]["StepResumedPayload"] | components["schemas"]["StepSkippedPayload"] | components["schemas"]["ActionCalledPayload"] | components["schemas"]["ActionCompletedPayload"] | components["schemas"]["ActionFailedPayload"] | components["schemas"]["ActionRetriedPayload"] | components["schemas"]["ActionResultPayload"] | components["schemas"]["CheckVerdictPayload"] | components["schemas"]["InteractionRespondedPayload"] | components["schemas"]["WaitResumedPayload"] | components["schemas"]["WaitTimedOutPayload"] | components["schemas"]["BudgetExceededPayload"] | components["schemas"]["ProgressStalledPayload"] | components["schemas"]["LimitReachedPayload"] | components["schemas"]["ArtifactCreatedPayload"] | components["schemas"]["GenericEventPayload"];
         RunStartedPayload: {
             loop_id?: string;
@@ -5676,8 +5823,21 @@ export interface components {
         };
         WaitPayload: {
             step?: string;
+            /** @description Source event type or pattern this wait is listening for. */
+            event_type?: string;
+            /** @description Optional source identifier that scopes event matching. */
+            source_id?: string;
+            /** @description Optional matcher fields required on the source event. */
+            match?: {
+                [key: string]: unknown;
+            };
             wait_id?: string;
             wait_kind?: string;
+            /**
+             * Format: date-time
+             * @description Wall-clock expiry for the wait, when bounded.
+             */
+            expires_at?: string;
             /** Format: date-time */
             deadline?: string;
             subject?: {
@@ -6051,7 +6211,7 @@ export interface components {
         /**
          * @description One stored row in a project table.
          * @example {
-         *       "id": "tablerow_5p9x2q7m4n8v3r6t",
+         *       "id": "row_5p9x2q7m4n8v3r6t",
          *       "table_id": "table_2x7q5m9v3p8r4n6t",
          *       "data": {
          *         "pull_request_url": "https://github.com/deepnoodle-ai/mobius-cloud/pull/123",
@@ -9057,7 +9217,7 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Server-sent event stream of the turn's activity, returned when the request sets `Accept: text/event-stream`. Framing matches `GET .../events`. */
+            /** @description Server-sent event stream of the turn's activity, returned when the request sets `Accept: text/event-stream`. Framing matches `GET .../stream`. */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -9113,6 +9273,36 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
+    getSessionTurnLive: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
+                /** @description Identifier of the conversation session. */
+                session_id: components["parameters"]["SessionIdParam"];
+                /** @description Identifier of a turn within a session. */
+                turn_id: components["parameters"]["TurnIdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionLiveSnapshot"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
     cancelTurn: {
         parameters: {
             query?: never;
@@ -9143,13 +9333,11 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
-    listSessionEvents: {
+    streamSession: {
         parameters: {
             query?: {
                 /** @description Continuation cursor for sequence-ordered lists. Only include rows whose monotonic per-resource sequence is strictly greater than this value. Pass the `next_sequence` from the previous response to fetch the next page. */
                 after_sequence?: components["parameters"]["AfterSequenceParam"];
-                /** @description Maximum number of items to return */
-                limit?: components["parameters"]["LimitParam"];
             };
             header?: {
                 /** @description SSE reconnect cursor. The browser EventSource API replays the last event's `id` in this header on automatic reconnect; the server resumes the stream after that sequence number. When both this header and the `after_sequence` query parameter are supplied, the larger sequence wins, so an explicit `after_sequence` never rewinds a live reconnect. Ignored for non-streaming (JSON) requests. */
@@ -9165,13 +9353,12 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description A JSON page of session events, or, when the request sets `Accept: text/event-stream`, a Server-Sent Events stream of session activity. On the stream each message is framed as `event: <event type>` followed by a `data:` line carrying the JSON-encoded event payload. Durable events carry an `id:` line with the event sequence number for `Last-Event-ID` resume; live-only `generation.delta` frames do not carry `id:` and cannot be replayed. */
+            /** @description A Server-Sent Events stream of session activity. Each frame is `event: <event type>` followed by a `data:` line carrying the JSON-encoded payload. Durable message frames carry an `id:` line with the message `sequence` for `Last-Event-ID` resume; live-only frames (`generation.delta`, `session.message.preview`, `tool.call`, `tool.result`) do not carry `id:` and cannot be replayed. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SessionEventListResponse"];
                     "text/event-stream": components["schemas"]["SessionStreamFrame"];
                 };
             };
@@ -9783,7 +9970,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description A JSON page of run events, or, when the request sets `Accept: text/event-stream`, a Server-Sent Events stream where each durable message is framed as `id: <sequence>`, `event: <run-event type>`, and a `data:` line carrying the JSON-encoded `LoopRunEvent`. Live-only `generation.delta` frames may be interleaved without an `id:` line; they are not persisted and cannot be replayed. */
+            /** @description A JSON page of run events, or, when the request sets `Accept: text/event-stream`, a Server-Sent Events stream where each durable message is framed as `id: <sequence>`, `event: <run-event type>`, and a `data:` line carrying the JSON-encoded `LoopRunEvent`. Agent transcript content and token previews are streamed on the referenced session stream, not on the run stream. */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -10603,7 +10790,7 @@ export interface operations {
                 content: {
                     /**
                      * @example {
-                     *       "id": "tablerow_5p9x2q7m4n8v3r6t",
+                     *       "id": "row_5p9x2q7m4n8v3r6t",
                      *       "table_id": "table_2x7q5m9v3p8r4n6t",
                      *       "data": {
                      *         "pull_request_url": "https://github.com/deepnoodle-ai/mobius-cloud/pull/123",
@@ -10672,7 +10859,7 @@ export interface operations {
                      * @example {
                      *       "items": [
                      *         {
-                     *           "id": "tablerow_5p9x2q7m4n8v3r6t",
+                     *           "id": "row_5p9x2q7m4n8v3r6t",
                      *           "table_id": "table_2x7q5m9v3p8r4n6t",
                      *           "data": {
                      *             "pull_request_url": "https://github.com/deepnoodle-ai/mobius-cloud/pull/123",
@@ -10735,7 +10922,7 @@ export interface operations {
                      * @example {
                      *       "items": [
                      *         {
-                     *           "id": "tablerow_5p9x2q7m4n8v3r6t",
+                     *           "id": "row_5p9x2q7m4n8v3r6t",
                      *           "table_id": "table_2x7q5m9v3p8r4n6t",
                      *           "data": {
                      *             "pull_request_url": "https://github.com/deepnoodle-ai/mobius-cloud/pull/123",
@@ -10797,7 +10984,7 @@ export interface operations {
                     /**
                      * @example {
                      *       "row": {
-                     *         "id": "tablerow_5p9x2q7m4n8v3r6t",
+                     *         "id": "row_5p9x2q7m4n8v3r6t",
                      *         "table_id": "table_2x7q5m9v3p8r4n6t",
                      *         "data": {
                      *           "pull_request_url": "https://github.com/deepnoodle-ai/mobius-cloud/pull/123",
@@ -10823,7 +11010,7 @@ export interface operations {
                     /**
                      * @example {
                      *       "row": {
-                     *         "id": "tablerow_6n3r8v4m7q2x9p5t",
+                     *         "id": "row_6n3r8v4m7q2x9p5t",
                      *         "table_id": "table_2x7q5m9v3p8r4n6t",
                      *         "data": {
                      *           "pull_request_url": "https://github.com/deepnoodle-ai/mobius-cloud/pull/124",
@@ -10893,7 +11080,7 @@ export interface operations {
                      *       "inserted": 2,
                      *       "items": [
                      *         {
-                     *           "id": "tablerow_5p9x2q7m4n8v3r6t",
+                     *           "id": "row_5p9x2q7m4n8v3r6t",
                      *           "table_id": "table_2x7q5m9v3p8r4n6t",
                      *           "data": {
                      *             "pull_request_url": "https://github.com/deepnoodle-ai/mobius-cloud/pull/123",
@@ -10941,7 +11128,7 @@ export interface operations {
                 content: {
                     /**
                      * @example {
-                     *       "id": "tablerow_5p9x2q7m4n8v3r6t",
+                     *       "id": "row_5p9x2q7m4n8v3r6t",
                      *       "table_id": "table_2x7q5m9v3p8r4n6t",
                      *       "data": {
                      *         "pull_request_url": "https://github.com/deepnoodle-ai/mobius-cloud/pull/123",
@@ -11026,7 +11213,7 @@ export interface operations {
                 content: {
                     /**
                      * @example {
-                     *       "id": "tablerow_5p9x2q7m4n8v3r6t",
+                     *       "id": "row_5p9x2q7m4n8v3r6t",
                      *       "table_id": "table_2x7q5m9v3p8r4n6t",
                      *       "data": {
                      *         "pull_request_url": "https://github.com/deepnoodle-ai/mobius-cloud/pull/123",

@@ -26,7 +26,7 @@ func registerAgentsCommands(app *cli.App) {
 			cli.String("compaction-policy", "").Help("Controls how a session's transcript is automatically summarized as it grows. On create the supplied fields are merged over the owning… Accepts JSON, @file, or @-."),
 			cli.String("description", "").Help("Optional human-readable description."),
 			cli.String("kind", "").Help("Freeform classification (e.g. \"llm\", \"rpa\", \"integration\")."),
-			cli.String("model", "").Help("Model identifier for platform agents. Any id from `GET /v1/projects/{project_handle}/catalog/models`, optionally `provider/`-prefixed (e.g…"),
+			cli.String("model", "").Help("Model identifier for platform agents. Any id from `GET /v1/projects/{project_handle}/catalog/models`, including slash-bearing OpenRouter…"),
 			cli.String("model-route", "").Help("Default model route used by built-in messaging and by loop agent steps that do not override the route. Accepts JSON, @file, or @-."),
 			cli.String("name", "").Help("[required] Unique name for this agent. Free-form human-readable label, 1-63 characters."),
 			cli.String("system-prompt", "").Help("Custom system prompt for platform agents. Empty uses the generated default."),
@@ -439,6 +439,7 @@ func registerAgentsCommands(app *cli.App) {
 			cli.String("kind", "").Help("Classifies a memory entry. Kinds carry different retention and compaction semantics: facts and preferences are durable, episodes are the…"),
 			cli.String("metadata", "").Help("Optional structured metadata to store alongside the memory. Accepts JSON, @file, or @-."),
 			cli.Bool("pinned", "").Help("Pin to exempt this memory from compaction."),
+			cli.String("summary", "").Help("Optional short one-line summary (≤140 chars) shown in the memory index."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -477,7 +478,11 @@ func registerAgentsCommands(app *cli.App) {
 				v := ctx.Bool("pinned")
 				body.Pinned = &v
 			}
-			if ctx.String("file") == "" && !ctx.IsSet("content") && !ctx.IsSet("importance") && !ctx.IsSet("kind") && !ctx.IsSet("metadata") && !ctx.IsSet("pinned") {
+			if ctx.IsSet("summary") {
+				v := ctx.String("summary")
+				body.Summary = &v
+			}
+			if ctx.String("file") == "" && !ctx.IsSet("content") && !ctx.IsSet("importance") && !ctx.IsSet("kind") && !ctx.IsSet("metadata") && !ctx.IsSet("pinned") && !ctx.IsSet("summary") {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
 			if ctx.Bool("dry-run") {
@@ -570,6 +575,7 @@ func registerAgentsCommands(app *cli.App) {
 		Flags(
 			cli.Bool("all-messages", "").Help("Respond to every message in bound channels, not just mentions."),
 			cli.Strings("channels", "").Help("Channel IDs the binding is scoped to (empty means all channels)."),
+			cli.String("compaction-policy", "").Help("Controls how a session's transcript is automatically summarized as it grows. On create the supplied fields are merged over the owning… Accepts JSON, @file, or @-."),
 			cli.String("dm-policy", "").Help("Direct-message access policy: `open`, `allowlist`, or `disabled`."),
 			cli.Bool("dms", "").Help("Respond to direct messages."),
 			cli.Bool("enabled", "").Help("Whether the binding is active and the agent responds on this provider."),
@@ -603,6 +609,11 @@ func registerAgentsCommands(app *cli.App) {
 			if ctx.IsSet("channels") {
 				v := ctx.Strings("channels")
 				body.Channels = &v
+			}
+			if ctx.IsSet("compaction-policy") {
+				if err := decodeFlagJSON(ctx, "compaction-policy", ctx.String("compaction-policy"), &body.CompactionPolicy); err != nil {
+					return err
+				}
 			}
 			if ctx.IsSet("dm-policy") {
 				v := api.AgentMessagingDMPolicy(ctx.String("dm-policy"))
@@ -667,7 +678,7 @@ func registerAgentsCommands(app *cli.App) {
 			cli.String("compaction-policy", "").Help("Controls how a session's transcript is automatically summarized as it grows. On create the supplied fields are merged over the owning… Accepts JSON, @file, or @-."),
 			cli.String("description", "").Help("Replacement description."),
 			cli.String("kind", "").Help("Replacement freeform agent classification (e.g. `llm`, `rpa`)."),
-			cli.String("model", "").Help("Replacement model identifier for platform agents (any id from `GET /v1/projects/{project_handle}/catalog/models`, optionally…"),
+			cli.String("model", "").Help("Replacement model identifier for platform agents (any id from `GET /v1/projects/{project_handle}/catalog/models`, including slash-bearing…"),
 			cli.String("model-route", "").Help("Default model route used by built-in messaging and by loop agent steps that do not override the route. Accepts JSON, @file, or @-."),
 			cli.String("name", "").Help("Free-form human-readable label, 1-63 characters; must be unique within the project."),
 			cli.String("status", "").Help("Replacement agent status: `active` or `inactive`. Use DELETE to delete the agent."),

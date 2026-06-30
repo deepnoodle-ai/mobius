@@ -268,6 +268,27 @@ func registerSessionsCommands(app *cli.App) {
 			return printResponse(ctx, "getSessionTurn", resp.StatusCode(), resp.Body)
 		})
 
+	sessionsGrp.Command("get-turn-live").
+		Description("Get live session turn snapshot").
+		AddArg(&cli.Arg{Name: "session-id", Description: "Identifier of the conversation session.", Required: true}).
+		AddArg(&cli.Arg{Name: "turn-id", Description: "Identifier of a turn within a session.", Required: true}).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			p1 := ctx.Arg(0)
+			p2 := ctx.Arg(1)
+			resp, err := client.GetSessionTurnLiveWithResponse(ctx.Context(), p0, p1, p2)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "getSessionTurnLive", resp.StatusCode(), resp.Body)
+		})
+
 	sessionsGrp.Command("list").
 		Description("List sessions").
 		Flags(
@@ -321,43 +342,6 @@ func registerSessionsCommands(app *cli.App) {
 				return err
 			}
 			return printResponse(ctx, "listSessions", resp.StatusCode(), resp.Body)
-		})
-
-	sessionsGrp.Command("list-events").
-		Description("List or stream session events").
-		AddArg(&cli.Arg{Name: "session-id", Description: "Identifier of the conversation session.", Required: true}).
-		Flags(
-			cli.Int("after-sequence", "").Help("Continuation cursor for sequence-ordered lists. Only include rows whose monotonic per-resource sequence is strictly greater than this…"),
-			cli.Int("limit", "").Help("Maximum number of items to return"),
-			cli.Int("last-event-id", "").Help("SSE reconnect cursor. The browser EventSource API replays the last event's `id` in this header on automatic reconnect; the server resumes…"),
-		).
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			params := &api.ListSessionEventsParams{}
-			if ctx.IsSet("after-sequence") {
-				v := api.AfterSequenceParam(int64(ctx.Int("after-sequence")))
-				params.AfterSequence = &v
-			}
-			if ctx.IsSet("limit") {
-				v := api.LimitParam(ctx.Int("limit"))
-				params.Limit = &v
-			}
-			if ctx.IsSet("last-event-id") {
-				v := api.LastEventIDParam(int64(ctx.Int("last-event-id")))
-				params.LastEventID = &v
-			}
-			resp, err := client.ListSessionEventsWithResponse(ctx.Context(), p0, p1, params)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "listSessionEvents", resp.StatusCode(), resp.Body)
 		})
 
 	sessionsGrp.Command("list-messages").
@@ -497,6 +481,38 @@ func registerSessionsCommands(app *cli.App) {
 				return err
 			}
 			return printResponse(ctx, "startTurn", resp.StatusCode(), resp.Body)
+		})
+
+	sessionsGrp.Command("stream").
+		Description("Stream a session's activity").
+		AddArg(&cli.Arg{Name: "session-id", Description: "Identifier of the conversation session.", Required: true}).
+		Flags(
+			cli.Int("after-sequence", "").Help("Continuation cursor for sequence-ordered lists. Only include rows whose monotonic per-resource sequence is strictly greater than this…"),
+			cli.Int("last-event-id", "").Help("SSE reconnect cursor. The browser EventSource API replays the last event's `id` in this header on automatic reconnect; the server resumes…"),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			p1 := ctx.Arg(0)
+			params := &api.StreamSessionParams{}
+			if ctx.IsSet("after-sequence") {
+				v := api.AfterSequenceParam(int64(ctx.Int("after-sequence")))
+				params.AfterSequence = &v
+			}
+			if ctx.IsSet("last-event-id") {
+				v := api.LastEventIDParam(int64(ctx.Int("last-event-id")))
+				params.LastEventID = &v
+			}
+			resp, err := client.StreamSessionWithResponse(ctx.Context(), p0, p1, params)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "streamSession", resp.StatusCode(), resp.Body)
 		})
 
 	sessionsGrp.Command("update").

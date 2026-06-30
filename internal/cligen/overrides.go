@@ -93,6 +93,9 @@ var overrides = map[string]Override{
 	// `compact` isn't in the verb list, so the auto-derive keeps the
 	// redundant `-session` suffix; strip it (the group already carries it).
 	"compactSession": {Command: "compact"},
+	// Same for `stream` (not a recognised verb): `streamSession` would land as
+	// `stream-session`, so strip the redundant suffix to give `sessions stream`.
+	"streamSession": {Command: "stream"},
 
 	// --- tables -----------------------------------------------------------
 	// Row operations use verbs the auto-derivation doesn't recognise
