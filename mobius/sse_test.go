@@ -16,7 +16,7 @@ func TestSinceSequenceParam(t *testing.T) {
 	assert.Equal(t, *got, int64(42))
 }
 
-func TestReadSSEStream_DecodesAutomationRunEvent(t *testing.T) {
+func TestReadSSEStream_DecodesLoopRunEvent(t *testing.T) {
 	c, _ := NewClient()
 	body := io.NopCloser(strings.NewReader(`event: run.started
 id: 7

@@ -21,7 +21,7 @@ const DefaultBaseURL = "https://api.mobiusops.ai"
 const DefaultMaxRetries = 3
 
 // Client holds connection settings for the Mobius API. Create one with NewClient
-// and use it to construct Workers, start runs, or manage automations.
+// and use it to construct Workers, start runs, or manage loops.
 type Client struct {
 	baseURL       string
 	apiKey        string

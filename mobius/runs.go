@@ -10,7 +10,7 @@ import (
 
 const defaultWaitRunReconnectDelay = time.Second
 
-// StartRunOptions contains common fields for starting automation runs.
+// StartRunOptions contains common fields for starting loop runs.
 // ExternalID is a caller-supplied correlation and idempotency key.
 //
 // Event is the exact event object that starts the run, reachable in templates
@@ -25,13 +25,12 @@ type StartRunOptions struct {
 	ExternalID string
 }
 
-// ListRunsOptions filters and paginates project automation runs.
+// ListRunsOptions filters and paginates project loop runs.
 type ListRunsOptions struct {
-	Status       api.LoopRunStatus
-	AutomationID string
-	LoopID       string
-	Cursor       string
-	Limit        int
+	Status api.LoopRunStatus
+	LoopID string
+	Cursor string
+	Limit  int
 }
 
 // WaitRunOptions configures WaitRun.
@@ -43,25 +42,20 @@ type WaitRunOptions struct {
 	ReconnectDelay time.Duration
 }
 
-// StartRun starts a published automation by loop ID.
-func (c *Client) StartRun(ctx context.Context, automationID string, opts *StartRunOptions) (*api.LoopRun, error) {
-	return c.StartAutomationRun(ctx, automationID, opts)
-}
-
-// StartAutomationRun starts a published automation by loop ID.
-func (c *Client) StartAutomationRun(ctx context.Context, automationID string, opts *StartRunOptions) (*api.LoopRun, error) {
-	req := startAutomationRunRequest(opts)
-	resp, err := c.ac.StartRunWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.IDParam(automationID), req)
+// StartRun starts a published loop run by loop ID.
+func (c *Client) StartRun(ctx context.Context, loopID string, opts *StartRunOptions) (*api.LoopRun, error) {
+	req := startRunRequest(opts)
+	resp, err := c.ac.StartRunWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.IDParam(loopID), req)
 	if err != nil {
-		return nil, fmt.Errorf("mobius: start automation run: %w", err)
+		return nil, fmt.Errorf("mobius: start run: %w", err)
 	}
 	if resp.JSON202 == nil {
-		return nil, unexpectedRunStatus("start automation run", resp.Status(), resp.Body)
+		return nil, unexpectedRunStatus("start run", resp.Status(), resp.Body)
 	}
 	return resp.JSON202, nil
 }
 
-// ListRuns returns project automation runs matching opts.
+// ListRuns returns project loop runs matching opts.
 func (c *Client) ListRuns(ctx context.Context, opts *ListRunsOptions) (*api.LoopRunListResponse, error) {
 	resp, err := c.ac.ListRunsWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), listRunsParams(opts))
 	if err != nil {
@@ -73,7 +67,7 @@ func (c *Client) ListRuns(ctx context.Context, opts *ListRunsOptions) (*api.Loop
 	return resp.JSON200, nil
 }
 
-// GetRun returns the current automation run detail.
+// GetRun returns the current loop run detail.
 func (c *Client) GetRun(ctx context.Context, runID string) (*api.LoopRun, error) {
 	resp, err := c.ac.GetRunWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.IDParam(runID))
 	if err != nil {
@@ -85,7 +79,7 @@ func (c *Client) GetRun(ctx context.Context, runID string) (*api.LoopRun, error)
 	return resp.JSON200, nil
 }
 
-// CancelRun requests cancellation of an in-flight automation run.
+// CancelRun requests cancellation of an in-flight loop run.
 func (c *Client) CancelRun(ctx context.Context, runID string, reason string) (*api.LoopRun, error) {
 	req := api.CancelLoopRunRequest{}
 	if reason != "" {
@@ -101,7 +95,7 @@ func (c *Client) CancelRun(ctx context.Context, runID string, reason string) (*a
 	return resp.JSON200, nil
 }
 
-// SignalRun durably resumes a suspended automation step.
+// SignalRun durably resumes a suspended loop step.
 func (c *Client) SignalRun(ctx context.Context, runID, stepKey string, result map[string]interface{}) (*api.LoopRun, error) {
 	req := api.SignalLoopRunRequest{StepKey: stepKey}
 	if result != nil {
@@ -176,7 +170,7 @@ func IsTerminalRunStatus(status api.LoopRunStatus) bool {
 		status == api.LoopRunStatusCancelled
 }
 
-func startAutomationRunRequest(opts *StartRunOptions) api.StartLoopRunRequest {
+func startRunRequest(opts *StartRunOptions) api.StartLoopRunRequest {
 	req := api.StartLoopRunRequest{}
 	if opts == nil {
 		return req
@@ -209,8 +203,6 @@ func listRunsParams(opts *ListRunsOptions) *api.ListRunsParams {
 	}
 	if opts.LoopID != "" {
 		params.LoopId = &opts.LoopID
-	} else if opts.AutomationID != "" {
-		params.LoopId = &opts.AutomationID
 	}
 	if opts.Cursor != "" {
 		params.Cursor = &opts.Cursor

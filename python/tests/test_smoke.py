@@ -30,14 +30,14 @@ from deepnoodle.mobius import (
     verify_signed_delivery,
 )
 from deepnoodle.mobius.client import (
-    AutomationOptions,
-    ListAutomationsOptions,
-    UpdateAutomationOptions,
+    ListLoopsOptions,
+    LoopOptions,
+    UpdateLoopOptions,
 )
 from deepnoodle.mobius._api.models import (
-    LoopRunSource as AutomationRunSource,
-    LoopRunStatus as AutomationRunStatus,
-    LoopStatus as AutomationStatus,
+    LoopRunSource,
+    LoopRunStatus,
+    LoopStatus,
 )
 
 
@@ -79,7 +79,7 @@ def test_worker_socket_url_uses_project_scoped_websocket_route() -> None:
     client.close()
 
 
-def test_automation_helpers_use_project_scoped_routes() -> None:
+def test_loop_helpers_use_project_scoped_routes() -> None:
     requests: list[tuple[str, str, str]] = []
 
     def handler(request: httpx.Request) -> httpx.Response:
@@ -87,50 +87,50 @@ def test_automation_helpers_use_project_scoped_routes() -> None:
         requests.append((request.method, request.url.path, body))
         if request.method == "POST" and request.url.path.endswith("/loops"):
             payload = json.loads(body)
-            return httpx.Response(201, json=_automation_body(name=payload["name"]))
+            return httpx.Response(201, json=_loop_body(name=payload["name"]))
         if request.method == "PATCH":
             payload = json.loads(body)
-            return httpx.Response(200, json=_automation_body(name=payload["name"], status=payload["status"]))
+            return httpx.Response(200, json=_loop_body(name=payload["name"], status=payload["status"]))
         if request.method == "GET" and request.url.path.endswith("/loops"):
             assert request.url.params["status"] == "active"
-            return httpx.Response(200, json={"items": [_automation_body()], "has_more": False})
+            return httpx.Response(200, json={"items": [_loop_body()], "has_more": False})
         if request.method == "DELETE":
             return httpx.Response(204)
         return httpx.Response(404)
 
     client = _client_with(handler)
-    created = client.create_automation(
-        AutomationOptions(
+    created = client.create_loop(
+        LoopOptions(
             name="Research",
             default_config={"topic": "agents"},
         )
     )
-    updated = client.update_automation(
+    updated = client.update_loop(
         "loop_1",
-        UpdateAutomationOptions(name="Research v2", status=AutomationStatus.active),
+        UpdateLoopOptions(name="Research v2", status=LoopStatus.active),
     )
-    listed = client.list_automations(ListAutomationsOptions(status=AutomationStatus.active))
-    client.delete_automation("loop_1")
+    listed = client.list_loops(ListLoopsOptions(status=LoopStatus.active))
+    client.delete_loop("loop_1")
 
     assert created.name == "Research"
-    assert updated.status is AutomationStatus.active
+    assert updated.status is LoopStatus.active
     assert len(listed.items) == 1
     assert requests[0][0:2] == ("POST", "/v1/projects/test-project/loops")
     assert any(req[0] == "DELETE" and req[1].endswith("/loops/loop_1") for req in requests)
 
 
-def test_create_automation_sends_inline_spec() -> None:
+def test_create_loop_sends_inline_spec() -> None:
     captured: dict[str, object] = {}
 
     def handler(request: httpx.Request) -> httpx.Response:
         if request.method == "POST" and request.url.path.endswith("/loops"):
             captured["payload"] = json.loads(request.read().decode())
-            return httpx.Response(201, json=_automation_body(name="Research"))
+            return httpx.Response(201, json=_loop_body(name="Research"))
         return httpx.Response(404)
 
     client = _client_with(handler)
-    created = client.create_automation(
-        AutomationOptions(
+    created = client.create_loop(
+        LoopOptions(
             name="Research",
             agent_id="agent_1",
             spec={
@@ -149,7 +149,7 @@ def test_create_automation_sends_inline_spec() -> None:
     assert payload["steps"] == [{"kind": "agent", "config": {"instructions": "do research"}}]
 
 
-def test_start_run_posts_to_automation_bound_route() -> None:
+def test_start_run_posts_to_loop_bound_route() -> None:
     seen: dict[str, object] = {}
 
     def handler(request: httpx.Request) -> httpx.Response:
@@ -158,13 +158,13 @@ def test_start_run_posts_to_automation_bound_route() -> None:
         return httpx.Response(202, json=_run_body("run_1", "running"))
 
     client = _client_with(handler)
-    run = client.start_automation_run(
+    run = client.start_run(
         "loop_1",
         StartRunOptions(
             external_id="external-1",
             event={"topic": "sdk"},
             config={"priority": "normal"},
-            source=AutomationRunSource(type="api", id="test"),
+            source=LoopRunSource(type="api", id="test"),
         ),
     )
 
@@ -190,9 +190,9 @@ def test_run_control_helpers_use_project_scoped_paths_and_enum_query_values() ->
         return httpx.Response(200, json={"items": [_run_body("run_1", "completed")], "has_more": False})
 
     client = _client_with(handler)
-    assert client.get_run("run_1").status is AutomationRunStatus.completed
-    assert len(client.list_runs(ListRunsOptions(status=AutomationRunStatus.completed)).items) == 1
-    assert client.cancel_run("run_1", reason="test").status is AutomationRunStatus.cancelled
+    assert client.get_run("run_1").status is LoopRunStatus.completed
+    assert len(client.list_runs(ListRunsOptions(status=LoopRunStatus.completed)).items) == 1
+    assert client.cancel_run("run_1", reason="test").status is LoopRunStatus.cancelled
     assert client.signal_run("run_1", "approval", {"ok": True}).id == "run_1"
 
     assert any("/runs?status=completed" in url for url in seen)
@@ -200,7 +200,7 @@ def test_run_control_helpers_use_project_scoped_paths_and_enum_query_values() ->
     assert any(url.endswith("/runs/run_1/signals") for url in seen)
 
 
-def test_watch_run_parses_automation_run_event_stream() -> None:
+def test_watch_run_parses_loop_run_event_stream() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         assert request.url.path.endswith("/runs/run_1/events.stream")
         assert request.url.params["after_sequence"] == "7"
@@ -226,7 +226,7 @@ def test_wait_run_returns_when_initial_fetch_is_terminal() -> None:
     client = _client_with(handler)
     run = client.wait_run("run_1", WaitRunOptions(timeout=1))
 
-    assert run.status is AutomationRunStatus.completed
+    assert run.status is LoopRunStatus.completed
     assert is_terminal_run_status(run.status)
 
 
@@ -322,7 +322,7 @@ def test_synthetic_webhook_delivery_posts_signed_envelope() -> None:
     )
 
 
-def _automation_body(
+def _loop_body(
     *,
     name: str = "Research",
     status: str = "active",

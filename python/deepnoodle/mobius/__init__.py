@@ -1,19 +1,19 @@
-"""Mobius SDK for Python - build workers and control automation runs."""
+"""Mobius SDK for Python - build workers and control loop runs."""
 
 from .action import action
 from .client import (
     DEFAULT_BASE_URL,
-    AutomationOptions,
     Client,
     ClientOptions,
     LeaseLostError,
-    ListAutomationsOptions,
+    ListLoopsOptions,
     ListRunsOptions,
+    LoopOptions,
     PayloadTooLargeError,
     RateLimitedError,
     RunEvent,
     StartRunOptions,
-    UpdateAutomationOptions,
+    UpdateLoopOptions,
     WaitRunOptions,
     is_terminal_run_status,
 )
@@ -57,13 +57,13 @@ from .worker import (
 __all__ = [
     "ActionContext",
     "AuthRevokedError",
-    "AutomationOptions",
     "Client",
     "ClientOptions",
     "DEFAULT_BASE_URL",
     "LeaseLostError",
-    "ListAutomationsOptions",
+    "ListLoopsOptions",
     "ListRunsOptions",
+    "LoopOptions",
     "ModelCapability",
     "PayloadTooLargeError",
     "RunEvent",
@@ -71,7 +71,7 @@ __all__ = [
     "RateLimitedError",
     "RetryingTransport",
     "StartRunOptions",
-    "UpdateAutomationOptions",
+    "UpdateLoopOptions",
     "WaitRunOptions",
     "Worker",
     "WorkerConfig",

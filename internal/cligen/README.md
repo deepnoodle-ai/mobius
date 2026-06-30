@@ -14,22 +14,18 @@ All customization goes through the `overrides` map in [`overrides.go`](./overrid
 |---|---|
 | `Skip` | Drop the operation from CLI generation. Use when the command is hand-written in `cmd/mobius`, or when the endpoint is webhook-style and not meant for interactive use. |
 | `Group` | Override the subcommand group. Defaults to the operation's first OpenAPI tag. |
-| `Command` | Override the leaf command name. Defaults to a name derived from the `operationId` (e.g. `listAutomations` -> `list`, `getAutomation` -> `get`). |
+| `Command` | Override the leaf command name. Defaults to a name derived from the `operationId` (e.g. `listLoops` -> `list`, `getLoop` -> `get`). |
 | `Description` | Override the short help text. Defaults to the OpenAPI operation summary. |
 
 Example:
 
 ```go
 var overrides = map[string]Override{
-    // Hidden: webhook endpoint, not for interactive use.
-    "handleSlackEvents": {Skip: true},
+    // Hidden: hand-written elsewhere, not auto-generated.
+    "openWorkerSocket": {Skip: true},
 
-    // Rename + regroup:
-    "listAutomationRuns": {
-        Group:       "automations",
-        Command:     "list",
-        Description: "List automation runs in the current project",
-    },
+    // Rename: auto-derive keeps a redundant token the verb-stripper can't see.
+    "invokeAction": {Command: "invoke"},
 }
 ```
 
@@ -39,7 +35,7 @@ Group descriptions are opt-in. By default `app.Group("name")` is emitted with no
 
 ```go
 var groupDescriptions = map[string]string{
-    "automations": "Manage automation definitions",
+    "loops": "Loop definitions, versions, and runs",
 }
 ```
 

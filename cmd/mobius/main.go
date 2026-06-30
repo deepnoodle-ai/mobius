@@ -1,7 +1,7 @@
 // Command mobius is the general-purpose CLI for Mobius, built on the Go SDK.
 //
 // The root `mobius` command exposes subcommands for interacting with Mobius API
-// resources (automations, runs, triggers, …) plus a `worker` subcommand that
+// resources (loops, runs, agents, …) plus a `worker` subcommand that
 // connects to Mobius Cloud and executes action or generation jobs.
 //
 // Global flags — `--api-url`, `--api-key`, `--project`, `--log-level` — are
@@ -11,7 +11,7 @@
 // Example:
 //
 //	mobius worker --queues default
-//	mobius automations list
+//	mobius loops list
 //	mobius runs get run_abc123
 package main
 

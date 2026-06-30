@@ -26,7 +26,7 @@ type ResponseRenderer func(ctx *cli.Context, body []byte) error
 var responseRenderers = map[string]ResponseRenderer{}
 
 // RegisterResponseRenderer attaches a pretty renderer to one operation,
-// keyed by its OpenAPI operationId (e.g. "getRun", "listAutomations"). Hand-
+// keyed by its OpenAPI operationId (e.g. "getRun", "listLoops"). Hand-
 // written sibling files call this from init() to layer custom views on top
 // of the generic table/key-value renderer without touching cligen.
 func RegisterResponseRenderer(opID string, fn ResponseRenderer) {

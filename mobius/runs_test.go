@@ -15,7 +15,7 @@ import (
 	"github.com/deepnoodle-ai/wonton/assert"
 )
 
-func TestStartAutomationRun_HighLevelClient(t *testing.T) {
+func TestStartRun_HighLevelClient(t *testing.T) {
 	var body map[string]interface{}
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -24,7 +24,7 @@ func TestStartAutomationRun_HighLevelClient(t *testing.T) {
 			b, _ := io.ReadAll(r.Body)
 			assert.NoError(t, json.Unmarshal(b, &body))
 			w.WriteHeader(http.StatusAccepted)
-			_, _ = io.WriteString(w, automationRunJSON("run_1", "running"))
+			_, _ = io.WriteString(w, loopRunJSON("run_1", "running"))
 		default:
 			http.NotFound(w, r)
 		}
@@ -32,7 +32,7 @@ func TestStartAutomationRun_HighLevelClient(t *testing.T) {
 	c, srv := newTestClient(t, h)
 	defer srv.Close()
 
-	run, err := c.StartAutomationRun(context.Background(), "loop_1", &StartRunOptions{
+	run, err := c.StartRun(context.Background(), "loop_1", &StartRunOptions{
 		ExternalID: "external-1",
 		Event:      map[string]interface{}{"topic": "sdk"},
 		Config:     map[string]interface{}{"priority": "normal"},
@@ -53,18 +53,18 @@ func TestRunControl_HighLevelClient(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		switch {
 		case r.Method == http.MethodGet && r.URL.Path == "/v1/projects/test-project/runs/run_1":
-			_, _ = io.WriteString(w, automationRunJSON("run_1", "completed"))
+			_, _ = io.WriteString(w, loopRunJSON("run_1", "completed"))
 		case r.Method == http.MethodGet && r.URL.Path == "/v1/projects/test-project/runs":
 			seenQuery = r.URL.RawQuery
-			_, _ = io.WriteString(w, fmt.Sprintf(`{"items":[%s],"has_more":false}`, automationRunJSON("run_1", "completed")))
+			_, _ = io.WriteString(w, fmt.Sprintf(`{"items":[%s],"has_more":false}`, loopRunJSON("run_1", "completed")))
 		case r.Method == http.MethodPost && r.URL.Path == "/v1/projects/test-project/runs/run_1/cancel":
 			b, _ := io.ReadAll(r.Body)
 			assert.NoError(t, json.Unmarshal(b, &cancelBody))
-			_, _ = io.WriteString(w, automationRunJSON("run_1", "cancelled"))
+			_, _ = io.WriteString(w, loopRunJSON("run_1", "cancelled"))
 		case r.Method == http.MethodPost && r.URL.Path == "/v1/projects/test-project/runs/run_1/signals":
 			b, _ := io.ReadAll(r.Body)
 			assert.NoError(t, json.Unmarshal(b, &signalBody))
-			_, _ = io.WriteString(w, automationRunJSON("run_1", "running"))
+			_, _ = io.WriteString(w, loopRunJSON("run_1", "running"))
 		default:
 			http.NotFound(w, r)
 		}
@@ -106,10 +106,10 @@ func TestWaitRun_FetchesAfterStreamClosesBeforeTerminal(t *testing.T) {
 		case r.Method == http.MethodGet && r.URL.Path == "/v1/projects/test-project/runs/run_1":
 			w.Header().Set("Content-Type", "application/json")
 			if getCalls.Add(1) == 1 {
-				_, _ = io.WriteString(w, automationRunJSON("run_1", "running"))
+				_, _ = io.WriteString(w, loopRunJSON("run_1", "running"))
 				return
 			}
-			_, _ = io.WriteString(w, automationRunJSON("run_1", "completed"))
+			_, _ = io.WriteString(w, loopRunJSON("run_1", "completed"))
 		case r.Method == http.MethodGet && r.URL.Path == "/v1/projects/test-project/runs/run_1/events.stream":
 			w.Header().Set("Content-Type", "text/event-stream")
 			_, _ = io.WriteString(w, `event: run.updated
@@ -130,7 +130,7 @@ data: {"id":"evt_1","org_id":"org_1","project_id":"proj_1","run_id":"run_1","eve
 	assert.Equal(t, int(getCalls.Load()), 2)
 }
 
-func automationRunJSON(id, status string) string {
+func loopRunJSON(id, status string) string {
 	return fmt.Sprintf(`{
 		"id":%q,
 		"org_id":"org_1",

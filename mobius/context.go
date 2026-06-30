@@ -6,8 +6,8 @@ import (
 )
 
 // Context is passed to action and generation handlers executed by a worker.
-// The agent loop and automation engine run in Mobius Cloud; handlers receive
-// only the current job identity plus the cancellation context.
+// The agent loop engine runs in Mobius Cloud; handlers receive only the
+// current job identity plus the cancellation context.
 type Context interface {
 	context.Context
 

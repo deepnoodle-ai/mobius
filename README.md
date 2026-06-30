@@ -1,6 +1,6 @@
 # Mobius
 
-Mobius is an agent automation platform for humans, systems, and AI agents. This repo contains the `mobius` CLI plus generated SDKs for Go, Python, and TypeScript.
+Mobius is an agent loop platform for humans, systems, and AI agents. This repo contains the `mobius` CLI plus generated SDKs for Go, Python, and TypeScript.
 
 ## Installation
 
@@ -37,9 +37,9 @@ mobius --help
 Inspect the resources available in your project:
 
 ```bash
-mobius automations list
+mobius loops list
 mobius runs list
-mobius worker-sessions list
+mobius agents list
 ```
 
 Start the stock worker:
@@ -88,16 +88,16 @@ The stock worker registers built-in actions like `print`, `fail`, `json`, `time`
 
 The SDKs expose two layers:
 
-- A high-level surface for common automation and worker flows: create and
-  publish automations, start runs, get/list/cancel/signal runs, watch run
-  events, wait for terminal completion, run WebSocket workers that execute
-  action jobs and LLM generation jobs, verify and parse webhook deliveries,
-  and deliver synthetic local webhooks.
+- A high-level surface for common loop and worker flows: create and publish
+  loops, start runs, get/list/cancel/signal runs, watch run events, wait for
+  terminal completion, run WebSocket workers that execute action jobs and LLM
+  generation jobs, verify and parse webhook deliveries, and deliver synthetic
+  local webhooks.
 - Generated OpenAPI bindings for the full API contract when you need a lower
   level escape hatch.
 
 See [`docs/sdk-helpers.md`](./docs/sdk-helpers.md) for cross-language examples
-of the webhook, automation, run, and worker helpers.
+of the webhook, loop, run, and worker helpers.
 
 All three SDKs share the same retry and rate-limit handling: `429` and
 `503` responses are retried transparently (respecting `Retry-After`), and
