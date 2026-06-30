@@ -49,6 +49,26 @@ spliced with a live channel, keyed by one cursor.
   (`user.message` vs `agent.message`) or open objects, so the `data:` body
   cannot be shape-matched to one variant. Consumers MUST dispatch on the SSE
   `event:` name and decode the body as the corresponding payload.
+- SDKs (BREAKING): the hand-written `Automation*` convenience methods never
+  finished migrating to the `loops` rename from 0.0.24 (MB-455, #101) — they
+  were the only working names, not aliases over a `Loop*` primary surface as
+  previously documented. Completed the migration instead of carrying the
+  inconsistency further: Go's `CreateAutomation`/`ListAutomations`/
+  `GetAutomation`/`UpdateAutomation`/`DeleteAutomation`/`StartAutomationRun`
+  are now `CreateLoop`/`ListLoops`/`GetLoop`/`UpdateLoop`/`DeleteLoop`/
+  `StartRun` (`mobius/automations.go` is now `mobius/loops.go`); Python's
+  `create_automation`/`list_automations`/`get_automation`/
+  `update_automation`/`delete_automation`/`start_automation_run` are now
+  `create_loop`/`list_loops`/`get_loop`/`update_loop`/`delete_loop`/
+  `start_run`; TypeScript's `createAutomation`/`listAutomations`/
+  `getAutomation`/`updateAutomation`/`deleteAutomation`/`startAutomationRun`
+  are now `createLoop`/`listLoops`/`getLoop`/`updateLoop`/`deleteLoop`/
+  `startRun`. `AutomationOptions` / `UpdateAutomationOptions` /
+  `ListAutomationsOptions` are now `LoopOptions` / `UpdateLoopOptions` /
+  `ListLoopsOptions` in all three SDKs. `ListRunsOptions.AutomationID` /
+  `automation_id` is gone — use `LoopID` / `loop_id`. No deprecated aliases
+  are kept; the SDKs are pre-1.0 and these names were never the documented
+  public surface.
 
 ### Removed
 

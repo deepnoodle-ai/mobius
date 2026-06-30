@@ -247,7 +247,7 @@ func displayPath(p string) string {
 }
 
 // applyVars performs ${KEY} substitution on data using --var KEY=VALUE pairs.
-// Unknown keys are left intact (so automation specs with intentional ${...}
+// Unknown keys are left intact (so loop specs with intentional ${...}
 // placeholders pass through untouched). Returns data unchanged when no --var
 // flag was set.
 func applyVars(ctx *cli.Context, data []byte) ([]byte, error) {

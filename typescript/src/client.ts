@@ -22,20 +22,6 @@ import {
 
 export { RateLimitError } from "./retry.js";
 
-type Automation = Loop;
-type AutomationListResponse = LoopListResponse;
-type AutomationRun = LoopRun;
-type AutomationRunEvent = LoopRunEvent;
-type AutomationRunListResponse = LoopRunListResponse;
-type AutomationRunSource = LoopRunSource;
-type AutomationRunStatus = LoopRunStatus;
-type AutomationStatus = LoopStatus;
-type CancelAutomationRunRequest = CancelLoopRunRequest;
-type CreateAutomationRequest = CreateLoopRequest;
-type SignalAutomationRunRequest = SignalLoopRunRequest;
-type StartAutomationRunRequest = StartLoopRunRequest;
-type UpdateAutomationRequest = UpdateLoopRequest;
-
 export interface ClientOptions {
   apiKey: string;
   baseURL?: string;
@@ -128,7 +114,7 @@ function extractHandleFromApiKey(apiKey: string): string | null {
   return handle;
 }
 
-export interface AutomationOptions {
+export interface LoopOptions {
   name: string;
   description?: string;
   agent_id?: string;
@@ -136,28 +122,27 @@ export interface AutomationOptions {
   settings?: Record<string, unknown>;
   tags?: TagMap;
   /**
-   * Authoring definition for the automation. Recognised keys mirror the loop
-   * spec (steps, event, config, triggers, defaults, limits, output,
-   * repositories, cleanup, …). When it carries steps the automation is
-   * runnable immediately.
+   * Authoring definition for the loop. Recognised keys are schema_version,
+   * steps, event, config, triggers, defaults, limits, output, repositories,
+   * cleanup, …. When it carries steps the loop is runnable immediately.
    */
   spec?: Record<string, unknown>;
 }
 
-export interface UpdateAutomationOptions {
+export interface UpdateLoopOptions {
   name?: string;
   description?: string;
   agent_id?: string;
   default_config?: Record<string, unknown>;
   settings?: Record<string, unknown>;
-  status?: AutomationStatus;
+  status?: LoopStatus;
   tags?: TagMap;
-  /** Replacement authoring definition. See {@link AutomationOptions.spec}. */
+  /** Replacement authoring definition. See {@link LoopOptions.spec}. */
   spec?: Record<string, unknown>;
 }
 
-export interface ListAutomationsOptions {
-  status?: AutomationStatus;
+export interface ListLoopsOptions {
+  status?: LoopStatus;
   cursor?: string;
   limit?: number;
 }
@@ -169,14 +154,13 @@ export interface StartRunOptions {
   config?: Record<string, unknown>;
   /** Optional caller-supplied event metadata; Mobius adds its own provenance. */
   meta?: Record<string, unknown>;
-  source?: AutomationRunSource;
+  source?: LoopRunSource;
   external_id?: string;
 }
 
 export interface ListRunsOptions {
-  status?: AutomationRunStatus;
+  status?: LoopRunStatus;
   loop_id?: string;
-  automation_id?: string;
   cursor?: string;
   limit?: number;
 }
@@ -190,7 +174,7 @@ export interface WaitRunOptions extends WatchRunOptions {
   reconnectDelayMs?: number;
 }
 
-export type RunEvent = AutomationRunEvent;
+export type RunEvent = LoopRunEvent;
 
 export class Client {
   private readonly baseURL: string;
@@ -237,32 +221,22 @@ export class Client {
     return url.toString();
   }
 
-  async listAutomations(
-    opts: ListAutomationsOptions = {},
-  ): Promise<AutomationListResponse> {
+  async listLoops(opts: ListLoopsOptions = {}): Promise<LoopListResponse> {
     const resp = await this.request(withQuery("/v1/projects/:project/loops", opts), {
       method: "GET",
     });
-    return (await resp.json()) as AutomationListResponse;
+    return (await resp.json()) as LoopListResponse;
   }
 
-  async getAutomation(id: string): Promise<Automation> {
+  async getLoop(id: string): Promise<Loop> {
     const resp = await this.request(
       `/v1/projects/:project/loops/${encodeURIComponent(id)}`,
       { method: "GET" },
     );
-    return (await resp.json()) as Automation;
+    return (await resp.json()) as Loop;
   }
 
-  async getLoop(id: string): Promise<Automation> {
-    const resp = await this.request(
-      `/v1/projects/:project/loops/${encodeURIComponent(id)}`,
-      { method: "GET" },
-    );
-    return (await resp.json()) as Automation;
-  }
-
-  async createAutomation(opts: AutomationOptions): Promise<Automation> {
+  async createLoop(opts: LoopOptions): Promise<Loop> {
     const body = {
       schema_version: "1" as const,
       ...(opts.spec ?? {}),
@@ -274,31 +248,28 @@ export class Client {
         settings: opts.settings,
         tags: opts.tags,
       }),
-    } as CreateAutomationRequest;
+    } as CreateLoopRequest;
     const resp = await this.request("/v1/projects/:project/loops", {
       method: "POST",
       body,
     });
-    return (await resp.json()) as Automation;
+    return (await resp.json()) as Loop;
   }
 
-  async updateAutomation(
-    id: string,
-    opts: UpdateAutomationOptions,
-  ): Promise<Automation> {
+  async updateLoop(id: string, opts: UpdateLoopOptions): Promise<Loop> {
     const { spec, ...meta } = opts;
     const body = {
       ...(spec ?? {}),
       ...removeUndefined(meta),
-    } as UpdateAutomationRequest;
+    } as UpdateLoopRequest;
     const resp = await this.request(
       `/v1/projects/:project/loops/${encodeURIComponent(id)}`,
       { method: "PATCH", body },
     );
-    return (await resp.json()) as Automation;
+    return (await resp.json()) as Loop;
   }
 
-  async deleteAutomation(id: string): Promise<void> {
+  async deleteLoop(id: string): Promise<void> {
     await this.request(
       `/v1/projects/:project/loops/${encodeURIComponent(id)}`,
       { method: "DELETE" },
@@ -306,17 +277,10 @@ export class Client {
   }
 
   async startRun(
-    automationID: string,
+    loopId: string,
     opts: StartRunOptions = {},
-  ): Promise<AutomationRun> {
-    return this.startAutomationRun(automationID, opts);
-  }
-
-  async startAutomationRun(
-    automationID: string,
-    opts: StartRunOptions = {},
-  ): Promise<AutomationRun> {
-    const body: StartAutomationRunRequest = removeUndefined({
+  ): Promise<LoopRun> {
+    const body: StartLoopRunRequest = removeUndefined({
       event: opts.event,
       config: opts.config,
       meta: opts.meta,
@@ -324,47 +288,43 @@ export class Client {
       idempotency_key: opts.external_id,
     });
     const resp = await this.request(
-      `/v1/projects/:project/loops/${encodeURIComponent(automationID)}/runs`,
+      `/v1/projects/:project/loops/${encodeURIComponent(loopId)}/runs`,
       { method: "POST", body },
     );
-    return (await resp.json()) as AutomationRun;
+    return (await resp.json()) as LoopRun;
   }
 
-  async listRuns(opts: ListRunsOptions = {}): Promise<AutomationRunListResponse> {
-    const { automation_id, loop_id, ...rest } = opts;
+  async listRuns(opts: ListRunsOptions = {}): Promise<LoopRunListResponse> {
     const resp = await this.request(
-      withQuery("/v1/projects/:project/runs", {
-        ...rest,
-        loop_id: loop_id ?? automation_id,
-      }),
+      withQuery("/v1/projects/:project/runs", opts),
       { method: "GET" },
     );
-    return (await resp.json()) as AutomationRunListResponse;
+    return (await resp.json()) as LoopRunListResponse;
   }
 
-  async getRun(runId: string): Promise<AutomationRun> {
+  async getRun(runId: string): Promise<LoopRun> {
     const resp = await this.request(
       `/v1/projects/:project/runs/${encodeURIComponent(runId)}`,
       { method: "GET" },
     );
-    return (await resp.json()) as AutomationRun;
+    return (await resp.json()) as LoopRun;
   }
 
-  async cancelRun(runId: string, reason?: string): Promise<AutomationRun> {
-    const body: CancelAutomationRunRequest = removeUndefined({ reason });
+  async cancelRun(runId: string, reason?: string): Promise<LoopRun> {
+    const body: CancelLoopRunRequest = removeUndefined({ reason });
     const resp = await this.request(
       `/v1/projects/:project/runs/${encodeURIComponent(runId)}/cancel`,
       { method: "POST", body },
     );
-    return (await resp.json()) as AutomationRun;
+    return (await resp.json()) as LoopRun;
   }
 
   async signalRun(
     runId: string,
     stepKey: string,
     result?: Record<string, unknown>,
-  ): Promise<AutomationRun> {
-    const body: SignalAutomationRunRequest = removeUndefined({
+  ): Promise<LoopRun> {
+    const body: SignalLoopRunRequest = removeUndefined({
       step_key: stepKey,
       result,
     });
@@ -372,13 +332,13 @@ export class Client {
       `/v1/projects/:project/runs/${encodeURIComponent(runId)}/signals`,
       { method: "POST", body },
     );
-    return (await resp.json()) as AutomationRun;
+    return (await resp.json()) as LoopRun;
   }
 
   async *watchRun(
     runId: string,
     opts: WatchRunOptions = {},
-  ): AsyncGenerator<AutomationRunEvent> {
+  ): AsyncGenerator<LoopRunEvent> {
     const path = withQuery(
       `/v1/projects/:project/runs/${encodeURIComponent(runId)}/events.stream`,
       opts.since && opts.since > 0 ? { after_sequence: opts.since } : {},
@@ -397,11 +357,11 @@ export class Client {
     }
     for await (const evt of parseSSE(resp.body)) {
       if (!evt.data) continue;
-      yield JSON.parse(evt.data) as AutomationRunEvent;
+      yield JSON.parse(evt.data) as LoopRunEvent;
     }
   }
 
-  async waitRun(runId: string, opts: WaitRunOptions = {}): Promise<AutomationRun> {
+  async waitRun(runId: string, opts: WaitRunOptions = {}): Promise<LoopRun> {
     let since = opts.since ?? 0;
     const reconnectDelayMs = opts.reconnectDelayMs ?? 1000;
     for (;;) {
@@ -448,16 +408,7 @@ export class Client {
   }
 }
 
-export type {
-  Automation,
-  AutomationListResponse,
-  AutomationRun,
-  AutomationRunEvent,
-  AutomationRunListResponse,
-  AutomationRunStatus,
-};
-
-export function isTerminalRunStatus(status: AutomationRunStatus | string): boolean {
+export function isTerminalRunStatus(status: LoopRunStatus | string): boolean {
   return status === "completed" || status === "failed" || status === "cancelled";
 }
 

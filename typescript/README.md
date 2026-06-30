@@ -5,7 +5,7 @@ platform for mixed teams of humans, systems, and AI agents.
 
 This package contains the runtime client and WebSocket worker used to execute
 actions and LLM generations against the Mobius API, plus high-level helpers for
-creating automations and starting, observing, and controlling automation runs.
+creating loops and starting, observing, and controlling loop runs.
 Types are generated from the canonical
 [OpenAPI spec](https://github.com/deepnoodle-ai/mobius/blob/main/openapi.yaml)
 and round-tripped against the same cross-language contract fixtures as the Go
@@ -58,14 +58,14 @@ For independent presence rows (one row per worker) — e.g. graceful
 draining or in-flight isolation — use `WorkerPool` with `count` and
 optionally `workerInstanceIdPrefix` instead.
 
-### Automation runs
+### Loop runs
 
 ```ts
 import { Client } from "@deepnoodle/mobius";
 
 const client = new Client({ apiKey: process.env.MOBIUS_API_KEY! });
 
-const run = await client.startAutomationRun("customer-onboarding", {
+const run = await client.startRun("customer-onboarding", {
   external_id: "customer-run-123",
   event: { customer_id: "cus_123" },
 });
@@ -74,15 +74,15 @@ const terminal = await client.waitRun(run.id);
 console.log(terminal.status, terminal.result, terminal.error_message);
 ```
 
-### Automations
+### Loops
 
 ```ts
-const automation = await client.createAutomation({
+const loop = await client.createLoop({
   name: "Customer onboarding",
   spec: { steps: [] },
 });
 
-console.log(automation.id, automation.status);
+console.log(loop.id, loop.status);
 ```
 
 ### Webhooks
@@ -118,7 +118,7 @@ const client = new Client({
 });
 
 try {
-  await client.startAutomationRun("customer-onboarding", {
+  await client.startRun("customer-onboarding", {
     external_id: "customer-run-123",
     event: { customer_id: "cus_123" },
   });

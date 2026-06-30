@@ -11,14 +11,14 @@ import (
 	"github.com/deepnoodle-ai/wonton/sse"
 )
 
-// RunEvent is a decoded event from an automation run stream.
+// RunEvent is a decoded event from a loop run stream.
 type RunEvent = api.LoopRunEvent
 
 // sseReadBufferSize bounds a single SSE line. Run events can embed step I/O,
 // so the bufio default (64KB) is too tight.
 const sseReadBufferSize = 8 << 20
 
-// WatchRun opens a Server-Sent Events stream for a single automation run and
+// WatchRun opens a Server-Sent Events stream for a single loop run and
 // emits decoded RunEvent values on the returned channel. The channel is closed
 // when ctx is cancelled or the server closes the connection.
 //

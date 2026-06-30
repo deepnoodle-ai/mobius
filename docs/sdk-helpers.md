@@ -5,7 +5,7 @@ common integration tasks:
 
 - verifying and parsing Mobius outgoing webhook deliveries
 - delivering Mobius-shaped synthetic webhooks for local/test bridges
-- managing automations and automation runs from code
+- managing loops and loop runs from code
 - running workers that execute action jobs and LLM generation jobs over
   WebSockets
 
@@ -71,31 +71,31 @@ await deliverSyntheticWebhook({
 });
 ```
 
-## Automations And Runs
+## Loops And Runs
 
-Create a saved, runnable automation with an inline spec, then start a run by
-loop ID. The run's `event` object is reachable in step templates at `event.*`;
+Create a saved, runnable loop with an inline spec, then start a run by loop
+ID. The run's `event` object is reachable in step templates at `event.*`;
 optional `config` is reachable at `config.*`.
 
 ```go
-automation, err := client.CreateAutomation(ctx, mobius.AutomationOptions{
+loop, err := client.CreateLoop(ctx, mobius.LoopOptions{
 	Name: "Customer onboarding",
 	Spec: map[string]any{"steps": []any{ /* ... */ }},
 })
 if err != nil { return err }
-run, err := client.StartAutomationRun(ctx, automation.Id, &mobius.StartRunOptions{
+run, err := client.StartRun(ctx, loop.Id, &mobius.StartRunOptions{
 	Event:      map[string]any{"customer_id": "cus_123"},
 	ExternalID: "customer-run-123",
 })
 ```
 
 ```python
-automation = client.create_automation(mobius.AutomationOptions(
+loop = client.create_loop(mobius.LoopOptions(
     name="Customer onboarding",
     spec={"steps": []},
 ))
-run = client.start_automation_run(
-    automation.id,
+run = client.start_run(
+    loop.id,
     mobius.StartRunOptions(
         event={"customer_id": "cus_123"},
         external_id="customer-run-123",
@@ -104,11 +104,11 @@ run = client.start_automation_run(
 ```
 
 ```ts
-const automation = await client.createAutomation({
+const loop = await client.createLoop({
   name: "Customer onboarding",
   spec: { steps: [] },
 });
-const run = await client.startAutomationRun(automation.id, {
+const run = await client.startRun(loop.id, {
   event: { customer_id: "cus_123" },
   external_id: "customer-run-123",
 });

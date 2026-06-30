@@ -15,7 +15,7 @@ type FailInput struct {
 type FailOutput struct{}
 
 // NewFailAction returns an action that always fails. Useful for
-// exercising retry and error paths in automation definitions.
+// exercising retry and error paths in loop definitions.
 func NewFailAction() mobius.Action {
 	return mobius.NewTypedAction("fail", func(ctx mobius.Context, params FailInput) (FailOutput, error) {
 		message := params.Message

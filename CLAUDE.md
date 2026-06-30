@@ -5,7 +5,7 @@ code in this repository.
 
 ## What this is
 
-Public client side of Mobius (automations / runs / actions / workers). Three
+Public client side of Mobius (loops / runs / actions / workers). Three
 SDKs (Go, Python, TypeScript) plus the `mobius` CLI, all generated from
 `openapi.yaml`.
 

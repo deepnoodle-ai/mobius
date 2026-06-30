@@ -60,7 +60,7 @@ test("client: defaults to the production API host", async () => {
   });
   try {
     const client = new Client({ apiKey: "mbx_test", project: "test-project" });
-    await client.listAutomations();
+    await client.listLoops();
   } finally {
     restore();
   }
@@ -94,12 +94,12 @@ test("client: workerSocketURL uses websocket scheme", () => {
   );
 });
 
-test("client: startAutomationRun posts the new request shape", async () => {
+test("client: startRun posts the new request shape", async () => {
   let requestedURL = "";
   let requestBody = "";
   const restore = installFakeFetch({
     status: 202,
-    body: automationRun("run_1", "running"),
+    body: loopRun("run_1", "running"),
     capture: (input, init) => {
       requestedURL = typeof input === "string" ? input : input.toString();
       requestBody = String(init?.body ?? "");
@@ -111,7 +111,7 @@ test("client: startAutomationRun posts the new request shape", async () => {
       baseURL: "https://api.example.invalid",
       project: "test-project",
     });
-    const run = await client.startAutomationRun("loop_1", {
+    const run = await client.startRun("loop_1", {
       external_id: "external-1",
       event: { topic: "sdk" },
     });
@@ -127,11 +127,11 @@ test("client: startAutomationRun posts the new request shape", async () => {
   assert.match(requestBody, /"event":\{"topic":"sdk"\}/);
 });
 
-test("client: run control helpers use automation run endpoints", async () => {
+test("client: run control helpers use loop run endpoints", async () => {
   const seen: string[] = [];
   const restore = installFakeFetch({
     status: 200,
-    body: automationRun("run_1", "cancelled"),
+    body: loopRun("run_1", "cancelled"),
     capture: (input) => {
       seen.push(typeof input === "string" ? input : input.toString());
     },
@@ -178,7 +178,7 @@ data: {"type":"run_updated","run_id":"run_1","seq":7,"timestamp":"2026-04-27T00:
     }
     getCalls += 1;
     return new Response(
-      JSON.stringify(automationRun("run_1", getCalls === 1 ? "running" : "completed")),
+      JSON.stringify(loopRun("run_1", getCalls === 1 ? "running" : "completed")),
       { status: 200, headers: { "Content-Type": "application/json" } },
     );
   }) as typeof fetch;
@@ -296,7 +296,7 @@ test("client: terminal run status helper includes cancelled", () => {
   assert.equal(isTerminalRunStatus("running"), false);
 });
 
-function automationRun(id: string, status: string) {
+function loopRun(id: string, status: string) {
   return {
     id,
     org_id: "org_1",
