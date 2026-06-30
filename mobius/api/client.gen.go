@@ -167,6 +167,21 @@ func (e ActionInvocationResultStatus) Valid() bool {
 	}
 }
 
+// Defines values for AgentMessagePayloadRole.
+const (
+	AgentMessagePayloadRoleAssistant AgentMessagePayloadRole = "assistant"
+)
+
+// Valid indicates whether the value is a known member of the AgentMessagePayloadRole enum.
+func (e AgentMessagePayloadRole) Valid() bool {
+	switch e {
+	case AgentMessagePayloadRoleAssistant:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for AgentMessagingDMPolicy.
 const (
 	AgentMessagingDMPolicyAllowlist AgentMessagingDMPolicy = "allowlist"
@@ -3070,7 +3085,7 @@ type AgentMessagePayload struct {
 	MessageId string `json:"message_id"`
 
 	// Role Always `assistant`.
-	Role string `json:"role"`
+	Role AgentMessagePayloadRole `json:"role"`
 
 	// Sequence The mirrored message's per-session transcript sequence.
 	Sequence int64 `json:"sequence"`
@@ -3079,6 +3094,9 @@ type AgentMessagePayload struct {
 	TurnId               *string                `json:"turn_id,omitempty"`
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
+
+// AgentMessagePayloadRole Always `assistant`.
+type AgentMessagePayloadRole string
 
 // AgentMessagingBinding Messaging provider account that an agent can answer from.
 type AgentMessagingBinding struct {
@@ -5988,7 +6006,11 @@ type SessionScope string
 // SessionStatus Durable conversation session status: `active`, `archived`, or `deleted`.
 type SessionStatus string
 
-// SessionStreamFrame JSON payload of a single `data:` line on the session SSE stream, paired with an `event: <event type>` line. Durable message frames (`user.message`, `agent.message`, `compaction.created`) are replayed from the transcript and carry an SSE `id: <sequence>` — that `sequence` is the only cursor a client persists for `after_sequence` / `Last-Event-ID` resume. Terminal `turn.*` frames mark the active turn settling. `session.message.preview`, `session.resync`, `tool.call`, `tool.result`, and `generation.delta` frames are live-only and carry no `id:`.
+// SessionStreamFrame JSON payload of a single `data:` line on the session SSE stream, paired with an `event: <event type>` line.
+//
+// The `event:` line is the authoritative frame selector. This union is reference-only: several payloads are structurally identical (e.g. `user.message` and `agent.message`) or permissive open objects, so the `data:` body alone cannot be shape-matched to a single variant. Consumers MUST dispatch on the `event:` name and decode the body as the corresponding payload — never validate the bare body against the union.
+//
+// Durable message frames (`user.message`, `agent.message`, `compaction.created`) are replayed from the transcript and carry an SSE `id: <sequence>` — that `sequence` is the only cursor a client persists for `after_sequence` / `Last-Event-ID` resume. Terminal `turn.*` frames mark the active turn settling. `session.message.preview`, `session.resync`, `tool.call`, `tool.result`, and `generation.delta` frames are live-only and carry no `id:`.
 type SessionStreamFrame struct {
 	union json.RawMessage
 }
@@ -6071,8 +6093,8 @@ type SessionUserMessagePayload struct {
 	// MessageId Id of the transcript message this event mirrors.
 	MessageId string `json:"message_id"`
 
-	// Role Transcript role of the message (e.g. `user`, `system`, or a user-role message carrying tool results).
-	Role string `json:"role"`
+	// Role Message role: `system`, `user`, `assistant`, `tool`, or `compaction`.
+	Role SessionMessageRole `json:"role"`
 
 	// Sequence The mirrored message's per-session transcript sequence.
 	Sequence int64 `json:"sequence"`
@@ -6460,9 +6482,9 @@ type ToolCallPayload struct {
 
 // ToolResultPayload Payload of a live-only `tool.result` frame — an in-flight preview that a tool returned during the active turn. Never persisted and carries no sequence: the durable record is the `tool_result` content block of the following transcript message, delivered as a `user.message` event when the turn commits.
 type ToolResultPayload struct {
-	// Content The tool result as structured content blocks (e.g. `[{ "type": "text", "text": "…" }]`), the same shape as the `tool_result` content of the durable transcript message — so the live preview and the committed record read identically.
-	Content *[]map[string]interface{} `json:"content,omitempty"`
-	Display *string                   `json:"display,omitempty"`
+	// Content The tool result as canonical content blocks (e.g. `[{ "type": "text", "text": "…" }]`), the same `SessionContentBlock` shape as the `tool_result` content of the durable transcript message — so the live preview and the committed record read identically. In practice the server collapses the result to a single `text` block.
+	Content *[]SessionContentBlock `json:"content,omitempty"`
+	Display *string                `json:"display,omitempty"`
 
 	// EmittedAt Server timestamp when this live preview frame was emitted.
 	EmittedAt *time.Time `json:"emitted_at,omitempty"`

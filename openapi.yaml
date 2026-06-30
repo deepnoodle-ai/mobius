@@ -9171,13 +9171,12 @@ components:
       - $ref: '#/components/schemas/ToolCallPayload'
       - $ref: '#/components/schemas/ToolResultPayload'
       - $ref: '#/components/schemas/GenerationDeltaFrame'
-      description: 'JSON payload of a single `data:` line on the session SSE stream, paired
-        with an `event: <event type>` line. Durable message frames (`user.message`, `agent.message`,
-        `compaction.created`) are replayed from the transcript and carry an SSE `id: <sequence>`
-        — that `sequence` is the only cursor a client persists for `after_sequence` / `Last-Event-ID`
-        resume. Terminal `turn.*` frames mark the active turn settling. `session.message.preview`,
-        `session.resync`, `tool.call`, `tool.result`, and `generation.delta` frames are live-only
-        and carry no `id:`.'
+      description: |-
+        JSON payload of a single `data:` line on the session SSE stream, paired with an `event: <event type>` line.
+
+        The `event:` line is the authoritative frame selector. This union is reference-only: several payloads are structurally identical (e.g. `user.message` and `agent.message`) or permissive open objects, so the `data:` body alone cannot be shape-matched to a single variant. Consumers MUST dispatch on the `event:` name and decode the body as the corresponding payload — never validate the bare body against the union.
+
+        Durable message frames (`user.message`, `agent.message`, `compaction.created`) are replayed from the transcript and carry an SSE `id: <sequence>` — that `sequence` is the only cursor a client persists for `after_sequence` / `Last-Event-ID` resume. Terminal `turn.*` frames mark the active turn settling. `session.message.preview`, `session.resync`, `tool.call`, `tool.result`, and `generation.delta` frames are live-only and carry no `id:`.
     SessionMessagePreviewFrame:
       type: object
       additionalProperties: true
@@ -9308,9 +9307,9 @@ components:
           format: int64
           description: The mirrored message's per-session transcript sequence.
         role:
-          type: string
+          $ref: '#/components/schemas/SessionMessageRole'
           description: Transcript role of the message (e.g. `user`, `system`, or a user-role
-            message carrying tool results).
+            message carrying tool results); never `assistant`.
         content:
           type: array
           description: The message's full canonical content blocks (text, tool_result, …).
@@ -9346,6 +9345,8 @@ components:
           description: The mirrored message's per-session transcript sequence.
         role:
           type: string
+          enum:
+          - assistant
           description: Always `assistant`.
         content:
           type: array
@@ -9394,12 +9395,13 @@ components:
           type: string
         content:
           type: array
-          description: 'The tool result as structured content blocks (e.g. `[{ "type": "text",
-            "text": "…" }]`), the same shape as the `tool_result` content of the durable transcript
-            message — so the live preview and the committed record read identically.'
+          description: 'The tool result as canonical content blocks (e.g. `[{ "type": "text",
+            "text": "…" }]`), the same `SessionContentBlock` shape as the `tool_result` content
+            of the durable transcript message — so the live preview and the committed record
+            read identically. In practice the server collapses the result to a single `text`
+            block.'
           items:
-            type: object
-            additionalProperties: true
+            $ref: '#/components/schemas/SessionContentBlock'
         display:
           type: string
         is_error:

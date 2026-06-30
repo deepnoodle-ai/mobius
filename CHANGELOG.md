@@ -39,7 +39,16 @@ spliced with a live channel, keyed by one cursor.
   `SessionUserMessagePayload`, `AgentMessagePayload`, and
   `CompactionCreatedPayload`. Each variant keeps an open
   (`additionalProperties`) map so unknown fields round-trip losslessly.
-  Request bodies stay lenient — only response/frame content is frozen.
+  Request bodies stay lenient — only response/frame content is frozen. The
+  live `tool.result` frame (`ToolResultPayload.content`) now carries the same
+  typed blocks as the durable record, and message-role fields are tightened
+  (`AgentMessagePayload.role` is the `assistant` literal;
+  `SessionUserMessagePayload.role` is `SessionMessageRole`, never `assistant`).
+- SDKs: the session SSE stream-frame union (`SessionStreamFrame`) is
+  reference-only — several payloads are structurally identical
+  (`user.message` vs `agent.message`) or open objects, so the `data:` body
+  cannot be shape-matched to one variant. Consumers MUST dispatch on the SSE
+  `event:` name and decode the body as the corresponding payload.
 
 ### Removed
 

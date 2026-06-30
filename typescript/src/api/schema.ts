@@ -4263,7 +4263,13 @@ export interface components {
             /** @description Partial patch to the session's compaction policy. Only the supplied fields change; omitted fields keep their current values. */
             compaction_policy?: components["schemas"]["SessionCompactionPolicy"];
         };
-        /** @description JSON payload of a single `data:` line on the session SSE stream, paired with an `event: <event type>` line. Durable message frames (`user.message`, `agent.message`, `compaction.created`) are replayed from the transcript and carry an SSE `id: <sequence>` — that `sequence` is the only cursor a client persists for `after_sequence` / `Last-Event-ID` resume. Terminal `turn.*` frames mark the active turn settling. `session.message.preview`, `session.resync`, `tool.call`, `tool.result`, and `generation.delta` frames are live-only and carry no `id:`. */
+        /**
+         * @description JSON payload of a single `data:` line on the session SSE stream, paired with an `event: <event type>` line.
+         *
+         *     The `event:` line is the authoritative frame selector. This union is reference-only: several payloads are structurally identical (e.g. `user.message` and `agent.message`) or permissive open objects, so the `data:` body alone cannot be shape-matched to a single variant. Consumers MUST dispatch on the `event:` name and decode the body as the corresponding payload — never validate the bare body against the union.
+         *
+         *     Durable message frames (`user.message`, `agent.message`, `compaction.created`) are replayed from the transcript and carry an SSE `id: <sequence>` — that `sequence` is the only cursor a client persists for `after_sequence` / `Last-Event-ID` resume. Terminal `turn.*` frames mark the active turn settling. `session.message.preview`, `session.resync`, `tool.call`, `tool.result`, and `generation.delta` frames are live-only and carry no `id:`.
+         */
         SessionStreamFrame: components["schemas"]["SessionUserMessagePayload"] | components["schemas"]["AgentMessagePayload"] | components["schemas"]["CompactionCreatedPayload"] | components["schemas"]["TurnStartedPayload"] | components["schemas"]["TurnWaitingPayload"] | components["schemas"]["TurnCompletedPayload"] | components["schemas"]["TurnFailedPayload"] | components["schemas"]["TurnCancelledPayload"] | components["schemas"]["SessionMessagePreviewFrame"] | components["schemas"]["SessionResyncFrame"] | components["schemas"]["ToolCallPayload"] | components["schemas"]["ToolResultPayload"] | components["schemas"]["GenerationDeltaFrame"];
         /** @description Live-only, SessionMessage-compatible transcript preview for an in-flight agent response segment. It carries no durable `seq`, transcript `sequence`, or stable `message_id`; the committed row later replaces it by `turn_id` plus `metadata.response_message_index`. */
         SessionMessagePreviewFrame: {
@@ -4336,8 +4342,8 @@ export interface components {
              * @description The mirrored message's per-session transcript sequence.
              */
             sequence: number;
-            /** @description Transcript role of the message (e.g. `user`, `system`, or a user-role message carrying tool results). */
-            role: string;
+            /** @description Transcript role of the message (e.g. `user`, `system`, or a user-role message carrying tool results); never `assistant`. */
+            role: components["schemas"]["SessionMessageRole"];
             /** @description The message's full canonical content blocks (text, tool_result, …). */
             content: components["schemas"]["SessionContentBlock"][];
             /** @description The agent turn that produced this message, when applicable. */
@@ -4358,8 +4364,11 @@ export interface components {
              * @description The mirrored message's per-session transcript sequence.
              */
             sequence: number;
-            /** @description Always `assistant`. */
-            role: string;
+            /**
+             * @description Always `assistant`.
+             * @enum {string}
+             */
+            role: "assistant";
             /** @description The assistant message's full canonical content blocks (text, thinking, tool_use). */
             content: components["schemas"]["SessionContentBlock"][];
             /** @description The agent turn that produced this message. */
@@ -4391,10 +4400,8 @@ export interface components {
         ToolResultPayload: {
             tool_call_id?: string;
             tool_name?: string;
-            /** @description The tool result as structured content blocks (e.g. `[{ "type": "text", "text": "…" }]`), the same shape as the `tool_result` content of the durable transcript message — so the live preview and the committed record read identically. */
-            content?: {
-                [key: string]: unknown;
-            }[];
+            /** @description The tool result as canonical content blocks (e.g. `[{ "type": "text", "text": "…" }]`), the same `SessionContentBlock` shape as the `tool_result` content of the durable transcript message — so the live preview and the committed record read identically. In practice the server collapses the result to a single `text` block. */
+            content?: components["schemas"]["SessionContentBlock"][];
             display?: string;
             is_error?: boolean;
             error?: string;

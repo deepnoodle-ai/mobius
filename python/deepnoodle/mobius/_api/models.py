@@ -3011,6 +3011,14 @@ class TurnStartedPayload(BaseModel):
     )
 
 
+class Role(StrEnum):
+    """
+    Always `assistant`.
+    """
+
+    assistant = 'assistant'
+
+
 class ToolCallPayload(BaseModel):
     """
     Payload of a live-only `tool.call` frame — an in-flight preview that a tool was invoked during the active turn. Never persisted and carries no sequence: the durable record of the call is the `tool_use` content block of the assistant message, delivered as an `agent.message` event when the turn commits.
@@ -3022,32 +3030,6 @@ class ToolCallPayload(BaseModel):
     tool_call_id: str | None = None
     tool_name: str | None = None
     input: dict[str, Any] | None = None
-    live_sequence: int | None = Field(
-        None,
-        description='Monotonic per-turn sequence across all live-only session frames; use to detect dropped live frames.',
-    )
-    emitted_at: AwareDatetime | None = Field(
-        None, description='Server timestamp when this live preview frame was emitted.'
-    )
-
-
-class ToolResultPayload(BaseModel):
-    """
-    Payload of a live-only `tool.result` frame — an in-flight preview that a tool returned during the active turn. Never persisted and carries no sequence: the durable record is the `tool_result` content block of the following transcript message, delivered as a `user.message` event when the turn commits.
-    """
-
-    model_config = ConfigDict(
-        extra='allow',
-    )
-    tool_call_id: str | None = None
-    tool_name: str | None = None
-    content: list[dict[str, Any]] | None = Field(
-        None,
-        description='The tool result as structured content blocks (e.g. `[{ "type": "text", "text": "…" }]`), the same shape as the `tool_result` content of the durable transcript message — so the live preview and the committed record read identically.',
-    )
-    display: str | None = None
-    is_error: bool | None = None
-    error: str | None = None
     live_sequence: int | None = Field(
         None,
         description='Monotonic per-turn sequence across all live-only session frames; use to detect dropped live frames.',
@@ -3174,7 +3156,7 @@ class CreateSessionRequest(BaseModel):
     )
 
 
-class Role(StrEnum):
+class Role1(StrEnum):
     """
     Role of the input message. A turn carries caller input, so only `user` is accepted; defaults to `user` when omitted.
     """
@@ -3190,7 +3172,7 @@ class StartTurnRequest(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    role: Role = Field(
+    role: Role1 = Field(
         'user',
         description='Role of the input message. A turn carries caller input, so only `user` is accepted; defaults to `user` when omitted.',
     )
@@ -6741,9 +6723,9 @@ class SessionUserMessagePayload(BaseModel):
     sequence: int = Field(
         ..., description="The mirrored message's per-session transcript sequence."
     )
-    role: str = Field(
+    role: SessionMessageRole = Field(
         ...,
-        description='Transcript role of the message (e.g. `user`, `system`, or a user-role message carrying tool results).',
+        description='Transcript role of the message (e.g. `user`, `system`, or a user-role message carrying tool results); never `assistant`.',
     )
     content: list[SessionContentBlock] = Field(
         ...,
@@ -6768,13 +6750,39 @@ class AgentMessagePayload(BaseModel):
     sequence: int = Field(
         ..., description="The mirrored message's per-session transcript sequence."
     )
-    role: str = Field(..., description='Always `assistant`.')
+    role: Role = Field(..., description='Always `assistant`.')
     content: list[SessionContentBlock] = Field(
         ...,
         description="The assistant message's full canonical content blocks (text, thinking, tool_use).",
     )
     turn_id: str | None = Field(
         None, description='The agent turn that produced this message.'
+    )
+
+
+class ToolResultPayload(BaseModel):
+    """
+    Payload of a live-only `tool.result` frame — an in-flight preview that a tool returned during the active turn. Never persisted and carries no sequence: the durable record is the `tool_result` content block of the following transcript message, delivered as a `user.message` event when the turn commits.
+    """
+
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    tool_call_id: str | None = None
+    tool_name: str | None = None
+    content: list[SessionContentBlock] | None = Field(
+        None,
+        description='The tool result as canonical content blocks (e.g. `[{ "type": "text", "text": "…" }]`), the same `SessionContentBlock` shape as the `tool_result` content of the durable transcript message — so the live preview and the committed record read identically. In practice the server collapses the result to a single `text` block.',
+    )
+    display: str | None = None
+    is_error: bool | None = None
+    error: str | None = None
+    live_sequence: int | None = Field(
+        None,
+        description='Monotonic per-turn sequence across all live-only session frames; use to detect dropped live frames.',
+    )
+    emitted_at: AwareDatetime | None = Field(
+        None, description='Server timestamp when this live preview frame was emitted.'
     )
 
 
@@ -6864,7 +6872,7 @@ class SessionStreamFrame(
         | GenerationDeltaFrame
     ) = Field(
         ...,
-        description='JSON payload of a single `data:` line on the session SSE stream, paired with an `event: <event type>` line. Durable message frames (`user.message`, `agent.message`, `compaction.created`) are replayed from the transcript and carry an SSE `id: <sequence>` — that `sequence` is the only cursor a client persists for `after_sequence` / `Last-Event-ID` resume. Terminal `turn.*` frames mark the active turn settling. `session.message.preview`, `session.resync`, `tool.call`, `tool.result`, and `generation.delta` frames are live-only and carry no `id:`.',
+        description='JSON payload of a single `data:` line on the session SSE stream, paired with an `event: <event type>` line.\n\nThe `event:` line is the authoritative frame selector. This union is reference-only: several payloads are structurally identical (e.g. `user.message` and `agent.message`) or permissive open objects, so the `data:` body alone cannot be shape-matched to a single variant. Consumers MUST dispatch on the `event:` name and decode the body as the corresponding payload — never validate the bare body against the union.\n\nDurable message frames (`user.message`, `agent.message`, `compaction.created`) are replayed from the transcript and carry an SSE `id: <sequence>` — that `sequence` is the only cursor a client persists for `after_sequence` / `Last-Event-ID` resume. Terminal `turn.*` frames mark the active turn settling. `session.message.preview`, `session.resync`, `tool.call`, `tool.result`, and `generation.delta` frames are live-only and carry no `id:`.',
     )
 
 
@@ -6873,4 +6881,5 @@ SessionMessage.model_rebuild()
 SessionMessagePreviewFrame.model_rebuild()
 SessionUserMessagePayload.model_rebuild()
 AgentMessagePayload.model_rebuild()
+ToolResultPayload.model_rebuild()
 CompactionCreatedPayload.model_rebuild()
