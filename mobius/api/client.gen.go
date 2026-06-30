@@ -920,6 +920,27 @@ func (e InteractionResponseState) Valid() bool {
 	}
 }
 
+// Defines values for InvokeSessionSpecMode.
+const (
+	InvokeSessionSpecModeContinue         InvokeSessionSpecMode = "continue"
+	InvokeSessionSpecModeContinueOrCreate InvokeSessionSpecMode = "continue_or_create"
+	InvokeSessionSpecModeNew              InvokeSessionSpecMode = "new"
+)
+
+// Valid indicates whether the value is a known member of the InvokeSessionSpecMode enum.
+func (e InvokeSessionSpecMode) Valid() bool {
+	switch e {
+	case InvokeSessionSpecModeContinue:
+		return true
+	case InvokeSessionSpecModeContinueOrCreate:
+		return true
+	case InvokeSessionSpecModeNew:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for LoopConcurrency.
 const (
 	LoopConcurrencyAllow   LoopConcurrency = "allow"
@@ -3224,6 +3245,15 @@ type AgentModelRoute struct {
 // AgentModelRouteMode Model-call route mode: `managed` or `worker`.
 type AgentModelRouteMode string
 
+// AgentRef Reference to an agent in this project. Supply exactly one of `id` (the agent identifier) or `name` (the project-unique agent name). A blueprint-binding reference form is reserved for a later release and is not resolvable yet.
+type AgentRef struct {
+	// Id Agent identifier.
+	Id *string `json:"id,omitempty"`
+
+	// Name Project-unique agent name.
+	Name *string `json:"name,omitempty"`
+}
+
 // AgentStatus Administrative status. Inactive agents cannot claim new jobs. Deleted agents are excluded from normal reads.
 type AgentStatus string
 
@@ -3517,6 +3547,21 @@ type CapabilityReadiness string
 
 // CapabilityReadinessReason Why a capability is `needs_setup`. Present only when readiness is `needs_setup`. `not_configured` — no integration or credential is connected yet. `inactive` — the backing integration is manually disabled. `expired` — the backing credential has expired. `provider_unavailable` — the provider runtime is not currently available. `permission_missing` — the caller lacks permission to use it. `not_implemented` — a placeholder for a capability that is not yet available.
 type CapabilityReadinessReason string
+
+// ChannelContext Optional messaging provider/channel routing context (Slack, Telegram, …). Persisted on the started turn's input-message metadata under a `channel_context` key so chat history and support views can trace a turn back to the provider thread it came from.
+type ChannelContext struct {
+	// ChannelId Provider channel or chat identifier.
+	ChannelId *string `json:"channel_id,omitempty"`
+
+	// Provider Messaging provider, e.g. `slack` or `telegram`.
+	Provider *string `json:"provider,omitempty"`
+
+	// ThreadId Provider thread identifier within the channel.
+	ThreadId *string `json:"thread_id,omitempty"`
+
+	// WorkspaceId Provider workspace/team identifier.
+	WorkspaceId *string `json:"workspace_id,omitempty"`
+}
 
 // CheckVerdictPayload defines model for CheckVerdictPayload.
 type CheckVerdictPayload struct {
@@ -4528,6 +4573,57 @@ type InvokeActionRequest struct {
 	// TimeoutSeconds How long (in seconds) to wait for synchronous completion. Default 30, max 120.
 	TimeoutSeconds *int `json:"timeout_seconds,omitempty"`
 }
+
+// InvokeAgentRequest A single compound invocation: which agent to run, how to resolve the session, the caller's input message, and optional channel routing context.
+type InvokeAgentRequest struct {
+	// AgentRef Reference to an agent in this project. Supply exactly one of `id` (the agent identifier) or `name` (the project-unique agent name). A blueprint-binding reference form is reserved for a later release and is not resolvable yet.
+	AgentRef AgentRef `json:"agent_ref"`
+
+	// ChannelContext Optional messaging provider/channel routing context (Slack, Telegram, …). Persisted on the started turn's input-message metadata under a `channel_context` key so chat history and support views can trace a turn back to the provider thread it came from.
+	ChannelContext *ChannelContext `json:"channel_context,omitempty"`
+
+	// Input The caller input message that starts the agent turn.
+	Input InvokeInput `json:"input"`
+
+	// Session How to resolve or create the session this invocation runs in. Mirrors the create-session policy: `mode` + `session_key` resolve a durable conversation for the agent, and the remaining fields seed a session that does not already exist (they are ignored when an existing session is resolved). Omit the whole object to use a single default session per agent in `continue_or_create` mode.
+	Session *InvokeSessionSpec `json:"session,omitempty"`
+}
+
+// InvokeInput The caller input message that starts the agent turn.
+type InvokeInput struct {
+	// Content Ordered content blocks (text, images) for the input message.
+	Content []map[string]interface{} `json:"content"`
+
+	// IdempotencyKey Dedup key scoped to the resolved session. A repeat call with the same key resumes the existing turn and writes nothing new — derive it from the provider event id for Slack/Telegram webhook retries.
+	IdempotencyKey *string `json:"idempotency_key,omitempty"`
+
+	// Metadata Free-form caller metadata attached to the input message.
+	Metadata *map[string]interface{} `json:"metadata,omitempty"`
+}
+
+// InvokeSessionSpec How to resolve or create the session this invocation runs in. Mirrors the create-session policy: `mode` + `session_key` resolve a durable conversation for the agent, and the remaining fields seed a session that does not already exist (they are ignored when an existing session is resolved). Omit the whole object to use a single default session per agent in `continue_or_create` mode.
+type InvokeSessionSpec struct {
+	// CompactionPolicy Controls how a session's transcript is automatically summarized as it grows. On create the supplied fields are merged over the owning agent's default policy and the server defaults; on update they patch the session's current policy. Omitted fields keep their resolved values.
+	CompactionPolicy *SessionCompactionPolicy `json:"compaction_policy,omitempty"`
+
+	// Metadata Free-form caller metadata stored on a newly created session.
+	Metadata *map[string]interface{} `json:"metadata,omitempty"`
+
+	// Mode `continue_or_create` (default) resolves an existing session for the `session_key` or creates one; `new` always creates a fresh session; `continue` resolves an existing session and fails if none exists.
+	Mode *InvokeSessionSpecMode `json:"mode,omitempty"`
+
+	// SessionKey Stable key identifying the conversation within the agent.
+	SessionKey *string `json:"session_key,omitempty"`
+
+	// Title Human-friendly title for a newly created session.
+	Title *string `json:"title,omitempty"`
+
+	// Visibility Visibility of the session in project surfaces: `project` or `private`.
+	Visibility *SessionVisibility `json:"visibility,omitempty"`
+}
+
+// InvokeSessionSpecMode `continue_or_create` (default) resolves an existing session for the `session_key` or creates one; `new` always creates a fresh session; `continue` resolves an existing session and fails if none exists.
+type InvokeSessionSpecMode string
 
 // LimitReachedPayload defines model for LimitReachedPayload.
 type LimitReachedPayload struct {
@@ -7654,6 +7750,9 @@ type ListSessionsParams struct {
 	// AgentId Filter to sessions owned by this agent.
 	AgentId *string `form:"agent_id,omitempty" json:"agent_id,omitempty"`
 
+	// SessionKey Look up the session with this exact routing key — a read-only deterministic lookup that avoids a create-or-resolve round trip, returning the one matching session or an empty list. Requires `agent_id`, since session keys are scoped to an agent.
+	SessionKey *string `form:"session_key,omitempty" json:"session_key,omitempty"`
+
 	// Status Filter by session status.
 	Status *SessionStatus `form:"status,omitempty" json:"status,omitempty"`
 
@@ -7804,6 +7903,9 @@ type InvokeActionJSONRequestBody = InvokeActionRequest
 
 // CreateAgentJSONRequestBody defines body for CreateAgent for application/json ContentType.
 type CreateAgentJSONRequestBody = CreateAgentRequest
+
+// InvokeAgentJSONRequestBody defines body for InvokeAgent for application/json ContentType.
+type InvokeAgentJSONRequestBody = InvokeAgentRequest
 
 // UpdateAgentJSONRequestBody defines body for UpdateAgent for application/json ContentType.
 type UpdateAgentJSONRequestBody = UpdateAgentRequest
@@ -14895,6 +14997,11 @@ type ClientInterface interface {
 
 	CreateAgent(ctx context.Context, projectHandle ProjectHandleParam, body CreateAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// InvokeAgentWithBody request with any body
+	InvokeAgentWithBody(ctx context.Context, projectHandle ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	InvokeAgent(ctx context.Context, projectHandle ProjectHandleParam, body InvokeAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// DeleteAgent request
 	DeleteAgent(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -15503,6 +15610,30 @@ func (c *Client) CreateAgentWithBody(ctx context.Context, projectHandle ProjectH
 
 func (c *Client) CreateAgent(ctx context.Context, projectHandle ProjectHandleParam, body CreateAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewCreateAgentRequest(c.Server, projectHandle, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) InvokeAgentWithBody(ctx context.Context, projectHandle ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewInvokeAgentRequestWithBody(c.Server, projectHandle, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) InvokeAgent(ctx context.Context, projectHandle ProjectHandleParam, body InvokeAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewInvokeAgentRequest(c.Server, projectHandle, body)
 	if err != nil {
 		return nil, err
 	}
@@ -17897,6 +18028,53 @@ func NewCreateAgentRequestWithBody(server string, projectHandle ProjectHandlePar
 	}
 
 	operationPath := fmt.Sprintf("/v1/projects/%s/agents", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewInvokeAgentRequest calls the generic InvokeAgent builder with application/json body
+func NewInvokeAgentRequest(server string, projectHandle ProjectHandleParam, body InvokeAgentJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewInvokeAgentRequestWithBody(server, projectHandle, "application/json", bodyReader)
+}
+
+// NewInvokeAgentRequestWithBody generates requests for InvokeAgent with any type of body
+func NewInvokeAgentRequestWithBody(server string, projectHandle ProjectHandleParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project_handle", projectHandle, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/agents/invoke", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -20900,6 +21078,18 @@ func NewListSessionsRequest(server string, projectHandle ProjectHandleParam, par
 
 		}
 
+		if params.SessionKey != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "session_key", *params.SessionKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
 		if params.Status != nil {
 
 			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "status", *params.Status, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
@@ -23862,6 +24052,11 @@ type ClientWithResponsesInterface interface {
 
 	CreateAgentWithResponse(ctx context.Context, projectHandle ProjectHandleParam, body CreateAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateAgentResponse, error)
 
+	// InvokeAgentWithBodyWithResponse request with any body
+	InvokeAgentWithBodyWithResponse(ctx context.Context, projectHandle ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*InvokeAgentResponse, error)
+
+	InvokeAgentWithResponse(ctx context.Context, projectHandle ProjectHandleParam, body InvokeAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*InvokeAgentResponse, error)
+
 	// DeleteAgentWithResponse request
 	DeleteAgentWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, reqEditors ...RequestEditorFn) (*DeleteAgentResponse, error)
 
@@ -24692,6 +24887,42 @@ func (r CreateAgentResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r CreateAgentResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type InvokeAgentResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON202      *TurnAck
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+	JSON409      *Conflict
+	JSON429      *TooManyRequests
+}
+
+// Status returns HTTPResponse.Status
+func (r InvokeAgentResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r InvokeAgentResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r InvokeAgentResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -28415,6 +28646,23 @@ func (c *ClientWithResponses) CreateAgentWithResponse(ctx context.Context, proje
 	return ParseCreateAgentResponse(rsp)
 }
 
+// InvokeAgentWithBodyWithResponse request with arbitrary body returning *InvokeAgentResponse
+func (c *ClientWithResponses) InvokeAgentWithBodyWithResponse(ctx context.Context, projectHandle ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*InvokeAgentResponse, error) {
+	rsp, err := c.InvokeAgentWithBody(ctx, projectHandle, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseInvokeAgentResponse(rsp)
+}
+
+func (c *ClientWithResponses) InvokeAgentWithResponse(ctx context.Context, projectHandle ProjectHandleParam, body InvokeAgentJSONRequestBody, reqEditors ...RequestEditorFn) (*InvokeAgentResponse, error) {
+	rsp, err := c.InvokeAgent(ctx, projectHandle, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseInvokeAgentResponse(rsp)
+}
+
 // DeleteAgentWithResponse request returning *DeleteAgentResponse
 func (c *ClientWithResponses) DeleteAgentWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, reqEditors ...RequestEditorFn) (*DeleteAgentResponse, error) {
 	rsp, err := c.DeleteAgent(ctx, projectHandle, resourceId, reqEditors...)
@@ -30338,6 +30586,74 @@ func ParseCreateAgentResponse(rsp *http.Response) (*CreateAgentResponse, error) 
 			return nil, err
 		}
 		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest TooManyRequests
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseInvokeAgentResponse parses an HTTP response from a InvokeAgentWithResponse call
+func ParseInvokeAgentResponse(rsp *http.Response) (*InvokeAgentResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &InvokeAgentResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+		var dest TurnAck
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON202 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
 		var dest BadRequest

@@ -3118,6 +3118,18 @@ class SessionCompactionBoundary(BaseModel):
     )
 
 
+class AgentRef(BaseModel):
+    """
+    Reference to an agent in this project. Supply exactly one of `id` (the agent identifier) or `name` (the project-unique agent name). A blueprint-binding reference form is reserved for a later release and is not resolvable yet.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str | None = Field(None, description='Agent identifier.')
+    name: str | None = Field(None, description='Project-unique agent name.')
+
+
 class Mode1(StrEnum):
     """
     `continue_or_create` (default) resolves an existing session for the `session_key` or creates one; `new` always creates a fresh session; `continue` resolves an existing session and fails if none exists.
@@ -3126,6 +3138,78 @@ class Mode1(StrEnum):
     new = 'new'
     continue_ = 'continue'
     continue_or_create = 'continue_or_create'
+
+
+class InvokeSessionSpec(BaseModel):
+    """
+    How to resolve or create the session this invocation runs in. Mirrors the create-session policy: `mode` + `session_key` resolve a durable conversation for the agent, and the remaining fields seed a session that does not already exist (they are ignored when an existing session is resolved). Omit the whole object to use a single default session per agent in `continue_or_create` mode.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    mode: Mode1 | None = Field(
+        None,
+        description='`continue_or_create` (default) resolves an existing session for the `session_key` or creates one; `new` always creates a fresh session; `continue` resolves an existing session and fails if none exists.',
+    )
+    session_key: str | None = Field(
+        None, description='Stable key identifying the conversation within the agent.'
+    )
+    title: str | None = Field(
+        None, description='Human-friendly title for a newly created session.'
+    )
+    visibility: SessionVisibility | None = None
+    compaction_policy: SessionCompactionPolicy | None = Field(
+        None,
+        description="Per-session compaction overrides applied when the session is first created. Merged over the agent's default policy and server defaults. Ignored when an existing session is resolved.",
+    )
+    metadata: dict[str, Any] | None = Field(
+        None, description='Free-form caller metadata stored on a newly created session.'
+    )
+
+
+class InvokeInput(BaseModel):
+    """
+    The caller input message that starts the agent turn.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    content: list[dict[str, Any]] = Field(
+        ...,
+        description='Ordered content blocks (text, images) for the input message.',
+        min_length=1,
+    )
+    idempotency_key: str | None = Field(
+        None,
+        description='Dedup key scoped to the resolved session. A repeat call with the same key resumes the existing turn and writes nothing new — derive it from the provider event id for Slack/Telegram webhook retries.',
+    )
+    metadata: dict[str, Any] | None = Field(
+        None, description='Free-form caller metadata attached to the input message.'
+    )
+
+
+class ChannelContext(BaseModel):
+    """
+    Optional messaging provider/channel routing context (Slack, Telegram, …). Persisted on the started turn's input-message metadata under a `channel_context` key so chat history and support views can trace a turn back to the provider thread it came from.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    provider: str | None = Field(
+        None, description='Messaging provider, e.g. `slack` or `telegram`.'
+    )
+    workspace_id: str | None = Field(
+        None, description='Provider workspace/team identifier.'
+    )
+    channel_id: str | None = Field(
+        None, description='Provider channel or chat identifier.'
+    )
+    thread_id: str | None = Field(
+        None, description='Provider thread identifier within the channel.'
+    )
 
 
 class CreateSessionRequest(BaseModel):
@@ -3544,7 +3628,7 @@ class LoopAgentSessionPolicy(BaseModel):
     )
 
 
-class Mode2(StrEnum):
+class Mode3(StrEnum):
     """
     Model route mode: `managed` or `worker`.
     """
@@ -3561,7 +3645,7 @@ class LoopModelRoute(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    mode: Mode2 = Field(..., description='Model route mode: `managed` or `worker`.')
+    mode: Mode3 = Field(..., description='Model route mode: `managed` or `worker`.')
     environment_id: str | None = Field(
         None, description='Managed environment to route worker-backed model calls to.'
     )
@@ -4713,7 +4797,7 @@ class TableRowQueryListResponse(BaseModel):
     )
 
 
-class Mode3(StrEnum):
+class Mode4(StrEnum):
     """
     Search mode. `keyword` uses token-prefix full-text search, `semantic` uses sidecar embedding similarity, and `hybrid` combines both.
     """
@@ -4732,7 +4816,7 @@ class SearchRowsRequest(BaseModel):
         description='Search query. Hyphens and other punctuation split terms for keyword matching.',
         min_length=1,
     )
-    mode: Mode3 = Field(
+    mode: Mode4 = Field(
         'keyword',
         description='Search mode. `keyword` uses token-prefix full-text search, `semantic` uses sidecar embedding similarity, and `hybrid` combines both.',
     )
@@ -5359,6 +5443,20 @@ class AppendSessionMessagesRequest(BaseModel):
     model_provider: str | None = Field(
         None, description='Provider for the supplied `model`.'
     )
+
+
+class InvokeAgentRequest(BaseModel):
+    """
+    A single compound invocation: which agent to run, how to resolve the session, the caller's input message, and optional channel routing context.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    agent_ref: AgentRef
+    session: InvokeSessionSpec | None = None
+    input: InvokeInput
+    channel_context: ChannelContext | None = None
 
 
 class TurnAck(BaseModel):
