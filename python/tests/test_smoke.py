@@ -18,6 +18,7 @@ from deepnoodle.mobius import (
     WEBHOOK_EVENT_TYPE_HEADER,
     Client,
     ClientOptions,
+    InvokeAgentOptions,
     ListRunsOptions,
     StartRunOptions,
     SyntheticWebhookDelivery,
@@ -35,6 +36,7 @@ from deepnoodle.mobius.client import (
     UpdateLoopOptions,
 )
 from deepnoodle.mobius._api.models import (
+    InvokeSessionSpec,
     LoopRunSource,
     LoopRunStatus,
     LoopStatus,
@@ -200,6 +202,63 @@ def test_run_control_helpers_use_project_scoped_paths_and_enum_query_values() ->
     assert any(url.endswith("/runs/run_1/signals") for url in seen)
 
 
+def test_invoke_agent_posts_the_compound_invoke_request_shape() -> None:
+    seen: dict[str, object] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen["path"] = request.url.path
+        seen["body"] = request.read().decode()
+        return httpx.Response(202, json=_turn_ack_body("sess_1", "turn_1", 7))
+
+    client = _client_with(handler)
+    ack = client.invoke_agent(
+        InvokeAgentOptions(
+            agent_id="agent_1",
+            content=[{"type": "text", "text": "hi"}],
+            idempotency_key="evt_1",
+            session=InvokeSessionSpec(session_key="app:acct_1:user_2"),
+        )
+    )
+
+    assert ack.after_sequence == 7
+    assert ack.session.id == "sess_1"
+    assert ack.turn.id == "turn_1"
+    assert seen["path"] == "/v1/projects/test-project/agents/invoke"
+    assert '"agent_ref":{"id":"agent_1"}' in str(seen["body"])
+    assert '"idempotency_key":"evt_1"' in str(seen["body"])
+    assert '"session_key":"app:acct_1:user_2"' in str(seen["body"])
+
+
+def test_invoke_agent_requires_agent_ref_and_content() -> None:
+    client = _client_with(lambda _: httpx.Response(404))
+
+    with pytest.raises(ValueError):
+        client.invoke_agent(InvokeAgentOptions(content=[{"type": "text", "text": "hi"}]))
+    with pytest.raises(ValueError):
+        client.invoke_agent(InvokeAgentOptions(agent_id="agent_1", content=[]))
+
+
+def test_invoke_agent_stream_streams_session_frames_inline() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.headers["accept"] == "text/event-stream"
+        return httpx.Response(
+            200,
+            text='event: turn.completed\ndata: {"usage":{"input_tokens":42}}\n\n',
+            headers={"Content-Type": "text/event-stream"},
+        )
+
+    client = _client_with(handler)
+    events = list(
+        client.invoke_agent_stream(
+            InvokeAgentOptions(agent_name="support", content=[{"type": "text", "text": "hi"}])
+        )
+    )
+
+    assert len(events) == 1
+    assert events[0].event_type == "turn.completed"
+    assert events[0].data == {"usage": {"input_tokens": 42}}
+
+
 def test_watch_run_parses_loop_run_event_stream() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         assert request.url.path.endswith("/runs/run_1/events.stream")
@@ -347,6 +406,39 @@ def _run_body(run_id: str, status: str) -> dict[str, object]:
         "event": {"topic": "sdk"},
         "created_at": "2026-05-27T00:00:00Z",
         "updated_at": "2026-05-27T00:00:00Z",
+    }
+
+
+def _turn_ack_body(session_id: str, turn_id: str, after_sequence: int) -> dict[str, object]:
+    return {
+        "after_sequence": after_sequence,
+        "session": {
+            "id": session_id,
+            "agent_id": "agent_1",
+            "origin": "api",
+            "scope": "agent",
+            "scope_name": "app:acct_1:user_2",
+            "scope_ref_id": "agent_1",
+            "session_key": "app:acct_1:user_2",
+            "status": "active",
+            "title": "",
+            "visibility": "private",
+            "version": 1,
+            "message_count": 1,
+            "token_input_total": 0,
+            "token_output_total": 0,
+            "created_at": "2026-05-27T00:00:00Z",
+            "updated_at": "2026-05-27T00:00:00Z",
+        },
+        "turn": {
+            "id": turn_id,
+            "agent_id": "agent_1",
+            "session_id": session_id,
+            "attempt": 1,
+            "status": "running",
+            "created_at": "2026-05-27T00:00:00Z",
+            "updated_at": "2026-05-27T00:00:00Z",
+        },
     }
 
 

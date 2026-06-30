@@ -1,6 +1,11 @@
 import type {
+  AgentRef,
   CancelLoopRunRequest,
+  ChannelContext,
   CreateLoopRequest,
+  InvokeAgentRequest,
+  InvokeInput,
+  InvokeSessionSpec,
   Loop,
   LoopListResponse,
   LoopRun,
@@ -9,9 +14,11 @@ import type {
   LoopRunSource,
   LoopRunStatus,
   LoopStatus,
+  SessionStreamFrame,
   SignalLoopRunRequest,
   StartLoopRunRequest,
   TagMap,
+  TurnAck,
   UpdateLoopRequest,
 } from "./api/index.js";
 import {
@@ -176,6 +183,46 @@ export interface WaitRunOptions extends WatchRunOptions {
 
 export type RunEvent = LoopRunEvent;
 
+export interface InvokeAgentOptions {
+  /** Agent identifier. Mutually exclusive with agentName. */
+  agentId?: string;
+  /** Project-unique agent name. Mutually exclusive with agentId. */
+  agentName?: string;
+  /** Ordered content blocks (text, images, …) for the caller's input message. Required. */
+  content: Record<string, unknown>[];
+  /**
+   * Dedup key scoped to the resolved session. A repeat call with the same
+   * key resolves the same session and resumes the existing turn rather
+   * than starting a second one — derive it from the provider event id for
+   * Slack/Telegram webhook retries.
+   */
+  idempotencyKey?: string;
+  /** Free-form caller metadata attached to the input message. */
+  inputMetadata?: Record<string, unknown>;
+  /**
+   * How to resolve or create the session this invocation runs in. Omit to
+   * use a single default session per agent in continue_or_create mode.
+   */
+  session?: InvokeSessionSpec;
+  /**
+   * Optional messaging provider/channel routing context (Slack, Telegram,
+   * …) recorded on the started turn.
+   */
+  channelContext?: ChannelContext;
+}
+
+/**
+ * A single decoded frame from a session SSE stream. eventType is the
+ * authoritative SSE `event:` name (e.g. "user.message", "turn.completed",
+ * "tool.call") — {@link SessionStreamFrame} is a reference-only union that
+ * cannot be shape-matched from data alone, so dispatch on eventType and cast
+ * data to the corresponding payload type.
+ */
+export interface SessionStreamEvent {
+  eventType: string;
+  data: SessionStreamFrame;
+}
+
 export class Client {
   private readonly baseURL: string;
   readonly project: string;
@@ -335,6 +382,57 @@ export class Client {
     return (await resp.json()) as LoopRun;
   }
 
+  /**
+   * Resolves (or creates) a session, appends opts.content as the caller's
+   * input message, and starts an agent turn — collapsing the
+   * create-or-resolve-session + start-turn sequence into one retryable
+   * call. This is the entry point for a product backend (an embedded app,
+   * a Slack handler, a Telegram bot) calling per inbound message.
+   *
+   * Returns once the turn is accepted; the response's after_sequence is a
+   * durable stream cursor for `GET …/sessions/{id}/stream`. Use
+   * {@link Client.invokeAgentStream} instead to observe the turn's
+   * activity inline on the same connection.
+   */
+  async invokeAgent(opts: InvokeAgentOptions): Promise<TurnAck> {
+    const body = invokeAgentRequest(opts);
+    const resp = await this.request("/v1/projects/:project/agents/invoke", {
+      method: "POST",
+      body,
+    });
+    return (await resp.json()) as TurnAck;
+  }
+
+  /**
+   * Behaves like {@link Client.invokeAgent} but streams the turn's
+   * activity inline on the same connection instead of waiting for a
+   * TurnAck, identical to framing from `GET …/sessions/{id}/stream`.
+   */
+  async *invokeAgentStream(
+    opts: InvokeAgentOptions,
+    streamOpts: { signal?: AbortSignal } = {},
+  ): AsyncGenerator<SessionStreamEvent> {
+    const path = "/v1/projects/:project/agents/invoke";
+    const body = invokeAgentRequest(opts);
+    const resp = await this.fetchFn(this.url(path), {
+      method: "POST",
+      headers: { ...this.headers, Accept: "text/event-stream" },
+      body: JSON.stringify(body),
+      signal: streamOpts.signal,
+    });
+    if (!resp.ok) {
+      const text = await resp.text().catch(() => "");
+      throw new Error(`mobius API POST ${path}: HTTP ${resp.status}: ${text}`);
+    }
+    if (!resp.body) {
+      throw new Error("mobius API POST agents/invoke: response body is not readable");
+    }
+    for await (const evt of parseSSE(resp.body)) {
+      if (!evt.event || !evt.data) continue;
+      yield { eventType: evt.event, data: JSON.parse(evt.data) as SessionStreamFrame };
+    }
+  }
+
   async *watchRun(
     runId: string,
     opts: WatchRunOptions = {},
@@ -440,6 +538,28 @@ function withQuery(path: string, params: object): string {
   return qs ? `${path}?${qs}` : path;
 }
 
+function invokeAgentRequest(opts: InvokeAgentOptions): InvokeAgentRequest {
+  if (!opts.agentId && !opts.agentName) {
+    throw new Error("mobius: invoke agent: agentId or agentName is required");
+  }
+  if (!opts.content || opts.content.length === 0) {
+    throw new Error("mobius: invoke agent: content is required");
+  }
+  return removeUndefined({
+    agent_ref: removeUndefined({
+      id: opts.agentId,
+      name: opts.agentName,
+    }) as AgentRef,
+    input: removeUndefined({
+      content: opts.content,
+      idempotency_key: opts.idempotencyKey,
+      metadata: opts.inputMetadata,
+    }) as InvokeInput,
+    session: opts.session,
+    channel_context: opts.channelContext,
+  }) as InvokeAgentRequest;
+}
+
 function removeUndefined<T extends object>(obj: T): T {
   return Object.fromEntries(
     Object.entries(obj).filter(([, v]) => v !== undefined),
@@ -464,6 +584,7 @@ async function delay(ms: number, signal?: AbortSignal): Promise<void> {
 }
 
 interface SSEEvent {
+  event?: string;
   data: string;
 }
 
@@ -481,12 +602,14 @@ async function* parseSSE(body: ReadableStream<Uint8Array>): AsyncGenerator<SSEEv
         if (!match) break;
         const raw = buffer.slice(0, match.index);
         buffer = buffer.slice(match.index + match[0].length);
-        const data = raw
-          .split(/\r?\n/)
+        const lines = raw.split(/\r?\n/);
+        const data = lines
           .filter((line) => line.startsWith("data:"))
           .map((line) => line.slice(5).trimStart())
           .join("\n");
-        yield { data };
+        const eventLine = lines.find((line) => line.startsWith("event:"));
+        const event = eventLine ? eventLine.slice(6).trimStart() : undefined;
+        yield { event, data };
       }
     }
   } finally {
