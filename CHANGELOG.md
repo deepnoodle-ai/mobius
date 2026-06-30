@@ -6,6 +6,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 
 ## [Unreleased]
 
+## [0.0.30] - 2026-06-30
+
+First-class SDK wrappers for the compound agent-invoke endpoint that shipped
+generated-only in 0.0.29.
+
+### Added
+
+- SDKs: a hand-written `InvokeAgent` / `invokeAgent` / `invoke_agent`
+  convenience method on each client wraps the compound `POST …/agents/invoke`
+  call (resolve-or-create session + append the caller's input message + start
+  a turn), mirroring the existing `StartRun` request-building and
+  error-handling pattern. It returns the `202 Accepted` turn ack carrying a
+  durable `after_sequence` stream cursor. A companion `InvokeAgentStream` /
+  `invokeAgentStream` / `invoke_agent_stream` variant opens the same call with
+  `Accept: text/event-stream` and surfaces the turn's activity inline as
+  decoded session stream frames, mirroring `WatchRun`'s SSE plumbing. Provide
+  exactly one of agent id or agent name plus the input content.
+
 ## [0.0.29] - 2026-06-30
 
 Session transcript rework, synced from the mobius-cloud spec.
