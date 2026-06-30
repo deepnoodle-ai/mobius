@@ -2581,7 +2581,7 @@ paths:
 
         The stream follows the session's active turn and closes once the session is idle — no queued or running turn — after the active turn's committed rows and a terminal `turn.completed` / `turn.failed` / `turn.cancelled` frame have been delivered. A later turn is a new activity tail; open a new stream for it or use the streaming `POST .../turns` response.
 
-        Live-only `generation.delta`, `session.message.preview`, `tool.call`, and `tool.result` frames carry no `id:`, are interleaved best-effort for low-latency rendering, and are never persisted or replayed — on reconnect the durable message frames are the source of truth.
+        Live-only `generation.delta`, `session.message.preview`, `session.resync`, `tool.call`, and `tool.result` frames carry no `id:`, are interleaved best-effort for low-latency rendering, and are never persisted or replayed — on reconnect the durable message frames are the source of truth.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/SessionIdParam'
@@ -2592,8 +2592,8 @@ paths:
           description: 'A Server-Sent Events stream of session activity. Each frame is `event:
             <event type>` followed by a `data:` line carrying the JSON-encoded payload. Durable
             message frames carry an `id:` line with the message `sequence` for `Last-Event-ID`
-            resume; live-only frames (`generation.delta`, `session.message.preview`, `tool.call`,
-            `tool.result`) do not carry `id:` and cannot be replayed.'
+            resume; live-only frames (`generation.delta`, `session.message.preview`, `session.resync`,
+            `tool.call`, `tool.result`) do not carry `id:` and cannot be replayed.'
           content:
             text/event-stream:
               schema:
@@ -8592,6 +8592,19 @@ components:
           type: object
           additionalProperties: true
           description: Tool input arguments.
+    SessionContentBlock:
+      oneOf:
+      - $ref: '#/components/schemas/SessionTextBlock'
+      - $ref: '#/components/schemas/SessionThinkingBlock'
+      - $ref: '#/components/schemas/SessionToolUseBlock'
+      - $ref: '#/components/schemas/SessionToolResultBlock'
+      - $ref: '#/components/schemas/SessionImageBlock'
+      description: One content block in a session transcript message — the canonical, frozen
+        JSON shape Mobius persists and replays, discriminated by `type`. The variants are
+        `text`, `thinking`, `tool_use`, `tool_result`, and `image`. Each variant permits provider-specific
+        extra fields (citations, signatures, cache hints, and the like), and unknown fields
+        are preserved rather than rejected, so the transcript round-trips losslessly across
+        providers.
     SessionToolResultBlock:
       type: object
       additionalProperties: true
@@ -8608,8 +8621,13 @@ components:
           type: string
           description: The tool_use id this result answers.
         content:
-          description: Result payload — a string or an array of typed sub-blocks (the same
-            block shape as a transcript message).
+          description: Result payload — a string, or an array of typed sub-blocks using the
+            same canonical block shape as a transcript message.
+          oneOf:
+          - type: string
+          - type: array
+            items:
+              $ref: '#/components/schemas/SessionContentBlock'
         is_error:
           type: boolean
           description: True when the tool reported a failure.
@@ -8628,19 +8646,6 @@ components:
           type: object
           additionalProperties: true
           description: Provider-specific image source descriptor.
-    SessionContentBlock:
-      oneOf:
-      - $ref: '#/components/schemas/SessionTextBlock'
-      - $ref: '#/components/schemas/SessionThinkingBlock'
-      - $ref: '#/components/schemas/SessionToolUseBlock'
-      - $ref: '#/components/schemas/SessionToolResultBlock'
-      - $ref: '#/components/schemas/SessionImageBlock'
-      description: One content block in a session transcript message — the canonical, frozen
-        JSON shape Mobius persists and replays, discriminated by `type`. The variants are
-        `text`, `thinking`, `tool_use`, `tool_result`, and `image`. Each variant permits provider-specific
-        extra fields (citations, signatures, cache hints, and the like), and unknown fields
-        are preserved rather than rejected, so the transcript round-trips losslessly across
-        providers.
     SessionMessageEntryType:
       type: string
       enum:
@@ -9152,7 +9157,7 @@ components:
           description: Partial patch to the session's compaction policy. Only the supplied
             fields change; omitted fields keep their current values.
     SessionStreamFrame:
-      oneOf:
+      anyOf:
       - $ref: '#/components/schemas/SessionUserMessagePayload'
       - $ref: '#/components/schemas/AgentMessagePayload'
       - $ref: '#/components/schemas/CompactionCreatedPayload'
@@ -10969,6 +10974,14 @@ components:
         status:
           $ref: '#/components/schemas/LoopRunStatus'
           description: Current lifecycle state of this run.
+        queue_reason:
+          $ref: '#/components/schemas/LoopRunQueueReason'
+          description: Gate that placed this run in the durable queue. Present only while
+            `status` is `queued`.
+        plan_concurrency_limit:
+          type: integer
+          description: Org-wide concurrent-run ceiling stamped at run start. Present when
+            the run was evaluated against a plan concurrency limit.
         stop_reason:
           $ref: '#/components/schemas/LoopRunStopReason'
           description: Terminal reason recorded when the run stops.
@@ -11091,6 +11104,15 @@ components:
       - cancelled
       description: 'Run lifecycle state: `queued`, `running`, `suspended`, `completed`, `failed`,
         or `cancelled`.'
+    LoopRunQueueReason:
+      type: string
+      enum:
+      - plan_concurrency
+      - loop_policy
+      - trigger_concurrency
+      description: Why a run is waiting in the queue. `plan_concurrency` means the organization's
+        current plan has no active-run capacity available. `loop_policy` and `trigger_concurrency`
+        mean authored concurrency policy deferred the run.
     LoopRunStopReason:
       type: string
       enum:

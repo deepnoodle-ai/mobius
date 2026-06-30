@@ -138,6 +138,7 @@ export type LoopRunEvent = components["schemas"]["LoopRunEvent"];
 export type LoopRunEventListResponse = components["schemas"]["LoopRunEventListResponse"];
 export type LoopRunLifecycleFrame = components["schemas"]["LoopRunLifecycleFrame"];
 export type LoopRunListResponse = components["schemas"]["LoopRunListResponse"];
+export type LoopRunQueueReason = components["schemas"]["LoopRunQueueReason"];
 export type LoopRunSource = components["schemas"]["LoopRunSource"];
 export type LoopRunStatus = components["schemas"]["LoopRunStatus"];
 export type LoopRunStep = components["schemas"]["LoopRunStep"];

@@ -11,6 +11,15 @@ Session transcript rework, synced from the mobius-cloud spec.
 is ephemeral (never persisted) — the stream is a view over the durable log
 spliced with a live channel, keyed by one cursor.
 
+### Added
+
+- SDKs: loop run records expose `queue_reason` and `plan_concurrency_limit`.
+  `queue_reason` (new `LoopRunQueueReason` enum: `plan_concurrency`,
+  `loop_policy`, `trigger_concurrency`) is present only while `status` is
+  `queued` and says which gate placed the run in the durable queue;
+  `plan_concurrency_limit` is the org-wide concurrent-run ceiling stamped at
+  run start, present when the run was evaluated against a plan limit.
+
 ### Changed
 
 - SDKs / CLI (BREAKING): the session events endpoint

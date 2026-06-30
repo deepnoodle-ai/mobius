@@ -1027,7 +1027,7 @@ export interface paths {
          *
          *     The stream follows the session's active turn and closes once the session is idle — no queued or running turn — after the active turn's committed rows and a terminal `turn.completed` / `turn.failed` / `turn.cancelled` frame have been delivered. A later turn is a new activity tail; open a new stream for it or use the streaming `POST .../turns` response.
          *
-         *     Live-only `generation.delta`, `session.message.preview`, `tool.call`, and `tool.result` frames carry no `id:`, are interleaved best-effort for low-latency rendering, and are never persisted or replayed — on reconnect the durable message frames are the source of truth.
+         *     Live-only `generation.delta`, `session.message.preview`, `session.resync`, `tool.call`, and `tool.result` frames carry no `id:`, are interleaved best-effort for low-latency rendering, and are never persisted or replayed — on reconnect the durable message frames are the source of truth.
          */
         get: operations["streamSession"];
         put?: never;
@@ -3910,14 +3910,16 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /** @description One content block in a session transcript message — the canonical, frozen JSON shape Mobius persists and replays, discriminated by `type`. The variants are `text`, `thinking`, `tool_use`, `tool_result`, and `image`. Each variant permits provider-specific extra fields (citations, signatures, cache hints, and the like), and unknown fields are preserved rather than rejected, so the transcript round-trips losslessly across providers. */
+        SessionContentBlock: components["schemas"]["SessionTextBlock"] | components["schemas"]["SessionThinkingBlock"] | components["schemas"]["SessionToolUseBlock"] | components["schemas"]["SessionToolResultBlock"] | components["schemas"]["SessionImageBlock"];
         /** @description The result of a tool call. */
         SessionToolResultBlock: {
             /** @enum {string} */
             type: "tool_result";
             /** @description The tool_use id this result answers. */
             tool_use_id: string;
-            /** @description Result payload — a string or an array of typed sub-blocks (the same block shape as a transcript message). */
-            content?: unknown;
+            /** @description Result payload — a string, or an array of typed sub-blocks using the same canonical block shape as a transcript message. */
+            content?: string | components["schemas"]["SessionContentBlock"][];
             /** @description True when the tool reported a failure. */
             is_error?: boolean;
         } & {
@@ -3934,8 +3936,6 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
-        /** @description One content block in a session transcript message — the canonical, frozen JSON shape Mobius persists and replays, discriminated by `type`. The variants are `text`, `thinking`, `tool_use`, `tool_result`, and `image`. Each variant permits provider-specific extra fields (citations, signatures, cache hints, and the like), and unknown fields are preserved rather than rejected, so the transcript round-trips losslessly across providers. */
-        SessionContentBlock: components["schemas"]["SessionTextBlock"] | components["schemas"]["SessionThinkingBlock"] | components["schemas"]["SessionToolUseBlock"] | components["schemas"]["SessionToolResultBlock"] | components["schemas"]["SessionImageBlock"];
         /**
          * @description Transcript entry type: `message` or `compaction`.
          * @enum {string}
@@ -5420,6 +5420,10 @@ export interface components {
             loop_version: number;
             /** @description Current lifecycle state of this run. */
             status: components["schemas"]["LoopRunStatus"];
+            /** @description Gate that placed this run in the durable queue. Present only while `status` is `queued`. */
+            queue_reason?: components["schemas"]["LoopRunQueueReason"];
+            /** @description Org-wide concurrent-run ceiling stamped at run start. Present when the run was evaluated against a plan concurrency limit. */
+            plan_concurrency_limit?: number;
             /** @description Terminal reason recorded when the run stops. */
             stop_reason?: components["schemas"]["LoopRunStopReason"];
             /**
@@ -5500,6 +5504,11 @@ export interface components {
          * @enum {string}
          */
         LoopRunStatus: "queued" | "running" | "suspended" | "completed" | "failed" | "cancelled";
+        /**
+         * @description Why a run is waiting in the queue. `plan_concurrency` means the organization's current plan has no active-run capacity available. `loop_policy` and `trigger_concurrency` mean authored concurrency policy deferred the run.
+         * @enum {string}
+         */
+        LoopRunQueueReason: "plan_concurrency" | "loop_policy" | "trigger_concurrency";
         /**
          * @description Why a run stopped. Set exactly once when the run reaches a terminal status; absent on non-terminal runs. `status` carries the lifecycle state and `error_type` classifies the error when one occurred; `stop_reason` classifies the stop itself.
          *
@@ -9353,7 +9362,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description A Server-Sent Events stream of session activity. Each frame is `event: <event type>` followed by a `data:` line carrying the JSON-encoded payload. Durable message frames carry an `id:` line with the message `sequence` for `Last-Event-ID` resume; live-only frames (`generation.delta`, `session.message.preview`, `tool.call`, `tool.result`) do not carry `id:` and cannot be replayed. */
+            /** @description A Server-Sent Events stream of session activity. Each frame is `event: <event type>` followed by a `data:` line carrying the JSON-encoded payload. Durable message frames carry an `id:` line with the message `sequence` for `Last-Event-ID` resume; live-only frames (`generation.delta`, `session.message.preview`, `session.resync`, `tool.call`, `tool.result`) do not carry `id:` and cannot be replayed. */
             200: {
                 headers: {
                     [name: string]: unknown;

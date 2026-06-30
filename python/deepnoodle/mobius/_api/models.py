@@ -2676,25 +2676,6 @@ class Type22(StrEnum):
     tool_result = 'tool_result'
 
 
-class SessionToolResultBlock(BaseModel):
-    """
-    The result of a tool call.
-    """
-
-    model_config = ConfigDict(
-        extra='allow',
-    )
-    type: Type22
-    tool_use_id: str = Field(..., description='The tool_use id this result answers.')
-    content: Any | None = Field(
-        None,
-        description='Result payload — a string or an array of typed sub-blocks (the same block shape as a transcript message).',
-    )
-    is_error: bool | None = Field(
-        None, description='True when the tool reported a failure.'
-    )
-
-
 class Type23(StrEnum):
     image = 'image'
 
@@ -2713,27 +2694,6 @@ class SessionImageBlock(BaseModel):
     )
 
 
-class SessionContentBlock(
-    RootModel[
-        SessionTextBlock
-        | SessionThinkingBlock
-        | SessionToolUseBlock
-        | SessionToolResultBlock
-        | SessionImageBlock
-    ]
-):
-    root: (
-        SessionTextBlock
-        | SessionThinkingBlock
-        | SessionToolUseBlock
-        | SessionToolResultBlock
-        | SessionImageBlock
-    ) = Field(
-        ...,
-        description='One content block in a session transcript message — the canonical, frozen JSON shape Mobius persists and replays, discriminated by `type`. The variants are `text`, `thinking`, `tool_use`, `tool_result`, and `image`. Each variant permits provider-specific extra fields (citations, signatures, cache hints, and the like), and unknown fields are preserved rather than rejected, so the transcript round-trips losslessly across providers.',
-    )
-
-
 class SessionMessageEntryType(StrEnum):
     """
     Transcript entry type: `message` or `compaction`.
@@ -2741,68 +2701,6 @@ class SessionMessageEntryType(StrEnum):
 
     message = 'message'
     compaction = 'compaction'
-
-
-class SessionMessage(BaseModel):
-    """
-    One persisted message or compaction entry in a session transcript.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    id: str = Field(..., description='Stable message identifier.')
-    session_id: str = Field(..., description='Session this message belongs to.')
-    agent_id: str = Field(..., description='Agent that owns the parent session.')
-    role: SessionMessageRole = Field(
-        ..., description='Role of this message in the transcript.'
-    )
-    content: list[SessionContentBlock] = Field(
-        ...,
-        description='Ordered canonical content blocks (text, thinking, tool_use, tool_result, image).',
-    )
-    entry_type: SessionMessageEntryType = Field(
-        ..., description='Whether this row is a normal message or a compaction summary.'
-    )
-    covers_through_sequence: int | None = Field(
-        None,
-        description='For `compaction` messages, the highest sequence number this summary covers.',
-    )
-    sequence: int = Field(
-        ...,
-        description='Monotonic per-session sequence number assigned at append time.',
-    )
-    turn_id: str | None = Field(
-        None,
-        description='AgentTurn that produced this message. Run, step, and channel identity for the message are read from this turn. Absent for compaction summaries and messages not tied to a turn.',
-    )
-    metadata: dict[str, Any] | None = Field(
-        None, description='Free-form caller metadata for this message.'
-    )
-    created_at: AwareDatetime = Field(
-        ..., description='Server timestamp when the message was appended.'
-    )
-
-
-class SessionMessageListResponse(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    items: list[SessionMessage] = Field(
-        ..., description='Messages in this page, ordered by `sequence` ascending.'
-    )
-    has_more: bool | None = Field(
-        None,
-        description="True when more messages exist past this page in the query's scan direction.",
-    )
-    next_sequence: int | None = Field(
-        None,
-        description='Sequence of the last (highest) item — pass back as `after_sequence` to page forward (newer).',
-    )
-    prev_sequence: int | None = Field(
-        None,
-        description='Sequence of the first (lowest) item — pass back as `before_sequence` with `order=desc` to page backward (older). After paginating history, open the stream with `after_sequence=next_sequence` to receive the in-flight turn and everything after it — the stream and the messages API share one `sequence` cursor, so there is no overlap and no gap.',
-    )
 
 
 class SelectorType(StrEnum):
@@ -3061,46 +2959,6 @@ class EventType1(StrEnum):
     session_message_preview = 'session.message.preview'
 
 
-class SessionMessagePreviewFrame(BaseModel):
-    """
-    Live-only, SessionMessage-compatible transcript preview for an in-flight agent response segment. It carries no durable `seq`, transcript `sequence`, or stable `message_id`; the committed row later replaces it by `turn_id` plus `metadata.response_message_index`.
-    """
-
-    model_config = ConfigDict(
-        extra='allow',
-    )
-    event_type: EventType1
-    id: str = Field(
-        ...,
-        description='Provisional live id. Do not persist or use as the durable message id.',
-    )
-    session_id: str = Field(..., description='Session this preview belongs to.')
-    agent_id: str | None = Field(
-        None, description='Agent that owns the parent session, when known.'
-    )
-    run_id: str | None = Field(
-        None, description='Loop run that produced the preview, when applicable.'
-    )
-    turn_id: str = Field(..., description='Agent turn that produced the preview.')
-    live_sequence: int | None = Field(
-        None,
-        description='Monotonic per-turn sequence across all live-only session frames; use to detect dropped live frames.',
-    )
-    role: SessionMessageRole
-    entry_type: SessionMessageEntryType
-    content: list[SessionContentBlock] = Field(
-        ...,
-        description='Ordered content blocks using the same canonical block shape as SessionMessage.',
-    )
-    metadata: dict[str, Any] = Field(
-        ...,
-        description='Must include `response_message_index`, the handoff key shared with the durable transcript row.',
-    )
-    emitted_at: AwareDatetime | None = Field(
-        None, description='Server timestamp when this live preview frame was emitted.'
-    )
-
-
 class SessionLiveSnapshot(BaseModel):
     """
     Ephemeral, process-local live transcript snapshot for an in-flight turn.
@@ -3143,33 +3001,6 @@ class SessionResyncFrame(BaseModel):
     )
 
 
-class SessionUserMessagePayload(BaseModel):
-    """
-    Payload of a `user.message` content event: the durable encoding of one non-assistant transcript message — caller input, or a user-role message carrying tool results. It mirrors the transcript row exactly, carrying the message identity (`message_id` + `sequence`) and full content. Replaying these events reconstructs the same view as reading the messages API.
-    """
-
-    model_config = ConfigDict(
-        extra='allow',
-    )
-    message_id: str = Field(
-        ..., description='Id of the transcript message this event mirrors.'
-    )
-    sequence: int = Field(
-        ..., description="The mirrored message's per-session transcript sequence."
-    )
-    role: str = Field(
-        ...,
-        description='Transcript role of the message (e.g. `user`, `system`, or a user-role message carrying tool results).',
-    )
-    content: list[SessionContentBlock] = Field(
-        ...,
-        description="The message's full canonical content blocks (text, tool_result, …).",
-    )
-    turn_id: str | None = Field(
-        None, description='The agent turn that produced this message, when applicable.'
-    )
-
-
 class TurnStartedPayload(BaseModel):
     """
     Payload of a `turn.started` event. Empty: the turn is identified by the envelope `turn_id`, so nothing is duplicated in the payload.
@@ -3177,30 +3008,6 @@ class TurnStartedPayload(BaseModel):
 
     model_config = ConfigDict(
         extra='allow',
-    )
-
-
-class AgentMessagePayload(BaseModel):
-    """
-    Payload of an `agent.message` content event: the durable encoding of one assistant transcript message. Carries the message's full structured content (text, thinking, tool_use) plus the message identity (`message_id` + `sequence`). Replaying these events reconstructs the same view as reading the messages API.
-    """
-
-    model_config = ConfigDict(
-        extra='allow',
-    )
-    message_id: str = Field(
-        ..., description='Id of the transcript message this event mirrors.'
-    )
-    sequence: int = Field(
-        ..., description="The mirrored message's per-session transcript sequence."
-    )
-    role: str = Field(..., description='Always `assistant`.')
-    content: list[SessionContentBlock] = Field(
-        ...,
-        description="The assistant message's full canonical content blocks (text, thinking, tool_use).",
-    )
-    turn_id: str | None = Field(
-        None, description='The agent turn that produced this message.'
     )
 
 
@@ -3283,38 +3090,6 @@ class TurnCancelledPayload(BaseModel):
         extra='allow',
     )
     reason: str | None = None
-
-
-class CompactionCreatedPayload(BaseModel):
-    """
-    Payload of a `compaction.created` event, emitted when the session transcript is summarized. The event is non-terminal: it never closes the session stream, so a live consumer observes a compaction landing inline.
-    """
-
-    model_config = ConfigDict(
-        extra='allow',
-    )
-    message_id: str | None = Field(
-        None,
-        description='Id of the compaction summary message appended to the transcript.',
-    )
-    sequence: int | None = Field(
-        None, description="The summary message's per-session transcript sequence."
-    )
-    role: str | None = Field(None, description='Transcript role of the summary entry.')
-    content: list[SessionContentBlock] | None = Field(
-        None,
-        description="The summary's full canonical content blocks, so replaying the stream reconstructs the compaction entry exactly.",
-    )
-    covers_through_sequence: int | None = Field(
-        None,
-        description='Highest message sequence the new summary covers — the before/after boundary.',
-    )
-    message_count: int | None = Field(
-        None, description='Number of transcript messages folded into this summary.'
-    )
-    summary_model: str | None = Field(
-        None, description='Model that produced the summary.'
-    )
 
 
 class AppendSessionMessage(BaseModel):
@@ -4144,6 +3919,16 @@ class LoopRunStatus(StrEnum):
     completed = 'completed'
     failed = 'failed'
     cancelled = 'cancelled'
+
+
+class LoopRunQueueReason(StrEnum):
+    """
+    Why a run is waiting in the queue. `plan_concurrency` means the organization's current plan has no active-run capacity available. `loop_policy` and `trigger_concurrency` mean authored concurrency policy deferred the run.
+    """
+
+    plan_concurrency = 'plan_concurrency'
+    loop_policy = 'loop_policy'
+    trigger_concurrency = 'trigger_concurrency'
 
 
 class LoopRunStopReason(StrEnum):
@@ -5575,43 +5360,6 @@ class SessionListResponse(BaseModel):
     )
 
 
-class SessionStreamFrame(
-    RootModel[
-        SessionUserMessagePayload
-        | AgentMessagePayload
-        | CompactionCreatedPayload
-        | TurnStartedPayload
-        | TurnWaitingPayload
-        | TurnCompletedPayload
-        | TurnFailedPayload
-        | TurnCancelledPayload
-        | SessionMessagePreviewFrame
-        | SessionResyncFrame
-        | ToolCallPayload
-        | ToolResultPayload
-        | GenerationDeltaFrame
-    ]
-):
-    root: (
-        SessionUserMessagePayload
-        | AgentMessagePayload
-        | CompactionCreatedPayload
-        | TurnStartedPayload
-        | TurnWaitingPayload
-        | TurnCompletedPayload
-        | TurnFailedPayload
-        | TurnCancelledPayload
-        | SessionMessagePreviewFrame
-        | SessionResyncFrame
-        | ToolCallPayload
-        | ToolResultPayload
-        | GenerationDeltaFrame
-    ) = Field(
-        ...,
-        description='JSON payload of a single `data:` line on the session SSE stream, paired with an `event: <event type>` line. Durable message frames (`user.message`, `agent.message`, `compaction.created`) are replayed from the transcript and carry an SSE `id: <sequence>` — that `sequence` is the only cursor a client persists for `after_sequence` / `Last-Event-ID` resume. Terminal `turn.*` frames mark the active turn settling. `session.message.preview`, `session.resync`, `tool.call`, `tool.result`, and `generation.delta` frames are live-only and carry no `id:`.',
-    )
-
-
 class AppendSessionMessagesRequest(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
@@ -5949,6 +5697,14 @@ class LoopRun(BaseModel):
     )
     status: LoopRunStatus = Field(
         ..., description='Current lifecycle state of this run.'
+    )
+    queue_reason: LoopRunQueueReason | None = Field(
+        None,
+        description='Gate that placed this run in the durable queue. Present only while `status` is `queued`.',
+    )
+    plan_concurrency_limit: int | None = Field(
+        None,
+        description='Org-wide concurrent-run ceiling stamped at run start. Present when the run was evaluated against a plan concurrency limit.',
     )
     stop_reason: LoopRunStopReason | None = Field(
         None, description='Terminal reason recorded when the run stops.'
@@ -6848,3 +6604,273 @@ class UpdateLoopRequest(BaseModel):
     tags: TagMap | None = Field(
         None, description='Replacement labels; send an empty object to clear all tags.'
     )
+
+
+class SessionToolResultBlock(BaseModel):
+    """
+    The result of a tool call.
+    """
+
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    type: Type22
+    tool_use_id: str = Field(..., description='The tool_use id this result answers.')
+    content: str | list[SessionContentBlock] | None = Field(
+        None,
+        description='Result payload — a string, or an array of typed sub-blocks using the same canonical block shape as a transcript message.',
+    )
+    is_error: bool | None = Field(
+        None, description='True when the tool reported a failure.'
+    )
+
+
+class SessionMessage(BaseModel):
+    """
+    One persisted message or compaction entry in a session transcript.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str = Field(..., description='Stable message identifier.')
+    session_id: str = Field(..., description='Session this message belongs to.')
+    agent_id: str = Field(..., description='Agent that owns the parent session.')
+    role: SessionMessageRole = Field(
+        ..., description='Role of this message in the transcript.'
+    )
+    content: list[SessionContentBlock] = Field(
+        ...,
+        description='Ordered canonical content blocks (text, thinking, tool_use, tool_result, image).',
+    )
+    entry_type: SessionMessageEntryType = Field(
+        ..., description='Whether this row is a normal message or a compaction summary.'
+    )
+    covers_through_sequence: int | None = Field(
+        None,
+        description='For `compaction` messages, the highest sequence number this summary covers.',
+    )
+    sequence: int = Field(
+        ...,
+        description='Monotonic per-session sequence number assigned at append time.',
+    )
+    turn_id: str | None = Field(
+        None,
+        description='AgentTurn that produced this message. Run, step, and channel identity for the message are read from this turn. Absent for compaction summaries and messages not tied to a turn.',
+    )
+    metadata: dict[str, Any] | None = Field(
+        None, description='Free-form caller metadata for this message.'
+    )
+    created_at: AwareDatetime = Field(
+        ..., description='Server timestamp when the message was appended.'
+    )
+
+
+class SessionMessageListResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    items: list[SessionMessage] = Field(
+        ..., description='Messages in this page, ordered by `sequence` ascending.'
+    )
+    has_more: bool | None = Field(
+        None,
+        description="True when more messages exist past this page in the query's scan direction.",
+    )
+    next_sequence: int | None = Field(
+        None,
+        description='Sequence of the last (highest) item — pass back as `after_sequence` to page forward (newer).',
+    )
+    prev_sequence: int | None = Field(
+        None,
+        description='Sequence of the first (lowest) item — pass back as `before_sequence` with `order=desc` to page backward (older). After paginating history, open the stream with `after_sequence=next_sequence` to receive the in-flight turn and everything after it — the stream and the messages API share one `sequence` cursor, so there is no overlap and no gap.',
+    )
+
+
+class SessionMessagePreviewFrame(BaseModel):
+    """
+    Live-only, SessionMessage-compatible transcript preview for an in-flight agent response segment. It carries no durable `seq`, transcript `sequence`, or stable `message_id`; the committed row later replaces it by `turn_id` plus `metadata.response_message_index`.
+    """
+
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    event_type: EventType1
+    id: str = Field(
+        ...,
+        description='Provisional live id. Do not persist or use as the durable message id.',
+    )
+    session_id: str = Field(..., description='Session this preview belongs to.')
+    agent_id: str | None = Field(
+        None, description='Agent that owns the parent session, when known.'
+    )
+    run_id: str | None = Field(
+        None, description='Loop run that produced the preview, when applicable.'
+    )
+    turn_id: str = Field(..., description='Agent turn that produced the preview.')
+    live_sequence: int | None = Field(
+        None,
+        description='Monotonic per-turn sequence across all live-only session frames; use to detect dropped live frames.',
+    )
+    role: SessionMessageRole
+    entry_type: SessionMessageEntryType
+    content: list[SessionContentBlock] = Field(
+        ...,
+        description='Ordered content blocks using the same canonical block shape as SessionMessage.',
+    )
+    metadata: dict[str, Any] = Field(
+        ...,
+        description='Must include `response_message_index`, the handoff key shared with the durable transcript row.',
+    )
+    emitted_at: AwareDatetime | None = Field(
+        None, description='Server timestamp when this live preview frame was emitted.'
+    )
+
+
+class SessionUserMessagePayload(BaseModel):
+    """
+    Payload of a `user.message` content event: the durable encoding of one non-assistant transcript message — caller input, or a user-role message carrying tool results. It mirrors the transcript row exactly, carrying the message identity (`message_id` + `sequence`) and full content. Replaying these events reconstructs the same view as reading the messages API.
+    """
+
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    message_id: str = Field(
+        ..., description='Id of the transcript message this event mirrors.'
+    )
+    sequence: int = Field(
+        ..., description="The mirrored message's per-session transcript sequence."
+    )
+    role: str = Field(
+        ...,
+        description='Transcript role of the message (e.g. `user`, `system`, or a user-role message carrying tool results).',
+    )
+    content: list[SessionContentBlock] = Field(
+        ...,
+        description="The message's full canonical content blocks (text, tool_result, …).",
+    )
+    turn_id: str | None = Field(
+        None, description='The agent turn that produced this message, when applicable.'
+    )
+
+
+class AgentMessagePayload(BaseModel):
+    """
+    Payload of an `agent.message` content event: the durable encoding of one assistant transcript message. Carries the message's full structured content (text, thinking, tool_use) plus the message identity (`message_id` + `sequence`). Replaying these events reconstructs the same view as reading the messages API.
+    """
+
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    message_id: str = Field(
+        ..., description='Id of the transcript message this event mirrors.'
+    )
+    sequence: int = Field(
+        ..., description="The mirrored message's per-session transcript sequence."
+    )
+    role: str = Field(..., description='Always `assistant`.')
+    content: list[SessionContentBlock] = Field(
+        ...,
+        description="The assistant message's full canonical content blocks (text, thinking, tool_use).",
+    )
+    turn_id: str | None = Field(
+        None, description='The agent turn that produced this message.'
+    )
+
+
+class CompactionCreatedPayload(BaseModel):
+    """
+    Payload of a `compaction.created` event, emitted when the session transcript is summarized. The event is non-terminal: it never closes the session stream, so a live consumer observes a compaction landing inline.
+    """
+
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    message_id: str | None = Field(
+        None,
+        description='Id of the compaction summary message appended to the transcript.',
+    )
+    sequence: int | None = Field(
+        None, description="The summary message's per-session transcript sequence."
+    )
+    role: str | None = Field(None, description='Transcript role of the summary entry.')
+    content: list[SessionContentBlock] | None = Field(
+        None,
+        description="The summary's full canonical content blocks, so replaying the stream reconstructs the compaction entry exactly.",
+    )
+    covers_through_sequence: int | None = Field(
+        None,
+        description='Highest message sequence the new summary covers — the before/after boundary.',
+    )
+    message_count: int | None = Field(
+        None, description='Number of transcript messages folded into this summary.'
+    )
+    summary_model: str | None = Field(
+        None, description='Model that produced the summary.'
+    )
+
+
+class SessionContentBlock(
+    RootModel[
+        SessionTextBlock
+        | SessionThinkingBlock
+        | SessionToolUseBlock
+        | SessionToolResultBlock
+        | SessionImageBlock
+    ]
+):
+    root: (
+        SessionTextBlock
+        | SessionThinkingBlock
+        | SessionToolUseBlock
+        | SessionToolResultBlock
+        | SessionImageBlock
+    ) = Field(
+        ...,
+        description='One content block in a session transcript message — the canonical, frozen JSON shape Mobius persists and replays, discriminated by `type`. The variants are `text`, `thinking`, `tool_use`, `tool_result`, and `image`. Each variant permits provider-specific extra fields (citations, signatures, cache hints, and the like), and unknown fields are preserved rather than rejected, so the transcript round-trips losslessly across providers.',
+    )
+
+
+class SessionStreamFrame(
+    RootModel[
+        SessionUserMessagePayload
+        | AgentMessagePayload
+        | CompactionCreatedPayload
+        | TurnStartedPayload
+        | TurnWaitingPayload
+        | TurnCompletedPayload
+        | TurnFailedPayload
+        | TurnCancelledPayload
+        | SessionMessagePreviewFrame
+        | SessionResyncFrame
+        | ToolCallPayload
+        | ToolResultPayload
+        | GenerationDeltaFrame
+    ]
+):
+    root: (
+        SessionUserMessagePayload
+        | AgentMessagePayload
+        | CompactionCreatedPayload
+        | TurnStartedPayload
+        | TurnWaitingPayload
+        | TurnCompletedPayload
+        | TurnFailedPayload
+        | TurnCancelledPayload
+        | SessionMessagePreviewFrame
+        | SessionResyncFrame
+        | ToolCallPayload
+        | ToolResultPayload
+        | GenerationDeltaFrame
+    ) = Field(
+        ...,
+        description='JSON payload of a single `data:` line on the session SSE stream, paired with an `event: <event type>` line. Durable message frames (`user.message`, `agent.message`, `compaction.created`) are replayed from the transcript and carry an SSE `id: <sequence>` — that `sequence` is the only cursor a client persists for `after_sequence` / `Last-Event-ID` resume. Terminal `turn.*` frames mark the active turn settling. `session.message.preview`, `session.resync`, `tool.call`, `tool.result`, and `generation.delta` frames are live-only and carry no `id:`.',
+    )
+
+
+SessionToolResultBlock.model_rebuild()
+SessionMessage.model_rebuild()
+SessionMessagePreviewFrame.model_rebuild()
+SessionUserMessagePayload.model_rebuild()
+AgentMessagePayload.model_rebuild()
+CompactionCreatedPayload.model_rebuild()

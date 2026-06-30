@@ -1088,6 +1088,27 @@ func (e LoopModelRouteMode) Valid() bool {
 	}
 }
 
+// Defines values for LoopRunQueueReason.
+const (
+	LoopRunQueueReasonLoopPolicy         LoopRunQueueReason = "loop_policy"
+	LoopRunQueueReasonPlanConcurrency    LoopRunQueueReason = "plan_concurrency"
+	LoopRunQueueReasonTriggerConcurrency LoopRunQueueReason = "trigger_concurrency"
+)
+
+// Valid indicates whether the value is a known member of the LoopRunQueueReason enum.
+func (e LoopRunQueueReason) Valid() bool {
+	switch e {
+	case LoopRunQueueReasonLoopPolicy:
+		return true
+	case LoopRunQueueReasonPlanConcurrency:
+		return true
+	case LoopRunQueueReasonTriggerConcurrency:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for LoopRunSourceType.
 const (
 	LoopRunSourceTypeApi     LoopRunSourceType = "api"
@@ -4903,6 +4924,12 @@ type LoopRun struct {
 	// ParentStepKey Step key within the parent run's loop that triggered this run. Present only on child runs.
 	ParentStepKey *string `json:"parent_step_key,omitempty"`
 
+	// PlanConcurrencyLimit Org-wide concurrent-run ceiling stamped at run start. Present when the run was evaluated against a plan concurrency limit.
+	PlanConcurrencyLimit *int `json:"plan_concurrency_limit,omitempty"`
+
+	// QueueReason Why a run is waiting in the queue. `plan_concurrency` means the organization's current plan has no active-run capacity available. `loop_policy` and `trigger_concurrency` mean authored concurrency policy deferred the run.
+	QueueReason *LoopRunQueueReason `json:"queue_reason,omitempty"`
+
 	// Result Final result payload. When the loop declares an `output:` block this is that block rendered at completion; otherwise it is the run's accumulated step outputs, keyed by step id. Absent until the run terminates successfully.
 	Result *map[string]interface{} `json:"result,omitempty"`
 
@@ -4985,6 +5012,9 @@ type LoopRunListResponse struct {
 	// NextCursor Opaque cursor for the next page; absent when no more results.
 	NextCursor *string `json:"next_cursor,omitempty"`
 }
+
+// LoopRunQueueReason Why a run is waiting in the queue. `plan_concurrency` means the organization's current plan has no active-run capacity available. `loop_policy` and `trigger_concurrency` mean authored concurrency policy deferred the run.
+type LoopRunQueueReason string
 
 // LoopRunSource Optional attribution for the call that started this run. Triggers and HTTP trigger dispatch populate `trigger_id` and `trigger_fire_id`. API callers usually only set `type` and `id`.
 type LoopRunSource struct {
@@ -5990,8 +6020,8 @@ type SessionThinkingBlockType string
 
 // SessionToolResultBlock The result of a tool call.
 type SessionToolResultBlock struct {
-	// Content Result payload — a string or an array of typed sub-blocks (the same block shape as a transcript message).
-	Content interface{} `json:"content,omitempty"`
+	// Content Result payload — a string, or an array of typed sub-blocks using the same canonical block shape as a transcript message.
+	Content *SessionToolResultBlock_Content `json:"content,omitempty"`
 
 	// IsError True when the tool reported a failure.
 	IsError *bool `json:"is_error,omitempty"`
@@ -6000,6 +6030,17 @@ type SessionToolResultBlock struct {
 	ToolUseId            string                     `json:"tool_use_id"`
 	Type                 SessionToolResultBlockType `json:"type"`
 	AdditionalProperties map[string]interface{}     `json:"-"`
+}
+
+// SessionToolResultBlockContent0 defines model for .
+type SessionToolResultBlockContent0 = string
+
+// SessionToolResultBlockContent1 defines model for .
+type SessionToolResultBlockContent1 = []SessionContentBlock
+
+// SessionToolResultBlock_Content Result payload — a string, or an array of typed sub-blocks using the same canonical block shape as a transcript message.
+type SessionToolResultBlock_Content struct {
+	union json.RawMessage
 }
 
 // SessionToolResultBlockType defines model for SessionToolResultBlock.Type.
@@ -10596,9 +10637,11 @@ func (a SessionToolResultBlock) MarshalJSON() ([]byte, error) {
 	var err error
 	object := make(map[string]json.RawMessage)
 
-	object["content"], err = json.Marshal(a.Content)
-	if err != nil {
-		return nil, fmt.Errorf("error marshaling 'content': %w", err)
+	if a.Content != nil {
+		object["content"], err = json.Marshal(a.Content)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'content': %w", err)
+		}
 	}
 
 	if a.IsError != nil {
@@ -14162,6 +14205,68 @@ func (t SessionStreamFrame) MarshalJSON() ([]byte, error) {
 }
 
 func (t *SessionStreamFrame) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsSessionToolResultBlockContent0 returns the union data inside the SessionToolResultBlock_Content as a SessionToolResultBlockContent0
+func (t SessionToolResultBlock_Content) AsSessionToolResultBlockContent0() (SessionToolResultBlockContent0, error) {
+	var body SessionToolResultBlockContent0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSessionToolResultBlockContent0 overwrites any union data inside the SessionToolResultBlock_Content as the provided SessionToolResultBlockContent0
+func (t *SessionToolResultBlock_Content) FromSessionToolResultBlockContent0(v SessionToolResultBlockContent0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSessionToolResultBlockContent0 performs a merge with any union data inside the SessionToolResultBlock_Content, using the provided SessionToolResultBlockContent0
+func (t *SessionToolResultBlock_Content) MergeSessionToolResultBlockContent0(v SessionToolResultBlockContent0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSessionToolResultBlockContent1 returns the union data inside the SessionToolResultBlock_Content as a SessionToolResultBlockContent1
+func (t SessionToolResultBlock_Content) AsSessionToolResultBlockContent1() (SessionToolResultBlockContent1, error) {
+	var body SessionToolResultBlockContent1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSessionToolResultBlockContent1 overwrites any union data inside the SessionToolResultBlock_Content as the provided SessionToolResultBlockContent1
+func (t *SessionToolResultBlock_Content) FromSessionToolResultBlockContent1(v SessionToolResultBlockContent1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSessionToolResultBlockContent1 performs a merge with any union data inside the SessionToolResultBlock_Content, using the provided SessionToolResultBlockContent1
+func (t *SessionToolResultBlock_Content) MergeSessionToolResultBlockContent1(v SessionToolResultBlockContent1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t SessionToolResultBlock_Content) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *SessionToolResultBlock_Content) UnmarshalJSON(b []byte) error {
 	err := t.union.UnmarshalJSON(b)
 	return err
 }
