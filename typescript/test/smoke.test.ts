@@ -296,6 +296,84 @@ test("client: terminal run status helper includes cancelled", () => {
   assert.equal(isTerminalRunStatus("running"), false);
 });
 
+test("client: invokeAgent posts the compound invoke request shape", async () => {
+  let requestedURL = "";
+  let requestBody = "";
+  const restore = installFakeFetch({
+    status: 202,
+    body: turnAck("sess_1", "turn_1", 7),
+    capture: (input, init) => {
+      requestedURL = typeof input === "string" ? input : input.toString();
+      requestBody = String(init?.body ?? "");
+    },
+  });
+  try {
+    const client = new Client({
+      apiKey: "mbx_test",
+      baseURL: "https://api.example.invalid",
+      project: "test-project",
+    });
+    const ack = await client.invokeAgent({
+      agentId: "agent_1",
+      content: [{ type: "text", text: "hi" }],
+      idempotencyKey: "evt_1",
+      session: { session_key: "app:acct_1:user_2" },
+    });
+    assert.equal(ack.after_sequence, 7);
+    assert.equal(ack.session.id, "sess_1");
+  } finally {
+    restore();
+  }
+  assert.equal(
+    requestedURL,
+    "https://api.example.invalid/v1/projects/test-project/agents/invoke",
+  );
+  assert.match(requestBody, /"agent_ref":\{"id":"agent_1"\}/);
+  assert.match(requestBody, /"idempotency_key":"evt_1"/);
+  assert.match(requestBody, /"session_key":"app:acct_1:user_2"/);
+});
+
+test("client: invokeAgent requires agent ref and content", async () => {
+  const client = new Client({ apiKey: "mbx_test", project: "test-project" });
+  await assert.rejects(() =>
+    client.invokeAgent({ content: [{ type: "text", text: "hi" }] }),
+  );
+  await assert.rejects(() => client.invokeAgent({ agentId: "agent_1", content: [] }));
+});
+
+test("client: invokeAgentStream streams session frames inline", async () => {
+  let acceptHeader: string | null = null;
+  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    acceptHeader = new Headers(init?.headers).get("Accept");
+    return new Response(
+      'event: turn.completed\ndata: {"usage":{"input_tokens":42}}\n\n',
+      { status: 200, headers: { "Content-Type": "text/event-stream" } },
+    );
+  }) as typeof fetch;
+
+  const client = new Client({
+    apiKey: "mbx_test",
+    baseURL: "https://api.example.invalid",
+    project: "test-project",
+  });
+
+  const events = [];
+  for await (const ev of client.invokeAgentStream({
+    agentName: "support",
+    content: [{ type: "text", text: "hi" }],
+  })) {
+    events.push(ev);
+  }
+
+  assert.equal(acceptHeader, "text/event-stream");
+  assert.equal(events.length, 1);
+  assert.equal(events[0].eventType, "turn.completed");
+  assert.equal(
+    (events[0].data as { usage: { input_tokens: number } }).usage.input_tokens,
+    42,
+  );
+});
+
 function loopRun(id: string, status: string) {
   return {
     id,
@@ -307,5 +385,38 @@ function loopRun(id: string, status: string) {
     status,
     created_at: "2026-05-27T00:00:00Z",
     updated_at: "2026-05-27T00:00:00Z",
+  };
+}
+
+function turnAck(sessionId: string, turnId: string, afterSequence: number) {
+  return {
+    after_sequence: afterSequence,
+    session: {
+      id: sessionId,
+      agent_id: "agent_1",
+      origin: "api",
+      scope: "agent",
+      scope_name: "app:acct_1:user_2",
+      scope_ref_id: "agent_1",
+      session_key: "app:acct_1:user_2",
+      status: "active",
+      title: "",
+      visibility: "private",
+      version: 1,
+      message_count: 1,
+      token_input_total: 0,
+      token_output_total: 0,
+      created_at: "2026-05-27T00:00:00Z",
+      updated_at: "2026-05-27T00:00:00Z",
+    },
+    turn: {
+      id: turnId,
+      agent_id: "agent_1",
+      session_id: sessionId,
+      attempt: 1,
+      status: "running",
+      created_at: "2026-05-27T00:00:00Z",
+      updated_at: "2026-05-27T00:00:00Z",
+    },
   };
 }

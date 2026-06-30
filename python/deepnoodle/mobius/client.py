@@ -11,8 +11,13 @@ from urllib.parse import quote, urlencode, urlparse, urlunparse
 import httpx
 
 from ._api.models import (
+    AgentRef,
     CancelLoopRunRequest,
+    ChannelContext,
     CreateLoopRequest,
+    InvokeAgentRequest,
+    InvokeInput,
+    InvokeSessionSpec,
     Loop,
     LoopListResponse,
     LoopRun,
@@ -24,6 +29,7 @@ from ._api.models import (
     SignalLoopRunRequest,
     StartLoopRunRequest,
     TagMap,
+    TurnAck,
     UpdateLoopRequest,
 )
 from .errors import AuthRevokedError, RateLimitError
@@ -119,6 +125,39 @@ class RunEvent:
     event_type: str
     sequence: int
     payload: dict[str, Any] | None = None
+
+
+@dataclass
+class InvokeAgentOptions:
+    # Ordered content blocks (text, images, ...) for the caller's input
+    # message. Required.
+    content: list[dict[str, Any]]
+    # Agent identifier. Mutually exclusive with agent_name.
+    agent_id: str | None = None
+    # Project-unique agent name. Mutually exclusive with agent_id.
+    agent_name: str | None = None
+    # Dedup key scoped to the resolved session. A repeat call with the same
+    # key resolves the same session and resumes the existing turn rather
+    # than starting a second one — derive it from the provider event id for
+    # Slack/Telegram webhook retries.
+    idempotency_key: str | None = None
+    # Free-form caller metadata attached to the input message.
+    input_metadata: dict[str, Any] | None = None
+    # How to resolve or create the session this invocation runs in. Omit to
+    # use a single default session per agent in continue_or_create mode.
+    session: InvokeSessionSpec | None = None
+    # Optional messaging provider/channel routing context (Slack, Telegram,
+    # ...) recorded on the started turn.
+    channel_context: ChannelContext | None = None
+
+
+@dataclass
+class SessionStreamEvent:
+    # event_type is the authoritative SSE `event:` name (e.g.
+    # "turn.completed"); validate data with the payload model matching it —
+    # SessionStreamFrame is a reference-only union, ambiguous from data alone.
+    event_type: str
+    data: dict[str, Any]
 
 
 class LeaseLostError(Exception):
@@ -259,6 +298,48 @@ class Client:
         resp = self._request("POST", f"/v1/projects/{{project}}/runs/{quote(run_id, safe='')}/signals", json=body)
         return LoopRun.model_validate(resp.json())
 
+    # Resolves (or creates) a session, appends opts.content as the caller's
+    # input message, and starts an agent turn in one retryable call. Returns
+    # once the turn is accepted; use invoke_agent_stream to observe the
+    # turn's activity inline on the same connection instead.
+    def invoke_agent(self, opts: InvokeAgentOptions) -> TurnAck:
+        body = _invoke_agent_request(opts)
+        resp = self._request("POST", "/v1/projects/{project}/agents/invoke", json=body)
+        return TurnAck.model_validate(resp.json())
+
+    # Behaves like invoke_agent but streams the turn's activity inline on
+    # the same connection instead of waiting for a TurnAck.
+    def invoke_agent_stream(self, opts: InvokeAgentOptions) -> Iterator[SessionStreamEvent]:
+        body = _invoke_agent_request(opts)
+        payload = _model_dump(body)
+        path = self._path("/v1/projects/{project}/agents/invoke")
+        with self._client.stream(
+            "POST", path, json=payload, headers={"Accept": "text/event-stream"}
+        ) as resp:
+            resp.raise_for_status()
+            buf = ""
+            for chunk in resp.iter_text():
+                buf += chunk
+                while "\n\n" in buf:
+                    raw, buf = buf.split("\n\n", 1)
+                    lines = raw.splitlines()
+                    data = "\n".join(
+                        line.removeprefix("data:").lstrip()
+                        for line in lines
+                        if line.startswith("data:")
+                    )
+                    event_type = next(
+                        (
+                            line.removeprefix("event:").lstrip()
+                            for line in lines
+                            if line.startswith("event:")
+                        ),
+                        None,
+                    )
+                    if not data or not event_type:
+                        continue
+                    yield SessionStreamEvent(event_type=event_type, data=json.loads(data))
+
     def watch_run(self, run_id: str, since: int = 0) -> Iterator[RunEvent]:
         params = {"after_sequence": since} if since > 0 else None
         path = f"/v1/projects/{{project}}/runs/{quote(run_id, safe='')}/events.stream"
@@ -353,6 +434,23 @@ def _model_dump(value: Any) -> Any:
 
 def _drop_none(values: dict[str, Any]) -> dict[str, Any]:
     return {k: v for k, v in values.items() if v is not None}
+
+
+def _invoke_agent_request(opts: InvokeAgentOptions) -> InvokeAgentRequest:
+    if not opts.agent_id and not opts.agent_name:
+        raise ValueError("mobius: invoke agent: agent_id or agent_name is required")
+    if not opts.content:
+        raise ValueError("mobius: invoke agent: content is required")
+    return InvokeAgentRequest(
+        agent_ref=AgentRef(id=opts.agent_id, name=opts.agent_name),
+        input=InvokeInput(
+            content=opts.content,
+            idempotency_key=opts.idempotency_key,
+            metadata=opts.input_metadata,
+        ),
+        session=opts.session,
+        channel_context=opts.channel_context,
+    )
 
 
 def _merge_loop_fields(opts: Any) -> dict[str, Any]:
