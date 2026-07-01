@@ -66,6 +66,10 @@ var overrides = map[string]Override{
 	"getAPIKey":    {Command: "get"},
 	"deleteAPIKey": {Command: "delete"},
 
+	// --- blueprints -------------------------------------------------------
+	// Drop the redundant `blueprint` token; the group name already carries it.
+	"applyBlueprint": {Command: "apply"},
+
 	// --- environments -----------------------------------------------------
 	"listEnvironments":   {Command: "list"},
 	"createEnvironment":  {Command: "create"},
@@ -122,6 +126,7 @@ var groupDescriptions = map[string]string{
 	"agents":       "Agent identities, presence, and lifecycle",
 	"api-keys":     "Project and organization API keys",
 	"artifacts":    "Run output artifacts and storage quota",
+	"blueprints":   "Project blueprint application and bindings",
 	"catalog":      "Available actions and triggerable events",
 	"environments": "Managed execution environments",
 	"interactions": "Information, approval, and review requests between users and agents",

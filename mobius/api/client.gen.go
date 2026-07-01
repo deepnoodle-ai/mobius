@@ -386,6 +386,138 @@ func (e ArtifactVisibility) Valid() bool {
 	}
 }
 
+// Defines values for BlueprintActionInputType.
+const (
+	BlueprintActionInputTypeBuiltin BlueprintActionInputType = "builtin"
+	BlueprintActionInputTypeHttp    BlueprintActionInputType = "http"
+	BlueprintActionInputTypeWorker  BlueprintActionInputType = "worker"
+)
+
+// Valid indicates whether the value is a known member of the BlueprintActionInputType enum.
+func (e BlueprintActionInputType) Valid() bool {
+	switch e {
+	case BlueprintActionInputTypeBuiltin:
+		return true
+	case BlueprintActionInputTypeHttp:
+		return true
+	case BlueprintActionInputTypeWorker:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for BlueprintApplyMode.
+const (
+	BlueprintApplyModeApply   BlueprintApplyMode = "apply"
+	BlueprintApplyModePreview BlueprintApplyMode = "preview"
+)
+
+// Valid indicates whether the value is a known member of the BlueprintApplyMode enum.
+func (e BlueprintApplyMode) Valid() bool {
+	switch e {
+	case BlueprintApplyModeApply:
+		return true
+	case BlueprintApplyModePreview:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for BlueprintApplyResultStatus.
+const (
+	BlueprintApplyResultStatusApplied   BlueprintApplyResultStatus = "applied"
+	BlueprintApplyResultStatusPreviewed BlueprintApplyResultStatus = "previewed"
+)
+
+// Valid indicates whether the value is a known member of the BlueprintApplyResultStatus enum.
+func (e BlueprintApplyResultStatus) Valid() bool {
+	switch e {
+	case BlueprintApplyResultStatusApplied:
+		return true
+	case BlueprintApplyResultStatusPreviewed:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for BlueprintChangeAction.
+const (
+	BlueprintChangeActionAdopted   BlueprintChangeAction = "adopted"
+	BlueprintChangeActionCreated   BlueprintChangeAction = "created"
+	BlueprintChangeActionUnchanged BlueprintChangeAction = "unchanged"
+	BlueprintChangeActionUpdated   BlueprintChangeAction = "updated"
+)
+
+// Valid indicates whether the value is a known member of the BlueprintChangeAction enum.
+func (e BlueprintChangeAction) Valid() bool {
+	switch e {
+	case BlueprintChangeActionAdopted:
+		return true
+	case BlueprintChangeActionCreated:
+		return true
+	case BlueprintChangeActionUnchanged:
+		return true
+	case BlueprintChangeActionUpdated:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for BlueprintLoopInputStatus.
+const (
+	BlueprintLoopInputStatusActive BlueprintLoopInputStatus = "active"
+	BlueprintLoopInputStatusDraft  BlueprintLoopInputStatus = "draft"
+	BlueprintLoopInputStatusPaused BlueprintLoopInputStatus = "paused"
+)
+
+// Valid indicates whether the value is a known member of the BlueprintLoopInputStatus enum.
+func (e BlueprintLoopInputStatus) Valid() bool {
+	switch e {
+	case BlueprintLoopInputStatusActive:
+		return true
+	case BlueprintLoopInputStatusDraft:
+		return true
+	case BlueprintLoopInputStatusPaused:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for BlueprintResourceType.
+const (
+	BlueprintResourceTypeAction  BlueprintResourceType = "action"
+	BlueprintResourceTypeAgent   BlueprintResourceType = "agent"
+	BlueprintResourceTypeLoop    BlueprintResourceType = "loop"
+	BlueprintResourceTypeSkill   BlueprintResourceType = "skill"
+	BlueprintResourceTypeTable   BlueprintResourceType = "table"
+	BlueprintResourceTypeToolkit BlueprintResourceType = "toolkit"
+)
+
+// Valid indicates whether the value is a known member of the BlueprintResourceType enum.
+func (e BlueprintResourceType) Valid() bool {
+	switch e {
+	case BlueprintResourceTypeAction:
+		return true
+	case BlueprintResourceTypeAgent:
+		return true
+	case BlueprintResourceTypeLoop:
+		return true
+	case BlueprintResourceTypeSkill:
+		return true
+	case BlueprintResourceTypeTable:
+		return true
+	case BlueprintResourceTypeToolkit:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for CapabilityReadiness.
 const (
 	CapabilityReadinessNeedsSetup CapabilityReadiness = "needs_setup"
@@ -3367,6 +3499,12 @@ type AppendSessionMessage struct {
 
 // AppendSessionMessagesRequest defines model for AppendSessionMessagesRequest.
 type AppendSessionMessagesRequest struct {
+	// CacheCreationInputTotal Prompt-cache-write input tokens to add to this session's lifetime total.
+	CacheCreationInputTotal *int `json:"cache_creation_input_total,omitempty"`
+
+	// CacheReadInputTotal Prompt-cache-read input tokens to add to this session's lifetime total.
+	CacheReadInputTotal *int `json:"cache_read_input_total,omitempty"`
+
 	// Messages Messages to append to the session, in order.
 	Messages []AppendSessionMessage `json:"messages"`
 
@@ -3376,11 +3514,29 @@ type AppendSessionMessagesRequest struct {
 	// ModelProvider Provider for the supplied `model`.
 	ModelProvider *string `json:"model_provider,omitempty"`
 
-	// TokenInputTotal Updated lifetime input-token total for this session.
+	// TokenInputTotal Fresh (uncached) input tokens to add to this session's lifetime total.
 	TokenInputTotal *int `json:"token_input_total,omitempty"`
 
-	// TokenOutputTotal Updated lifetime output-token total for this session.
+	// TokenOutputTotal Output tokens to add to this session's lifetime total.
 	TokenOutputTotal *int `json:"token_output_total,omitempty"`
+}
+
+// ApplyBlueprintRequest A desired blueprint plus the apply mode.
+type ApplyBlueprintRequest struct {
+	// BlueprintKey Optional blueprint identifier recorded as provenance.
+	BlueprintKey *string `json:"blueprint_key,omitempty"`
+
+	// BlueprintVersion Optional blueprint version recorded as provenance.
+	BlueprintVersion *string `json:"blueprint_version,omitempty"`
+
+	// Mode `apply` performs the change; `preview` validates and returns a plan without mutating resources.
+	Mode *BlueprintApplyMode `json:"mode,omitempty"`
+
+	// Namespace Optional namespace recorded as provenance on each binding.
+	Namespace *string `json:"namespace,omitempty"`
+
+	// Resources The desired resources grouped by type. All groups are optional.
+	Resources BlueprintResources `json:"resources"`
 }
 
 // Artifact Stored file or generated artifact metadata.
@@ -3505,6 +3661,213 @@ type ArtifactThumbnailSummaryStatus string
 
 // ArtifactVisibility Private artifacts are visible only to their owner user. Shared artifacts are visible to the project.
 type ArtifactVisibility string
+
+// BlueprintActionAnnotations Behavioral annotations describing how an action may be used.
+type BlueprintActionAnnotations struct {
+	Destructive *bool `json:"destructive,omitempty"`
+	Idempotent  *bool `json:"idempotent,omitempty"`
+	LongRunning *bool `json:"long_running,omitempty"`
+	ReadOnly    *bool `json:"read_only,omitempty"`
+}
+
+// BlueprintActionInput A desired action. `name` is its immutable project-unique identity.
+type BlueprintActionInput struct {
+	// Annotations Behavioral annotations describing how an action may be used.
+	Annotations *BlueprintActionAnnotations `json:"annotations,omitempty"`
+	Description *string                     `json:"description,omitempty"`
+
+	// Endpoint Endpoint URL for http actions.
+	Endpoint    *string                 `json:"endpoint,omitempty"`
+	InputSchema *map[string]interface{} `json:"input_schema,omitempty"`
+
+	// Key Blueprint-defined handle other resources use to reference it.
+	Key          string                  `json:"key"`
+	Name         string                  `json:"name"`
+	OutputSchema *map[string]interface{} `json:"output_schema,omitempty"`
+
+	// Tags Key/value tags for organizing and filtering resources. Up to 8 per resource; keys 1–128 characters, values up to 256. Keys prefixed `mobius:` are system-managed and cannot be set by callers.
+	Tags  *TagMap `json:"tags,omitempty"`
+	Title *string `json:"title,omitempty"`
+
+	// Type Endpoint kind. Defaults to `http`. Immutable after create.
+	Type *BlueprintActionInputType `json:"type,omitempty"`
+}
+
+// BlueprintActionInputType Endpoint kind. Defaults to `http`. Immutable after create.
+type BlueprintActionInputType string
+
+// BlueprintAgentInput A desired agent. `toolkits` and `skills`, when present, replace the agent's full assignment set; omit them to leave existing assignments untouched.
+type BlueprintAgentInput struct {
+	Color        *string                 `json:"color,omitempty"`
+	Description  *string                 `json:"description,omitempty"`
+	Key          string                  `json:"key"`
+	Kind         *string                 `json:"kind,omitempty"`
+	Model        *string                 `json:"model,omitempty"`
+	Name         string                  `json:"name"`
+	Skills       *[]BlueprintResourceRef `json:"skills,omitempty"`
+	SystemPrompt *string                 `json:"system_prompt,omitempty"`
+
+	// Tags Key/value tags for organizing and filtering resources. Up to 8 per resource; keys 1–128 characters, values up to 256. Keys prefixed `mobius:` are system-managed and cannot be set by callers.
+	Tags     *TagMap                 `json:"tags,omitempty"`
+	Toolkits *[]BlueprintResourceRef `json:"toolkits,omitempty"`
+}
+
+// BlueprintApplyMode `apply` performs the change; `preview` validates and returns a plan without mutating resources.
+type BlueprintApplyMode string
+
+// BlueprintApplyResult The outcome of an apply or preview.
+type BlueprintApplyResult struct {
+	Bindings         []BlueprintBinding `json:"bindings"`
+	BlueprintKey     *string            `json:"blueprint_key,omitempty"`
+	BlueprintVersion *string            `json:"blueprint_version,omitempty"`
+	Changes          []BlueprintChange  `json:"changes"`
+	Namespace        *string            `json:"namespace,omitempty"`
+
+	// Status `applied` for a mutating apply, `previewed` for a preview.
+	Status BlueprintApplyResultStatus `json:"status"`
+}
+
+// BlueprintApplyResultStatus `applied` for a mutating apply, `previewed` for a preview.
+type BlueprintApplyResultStatus string
+
+// BlueprintBinding defines model for BlueprintBinding.
+type BlueprintBinding struct {
+	BlueprintKey     *string `json:"blueprint_key,omitempty"`
+	BlueprintVersion *string `json:"blueprint_version,omitempty"`
+	Key              string  `json:"key"`
+	Namespace        *string `json:"namespace,omitempty"`
+	ResourceId       string  `json:"resource_id"`
+
+	// ResourceType The kind of Mobius resource a binding or change refers to.
+	ResourceType BlueprintResourceType `json:"resource_type"`
+}
+
+// BlueprintBindingListResponse defines model for BlueprintBindingListResponse.
+type BlueprintBindingListResponse struct {
+	Items []BlueprintBinding `json:"items"`
+}
+
+// BlueprintChange defines model for BlueprintChange.
+type BlueprintChange struct {
+	// Action What apply did (or, in preview, would do): `created` a new resource, `updated` a managed one, `adopted` a matching unmanaged one, or left an `unchanged` resource untouched.
+	Action BlueprintChangeAction `json:"action"`
+	Key    string                `json:"key"`
+
+	// ResourceId The provisioned resource id. Empty for would-create entries in a preview.
+	ResourceId *string `json:"resource_id,omitempty"`
+
+	// ResourceType The kind of Mobius resource a binding or change refers to.
+	ResourceType BlueprintResourceType `json:"resource_type"`
+}
+
+// BlueprintChangeAction What apply did (or, in preview, would do): `created` a new resource, `updated` a managed one, `adopted` a matching unmanaged one, or left an `unchanged` resource untouched.
+type BlueprintChangeAction string
+
+// BlueprintLoopInput A desired loop. The spec-bearing fields (`steps`, `triggers`, `event`, `config`, `limits`, `output`, `concurrency`, `repositories`, `cleanup`, `defaults`) mirror the loop authoring shape and are compiled by the loop engine. Applied loops default to `draft` unless `status` is set.
+type BlueprintLoopInput struct {
+	// Agent A reference to a Mobius resource by direct `id`, by blueprint `key` (resolved within this apply first, then against existing bindings), or by `blueprint_ref` (namespace + key).
+	Agent *BlueprintResourceRef `json:"agent,omitempty"`
+
+	// Cleanup Cleanup steps run at the end of the run (maps to the loop spec `cleanup`).
+	Cleanup     *[]map[string]interface{} `json:"cleanup,omitempty"`
+	Concurrency *string                   `json:"concurrency,omitempty"`
+	Config      *map[string]interface{}   `json:"config,omitempty"`
+	Defaults    *map[string]interface{}   `json:"defaults,omitempty"`
+	Description *string                   `json:"description,omitempty"`
+
+	// Event Declared event input contract for the run (maps to the loop spec `event`).
+	Event        *map[string]interface{}   `json:"event,omitempty"`
+	Key          string                    `json:"key"`
+	Limits       *map[string]interface{}   `json:"limits,omitempty"`
+	Name         string                    `json:"name"`
+	Output       *map[string]interface{}   `json:"output,omitempty"`
+	Repositories *[]map[string]interface{} `json:"repositories,omitempty"`
+	Status       *BlueprintLoopInputStatus `json:"status,omitempty"`
+	Steps        *[]map[string]interface{} `json:"steps,omitempty"`
+
+	// Tags Key/value tags for organizing and filtering resources. Up to 8 per resource; keys 1–128 characters, values up to 256. Keys prefixed `mobius:` are system-managed and cannot be set by callers.
+	Tags     *TagMap                   `json:"tags,omitempty"`
+	Triggers *[]map[string]interface{} `json:"triggers,omitempty"`
+}
+
+// BlueprintLoopInputStatus defines model for BlueprintLoopInput.Status.
+type BlueprintLoopInputStatus string
+
+// BlueprintRef A namespaced blueprint key reference.
+type BlueprintRef struct {
+	Key       string  `json:"key"`
+	Namespace *string `json:"namespace,omitempty"`
+}
+
+// BlueprintResourceRef A reference to a Mobius resource by direct `id`, by blueprint `key` (resolved within this apply first, then against existing bindings), or by `blueprint_ref` (namespace + key).
+type BlueprintResourceRef struct {
+	// BlueprintRef A namespaced blueprint key reference.
+	BlueprintRef *BlueprintRef `json:"blueprint_ref,omitempty"`
+
+	// Id Direct resource id.
+	Id *string `json:"id,omitempty"`
+
+	// Key Blueprint-defined resource key.
+	Key *string `json:"key,omitempty"`
+}
+
+// BlueprintResourceType The kind of Mobius resource a binding or change refers to.
+type BlueprintResourceType string
+
+// BlueprintResources The desired resources grouped by type. All groups are optional.
+type BlueprintResources struct {
+	Actions  *[]BlueprintActionInput  `json:"actions,omitempty"`
+	Agents   *[]BlueprintAgentInput   `json:"agents,omitempty"`
+	Loops    *[]BlueprintLoopInput    `json:"loops,omitempty"`
+	Skills   *[]BlueprintSkillInput   `json:"skills,omitempty"`
+	Tables   *[]BlueprintTableInput   `json:"tables,omitempty"`
+	Toolkits *[]BlueprintToolkitInput `json:"toolkits,omitempty"`
+}
+
+// BlueprintSkillInput A desired skill.
+type BlueprintSkillInput struct {
+	Description  *string `json:"description,omitempty"`
+	Instructions *string `json:"instructions,omitempty"`
+	Key          string  `json:"key"`
+	Name         string  `json:"name"`
+
+	// Tags Key/value tags for organizing and filtering resources. Up to 8 per resource; keys 1–128 characters, values up to 256. Keys prefixed `mobius:` are system-managed and cannot be set by callers.
+	Tags  *TagMap `json:"tags,omitempty"`
+	Title *string `json:"title,omitempty"`
+}
+
+// BlueprintTableInput A desired table. `name` is its immutable project-unique identity (lower snake_case). `schema` carries the full column and identity definition and is validated on apply. The identity column and the required-ness of existing columns are immutable after create, so a re-apply that changes them is rejected.
+type BlueprintTableInput struct {
+	Description *string `json:"description,omitempty"`
+
+	// Instructions Optional author guidance for how this table should be used (e.g. surfaced to agents).
+	Instructions *string `json:"instructions,omitempty"`
+
+	// Key Blueprint-defined handle other resources use to reference it.
+	Key  string `json:"key"`
+	Name string `json:"name"`
+
+	// Schema Column definition for a virtual table. Each table has exactly one required string identity column and may nominate one optional string secondary key column.
+	Schema TableSchema `json:"schema"`
+}
+
+// BlueprintToolkitActionGrant Grants one action into a toolkit by its name.
+type BlueprintToolkitActionGrant struct {
+	ActionName string `json:"action_name"`
+}
+
+// BlueprintToolkitInput A desired toolkit. Resolved only through its binding (toolkits have no unique name).
+type BlueprintToolkitInput struct {
+	// Actions Actions granted into the toolkit by exact action name.
+	Actions     *[]BlueprintToolkitActionGrant `json:"actions,omitempty"`
+	Description *string                        `json:"description,omitempty"`
+	Key         string                         `json:"key"`
+	Metadata    *map[string]interface{}        `json:"metadata,omitempty"`
+	Name        string                         `json:"name"`
+
+	// Tags Key/value tags for organizing and filtering resources. Up to 8 per resource; keys 1–128 characters, values up to 256. Keys prefixed `mobius:` are system-managed and cannot be set by callers.
+	Tags *TagMap `json:"tags,omitempty"`
+}
 
 // BudgetExceededPayload defines model for BudgetExceededPayload.
 type BudgetExceededPayload struct {
@@ -5638,8 +6001,14 @@ type ProjectAccessMode string
 
 // ProjectListResponse defines model for ProjectListResponse.
 type ProjectListResponse struct {
+	// HasMore Whether more results are available beyond this page.
+	HasMore bool `json:"has_more"`
+
 	// Items The list of results for this page.
 	Items []Project `json:"items"`
+
+	// NextCursor Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.
+	NextCursor *string `json:"next_cursor,omitempty"`
 }
 
 // ProvisionEnvironmentProvider Providers the control plane can provision on demand: `sprites` or `cloudflare_containers`. Excludes `worker`: worker-provided environments are registered out-of-band via the attach endpoint and are never provisioned through create/acquire.
@@ -5838,6 +6207,12 @@ type Session struct {
 	// AgentId Agent that owns this session.
 	AgentId string `json:"agent_id"`
 
+	// CacheCreationInputTotal Lifetime prompt-cache-write (cache creation) input-token total for this session.
+	CacheCreationInputTotal int `json:"cache_creation_input_total"`
+
+	// CacheReadInputTotal Lifetime prompt-cache-read input-token total for this session.
+	CacheReadInputTotal int `json:"cache_read_input_total"`
+
 	// CompactionPolicy Controls how a session's transcript is automatically summarized as it grows. On create the supplied fields are merged over the owning agent's default policy and the server defaults; on update they patch the session's current policy. Omitted fields keep their resolved values.
 	CompactionPolicy *SessionCompactionPolicy `json:"compaction_policy,omitempty"`
 
@@ -5895,7 +6270,7 @@ type Session struct {
 	// Title Human-readable session title.
 	Title string `json:"title"`
 
-	// TokenInputTotal Lifetime input-token total reported for this session.
+	// TokenInputTotal Lifetime fresh (uncached) input-token total for this session. Prompt-cache tokens are reported separately in `cache_read_input_total` and `cache_creation_input_total`.
 	TokenInputTotal int `json:"token_input_total"`
 
 	// TokenOutputTotal Lifetime output-token total reported for this session.
@@ -7552,8 +7927,17 @@ type bearerAuthContextKey string
 
 // ListProjectsParams defines parameters for ListProjects.
 type ListProjectsParams struct {
-	// Search Prefix-match filter applied to project name and handle.
+	// Search Case-insensitive substring filter applied to project name, handle, and description.
 	Search *string `form:"search,omitempty" json:"search,omitempty"`
+
+	// Tag Filter to projects carrying the given tags. Each value is either a bare key (matches any project that has the key) or `key:value` (matches the exact key/value pair). Comma-separate to require several tags; a project must match every one.
+	Tag *[]string `form:"tag,omitempty" json:"tag,omitempty"`
+
+	// Cursor Cursor for pagination (opaque string from previous response)
+	Cursor *CursorParam `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Limit Maximum number of items to return
+	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
 // ListActionInvocationsParams defines parameters for ListActionInvocations.
@@ -7647,6 +8031,12 @@ type ListArtifactsParams struct {
 type CreateArtifactSignedUrlParams struct {
 	// TtlSeconds Requested signed URL TTL. The server caps this at the maximum supported artifact download TTL.
 	TtlSeconds *int64 `form:"ttl_seconds,omitempty" json:"ttl_seconds,omitempty"`
+}
+
+// ListBlueprintBindingsParams defines parameters for ListBlueprintBindings.
+type ListBlueprintBindingsParams struct {
+	// Namespace Optional namespace filter (matches the binding's stored provenance).
+	Namespace *string `form:"namespace,omitempty" json:"namespace,omitempty"`
 }
 
 // ListEnvironmentsParams defines parameters for ListEnvironments.
@@ -7924,6 +8314,9 @@ type ReplaceAgentToolkitAssignmentsJSONRequestBody = ReplaceToolkitsRequest
 
 // CreateAPIKeyJSONRequestBody defines body for CreateAPIKey for application/json ContentType.
 type CreateAPIKeyJSONRequestBody = CreateAPIKeyRequest
+
+// ApplyBlueprintJSONRequestBody defines body for ApplyBlueprint for application/json ContentType.
+type ApplyBlueprintJSONRequestBody = ApplyBlueprintRequest
 
 // CreateEnvironmentJSONRequestBody defines body for CreateEnvironment for application/json ContentType.
 type CreateEnvironmentJSONRequestBody = CreateEnvironmentRequest
@@ -15089,6 +15482,14 @@ type ClientInterface interface {
 	// CreateArtifactSignedUrl request
 	CreateArtifactSignedUrl(ctx context.Context, projectHandle ProjectHandleParam, artifactId ArtifactIdParam, params *CreateArtifactSignedUrlParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ApplyBlueprintWithBody request with any body
+	ApplyBlueprintWithBody(ctx context.Context, projectHandle ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	ApplyBlueprint(ctx context.Context, projectHandle ProjectHandleParam, body ApplyBlueprintJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListBlueprintBindings request
+	ListBlueprintBindings(ctx context.Context, projectHandle ProjectHandleParam, params *ListBlueprintBindingsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListCatalogActions request
 	ListCatalogActions(ctx context.Context, projectHandle ProjectHandleParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -16006,6 +16407,42 @@ func (c *Client) GetArtifactContent(ctx context.Context, projectHandle ProjectHa
 
 func (c *Client) CreateArtifactSignedUrl(ctx context.Context, projectHandle ProjectHandleParam, artifactId ArtifactIdParam, params *CreateArtifactSignedUrlParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewCreateArtifactSignedUrlRequest(c.Server, projectHandle, artifactId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ApplyBlueprintWithBody(ctx context.Context, projectHandle ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewApplyBlueprintRequestWithBody(c.Server, projectHandle, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ApplyBlueprint(ctx context.Context, projectHandle ProjectHandleParam, body ApplyBlueprintJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewApplyBlueprintRequest(c.Server, projectHandle, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListBlueprintBindings(ctx context.Context, projectHandle ProjectHandleParam, params *ListBlueprintBindingsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListBlueprintBindingsRequest(c.Server, projectHandle, params)
 	if err != nil {
 		return nil, err
 	}
@@ -17379,6 +17816,42 @@ func NewListProjectsRequest(server string, params *ListProjectsParams) (*http.Re
 		if params.Search != nil {
 
 			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "search", *params.Search, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Tag != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", false, "tag", *params.Tag, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "array", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Cursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "cursor", *params.Cursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -19445,6 +19918,114 @@ func NewCreateArtifactSignedUrlRequest(server string, projectHandle ProjectHandl
 	}
 
 	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewApplyBlueprintRequest calls the generic ApplyBlueprint builder with application/json body
+func NewApplyBlueprintRequest(server string, projectHandle ProjectHandleParam, body ApplyBlueprintJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewApplyBlueprintRequestWithBody(server, projectHandle, "application/json", bodyReader)
+}
+
+// NewApplyBlueprintRequestWithBody generates requests for ApplyBlueprint with any type of body
+func NewApplyBlueprintRequestWithBody(server string, projectHandle ProjectHandleParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project_handle", projectHandle, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/blueprints/apply", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewListBlueprintBindingsRequest generates requests for ListBlueprintBindings
+func NewListBlueprintBindingsRequest(server string, projectHandle ProjectHandleParam, params *ListBlueprintBindingsParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project_handle", projectHandle, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/blueprints/bindings", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Namespace != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "namespace", *params.Namespace, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -24144,6 +24725,14 @@ type ClientWithResponsesInterface interface {
 	// CreateArtifactSignedUrlWithResponse request
 	CreateArtifactSignedUrlWithResponse(ctx context.Context, projectHandle ProjectHandleParam, artifactId ArtifactIdParam, params *CreateArtifactSignedUrlParams, reqEditors ...RequestEditorFn) (*CreateArtifactSignedUrlResponse, error)
 
+	// ApplyBlueprintWithBodyWithResponse request with any body
+	ApplyBlueprintWithBodyWithResponse(ctx context.Context, projectHandle ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ApplyBlueprintResponse, error)
+
+	ApplyBlueprintWithResponse(ctx context.Context, projectHandle ProjectHandleParam, body ApplyBlueprintJSONRequestBody, reqEditors ...RequestEditorFn) (*ApplyBlueprintResponse, error)
+
+	// ListBlueprintBindingsWithResponse request
+	ListBlueprintBindingsWithResponse(ctx context.Context, projectHandle ProjectHandleParam, params *ListBlueprintBindingsParams, reqEditors ...RequestEditorFn) (*ListBlueprintBindingsResponse, error)
+
 	// ListCatalogActionsWithResponse request
 	ListCatalogActionsWithResponse(ctx context.Context, projectHandle ProjectHandleParam, reqEditors ...RequestEditorFn) (*ListCatalogActionsResponse, error)
 
@@ -25766,6 +26355,76 @@ func (r CreateArtifactSignedUrlResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r CreateArtifactSignedUrlResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ApplyBlueprintResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *BlueprintApplyResult
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *ErrorResponse
+	JSON409      *ErrorResponse
+	JSON429      *TooManyRequests
+}
+
+// Status returns HTTPResponse.Status
+func (r ApplyBlueprintResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ApplyBlueprintResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ApplyBlueprintResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ListBlueprintBindingsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *BlueprintBindingListResponse
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+	JSON429      *TooManyRequests
+}
+
+// Status returns HTTPResponse.Status
+func (r ListBlueprintBindingsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListBlueprintBindingsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListBlueprintBindingsResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -28936,6 +29595,32 @@ func (c *ClientWithResponses) CreateArtifactSignedUrlWithResponse(ctx context.Co
 	return ParseCreateArtifactSignedUrlResponse(rsp)
 }
 
+// ApplyBlueprintWithBodyWithResponse request with arbitrary body returning *ApplyBlueprintResponse
+func (c *ClientWithResponses) ApplyBlueprintWithBodyWithResponse(ctx context.Context, projectHandle ProjectHandleParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ApplyBlueprintResponse, error) {
+	rsp, err := c.ApplyBlueprintWithBody(ctx, projectHandle, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseApplyBlueprintResponse(rsp)
+}
+
+func (c *ClientWithResponses) ApplyBlueprintWithResponse(ctx context.Context, projectHandle ProjectHandleParam, body ApplyBlueprintJSONRequestBody, reqEditors ...RequestEditorFn) (*ApplyBlueprintResponse, error) {
+	rsp, err := c.ApplyBlueprint(ctx, projectHandle, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseApplyBlueprintResponse(rsp)
+}
+
+// ListBlueprintBindingsWithResponse request returning *ListBlueprintBindingsResponse
+func (c *ClientWithResponses) ListBlueprintBindingsWithResponse(ctx context.Context, projectHandle ProjectHandleParam, params *ListBlueprintBindingsParams, reqEditors ...RequestEditorFn) (*ListBlueprintBindingsResponse, error) {
+	rsp, err := c.ListBlueprintBindings(ctx, projectHandle, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListBlueprintBindingsResponse(rsp)
+}
+
 // ListCatalogActionsWithResponse request returning *ListCatalogActionsResponse
 func (c *ClientWithResponses) ListCatalogActionsWithResponse(ctx context.Context, projectHandle ProjectHandleParam, reqEditors ...RequestEditorFn) (*ListCatalogActionsResponse, error) {
 	rsp, err := c.ListCatalogActions(ctx, projectHandle, reqEditors...)
@@ -31990,6 +32675,128 @@ func ParseCreateArtifactSignedUrlResponse(rsp *http.Response) (*CreateArtifactSi
 			return nil, err
 		}
 		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest TooManyRequests
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseApplyBlueprintResponse parses an HTTP response from a ApplyBlueprintWithResponse call
+func ParseApplyBlueprintResponse(rsp *http.Response) (*ApplyBlueprintResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ApplyBlueprintResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest BlueprintApplyResult
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest TooManyRequests
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListBlueprintBindingsResponse parses an HTTP response from a ListBlueprintBindingsWithResponse call
+func ParseListBlueprintBindingsResponse(rsp *http.Response) (*ListBlueprintBindingsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListBlueprintBindingsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest BlueprintBindingListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
 		var dest TooManyRequests

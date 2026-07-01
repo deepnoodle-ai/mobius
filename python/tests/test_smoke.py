@@ -426,6 +426,8 @@ def _turn_ack_body(session_id: str, turn_id: str, after_sequence: int) -> dict[s
             "version": 1,
             "message_count": 1,
             "token_input_total": 0,
+            "cache_read_input_total": 0,
+            "cache_creation_input_total": 0,
             "token_output_total": 0,
             "created_at": "2026-05-27T00:00:00Z",
             "updated_at": "2026-05-27T00:00:00Z",

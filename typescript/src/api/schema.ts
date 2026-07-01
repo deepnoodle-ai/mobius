@@ -337,7 +337,7 @@ export interface paths {
         };
         /**
          * List projects
-         * @description Returns up to 100 projects. Use `search` for prefix-match filtering by name or handle. Deleted projects are omitted from normal list responses.
+         * @description Lists the projects the caller can see, newest first. Results are paginated: pass `limit` to size the page and follow `next_cursor` (returned while `has_more` is true) to walk the full set — the way to enumerate an org that runs a project per tenant. Use `search` to substring-match name, handle, or description, and repeat `tag` to narrow to projects carrying specific labels. Deleted projects are omitted from normal list responses.
          */
         get: operations["listProjects"];
         put?: never;
@@ -1438,6 +1438,48 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/projects/{project_handle}/blueprints/apply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Apply a blueprint to a project
+         * @description Creates missing resources, updates resources Mobius manages on behalf of the blueprint, adopts matching uniquely-named resources where safe, and reports the resulting changes and bindings. With `mode: preview` the request validates and returns a plan without mutating anything.
+         *
+         *     Apply writes each resource together with its binding in one transaction, but is not all-or-nothing across resources: a failure in a later tier leaves earlier tiers persisted with bindings, and a re-apply converges. Loops are content-diffed, so an unchanged loop is a no-op and does not mint a new version.
+         */
+        post: operations["applyBlueprint"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project_handle}/blueprints/bindings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List blueprint bindings
+         * @description Returns the project's blueprint bindings: the mapping from each blueprint-defined resource key to the Mobius resource it provisions. Optionally filtered by namespace.
+         */
+        get: operations["listBlueprintBindings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/projects/{project_handle}/tables": {
         parameters: {
             query?: never;
@@ -1877,6 +1919,10 @@ export interface components {
         ProjectListResponse: {
             /** @description The list of results for this page. */
             items: components["schemas"]["Project"][];
+            /** @description Whether more results are available beyond this page. */
+            has_more: boolean;
+            /** @description Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false. */
+            next_cursor?: string;
         };
         /**
          * @description Model-call route mode: `managed` or `worker`.
@@ -4236,10 +4282,14 @@ export interface components {
             latest_compaction?: components["schemas"]["SessionCompactionBoundary"];
             /** @description Total messages currently in the session, including compaction summaries. */
             message_count: number;
-            /** @description Lifetime input-token total reported for this session. */
+            /** @description Lifetime fresh (uncached) input-token total for this session. Prompt-cache tokens are reported separately in `cache_read_input_total` and `cache_creation_input_total`. */
             token_input_total: number;
             /** @description Lifetime output-token total reported for this session. */
             token_output_total: number;
+            /** @description Lifetime prompt-cache-read input-token total for this session. */
+            cache_read_input_total: number;
+            /** @description Lifetime prompt-cache-write (cache creation) input-token total for this session. */
+            cache_creation_input_total: number;
             /** @description Optimistic-concurrency version. Increments on every mutation. */
             version: number;
             /**
@@ -4493,10 +4543,14 @@ export interface components {
         AppendSessionMessagesRequest: {
             /** @description Messages to append to the session, in order. */
             messages: components["schemas"]["AppendSessionMessage"][];
-            /** @description Updated lifetime input-token total for this session. */
+            /** @description Fresh (uncached) input tokens to add to this session's lifetime total. */
             token_input_total?: number;
-            /** @description Updated lifetime output-token total for this session. */
+            /** @description Output tokens to add to this session's lifetime total. */
             token_output_total?: number;
+            /** @description Prompt-cache-read input tokens to add to this session's lifetime total. */
+            cache_read_input_total?: number;
+            /** @description Prompt-cache-write input tokens to add to this session's lifetime total. */
+            cache_creation_input_total?: number;
             /** @description Model that produced these messages. */
             model?: string;
             /** @description Provider for the supplied `model`. */
@@ -6068,6 +6122,203 @@ export interface components {
             items: components["schemas"]["Skill"][];
         };
         /**
+         * @description `apply` performs the change; `preview` validates and returns a plan without mutating resources.
+         * @enum {string}
+         */
+        BlueprintApplyMode: "preview" | "apply";
+        /**
+         * @description The kind of Mobius resource a binding or change refers to.
+         * @enum {string}
+         */
+        BlueprintResourceType: "action" | "toolkit" | "skill" | "agent" | "loop" | "table";
+        /**
+         * @description What apply did (or, in preview, would do): `created` a new resource, `updated` a managed one, `adopted` a matching unmanaged one, or left an `unchanged` resource untouched.
+         * @enum {string}
+         */
+        BlueprintChangeAction: "created" | "updated" | "adopted" | "unchanged";
+        /** @description A reference to a Mobius resource by direct `id`, by blueprint `key` (resolved within this apply first, then against existing bindings), or by `blueprint_ref` (namespace + key). */
+        BlueprintResourceRef: {
+            /** @description Direct resource id. */
+            id?: string;
+            /** @description Blueprint-defined resource key. */
+            key?: string;
+            blueprint_ref?: components["schemas"]["BlueprintRef"];
+        };
+        /** @description A namespaced blueprint key reference. */
+        BlueprintRef: {
+            namespace?: string;
+            key: string;
+        };
+        /** @description A desired blueprint plus the apply mode. */
+        ApplyBlueprintRequest: {
+            /** @description Optional namespace recorded as provenance on each binding. */
+            namespace?: string;
+            /** @description Optional blueprint identifier recorded as provenance. */
+            blueprint_key?: string;
+            /** @description Optional blueprint version recorded as provenance. */
+            blueprint_version?: string;
+            mode?: components["schemas"]["BlueprintApplyMode"];
+            resources: components["schemas"]["BlueprintResources"];
+        };
+        /** @description The desired resources grouped by type. All groups are optional. */
+        BlueprintResources: {
+            actions?: components["schemas"]["BlueprintActionInput"][];
+            toolkits?: components["schemas"]["BlueprintToolkitInput"][];
+            skills?: components["schemas"]["BlueprintSkillInput"][];
+            agents?: components["schemas"]["BlueprintAgentInput"][];
+            loops?: components["schemas"]["BlueprintLoopInput"][];
+            tables?: components["schemas"]["BlueprintTableInput"][];
+        };
+        /** @description A desired action. `name` is its immutable project-unique identity. */
+        BlueprintActionInput: {
+            /** @description Blueprint-defined handle other resources use to reference it. */
+            key: string;
+            name: string;
+            /**
+             * @description Endpoint kind. Defaults to `http`. Immutable after create.
+             * @enum {string}
+             */
+            type?: "http" | "worker" | "builtin";
+            /** @description Endpoint URL for http actions. */
+            endpoint?: string;
+            title?: string;
+            description?: string;
+            input_schema?: {
+                [key: string]: unknown;
+            };
+            output_schema?: {
+                [key: string]: unknown;
+            };
+            annotations?: components["schemas"]["BlueprintActionAnnotations"];
+            tags?: components["schemas"]["TagMap"];
+        };
+        /** @description Behavioral annotations describing how an action may be used. */
+        BlueprintActionAnnotations: {
+            idempotent?: boolean;
+            destructive?: boolean;
+            read_only?: boolean;
+            long_running?: boolean;
+        };
+        /** @description A desired toolkit. Resolved only through its binding (toolkits have no unique name). */
+        BlueprintToolkitInput: {
+            key: string;
+            name: string;
+            description?: string;
+            /** @description Actions granted into the toolkit by exact action name. */
+            actions?: components["schemas"]["BlueprintToolkitActionGrant"][];
+            tags?: components["schemas"]["TagMap"];
+            metadata?: {
+                [key: string]: unknown;
+            };
+        };
+        /** @description Grants one action into a toolkit by its name. */
+        BlueprintToolkitActionGrant: {
+            action_name: string;
+        };
+        /** @description A desired skill. */
+        BlueprintSkillInput: {
+            key: string;
+            name: string;
+            title?: string;
+            description?: string;
+            instructions?: string;
+            tags?: components["schemas"]["TagMap"];
+        };
+        /** @description A desired agent. `toolkits` and `skills`, when present, replace the agent's full assignment set; omit them to leave existing assignments untouched. */
+        BlueprintAgentInput: {
+            key: string;
+            name: string;
+            description?: string;
+            model?: string;
+            system_prompt?: string;
+            kind?: string;
+            color?: string;
+            toolkits?: components["schemas"]["BlueprintResourceRef"][];
+            skills?: components["schemas"]["BlueprintResourceRef"][];
+            tags?: components["schemas"]["TagMap"];
+        };
+        /** @description A desired loop. The spec-bearing fields (`steps`, `triggers`, `event`, `config`, `limits`, `output`, `concurrency`, `repositories`, `cleanup`, `defaults`) mirror the loop authoring shape and are compiled by the loop engine. Applied loops default to `draft` unless `status` is set. */
+        BlueprintLoopInput: {
+            key: string;
+            name: string;
+            description?: string;
+            agent?: components["schemas"]["BlueprintResourceRef"];
+            /** @enum {string} */
+            status?: "draft" | "active" | "paused";
+            steps?: {
+                [key: string]: unknown;
+            }[];
+            triggers?: {
+                [key: string]: unknown;
+            }[];
+            /** @description Declared event input contract for the run (maps to the loop spec `event`). */
+            event?: {
+                [key: string]: unknown;
+            };
+            config?: {
+                [key: string]: unknown;
+            };
+            limits?: {
+                [key: string]: unknown;
+            };
+            output?: {
+                [key: string]: unknown;
+            };
+            concurrency?: string;
+            repositories?: {
+                [key: string]: unknown;
+            }[];
+            /** @description Cleanup steps run at the end of the run (maps to the loop spec `cleanup`). */
+            cleanup?: {
+                [key: string]: unknown;
+            }[];
+            defaults?: {
+                [key: string]: unknown;
+            };
+            tags?: components["schemas"]["TagMap"];
+        };
+        /** @description A desired table. `name` is its immutable project-unique identity (lower snake_case). `schema` carries the full column and identity definition and is validated on apply. The identity column and the required-ness of existing columns are immutable after create, so a re-apply that changes them is rejected. */
+        BlueprintTableInput: {
+            /** @description Blueprint-defined handle other resources use to reference it. */
+            key: string;
+            name: string;
+            description?: string;
+            /** @description Optional author guidance for how this table should be used (e.g. surfaced to agents). */
+            instructions?: string;
+            schema: components["schemas"]["TableSchema"];
+        };
+        /** @description The outcome of an apply or preview. */
+        BlueprintApplyResult: {
+            /**
+             * @description `applied` for a mutating apply, `previewed` for a preview.
+             * @enum {string}
+             */
+            status: "applied" | "previewed";
+            namespace?: string;
+            blueprint_key?: string;
+            blueprint_version?: string;
+            changes: components["schemas"]["BlueprintChange"][];
+            bindings: components["schemas"]["BlueprintBinding"][];
+        };
+        BlueprintChange: {
+            resource_type: components["schemas"]["BlueprintResourceType"];
+            key: string;
+            action: components["schemas"]["BlueprintChangeAction"];
+            /** @description The provisioned resource id. Empty for would-create entries in a preview. */
+            resource_id?: string;
+        };
+        BlueprintBinding: {
+            resource_type: components["schemas"]["BlueprintResourceType"];
+            key: string;
+            resource_id: string;
+            namespace?: string;
+            blueprint_key?: string;
+            blueprint_version?: string;
+        };
+        BlueprintBindingListResponse: {
+            items: components["schemas"]["BlueprintBinding"][];
+        };
+        /**
          * @description Column value type: `string`, `number`, `boolean`, `date`, `object`, `array`, or `any`.
          * @enum {string}
          */
@@ -7551,8 +7802,14 @@ export interface operations {
     listProjects: {
         parameters: {
             query?: {
-                /** @description Prefix-match filter applied to project name and handle. */
+                /** @description Case-insensitive substring filter applied to project name, handle, and description. */
                 search?: string;
+                /** @description Filter to projects carrying the given tags. Each value is either a bare key (matches any project that has the key) or `key:value` (matches the exact key/value pair). Comma-separate to require several tags; a project must match every one. */
+                tag?: string[];
+                /** @description Cursor for pagination (opaque string from previous response) */
+                cursor?: components["parameters"]["CursorParam"];
+                /** @description Maximum number of items to return */
+                limit?: components["parameters"]["LimitParam"];
             };
             header?: never;
             path?: never;
@@ -10649,6 +10906,85 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    applyBlueprint: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ApplyBlueprintRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BlueprintApplyResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            /** @description A blueprint reference points at a resource that does not exist. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description A blueprint reference or apply conflict requires human review. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    listBlueprintBindings: {
+        parameters: {
+            query?: {
+                /** @description Optional namespace filter (matches the binding's stored provenance). */
+                namespace?: string;
+            };
+            header?: never;
+            path: {
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BlueprintBindingListResponse"];
+                };
             };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];

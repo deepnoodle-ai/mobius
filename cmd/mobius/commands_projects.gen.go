@@ -112,7 +112,10 @@ func registerProjectsCommands(app *cli.App) {
 	projectsGrp.Command("list").
 		Description("List projects").
 		Flags(
-			cli.String("search", "").Help("Prefix-match filter applied to project name and handle."),
+			cli.String("search", "").Help("Case-insensitive substring filter applied to project name, handle, and description."),
+			cli.Strings("tag", "").Help("Filter to projects carrying the given tags. Each value is either a bare key (matches any project that has the key) or `key:value` (matches…"),
+			cli.String("cursor", "").Help("Cursor for pagination (opaque string from previous response)"),
+			cli.Int("limit", "").Help("Maximum number of items to return"),
 		).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -125,6 +128,18 @@ func registerProjectsCommands(app *cli.App) {
 			if ctx.IsSet("search") {
 				v := ctx.String("search")
 				params.Search = &v
+			}
+			if ctx.IsSet("tag") {
+				v := ctx.Strings("tag")
+				params.Tag = &v
+			}
+			if ctx.IsSet("cursor") {
+				v := api.CursorParam(ctx.String("cursor"))
+				params.Cursor = &v
+			}
+			if ctx.IsSet("limit") {
+				v := api.LimitParam(ctx.Int("limit"))
+				params.Limit = &v
 			}
 			resp, err := client.ListProjectsWithResponse(ctx.Context(), params)
 			if err != nil {

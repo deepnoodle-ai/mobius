@@ -23,11 +23,13 @@ func registerSessionsCommands(app *cli.App) {
 		Description("Append session messages").
 		AddArg(&cli.Arg{Name: "session-id", Description: "Identifier of the conversation session.", Required: true}).
 		Flags(
+			cli.Int("cache-creation-input-total", "").Help("Prompt-cache-write input tokens to add to this session's lifetime total."),
+			cli.Int("cache-read-input-total", "").Help("Prompt-cache-read input tokens to add to this session's lifetime total."),
 			cli.String("messages", "").Help("[required] Messages to append to the session, in order. Accepts JSON, @file, or @-."),
 			cli.String("model", "").Help("Model that produced these messages."),
 			cli.String("model-provider", "").Help("Provider for the supplied `model`."),
-			cli.Int("token-input-total", "").Help("Updated lifetime input-token total for this session."),
-			cli.Int("token-output-total", "").Help("Updated lifetime output-token total for this session."),
+			cli.Int("token-input-total", "").Help("Fresh (uncached) input tokens to add to this session's lifetime total."),
+			cli.Int("token-output-total", "").Help("Output tokens to add to this session's lifetime total."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -43,6 +45,14 @@ func registerSessionsCommands(app *cli.App) {
 			var body api.AppendSessionMessagesJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
+			}
+			if ctx.IsSet("cache-creation-input-total") {
+				v := ctx.Int("cache-creation-input-total")
+				body.CacheCreationInputTotal = &v
+			}
+			if ctx.IsSet("cache-read-input-total") {
+				v := ctx.Int("cache-read-input-total")
+				body.CacheReadInputTotal = &v
 			}
 			if ctx.IsSet("messages") {
 				if err := decodeFlagJSON(ctx, "messages", ctx.String("messages"), &body.Messages); err != nil {
