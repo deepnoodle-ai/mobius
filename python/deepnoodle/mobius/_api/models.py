@@ -191,6 +191,13 @@ class ProjectListResponse(BaseModel):
         extra='forbid',
     )
     items: list[Project] = Field(..., description='The list of results for this page.')
+    has_more: bool = Field(
+        ..., description='Whether more results are available beyond this page.'
+    )
+    next_cursor: str | None = Field(
+        None,
+        description='Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.',
+    )
 
 
 class AgentModelRouteMode(StrEnum):
@@ -4451,6 +4458,149 @@ class SkillListResponse(BaseModel):
     items: list[Skill] = Field(..., description='The list of results for this page.')
 
 
+class BlueprintApplyMode(StrEnum):
+    """
+    `apply` performs the change; `preview` validates and returns a plan without mutating resources.
+    """
+
+    preview = 'preview'
+    apply = 'apply'
+
+
+class BlueprintResourceType(StrEnum):
+    """
+    The kind of Mobius resource a binding or change refers to.
+    """
+
+    action = 'action'
+    toolkit = 'toolkit'
+    skill = 'skill'
+    agent = 'agent'
+    loop = 'loop'
+    table = 'table'
+
+
+class BlueprintChangeAction(StrEnum):
+    """
+    What apply did (or, in preview, would do): `created` a new resource, `updated` a managed one, `adopted` a matching unmanaged one, or left an `unchanged` resource untouched.
+    """
+
+    created = 'created'
+    updated = 'updated'
+    adopted = 'adopted'
+    unchanged = 'unchanged'
+
+
+class BlueprintRef(BaseModel):
+    """
+    A namespaced blueprint key reference.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    namespace: str | None = None
+    key: str
+
+
+class Type25(StrEnum):
+    """
+    Endpoint kind. Defaults to `http`. Immutable after create.
+    """
+
+    http = 'http'
+    worker = 'worker'
+    builtin = 'builtin'
+
+
+class BlueprintActionAnnotations(BaseModel):
+    """
+    Behavioral annotations describing how an action may be used.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    idempotent: bool | None = None
+    destructive: bool | None = None
+    read_only: bool | None = None
+    long_running: bool | None = None
+
+
+class BlueprintToolkitActionGrant(BaseModel):
+    """
+    Grants one action into a toolkit by its name.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    action_name: str
+
+
+class BlueprintSkillInput(BaseModel):
+    """
+    A desired skill.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    key: str
+    name: str
+    title: str | None = None
+    description: str | None = None
+    instructions: str | None = None
+    tags: TagMap | None = None
+
+
+class Status5(StrEnum):
+    draft = 'draft'
+    active = 'active'
+    paused = 'paused'
+
+
+class Status6(StrEnum):
+    """
+    `applied` for a mutating apply, `previewed` for a preview.
+    """
+
+    applied = 'applied'
+    previewed = 'previewed'
+
+
+class BlueprintChange(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    resource_type: BlueprintResourceType
+    key: str
+    action: BlueprintChangeAction
+    resource_id: str | None = Field(
+        None,
+        description='The provisioned resource id. Empty for would-create entries in a preview.',
+    )
+
+
+class BlueprintBinding(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    resource_type: BlueprintResourceType
+    key: str
+    resource_id: str
+    namespace: str | None = None
+    blueprint_key: str | None = None
+    blueprint_version: str | None = None
+
+
+class BlueprintBindingListResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    items: list[BlueprintBinding]
+
+
 class ColumnType(StrEnum):
     """
     Column value type: `string`, `number`, `boolean`, `date`, `object`, `array`, or `any`.
@@ -4911,7 +5061,7 @@ class ArtifactVisibility(StrEnum):
     shared = 'shared'
 
 
-class Status5(StrEnum):
+class Status7(StrEnum):
     """
     Current thumbnail state for the source artifact's content.
     """
@@ -4932,7 +5082,7 @@ class ArtifactThumbnailSummary(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    status: Status5 = Field(
+    status: Status7 = Field(
         ..., description="Current thumbnail state for the source artifact's content."
     )
     variant: str = Field(
@@ -5383,10 +5533,19 @@ class Session(BaseModel):
         description='Total messages currently in the session, including compaction summaries.',
     )
     token_input_total: int = Field(
-        ..., description='Lifetime input-token total reported for this session.'
+        ...,
+        description='Lifetime fresh (uncached) input-token total for this session. Prompt-cache tokens are reported separately in `cache_read_input_total` and `cache_creation_input_total`.',
     )
     token_output_total: int = Field(
         ..., description='Lifetime output-token total reported for this session.'
+    )
+    cache_read_input_total: int = Field(
+        ...,
+        description='Lifetime prompt-cache-read input-token total for this session.',
+    )
+    cache_creation_input_total: int = Field(
+        ...,
+        description='Lifetime prompt-cache-write (cache creation) input-token total for this session.',
     )
     version: int = Field(
         ..., description='Optimistic-concurrency version. Increments on every mutation.'
@@ -5434,10 +5593,22 @@ class AppendSessionMessagesRequest(BaseModel):
         ..., description='Messages to append to the session, in order.', min_length=1
     )
     token_input_total: int | None = Field(
-        None, description='Updated lifetime input-token total for this session.', ge=0
+        None,
+        description="Fresh (uncached) input tokens to add to this session's lifetime total.",
+        ge=0,
     )
     token_output_total: int | None = Field(
-        None, description='Updated lifetime output-token total for this session.', ge=0
+        None, description="Output tokens to add to this session's lifetime total.", ge=0
+    )
+    cache_read_input_total: int | None = Field(
+        None,
+        description="Prompt-cache-read input tokens to add to this session's lifetime total.",
+        ge=0,
+    )
+    cache_creation_input_total: int | None = Field(
+        None,
+        description="Prompt-cache-write input tokens to add to this session's lifetime total.",
+        ge=0,
     )
     model: str | None = Field(None, description='Model that produced these messages.')
     model_provider: str | None = Field(
@@ -5935,6 +6106,151 @@ class RunEventPayload(
     )
 
 
+class BlueprintResourceRef(BaseModel):
+    """
+    A reference to a Mobius resource by direct `id`, by blueprint `key` (resolved within this apply first, then against existing bindings), or by `blueprint_ref` (namespace + key).
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str | None = Field(None, description='Direct resource id.')
+    key: str | None = Field(None, description='Blueprint-defined resource key.')
+    blueprint_ref: BlueprintRef | None = None
+
+
+class BlueprintActionInput(BaseModel):
+    """
+    A desired action. `name` is its immutable project-unique identity.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    key: str = Field(
+        ..., description='Blueprint-defined handle other resources use to reference it.'
+    )
+    name: str
+    type: Type25 | None = Field(
+        None, description='Endpoint kind. Defaults to `http`. Immutable after create.'
+    )
+    endpoint: str | None = Field(None, description='Endpoint URL for http actions.')
+    title: str | None = None
+    description: str | None = None
+    input_schema: dict[str, Any] | None = None
+    output_schema: dict[str, Any] | None = None
+    annotations: BlueprintActionAnnotations | None = None
+    tags: TagMap | None = None
+
+
+class BlueprintToolkitInput(BaseModel):
+    """
+    A desired toolkit. Resolved only through its binding (toolkits have no unique name).
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    key: str
+    name: str
+    description: str | None = None
+    actions: list[BlueprintToolkitActionGrant] | None = Field(
+        None, description='Actions granted into the toolkit by exact action name.'
+    )
+    tags: TagMap | None = None
+    metadata: dict[str, Any] | None = None
+
+
+class BlueprintAgentInput(BaseModel):
+    """
+    A desired agent. `toolkits` and `skills`, when present, replace the agent's full assignment set; omit them to leave existing assignments untouched.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    key: str
+    name: str
+    description: str | None = None
+    model: str | None = None
+    system_prompt: str | None = None
+    kind: str | None = None
+    color: str | None = None
+    toolkits: list[BlueprintResourceRef] | None = None
+    skills: list[BlueprintResourceRef] | None = None
+    tags: TagMap | None = None
+
+
+class BlueprintLoopInput(BaseModel):
+    """
+    A desired loop. The spec-bearing fields (`steps`, `triggers`, `event`, `config`, `limits`, `output`, `concurrency`, `repositories`, `cleanup`, `defaults`) mirror the loop authoring shape and are compiled by the loop engine. Applied loops default to `draft` unless `status` is set.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    key: str
+    name: str
+    description: str | None = None
+    agent: BlueprintResourceRef | None = None
+    status: Status5 | None = None
+    steps: list[dict[str, Any]] | None = None
+    triggers: list[dict[str, Any]] | None = None
+    event: dict[str, Any] | None = Field(
+        None,
+        description='Declared event input contract for the run (maps to the loop spec `event`).',
+    )
+    config: dict[str, Any] | None = None
+    limits: dict[str, Any] | None = None
+    output: dict[str, Any] | None = None
+    concurrency: str | None = None
+    repositories: list[dict[str, Any]] | None = None
+    cleanup: list[dict[str, Any]] | None = Field(
+        None,
+        description='Cleanup steps run at the end of the run (maps to the loop spec `cleanup`).',
+    )
+    defaults: dict[str, Any] | None = None
+    tags: TagMap | None = None
+
+
+class BlueprintTableInput(BaseModel):
+    """
+    A desired table. `name` is its immutable project-unique identity (lower snake_case). `schema` carries the full column and identity definition and is validated on apply. The identity column and the required-ness of existing columns are immutable after create, so a re-apply that changes them is rejected.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    key: str = Field(
+        ..., description='Blueprint-defined handle other resources use to reference it.'
+    )
+    name: str
+    description: str | None = None
+    instructions: str | None = Field(
+        None,
+        description='Optional author guidance for how this table should be used (e.g. surfaced to agents).',
+    )
+    schema_: TableSchema = Field(..., alias='schema')
+
+
+class BlueprintApplyResult(BaseModel):
+    """
+    The outcome of an apply or preview.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    status: Status6 = Field(
+        ..., description='`applied` for a mutating apply, `previewed` for a preview.'
+    )
+    namespace: str | None = None
+    blueprint_key: str | None = None
+    blueprint_version: str | None = None
+    changes: list[BlueprintChange]
+    bindings: list[BlueprintBinding]
+
+
 class Artifact(BaseModel):
     """
     Stored file or generated artifact metadata.
@@ -6424,6 +6740,22 @@ class LoopRunEventListResponse(BaseModel):
     )
 
 
+class BlueprintResources(BaseModel):
+    """
+    The desired resources grouped by type. All groups are optional.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    actions: list[BlueprintActionInput] | None = None
+    toolkits: list[BlueprintToolkitInput] | None = None
+    skills: list[BlueprintSkillInput] | None = None
+    agents: list[BlueprintAgentInput] | None = None
+    loops: list[BlueprintLoopInput] | None = None
+    tables: list[BlueprintTableInput] | None = None
+
+
 class CreateInteractionRequest(
     RootModel[CreateStandaloneInteractionRequest | CreateRunBackedInteractionRequest]
 ):
@@ -6457,6 +6789,27 @@ class LoopStep(
         description='User-authored loop step, discriminated by `kind`.',
         discriminator='kind',
     )
+
+
+class ApplyBlueprintRequest(BaseModel):
+    """
+    A desired blueprint plus the apply mode.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    namespace: str | None = Field(
+        None, description='Optional namespace recorded as provenance on each binding.'
+    )
+    blueprint_key: str | None = Field(
+        None, description='Optional blueprint identifier recorded as provenance.'
+    )
+    blueprint_version: str | None = Field(
+        None, description='Optional blueprint version recorded as provenance.'
+    )
+    mode: BlueprintApplyMode | None = None
+    resources: BlueprintResources
 
 
 class Loop(BaseModel):

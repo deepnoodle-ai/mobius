@@ -67,6 +67,9 @@ tags:
   x-displayName: Skills
   description: Project-local and system skill templates used to shape agent behavior and requested
     tools.
+- name: blueprints
+  x-displayName: Blueprints
+  description: Blueprints API operations.
 - name: tables
   x-displayName: Tables
   description: Agent-readable and -writable project tables.
@@ -799,14 +802,32 @@ paths:
       tags:
       - projects
       summary: List projects
-      description: Returns up to 100 projects. Use `search` for prefix-match filtering by
-        name or handle. Deleted projects are omitted from normal list responses.
+      description: 'Lists the projects the caller can see, newest first. Results are paginated:
+        pass `limit` to size the page and follow `next_cursor` (returned while `has_more`
+        is true) to walk the full set — the way to enumerate an org that runs a project per
+        tenant. Use `search` to substring-match name, handle, or description, and repeat `tag`
+        to narrow to projects carrying specific labels. Deleted projects are omitted from
+        normal list responses.'
       parameters:
       - name: search
         in: query
-        description: Prefix-match filter applied to project name and handle.
+        description: Case-insensitive substring filter applied to project name, handle, and
+          description.
         schema:
           type: string
+      - name: tag
+        in: query
+        description: Filter to projects carrying the given tags. Each value is either a bare
+          key (matches any project that has the key) or `key:value` (matches the exact key/value
+          pair). Comma-separate to require several tags; a project must match every one.
+        schema:
+          type: array
+          items:
+            type: string
+        style: form
+        explode: false
+      - $ref: '#/components/parameters/CursorParam'
+      - $ref: '#/components/parameters/LimitParam'
       responses:
         '200':
           description: OK
@@ -3743,6 +3764,81 @@ paths:
           $ref: '#/components/responses/NotFound'
         '429':
           $ref: '#/components/responses/TooManyRequests'
+  /v1/projects/{project_handle}/blueprints/apply:
+    post:
+      operationId: applyBlueprint
+      tags:
+      - blueprints
+      summary: Apply a blueprint to a project
+      description: |-
+        Creates missing resources, updates resources Mobius manages on behalf of the blueprint, adopts matching uniquely-named resources where safe, and reports the resulting changes and bindings. With `mode: preview` the request validates and returns a plan without mutating anything.
+
+        Apply writes each resource together with its binding in one transaction, but is not all-or-nothing across resources: a failure in a later tier leaves earlier tiers persisted with bindings, and a re-apply converges. Loops are content-diffed, so an unchanged loop is a no-op and does not mint a new version.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApplyBlueprintRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BlueprintApplyResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: A blueprint reference points at a resource that does not exist.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: A blueprint reference or apply conflict requires human review.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /v1/projects/{project_handle}/blueprints/bindings:
+    get:
+      operationId: listBlueprintBindings
+      tags:
+      - blueprints
+      summary: List blueprint bindings
+      description: 'Returns the project''s blueprint bindings: the mapping from each blueprint-defined
+        resource key to the Mobius resource it provisions. Optionally filtered by namespace.'
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - name: namespace
+        in: query
+        description: Optional namespace filter (matches the binding's stored provenance).
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BlueprintBindingListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
   /v1/projects/{project_handle}/tables:
     get:
       operationId: listTables
@@ -5045,12 +5141,20 @@ components:
       additionalProperties: false
       required:
       - items
+      - has_more
       properties:
         items:
           type: array
           description: The list of results for this page.
           items:
             $ref: '#/components/schemas/Project'
+        has_more:
+          type: boolean
+          description: Whether more results are available beyond this page.
+        next_cursor:
+          type: string
+          description: Opaque cursor to pass as `cursor` on the next request. Absent when
+            `has_more` is false.
     AgentModelRouteMode:
       type: string
       enum:
@@ -9100,6 +9204,8 @@ components:
       - message_count
       - token_input_total
       - token_output_total
+      - cache_read_input_total
+      - cache_creation_input_total
       - version
       - created_at
       - updated_at
@@ -9158,10 +9264,18 @@ components:
           description: Total messages currently in the session, including compaction summaries.
         token_input_total:
           type: integer
-          description: Lifetime input-token total reported for this session.
+          description: Lifetime fresh (uncached) input-token total for this session. Prompt-cache
+            tokens are reported separately in `cache_read_input_total` and `cache_creation_input_total`.
         token_output_total:
           type: integer
           description: Lifetime output-token total reported for this session.
+        cache_read_input_total:
+          type: integer
+          description: Lifetime prompt-cache-read input-token total for this session.
+        cache_creation_input_total:
+          type: integer
+          description: Lifetime prompt-cache-write (cache creation) input-token total for
+            this session.
         version:
           type: integer
           description: Optimistic-concurrency version. Increments on every mutation.
@@ -9571,11 +9685,19 @@ components:
         token_input_total:
           type: integer
           minimum: 0
-          description: Updated lifetime input-token total for this session.
+          description: Fresh (uncached) input tokens to add to this session's lifetime total.
         token_output_total:
           type: integer
           minimum: 0
-          description: Updated lifetime output-token total for this session.
+          description: Output tokens to add to this session's lifetime total.
+        cache_read_input_total:
+          type: integer
+          minimum: 0
+          description: Prompt-cache-read input tokens to add to this session's lifetime total.
+        cache_creation_input_total:
+          type: integer
+          minimum: 0
+          description: Prompt-cache-write input tokens to add to this session's lifetime total.
         model:
           type: string
           description: Model that produced these messages.
@@ -11999,6 +12121,412 @@ components:
           description: The list of results for this page.
           items:
             $ref: '#/components/schemas/Skill'
+    BlueprintApplyMode:
+      type: string
+      description: '`apply` performs the change; `preview` validates and returns a plan without
+        mutating resources.'
+      enum:
+      - preview
+      - apply
+    BlueprintResourceType:
+      type: string
+      description: The kind of Mobius resource a binding or change refers to.
+      enum:
+      - action
+      - toolkit
+      - skill
+      - agent
+      - loop
+      - table
+    BlueprintChangeAction:
+      type: string
+      description: 'What apply did (or, in preview, would do): `created` a new resource, `updated`
+        a managed one, `adopted` a matching unmanaged one, or left an `unchanged` resource
+        untouched.'
+      enum:
+      - created
+      - updated
+      - adopted
+      - unchanged
+    BlueprintResourceRef:
+      type: object
+      additionalProperties: false
+      description: A reference to a Mobius resource by direct `id`, by blueprint `key` (resolved
+        within this apply first, then against existing bindings), or by `blueprint_ref` (namespace
+        + key).
+      properties:
+        id:
+          type: string
+          description: Direct resource id.
+        key:
+          type: string
+          description: Blueprint-defined resource key.
+        blueprint_ref:
+          $ref: '#/components/schemas/BlueprintRef'
+    BlueprintRef:
+      type: object
+      additionalProperties: false
+      description: A namespaced blueprint key reference.
+      required:
+      - key
+      properties:
+        namespace:
+          type: string
+        key:
+          type: string
+    ApplyBlueprintRequest:
+      type: object
+      additionalProperties: false
+      description: A desired blueprint plus the apply mode.
+      required:
+      - resources
+      properties:
+        namespace:
+          type: string
+          description: Optional namespace recorded as provenance on each binding.
+        blueprint_key:
+          type: string
+          description: Optional blueprint identifier recorded as provenance.
+        blueprint_version:
+          type: string
+          description: Optional blueprint version recorded as provenance.
+        mode:
+          $ref: '#/components/schemas/BlueprintApplyMode'
+        resources:
+          $ref: '#/components/schemas/BlueprintResources'
+    BlueprintResources:
+      type: object
+      additionalProperties: false
+      description: The desired resources grouped by type. All groups are optional.
+      properties:
+        actions:
+          type: array
+          items:
+            $ref: '#/components/schemas/BlueprintActionInput'
+        toolkits:
+          type: array
+          items:
+            $ref: '#/components/schemas/BlueprintToolkitInput'
+        skills:
+          type: array
+          items:
+            $ref: '#/components/schemas/BlueprintSkillInput'
+        agents:
+          type: array
+          items:
+            $ref: '#/components/schemas/BlueprintAgentInput'
+        loops:
+          type: array
+          items:
+            $ref: '#/components/schemas/BlueprintLoopInput'
+        tables:
+          type: array
+          items:
+            $ref: '#/components/schemas/BlueprintTableInput'
+    BlueprintActionInput:
+      type: object
+      additionalProperties: false
+      description: A desired action. `name` is its immutable project-unique identity.
+      required:
+      - key
+      - name
+      properties:
+        key:
+          type: string
+          description: Blueprint-defined handle other resources use to reference it.
+        name:
+          type: string
+        type:
+          type: string
+          description: Endpoint kind. Defaults to `http`. Immutable after create.
+          enum:
+          - http
+          - worker
+          - builtin
+        endpoint:
+          type: string
+          description: Endpoint URL for http actions.
+        title:
+          type: string
+        description:
+          type: string
+        input_schema:
+          type: object
+          additionalProperties: true
+        output_schema:
+          type: object
+          additionalProperties: true
+        annotations:
+          $ref: '#/components/schemas/BlueprintActionAnnotations'
+        tags:
+          $ref: '#/components/schemas/TagMap'
+    BlueprintActionAnnotations:
+      type: object
+      additionalProperties: false
+      description: Behavioral annotations describing how an action may be used.
+      properties:
+        idempotent:
+          type: boolean
+        destructive:
+          type: boolean
+        read_only:
+          type: boolean
+        long_running:
+          type: boolean
+    BlueprintToolkitInput:
+      type: object
+      additionalProperties: false
+      description: A desired toolkit. Resolved only through its binding (toolkits have no
+        unique name).
+      required:
+      - key
+      - name
+      properties:
+        key:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        actions:
+          type: array
+          description: Actions granted into the toolkit by exact action name.
+          items:
+            $ref: '#/components/schemas/BlueprintToolkitActionGrant'
+        tags:
+          $ref: '#/components/schemas/TagMap'
+        metadata:
+          type: object
+          additionalProperties: true
+    BlueprintToolkitActionGrant:
+      type: object
+      additionalProperties: false
+      description: Grants one action into a toolkit by its name.
+      required:
+      - action_name
+      properties:
+        action_name:
+          type: string
+    BlueprintSkillInput:
+      type: object
+      additionalProperties: false
+      description: A desired skill.
+      required:
+      - key
+      - name
+      properties:
+        key:
+          type: string
+        name:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        instructions:
+          type: string
+        tags:
+          $ref: '#/components/schemas/TagMap'
+    BlueprintAgentInput:
+      type: object
+      additionalProperties: false
+      description: A desired agent. `toolkits` and `skills`, when present, replace the agent's
+        full assignment set; omit them to leave existing assignments untouched.
+      required:
+      - key
+      - name
+      properties:
+        key:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        model:
+          type: string
+        system_prompt:
+          type: string
+        kind:
+          type: string
+        color:
+          type: string
+        toolkits:
+          type: array
+          items:
+            $ref: '#/components/schemas/BlueprintResourceRef'
+        skills:
+          type: array
+          items:
+            $ref: '#/components/schemas/BlueprintResourceRef'
+        tags:
+          $ref: '#/components/schemas/TagMap'
+    BlueprintLoopInput:
+      type: object
+      additionalProperties: false
+      description: A desired loop. The spec-bearing fields (`steps`, `triggers`, `event`,
+        `config`, `limits`, `output`, `concurrency`, `repositories`, `cleanup`, `defaults`)
+        mirror the loop authoring shape and are compiled by the loop engine. Applied loops
+        default to `draft` unless `status` is set.
+      required:
+      - key
+      - name
+      properties:
+        key:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        agent:
+          $ref: '#/components/schemas/BlueprintResourceRef'
+        status:
+          type: string
+          enum:
+          - draft
+          - active
+          - paused
+        steps:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        triggers:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        event:
+          type: object
+          description: Declared event input contract for the run (maps to the loop spec `event`).
+          additionalProperties: true
+        config:
+          type: object
+          additionalProperties: true
+        limits:
+          type: object
+          additionalProperties: true
+        output:
+          type: object
+          additionalProperties: true
+        concurrency:
+          type: string
+        repositories:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        cleanup:
+          type: array
+          description: Cleanup steps run at the end of the run (maps to the loop spec `cleanup`).
+          items:
+            type: object
+            additionalProperties: true
+        defaults:
+          type: object
+          additionalProperties: true
+        tags:
+          $ref: '#/components/schemas/TagMap'
+    BlueprintTableInput:
+      type: object
+      additionalProperties: false
+      description: A desired table. `name` is its immutable project-unique identity (lower
+        snake_case). `schema` carries the full column and identity definition and is validated
+        on apply. The identity column and the required-ness of existing columns are immutable
+        after create, so a re-apply that changes them is rejected.
+      required:
+      - key
+      - name
+      - schema
+      properties:
+        key:
+          type: string
+          description: Blueprint-defined handle other resources use to reference it.
+        name:
+          type: string
+        description:
+          type: string
+        instructions:
+          type: string
+          description: Optional author guidance for how this table should be used (e.g. surfaced
+            to agents).
+        schema:
+          $ref: '#/components/schemas/TableSchema'
+    BlueprintApplyResult:
+      type: object
+      additionalProperties: false
+      description: The outcome of an apply or preview.
+      required:
+      - status
+      - changes
+      - bindings
+      properties:
+        status:
+          type: string
+          description: '`applied` for a mutating apply, `previewed` for a preview.'
+          enum:
+          - applied
+          - previewed
+        namespace:
+          type: string
+        blueprint_key:
+          type: string
+        blueprint_version:
+          type: string
+        changes:
+          type: array
+          items:
+            $ref: '#/components/schemas/BlueprintChange'
+        bindings:
+          type: array
+          items:
+            $ref: '#/components/schemas/BlueprintBinding'
+    BlueprintChange:
+      type: object
+      additionalProperties: false
+      required:
+      - resource_type
+      - key
+      - action
+      properties:
+        resource_type:
+          $ref: '#/components/schemas/BlueprintResourceType'
+        key:
+          type: string
+        action:
+          $ref: '#/components/schemas/BlueprintChangeAction'
+        resource_id:
+          type: string
+          description: The provisioned resource id. Empty for would-create entries in a preview.
+    BlueprintBinding:
+      type: object
+      additionalProperties: false
+      required:
+      - resource_type
+      - key
+      - resource_id
+      properties:
+        resource_type:
+          $ref: '#/components/schemas/BlueprintResourceType'
+        key:
+          type: string
+        resource_id:
+          type: string
+        namespace:
+          type: string
+        blueprint_key:
+          type: string
+        blueprint_version:
+          type: string
+    BlueprintBindingListResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/BlueprintBinding'
     ColumnType:
       type: string
       enum:
@@ -12784,6 +13312,9 @@ x-tagGroups:
 - name: Skills
   tags:
   - skills
+- name: Blueprints
+  tags:
+  - blueprints
 - name: Tables
   tags:
   - tables
