@@ -420,8 +420,84 @@ func NewEnvironmentGitCloneAction() mobius.Action {
 			args = append(args, "--branch", in.Branch)
 		}
 		args = append(args, "https://github.com/"+in.RepoFullName+".git", target)
-		return runGitWithCredential(ctx, in.RepoFullName, "clone", "", args)
+		result, err := runGitWithCredential(ctx, in.RepoFullName, "clone", "", args)
+		if err != nil {
+			return result, err
+		}
+		// Wire a persistent, broker-backed credential helper so ordinary git
+		// commands run later from the environment (fetch/pull/push via bash)
+		// authenticate without a token ever touching disk. Best-effort: the
+		// clone already succeeded, so a config failure is surfaced in the result
+		// but does not fail the step.
+		if ec, ok := ctx.(environmentContext); ok {
+			if cfgErr := configureEnvironmentGitCredentials(ctx, ec.EnvironmentID()); cfgErr != nil {
+				if m, ok := result.(map[string]any); ok {
+					m["git_credential_helper_error"] = cfgErr.Error()
+				}
+			}
+		}
+		return result, nil
 	})
+}
+
+// Bot identity stamped on commits made inside a managed environment when the
+// environment has no git identity of its own, so agent commits are attributable
+// rather than authored by `unknown <root@…>`.
+const (
+	environmentGitUserName  = "Mobius Agent"
+	environmentGitUserEmail = "agent@mobiusops.ai"
+)
+
+// configureEnvironmentGitCredentials writes the global git config that lets
+// arbitrary git commands in the environment authenticate through the Mobius
+// credential broker. The config holds no secret — only the environment id and
+// the path to this binary — because the helper brokers a fresh token on each
+// call. Uses the absolute path to the running worker binary so git can find the
+// helper regardless of PATH.
+func configureEnvironmentGitCredentials(ctx context.Context, environmentID string) error {
+	if strings.TrimSpace(environmentID) == "" {
+		return fmt.Errorf("environment id is required to configure git credentials")
+	}
+	bin, err := os.Executable()
+	if err != nil || strings.TrimSpace(bin) == "" {
+		bin = "mobius"
+	}
+	helper := "!" + shellQuoteSingle(bin) + " git-credential-helper --environment " + shellQuoteSingle(environmentID)
+	// credential.useHttpPath makes git pass the repository path to the helper so
+	// it can broker a token scoped to that exact repository.
+	if err := runGitConfigGlobal(ctx, "credential.useHttpPath", "true"); err != nil {
+		return err
+	}
+	if err := runGitConfigGlobal(ctx, "credential.helper", helper); err != nil {
+		return err
+	}
+	setEnvironmentGitIdentityIfUnset(ctx, "user.name", environmentGitUserName)
+	setEnvironmentGitIdentityIfUnset(ctx, "user.email", environmentGitUserEmail)
+	return nil
+}
+
+func runGitConfigGlobal(ctx context.Context, key, value string) error {
+	cmd := exec.CommandContext(ctx, "git", "config", "--global", key, value)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("git config --global %s: %w: %s", key, err, strings.TrimSpace(string(out)))
+	}
+	return nil
+}
+
+// setEnvironmentGitIdentityIfUnset sets a global git identity value only when
+// none is configured, so a repo- or user-provided identity is never clobbered.
+func setEnvironmentGitIdentityIfUnset(ctx context.Context, key, value string) {
+	check := exec.CommandContext(ctx, "git", "config", "--global", "--get", key)
+	if out, err := check.Output(); err == nil && strings.TrimSpace(string(out)) != "" {
+		return
+	}
+	_ = runGitConfigGlobal(ctx, key, value)
+}
+
+// shellQuoteSingle single-quotes s for safe embedding in the `!`-prefixed shell
+// string git runs for a credential helper.
+func shellQuoteSingle(s string) string {
+	return "'" + strings.ReplaceAll(s, "'", `'\''`) + "'"
 }
 
 func NewEnvironmentGitFetchAction() mobius.Action {

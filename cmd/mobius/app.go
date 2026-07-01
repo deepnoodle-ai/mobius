@@ -57,6 +57,7 @@ func newApp() *cli.App {
 	app.Use(authMiddleware())
 
 	registerWorkerCommand(app)
+	registerGitCredentialHelperCommand(app)
 	registerAuthCommands(app)
 	registerGeneratedCommands(app)
 
