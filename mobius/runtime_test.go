@@ -131,10 +131,17 @@ func TestWorkerRun_ExecutesActionJobOverWebSocket(t *testing.T) {
 	}
 	select {
 	case err := <-done:
-		assert.True(t, errors.Is(err, context.Canceled) || err == nil || errors.Is(err, io.EOF))
+		assert.True(t, workerSocketStoppedCleanly(err))
 	case <-time.After(time.Second):
 		t.Fatal("worker did not stop")
 	}
+}
+
+func workerSocketStoppedCleanly(err error) bool {
+	return err == nil ||
+		errors.Is(err, context.Canceled) ||
+		errors.Is(err, io.EOF) ||
+		errors.Is(err, websocket.ErrCloseSent)
 }
 
 func TestWorkerRun_StreamsGenerationDeltaAndReportsTerminalResult(t *testing.T) {
