@@ -6,6 +6,37 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 
 ## [Unreleased]
 
+## [0.0.31] - 2026-07-01
+
+Publishes the project blueprint API and reworks how the worker's environment
+tools truncate oversized output.
+
+### Added
+
+- SDKs / CLI: a project **blueprint** API. `POST
+  …/projects/{project_handle}/blueprints/apply` (operation `applyBlueprint`)
+  applies a desired blueprint — a declarative set of project resources plus an
+  apply mode — to a project, and `GET
+  …/projects/{project_handle}/blueprints/bindings`
+  (`listBlueprintBindings`) returns the mapping from each blueprint-defined
+  resource key to the concrete resource it resolved to. New CLI group `mobius
+  blueprints` (`apply` plus bindings listing), with generated
+  request/response types across the Go, TypeScript, and Python SDKs.
+
+### Changed
+
+- Worker (Go): the built-in environment tools now truncate oversized output
+  with per-tool strategies that keep the highest-signal content and
+  self-describe the truncation in-band, replacing the previous one-size
+  head-cut and its parallel structured-truncation fields. `bash` / `git
+  clone` / `git fetch` keep head+tail so a trailing error survives; `git
+  diff` cuts on whole-file (`diff --git`) boundaries; `git status` cuts on
+  whole lines; `logs.tail` keeps the newest bytes behind a prepended notice;
+  `files.read` paginates by offset with a `next_offset` trailer; `files.list`
+  returns mtime-ranked, byte-budgeted entries with an accurate total. New tool
+  parameters: `offset` on `files.read`, `max_output_bytes` on `git status` /
+  `git diff`, and `max_bytes` on `logs.tail`.
+
 ## [0.0.30] - 2026-06-30
 
 First-class SDK wrappers for the compound agent-invoke endpoint that shipped
