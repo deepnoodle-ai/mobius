@@ -1,7 +1,6 @@
 package action
 
 import (
-	"bytes"
 	"context"
 	"encoding/base64"
 	"fmt"
@@ -10,6 +9,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -17,11 +17,53 @@ import (
 	"github.com/deepnoodle-ai/mobius/mobius"
 )
 
+const defaultCommandTimeout = 5 * time.Minute
+
+// approxBytesPerToken converts a token budget into the byte limit the truncators
+// enforce. Roughly 4 bytes per token is the common rule of thumb; this is only a
+// coarse sizing approximation, so exact tokenizer variation across models and
+// content does not matter here.
+const approxBytesPerToken = 4
+
+// Output caps are sized in tokens because context, not disk, is the scarce
+// resource: the models we target have a 200k-token (often smaller) window, and a
+// single tool result should consume only a small fraction of it. They are
+// package-level variables (not constants) so they can be tuned at runtime and
+// overridden in tests via setSizeForTest; values are read at call time, so an
+// override takes effect on the next call.
+var (
+	// absoluteOutputMaxBytes is the hard ceiling on any single tool result at
+	// this layer (~32k tokens, ~16% of a 200k-token window). Every byte-output
+	// tool clamps to it; each tool's own default and truncation strategy operate
+	// below it.
+	absoluteOutputMaxBytes = 32_000 * approxBytesPerToken
+
+	// Per-tool defaults, applied when the caller does not request a size. Each is
+	// a fraction of absoluteOutputMaxBytes, leaving headroom a caller can opt
+	// into up to the absolute cap.
+	defaultCommandOutputMaxBytes       = 16_000 * approxBytesPerToken // bash, git status, git diff
+	gitCloneFetchCommandOutputMaxBytes = 16_000 * approxBytesPerToken // clone/fetch progress text
+	defaultLogsTailMaxBytes            = 16_000 * approxBytesPerToken
+	defaultFileReadMaxBytes            = 16_000 * approxBytesPerToken // per read page; larger files paginate
+
+	// capturedOutputCeiling bounds in-memory buffering for structural truncation
+	// (git status/diff). It is a MEMORY guard, not a context budget — only the
+	// truncated result reaches the model — so it stays well above the
+	// presentation caps to keep file/line counts accurate.
+	capturedOutputCeiling = 1 << 20 // 1 MiB
+
+	// defaultFileListMaxScan bounds how many entries files.list scans before
+	// ranking and cutting (an entry count, not bytes).
+	defaultFileListMaxScan = 5000
+)
+
+// Per-tool suggestions embedded in truncation notices. Each is phrased as a
+// concrete next action the agent can take to recover the omitted content.
 const (
-	defaultCommandTimeout              = 5 * time.Minute
-	defaultCommandOutputMaxBytes       = 128 * 1024
-	hardCommandOutputMaxBytes          = 512 * 1024
-	gitCloneFetchCommandOutputMaxBytes = 512 * 1024
+	bashOutputHint      = "redirect large output to a file, then read it back in ranges, or publish it as an artifact"
+	gitStatusOutputHint = "scope the check to a pathspec (git status -- <path>) in a large working tree"
+	gitDiffOutputHint   = "re-run with a pathspec, --stat, or a lower --context to see the rest"
+	gitRemoteOutputHint = "retry with a narrower git operation if you need the full output"
 )
 
 type environmentContext interface {
@@ -47,6 +89,7 @@ type FileReadInput struct {
 	Path     string `json:"path"`
 	Encoding string `json:"encoding,omitempty"`
 	MaxBytes int    `json:"max_bytes,omitempty"`
+	Offset   int64  `json:"offset,omitempty"`
 }
 
 type FileWriteInput struct {
@@ -106,8 +149,9 @@ type ArtifactDownloadInput struct {
 }
 
 type LogsTailInput struct {
-	LogName string `json:"log_name,omitempty"`
-	Tail    int    `json:"tail,omitempty"`
+	LogName  string `json:"log_name,omitempty"`
+	Tail     int    `json:"tail,omitempty"`
+	MaxBytes int    `json:"max_bytes,omitempty"`
 }
 
 func NewEnvironmentBashAction() mobius.Action {
@@ -131,10 +175,10 @@ func NewEnvironmentBashAction() mobius.Action {
 		for key, value := range in.Env {
 			cmd.Env = append(cmd.Env, key+"="+value)
 		}
-		return runCommand(cmd, commandOutputOptions{
-			MaxBytes: in.MaxOutputBytes,
-			Hint:     "Use a narrower command, redirect large output to a file, or publish a large result as an artifact.",
-		})
+		limit := resolveOutputMaxBytes(in.MaxOutputBytes, defaultCommandOutputMaxBytes)
+		return runCommand(cmd,
+			newHeadTailTruncator(limit, "stdout", bashOutputHint),
+			newHeadTailTruncator(limit, "stderr", bashOutputHint))
 	})
 }
 
@@ -144,15 +188,21 @@ func NewEnvironmentFileReadAction() mobius.Action {
 		if err != nil {
 			return nil, err
 		}
-		limit := in.MaxBytes
-		if limit <= 0 {
-			limit = 512 * 1024
+		limit := resolveOutputMaxBytes(in.MaxBytes, defaultFileReadMaxBytes)
+		offset := in.Offset
+		if offset < 0 {
+			offset = 0
 		}
 		file, err := os.Open(path)
 		if err != nil {
 			return nil, err
 		}
 		defer func() { _ = file.Close() }()
+		if offset > 0 {
+			if _, err := file.Seek(offset, io.SeekStart); err != nil {
+				return nil, err
+			}
+		}
 		data, err := io.ReadAll(io.LimitReader(file, int64(limit+1)))
 		if err != nil {
 			return nil, err
@@ -161,10 +211,27 @@ func NewEnvironmentFileReadAction() mobius.Action {
 		if truncated {
 			data = data[:limit]
 		}
+		nextOffset := offset + int64(len(data))
 		if in.Encoding == "base64" {
-			return map[string]any{"path": in.Path, "encoding": "base64", "content": base64.StdEncoding.EncodeToString(data), "truncated": truncated}, nil
+			// Binary payload: keep the truncation signal out-of-band so the
+			// base64 content stays decodable as a single blob.
+			out := map[string]any{"path": in.Path, "encoding": "base64", "content": base64.StdEncoding.EncodeToString(data), "truncated": truncated}
+			if truncated {
+				out["next_offset"] = nextOffset
+			}
+			return out, nil
 		}
-		return map[string]any{"path": in.Path, "encoding": "text", "content": string(data), "truncated": truncated}, nil
+		content := string(data)
+		if truncated {
+			content += fmt.Sprintf(
+				"\n\n[file truncated: read %s ending at byte %d; call again with offset=%d to continue]",
+				humanBytes(len(data)), nextOffset, nextOffset)
+		}
+		out := map[string]any{"path": in.Path, "encoding": "text", "content": content, "truncated": truncated}
+		if truncated {
+			out["next_offset"] = nextOffset
+		}
+		return out, nil
 	})
 }
 
@@ -212,17 +279,37 @@ func NewEnvironmentFileListAction() mobius.Action {
 		if maxEntries <= 0 {
 			maxEntries = 200
 		}
-		var entries []map[string]any
+		type scannedEntry struct {
+			m   map[string]any
+			mod time.Time
+		}
+		// Collect up to a scan ceiling, then rank and cut. Scanning a bounded
+		// superset lets us surface the most recently modified entries and report
+		// an accurate total rather than an off-by-one "looks full" guess.
+		scanLimit := maxEntries
+		if scanLimit < defaultFileListMaxScan {
+			scanLimit = defaultFileListMaxScan
+		}
+		var scanned []scannedEntry
+		scanCapped := false
 		add := func(path string, info os.FileInfo) {
+			if len(scanned) >= scanLimit {
+				scanCapped = true
+				return
+			}
 			rel, _ := filepath.Rel(workspaceRoot(), path)
-			entries = append(entries, map[string]any{"path": filepath.ToSlash(rel), "dir": info.IsDir(), "size": info.Size(), "modified_at": info.ModTime()})
+			scanned = append(scanned, scannedEntry{
+				m:   map[string]any{"path": filepath.ToSlash(rel), "dir": info.IsDir(), "size": info.Size(), "modified_at": info.ModTime()},
+				mod: info.ModTime(),
+			})
 		}
 		if in.Recursive {
 			err = filepath.Walk(root, func(path string, info os.FileInfo, walkErr error) error {
 				if walkErr != nil {
 					return walkErr
 				}
-				if len(entries) >= maxEntries {
+				if len(scanned) >= scanLimit {
+					scanCapped = true
 					return filepath.SkipAll
 				}
 				add(path, info)
@@ -232,7 +319,8 @@ func NewEnvironmentFileListAction() mobius.Action {
 			var items []os.DirEntry
 			items, err = os.ReadDir(root)
 			for _, item := range items {
-				if len(entries) >= maxEntries {
+				if len(scanned) >= scanLimit {
+					scanCapped = true
 					break
 				}
 				info, statErr := item.Info()
@@ -245,7 +333,42 @@ func NewEnvironmentFileListAction() mobius.Action {
 		if err != nil {
 			return nil, err
 		}
-		return map[string]any{"path": in.Path, "entries": entries, "truncated": len(entries) >= maxEntries}, nil
+		sort.SliceStable(scanned, func(i, j int) bool { return scanned[i].mod.After(scanned[j].mod) })
+		total := len(scanned)
+
+		// Include newest-first entries until we hit either the requested max or
+		// the layer's absolute byte budget, whichever binds first — so a large
+		// max_entries can't push the serialized listing past the absolute cap.
+		// At least one entry is always returned.
+		entries := make([]map[string]any, 0)
+		used := 0
+		byteCapped := false
+		for _, e := range scanned {
+			if len(entries) >= maxEntries {
+				break
+			}
+			est := estimatedEntryBytes(e.m)
+			if len(entries) > 0 && used+est > absoluteOutputMaxBytes {
+				byteCapped = true
+				break
+			}
+			entries = append(entries, e.m)
+			used += est
+		}
+		truncated := len(entries) < total
+		out := map[string]any{"path": in.Path, "entries": entries, "truncated": truncated}
+		if truncated {
+			totalLabel := fmt.Sprintf("%d", total)
+			if scanCapped {
+				totalLabel = fmt.Sprintf("%d+", total)
+			}
+			reason := "narrow the path or raise max_entries to see more"
+			if byteCapped {
+				reason = fmt.Sprintf("output hit the ~%s cap; narrow the path to see more", humanBytes(absoluteOutputMaxBytes))
+			}
+			out["note"] = fmt.Sprintf("showing %d of %s entries (newest first); %s", len(entries), totalLabel, reason)
+		}
+		return out, nil
 	})
 }
 
@@ -327,10 +450,10 @@ func NewEnvironmentGitStatusAction() mobius.Action {
 		}
 		cmd := exec.CommandContext(ctx, "git", "status", "--short", "--branch")
 		cmd.Dir = dir
-		return runCommand(cmd, commandOutputOptions{
-			MaxBytes: in.MaxOutputBytes,
-			Hint:     "Use a path-scoped git status command when inspecting very large repositories.",
-		})
+		limit := resolveOutputMaxBytes(in.MaxOutputBytes, defaultCommandOutputMaxBytes)
+		return runCommand(cmd,
+			newLineTruncator(limit, "git status", gitStatusOutputHint),
+			newHeadTailTruncator(limit, "stderr", gitStatusOutputHint))
 	})
 }
 
@@ -349,10 +472,10 @@ func NewEnvironmentGitDiffAction() mobius.Action {
 		}
 		cmd := exec.CommandContext(ctx, "git", args...)
 		cmd.Dir = dir
-		return runCommand(cmd, commandOutputOptions{
-			MaxBytes: in.MaxOutputBytes,
-			Hint:     "Use git diff --stat, a path-scoped diff, or lower context to inspect the remaining changes.",
-		})
+		limit := resolveOutputMaxBytes(in.MaxOutputBytes, defaultCommandOutputMaxBytes)
+		return runCommand(cmd,
+			newDiffTruncator(limit, gitDiffOutputHint),
+			newHeadTailTruncator(limit, "stderr", gitDiffOutputHint))
 	})
 }
 
@@ -437,7 +560,21 @@ func NewEnvironmentLogsTailAction() mobius.Action {
 		if err != nil {
 			return nil, err
 		}
-		return map[string]any{"log_name": logName, "path": path, "tail": tail, "content": redactSecrets(content)}, nil
+		content = redactSecrets(content)
+		maxBytes := resolveOutputMaxBytes(in.MaxBytes, defaultLogsTailMaxBytes)
+		// Logs are read newest-last, so keep the tail bytes (most recent) and
+		// prepend the notice where an outer truncation is least likely to drop it.
+		if len(content) > maxBytes {
+			omitted := len(content) - maxBytes
+			content = content[len(content)-maxBytes:]
+			if nl := strings.IndexByte(content, '\n'); nl >= 0 && nl < len(content)-1 {
+				content = content[nl+1:]
+			}
+			content = fmt.Sprintf(
+				"[logs truncated: kept last %s, %s of earlier output omitted; request fewer lines or a specific log]\n\n",
+				humanBytes(len(content)), humanBytes(omitted)) + content
+		}
+		return map[string]any{"log_name": logName, "path": path, "tail": tail, "content": content}, nil
 	})
 }
 
@@ -514,19 +651,18 @@ func workspaceRootAbs() string {
 	return filepath.Clean(root)
 }
 
-type commandOutputOptions struct {
-	MaxBytes        int
-	DefaultMaxBytes int
-	Hint            string
+// streamTruncator captures a command's output stream (bounding its own memory)
+// and renders the agent-facing string, self-describing any truncation in-band.
+// Each tool picks the strategy that fits its output shape; the only shared
+// contract is that truncation is announced in the returned text.
+type streamTruncator interface {
+	io.Writer
+	present() string
 }
 
-func runCommand(cmd *exec.Cmd, opts commandOutputOptions) (map[string]any, error) {
-	maxBytes := commandOutputMaxBytes(opts.MaxBytes, opts.DefaultMaxBytes)
-	var stdout, stderr limitedBuffer
-	stdout.limit = maxBytes
-	stderr.limit = maxBytes
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
+func runCommand(cmd *exec.Cmd, stdout, stderr streamTruncator) (map[string]any, error) {
+	cmd.Stdout = stdout
+	cmd.Stderr = stderr
 	err := cmd.Run()
 	exitCode := 0
 	if err != nil {
@@ -536,15 +672,11 @@ func runCommand(cmd *exec.Cmd, opts commandOutputOptions) (map[string]any, error
 			return nil, err
 		}
 	}
-	out := map[string]any{
-		"stdout":           stdout.String(),
-		"stderr":           stderr.String(),
-		"exit_code":        exitCode,
-		"stdout_truncated": stdout.truncated,
-		"stderr_truncated": stderr.truncated,
-	}
-	annotateCommandOutputTruncation(out, maxBytes, opts.Hint, &stdout, &stderr)
-	return out, nil
+	return map[string]any{
+		"stdout":    stdout.present(),
+		"stderr":    stderr.present(),
+		"exit_code": exitCode,
+	}, nil
 }
 
 func runGitWithCredential(ctx mobius.Context, repoFullName, operation, dir string, args []string) (any, error) {
@@ -574,10 +706,10 @@ func runGitWithCredential(ctx mobius.Context, repoFullName, operation, dir strin
 		"MOBIUS_GIT_USERNAME="+cred.Username,
 		"MOBIUS_GIT_TOKEN="+cred.Token,
 	)
-	out, err := runCommand(cmd, commandOutputOptions{
-		DefaultMaxBytes: gitCloneFetchCommandOutputMaxBytes,
-		Hint:            "Retry with a narrower git operation if more output is needed.",
-	})
+	limit := resolveOutputMaxBytes(0, gitCloneFetchCommandOutputMaxBytes)
+	out, err := runCommand(cmd,
+		newHeadTailTruncator(limit, "stdout", gitRemoteOutputHint),
+		newHeadTailTruncator(limit, "stderr", gitRemoteOutputHint))
 	if out != nil {
 		out["repo_full_name"] = repoFullName
 		out["credential_expires_at"] = cred.ExpiresAt
@@ -634,97 +766,280 @@ func redactSecrets(s string) string {
 	return secretRedactionPattern.ReplaceAllString(s, "[redacted]")
 }
 
-type limitedBuffer struct {
-	buf       bytes.Buffer
-	limit     int
-	truncated bool
-	omitted   int
-}
-
-func (b *limitedBuffer) Write(p []byte) (int, error) {
-	if b.limit <= 0 {
-		return len(p), nil
-	}
-	remaining := b.limit - b.Len()
-	if remaining <= 0 {
-		b.truncated = true
-		b.omitted += len(p)
-		return len(p), nil
-	}
-	if len(p) > remaining {
-		b.truncated = true
-		_, _ = b.buf.Write(p[:remaining])
-		b.omitted += len(p) - remaining
-		return len(p), nil
-	}
-	return b.buf.Write(p)
-}
-
-func (b *limitedBuffer) Len() int {
-	if b == nil {
-		return 0
-	}
-	return b.buf.Len()
-}
-
-func (b *limitedBuffer) String() string {
-	if b == nil {
-		return ""
-	}
-	return b.buf.String()
-}
-
-func commandOutputMaxBytes(requested, defaultMaxBytes int) int {
-	maxBytes := defaultMaxBytes
-	if maxBytes <= 0 {
-		maxBytes = defaultCommandOutputMaxBytes
+// resolveOutputMaxBytes picks the effective byte cap for a tool result: the
+// caller's requested size if given, else the tool default — always clamped to
+// absoluteOutputMaxBytes so no single tool result at this layer can exceed it.
+func resolveOutputMaxBytes(requested, toolDefault int) int {
+	limit := toolDefault
+	if limit <= 0 {
+		limit = defaultCommandOutputMaxBytes
 	}
 	if requested > 0 {
-		maxBytes = requested
+		limit = requested
 	}
-	if maxBytes > hardCommandOutputMaxBytes {
-		return hardCommandOutputMaxBytes
+	if limit > absoluteOutputMaxBytes {
+		return absoluteOutputMaxBytes
 	}
-	return maxBytes
+	return limit
 }
 
-func annotateCommandOutputTruncation(out map[string]any, maxBytes int, hint string, stdout, stderr *limitedBuffer) {
-	if out == nil {
-		return
-	}
-	var totalOmitted int
-	if stdout != nil && stdout.truncated {
-		totalOmitted += stdout.omitted
-		out["stdout_bytes_omitted"] = stdout.omitted
-		out["stdout"] = stdout.String() + commandStreamTruncationNotice("stdout", stdout.omitted, hint)
-	}
-	if stderr != nil && stderr.truncated {
-		totalOmitted += stderr.omitted
-		out["stderr_bytes_omitted"] = stderr.omitted
-		out["stderr"] = stderr.String() + commandStreamTruncationNotice("stderr", stderr.omitted, hint)
-	}
-	if totalOmitted == 0 {
-		return
-	}
-	out["partial"] = true
-	out["truncated"] = true
-	out["bytes_omitted"] = totalOmitted
-	out["max_output_bytes"] = maxBytes
-	out["truncation_notice"] = commandResultTruncationNotice(totalOmitted, hint)
+// headTailTruncator keeps the first and last bytes of a stream, dropping the
+// middle. It suits unstructured output (bash, git clone/fetch) where the most
+// diagnostic content — the final error — lives at the end. Memory is bounded to
+// the presentation limit no matter how much the command emits.
+type headTailTruncator struct {
+	label   string
+	hint    string
+	headMax int
+	tailMax int
+	head    []byte
+	tail    []byte
+	total   int
 }
 
-func commandStreamTruncationNotice(stream string, bytesOmitted int, hint string) string {
-	return "\n\n" + commandResultTruncationNoticeForStream(stream, bytesOmitted, hint)
-}
-
-func commandResultTruncationNotice(bytesOmitted int, hint string) string {
-	return commandResultTruncationNoticeForStream("result", bytesOmitted, hint)
-}
-
-func commandResultTruncationNoticeForStream(stream string, bytesOmitted int, hint string) string {
-	message := fmt.Sprintf("[partial %s: truncated %d bytes", stream, bytesOmitted)
-	if strings.TrimSpace(hint) != "" {
-		message += "; " + strings.TrimSpace(hint)
+func newHeadTailTruncator(limit int, label, hint string) *headTailTruncator {
+	if limit < 2 {
+		limit = 2
 	}
-	return message + "]"
+	return &headTailTruncator{
+		label:   label,
+		hint:    hint,
+		headMax: limit / 2,
+		tailMax: limit - limit/2,
+	}
+}
+
+func (t *headTailTruncator) Write(p []byte) (int, error) {
+	n := len(p)
+	t.total += n
+	if len(t.head) < t.headMax {
+		take := t.headMax - len(t.head)
+		if take > len(p) {
+			take = len(p)
+		}
+		t.head = append(t.head, p[:take]...)
+		p = p[take:]
+	}
+	if len(p) > 0 {
+		t.tail = append(t.tail, p...)
+		if len(t.tail) > t.tailMax {
+			t.tail = t.tail[len(t.tail)-t.tailMax:]
+		}
+	}
+	return n, nil
+}
+
+func (t *headTailTruncator) present() string {
+	if t.total <= t.headMax {
+		return string(t.head)
+	}
+	afterHead := t.total - len(t.head)
+	if afterHead <= len(t.tail) {
+		// Everything past the head still fit in the tail buffer: nothing lost.
+		return string(t.head) + string(t.tail)
+	}
+	omitted := afterHead - len(t.tail)
+	return truncationNotice(t.label, omitted, len(t.head), len(t.tail), t.hint) +
+		"\n\n" + string(t.head) +
+		fmt.Sprintf("\n\n[... %s omitted ...]\n\n", humanBytes(omitted)) + string(t.tail)
+}
+
+// capturedTruncator buffers output up to a memory ceiling and defers truncation
+// to a format function that can see structure (whole lines, whole diff files).
+// It presents from the head, so the ceiling only needs to exceed what we might
+// present — bytes past it are never shown anyway.
+type capturedTruncator struct {
+	ceiling int
+	buf     []byte
+	total   int
+	format  func(raw string, cappedAtCeiling bool) string
+}
+
+func (t *capturedTruncator) Write(p []byte) (int, error) {
+	t.total += len(p)
+	if len(t.buf) < t.ceiling {
+		take := t.ceiling - len(t.buf)
+		if take > len(p) {
+			take = len(p)
+		}
+		t.buf = append(t.buf, p[:take]...)
+	}
+	return len(p), nil
+}
+
+func (t *capturedTruncator) present() string {
+	return t.format(string(t.buf), t.total > t.ceiling)
+}
+
+// newLineTruncator keeps whole lines up to the limit — never cutting mid-line —
+// and reports how many lines were shown of the total.
+func newLineTruncator(limit int, label, hint string) *capturedTruncator {
+	return &capturedTruncator{
+		ceiling: capturedOutputCeiling,
+		format: func(raw string, cappedAtCeiling bool) string {
+			return truncateByLines(raw, limit, label, hint, cappedAtCeiling)
+		},
+	}
+}
+
+// newDiffTruncator keeps whole per-file sections of a unified diff up to the
+// limit, so the presented text stays a valid, parseable diff.
+func newDiffTruncator(limit int, hint string) *capturedTruncator {
+	return &capturedTruncator{
+		ceiling: capturedOutputCeiling,
+		format: func(raw string, cappedAtCeiling bool) string {
+			return truncateDiff(raw, limit, hint, cappedAtCeiling)
+		},
+	}
+}
+
+func truncateByLines(raw string, limit int, label, hint string, cappedAtCeiling bool) string {
+	if len(raw) <= limit && !cappedAtCeiling {
+		return raw
+	}
+	lines := strings.SplitAfter(raw, "\n")
+	// SplitAfter yields a trailing "" when raw ends in "\n"; drop it.
+	if n := len(lines); n > 0 && lines[n-1] == "" {
+		lines = lines[:n-1]
+	}
+	var b strings.Builder
+	shown := 0
+	for _, ln := range lines {
+		if shown > 0 && b.Len()+len(ln) > limit {
+			break
+		}
+		b.WriteString(ln)
+		shown++
+	}
+	if shown >= len(lines) && !cappedAtCeiling {
+		return raw
+	}
+	notice := fmt.Sprintf("[%s truncated: showing %d of %s lines", label, shown, countLabel(len(lines), cappedAtCeiling))
+	if h := strings.TrimSpace(hint); h != "" {
+		notice += " — " + h
+	}
+	return notice + "]\n\n" + b.String()
+}
+
+func truncateDiff(raw string, limit int, hint string, cappedAtCeiling bool) string {
+	if len(raw) <= limit && !cappedAtCeiling {
+		return raw
+	}
+	sections := splitDiffSections(raw)
+	if len(sections) <= 1 {
+		// A single enormous file (or non-standard diff): fall back to head+tail
+		// on the bytes so the agent still sees both ends of the change.
+		return headTailString(raw, limit, "git diff", hint)
+	}
+	var b strings.Builder
+	shown := 0
+	for _, s := range sections {
+		if shown > 0 && b.Len()+len(s) > limit {
+			break
+		}
+		b.WriteString(s)
+		shown++
+	}
+	if shown == 0 {
+		return headTailString(raw, limit, "git diff", hint)
+	}
+	if shown >= len(sections) && !cappedAtCeiling {
+		return raw
+	}
+	notice := fmt.Sprintf("[git diff truncated: showing %d of %s files (%s of %s)",
+		shown, countLabel(len(sections), cappedAtCeiling), humanBytes(b.Len()), humanBytes(len(raw)))
+	if h := strings.TrimSpace(hint); h != "" {
+		notice += " — " + h
+	}
+	return notice + "]\n\n" + b.String()
+}
+
+// splitDiffSections splits unified-diff text on "diff --git " boundaries so each
+// element is one complete file's diff. Any preamble before the first section is
+// dropped (plain `git diff` output has none).
+func splitDiffSections(raw string) []string {
+	const marker = "diff --git "
+	var starts []int
+	if strings.HasPrefix(raw, marker) {
+		starts = append(starts, 0)
+	}
+	for i := 0; ; {
+		j := strings.Index(raw[i:], "\n"+marker)
+		if j < 0 {
+			break
+		}
+		pos := i + j + 1 // index of 'd' in the marker
+		starts = append(starts, pos)
+		i = pos + len(marker)
+	}
+	if len(starts) == 0 {
+		return nil
+	}
+	sections := make([]string, 0, len(starts))
+	for k, start := range starts {
+		end := len(raw)
+		if k+1 < len(starts) {
+			end = starts[k+1]
+		}
+		sections = append(sections, raw[start:end])
+	}
+	return sections
+}
+
+// headTailString applies head+tail truncation to an already-captured string.
+func headTailString(s string, limit int, label, hint string) string {
+	if len(s) <= limit {
+		return s
+	}
+	if limit < 2 {
+		limit = 2
+	}
+	head := limit / 2
+	tail := limit - head
+	omitted := len(s) - head - tail
+	return truncationNotice(label, omitted, head, tail, hint) +
+		"\n\n" + s[:head] +
+		fmt.Sprintf("\n\n[... %s omitted ...]\n\n", humanBytes(omitted)) + s[len(s)-tail:]
+}
+
+// truncationNotice renders the leading one-liner for head+tail truncation. It is
+// prepended (not appended) so a downstream token cap trims trailing content
+// before this signal.
+func truncationNotice(label string, omitted, head, tail int, hint string) string {
+	notice := fmt.Sprintf("[%s truncated: %s omitted (kept first %s + last %s)",
+		label, humanBytes(omitted), humanBytes(head), humanBytes(tail))
+	if h := strings.TrimSpace(hint); h != "" {
+		notice += " — " + h
+	}
+	return notice + "]"
+}
+
+func countLabel(n int, capped bool) string {
+	if capped {
+		return fmt.Sprintf("%d+", n)
+	}
+	return fmt.Sprintf("%d", n)
+}
+
+// fileListEntryOverheadBytes approximates the JSON overhead of one files.list
+// entry beyond its path: the keys, dir bool, size, and RFC3339 timestamp.
+const fileListEntryOverheadBytes = 96
+
+// estimatedEntryBytes approximates the serialized size of one files.list entry,
+// dominated by the (variable-length) path. It only needs to be good enough to
+// keep the listing under absoluteOutputMaxBytes.
+func estimatedEntryBytes(m map[string]any) int {
+	p, _ := m["path"].(string)
+	return len(p) + fileListEntryOverheadBytes
+}
+
+func humanBytes(n int) string {
+	switch {
+	case n >= 1<<20:
+		return fmt.Sprintf("%.1f MB", float64(n)/(1<<20))
+	case n >= 1<<10:
+		return fmt.Sprintf("%.1f KB", float64(n)/(1<<10))
+	default:
+		return fmt.Sprintf("%d B", n)
+	}
 }
