@@ -17,7 +17,12 @@ import (
 	"github.com/deepnoodle-ai/mobius/mobius"
 )
 
-const defaultCommandTimeout = 5 * time.Minute
+const (
+	defaultCommandTimeout              = 5 * time.Minute
+	defaultCommandOutputMaxBytes       = 128 * 1024
+	hardCommandOutputMaxBytes          = 512 * 1024
+	gitCloneFetchCommandOutputMaxBytes = 512 * 1024
+)
 
 type environmentContext interface {
 	EnvironmentID() string
@@ -76,13 +81,15 @@ type GitFetchInput struct {
 }
 
 type GitStatusInput struct {
-	Dir string `json:"dir,omitempty"`
+	Dir            string `json:"dir,omitempty"`
+	MaxOutputBytes int    `json:"max_output_bytes,omitempty"`
 }
 
 type GitDiffInput struct {
-	Dir     string `json:"dir,omitempty"`
-	Staged  bool   `json:"staged,omitempty"`
-	Context int    `json:"context,omitempty"`
+	Dir            string `json:"dir,omitempty"`
+	Staged         bool   `json:"staged,omitempty"`
+	Context        int    `json:"context,omitempty"`
+	MaxOutputBytes int    `json:"max_output_bytes,omitempty"`
 }
 
 type ArtifactPublishInput struct {
@@ -124,7 +131,10 @@ func NewEnvironmentBashAction() mobius.Action {
 		for key, value := range in.Env {
 			cmd.Env = append(cmd.Env, key+"="+value)
 		}
-		return runCommand(cmd, in.MaxOutputBytes)
+		return runCommand(cmd, commandOutputOptions{
+			MaxBytes: in.MaxOutputBytes,
+			Hint:     "Use a narrower command, redirect large output to a file, or publish a large result as an artifact.",
+		})
 	})
 }
 
@@ -317,7 +327,10 @@ func NewEnvironmentGitStatusAction() mobius.Action {
 		}
 		cmd := exec.CommandContext(ctx, "git", "status", "--short", "--branch")
 		cmd.Dir = dir
-		return runCommand(cmd, 256*1024)
+		return runCommand(cmd, commandOutputOptions{
+			MaxBytes: in.MaxOutputBytes,
+			Hint:     "Use a path-scoped git status command when inspecting very large repositories.",
+		})
 	})
 }
 
@@ -336,7 +349,10 @@ func NewEnvironmentGitDiffAction() mobius.Action {
 		}
 		cmd := exec.CommandContext(ctx, "git", args...)
 		cmd.Dir = dir
-		return runCommand(cmd, 512*1024)
+		return runCommand(cmd, commandOutputOptions{
+			MaxBytes: in.MaxOutputBytes,
+			Hint:     "Use git diff --stat, a path-scoped diff, or lower context to inspect the remaining changes.",
+		})
 	})
 }
 
@@ -498,10 +514,14 @@ func workspaceRootAbs() string {
 	return filepath.Clean(root)
 }
 
-func runCommand(cmd *exec.Cmd, maxBytes int) (map[string]any, error) {
-	if maxBytes <= 0 {
-		maxBytes = 512 * 1024
-	}
+type commandOutputOptions struct {
+	MaxBytes        int
+	DefaultMaxBytes int
+	Hint            string
+}
+
+func runCommand(cmd *exec.Cmd, opts commandOutputOptions) (map[string]any, error) {
+	maxBytes := commandOutputMaxBytes(opts.MaxBytes, opts.DefaultMaxBytes)
 	var stdout, stderr limitedBuffer
 	stdout.limit = maxBytes
 	stderr.limit = maxBytes
@@ -516,13 +536,15 @@ func runCommand(cmd *exec.Cmd, maxBytes int) (map[string]any, error) {
 			return nil, err
 		}
 	}
-	return map[string]any{
+	out := map[string]any{
 		"stdout":           stdout.String(),
 		"stderr":           stderr.String(),
 		"exit_code":        exitCode,
 		"stdout_truncated": stdout.truncated,
 		"stderr_truncated": stderr.truncated,
-	}, nil
+	}
+	annotateCommandOutputTruncation(out, maxBytes, opts.Hint, &stdout, &stderr)
+	return out, nil
 }
 
 func runGitWithCredential(ctx mobius.Context, repoFullName, operation, dir string, args []string) (any, error) {
@@ -552,7 +574,10 @@ func runGitWithCredential(ctx mobius.Context, repoFullName, operation, dir strin
 		"MOBIUS_GIT_USERNAME="+cred.Username,
 		"MOBIUS_GIT_TOKEN="+cred.Token,
 	)
-	out, err := runCommand(cmd, 512*1024)
+	out, err := runCommand(cmd, commandOutputOptions{
+		DefaultMaxBytes: gitCloneFetchCommandOutputMaxBytes,
+		Hint:            "Retry with a narrower git operation if more output is needed.",
+	})
 	if out != nil {
 		out["repo_full_name"] = repoFullName
 		out["credential_expires_at"] = cred.ExpiresAt
@@ -610,9 +635,10 @@ func redactSecrets(s string) string {
 }
 
 type limitedBuffer struct {
-	bytes.Buffer
+	buf       bytes.Buffer
 	limit     int
 	truncated bool
+	omitted   int
 }
 
 func (b *limitedBuffer) Write(p []byte) (int, error) {
@@ -622,12 +648,83 @@ func (b *limitedBuffer) Write(p []byte) (int, error) {
 	remaining := b.limit - b.Len()
 	if remaining <= 0 {
 		b.truncated = true
+		b.omitted += len(p)
 		return len(p), nil
 	}
 	if len(p) > remaining {
 		b.truncated = true
-		_, _ = b.Buffer.Write(p[:remaining])
+		_, _ = b.buf.Write(p[:remaining])
+		b.omitted += len(p) - remaining
 		return len(p), nil
 	}
-	return b.Buffer.Write(p)
+	return b.buf.Write(p)
+}
+
+func (b *limitedBuffer) Len() int {
+	if b == nil {
+		return 0
+	}
+	return b.buf.Len()
+}
+
+func (b *limitedBuffer) String() string {
+	if b == nil {
+		return ""
+	}
+	return b.buf.String()
+}
+
+func commandOutputMaxBytes(requested, defaultMaxBytes int) int {
+	maxBytes := defaultMaxBytes
+	if maxBytes <= 0 {
+		maxBytes = defaultCommandOutputMaxBytes
+	}
+	if requested > 0 {
+		maxBytes = requested
+	}
+	if maxBytes > hardCommandOutputMaxBytes {
+		return hardCommandOutputMaxBytes
+	}
+	return maxBytes
+}
+
+func annotateCommandOutputTruncation(out map[string]any, maxBytes int, hint string, stdout, stderr *limitedBuffer) {
+	if out == nil {
+		return
+	}
+	var totalOmitted int
+	if stdout != nil && stdout.truncated {
+		totalOmitted += stdout.omitted
+		out["stdout_bytes_omitted"] = stdout.omitted
+		out["stdout"] = stdout.String() + commandStreamTruncationNotice("stdout", stdout.omitted, hint)
+	}
+	if stderr != nil && stderr.truncated {
+		totalOmitted += stderr.omitted
+		out["stderr_bytes_omitted"] = stderr.omitted
+		out["stderr"] = stderr.String() + commandStreamTruncationNotice("stderr", stderr.omitted, hint)
+	}
+	if totalOmitted == 0 {
+		return
+	}
+	out["partial"] = true
+	out["truncated"] = true
+	out["bytes_omitted"] = totalOmitted
+	out["max_output_bytes"] = maxBytes
+	out["truncation_notice"] = commandResultTruncationNotice(totalOmitted, hint)
+}
+
+func commandStreamTruncationNotice(stream string, bytesOmitted int, hint string) string {
+	return "\n\n" + commandResultTruncationNoticeForStream(stream, bytesOmitted, hint)
+}
+
+func commandResultTruncationNotice(bytesOmitted int, hint string) string {
+	return commandResultTruncationNoticeForStream("result", bytesOmitted, hint)
+}
+
+func commandResultTruncationNoticeForStream(stream string, bytesOmitted int, hint string) string {
+	message := fmt.Sprintf("[partial %s: truncated %d bytes", stream, bytesOmitted)
+	if strings.TrimSpace(hint) != "" {
+		message += "; " + strings.TrimSpace(hint)
+	}
+	return message + "]"
 }
