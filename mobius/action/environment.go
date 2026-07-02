@@ -170,7 +170,13 @@ func NewEnvironmentBashAction() mobius.Action {
 			return nil, err
 		}
 		cmd := exec.CommandContext(runCtx, "bash", "-lc", in.Command)
+		configureProcessGroup(cmd)
 		cmd.Dir = dir
+		// The full worker environment — including MOBIUS_API_KEY — is
+		// intentionally visible to sandboxed commands: the environment is
+		// single-tenant and agent scripts routinely call the mobius CLI. See
+		// SECURITY.md; logs.tail redacts credential-shaped tokens on the way
+		// back out.
 		cmd.Env = os.Environ()
 		for key, value := range in.Env {
 			cmd.Env = append(cmd.Env, key+"="+value)
@@ -622,14 +628,49 @@ func workspacePath(path string) (string, error) {
 	if err := assertInsideWorkspace(root, target); err != nil {
 		return "", err
 	}
-	// Resolve symlinks where the target exists to defeat boundary bypass via
-	// in-workspace symlinks that point outside the workspace.
-	if resolved, err := filepath.EvalSymlinks(target); err == nil {
-		if err := assertInsideWorkspace(root, resolved); err != nil {
+	// Resolve symlinks to defeat boundary bypass via in-workspace symlinks
+	// that point outside the workspace. The target itself may not exist yet
+	// (files.write creates it), so resolve the deepest EXISTING ancestor and
+	// re-join the not-yet-existing suffix — otherwise writing through a
+	// symlinked parent directory that points outside the workspace would pass
+	// the lexical check above.
+	resolved, err := resolveDeepestExisting(target)
+	if err == nil && resolved != "" {
+		resolvedRoot := root
+		if rr, err := filepath.EvalSymlinks(root); err == nil {
+			resolvedRoot = rr
+		}
+		if err := assertInsideWorkspace(resolvedRoot, resolved); err != nil {
 			return "", err
 		}
 	}
 	return target, nil
+}
+
+// resolveDeepestExisting resolves symlinks in the longest existing prefix of
+// path and re-joins the remaining (not-yet-created) components. Returns "" if
+// no component of the path exists.
+func resolveDeepestExisting(path string) (string, error) {
+	var suffix []string
+	p := path
+	for {
+		resolved, err := filepath.EvalSymlinks(p)
+		if err == nil {
+			for i := len(suffix) - 1; i >= 0; i-- {
+				resolved = filepath.Join(resolved, suffix[i])
+			}
+			return filepath.Clean(resolved), nil
+		}
+		if !os.IsNotExist(err) {
+			return "", err
+		}
+		parent := filepath.Dir(p)
+		if parent == p {
+			return "", nil // nothing on the path exists
+		}
+		suffix = append(suffix, filepath.Base(p))
+		p = parent
+	}
 }
 
 func assertInsideWorkspace(root, target string) error {
@@ -697,6 +738,7 @@ func runGitWithCredential(ctx mobius.Context, repoFullName, operation, dir strin
 	}
 	defer func() { _ = os.RemoveAll(filepath.Dir(askpass)) }()
 	cmd := exec.CommandContext(ctx, "git", args...)
+	configureProcessGroup(cmd)
 	if dir != "" {
 		cmd.Dir = dir
 	}
@@ -745,13 +787,42 @@ func repoFullNameFromOrigin(dir string) string {
 	return remote
 }
 
+// tailFileMaxScanBytes bounds how much of the file's end tailFile reads. Logs
+// can grow to gigabytes; reading the whole file to take its tail would OOM the
+// worker. The presentation layer truncates far below this anyway.
+const tailFileMaxScanBytes = 4 << 20
+
 func tailFile(path string, lines int) (string, error) {
-	data, err := os.ReadFile(path)
+	file, err := os.Open(path)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return "", nil
 		}
 		return "", err
+	}
+	defer func() { _ = file.Close() }()
+	info, err := file.Stat()
+	if err != nil {
+		return "", err
+	}
+	offset := info.Size() - tailFileMaxScanBytes
+	if offset < 0 {
+		offset = 0
+	}
+	if offset > 0 {
+		if _, err := file.Seek(offset, io.SeekStart); err != nil {
+			return "", err
+		}
+	}
+	data, err := io.ReadAll(io.LimitReader(file, tailFileMaxScanBytes))
+	if err != nil {
+		return "", err
+	}
+	if offset > 0 {
+		// Drop the partial first line of a mid-file read.
+		if nl := strings.IndexByte(string(data), '\n'); nl >= 0 && nl < len(data)-1 {
+			data = data[nl+1:]
+		}
 	}
 	parts := strings.Split(string(data), "\n")
 	if len(parts) > lines {
