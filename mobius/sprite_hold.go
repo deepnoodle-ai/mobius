@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"sync"
 	"time"
@@ -18,23 +19,22 @@ const (
 	// inside a Sprite microVM. Its existence is how the worker detects that it
 	// is running inside a Sprite.
 	spriteAPISocketPath = "/.sprite/api.sock"
-	// spriteTaskName is the single Tasks-API hold the worker maintains. A task
-	// is a named hold; we refcount in-process and keep exactly one task alive.
-	spriteTaskName = "mobius-worker"
+	// spriteTaskPrefix prefixes the Tasks-API hold each worker maintains. The
+	// full task name is "mobius-worker-<worker_instance_id>": task names are
+	// global to the Sprite, so scoping them per instance keeps two workers on
+	// one Sprite (a pool, or two processes) from releasing each other's hold.
+	spriteTaskPrefix = "mobius-worker"
 	// spriteTaskExpire is the task's lifetime; refreshed on spriteHeartbeat-
 	// Interval. Short enough that a crashed worker's hold releases on its own
 	// (the Sprite then pauses), long enough to cover a missed refresh or two.
 	spriteTaskExpire        = "5m"
 	spriteHeartbeatInterval = 60 * time.Second
 	spriteRequestTimeout    = 10 * time.Second
-	// spriteReleaseGrace keeps the hold alive for a short window after the worker
-	// goes idle, so the Sprite stays warm across an agent step's inter-tool-call
-	// think-time (a job completes, the LLM reasons, the next tool-call job
-	// arrives). Without it a reused (lease/explicit) environment pauses the
-	// instant a job finishes and strands the next job — the #1028 wedge. Each new
-	// job resets the window, so an active session never pauses; the Sprite only
-	// hibernates after the grace elapses with no work, so idle billing is bounded.
-	spriteReleaseGrace = 2 * time.Minute
+	// spriteRequiredRetryDelay separates the in-process attempts a required
+	// hold makes before giving up. A single transient Tasks-API blip must not
+	// bounce the whole worker through its Sprite Service supervisor.
+	spriteRequiredRetryDelay    = 1 * time.Second
+	spriteRequiredRetryAttempts = 3
 )
 
 var _ hold = (*spriteHold)(nil)
@@ -50,38 +50,50 @@ var _ hold = (*spriteHold)(nil)
 // The Sprites Tasks API exposes a "task": a hold that keeps the VM running while
 // it is live, reachable only from inside the VM over the management socket.
 // While at least one job runs we maintain such a task with a short expiry,
-// refreshed on an interval; when the worker goes idle we release it so the
-// Sprite is free to pause again (and stop billing). This scopes the hold to
-// active work rather than the worker's whole lifetime, so reused (lease/explicit
-// lifetime) environments still hibernate between jobs.
+// refreshed on an interval; once the worker has been idle for the configured
+// keep-warm window we release it so the Sprite is free to pause again (and stop
+// billing). The window is the single dial between the keep-warm modes: 0
+// releases the instant the last job finishes (on-demand), a positive window
+// bridges an agent's inter-tool-call think-gaps (recent-work), and the worker
+// pins a baseline acquire for its whole lifetime in forever mode.
 type spriteHold struct {
 	client       *http.Client
 	taskName     string
 	logger       *slog.Logger
 	interval     time.Duration
 	releaseGrace time.Duration
+	// retryDelay separates required-mode establish/refresh retries; a field so
+	// tests can shrink it.
+	retryDelay time.Duration
 
 	mu       sync.Mutex
 	count    int
 	degraded bool          // last refresh failed; tracked to log transitions once
+	refresh  bool          // poke(): re-establish immediately (environment may have resumed from a pause)
 	wake     chan struct{} // coalesced signal that count changed
 }
 
 // newSpriteHold returns a [spriteHold] when the process is running inside a
 // Sprite, or nil otherwise (the management socket is absent). The nil result is
 // what [detectHold] uses to fall back to a no-op hold.
-func newSpriteHold(logger *slog.Logger) *spriteHold {
-	return newSpriteHoldWithPath(spriteAPISocketPath, logger)
+func newSpriteHold(logger *slog.Logger, taskName string, window time.Duration) *spriteHold {
+	return newSpriteHoldWithPath(spriteAPISocketPath, logger, taskName, window)
 }
 
-func newSpriteHoldWithPath(socketPath string, logger *slog.Logger) *spriteHold {
+func newSpriteHoldWithPath(socketPath string, logger *slog.Logger, taskName string, window time.Duration) *spriteHold {
 	if !isSpriteSocket(socketPath) {
 		return nil // not inside a Sprite
 	}
 	if logger == nil {
 		logger = slog.Default()
 	}
-	logger.Info("sprite keep-warm enabled", "socket", socketPath, "task", spriteTaskName)
+	if taskName == "" {
+		taskName = spriteTaskPrefix
+	}
+	if window < 0 {
+		window = 0
+	}
+	logger.Info("sprite keep-warm enabled", "socket", socketPath, "task", taskName, "window", window.String())
 	return &spriteHold{
 		client: &http.Client{
 			Timeout: spriteRequestTimeout,
@@ -91,10 +103,11 @@ func newSpriteHoldWithPath(socketPath string, logger *slog.Logger) *spriteHold {
 				},
 			},
 		},
-		taskName:     spriteTaskName,
+		taskName:     taskName,
 		logger:       logger,
 		interval:     spriteHeartbeatInterval,
-		releaseGrace: spriteReleaseGrace,
+		releaseGrace: window,
+		retryDelay:   spriteRequiredRetryDelay,
 		wake:         make(chan struct{}, 1),
 	}
 }
@@ -142,13 +155,36 @@ func (h *spriteHold) signal() {
 	}
 }
 
+// poke flags that the environment may have just resumed from a pause. A task
+// created before the pause may have expired while the VM was suspended (its
+// expiry kept running on the host), so the maintainer must re-PUT it now
+// rather than waiting for the next scheduled refresh.
+func (h *spriteHold) poke() {
+	h.mu.Lock()
+	h.refresh = true
+	h.mu.Unlock()
+	h.signal()
+}
+
+func (h *spriteHold) pins() bool { return true }
+
+// takeRefresh consumes the poke flag.
+func (h *spriteHold) takeRefresh() bool {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	r := h.refresh
+	h.refresh = false
+	return r
+}
+
 // run maintains the Sprite task for the worker's lifetime. A single goroutine
 // owns all task I/O, so there is no create/delete race between concurrent jobs:
 // it creates the task when work first appears, refreshes it on h.interval, and
-// releases it once the worker has been idle for releaseGrace (so it bridges the
-// inter-tool-call think-gap) or when ctx is cancelled. If opts.Required is set,
-// any failed create/refresh is fatal so the worker exits under its Sprite
-// Service supervisor instead of silently letting the Sprite pause.
+// releases it once the worker has been idle for the keep-warm window (so it
+// bridges the inter-tool-call think-gap) or when ctx is cancelled. If
+// opts.Required is set, a failed create/refresh (after in-process retries) is
+// fatal so the worker exits under its Sprite Service supervisor instead of
+// silently letting the Sprite pause.
 func (h *spriteHold) run(ctx context.Context, opts holdRunOptions) error {
 	t := time.NewTicker(h.interval)
 	defer t.Stop()
@@ -170,10 +206,18 @@ func (h *spriteHold) run(ctx context.Context, opts holdRunOptions) error {
 		}
 	}()
 	for {
+		if h.takeRefresh() && held {
+			// The environment resumed from a pause: the task may have expired
+			// mid-suspend. Re-establish it before anything else.
+			if ok := h.putTaskRetrying(ctx, opts); !ok && opts.Required {
+				releaseOnExit = false
+				return fmt.Errorf("mobius: required Sprite keep-warm hold could not be re-established after resume for task %q", h.taskName)
+			}
+		}
 		switch active := h.active(); {
 		case active && !held:
 			stopGrace()
-			held = h.putTask(ctx)
+			held = h.putTaskRetrying(ctx, opts)
 			if !held && opts.Required {
 				releaseOnExit = false
 				return fmt.Errorf("mobius: required Sprite keep-warm hold could not be established for task %q", h.taskName)
@@ -183,6 +227,13 @@ func (h *spriteHold) run(ctx context.Context, opts holdRunOptions) error {
 			// hold and cancel any pending release.
 			stopGrace()
 		case !active && held && grace == nil:
+			if h.releaseGrace <= 0 {
+				// On-demand mode: no window; drop the hold the moment the worker
+				// goes idle so the Sprite is free to pause.
+				h.deleteTask()
+				held = false
+				continue
+			}
 			// Idle: arm the release grace instead of dropping the hold now, so a
 			// next-tool-call job arriving in the think-gap still finds it warm.
 			grace = time.NewTimer(h.releaseGrace)
@@ -194,7 +245,7 @@ func (h *spriteHold) run(ctx context.Context, opts holdRunOptions) error {
 		case <-h.wake:
 		case <-t.C:
 			if held {
-				if ok := h.putTask(ctx); !ok && opts.Required {
+				if ok := h.putTaskRetrying(ctx, opts); !ok && opts.Required {
 					// A failed refresh does not prove the already-created task is
 					// gone. Leave any remaining expiry in place while the Sprite
 					// Service restarts the worker and reacquires the hold.
@@ -222,6 +273,28 @@ func (h *spriteHold) ensure(ctx context.Context) bool {
 	return h.putTask(ctx)
 }
 
+// putTaskRetrying is putTask plus, in required mode, a couple of quick
+// in-process retries. Fail-closed is right for a required hold, but a single
+// transient Tasks-API blip should not bounce the worker through its
+// supervisor restart loop.
+func (h *spriteHold) putTaskRetrying(ctx context.Context, opts holdRunOptions) bool {
+	attempts := 1
+	if opts.Required {
+		attempts = spriteRequiredRetryAttempts
+	}
+	for i := 0; ; i++ {
+		if h.putTask(ctx) {
+			return true
+		}
+		if i >= attempts-1 || ctx.Err() != nil {
+			return false
+		}
+		if err := sleepContext(ctx, h.retryDelay); err != nil {
+			return false
+		}
+	}
+}
+
 // putTask creates or refreshes the hold and records whether it succeeded so the
 // degraded↔healthy transition is logged once (not on every interval). A failure
 // means the Sprite can pause mid-work, so it is surfaced at Warn — but never to
@@ -241,10 +314,14 @@ func (h *spriteHold) putTask(ctx context.Context) bool {
 	return ok
 }
 
+func (h *spriteHold) taskURL() string {
+	return "http://sprite/v1/tasks/" + url.PathEscape(h.taskName)
+}
+
 func (h *spriteHold) doPutTask(ctx context.Context) bool {
 	body := fmt.Sprintf(`{"expire":%q}`, spriteTaskExpire)
 	req, err := http.NewRequestWithContext(ctx, http.MethodPut,
-		"http://sprite/v1/tasks/"+h.taskName, bytes.NewReader([]byte(body)))
+		h.taskURL(), bytes.NewReader([]byte(body)))
 	if err != nil {
 		h.logger.Debug("sprite keep-warm: build PUT failed", "error", err)
 		return false
@@ -271,7 +348,7 @@ func (h *spriteHold) deleteTask() {
 	ctx, cancel := context.WithTimeout(context.Background(), spriteRequestTimeout)
 	defer cancel()
 	req, err := http.NewRequestWithContext(ctx, http.MethodDelete,
-		"http://sprite/v1/tasks/"+h.taskName, nil)
+		h.taskURL(), nil)
 	if err != nil {
 		h.logger.Debug("sprite keep-warm: build DELETE failed", "error", err)
 		return

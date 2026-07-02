@@ -13,16 +13,18 @@ import (
 )
 
 // taskRecorder is a stand-in for the Sprites management socket that records the
-// HTTP methods the hold sends to the Tasks API.
+// HTTP methods (and method+path pairs) the hold sends to the Tasks API.
 type taskRecorder struct {
-	mu      sync.Mutex
-	methods []string
-	status  int
+	mu       sync.Mutex
+	methods  []string
+	requests []string // "METHOD /path"
+	status   int
 }
 
 func (r *taskRecorder) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	r.mu.Lock()
 	r.methods = append(r.methods, req.Method)
+	r.requests = append(r.requests, req.Method+" "+req.URL.Path)
 	status := r.status
 	r.mu.Unlock()
 	if status != 0 {
@@ -42,6 +44,18 @@ func (r *taskRecorder) seen(method string) bool {
 	defer r.mu.Unlock()
 	for _, m := range r.methods {
 		if m == method {
+			return true
+		}
+	}
+	return false
+}
+
+func (r *taskRecorder) seenRequest(method, path string) bool {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	want := method + " " + path
+	for _, req := range r.requests {
+		if req == want {
 			return true
 		}
 	}
@@ -90,7 +104,7 @@ func TestSpriteHoldEstablishesAndReleases(t *testing.T) {
 	rec := &taskRecorder{}
 	sock := serveTaskSocket(t, rec)
 
-	h := newSpriteHoldWithPath(sock, slog.Default())
+	h := newSpriteHoldWithPath(sock, slog.Default(), "mobius-worker-test", DefaultKeepWarmWindow)
 	if h == nil {
 		t.Fatal("expected a hold for a real socket, got nil")
 	}
@@ -119,7 +133,7 @@ func TestSpriteHoldGraceBridgesInterJobGap(t *testing.T) {
 	rec := &taskRecorder{}
 	sock := serveTaskSocket(t, rec)
 
-	h := newSpriteHoldWithPath(sock, slog.Default())
+	h := newSpriteHoldWithPath(sock, slog.Default(), "mobius-worker-test", DefaultKeepWarmWindow)
 	if h == nil {
 		t.Fatal("expected a hold for a real socket, got nil")
 	}
@@ -148,10 +162,11 @@ func TestSpriteHoldRequiredFailsClosedWhenTaskCannotBeEstablished(t *testing.T) 
 	rec := &taskRecorder{status: http.StatusInternalServerError}
 	sock := serveTaskSocket(t, rec)
 
-	h := newSpriteHoldWithPath(sock, slog.Default())
+	h := newSpriteHoldWithPath(sock, slog.Default(), "mobius-worker-test", DefaultKeepWarmWindow)
 	if h == nil {
 		t.Fatal("expected a hold for a real socket, got nil")
 	}
+	h.retryDelay = time.Millisecond // keep the required-mode retries fast
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -169,11 +184,12 @@ func TestSpriteHoldRequiredRefreshFailureDoesNotDeleteExistingTask(t *testing.T)
 	rec := &taskRecorder{}
 	sock := serveTaskSocket(t, rec)
 
-	h := newSpriteHoldWithPath(sock, slog.Default())
+	h := newSpriteHoldWithPath(sock, slog.Default(), "mobius-worker-test", DefaultKeepWarmWindow)
 	if h == nil {
 		t.Fatal("expected a hold for a real socket, got nil")
 	}
 	h.interval = 20 * time.Millisecond
+	h.retryDelay = time.Millisecond // keep the required-mode retries fast
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -197,6 +213,99 @@ func TestSpriteHoldRequiredRefreshFailureDoesNotDeleteExistingTask(t *testing.T)
 	}
 }
 
+// TestSpriteHoldPerInstanceTaskNamesAreIndependent is the regression for the
+// shared-task-name hazard: two workers on one Sprite (a pool, or two
+// processes) each maintain their own task, so one going idle must release only
+// its own hold — not yank the task out from under the other mid-job.
+func TestSpriteHoldPerInstanceTaskNamesAreIndependent(t *testing.T) {
+	rec := &taskRecorder{}
+	sock := serveTaskSocket(t, rec)
+
+	a := newSpriteHoldWithPath(sock, slog.Default(), "mobius-worker-a", DefaultKeepWarmWindow)
+	b := newSpriteHoldWithPath(sock, slog.Default(), "mobius-worker-b", DefaultKeepWarmWindow)
+	if a == nil || b == nil {
+		t.Fatal("expected holds for a real socket")
+	}
+	a.interval, b.interval = time.Hour, time.Hour
+	a.releaseGrace = 10 * time.Millisecond
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go func() { _ = a.run(ctx, holdRunOptions{}) }()
+	go func() { _ = b.run(ctx, holdRunOptions{}) }()
+
+	a.acquire() // worker A starts a job
+	b.acquire() // worker B starts a longer job
+	waitFor(t, func() bool {
+		return rec.seenRequest(http.MethodPut, "/v1/tasks/mobius-worker-a") &&
+			rec.seenRequest(http.MethodPut, "/v1/tasks/mobius-worker-b")
+	}, "both per-instance tasks established")
+
+	a.release() // worker A goes idle; its grace elapses
+	waitFor(t, func() bool {
+		return rec.seenRequest(http.MethodDelete, "/v1/tasks/mobius-worker-a")
+	}, "worker A's task released")
+
+	if rec.seenRequest(http.MethodDelete, "/v1/tasks/mobius-worker-b") {
+		t.Fatal("worker A's idle release deleted worker B's task; B's in-flight job can be paused mid-work")
+	}
+}
+
+// TestSpriteHoldOnDemandWindowReleasesImmediately covers keep-warm mode B: a
+// zero window drops the hold the moment the worker goes idle, with no grace.
+func TestSpriteHoldOnDemandWindowReleasesImmediately(t *testing.T) {
+	rec := &taskRecorder{}
+	sock := serveTaskSocket(t, rec)
+
+	h := newSpriteHoldWithPath(sock, slog.Default(), "mobius-worker-test", 0)
+	if h == nil {
+		t.Fatal("expected a hold for a real socket, got nil")
+	}
+	h.interval = time.Hour
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go func() { _ = h.run(ctx, holdRunOptions{}) }()
+
+	h.acquire()
+	waitFor(t, func() bool { return rec.seen(http.MethodPut) }, "PUT on acquire")
+	h.release()
+	waitFor(t, func() bool { return rec.seen(http.MethodDelete) }, "immediate DELETE on idle")
+}
+
+// TestSpriteHoldPokeReestablishesHeldTask covers the resume-from-pause path: a
+// held task may have expired while the VM was suspended, so poke() must force
+// an immediate re-PUT rather than waiting for the next scheduled refresh.
+func TestSpriteHoldPokeReestablishesHeldTask(t *testing.T) {
+	rec := &taskRecorder{}
+	sock := serveTaskSocket(t, rec)
+
+	h := newSpriteHoldWithPath(sock, slog.Default(), "mobius-worker-test", DefaultKeepWarmWindow)
+	if h == nil {
+		t.Fatal("expected a hold for a real socket, got nil")
+	}
+	h.interval = time.Hour // no scheduled refresh; only poke can re-PUT
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go func() { _ = h.run(ctx, holdRunOptions{}) }()
+
+	h.acquire()
+	waitFor(t, func() bool { return rec.seen(http.MethodPut) }, "PUT on acquire")
+	before := func() int {
+		rec.mu.Lock()
+		defer rec.mu.Unlock()
+		return len(rec.requests)
+	}()
+
+	h.poke()
+	waitFor(t, func() bool {
+		rec.mu.Lock()
+		defer rec.mu.Unlock()
+		return len(rec.requests) > before
+	}, "re-PUT after poke")
+}
+
 func TestNewSpriteHoldOffSprite(t *testing.T) {
 	// A path that isn't a Unix socket means we're not inside a Sprite: the
 	// constructor returns nil so detectHold falls back to a no-op.
@@ -204,10 +313,10 @@ func TestNewSpriteHoldOffSprite(t *testing.T) {
 	if err := os.WriteFile(regular, []byte("x"), 0o600); err != nil {
 		t.Fatalf("write: %v", err)
 	}
-	if h := newSpriteHoldWithPath(regular, nil); h != nil {
+	if h := newSpriteHoldWithPath(regular, nil, "mobius-worker-test", DefaultKeepWarmWindow); h != nil {
 		t.Fatalf("expected nil hold for a regular file, got %v", h)
 	}
-	if h := newSpriteHoldWithPath(filepath.Join(t.TempDir(), "missing.sock"), nil); h != nil {
+	if h := newSpriteHoldWithPath(filepath.Join(t.TempDir(), "missing.sock"), nil, "mobius-worker-test", DefaultKeepWarmWindow); h != nil {
 		t.Fatalf("expected nil hold for a missing path, got %v", h)
 	}
 }
@@ -215,7 +324,7 @@ func TestNewSpriteHoldOffSprite(t *testing.T) {
 func TestDetectHoldDefaultsToNoop(t *testing.T) {
 	// In the test environment there is no Sprite management socket, so detectHold
 	// must return a usable no-op hold whose methods don't panic.
-	h := detectHold(slog.Default())
+	h := detectHold(slog.Default(), "mobius-worker-test", DefaultKeepWarmWindow)
 	if _, ok := h.(noopHold); !ok {
 		t.Skipf("unexpected hold %T (a Sprite socket exists on this host?)", h)
 	}

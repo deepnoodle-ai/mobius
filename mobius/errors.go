@@ -20,6 +20,12 @@ var ErrPayloadTooLarge = errors.New("mobius: custom event payload too large")
 // can restart under a rotated credential.
 var ErrAuthRevoked = errors.New("mobius: credential revoked")
 
+// ErrProjectNotFound is returned when the worker socket endpoint answers 404:
+// the project handle doesn't exist, or the base URL points somewhere that
+// isn't a Mobius API. Reconnecting cannot fix a missing project, so the
+// worker run loop treats this as terminal instead of retrying forever.
+var ErrProjectNotFound = errors.New("mobius: project not found - check MOBIUS_PROJECT/--project and the API URL")
+
 // ErrWorkerInstanceConflict is returned when the server rejects a worker
 // claim because another live process has already registered the same
 // worker_instance_id in the project. Surfaces from the run loop as a

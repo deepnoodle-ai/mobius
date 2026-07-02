@@ -1,0 +1,1 @@
+{"type":"job.report","message_id":"msg_7","job_id":"job_1","lease_token":"session-1:1","status":"cancelled","error_type":"Cancelled","error_message":"job cancelled by server directive"}

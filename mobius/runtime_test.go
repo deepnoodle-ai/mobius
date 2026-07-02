@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -131,17 +132,25 @@ func TestWorkerRun_ExecutesActionJobOverWebSocket(t *testing.T) {
 	}
 	select {
 	case err := <-done:
-		assert.True(t, workerSocketStoppedCleanly(err))
+		if !workerSocketStoppedCleanly(err) {
+			t.Fatalf("worker stopped uncleanly: %v", err)
+		}
 	case <-time.After(time.Second):
 		t.Fatal("worker did not stop")
 	}
 }
 
+// workerSocketStoppedCleanly reports whether the worker stopped for one of the
+// expected end-of-test reasons: its context was cancelled, or the test server
+// handler finished and tore the connection down (which surfaces as EOF or a
+// websocket close error depending on who wins the shutdown race).
 func workerSocketStoppedCleanly(err error) bool {
 	return err == nil ||
 		errors.Is(err, context.Canceled) ||
 		errors.Is(err, io.EOF) ||
-		errors.Is(err, websocket.ErrCloseSent)
+		errors.Is(err, net.ErrClosed) ||
+		errors.Is(err, websocket.ErrCloseSent) ||
+		websocket.IsCloseError(err, websocket.CloseNormalClosure, websocket.CloseAbnormalClosure, websocket.CloseGoingAway)
 }
 
 func TestWorkerRun_StreamsGenerationDeltaAndReportsTerminalResult(t *testing.T) {
@@ -271,8 +280,10 @@ func TestWorkerRun_HeartbeatCancelDirectiveCancelsJob(t *testing.T) {
 	select {
 	case report := <-reported:
 		cancel()
+		// A server-cancelled job reports the protocol's distinct `cancelled`
+		// status, not a failure.
 		assert.NotNil(t, report.Status)
-		assert.Equal(t, *report.Status, api.WorkerSocketJobReportFrameStatusFailed)
+		assert.Equal(t, *report.Status, api.WorkerSocketJobReportFrameStatusCancelled)
 		assert.Equal(t, *report.ErrorType, "Cancelled")
 	case <-time.After(time.Second):
 		t.Fatal("worker did not report cancellation")
