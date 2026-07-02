@@ -14,6 +14,43 @@ section proposes a configuration design for the three keep-alive behaviours
 the product wants: recent-work window, on-demand server wake, and
 always-on.
 
+## Implementation status
+
+A third pass implemented the recommendations. Everything client-side in this
+repo is now fixed on this branch; line numbers in the findings below refer to
+the tree at review time (pre-fix). Per finding:
+
+| Finding | Status |
+|---|---|
+| H1 signal handling | ✅ `signal.NotifyContext` in `cmd/mobius/main.go` |
+| H2 socket deadlines | ✅ write deadlines on every frame, client ping/pong with a rolling read deadline, bounded + ctx-aware registration read |
+| H3 report acks | ✅ ack-driven delivery: pending-report map, flush on re-register and on the tick, cleared only by `job.report.ack` |
+| H4 shared task name | ✅ per-instance task names (`mobius-worker-<worker_instance_id>`) |
+| H5 pause/resume | ✅ client side: wall-clock wake detector drops the socket and re-`poke`s the hold on resume. ❌ still server-side: wake-on-dispatch + reaper tolerance for paused-but-wakeable workers; the Sprite Service definition is still not shipped from this repo |
+| M1 slot accounting | ✅ register advertises `Concurrency - len(slots)`; claimed overflow is failed back immediately (`WorkerOverCapacity`) instead of dropped |
+| M2 shutdown reports | ✅ bounded shutdown drain (5s) delivers cancelled reports over the still-open socket |
+| M3 reconnect policy | ✅ exponential backoff with ±20% jitter capped at 60s; 403 and 404 dials are terminal (`ErrAuthRevoked` / `ErrProjectNotFound`) |
+| M4 hold-error race | ✅ error parked on the channel before `cancelRun()` |
+| M5 keep-warm telemetry | ✅ `keep-warm:established` only advertised by a real hold (`hold.pins()`); required holds retry 3× in-process before failing closed |
+| M6 artifact timeouts | ✅ dedicated transfer client (no whole-exchange timeout; response-header timeout on the transport) for artifact upload/download |
+| M7 cancelled status | ✅ cancelled jobs report `status=cancelled`; `job_report_cancelled` contract fixture added (passes in all three SDKs) |
+| Keep-warm modes | ✅ `WorkerConfig.KeepWarmWindow` (on-demand / window / forever) + orthogonal `KeepWarmRequired`; CLI `--keep-warm=on-demand\|5m\|forever`; `KeepWarmForLifetime` kept as a deprecated alias |
+| Low: lease-derived timing | ✅ claim timeout derived from the registered cadence (2×, 30s floor); user heartbeat interval can only tighten the server cadence |
+| Low: Ollama discovery | ✅ restart requirement documented in the flag help (periodic re-list not implemented) |
+| Low: emitter thread-safety | ✅ atomic delta sequence |
+| Low: generation spec schemas | ❌ not done — `WorkerSocketLLMGenerationSpec/Result` need to be defined in `openapi.yaml` in coordination with the server team, then generated across the three SDKs |
+| Low: drain stickiness | ✅ documented as per-connection by design (server re-drains on re-register) |
+| Low: lost read error | ✅ closed-channel path now drains `readErr` |
+| Low: bash grandchildren | ✅ process-group kill (`Setpgid` + group SIGKILL) and `WaitDelay` on bash/git commands |
+| Low: `tailFile` memory | ✅ bounded end-of-file scan (4 MiB) |
+| Low: `workspacePath` symlinks | ✅ deepest-existing-ancestor resolution |
+| Low: credential exposure | ✅ stated explicitly in SECURITY.md |
+
+New regression tests cover: unacked-report redelivery, shutdown-time
+cancelled reports, claimed overflow, register-never-answered, per-instance
+hold independence, on-demand window, hold re-establishment after `poke`,
+keep-warm config mapping, backoff bounds, and lease-derived claim timeouts.
+
 Overall the design is thoughtful: job execution decoupled from socket
 lifetime, a single claim in flight with a response deadline, lease-fenced
 frames, a refcounted Sprite hold with a release grace, and fail-closed
