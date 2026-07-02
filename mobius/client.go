@@ -27,10 +27,17 @@ type Client struct {
 	apiKey        string
 	projectHandle string
 	httpClient    *http.Client
-	customHTTP    bool
-	maxRetries    int
-	ac            *api.ClientWithResponses
-	config        *ClientConfig
+	// transferClient serves large-body transfers (artifact upload/download).
+	// http.Client.Timeout covers the entire exchange including the body, so
+	// the 60s default on httpClient would abort any artifact that takes
+	// longer than a minute to move; this client bounds the dial/TLS/header
+	// phases on its transport instead and leaves body transfer time to the
+	// caller's context.
+	transferClient *http.Client
+	customHTTP     bool
+	maxRetries     int
+	ac             *api.ClientWithResponses
+	config         *ClientConfig
 }
 
 // ClientConfig holds optional client configuration.
@@ -127,6 +134,17 @@ func NewClient(opts ...Option) (*Client, error) {
 			MaxRetries: c.maxRetries,
 			Logger:     c.config.Logger,
 		}
+		c.transferClient = &http.Client{
+			Transport: &RetryingTransport{
+				Base:       transferTransport(),
+				MaxRetries: c.maxRetries,
+				Logger:     c.config.Logger,
+			},
+		}
+	} else {
+		// A caller-supplied client owns its own timeout policy; use it for
+		// transfers unchanged.
+		c.transferClient = c.httpClient
 	}
 	ac, err := api.NewClientWithResponses(c.baseURL,
 		api.WithHTTPClient(c.httpClient),
@@ -142,6 +160,18 @@ func NewClient(opts ...Option) (*Client, error) {
 	}
 	c.ac = ac
 	return c, nil
+}
+
+// transferTransport clones the default transport and bounds the phases that
+// can hang without progress — waiting for response headers — while leaving
+// body transfer unbounded (the request context still applies end to end).
+func transferTransport() http.RoundTripper {
+	if t, ok := http.DefaultTransport.(*http.Transport); ok {
+		clone := t.Clone()
+		clone.ResponseHeaderTimeout = defaultHTTPTimeout
+		return clone
+	}
+	return http.DefaultTransport
 }
 
 // resolveProjectHandleFromAPIKey extracts the optional ".<handle>"

@@ -48,6 +48,23 @@ type socketEnvelope struct {
 	Raw       json.RawMessage `json:"-"`
 }
 
+// Socket liveness bounds. Every write carries a deadline so a stalled TCP peer
+// (half-open connection, or the guest resuming after a Sprite pause dropped the
+// remote end without a FIN) can never block a write indefinitely while holding
+// the socket mutex — which would freeze claims and heartbeats until the OS TCP
+// stack gave up. Reads are bounded by a rolling deadline extended by pongs and
+// by any inbound frame: the worker pings on socketPingInterval, so a peer that
+// stays silent past socketPongWait fails the read and triggers a reconnect.
+const (
+	socketWriteTimeout = 10 * time.Second
+	socketPingInterval = 20 * time.Second
+	socketPongWait     = 65 * time.Second
+	// registerReadTimeout bounds how long the worker waits for the
+	// worker.registered response; a server that accepts the upgrade but never
+	// answers must not hang the worker forever.
+	registerReadTimeout = 30 * time.Second
+)
+
 type workerSocket struct {
 	conn *websocket.Conn
 	mu   sync.Mutex
@@ -63,7 +80,22 @@ func (s *workerSocket) close() {
 func (s *workerSocket) writeJSON(v any) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	_ = s.conn.SetWriteDeadline(time.Now().Add(socketWriteTimeout))
 	return s.conn.WriteJSON(v)
+}
+
+// ping sends a WebSocket ping control frame. The peer's pong (or any inbound
+// frame) extends the read deadline; a peer silent past socketPongWait fails
+// the read loop and the worker reconnects.
+func (s *workerSocket) ping() error {
+	return s.conn.WriteControl(websocket.PingMessage, nil, time.Now().Add(socketWriteTimeout))
+}
+
+// extendReadDeadline rolls the read deadline forward; called for pongs and for
+// every successfully read frame (inbound data proves the peer is alive even if
+// pongs are dropped by an intermediary).
+func (s *workerSocket) extendReadDeadline() {
+	_ = s.conn.SetReadDeadline(time.Now().Add(socketPongWait))
 }
 
 func (c *Client) dialWorkerSocket(ctx context.Context) (*workerSocket, *http.Response, error) {
@@ -79,7 +111,13 @@ func (c *Client) dialWorkerSocket(ctx context.Context) (*workerSocket, *http.Res
 	if err != nil {
 		return nil, resp, err
 	}
-	return &workerSocket{conn: conn}, resp, nil
+	s := &workerSocket{conn: conn}
+	s.extendReadDeadline()
+	conn.SetPongHandler(func(string) error {
+		s.extendReadDeadline()
+		return nil
+	})
+	return s, resp, nil
 }
 
 func (c *Client) workerSocketURL() (string, error) {
@@ -111,6 +149,7 @@ func readSocketFrame(ctx context.Context, s *workerSocket, out chan<- socketEnve
 	defer close(out)
 	for {
 		_, raw, err := s.conn.ReadMessage()
+		s.extendReadDeadline()
 		if err != nil {
 			select {
 			case <-ctx.Done():
@@ -204,6 +243,24 @@ func failureReportFrame(job *runtimeJob, errorType, message string) api.WorkerSo
 		LeaseToken:   job.LeaseToken,
 		Status:       &status,
 		ErrorType:    strPtr(errorType),
+		ErrorMessage: strPtr(message),
+	}
+}
+
+// cancelledReportFrame reports a job that ended because its context was
+// cancelled (server cancel directive or worker shutdown). The protocol's
+// distinct `cancelled` status keeps cancellations out of failure metrics;
+// error_type "Cancelled" is retained alongside it for consumers that key off
+// the error taxonomy.
+func cancelledReportFrame(job *runtimeJob, message string) api.WorkerSocketJobReportFrame {
+	status := api.WorkerSocketJobReportFrameStatusCancelled
+	return api.WorkerSocketJobReportFrame{
+		Type:         api.WorkerSocketJobReportFrameTypeJobReport,
+		MessageId:    messageIDPtr(),
+		JobId:        job.JobID,
+		LeaseToken:   job.LeaseToken,
+		Status:       &status,
+		ErrorType:    strPtr("Cancelled"),
 		ErrorMessage: strPtr(message),
 	}
 }

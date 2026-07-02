@@ -5,7 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/deepnoodle-ai/wonton/cli"
 
@@ -52,12 +54,17 @@ func registerWorkerCommand(app *cli.App) {
 			cli.Int("workers", "").
 				Default(0).
 				Help("Run N independent worker instances (advanced; mutually exclusive with --concurrency)"),
-			cli.Bool("keep-warm-for-lifetime", "").
+			cli.String("keep-warm", "").
 				Env("MOBIUS_WORKER_KEEP_WARM").
-				Help("Keep the environment warm for the worker's whole lifetime, not just while a job runs (set for run-scoped environments so the VM doesn't hibernate between an agent's tool calls)"),
+				Help("How long to keep the environment warm after the last job: a duration (e.g. 5m), 'forever' (pin for the worker's lifetime; use for run-scoped environments), or 'on-demand' (let the VM pause between jobs; requires server-side wake). Empty = 2m default"),
+			cli.Bool("keep-warm-required", "").
+				Env("MOBIUS_WORKER_KEEP_WARM_REQUIRED").
+				Help("Fail closed when the keep-warm hold cannot be established or refreshed, instead of running best-effort"),
+			cli.Bool("keep-warm-for-lifetime", "").
+				Help("Deprecated: use --keep-warm=forever"),
 			cli.Bool("ollama", "").
 				Env("MOBIUS_WORKER_OLLAMA").
-				Help("Serve local Ollama models: advertise installed models to Mobius and handle llm_generation jobs from a local Ollama server"),
+				Help("Serve local Ollama models: advertise installed models to Mobius and handle llm_generation jobs from a local Ollama server (models are discovered once at startup; restart the worker after `ollama pull`/`rm` to re-advertise)"),
 			cli.String("ollama-url", "").
 				Default(defaultOllamaURL).
 				Env("MOBIUS_OLLAMA_URL").
@@ -77,9 +84,22 @@ func registerWorkerCommand(app *cli.App) {
 			environmentID := ctx.String("environment-id")
 			concurrency := ctx.Int("concurrency")
 			workers := ctx.Int("workers")
-			keepWarmForLifetime := ctx.Bool("keep-warm-for-lifetime")
+			keepWarmWindow, err := parseKeepWarm(ctx.String("keep-warm"))
+			if err != nil {
+				return err
+			}
+			if ctx.Bool("keep-warm-for-lifetime") && keepWarmWindow == 0 {
+				keepWarmWindow = mobius.KeepWarmForever
+			}
+			keepWarmRequired := ctx.Bool("keep-warm-required")
 			ollamaEnabled := ctx.Bool("ollama")
 			ollamaURL := ctx.String("ollama-url")
+
+			if keepWarmWindow == mobius.KeepWarmOnDemand {
+				logger.Warn("keep-warm=on-demand lets the environment pause between jobs; " +
+					"jobs will only be dispatched successfully if Mobius Cloud wakes the environment on dispatch " +
+					"and the worker is installed as a service that restarts on cold wake")
+			}
 
 			if workers > 0 && concurrency > 1 {
 				return fmt.Errorf(
@@ -91,15 +111,16 @@ func registerWorkerCommand(app *cli.App) {
 			}
 
 			baseConfig := mobius.WorkerConfig{
-				Name:                name,
-				WorkerInstanceID:    instanceID,
-				Version:             ctx.String("worker-version"),
-				EnvironmentID:       environmentID,
-				Queues:              queues,
-				Actions:             actions,
-				Concurrency:         concurrency,
-				KeepWarmForLifetime: keepWarmForLifetime,
-				Logger:              logger,
+				Name:             name,
+				WorkerInstanceID: instanceID,
+				Version:          ctx.String("worker-version"),
+				EnvironmentID:    environmentID,
+				Queues:           queues,
+				Actions:          actions,
+				Concurrency:      concurrency,
+				KeepWarmWindow:   keepWarmWindow,
+				KeepWarmRequired: keepWarmRequired,
+				Logger:           logger,
 			}
 
 			// When --ollama is set, advertise the models the local Ollama
@@ -129,7 +150,8 @@ func registerWorkerCommand(app *cli.App) {
 				"actions", actions,
 				"concurrency", concurrency,
 				"workers", workers,
-				"keep_warm_for_lifetime", keepWarmForLifetime,
+				"keep_warm", keepWarmDescription(keepWarmWindow),
+				"keep_warm_required", keepWarmRequired,
 			)
 
 			if workers > 0 {
@@ -177,6 +199,57 @@ func registerStockActions(w actionRegistrar) {
 	stock = append(stock, action.EnvironmentActions()...)
 	for _, a := range stock {
 		w.Register(a)
+	}
+}
+
+// parseKeepWarm maps the --keep-warm flag / MOBIUS_WORKER_KEEP_WARM value onto
+// a WorkerConfig.KeepWarmWindow. Accepted forms:
+//
+//	""                     -> 0 (SDK default window)
+//	"on-demand"            -> mobius.KeepWarmOnDemand
+//	"forever" | "lifetime" -> mobius.KeepWarmForever
+//	a Go duration ("5m")   -> that window ("0s" means on-demand)
+//	a boolean              -> forever / default (compat with the old
+//	                          MOBIUS_WORKER_KEEP_WARM=true lifetime toggle)
+func parseKeepWarm(value string) (time.Duration, error) {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "":
+		return 0, nil
+	case "on-demand", "ondemand":
+		return mobius.KeepWarmOnDemand, nil
+	case "forever", "lifetime", "always":
+		return mobius.KeepWarmForever, nil
+	}
+	if b, err := strconv.ParseBool(value); err == nil {
+		if b {
+			return mobius.KeepWarmForever, nil
+		}
+		return 0, nil
+	}
+	d, err := time.ParseDuration(strings.TrimSpace(value))
+	if err != nil {
+		return 0, fmt.Errorf("--keep-warm: %q is not a duration, 'on-demand', or 'forever'", value)
+	}
+	if d < 0 {
+		return 0, fmt.Errorf("--keep-warm: negative duration %q; use 'on-demand' to release immediately", value)
+	}
+	if d == 0 {
+		return mobius.KeepWarmOnDemand, nil
+	}
+	return d, nil
+}
+
+// keepWarmDescription renders a keep-warm window for startup logging.
+func keepWarmDescription(window time.Duration) string {
+	switch window {
+	case 0:
+		return "default"
+	case mobius.KeepWarmOnDemand:
+		return "on-demand"
+	case mobius.KeepWarmForever:
+		return "forever"
+	default:
+		return window.String()
 	}
 }
 

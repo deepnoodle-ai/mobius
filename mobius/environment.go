@@ -238,7 +238,10 @@ func (c *Client) DownloadArtifactToFile(ctx context.Context, artifactID, path st
 	if c.apiKey != "" {
 		req.Header.Set("Authorization", "Bearer "+c.apiKey)
 	}
-	resp, err := c.httpClient.Do(req)
+	// Artifact bodies can take longer than the general-purpose client's 60s
+	// whole-exchange timeout; the transfer client bounds only the phases that
+	// can hang without progress.
+	resp, err := c.transferClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -286,14 +289,16 @@ func (c *Client) doJSON(ctx context.Context, method, path string, body any, out 
 }
 
 func (c *Client) do(ctx context.Context, method, path, contentType string, body io.Reader, out any) error {
-	return c.doWithHeaders(ctx, method, path, contentType, body, nil, out)
+	return c.doWithHeaders(ctx, c.httpClient, method, path, contentType, body, nil, out)
 }
 
+// doMultipartWithHeaders rides the transfer client: multipart bodies are file
+// uploads whose transfer time is unbounded by design (see transferClient).
 func (c *Client) doMultipartWithHeaders(ctx context.Context, method, path, contentType string, body io.Reader, headers map[string]string, out any) error {
-	return c.doWithHeaders(ctx, method, path, contentType, body, headers, out)
+	return c.doWithHeaders(ctx, c.transferClient, method, path, contentType, body, headers, out)
 }
 
-func (c *Client) doWithHeaders(ctx context.Context, method, path, contentType string, body io.Reader, headers map[string]string, out any) error {
+func (c *Client) doWithHeaders(ctx context.Context, hc *http.Client, method, path, contentType string, body io.Reader, headers map[string]string, out any) error {
 	if c.projectHandle == "" {
 		return fmt.Errorf("mobius: no project configured - set MOBIUS_PROJECT or pass --project")
 	}
@@ -310,7 +315,7 @@ func (c *Client) doWithHeaders(ctx context.Context, method, path, contentType st
 	for key, value := range headers {
 		req.Header.Set(key, value)
 	}
-	resp, err := c.httpClient.Do(req)
+	resp, err := hc.Do(req)
 	if err != nil {
 		return err
 	}

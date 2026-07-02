@@ -3,6 +3,7 @@ package mobius
 import (
 	"context"
 	"log/slog"
+	"time"
 )
 
 // hold keeps the worker's execution environment in an active ("warm") state
@@ -13,9 +14,10 @@ import (
 //
 // The lifecycle is: run in its own goroutine for the worker's lifetime, and
 // bracket each job with acquire/release. Implementations refcount concurrent
-// jobs and establish the hold on the first, releasing it once the worker is
-// idle. Per-job holds are best-effort; a lifetime-pinned hold is required and
-// reports refresh failures so the worker can fail closed under its supervisor.
+// jobs and establish the hold on the first, releasing it once the worker has
+// been idle for the configured keep-warm window. Holds are best-effort by
+// default; a required hold reports establish/refresh failures so the worker
+// can fail closed under its supervisor.
 type hold interface {
 	// acquire records one more in-flight job.
 	acquire()
@@ -29,6 +31,16 @@ type hold interface {
 	// gap before the maintainer goroutine's first asynchronous refresh. The
 	// no-op hold reports true.
 	ensure(ctx context.Context) bool
+	// poke tells the maintainer the environment may have just resumed from a
+	// pause: a held task could have expired while the VM was suspended, so the
+	// hold must be re-established immediately rather than on the next
+	// scheduled refresh.
+	poke()
+	// pins reports whether this hold actually pins an environment. The no-op
+	// hold reports false so keep-warm telemetry (the "keep-warm:established"
+	// capability) is only advertised when a real hold exists — a worker
+	// running off-Sprite must not claim it pinned anything.
+	pins() bool
 }
 
 type holdRunOptions struct {
@@ -37,9 +49,10 @@ type holdRunOptions struct {
 
 // detectHold selects the keep-warm strategy for the current environment,
 // returning a no-op hold when the host doesn't pause (local dev, CI, customer
-// self-hosted, or any non-Sprite host).
-func detectHold(logger *slog.Logger) hold {
-	if h := newSpriteHold(logger); h != nil {
+// self-hosted, or any non-Sprite host). taskName scopes the hold to this
+// worker instance; window is how long the hold persists after the last job.
+func detectHold(logger *slog.Logger, taskName string, window time.Duration) hold {
+	if h := newSpriteHold(logger, taskName, window); h != nil {
 		return h
 	}
 	return noopHold{}
@@ -55,3 +68,5 @@ func (noopHold) run(ctx context.Context, _ holdRunOptions) error {
 	return ctx.Err()
 }
 func (noopHold) ensure(context.Context) bool { return true }
+func (noopHold) poke()                       {}
+func (noopHold) pins() bool                  { return false }

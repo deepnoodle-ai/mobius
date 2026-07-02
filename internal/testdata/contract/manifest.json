@@ -55,6 +55,12 @@
       "endpoint": "WS /v1/projects/{project}/workers/socket"
     },
     {
+      "file": "job_report_cancelled.json",
+      "schema": "WorkerSocketJobReportFrame",
+      "kind": "websocket_frame",
+      "endpoint": "WS /v1/projects/{project}/workers/socket"
+    },
+    {
       "file": "generation_delta.json",
       "schema": "WorkerSocketGenerationDeltaFrame",
       "kind": "websocket_frame",
