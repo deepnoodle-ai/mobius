@@ -7,6 +7,13 @@ Scope: the Go client-side worker stack in this repo — `mobius/worker.go`,
 to correct operation inside a Sprites.dev sandbox, including keep-warm
 behaviour. Review only; no fixes applied.
 
+A second pass incorporated the Sprites.dev lifecycle, idle-detection, and
+Tasks API documentation. Facts from those docs are cited inline where they
+confirm or sharpen a finding (notably H2 and H5), and the "Keep-warm modes"
+section proposes a configuration design for the three keep-alive behaviours
+the product wants: recent-work window, on-demand server wake, and
+always-on.
+
 Overall the design is thoughtful: job execution decoupled from socket
 lifetime, a single claim in flight with a response deadline, lease-fenced
 frames, a refcounted Sprite hold with a release grace, and fail-closed
@@ -73,6 +80,15 @@ answers `worker.register` hangs the worker forever (the claim deadline only
 covers claims), and ctx cancellation cannot unblock it because
 `socket.close()` is deferred until `runSocket` returns.
 
+The Sprites lifecycle docs make this a hot path, not an edge case: *"open
+TCP connections drop on the pause, even on warm"*. Every warm wake therefore
+resumes the worker process mid-thought on a socket whose remote end is gone
+— usually without a FIN/RST ever reaching the guest, so the blocked
+`ReadMessage` doesn't return promptly. Recovery today rides on Go's default
+TCP keepalive (~2-3 minutes to declare the peer dead) or on the claim
+deadline if the 10s ticker happens to get a claim written (~70s). Both eat
+directly into the dead-worker reaper's TTL budget on every single wake.
+
 **Recommendation:** set a write deadline inside `writeJSON` (a single
 `s.conn.SetWriteDeadline(time.Now().Add(10*time.Second))` before each write)
 and a read deadline around registration. A simpler structural alternative:
@@ -135,33 +151,56 @@ worker A's clean exit (`releaseOnExit`).
 
 Given the pool is documented as rare, (1) is both simpler and more correct.
 
-### H5. Paused-Sprite wake-up for reused environments is an unstated assumption — verify it, and document the intended contract
+### H5. A paused Sprite is unreachable over the worker socket — waking it must be an explicit server-side action, and the client isn't hardened for the resume path
 
-For non-lifetime (lease/explicit) environments the design deliberately lets
-the Sprite pause after the 2-minute release grace (`sprite_hold.go:31-38`).
-At that point the worker process, its clocks, and its established WebSocket
-are all frozen. For the next job to ever run, *something* must unpause the
-Sprite — and it cannot be the worker (it's frozen) nor plausibly the
-server's `work.available` push over the existing socket, unless Sprites.dev
-guarantees wake-on-inbound-data for established outbound TCP connections.
+The Sprites docs settle what was an open question in the first pass, and
+the answers make this concrete rather than hypothetical:
 
-If the actual wake path is "Mobius Cloud explicitly wakes/exec's the Sprite
-via the Sprites API before dispatching an environment-pinned job", the
-client-side design is fine — but nothing in this repo says so, and the
-failure mode if it's wrong is the worst one available: a wedged environment
-whose jobs all fail as `environment_worker_unavailable` after the reaper
-TTL, with nothing in the worker logs (it was paused).
+- *"Open TCP connections drop on the pause, even on warm."* The worker's
+  WebSocket to Mobius Cloud does not survive any pause. `work.available`
+  can never reach a paused Sprite over the existing socket — the socket no
+  longer exists.
+- Outbound connections don't count as wake triggers or idle activity: the
+  docs' idle-activity list covers exec/console, *inbound* TCP to the
+  Sprite's URL, TTY sessions, and services with open connections — and
+  "queue workers waiting on jobs from an external broker" is given as a
+  canonical *Tasks API* use case, i.e. an outbound-connected worker will
+  pause (~30s idle window) unless a task holds it.
+- Wake happens on inbound traffic: a request to `https://<name>.sprites.app`
+  or a `sprite exec` / SDK command (100-500ms warm, 1-2s cold).
+- A warm wake resumes the worker process mid-thought; a cold wake kills it.
+  Only a Sprite **Service** restarts the worker after a cold wake — which
+  `worker.go:243-246` already assumes ("Mobius Cloud runs the worker as a
+  Sprite Service") but nothing in this repo provisions or documents.
 
-Also note the interaction with H2: when a Sprite unpauses, the worker
-resumes with a long-dead socket. Recovery currently depends on the *read*
-failing promptly; with no deadlines, a half-open connection can instead hit
-the stalled-write wedge.
+So for any mode where the Sprite is allowed to pause between jobs, the
+dispatch contract must be: **Mobius Cloud explicitly wakes the Sprite**
+(HTTP poke to its URL or a Sprites-API exec) **before or upon dispatching an
+environment-pinned job, and the dead-worker reaper must not fail jobs for a
+worker whose Sprite is paused-but-wakeable.** If that server-side wake does
+not exist today, every reused (lease/explicit) environment wedges after its
+first 2-minute idle grace: jobs fail as `environment_worker_unavailable`
+with nothing in the worker logs (it was paused).
 
-**Recommendation:** document the wake contract (who wakes the Sprite, and
-on what trigger) next to `spriteHold`, and add a defensive behaviour for the
-resume-from-pause case: on any clock jump / long tick gap (e.g. comparing
-`time.Since(lastTick)` against the ticker interval), proactively drop the
-socket and reconnect rather than trusting the old connection.
+The client side then needs to treat resume-from-pause as a first-class,
+*common* event rather than an error path:
+
+1. **Assume the socket is dead on every wake** (the docs guarantee it).
+   Without H2's deadlines, the worker takes ~70s-3min to notice; after a
+   100-500ms warm wake that delay dominates job latency and eats the reaper
+   TTL.
+2. **Detect the wake directly** instead of waiting for I/O to fail: a
+   cheap suspend detector (a 1s ticker comparing wall-clock deltas; a gap
+   ≫ the interval means the VM was suspended) should immediately drop the
+   socket, reconnect, re-register, re-claim, and re-`ensure` the keep-warm
+   hold. That turns wake→first-claim into a sub-second path.
+3. **Ship the Service definition.** Document (or emit via the CLI, e.g.
+   `mobius worker install-service`) the `sprite-env services create`
+   invocation so the cold-wake restart path is a stated part of the design
+   rather than an assumption in a comment.
+
+See "Keep-warm modes" below for how this slots into the configuration
+surface.
 
 ---
 
@@ -215,8 +254,10 @@ same trick `deleteTask` already uses (`sprite_hold.go:270-272`).
 - `dialWorkerSocket` treats only 401 as terminal (`worker.go:314-316`). A
   403 (revoked project access), 404 (deleted project / wrong handle), or a
   misconfigured `--api-url` produce an eternal 2-second retry loop with a
-  Warn log each time — on a Sprite this can also hold the VM awake doing
-  nothing (the dial activity itself may count as activity).
+  Warn log each time. (Per the Sprites idle-detection docs this outbound
+  churn at least doesn't hold the VM awake — outbound connections aren't
+  activity — but as a Service the process spins forever with no operator
+  signal beyond logs.)
 
 **Recommendation:** exponential backoff with jitter capped at ~30-60s
 (there is already `expBackoff` in `transport.go` to reuse), and treat 403/404
@@ -347,6 +388,73 @@ fixture, which is itself a gap.)
 
 ---
 
+## Keep-warm modes: a configuration design
+
+Product intent (from discussion): the worker should support, driven by
+configuration, three keep-alive behaviours on a Sprite —
+
+- **A. Recent-work window** — guaranteed awake while the server has had
+  work for it in the last X minutes (e.g. 5m), free to pause after that;
+- **B. On-demand** — pause aggressively when idle; the server wakes the
+  Sprite (Sprites API / URL poke) when it has work;
+- **C. Always-on** — hold the Sprite awake for the worker's whole lifetime.
+
+The key observation is that these are not three mechanisms. They are one
+mechanism — the existing refcounted task hold — with three values of a
+single parameter: *how long after the last job does the hold persist?*
+
+| Mode | Hold window after last job | Today's equivalent |
+|------|---------------------------|--------------------|
+| B. On-demand | 0 (job-scoped only) | per-job hold with `releaseGrace` forced to ~0 |
+| A. Recent-work | X minutes (config) | per-job hold + `spriteReleaseGrace`, currently hardcoded 2m (`sprite_hold.go:37`) |
+| C. Always-on | infinite | `KeepWarmForLifetime` |
+
+**Proposed surface:** replace the `KeepWarmForLifetime bool` +
+hardcoded-grace pair with one knob, e.g. `WorkerConfig.KeepWarmWindow
+time.Duration` (`0` = on-demand/job-scoped, `>0` = recent-work window,
+negative or a sentinel = lifetime), exposed as
+`--keep-warm=on-demand|5m|forever` / `MOBIUS_WORKER_KEEP_WARM`. This
+*deletes* a mode flag and a constant rather than adding configuration, and
+the `spriteHold` maintainer needs no structural change — the grace timer
+already implements the window; it just reads the config instead of the
+constant. Make fail-closed (`Required`) orthogonal and available in modes A
+and C: "guaranteed" in mode A means a failed hold refresh inside the window
+should be loud (today per-job/grace holds are best-effort, Warn-only —
+`sprite_hold.go:229-242`).
+
+Notes per mode, informed by the Sprites docs:
+
+- **Mode A** — the window today starts when the last job *finishes*
+  (`release` arms the grace). That matches "work available in the last X
+  minutes" closely enough, since work arriving resets it via the next
+  claim's `acquire`. Keep the task expiry (`5m`) ≥ the refresh interval as
+  now; the docs' recommended heartbeat pattern (5m expiry, 60s refresh,
+  delete on exit, expiry as crash backstop) is exactly what `spriteHold`
+  already implements — worth saying explicitly: the wire-level usage (PUT
+  upsert, DELETE on release, short expiry) is textbook per the Tasks API
+  docs. The one required fix in this layer is per-instance task names (H4).
+- **Mode B** — cheapest to run but has hard prerequisites, because the
+  ~30s idle window means the Sprite pauses between *every* pair of jobs:
+  (1) the server-side wake call on dispatch and reaper tolerance for
+  paused workers (H5); (2) client hardening so wake→claim is fast — write
+  deadlines (H2) and the suspend detector (H5.2); (3) the worker installed
+  as a Sprite Service so cold wakes restart it (H5.3). Job-scoped holds
+  must remain even in this mode — a job mid-`git clone` still can't
+  survive a pause — and they should arguably be fail-closed here too,
+  since a pause mid-job in this mode strands the job until the reaper.
+  Until (1)-(3) exist, mode B should not be selectable.
+- **Mode C** — works today (`KeepWarmForLifetime`), with the caveats in
+  M4/M5. The Tasks API's 1-hour max expiry is comfortably handled by the
+  60s refresh cadence. This is the right default for run-scoped
+  environments, as the code already documents.
+
+The three-mode framing also resolves the open design tension in
+`spriteHold` (see Simplifications #5): the grace machinery isn't an
+either/or against lifetime pinning — it's the middle point on the dial, and
+all three points share one code path.
+
+---
+
 ## Simplifications & alternative approaches
 
 Recurring theme: the worker has grown several bespoke liveness/delivery
@@ -375,18 +483,15 @@ Each item below *removes* code or config rather than adding it.
 4. **Per-instance Sprite task names** (H4) eliminate the only cross-worker
    coordination problem the hold has, without adding coordination.
 
-5. **Reconsider the three-mode hold.** The hold currently has per-job
-   refcounting + release grace + optional lifetime pinning, each with its
-   own failure semantics. If the wake contract (H5) turns out to be
-   "Mobius Cloud wakes the Sprite on dispatch", then a single policy —
-   *hold while any job is in flight or arrived within the last N minutes,
-   pinned for the process lifetime when `KeepWarmForLifetime`* — is what
-   the code already implements, and the refcount could shrink to an atomic
-   counter plus one timestamp. If the wake contract is instead "nobody
-   wakes it", the per-job/grace modes are unsafe for any environment that
-   expects more work, and lifetime pinning becomes the only correct mode —
-   in which case the grace machinery can be deleted. Either answer to H5
-   simplifies this file.
+5. **Collapse the hold's modes onto one dial.** The hold currently has
+   per-job refcounting + release grace + optional lifetime pinning, each
+   with its own failure semantics. As laid out in "Keep-warm modes" above,
+   these are one policy — *hold while any job is in flight or finished
+   within the last W* — with W ∈ {0, X minutes, ∞}. Replacing
+   `KeepWarmForLifetime` + the `spriteReleaseGrace` constant with a single
+   configurable window removes a bool, a constant, and the special-cased
+   lifetime `acquire()` in `Run` (`worker.go:240`), and gives the product
+   its requested on-demand / recent-work / always-on switch for free.
 
 6. **Let the generated spec carry the generation contract** (Low): define
    `WorkerSocketLLMGenerationSpec/Result` schemas and generate the Go/TS/Py
