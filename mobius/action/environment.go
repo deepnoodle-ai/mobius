@@ -446,9 +446,9 @@ func NewEnvironmentGitCloneAction() mobius.Action {
 	})
 }
 
-// Bot identity stamped on commits made inside a managed environment when the
-// environment has no git identity of its own, so agent commits are attributable
-// rather than authored by `unknown <root@…>`.
+// Bot identity stamped on commits made inside a managed environment, so agent
+// commits are attributable to the Mobius bot rather than to the base image's
+// default git identity (`Sprite <noreply@sprites.dev>`) or `unknown <root@…>`.
 const (
 	environmentGitUserName  = "Mobius Agent"
 	environmentGitUserEmail = "agent@mobiusops.ai"
@@ -477,8 +477,8 @@ func configureEnvironmentGitCredentials(ctx context.Context, environmentID strin
 	if err := runGitConfigGlobal(ctx, "credential.helper", helper); err != nil {
 		return err
 	}
-	setEnvironmentGitIdentityIfUnset(ctx, "user.name", environmentGitUserName)
-	setEnvironmentGitIdentityIfUnset(ctx, "user.email", environmentGitUserEmail)
+	setEnvironmentGitIdentity(ctx, "user.name", environmentGitUserName)
+	setEnvironmentGitIdentity(ctx, "user.email", environmentGitUserEmail)
 	return nil
 }
 
@@ -490,13 +490,19 @@ func runGitConfigGlobal(ctx context.Context, key, value string) error {
 	return nil
 }
 
-// setEnvironmentGitIdentityIfUnset sets a global git identity value only when
-// none is configured, so a repo- or user-provided identity is never clobbered.
-func setEnvironmentGitIdentityIfUnset(ctx context.Context, key, value string) {
-	check := exec.CommandContext(ctx, "git", "config", "--global", "--get", key)
-	if out, err := check.Output(); err == nil && strings.TrimSpace(string(out)) != "" {
-		return
-	}
+// setEnvironmentGitIdentity force-sets a global git identity value in a
+// Mobius-managed environment so agent commits are attributable to the Mobius
+// bot. Forcing the GLOBAL identity is deliberate and safe: git resolves the
+// commit identity from higher-precedence sources first, so a repo-local
+// identity (`git config user.name` inside the repo) or an explicit
+// GIT_AUTHOR_*/GIT_COMMITTER_* environment variable still wins. The only global
+// identity a managed environment ships is the base image default
+// (`Sprite <noreply@sprites.dev>`) — precisely the value we must replace. An
+// earlier "set only if unset" guard treated that default as already-configured
+// and so never applied the Mobius identity, misattributing commits to Sprite.
+// Best-effort: an identity write failure is ignored — the clone already
+// succeeded and git simply falls back to whatever identity it can resolve.
+func setEnvironmentGitIdentity(ctx context.Context, key, value string) {
 	_ = runGitConfigGlobal(ctx, key, value)
 }
 
