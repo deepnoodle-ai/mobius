@@ -6,6 +6,32 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 
 ## [Unreleased]
 
+## [0.0.32] - 2026-07-02
+
+### Added
+
+- CLI: `mobius git-credential-helper`, a hidden broker-backed credential helper
+  so ordinary git commands (`fetch` / `pull` / `push` via `environment.bash`)
+  inside a managed environment can authenticate. No token is persisted; push is
+  a server-enforced opt-in. `environment.git.clone` now wires
+  `credential.helper` to it plus a bot identity.
+- Worker (Go): `--keep-warm=on-demand|<duration>|forever`,
+  `--keep-warm-required`, and SIGINT / SIGTERM graceful shutdown.
+- `job_report_cancelled` contract fixture for the worker `cancelled` status.
+
+### Changed
+
+- Worker (Go): client-side hardening from the architecture review —
+  deadline-bounded writes, ping/pong liveness, ack-driven report delivery,
+  resume-from-suspend detection, per-instance keep-warm scoping, jittered
+  reconnect backoff, and a `KeepWarmWindow` / `KeepWarmRequired` config
+  replacing the old release grace.
+
+### Deprecated
+
+- Worker (Go): `WorkerConfig.KeepWarmForLifetime` — use
+  `KeepWarmWindow = KeepWarmForever`.
+
 ## [0.0.31] - 2026-07-01
 
 Publishes the project blueprint API and reworks how the worker's environment
