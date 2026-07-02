@@ -16,7 +16,10 @@
 package main
 
 import (
+	"context"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/deepnoodle-ai/wonton/cli"
 	"github.com/deepnoodle-ai/wonton/env"
@@ -27,8 +30,17 @@ func main() {
 		_ = env.LoadEnvFile(".env")
 	}
 
+	// Cancel the command context on SIGINT/SIGTERM so long-running commands
+	// (notably `mobius worker`) shut down gracefully: in-flight jobs are
+	// cancelled and report terminal status, and the Sprite keep-warm task is
+	// released instead of pinning the microVM until its expiry. A second
+	// signal kills the process immediately (signal.NotifyContext restores
+	// default handling once the context is cancelled).
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
 	app := newApp()
-	if err := app.Execute(); err != nil {
+	if err := app.ExecuteContext(ctx, os.Args[1:]); err != nil {
 		app.PrintError(err)
 		os.Exit(cli.GetExitCode(err))
 	}
