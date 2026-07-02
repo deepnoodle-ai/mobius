@@ -587,3 +587,73 @@ func setSizeForTest(t *testing.T, target *int, v int) {
 	*target = v
 	t.Cleanup(func() { *target = old })
 }
+
+// TestConfigureEnvironmentGitIdentityForcesBotIdentity locks in the fix for
+// commits being misattributed to the base image's default git identity: the
+// managed environment must overwrite that default with the Mobius bot identity,
+// while a repo-local identity still takes precedence — the guarantee that makes
+// force-setting the global identity safe.
+func TestConfigureEnvironmentGitIdentityForcesBotIdentity(t *testing.T) {
+	// Sandbox global + system git config to temp files so the test never reads
+	// or mutates the developer's real ~/.gitconfig.
+	tmp := t.TempDir()
+	t.Setenv("GIT_CONFIG_GLOBAL", filepath.Join(tmp, "gitconfig"))
+	t.Setenv("GIT_CONFIG_SYSTEM", filepath.Join(tmp, "gitconfig-system"))
+
+	ctx := context.Background()
+
+	// Seed the base image default identity a managed environment ships with —
+	// the value the old "set only if unset" guard mistook for a real identity.
+	if err := runGitConfigGlobal(ctx, "user.name", "Sprite"); err != nil {
+		t.Fatal(err)
+	}
+	if err := runGitConfigGlobal(ctx, "user.email", "noreply@sprites.dev"); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := configureEnvironmentGitCredentials(ctx, "env_test"); err != nil {
+		t.Fatalf("configureEnvironmentGitCredentials: %v", err)
+	}
+
+	// The base image default must be overridden by the Mobius bot identity.
+	if got := gitGlobalConfig(t, "user.name"); got != environmentGitUserName {
+		t.Fatalf("global user.name = %q, want %q", got, environmentGitUserName)
+	}
+	if got := gitGlobalConfig(t, "user.email"); got != environmentGitUserEmail {
+		t.Fatalf("global user.email = %q, want %q", got, environmentGitUserEmail)
+	}
+
+	// Precedence guarantee: a repo-local identity still wins over the forced
+	// global one, so a repo or user that sets its own identity keeps control of
+	// commit attribution.
+	repo := realPath(t, t.TempDir())
+	runGit(t, repo, "init")
+	runGit(t, repo, "config", "user.name", "Repo Local")
+	runGit(t, repo, "config", "user.email", "local@example.com")
+	writeFile(t, repo, "f.txt", "hi")
+	runGit(t, repo, "add", ".")
+	runGit(t, repo, "commit", "-m", "local identity wins")
+	if got := gitOutput(t, repo, "log", "-1", "--format=%an <%ae>"); got != "Repo Local <local@example.com>" {
+		t.Fatalf("commit author = %q, want repo-local identity to win over forced global", got)
+	}
+}
+
+// gitGlobalConfig reads a value from the (test-sandboxed) global git config.
+func gitGlobalConfig(t *testing.T, key string) string {
+	t.Helper()
+	return gitOutput(t, "", "config", "--global", "--get", key)
+}
+
+// gitOutput runs a git command and returns its trimmed combined output.
+func gitOutput(t *testing.T, dir string, args ...string) string {
+	t.Helper()
+	cmd := exec.Command("git", args...)
+	if dir != "" {
+		cmd.Dir = dir
+	}
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("git %s: %v\n%s", strings.Join(args, " "), err, out)
+	}
+	return strings.TrimSpace(string(out))
+}

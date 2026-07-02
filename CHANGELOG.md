@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 
 ## [Unreleased]
 
+## [0.0.33] - 2026-07-02
+
+### Fixed
+
+- Environments: `environment.git.clone` now force-sets the Mobius bot git
+  identity (`Mobius Agent <agent@mobiusops.ai>`) instead of only setting it when
+  unset. The base image ships a default global identity, so the old "if unset"
+  guard never applied — commits made by ad-hoc git in a managed environment were
+  misattributed to that default. Forcing the global identity is safe: a
+  repo-local identity or an explicit `GIT_AUTHOR_*`/`GIT_COMMITTER_*` env var
+  still takes precedence.
+
 ## [0.0.32] - 2026-07-02
 
 ### Added
