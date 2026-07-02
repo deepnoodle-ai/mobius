@@ -18,7 +18,10 @@ always-on.
 
 A third pass implemented the recommendations. Everything client-side in this
 repo is now fixed on this branch; line numbers in the findings below refer to
-the tree at review time (pre-fix). Per finding:
+the tree at review time (pre-fix). The items that require Mobius Cloud
+changes are specified in
+[worker-server-side-recommendations.md](worker-server-side-recommendations.md).
+Per finding:
 
 | Finding | Status |
 |---|---|
