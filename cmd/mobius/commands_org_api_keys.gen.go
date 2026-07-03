@@ -15,17 +15,16 @@ import (
 	"github.com/deepnoodle-ai/mobius/mobius/api"
 )
 
-// registerApiKeysCommands registers every generated subcommand in the "api-keys" group.
-func registerApiKeysCommands(app *cli.App) {
-	apiKeysGrp := app.Group("api-keys").Description("Project and organization API keys")
-	apiKeysGrp.Alias("api-key")
-	apiKeysGrp.Command("create").
-		Description("Create API key").
+// registerOrgApiKeysCommands registers every generated subcommand in the "org-api-keys" group.
+func registerOrgApiKeysCommands(app *cli.App) {
+	orgApiKeysGrp := app.Group("org-api-keys").Description("Organization-level API keys with org-wide admin")
+	orgApiKeysGrp.Alias("org-api-key")
+	orgApiKeysGrp.Command("create").
+		Description("Create organization API key").
 		Flags(
 			cli.String("expires-at", "").Help("Optional hard expiry. Omit for a non-expiring key. Accepts JSON, @file, or @-."),
-			cli.String("name", "").Help("[required] Human-readable label, unique within the project."),
-			cli.String("principal-id", "").Help("[required] Principal this key authenticates as."),
-			cli.String("scope-role-id", "").Help("Optional role whose permissions cap this key below its principal's full grants."),
+			cli.String("name", "").Help("[required] Human-readable label, unique among organization API keys."),
+			cli.String("role", "").Help("System role the key acts as, applied org-wide across every project. Defaults to `Admin`. `Owner` grants full control (including billing and…"),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
@@ -37,8 +36,7 @@ func registerApiKeysCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			var body api.CreateAPIKeyJSONRequestBody
+			var body api.CreateOrgAPIKeyJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
 			}
@@ -50,12 +48,9 @@ func registerApiKeysCommands(app *cli.App) {
 			if ctx.IsSet("name") {
 				body.Name = ctx.String("name")
 			}
-			if ctx.IsSet("principal-id") {
-				body.PrincipalId = ctx.String("principal-id")
-			}
-			if ctx.IsSet("scope-role-id") {
-				v := ctx.String("scope-role-id")
-				body.ScopeRoleId = &v
+			if ctx.IsSet("role") {
+				v := api.CreateOrgAPIKeyRequestRole(ctx.String("role"))
+				body.Role = &v
 			}
 			if tags, err := parseTagFlags(ctx); err != nil {
 				return err
@@ -66,21 +61,18 @@ func registerApiKeysCommands(app *cli.App) {
 			if body.Name == "" {
 				return fmt.Errorf("--name is required (or supply it via --file)")
 			}
-			if body.PrincipalId == "" {
-				return fmt.Errorf("--principal-id is required (or supply it via --file)")
-			}
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.CreateAPIKeyWithResponse(ctx.Context(), p0, body)
+			resp, err := client.CreateOrgAPIKeyWithResponse(ctx.Context(), body)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, "createAPIKey", resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "createOrgAPIKey", resp.StatusCode(), resp.Body)
 		})
 
-	apiKeysGrp.Command("delete").
-		Description("Delete API key").
+	orgApiKeysGrp.Command("delete").
+		Description("Delete organization API key").
 		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -89,17 +81,16 @@ func registerApiKeysCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			resp, err := client.DeleteAPIKeyWithResponse(ctx.Context(), p0, p1)
+			p0 := ctx.Arg(0)
+			resp, err := client.DeleteOrgAPIKeyWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, "deleteAPIKey", resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "deleteOrgAPIKey", resp.StatusCode(), resp.Body)
 		})
 
-	apiKeysGrp.Command("get").
-		Description("Get API key").
+	orgApiKeysGrp.Command("get").
+		Description("Get organization API key").
 		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -108,17 +99,16 @@ func registerApiKeysCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			resp, err := client.GetAPIKeyWithResponse(ctx.Context(), p0, p1)
+			p0 := ctx.Arg(0)
+			resp, err := client.GetOrgAPIKeyWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, "getAPIKey", resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "getOrgAPIKey", resp.StatusCode(), resp.Body)
 		})
 
-	apiKeysGrp.Command("list").
-		Description("List API keys").
+	orgApiKeysGrp.Command("list").
+		Description("List organization API keys").
 		Flags(
 			cli.Int("limit", "").Help("Maximum number of items to return"),
 			cli.String("cursor", "").Help("Cursor for pagination (opaque string from previous response)"),
@@ -130,8 +120,7 @@ func registerApiKeysCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			params := &api.ListAPIKeysParams{}
+			params := &api.ListOrgAPIKeysParams{}
 			if ctx.IsSet("limit") {
 				v := api.LimitParam(ctx.Int("limit"))
 				params.Limit = &v
@@ -140,11 +129,11 @@ func registerApiKeysCommands(app *cli.App) {
 				v := api.CursorParam(ctx.String("cursor"))
 				params.Cursor = &v
 			}
-			resp, err := client.ListAPIKeysWithResponse(ctx.Context(), p0, params)
+			resp, err := client.ListOrgAPIKeysWithResponse(ctx.Context(), params)
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, "listAPIKeys", resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "listOrgAPIKeys", resp.StatusCode(), resp.Body)
 		})
 
 }

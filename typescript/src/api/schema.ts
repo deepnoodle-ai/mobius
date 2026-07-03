@@ -44,9 +44,57 @@ export interface paths {
         post?: never;
         /**
          * Delete API key
-         * @description Permanently deletes the key. In-flight requests using this key will immediately start receiving 401.
+         * @description Revokes the key. In-flight requests using this key will immediately start receiving 401 while credential metadata remains available for audit history.
          */
         delete: operations["deleteAPIKey"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/organization/api-keys": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List organization API keys
+         * @description Returns organization-level API keys, including pagination metadata. Requires org admin.
+         */
+        get: operations["listOrgAPIKeys"];
+        put?: never;
+        /**
+         * Create organization API key
+         * @description Creates an organization-level API key. The key authenticates as the organization's system principal and acts with the chosen `role` applied org-wide across every project (defaults to `Admin`). The raw key value is returned in `key` and is never retrievable again after this response. Requires org admin.
+         */
+        post: operations["createOrgAPIKey"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/organization/api-keys/{resource_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get organization API key
+         * @description Returns metadata for a single organization API key without exposing the raw secret. Requires org admin.
+         */
+        get: operations["getOrgAPIKey"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete organization API key
+         * @description Revokes the organization API key. In-flight requests using this key will immediately start receiving 401 while credential metadata remains available for audit history. Requires org admin.
+         */
+        delete: operations["deleteOrgAPIKey"];
         options?: never;
         head?: never;
         patch?: never;
@@ -509,7 +557,7 @@ export interface paths {
         put?: never;
         /**
          * Create interaction
-         * @description Creates a standalone or run-backed interaction. Run-backed interactions emit an `interaction.responded` event when completed; omit `run_id` and `signal_name` for interactions with no loop-run side effect.
+         * @description Creates a standalone or run-backed interaction. Run-backed interactions record an `interaction.responded` event when completed; omit `run_id` and `signal_name` for interactions with no loop-run association.
          */
         post: operations["createInteraction"];
         delete?: never;
@@ -837,10 +885,10 @@ export interface paths {
         };
         get?: never;
         /**
-         * Create or update a memory entry
-         * @description Creates or updates the memory entry identified by `memory_key`. Editing an agent's memory here is equivalent to the agent calling `mobius.memory.remember`. Provisions the store on first write.
+         * Save memory entry
+         * @description Saves the memory entry identified by `memory_key`, creating it when it does not exist. Editing memory here is equivalent to the agent calling `mobius.memory.remember`.
          */
-        put: operations["putAgentMemoryEntry"];
+        put: operations["saveAgentMemoryEntry"];
         post?: never;
         /**
          * Delete a memory entry
@@ -1091,7 +1139,7 @@ export interface paths {
         put?: never;
         /**
          * Compact the session transcript now
-         * @description Forces a compaction pass immediately, summarizing every message appended since the last compaction regardless of the session's configured strategy or token threshold. This is the manual counterpart to the `auto` strategy and the way to drive the `manual` strategy. It is a no-op when there is nothing new to compact. Returns the updated session. Requires the `mobius.agent.invoke` permission (or the agent's own backing principal).
+         * @description Compact messages appended since the last compaction immediately, regardless of the configured strategy or token threshold. This is a no-op when there is nothing new to compact. Returns the updated session.
          */
         post: operations["compactSession"];
         delete?: never;
@@ -1449,9 +1497,7 @@ export interface paths {
         put?: never;
         /**
          * Apply a blueprint to a project
-         * @description Creates missing resources, updates resources Mobius manages on behalf of the blueprint, adopts matching uniquely-named resources where safe, and reports the resulting changes and bindings. With `mode: preview` the request validates and returns a plan without mutating anything.
-         *
-         *     Apply writes each resource together with its binding in one transaction, but is not all-or-nothing across resources: a failure in a later tier leaves earlier tiers persisted with bindings, and a re-apply converges. Loops are content-diffed, so an unchanged loop is a no-op and does not mint a new version.
+         * @description Creates missing resources, updates resources Mobius manages on behalf of the blueprint, adopts matching uniquely-named resources where safe, and reports the resulting changes and bindings. With `mode: preview`, the request validates and returns a plan without mutating anything. Re-apply converges because each blueprint resource is persisted with its binding.
          */
         post: operations["applyBlueprint"];
         delete?: never;
@@ -2066,6 +2112,10 @@ export interface components {
             key_prefix: string;
             /** @description Principal this key authenticates as. */
             principal_id: string;
+            /** @description Optional role whose permissions cap this key below its principal's full grants. */
+            scope_role_id?: string;
+            /** @description For organization-level keys, the system role the key acts as org-wide (e.g. `Admin`). Absent for project-scoped keys. */
+            org_role?: string;
             /**
              * Format: date-time
              * @description Hard expiry timestamp. Requests using an expired key receive 401.
@@ -2113,6 +2163,10 @@ export interface components {
             key_prefix: string;
             /** @description Principal this key authenticates as. */
             principal_id: string;
+            /** @description Optional role whose permissions cap this key below its principal's full grants. */
+            scope_role_id?: string;
+            /** @description For organization-level keys, the system role the key acts as org-wide (e.g. `Admin`). Absent for project-scoped keys. */
+            org_role?: string;
             /**
              * Format: date-time
              * @description Timestamp when this key expires. Omitted if it does not expire.
@@ -2179,6 +2233,35 @@ export interface components {
             name: string;
             /** @description Principal this key authenticates as. */
             principal_id: string;
+            /** @description Optional role whose permissions cap this key below its principal's full grants. */
+            scope_role_id?: string;
+            /**
+             * Format: date-time
+             * @description Optional hard expiry. Omit for a non-expiring key.
+             */
+            expires_at?: string;
+            /** @description Labels to apply to the new API key. */
+            tags?: components["schemas"]["TagMap"];
+        };
+        /**
+         * @description Request shape for creating an organization-level API key. The key authenticates as the organization's system principal and acts with the chosen `role` applied org-wide across every project.
+         * @example {
+         *       "name": "Org automation",
+         *       "role": "Admin",
+         *       "tags": {
+         *         "owner": "platform"
+         *       }
+         *     }
+         */
+        CreateOrgAPIKeyRequest: {
+            /** @description Human-readable label, unique among organization API keys. */
+            name: string;
+            /**
+             * @description System role the key acts as, applied org-wide across every project. Defaults to `Admin`. `Owner` grants full control (including billing and org deletion); `Admin` covers org and project administration without billing; lower roles narrow to build/run, run-only, worker execution, or read-only.
+             * @default Admin
+             * @enum {string}
+             */
+            role: "Owner" | "Admin" | "Editor" | "Operator" | "Worker" | "Viewer";
             /**
              * Format: date-time
              * @description Optional hard expiry. Omit for a non-expiring key.
@@ -2377,14 +2460,7 @@ export interface components {
             annotations?: components["schemas"]["ActionAnnotations"];
             /** @description Free-form labels attached to this action. */
             tags?: components["schemas"]["TagMap"];
-            /** @description Project secret reference that stores this action's signing key. Present for HTTP-backed actions. */
-            secret_ref?: string;
-            /**
-             * Format: int64
-             * @description Version of `secret_ref` created by this response. Only populated on create and rotate responses.
-             */
-            secret_version?: number;
-            /** @description Base64-encoded 32-byte HMAC-SHA256 signing key. Only populated on create and rotate responses; null on all other reads. Store this value securely on first receipt — it cannot be retrieved again. */
+            /** @description Base64-encoded 32-byte HMAC-SHA256 signing key. Only populated on create and rotate responses; absent on all other reads. Store this value securely on first receipt — it cannot be retrieved again. */
             signing_secret?: string;
             /**
              * Format: date-time
@@ -2646,7 +2722,7 @@ export interface components {
             recommended?: boolean;
         };
         /** @description Local LLM models advertised by online project workers. */
-        WorkerModelCatalogResponse: {
+        WorkerModelCatalogListResponse: {
             items: components["schemas"]["WorkerModelCatalogItem"][];
         };
         /** @description One exact local model route available through online workers. */
@@ -2661,9 +2737,14 @@ export interface components {
         };
         /** @description Assign this route to use a local worker model. */
         WorkerModelRoute: {
-            /** @enum {string} */
+            /**
+             * @description Model route mode. Worker catalog routes always use `worker`.
+             * @enum {string}
+             */
             mode: "worker";
+            /** @description Provider id advertised by the local worker. */
             provider: string;
+            /** @description Model identifier advertised by the local worker. */
             model: string;
         };
         /**
@@ -2672,10 +2753,10 @@ export interface components {
          */
         EnvironmentProvider: "sprites" | "cloudflare_containers" | "worker";
         /**
-         * @description Providers the control plane can provision on demand: `sprites` or `cloudflare_containers`. Excludes `worker`: worker-provided environments are registered out-of-band via the attach endpoint and are never provisioned through create/acquire.
+         * @description Providers the control plane can provision on demand. Worker-provided environments are registered out-of-band via the attach endpoint and are never provisioned through create/acquire.
          * @enum {string}
          */
-        ProvisionEnvironmentProvider: "sprites" | "cloudflare_containers";
+        ProvisionEnvironmentProvider: "sprites";
         /**
          * @description Lifecycle status: `provisioning`, `ready`, `running`, `retained`, `destroying`, `destroyed`, `failed`, or `orphaned`.
          * @enum {string}
@@ -2756,7 +2837,7 @@ export interface components {
             name?: string;
             /** @description Optional naming scope for the environment. */
             scope?: components["schemas"]["ResourceScope"];
-            /** @description Provider to provision: `sprites` or `cloudflare_containers`. */
+            /** @description Provider to provision. */
             provider?: components["schemas"]["ProvisionEnvironmentProvider"];
             /** @description Canonical user owner ID. Defaults to the authenticated user. */
             owned_by?: string;
@@ -3084,7 +3165,7 @@ export interface components {
              * @description Version of `secret_ref` created by this response. Only populated on create and rotate responses.
              */
             secret_version?: number;
-            /** @description Base64-encoded 32-byte HMAC-SHA256 signing key. Only populated on create and rotate responses; null on all other reads. Store this value securely on first receipt — it cannot be retrieved again. */
+            /** @description Base64-encoded 32-byte HMAC-SHA256 signing key. Only populated on create and rotate responses; absent on all other reads. Store this value securely on first receipt — it cannot be retrieved again. */
             signing_secret?: string;
             /**
              * Format: date-time
@@ -3118,7 +3199,7 @@ export interface components {
          */
         WebhookListResponse: {
             /** @description The list of results for this page. */
-            items?: components["schemas"]["Webhook"][];
+            items: components["schemas"]["Webhook"][];
             /** @description Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false. */
             next_cursor?: string;
             /** @description Whether additional pages are available. */
@@ -3146,7 +3227,7 @@ export interface components {
             run_id?: string;
             /** @description The event type that triggered this delivery (e.g. `run.completed`). */
             event_type: string;
-            /** @description Current delivery status: `pending`, `delivered`, or `failed`. */
+            /** @description Current delivery status. */
             status: components["schemas"]["WebhookDeliveryStatus"];
             /** @description Number of delivery attempts made so far. Max 10. */
             attempts: number;
@@ -3165,7 +3246,7 @@ export interface components {
         };
         WebhookDeliveryListResponse: {
             /** @description The list of results for this page. */
-            items?: components["schemas"]["WebhookDeliveryRecord"][];
+            items: components["schemas"]["WebhookDeliveryRecord"][];
             /** @description Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false. */
             next_cursor?: string;
             /** @description Whether additional pages are available. */
@@ -3190,8 +3271,8 @@ export interface components {
             name: string;
             /** @description The endpoint Mobius will POST event payloads to. May be left empty at creation time so a candidate URL can be tested via the ping endpoint before it is saved; events do not fire for webhooks with an empty URL. */
             url?: string;
-            /** @description Event types to subscribe to. Use wildcards for broad subscriptions, e.g. `["run.*"]` for all run events. An empty list subscribes to all event types. */
-            events: string[];
+            /** @description Event types to subscribe to. Use wildcards for broad subscriptions, e.g. `["run.*"]` for all run events. Omit this field or send an empty list to subscribe to all event types. */
+            events?: string[];
             /** @description Whether the webhook starts enabled. Defaults to true when omitted. */
             enabled?: boolean;
             /** @description Initial labels to apply to the webhook. */
@@ -3241,9 +3322,9 @@ export interface components {
          * @description Declarative dialog contract for rendering and validating an interaction. Used at both authoring time (inside a loop definition) and runtime (persisted on an interaction). Protocol kind is decoupled from input shape: each kind declares which spec modes are *allowed*, not which is *implied*. An approval may now legitimately use `select` mode (approve/deny/defer), for example.
          *
          *     Allowed combinations:
-         *     * `approval` → `confirm`, `select`
-         *     * `review` → `select`, `input`
-         *     * `request` → `select`, `multi_select`, `input`
+         *     * `request_approval` → `confirm`, `select`
+         *     * `request_review` → `select`, `input`
+         *     * `request_information` → `select`, `multi_select`, `input`
          */
         InteractionSpec: {
             /** @description UI/input mode used to render and validate the response. */
@@ -3479,8 +3560,8 @@ export interface components {
         CreateInteractionRequest: components["schemas"]["CreateStandaloneInteractionRequest"] | components["schemas"]["CreateRunBackedInteractionRequest"];
         /** @description Creates a standalone interaction. Completion records the response but does not deliver a loop signal. */
         CreateStandaloneInteractionRequest: {
-            /** @description Resolved user IDs to target directly. Agents use their agent principal IDs. */
-            target_user_ids?: string[];
+            /** @description Resolved user IDs to target directly. At least one target is required — every interaction needs someone who can answer it, even when a machine consumer is waiting on the outcome. Agents use their agent principal IDs. */
+            target_user_ids: string[];
             /** @description Protocol kind. */
             kind: components["schemas"]["InteractionKind"];
             /** @description Short non-empty title shown to the responder. */
@@ -3522,12 +3603,12 @@ export interface components {
          *     This is an audit-only link: creating an interaction here does not suspend the run, and resolving it does not by itself resume a run. A run only blocks on, and resumes from, human input when the loop definition declares an interaction step — that step creates the interaction and registers the matching wait atomically. Use this endpoint to record a human decision against a run, not to drive run control flow.
          */
         CreateRunBackedInteractionRequest: {
-            /** @description ID of the loop run to resume when this interaction is completed. */
+            /** @description ID of the loop run associated with this interaction. */
             run_id: string;
-            /** @description Signal name the interaction will complete against when run-backed. */
+            /** @description Legacy signal name recorded with the run association. */
             signal_name: string;
-            /** @description Resolved user IDs to target directly. Agents use their agent principal IDs. */
-            target_user_ids?: string[];
+            /** @description Resolved user IDs to target directly. At least one target is required. Agents use their agent principal IDs. */
+            target_user_ids: string[];
             /** @description Protocol kind. */
             kind: components["schemas"]["InteractionKind"];
             /** @description Short non-empty title shown to the responder. */
@@ -3923,9 +4004,9 @@ export interface components {
             next_cursor?: string;
         };
         /** @description Content for a memory entry. The key comes from the path. */
-        PutAgentMemoryEntryRequest: {
+        SaveAgentMemoryEntryRequest: {
             /** @description The content to remember. */
-            content?: string;
+            content: string;
             /** @description Optional short one-line summary (≤140 chars) shown in the memory index. */
             summary?: string;
             kind?: components["schemas"]["MemoryKind"];
@@ -4183,10 +4264,10 @@ export interface components {
          */
         SessionStatus: "active" | "archived" | "deleted";
         /**
-         * @description Surface that created the session: `manual`, `api`, or `loop`.
+         * @description Surface that created the session: `manual`, `api`, `loop`, or `interaction`.
          * @enum {string}
          */
-        SessionOrigin: "manual" | "api" | "loop";
+        SessionOrigin: "manual" | "api" | "loop" | "interaction";
         /**
          * @description Boundary used to resolve named sessions: `agent` or `loop`.
          * @enum {string}
@@ -4802,11 +4883,6 @@ export interface components {
             last_run_at?: string;
             /**
              * Format: date-time
-             * @description Timestamp when this loop was deleted; absent on active loops.
-             */
-            deleted_at?: string;
-            /**
-             * Format: date-time
              * @description Record creation timestamp.
              */
             created_at: string;
@@ -5011,6 +5087,11 @@ export interface components {
             ref?: string;
             /** @description Whether the provider reports this repository as private. */
             private?: boolean;
+            /**
+             * @description Authorize the loop's managed environment to push to this repository. Defaults to `false`: the repository is cloned read-only and a `git push` from inside the environment fails with a permission error. Set `true` to let the environment obtain a write-scoped credential for this repository. Opt in per repository so environments are never write-capable by default.
+             * @default false
+             */
+            push: boolean;
         };
         /** @description One named input accepted by a loop spec. */
         LoopSpecInput: {
@@ -5254,9 +5335,9 @@ export interface components {
             agent_id?: string;
             /** @description Prompt or task instructions rendered before the agent turn starts. */
             instructions: string;
-            /** @description Optional per-step tool allow-list. When omitted, prompt-only managed agent steps default to no tools; set `disable_tools: false` to allow the agent's full granted tool set. */
+            /** @description Optional per-step tool allow-list. When omitted and `disable_tools` is not true, the agent's full granted tool set is available. Send an empty array to allow no tools. */
             tool_names?: string[];
-            /** @description Disable granted action and memory tools for this agent step. Reserved runtime tools such as `invoke_skill` and structured-output submission may still be present when applicable. When omitted, the agent's granted tools are available. */
+            /** @description Set true to disable granted action and memory tools for this step. When false or omitted, granted tools are available unless `tool_names` narrows the allow-list. Reserved runtime tools such as `invoke_skill` and structured-output submission may still be present when applicable. */
             disable_tools?: boolean;
             /** @description JSON Schema the agent should satisfy when returning structured output. */
             output_schema?: {
@@ -5271,8 +5352,6 @@ export interface components {
         };
         /** @description Durable conversation-session policy for loop agent steps. Omit to enable the product default: loop-scoped sessions keyed from the triggering conversation when Mobius can identify one, such as a Telegram chat ID. */
         LoopAgentSessionPolicy: {
-            /** @description Reserved for internal synthesized agent executions. Authored loop agent steps are session-backed; setting this to `true` is rejected. */
-            disabled?: boolean;
             /**
              * @description Named-session boundary. `auto` and omitted use `loop`. `agent` intentionally shares the named session across loops using the same agent.
              * @enum {string}
@@ -5337,8 +5416,6 @@ export interface components {
             match?: {
                 [key: string]: unknown;
             };
-            /** @description Optional expr predicate evaluated against `{ event, meta }`. */
-            condition?: string;
             /** @description Optional output mapping evaluated against `{ event, meta }`. */
             payload_mapping?: {
                 [key: string]: string;
@@ -5518,8 +5595,6 @@ export interface components {
             label?: string;
             /** @description Trigger that fired this run, if any. */
             readonly trigger_id?: string;
-            /** @description Internal trigger-fire ledger id used to deduplicate trigger dispatch retries. Present only for trigger-started runs. */
-            readonly trigger_fire_id?: string;
         };
         /**
          * @description One loop run record.
@@ -6136,7 +6211,7 @@ export interface components {
          * @enum {string}
          */
         BlueprintChangeAction: "created" | "updated" | "adopted" | "unchanged";
-        /** @description A reference to a Mobius resource by direct `id`, by blueprint `key` (resolved within this apply first, then against existing bindings), or by `blueprint_ref` (namespace + key). */
+        /** @description A reference to a Mobius resource by direct `id`, by blueprint `key` (resolved within this apply first, then against existing bindings), or by `blueprint_ref` (resolved by key; namespace is recorded as provenance and reserved for namespaced lookup). */
         BlueprintResourceRef: {
             /** @description Direct resource id. */
             id?: string;
@@ -6178,7 +6253,7 @@ export interface components {
              * @description Endpoint kind. Defaults to `http`. Immutable after create.
              * @enum {string}
              */
-            type?: "http" | "worker" | "builtin";
+            type?: "http" | "worker";
             /** @description Endpoint URL for http actions. */
             endpoint?: string;
             title?: string;
@@ -6361,7 +6436,7 @@ export interface components {
         TableSchema: {
             /** @description Name of the required string column that uniquely identifies one row in this table. */
             identity_column: string;
-            /** @description Optional string column projected into the fixed physical `sk` column for efficient secondary lookups. It cannot be changed after creation. */
+            /** @description Optional string column optimized for secondary lookups. It cannot be changed after creation. */
             secondary_key_column?: string;
             /** @description Ordered list of columns accepted in row data. */
             columns: components["schemas"]["ColumnDef"][];
@@ -6485,10 +6560,10 @@ export interface components {
             approx_data_bytes: number;
             /**
              * Format: int64
-             * @description Approximate proportional share of fixed table_rows index bytes.
+             * @description Approximate bytes used by secondary lookup indexes.
              */
             approx_index_bytes: number;
-            /** @description Number of schema columns projected into fixed physical keys. */
+            /** @description Number of schema columns optimized for secondary lookup. */
             indexed_column_count: number;
             /** @description Number of compatibility index declarations stored in the table schema. */
             declared_index_count: number;
@@ -6653,7 +6728,7 @@ export interface components {
             /** @description Search query. Hyphens and other punctuation split terms for keyword matching. */
             query: string;
             /**
-             * @description Search mode. `keyword` uses token-prefix full-text search, `semantic` uses sidecar embedding similarity, and `hybrid` combines both.
+             * @description Search mode. `keyword` uses token-prefix matching, `semantic` uses similarity over indexed row text, and `hybrid` combines both.
              * @default keyword
              * @enum {string}
              */
@@ -6761,29 +6836,6 @@ export interface components {
             updated_at?: string;
             /** @description Principal ID of the actor who last updated this artifact. Empty for system-initiated writes. */
             updated_by?: string;
-            /** @description Thumbnail summary for the default variant, when available. Absent until thumbnail processing has produced a state for the current content. */
-            thumbnail?: components["schemas"]["ArtifactThumbnailSummary"];
-        };
-        /** @description Summary of the Mobius-generated thumbnail for an artifact's default variant. The UI uses `status` to decide whether to fetch the thumbnail image, render a placeholder, or show a typed fallback card. */
-        ArtifactThumbnailSummary: {
-            /**
-             * @description Current thumbnail state for the source artifact's content.
-             * @enum {string}
-             */
-            status: "queued" | "processing" | "available" | "skipped" | "failed" | "stale";
-            /** @description Variant name this summary describes (e.g. `card`). */
-            variant: string;
-            /** @description Thumbnail image MIME type when available (image/jpeg or image/png). */
-            mime_type?: string;
-            /** @description Thumbnail pixel width when available. */
-            width?: number;
-            /** @description Thumbnail pixel height when available. */
-            height?: number;
-            /**
-             * Format: date-time
-             * @description Time this thumbnail state was last updated.
-             */
-            updated_at?: string;
         };
         /**
          * @example {
@@ -7145,6 +7197,122 @@ export interface operations {
             429: components["responses"]["TooManyRequests"];
         };
     };
+    listOrgAPIKeys: {
+        parameters: {
+            query?: {
+                /** @description Maximum number of items to return */
+                limit?: components["parameters"]["LimitParam"];
+                /** @description Cursor for pagination (opaque string from previous response) */
+                cursor?: components["parameters"]["CursorParam"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIKeyListResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    createOrgAPIKey: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "name": "Org automation",
+                 *       "expires_at": "2026-09-15T14:30:00Z",
+                 *       "tags": {
+                 *         "owner": "platform"
+                 *       }
+                 *     }
+                 */
+                "application/json": components["schemas"]["CreateOrgAPIKeyRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIKeyCreateResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    getOrgAPIKey: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Resource ID. */
+                resource_id: components["parameters"]["IDParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["APIKey"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    deleteOrgAPIKey: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Resource ID. */
+                resource_id: components["parameters"]["IDParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
     createAction: {
         parameters: {
             query?: never;
@@ -7218,8 +7386,7 @@ export interface operations {
                      *       "tags": {
                      *         "owner": "product"
                      *       },
-                     *       "secret_ref": "mobius/action/act_8m4x9q2v7p5n3r6t",
-                     *       "secret_version": 1,
+                     *       "signing_secret": "base64:one_time_secret",
                      *       "created_at": "2026-06-15T14:30:00Z",
                      *       "updated_at": "2026-06-15T14:30:00Z"
                      *     }
@@ -7564,7 +7731,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["WorkerModelCatalogResponse"];
+                    "application/json": components["schemas"]["WorkerModelCatalogListResponse"];
                 };
             };
             401: components["responses"]["Unauthorized"];
@@ -9206,7 +9373,7 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
-    putAgentMemoryEntry: {
+    saveAgentMemoryEntry: {
         parameters: {
             query?: never;
             header?: never;
@@ -9222,7 +9389,15 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["PutAgentMemoryEntryRequest"];
+                /**
+                 * @example {
+                 *       "content": "The production database runs in us-east-1.",
+                 *       "summary": "Production database region",
+                 *       "kind": "fact",
+                 *       "importance": 80
+                 *     }
+                 */
+                "application/json": components["schemas"]["SaveAgentMemoryEntryRequest"];
             };
         };
         responses: {
@@ -9248,6 +9423,7 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     deleteAgentMemoryEntry: {
@@ -9276,6 +9452,7 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     invokeAgent: {
@@ -9849,6 +10026,7 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
         };
     };
     listLoops: {
@@ -10925,6 +11103,27 @@ export interface operations {
         };
         requestBody: {
             content: {
+                /**
+                 * @example {
+                 *       "namespace": "support",
+                 *       "blueprint_key": "triage",
+                 *       "blueprint_version": "1",
+                 *       "mode": "apply",
+                 *       "resources": {
+                 *         "actions": [
+                 *           {
+                 *             "key": "notify",
+                 *             "name": "support.notify",
+                 *             "title": "Notify support",
+                 *             "description": "Send a support-team notification.",
+                 *             "input_schema": {
+                 *               "type": "object"
+                 *             }
+                 *           }
+                 *         ]
+                 *       }
+                 *     }
+                 */
                 "application/json": components["schemas"]["ApplyBlueprintRequest"];
             };
         };

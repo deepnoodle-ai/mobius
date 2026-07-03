@@ -38,10 +38,10 @@ var overrides = map[string]Override{
 	// (the group name already carries it).
 	"provisionAgentInbox":       {Command: "provision-inbox"},
 	"saveAgentMessagingBinding": {Command: "save-messaging-binding"},
-	// `put` isn't in the verb list, so the auto-derive keeps the redundant
+	// `save` isn't in the verb list, so the auto-derive keeps the redundant
 	// `agent` token; strip it so the leaf matches its siblings
 	// `get-memory`/`list-memory-entries`/`delete-memory-entry`.
-	"putAgentMemoryEntry": {Command: "put-memory-entry"},
+	"saveAgentMemoryEntry": {Command: "save-memory-entry"},
 	// `replaceAgentSkillAssignments`/`replaceAgentToolkitAssignments` keep a
 	// redundant `agent` token the auto-derivation can't strip (the group
 	// already carries it); the matching list ops derive cleanly to
@@ -65,6 +65,16 @@ var overrides = map[string]Override{
 	"listAPIKeys":  {Command: "list"},
 	"getAPIKey":    {Command: "get"},
 	"deleteAPIKey": {Command: "delete"},
+
+	// --- org-api-keys -----------------------------------------------------
+	// The `APIKey` initialism can't be stripped after the non-matching `Org`
+	// token, so the auto-derive lands on `create-a-pi-key`. Spell out the
+	// leaves to match the `api-keys` group; the group name already carries
+	// the "org api key" meaning.
+	"createOrgAPIKey": {Command: "create"},
+	"listOrgAPIKeys":  {Command: "list"},
+	"getOrgAPIKey":    {Command: "get"},
+	"deleteOrgAPIKey": {Command: "delete"},
 
 	// --- blueprints -------------------------------------------------------
 	// Drop the redundant `blueprint` token; the group name already carries it.
@@ -125,6 +135,7 @@ var groupDescriptions = map[string]string{
 	"actions":      "Actions available to loops and agents",
 	"agents":       "Agent identities, presence, and lifecycle",
 	"api-keys":     "Project and organization API keys",
+	"org-api-keys": "Organization-level API keys with org-wide admin",
 	"artifacts":    "Run output artifacts and storage quota",
 	"blueprints":   "Project blueprint application and bindings",
 	"catalog":      "Available actions and triggerable events",

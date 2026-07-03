@@ -338,36 +338,6 @@ func (e ArtifactSignedUrlMethod) Valid() bool {
 	}
 }
 
-// Defines values for ArtifactThumbnailSummaryStatus.
-const (
-	ArtifactThumbnailSummaryStatusAvailable  ArtifactThumbnailSummaryStatus = "available"
-	ArtifactThumbnailSummaryStatusFailed     ArtifactThumbnailSummaryStatus = "failed"
-	ArtifactThumbnailSummaryStatusProcessing ArtifactThumbnailSummaryStatus = "processing"
-	ArtifactThumbnailSummaryStatusQueued     ArtifactThumbnailSummaryStatus = "queued"
-	ArtifactThumbnailSummaryStatusSkipped    ArtifactThumbnailSummaryStatus = "skipped"
-	ArtifactThumbnailSummaryStatusStale      ArtifactThumbnailSummaryStatus = "stale"
-)
-
-// Valid indicates whether the value is a known member of the ArtifactThumbnailSummaryStatus enum.
-func (e ArtifactThumbnailSummaryStatus) Valid() bool {
-	switch e {
-	case ArtifactThumbnailSummaryStatusAvailable:
-		return true
-	case ArtifactThumbnailSummaryStatusFailed:
-		return true
-	case ArtifactThumbnailSummaryStatusProcessing:
-		return true
-	case ArtifactThumbnailSummaryStatusQueued:
-		return true
-	case ArtifactThumbnailSummaryStatusSkipped:
-		return true
-	case ArtifactThumbnailSummaryStatusStale:
-		return true
-	default:
-		return false
-	}
-}
-
 // Defines values for ArtifactVisibility.
 const (
 	ArtifactVisibilityPrivate ArtifactVisibility = "private"
@@ -388,16 +358,13 @@ func (e ArtifactVisibility) Valid() bool {
 
 // Defines values for BlueprintActionInputType.
 const (
-	BlueprintActionInputTypeBuiltin BlueprintActionInputType = "builtin"
-	BlueprintActionInputTypeHttp    BlueprintActionInputType = "http"
-	BlueprintActionInputTypeWorker  BlueprintActionInputType = "worker"
+	BlueprintActionInputTypeHttp   BlueprintActionInputType = "http"
+	BlueprintActionInputTypeWorker BlueprintActionInputType = "worker"
 )
 
 // Valid indicates whether the value is a known member of the BlueprintActionInputType enum.
 func (e BlueprintActionInputType) Valid() bool {
 	switch e {
-	case BlueprintActionInputTypeBuiltin:
-		return true
 	case BlueprintActionInputTypeHttp:
 		return true
 	case BlueprintActionInputTypeWorker:
@@ -671,6 +638,36 @@ const (
 func (e CreateLoopRequestSchemaVersion) Valid() bool {
 	switch e {
 	case CreateLoopRequestSchemaVersionN1:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CreateOrgAPIKeyRequestRole.
+const (
+	CreateOrgAPIKeyRequestRoleAdmin    CreateOrgAPIKeyRequestRole = "Admin"
+	CreateOrgAPIKeyRequestRoleEditor   CreateOrgAPIKeyRequestRole = "Editor"
+	CreateOrgAPIKeyRequestRoleOperator CreateOrgAPIKeyRequestRole = "Operator"
+	CreateOrgAPIKeyRequestRoleOwner    CreateOrgAPIKeyRequestRole = "Owner"
+	CreateOrgAPIKeyRequestRoleViewer   CreateOrgAPIKeyRequestRole = "Viewer"
+	CreateOrgAPIKeyRequestRoleWorker   CreateOrgAPIKeyRequestRole = "Worker"
+)
+
+// Valid indicates whether the value is a known member of the CreateOrgAPIKeyRequestRole enum.
+func (e CreateOrgAPIKeyRequestRole) Valid() bool {
+	switch e {
+	case CreateOrgAPIKeyRequestRoleAdmin:
+		return true
+	case CreateOrgAPIKeyRequestRoleEditor:
+		return true
+	case CreateOrgAPIKeyRequestRoleOperator:
+		return true
+	case CreateOrgAPIKeyRequestRoleOwner:
+		return true
+	case CreateOrgAPIKeyRequestRoleViewer:
+		return true
+	case CreateOrgAPIKeyRequestRoleWorker:
 		return true
 	default:
 		return false
@@ -1708,15 +1705,12 @@ func (e ProjectAccessMode) Valid() bool {
 
 // Defines values for ProvisionEnvironmentProvider.
 const (
-	ProvisionEnvironmentProviderCloudflareContainers ProvisionEnvironmentProvider = "cloudflare_containers"
-	ProvisionEnvironmentProviderSprites              ProvisionEnvironmentProvider = "sprites"
+	ProvisionEnvironmentProviderSprites ProvisionEnvironmentProvider = "sprites"
 )
 
 // Valid indicates whether the value is a known member of the ProvisionEnvironmentProvider enum.
 func (e ProvisionEnvironmentProvider) Valid() bool {
 	switch e {
-	case ProvisionEnvironmentProviderCloudflareContainers:
-		return true
 	case ProvisionEnvironmentProviderSprites:
 		return true
 	default:
@@ -1942,15 +1936,18 @@ func (e SessionMessageRole) Valid() bool {
 
 // Defines values for SessionOrigin.
 const (
-	SessionOriginApi    SessionOrigin = "api"
-	SessionOriginLoop   SessionOrigin = "loop"
-	SessionOriginManual SessionOrigin = "manual"
+	SessionOriginApi         SessionOrigin = "api"
+	SessionOriginInteraction SessionOrigin = "interaction"
+	SessionOriginLoop        SessionOrigin = "loop"
+	SessionOriginManual      SessionOrigin = "manual"
 )
 
 // Valid indicates whether the value is a known member of the SessionOrigin enum.
 func (e SessionOrigin) Valid() bool {
 	switch e {
 	case SessionOriginApi:
+		return true
+	case SessionOriginInteraction:
 		return true
 	case SessionOriginLoop:
 		return true
@@ -2746,8 +2743,14 @@ type APIKey struct {
 	// Name Human-readable label, unique within the project.
 	Name string `json:"name"`
 
+	// OrgRole For organization-level keys, the system role the key acts as org-wide (e.g. `Admin`). Absent for project-scoped keys.
+	OrgRole *string `json:"org_role,omitempty"`
+
 	// PrincipalId Principal this key authenticates as.
 	PrincipalId string `json:"principal_id"`
+
+	// ScopeRoleId Optional role whose permissions cap this key below its principal's full grants.
+	ScopeRoleId *string `json:"scope_role_id,omitempty"`
 
 	// Tags Key/value tags for organizing and filtering resources. Up to 8 per resource; keys 1–128 characters, values up to 256. Keys prefixed `mobius:` are system-managed and cannot be set by callers.
 	Tags *TagMap `json:"tags,omitempty"`
@@ -2779,8 +2782,14 @@ type APIKeyCreateResult struct {
 	// Name Human-readable name for the key.
 	Name string `json:"name"`
 
+	// OrgRole For organization-level keys, the system role the key acts as org-wide (e.g. `Admin`). Absent for project-scoped keys.
+	OrgRole *string `json:"org_role,omitempty"`
+
 	// PrincipalId Principal this key authenticates as.
 	PrincipalId string `json:"principal_id"`
+
+	// ScopeRoleId Optional role whose permissions cap this key below its principal's full grants.
+	ScopeRoleId *string `json:"scope_role_id,omitempty"`
 
 	// Tags Key/value tags for organizing and filtering resources. Up to 8 per resource; keys 1–128 characters, values up to 256. Keys prefixed `mobius:` are system-managed and cannot be set by callers.
 	Tags *TagMap `json:"tags,omitempty"`
@@ -2830,13 +2839,7 @@ type Action struct {
 	// OutputSchema JSON Schema describing the expected output shape.
 	OutputSchema *map[string]interface{} `json:"output_schema,omitempty"`
 
-	// SecretRef Project secret reference that stores this action's signing key. Present for HTTP-backed actions.
-	SecretRef *string `json:"secret_ref,omitempty"`
-
-	// SecretVersion Version of `secret_ref` created by this response. Only populated on create and rotate responses.
-	SecretVersion *int64 `json:"secret_version,omitempty"`
-
-	// SigningSecret Base64-encoded 32-byte HMAC-SHA256 signing key. Only populated on create and rotate responses; null on all other reads. Store this value securely on first receipt — it cannot be retrieved again.
+	// SigningSecret Base64-encoded 32-byte HMAC-SHA256 signing key. Only populated on create and rotate responses; absent on all other reads. Store this value securely on first receipt — it cannot be retrieved again.
 	SigningSecret *string `json:"signing_secret,omitempty"`
 
 	// Tags Key/value tags for organizing and filtering resources. Up to 8 per resource; keys 1–128 characters, values up to 256. Keys prefixed `mobius:` are system-managed and cannot be set by callers.
@@ -3568,9 +3571,6 @@ type Artifact struct {
 	// StepId Loop step that produced this artifact, derived from the active worker lease.
 	StepId *string `json:"step_id,omitempty"`
 
-	// Thumbnail Summary of the Mobius-generated thumbnail for an artifact's default variant. The UI uses `status` to decide whether to fetch the thumbnail image, render a placeholder, or show a typed fallback card.
-	Thumbnail *ArtifactThumbnailSummary `json:"thumbnail,omitempty"`
-
 	// UpdatedAt Time the artifact metadata was last updated.
 	UpdatedAt *time.Time `json:"updated_at,omitempty"`
 
@@ -3634,30 +3634,6 @@ type ArtifactSignedUrl struct {
 
 // ArtifactSignedUrlMethod HTTP method to use with `url`; currently `GET`.
 type ArtifactSignedUrlMethod string
-
-// ArtifactThumbnailSummary Summary of the Mobius-generated thumbnail for an artifact's default variant. The UI uses `status` to decide whether to fetch the thumbnail image, render a placeholder, or show a typed fallback card.
-type ArtifactThumbnailSummary struct {
-	// Height Thumbnail pixel height when available.
-	Height *int `json:"height,omitempty"`
-
-	// MimeType Thumbnail image MIME type when available (image/jpeg or image/png).
-	MimeType *string `json:"mime_type,omitempty"`
-
-	// Status Current thumbnail state for the source artifact's content.
-	Status ArtifactThumbnailSummaryStatus `json:"status"`
-
-	// UpdatedAt Time this thumbnail state was last updated.
-	UpdatedAt *time.Time `json:"updated_at,omitempty"`
-
-	// Variant Variant name this summary describes (e.g. `card`).
-	Variant string `json:"variant"`
-
-	// Width Thumbnail pixel width when available.
-	Width *int `json:"width,omitempty"`
-}
-
-// ArtifactThumbnailSummaryStatus Current thumbnail state for the source artifact's content.
-type ArtifactThumbnailSummaryStatus string
 
 // ArtifactVisibility Private artifacts are visible only to their owner user. Shared artifacts are visible to the project.
 type ArtifactVisibility string
@@ -3765,7 +3741,7 @@ type BlueprintChangeAction string
 
 // BlueprintLoopInput A desired loop. The spec-bearing fields (`steps`, `triggers`, `event`, `config`, `limits`, `output`, `concurrency`, `repositories`, `cleanup`, `defaults`) mirror the loop authoring shape and are compiled by the loop engine. Applied loops default to `draft` unless `status` is set.
 type BlueprintLoopInput struct {
-	// Agent A reference to a Mobius resource by direct `id`, by blueprint `key` (resolved within this apply first, then against existing bindings), or by `blueprint_ref` (namespace + key).
+	// Agent A reference to a Mobius resource by direct `id`, by blueprint `key` (resolved within this apply first, then against existing bindings), or by `blueprint_ref` (resolved by key; namespace is recorded as provenance and reserved for namespaced lookup).
 	Agent *BlueprintResourceRef `json:"agent,omitempty"`
 
 	// Cleanup Cleanup steps run at the end of the run (maps to the loop spec `cleanup`).
@@ -3799,7 +3775,7 @@ type BlueprintRef struct {
 	Namespace *string `json:"namespace,omitempty"`
 }
 
-// BlueprintResourceRef A reference to a Mobius resource by direct `id`, by blueprint `key` (resolved within this apply first, then against existing bindings), or by `blueprint_ref` (namespace + key).
+// BlueprintResourceRef A reference to a Mobius resource by direct `id`, by blueprint `key` (resolved within this apply first, then against existing bindings), or by `blueprint_ref` (resolved by key; namespace is recorded as provenance and reserved for namespaced lookup).
 type BlueprintResourceRef struct {
 	// BlueprintRef A namespaced blueprint key reference.
 	BlueprintRef *BlueprintRef `json:"blueprint_ref,omitempty"`
@@ -4015,6 +3991,9 @@ type CreateAPIKeyRequest struct {
 	// PrincipalId Principal this key authenticates as.
 	PrincipalId string `json:"principal_id"`
 
+	// ScopeRoleId Optional role whose permissions cap this key below its principal's full grants.
+	ScopeRoleId *string `json:"scope_role_id,omitempty"`
+
 	// Tags Key/value tags for organizing and filtering resources. Up to 8 per resource; keys 1–128 characters, values up to 256. Keys prefixed `mobius:` are system-managed and cannot be set by callers.
 	Tags *TagMap `json:"tags,omitempty"`
 }
@@ -4093,7 +4072,7 @@ type CreateEnvironmentRequest struct {
 	// OwnedBy Canonical user owner ID. Defaults to the authenticated user.
 	OwnedBy *string `json:"owned_by,omitempty"`
 
-	// Provider Providers the control plane can provision on demand: `sprites` or `cloudflare_containers`. Excludes `worker`: worker-provided environments are registered out-of-band via the attach endpoint and are never provisioned through create/acquire.
+	// Provider Providers the control plane can provision on demand. Worker-provided environments are registered out-of-band via the attach endpoint and are never provisioned through create/acquire.
 	Provider *ProvisionEnvironmentProvider `json:"provider,omitempty"`
 
 	// Scope Optional namespace for named runtime resources. Omitted/null means the project/default scope; `owner` means names are unique within `(project, owned_by)`.
@@ -4174,6 +4153,24 @@ type CreateLoopRequestConcurrency string
 // CreateLoopRequestSchemaVersion Loop authoring schema version. Only schema version 1 is accepted.
 type CreateLoopRequestSchemaVersion string
 
+// CreateOrgAPIKeyRequest Request shape for creating an organization-level API key. The key authenticates as the organization's system principal and acts with the chosen `role` applied org-wide across every project.
+type CreateOrgAPIKeyRequest struct {
+	// ExpiresAt Optional hard expiry. Omit for a non-expiring key.
+	ExpiresAt *time.Time `json:"expires_at,omitempty"`
+
+	// Name Human-readable label, unique among organization API keys.
+	Name string `json:"name"`
+
+	// Role System role the key acts as, applied org-wide across every project. Defaults to `Admin`. `Owner` grants full control (including billing and org deletion); `Admin` covers org and project administration without billing; lower roles narrow to build/run, run-only, worker execution, or read-only.
+	Role *CreateOrgAPIKeyRequestRole `json:"role,omitempty"`
+
+	// Tags Key/value tags for organizing and filtering resources. Up to 8 per resource; keys 1–128 characters, values up to 256. Keys prefixed `mobius:` are system-managed and cannot be set by callers.
+	Tags *TagMap `json:"tags,omitempty"`
+}
+
+// CreateOrgAPIKeyRequestRole System role the key acts as, applied org-wide across every project. Defaults to `Admin`. `Owner` grants full control (including billing and org deletion); `Admin` covers org and project administration without billing; lower roles narrow to build/run, run-only, worker execution, or read-only.
+type CreateOrgAPIKeyRequestRole string
+
 // CreateProjectRequest defines model for CreateProjectRequest.
 type CreateProjectRequest struct {
 	// AccessMode `open`: every org member can see and use the project, subject to role assignments. `restricted`: only listed project members (and org owners/admins) can see or use the project.
@@ -4233,18 +4230,18 @@ type CreateRunBackedInteractionRequest struct {
 	// ResolutionPolicy Declarative resolution rule attached to an Interaction. Determines how participant responses become a final outcome.
 	ResolutionPolicy *ResolutionPolicy `json:"resolution_policy,omitempty"`
 
-	// RunId ID of the loop run to resume when this interaction is completed.
+	// RunId ID of the loop run associated with this interaction.
 	RunId string `json:"run_id"`
 
-	// SignalName Signal name the interaction will complete against when run-backed.
+	// SignalName Legacy signal name recorded with the run association.
 	SignalName string `json:"signal_name"`
 
 	// Spec Declarative dialog contract for rendering and validating an interaction. Used at both authoring time (inside a loop definition) and runtime (persisted on an interaction). Protocol kind is decoupled from input shape: each kind declares which spec modes are *allowed*, not which is *implied*. An approval may now legitimately use `select` mode (approve/deny/defer), for example.
 	//
 	// Allowed combinations:
-	// * `approval` → `confirm`, `select`
-	// * `review` → `select`, `input`
-	// * `request` → `select`, `multi_select`, `input`
+	// * `request_approval` → `confirm`, `select`
+	// * `request_review` → `select`, `input`
+	// * `request_information` → `select`, `multi_select`, `input`
 	Spec *InteractionSpec `json:"spec,omitempty"`
 
 	// Subject Pointer to the work item, artifact, external ticket, or Mobius entity this interaction is about.
@@ -4253,8 +4250,8 @@ type CreateRunBackedInteractionRequest struct {
 	// Tags Key/value tags for organizing and filtering resources. Up to 8 per resource; keys 1–128 characters, values up to 256. Keys prefixed `mobius:` are system-managed and cannot be set by callers.
 	Tags *TagMap `json:"tags,omitempty"`
 
-	// TargetUserIds Resolved user IDs to target directly. Agents use their agent principal IDs.
-	TargetUserIds *[]string `json:"target_user_ids,omitempty"`
+	// TargetUserIds Resolved user IDs to target directly. At least one target is required. Agents use their agent principal IDs.
+	TargetUserIds []string `json:"target_user_ids"`
 
 	// Title Short non-empty title shown to the responder.
 	Title string `json:"title"`
@@ -4332,9 +4329,9 @@ type CreateStandaloneInteractionRequest struct {
 	// Spec Declarative dialog contract for rendering and validating an interaction. Used at both authoring time (inside a loop definition) and runtime (persisted on an interaction). Protocol kind is decoupled from input shape: each kind declares which spec modes are *allowed*, not which is *implied*. An approval may now legitimately use `select` mode (approve/deny/defer), for example.
 	//
 	// Allowed combinations:
-	// * `approval` → `confirm`, `select`
-	// * `review` → `select`, `input`
-	// * `request` → `select`, `multi_select`, `input`
+	// * `request_approval` → `confirm`, `select`
+	// * `request_review` → `select`, `input`
+	// * `request_information` → `select`, `multi_select`, `input`
 	Spec *InteractionSpec `json:"spec,omitempty"`
 
 	// Subject Pointer to the work item, artifact, external ticket, or Mobius entity this interaction is about.
@@ -4343,8 +4340,8 @@ type CreateStandaloneInteractionRequest struct {
 	// Tags Key/value tags for organizing and filtering resources. Up to 8 per resource; keys 1–128 characters, values up to 256. Keys prefixed `mobius:` are system-managed and cannot be set by callers.
 	Tags *TagMap `json:"tags,omitempty"`
 
-	// TargetUserIds Resolved user IDs to target directly. Agents use their agent principal IDs.
-	TargetUserIds *[]string `json:"target_user_ids,omitempty"`
+	// TargetUserIds Resolved user IDs to target directly. At least one target is required — every interaction needs someone who can answer it, even when a machine consumer is waiting on the outcome. Agents use their agent principal IDs.
+	TargetUserIds []string `json:"target_user_ids"`
 
 	// Title Short non-empty title shown to the responder.
 	Title string `json:"title"`
@@ -4370,8 +4367,8 @@ type CreateWebhookRequest struct {
 	// Enabled Whether the webhook starts enabled. Defaults to true when omitted.
 	Enabled *bool `json:"enabled,omitempty"`
 
-	// Events Event types to subscribe to. Use wildcards for broad subscriptions, e.g. `["run.*"]` for all run events. An empty list subscribes to all event types.
-	Events []string `json:"events"`
+	// Events Event types to subscribe to. Use wildcards for broad subscriptions, e.g. `["run.*"]` for all run events. Omit this field or send an empty list to subscribe to all event types.
+	Events *[]string `json:"events,omitempty"`
 
 	// Name Human-readable name, unique within the project.
 	Name string `json:"name"`
@@ -4735,9 +4732,9 @@ type Interaction struct {
 	// Spec Declarative dialog contract for rendering and validating an interaction. Used at both authoring time (inside a loop definition) and runtime (persisted on an interaction). Protocol kind is decoupled from input shape: each kind declares which spec modes are *allowed*, not which is *implied*. An approval may now legitimately use `select` mode (approve/deny/defer), for example.
 	//
 	// Allowed combinations:
-	// * `approval` → `confirm`, `select`
-	// * `review` → `select`, `input`
-	// * `request` → `select`, `multi_select`, `input`
+	// * `request_approval` → `confirm`, `select`
+	// * `request_review` → `select`, `input`
+	// * `request_information` → `select`, `multi_select`, `input`
 	Spec *InteractionSpec `json:"spec,omitempty"`
 
 	// Status Current status of the interaction: pending, completed, expired, or cancelled.
@@ -4876,9 +4873,9 @@ type InteractionResponseState string
 // InteractionSpec Declarative dialog contract for rendering and validating an interaction. Used at both authoring time (inside a loop definition) and runtime (persisted on an interaction). Protocol kind is decoupled from input shape: each kind declares which spec modes are *allowed*, not which is *implied*. An approval may now legitimately use `select` mode (approve/deny/defer), for example.
 //
 // Allowed combinations:
-// * `approval` → `confirm`, `select`
-// * `review` → `select`, `input`
-// * `request` → `select`, `multi_select`, `input`
+// * `request_approval` → `confirm`, `select`
+// * `request_review` → `select`, `input`
+// * `request_information` → `select`, `multi_select`, `input`
 type InteractionSpec struct {
 	// DefaultConfirmed Initial yes/no value for `confirm` mode.
 	DefaultConfirmed *bool `json:"default_confirmed,omitempty"`
@@ -5020,9 +5017,6 @@ type Loop struct {
 	// Defaults Run-level defaults inside the loop spec. Lives at `spec.defaults` in the JSON the engine compiles. The run wall-clock limit moved to `limits.wall_clock_timeout`.
 	Defaults *LoopSpecDefaults `json:"defaults,omitempty"`
 
-	// DeletedAt Timestamp when this loop was deleted; absent on active loops.
-	DeletedAt *time.Time `json:"deleted_at,omitempty"`
-
 	// Description Markdown description of the loop's purpose.
 	Description *string `json:"description,omitempty"`
 
@@ -5128,9 +5122,6 @@ type LoopAgentSessionPolicy struct {
 	// CompactionPolicy Controls how a session's transcript is automatically summarized as it grows. On create the supplied fields are merged over the owning agent's default policy and the server defaults; on update they patch the session's current policy. Omitted fields keep their resolved values.
 	CompactionPolicy *SessionCompactionPolicy `json:"compaction_policy,omitempty"`
 
-	// Disabled Reserved for internal synthesized agent executions. Authored loop agent steps are session-backed; setting this to `true` is rejected.
-	Disabled *bool `json:"disabled,omitempty"`
-
 	// Name Optional Go-template string rendered against `event`, `meta`, `config`, `context`, `agent`, `loop`, `run`, `source`, and `step`. When omitted, Mobius derives a stable name from the event payload, falling back to the trigger or `default`.
 	Name *string `json:"name,omitempty"`
 
@@ -5152,7 +5143,7 @@ type LoopAgentStep struct {
 	// AgentId Agent to run for this step. Omit to use the loop's top-level `agent_id`.
 	AgentId *string `json:"agent_id,omitempty"`
 
-	// DisableTools Disable granted action and memory tools for this agent step. Reserved runtime tools such as `invoke_skill` and structured-output submission may still be present when applicable. When omitted, the agent's granted tools are available.
+	// DisableTools Set true to disable granted action and memory tools for this step. When false or omitted, granted tools are available unless `tool_names` narrows the allow-list. Reserved runtime tools such as `invoke_skill` and structured-output submission may still be present when applicable.
 	DisableTools *bool `json:"disable_tools,omitempty"`
 
 	// Instructions Prompt or task instructions rendered before the agent turn starts.
@@ -5170,7 +5161,7 @@ type LoopAgentStep struct {
 	// Session Durable conversation-session policy for loop agent steps. Omit to enable the product default: loop-scoped sessions keyed from the triggering conversation when Mobius can identify one, such as a Telegram chat ID.
 	Session *LoopAgentSessionPolicy `json:"session,omitempty"`
 
-	// ToolNames Optional per-step tool allow-list. When omitted, prompt-only managed agent steps default to no tools; set `disable_tools: false` to allow the agent's full granted tool set.
+	// ToolNames Optional per-step tool allow-list. When omitted and `disable_tools` is not true, the agent's full granted tool set is available. Send an empty array to allow no tools.
 	ToolNames *[]string `json:"tool_names,omitempty"`
 }
 
@@ -5501,9 +5492,6 @@ type LoopRunSource struct {
 	// Label Display label.
 	Label *string `json:"label,omitempty"`
 
-	// TriggerFireId Internal trigger-fire ledger id used to deduplicate trigger dispatch retries. Present only for trigger-started runs.
-	TriggerFireId *string `json:"trigger_fire_id,omitempty"`
-
 	// TriggerId Trigger that fired this run, if any.
 	TriggerId *string `json:"trigger_id,omitempty"`
 
@@ -5716,6 +5704,9 @@ type LoopSpecRepository struct {
 	// Provider Repository provider. GitHub is the only supported provider today.
 	Provider *LoopSpecRepositoryProvider `json:"provider,omitempty"`
 
+	// Push Authorize the loop's managed environment to push to this repository. Defaults to `false`: the repository is cloned read-only and a `git push` from inside the environment fails with a permission error. Set `true` to let the environment obtain a write-scoped credential for this repository. Opt in per repository so environments are never write-capable by default.
+	Push *bool `json:"push,omitempty"`
+
 	// Ref Optional branch, tag, or ref to check out. For `static` repositories it pins the checkout; for `match` repositories it overrides the ref derived from the event. Omitted uses the provider default branch.
 	Ref *string `json:"ref,omitempty"`
 
@@ -5839,9 +5830,6 @@ type LoopTimeoutPolicyOnTimeout string
 
 // LoopWaitForEventStep Wait-for-event step configuration recognised inside `LoopSpec.steps[].config`.
 type LoopWaitForEventStep struct {
-	// Condition Optional expr predicate evaluated against `{ event, meta }`.
-	Condition *string `json:"condition,omitempty"`
-
 	// EventType Event type or pattern that resumes the waiting step.
 	EventType string `json:"event_type"`
 
@@ -6011,29 +5999,8 @@ type ProjectListResponse struct {
 	NextCursor *string `json:"next_cursor,omitempty"`
 }
 
-// ProvisionEnvironmentProvider Providers the control plane can provision on demand: `sprites` or `cloudflare_containers`. Excludes `worker`: worker-provided environments are registered out-of-band via the attach endpoint and are never provisioned through create/acquire.
+// ProvisionEnvironmentProvider Providers the control plane can provision on demand. Worker-provided environments are registered out-of-band via the attach endpoint and are never provisioned through create/acquire.
 type ProvisionEnvironmentProvider string
-
-// PutAgentMemoryEntryRequest Content for a memory entry. The key comes from the path.
-type PutAgentMemoryEntryRequest struct {
-	// Content The content to remember.
-	Content *string `json:"content,omitempty"`
-
-	// Importance Optional importance from 0 to 100; higher is kept longer during compaction.
-	Importance *int `json:"importance,omitempty"`
-
-	// Kind Classifies a memory entry. Kinds carry different retention and compaction semantics: facts and preferences are durable, episodes are the primary input to compaction, and a summary is the compacted product of other entries.
-	Kind *MemoryKind `json:"kind,omitempty"`
-
-	// Metadata Optional structured metadata to store alongside the memory.
-	Metadata *map[string]interface{} `json:"metadata,omitempty"`
-
-	// Pinned Pin to exempt this memory from compaction.
-	Pinned *bool `json:"pinned,omitempty"`
-
-	// Summary Optional short one-line summary (≤140 chars) shown in the memory index.
-	Summary *string `json:"summary,omitempty"`
-}
 
 // QueryRowsRequest defines model for QueryRowsRequest.
 type QueryRowsRequest struct {
@@ -6169,6 +6136,27 @@ type RunStartedPayload struct {
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
+// SaveAgentMemoryEntryRequest Content for a memory entry. The key comes from the path.
+type SaveAgentMemoryEntryRequest struct {
+	// Content The content to remember.
+	Content string `json:"content"`
+
+	// Importance Optional importance from 0 to 100; higher is kept longer during compaction.
+	Importance *int `json:"importance,omitempty"`
+
+	// Kind Classifies a memory entry. Kinds carry different retention and compaction semantics: facts and preferences are durable, episodes are the primary input to compaction, and a summary is the compacted product of other entries.
+	Kind *MemoryKind `json:"kind,omitempty"`
+
+	// Metadata Optional structured metadata to store alongside the memory.
+	Metadata *map[string]interface{} `json:"metadata,omitempty"`
+
+	// Pinned Pin to exempt this memory from compaction.
+	Pinned *bool `json:"pinned,omitempty"`
+
+	// Summary Optional short one-line summary (≤140 chars) shown in the memory index.
+	Summary *string `json:"summary,omitempty"`
+}
+
 // ScheduleTriggerConfig Configuration for `LoopSpec.triggers[]` entries with `kind` set to `schedule`. Provide exactly one of `cron` or `interval`; the compiler rejects configs that omit both or set both.
 type ScheduleTriggerConfig struct {
 	// Cron Standard five-field cron expression or descriptor such as `@hourly`.
@@ -6192,14 +6180,14 @@ type SearchRowsRequest struct {
 	// Limit Maximum number of rows to return (1–100, default 20).
 	Limit *int `json:"limit,omitempty"`
 
-	// Mode Search mode. `keyword` uses token-prefix full-text search, `semantic` uses sidecar embedding similarity, and `hybrid` combines both.
+	// Mode Search mode. `keyword` uses token-prefix matching, `semantic` uses similarity over indexed row text, and `hybrid` combines both.
 	Mode *SearchRowsRequestMode `json:"mode,omitempty"`
 
 	// Query Search query. Hyphens and other punctuation split terms for keyword matching.
 	Query string `json:"query"`
 }
 
-// SearchRowsRequestMode Search mode. `keyword` uses token-prefix full-text search, `semantic` uses sidecar embedding similarity, and `hybrid` combines both.
+// SearchRowsRequestMode Search mode. `keyword` uses token-prefix matching, `semantic` uses similarity over indexed row text, and `hybrid` combines both.
 type SearchRowsRequestMode string
 
 // Session Durable conversation transcript owned by an agent.
@@ -6249,7 +6237,7 @@ type Session struct {
 	// ModelProvider Provider for the recorded `model`.
 	ModelProvider *string `json:"model_provider,omitempty"`
 
-	// Origin Surface that created the session: `manual`, `api`, or `loop`.
+	// Origin Surface that created the session: `manual`, `api`, `loop`, or `interaction`.
 	Origin SessionOrigin `json:"origin"`
 
 	// Scope Boundary used to resolve named sessions: `agent` or `loop`.
@@ -6456,7 +6444,7 @@ type SessionMessagePreviewFrameEventType string
 // SessionMessageRole Message role: `system`, `user`, `assistant`, `tool`, or `compaction`.
 type SessionMessageRole string
 
-// SessionOrigin Surface that created the session: `manual`, `api`, or `loop`.
+// SessionOrigin Surface that created the session: `manual`, `api`, `loop`, or `interaction`.
 type SessionOrigin string
 
 // SessionResyncFrame Live-only marker asking the client to reconcile the active turn from the live snapshot endpoint.
@@ -6898,7 +6886,7 @@ type TableSchema struct {
 	// Open Allows rows to include undeclared keys while declared columns continue to be validated.
 	Open *bool `json:"open,omitempty"`
 
-	// SecondaryKeyColumn Optional string column projected into the fixed physical `sk` column for efficient secondary lookups. It cannot be changed after creation.
+	// SecondaryKeyColumn Optional string column optimized for secondary lookups. It cannot be changed after creation.
 	SecondaryKeyColumn *string `json:"secondary_key_column,omitempty"`
 }
 
@@ -6907,7 +6895,7 @@ type TableStats struct {
 	// ApproxDataBytes Approximate bytes used by table data.
 	ApproxDataBytes int64 `json:"approx_data_bytes"`
 
-	// ApproxIndexBytes Approximate proportional share of fixed table_rows index bytes.
+	// ApproxIndexBytes Approximate bytes used by secondary lookup indexes.
 	ApproxIndexBytes int64 `json:"approx_index_bytes"`
 
 	// DeclaredIndexCount Number of compatibility index declarations stored in the table schema.
@@ -6916,7 +6904,7 @@ type TableStats struct {
 	// GeneratedAt Time this statistics snapshot was generated.
 	GeneratedAt time.Time `json:"generated_at"`
 
-	// IndexedColumnCount Number of schema columns projected into fixed physical keys.
+	// IndexedColumnCount Number of schema columns optimized for secondary lookup.
 	IndexedColumnCount int `json:"indexed_column_count"`
 
 	// NewestRowUpdatedAt Update time of the newest changed row, when the table has rows.
@@ -7399,7 +7387,7 @@ type Webhook struct {
 	// SecretVersion Version of `secret_ref` created by this response. Only populated on create and rotate responses.
 	SecretVersion *int64 `json:"secret_version,omitempty"`
 
-	// SigningSecret Base64-encoded 32-byte HMAC-SHA256 signing key. Only populated on create and rotate responses; null on all other reads. Store this value securely on first receipt — it cannot be retrieved again.
+	// SigningSecret Base64-encoded 32-byte HMAC-SHA256 signing key. Only populated on create and rotate responses; absent on all other reads. Store this value securely on first receipt — it cannot be retrieved again.
 	SigningSecret *string `json:"signing_secret,omitempty"`
 
 	// Tags Key/value tags for organizing and filtering resources. Up to 8 per resource; keys 1–128 characters, values up to 256. Keys prefixed `mobius:` are system-managed and cannot be set by callers.
@@ -7421,7 +7409,7 @@ type WebhookDeliveryListResponse struct {
 	HasMore bool `json:"has_more"`
 
 	// Items The list of results for this page.
-	Items *[]WebhookDeliveryRecord `json:"items,omitempty"`
+	Items []WebhookDeliveryRecord `json:"items"`
 
 	// NextCursor Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.
 	NextCursor *string `json:"next_cursor,omitempty"`
@@ -7466,7 +7454,7 @@ type WebhookListResponse struct {
 	HasMore bool `json:"has_more"`
 
 	// Items The list of results for this page.
-	Items *[]Webhook `json:"items,omitempty"`
+	Items []Webhook `json:"items"`
 
 	// NextCursor Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.
 	NextCursor *string `json:"next_cursor,omitempty"`
@@ -7487,19 +7475,24 @@ type WorkerModelCatalogItem struct {
 	WorkerCount int `json:"worker_count"`
 }
 
-// WorkerModelCatalogResponse Local LLM models advertised by online project workers.
-type WorkerModelCatalogResponse struct {
+// WorkerModelCatalogListResponse Local LLM models advertised by online project workers.
+type WorkerModelCatalogListResponse struct {
 	Items []WorkerModelCatalogItem `json:"items"`
 }
 
 // WorkerModelRoute Assign this route to use a local worker model.
 type WorkerModelRoute struct {
-	Mode     WorkerModelRouteMode `json:"mode"`
-	Model    string               `json:"model"`
-	Provider string               `json:"provider"`
+	// Mode Model route mode. Worker catalog routes always use `worker`.
+	Mode WorkerModelRouteMode `json:"mode"`
+
+	// Model Model identifier advertised by the local worker.
+	Model string `json:"model"`
+
+	// Provider Provider id advertised by the local worker.
+	Provider string `json:"provider"`
 }
 
-// WorkerModelRouteMode defines model for WorkerModelRoute.Mode.
+// WorkerModelRouteMode Model route mode. Worker catalog routes always use `worker`.
 type WorkerModelRouteMode string
 
 // WorkerSocketCancelDirective defines model for WorkerSocketCancelDirective.
@@ -7925,6 +7918,15 @@ type Unauthorized = ErrorResponse
 // bearerAuthContextKey is the context key for BearerAuth security scheme
 type bearerAuthContextKey string
 
+// ListOrgAPIKeysParams defines parameters for ListOrgAPIKeys.
+type ListOrgAPIKeysParams struct {
+	// Limit Maximum number of items to return
+	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Cursor Cursor for pagination (opaque string from previous response)
+	Cursor *CursorParam `form:"cursor,omitempty" json:"cursor,omitempty"`
+}
+
 // ListProjectsParams defines parameters for ListProjects.
 type ListProjectsParams struct {
 	// Search Case-insensitive substring filter applied to project name, handle, and description.
@@ -8276,6 +8278,9 @@ type DeliverHTTPTriggerParams struct {
 	XMobiusSignature *string `json:"X-Mobius-Signature,omitempty"`
 }
 
+// CreateOrgAPIKeyJSONRequestBody defines body for CreateOrgAPIKey for application/json ContentType.
+type CreateOrgAPIKeyJSONRequestBody = CreateOrgAPIKeyRequest
+
 // CreateProjectJSONRequestBody defines body for CreateProject for application/json ContentType.
 type CreateProjectJSONRequestBody = CreateProjectRequest
 
@@ -8300,8 +8305,8 @@ type InvokeAgentJSONRequestBody = InvokeAgentRequest
 // UpdateAgentJSONRequestBody defines body for UpdateAgent for application/json ContentType.
 type UpdateAgentJSONRequestBody = UpdateAgentRequest
 
-// PutAgentMemoryEntryJSONRequestBody defines body for PutAgentMemoryEntry for application/json ContentType.
-type PutAgentMemoryEntryJSONRequestBody = PutAgentMemoryEntryRequest
+// SaveAgentMemoryEntryJSONRequestBody defines body for SaveAgentMemoryEntry for application/json ContentType.
+type SaveAgentMemoryEntryJSONRequestBody = SaveAgentMemoryEntryRequest
 
 // SaveAgentMessagingBindingJSONRequestBody defines body for SaveAgentMessagingBinding for application/json ContentType.
 type SaveAgentMessagingBindingJSONRequestBody = AgentMessagingBindingRequest
@@ -15339,6 +15344,20 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 
 // The interface specification for the client above.
 type ClientInterface interface {
+	// ListOrgAPIKeys request
+	ListOrgAPIKeys(ctx context.Context, params *ListOrgAPIKeysParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateOrgAPIKeyWithBody request with any body
+	CreateOrgAPIKeyWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	CreateOrgAPIKey(ctx context.Context, body CreateOrgAPIKeyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DeleteOrgAPIKey request
+	DeleteOrgAPIKey(ctx context.Context, resourceId IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetOrgAPIKey request
+	GetOrgAPIKey(ctx context.Context, resourceId IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListProjects request
 	ListProjects(ctx context.Context, params *ListProjectsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -15418,10 +15437,10 @@ type ClientInterface interface {
 	// DeleteAgentMemoryEntry request
 	DeleteAgentMemoryEntry(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, memoryKey MemoryKeyParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// PutAgentMemoryEntryWithBody request with any body
-	PutAgentMemoryEntryWithBody(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, memoryKey MemoryKeyParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	// SaveAgentMemoryEntryWithBody request with any body
+	SaveAgentMemoryEntryWithBody(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, memoryKey MemoryKeyParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	PutAgentMemoryEntry(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, memoryKey MemoryKeyParam, body PutAgentMemoryEntryJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	SaveAgentMemoryEntry(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, memoryKey MemoryKeyParam, body SaveAgentMemoryEntryJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListAgentMessagingBindings request
 	ListAgentMessagingBindings(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -15793,6 +15812,66 @@ type ClientInterface interface {
 	DeliverHTTPTrigger(ctx context.Context, httpHandle string, params *DeliverHTTPTriggerParams, body DeliverHTTPTriggerJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
+func (c *Client) ListOrgAPIKeys(ctx context.Context, params *ListOrgAPIKeysParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListOrgAPIKeysRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateOrgAPIKeyWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateOrgAPIKeyRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateOrgAPIKey(ctx context.Context, body CreateOrgAPIKeyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateOrgAPIKeyRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) DeleteOrgAPIKey(ctx context.Context, resourceId IDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteOrgAPIKeyRequest(c.Server, resourceId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetOrgAPIKey(ctx context.Context, resourceId IDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetOrgAPIKeyRequest(c.Server, resourceId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) ListProjects(ctx context.Context, params *ListProjectsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListProjectsRequest(c.Server, params)
 	if err != nil {
@@ -16141,8 +16220,8 @@ func (c *Client) DeleteAgentMemoryEntry(ctx context.Context, projectHandle Proje
 	return c.Client.Do(req)
 }
 
-func (c *Client) PutAgentMemoryEntryWithBody(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, memoryKey MemoryKeyParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewPutAgentMemoryEntryRequestWithBody(c.Server, projectHandle, resourceId, memoryKey, contentType, body)
+func (c *Client) SaveAgentMemoryEntryWithBody(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, memoryKey MemoryKeyParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSaveAgentMemoryEntryRequestWithBody(c.Server, projectHandle, resourceId, memoryKey, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -16153,8 +16232,8 @@ func (c *Client) PutAgentMemoryEntryWithBody(ctx context.Context, projectHandle 
 	return c.Client.Do(req)
 }
 
-func (c *Client) PutAgentMemoryEntry(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, memoryKey MemoryKeyParam, body PutAgentMemoryEntryJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewPutAgentMemoryEntryRequest(c.Server, projectHandle, resourceId, memoryKey, body)
+func (c *Client) SaveAgentMemoryEntry(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, memoryKey MemoryKeyParam, body SaveAgentMemoryEntryJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSaveAgentMemoryEntryRequest(c.Server, projectHandle, resourceId, memoryKey, body)
 	if err != nil {
 		return nil, err
 	}
@@ -17785,6 +17864,180 @@ func (c *Client) DeliverHTTPTrigger(ctx context.Context, httpHandle string, para
 	return c.Client.Do(req)
 }
 
+// NewListOrgAPIKeysRequest generates requests for ListOrgAPIKeys
+func NewListOrgAPIKeysRequest(server string, params *ListOrgAPIKeysParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/organization/api-keys")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Cursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "cursor", *params.Cursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCreateOrgAPIKeyRequest calls the generic CreateOrgAPIKey builder with application/json body
+func NewCreateOrgAPIKeyRequest(server string, body CreateOrgAPIKeyJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateOrgAPIKeyRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewCreateOrgAPIKeyRequestWithBody generates requests for CreateOrgAPIKey with any type of body
+func NewCreateOrgAPIKeyRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/organization/api-keys")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewDeleteOrgAPIKeyRequest generates requests for DeleteOrgAPIKey
+func NewDeleteOrgAPIKeyRequest(server string, resourceId IDParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "resource_id", resourceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/organization/api-keys/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetOrgAPIKeyRequest generates requests for GetOrgAPIKey
+func NewGetOrgAPIKeyRequest(server string, resourceId IDParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "resource_id", resourceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/organization/api-keys/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewListProjectsRequest generates requests for ListProjects
 func NewListProjectsRequest(server string, params *ListProjectsParams) (*http.Request, error) {
 	var err error
@@ -18937,19 +19190,19 @@ func NewDeleteAgentMemoryEntryRequest(server string, projectHandle ProjectHandle
 	return req, nil
 }
 
-// NewPutAgentMemoryEntryRequest calls the generic PutAgentMemoryEntry builder with application/json body
-func NewPutAgentMemoryEntryRequest(server string, projectHandle ProjectHandleParam, resourceId IDParam, memoryKey MemoryKeyParam, body PutAgentMemoryEntryJSONRequestBody) (*http.Request, error) {
+// NewSaveAgentMemoryEntryRequest calls the generic SaveAgentMemoryEntry builder with application/json body
+func NewSaveAgentMemoryEntryRequest(server string, projectHandle ProjectHandleParam, resourceId IDParam, memoryKey MemoryKeyParam, body SaveAgentMemoryEntryJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewPutAgentMemoryEntryRequestWithBody(server, projectHandle, resourceId, memoryKey, "application/json", bodyReader)
+	return NewSaveAgentMemoryEntryRequestWithBody(server, projectHandle, resourceId, memoryKey, "application/json", bodyReader)
 }
 
-// NewPutAgentMemoryEntryRequestWithBody generates requests for PutAgentMemoryEntry with any type of body
-func NewPutAgentMemoryEntryRequestWithBody(server string, projectHandle ProjectHandleParam, resourceId IDParam, memoryKey MemoryKeyParam, contentType string, body io.Reader) (*http.Request, error) {
+// NewSaveAgentMemoryEntryRequestWithBody generates requests for SaveAgentMemoryEntry with any type of body
+func NewSaveAgentMemoryEntryRequestWithBody(server string, projectHandle ProjectHandleParam, resourceId IDParam, memoryKey MemoryKeyParam, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -24582,6 +24835,20 @@ func WithBaseURL(baseURL string) ClientOption {
 
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
+	// ListOrgAPIKeysWithResponse request
+	ListOrgAPIKeysWithResponse(ctx context.Context, params *ListOrgAPIKeysParams, reqEditors ...RequestEditorFn) (*ListOrgAPIKeysResponse, error)
+
+	// CreateOrgAPIKeyWithBodyWithResponse request with any body
+	CreateOrgAPIKeyWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateOrgAPIKeyResponse, error)
+
+	CreateOrgAPIKeyWithResponse(ctx context.Context, body CreateOrgAPIKeyJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateOrgAPIKeyResponse, error)
+
+	// DeleteOrgAPIKeyWithResponse request
+	DeleteOrgAPIKeyWithResponse(ctx context.Context, resourceId IDParam, reqEditors ...RequestEditorFn) (*DeleteOrgAPIKeyResponse, error)
+
+	// GetOrgAPIKeyWithResponse request
+	GetOrgAPIKeyWithResponse(ctx context.Context, resourceId IDParam, reqEditors ...RequestEditorFn) (*GetOrgAPIKeyResponse, error)
+
 	// ListProjectsWithResponse request
 	ListProjectsWithResponse(ctx context.Context, params *ListProjectsParams, reqEditors ...RequestEditorFn) (*ListProjectsResponse, error)
 
@@ -24661,10 +24928,10 @@ type ClientWithResponsesInterface interface {
 	// DeleteAgentMemoryEntryWithResponse request
 	DeleteAgentMemoryEntryWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, memoryKey MemoryKeyParam, reqEditors ...RequestEditorFn) (*DeleteAgentMemoryEntryResponse, error)
 
-	// PutAgentMemoryEntryWithBodyWithResponse request with any body
-	PutAgentMemoryEntryWithBodyWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, memoryKey MemoryKeyParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PutAgentMemoryEntryResponse, error)
+	// SaveAgentMemoryEntryWithBodyWithResponse request with any body
+	SaveAgentMemoryEntryWithBodyWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, memoryKey MemoryKeyParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SaveAgentMemoryEntryResponse, error)
 
-	PutAgentMemoryEntryWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, memoryKey MemoryKeyParam, body PutAgentMemoryEntryJSONRequestBody, reqEditors ...RequestEditorFn) (*PutAgentMemoryEntryResponse, error)
+	SaveAgentMemoryEntryWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, memoryKey MemoryKeyParam, body SaveAgentMemoryEntryJSONRequestBody, reqEditors ...RequestEditorFn) (*SaveAgentMemoryEntryResponse, error)
 
 	// ListAgentMessagingBindingsWithResponse request
 	ListAgentMessagingBindingsWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, reqEditors ...RequestEditorFn) (*ListAgentMessagingBindingsResponse, error)
@@ -25034,6 +25301,139 @@ type ClientWithResponsesInterface interface {
 	DeliverHTTPTriggerWithBodyWithResponse(ctx context.Context, httpHandle string, params *DeliverHTTPTriggerParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*DeliverHTTPTriggerResponse, error)
 
 	DeliverHTTPTriggerWithResponse(ctx context.Context, httpHandle string, params *DeliverHTTPTriggerParams, body DeliverHTTPTriggerJSONRequestBody, reqEditors ...RequestEditorFn) (*DeliverHTTPTriggerResponse, error)
+}
+
+type ListOrgAPIKeysResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *APIKeyListResponse
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+}
+
+// Status returns HTTPResponse.Status
+func (r ListOrgAPIKeysResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListOrgAPIKeysResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListOrgAPIKeysResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type CreateOrgAPIKeyResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON201      *APIKeyCreateResult
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON409      *Conflict
+	JSON429      *TooManyRequests
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateOrgAPIKeyResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateOrgAPIKeyResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CreateOrgAPIKeyResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type DeleteOrgAPIKeyResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+	JSON429      *TooManyRequests
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteOrgAPIKeyResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteOrgAPIKeyResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r DeleteOrgAPIKeyResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetOrgAPIKeyResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *APIKey
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r GetOrgAPIKeyResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetOrgAPIKeyResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetOrgAPIKeyResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
 }
 
 type ListProjectsResponse struct {
@@ -25726,6 +26126,7 @@ type DeleteAgentMemoryEntryResponse struct {
 	JSON401      *Unauthorized
 	JSON403      *Forbidden
 	JSON404      *NotFound
+	JSON429      *TooManyRequests
 }
 
 // Status returns HTTPResponse.Status
@@ -25752,7 +26153,7 @@ func (r DeleteAgentMemoryEntryResponse) ContentType() string {
 	return ""
 }
 
-type PutAgentMemoryEntryResponse struct {
+type SaveAgentMemoryEntryResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *AgentMemoryEntry
@@ -25761,10 +26162,11 @@ type PutAgentMemoryEntryResponse struct {
 	JSON401      *Unauthorized
 	JSON403      *Forbidden
 	JSON404      *NotFound
+	JSON429      *TooManyRequests
 }
 
 // Status returns HTTPResponse.Status
-func (r PutAgentMemoryEntryResponse) Status() string {
+func (r SaveAgentMemoryEntryResponse) Status() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Status
 	}
@@ -25772,7 +26174,7 @@ func (r PutAgentMemoryEntryResponse) Status() string {
 }
 
 // StatusCode returns HTTPResponse.StatusCode
-func (r PutAgentMemoryEntryResponse) StatusCode() int {
+func (r SaveAgentMemoryEntryResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -25780,7 +26182,7 @@ func (r PutAgentMemoryEntryResponse) StatusCode() int {
 }
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r PutAgentMemoryEntryResponse) ContentType() string {
+func (r SaveAgentMemoryEntryResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -26564,7 +26966,7 @@ func (r ListCatalogModelsResponse) ContentType() string {
 type ListCatalogWorkerModelsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *WorkerModelCatalogResponse
+	JSON200      *WorkerModelCatalogListResponse
 	JSON401      *Unauthorized
 	JSON403      *Forbidden
 	JSON404      *NotFound
@@ -27581,6 +27983,7 @@ type CompactSessionResponse struct {
 	JSON403      *Forbidden
 	JSON404      *NotFound
 	JSON409      *Conflict
+	JSON429      *TooManyRequests
 }
 
 // Status returns HTTPResponse.Status
@@ -29140,6 +29543,50 @@ func (r DeliverHTTPTriggerResponse) ContentType() string {
 	return ""
 }
 
+// ListOrgAPIKeysWithResponse request returning *ListOrgAPIKeysResponse
+func (c *ClientWithResponses) ListOrgAPIKeysWithResponse(ctx context.Context, params *ListOrgAPIKeysParams, reqEditors ...RequestEditorFn) (*ListOrgAPIKeysResponse, error) {
+	rsp, err := c.ListOrgAPIKeys(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListOrgAPIKeysResponse(rsp)
+}
+
+// CreateOrgAPIKeyWithBodyWithResponse request with arbitrary body returning *CreateOrgAPIKeyResponse
+func (c *ClientWithResponses) CreateOrgAPIKeyWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateOrgAPIKeyResponse, error) {
+	rsp, err := c.CreateOrgAPIKeyWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateOrgAPIKeyResponse(rsp)
+}
+
+func (c *ClientWithResponses) CreateOrgAPIKeyWithResponse(ctx context.Context, body CreateOrgAPIKeyJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateOrgAPIKeyResponse, error) {
+	rsp, err := c.CreateOrgAPIKey(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateOrgAPIKeyResponse(rsp)
+}
+
+// DeleteOrgAPIKeyWithResponse request returning *DeleteOrgAPIKeyResponse
+func (c *ClientWithResponses) DeleteOrgAPIKeyWithResponse(ctx context.Context, resourceId IDParam, reqEditors ...RequestEditorFn) (*DeleteOrgAPIKeyResponse, error) {
+	rsp, err := c.DeleteOrgAPIKey(ctx, resourceId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteOrgAPIKeyResponse(rsp)
+}
+
+// GetOrgAPIKeyWithResponse request returning *GetOrgAPIKeyResponse
+func (c *ClientWithResponses) GetOrgAPIKeyWithResponse(ctx context.Context, resourceId IDParam, reqEditors ...RequestEditorFn) (*GetOrgAPIKeyResponse, error) {
+	rsp, err := c.GetOrgAPIKey(ctx, resourceId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetOrgAPIKeyResponse(rsp)
+}
+
 // ListProjectsWithResponse request returning *ListProjectsResponse
 func (c *ClientWithResponses) ListProjectsWithResponse(ctx context.Context, params *ListProjectsParams, reqEditors ...RequestEditorFn) (*ListProjectsResponse, error) {
 	rsp, err := c.ListProjects(ctx, params, reqEditors...)
@@ -29393,21 +29840,21 @@ func (c *ClientWithResponses) DeleteAgentMemoryEntryWithResponse(ctx context.Con
 	return ParseDeleteAgentMemoryEntryResponse(rsp)
 }
 
-// PutAgentMemoryEntryWithBodyWithResponse request with arbitrary body returning *PutAgentMemoryEntryResponse
-func (c *ClientWithResponses) PutAgentMemoryEntryWithBodyWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, memoryKey MemoryKeyParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PutAgentMemoryEntryResponse, error) {
-	rsp, err := c.PutAgentMemoryEntryWithBody(ctx, projectHandle, resourceId, memoryKey, contentType, body, reqEditors...)
+// SaveAgentMemoryEntryWithBodyWithResponse request with arbitrary body returning *SaveAgentMemoryEntryResponse
+func (c *ClientWithResponses) SaveAgentMemoryEntryWithBodyWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, memoryKey MemoryKeyParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SaveAgentMemoryEntryResponse, error) {
+	rsp, err := c.SaveAgentMemoryEntryWithBody(ctx, projectHandle, resourceId, memoryKey, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParsePutAgentMemoryEntryResponse(rsp)
+	return ParseSaveAgentMemoryEntryResponse(rsp)
 }
 
-func (c *ClientWithResponses) PutAgentMemoryEntryWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, memoryKey MemoryKeyParam, body PutAgentMemoryEntryJSONRequestBody, reqEditors ...RequestEditorFn) (*PutAgentMemoryEntryResponse, error) {
-	rsp, err := c.PutAgentMemoryEntry(ctx, projectHandle, resourceId, memoryKey, body, reqEditors...)
+func (c *ClientWithResponses) SaveAgentMemoryEntryWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, memoryKey MemoryKeyParam, body SaveAgentMemoryEntryJSONRequestBody, reqEditors ...RequestEditorFn) (*SaveAgentMemoryEntryResponse, error) {
+	rsp, err := c.SaveAgentMemoryEntry(ctx, projectHandle, resourceId, memoryKey, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
-	return ParsePutAgentMemoryEntryResponse(rsp)
+	return ParseSaveAgentMemoryEntryResponse(rsp)
 }
 
 // ListAgentMessagingBindingsWithResponse request returning *ListAgentMessagingBindingsResponse
@@ -30589,6 +31036,201 @@ func (c *ClientWithResponses) DeliverHTTPTriggerWithResponse(ctx context.Context
 	return ParseDeliverHTTPTriggerResponse(rsp)
 }
 
+// ParseListOrgAPIKeysResponse parses an HTTP response from a ListOrgAPIKeysWithResponse call
+func ParseListOrgAPIKeysResponse(rsp *http.Response) (*ListOrgAPIKeysResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListOrgAPIKeysResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest APIKeyListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateOrgAPIKeyResponse parses an HTTP response from a CreateOrgAPIKeyWithResponse call
+func ParseCreateOrgAPIKeyResponse(rsp *http.Response) (*CreateOrgAPIKeyResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateOrgAPIKeyResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest APIKeyCreateResult
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest TooManyRequests
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDeleteOrgAPIKeyResponse parses an HTTP response from a DeleteOrgAPIKeyWithResponse call
+func ParseDeleteOrgAPIKeyResponse(rsp *http.Response) (*DeleteOrgAPIKeyResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteOrgAPIKeyResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest TooManyRequests
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetOrgAPIKeyResponse parses an HTTP response from a GetOrgAPIKeyWithResponse call
+func ParseGetOrgAPIKeyResponse(rsp *http.Response) (*GetOrgAPIKeyResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetOrgAPIKeyResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest APIKey
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseListProjectsResponse parses an HTTP response from a ListProjectsWithResponse call
 func ParseListProjectsResponse(rsp *http.Response) (*ListProjectsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -31732,20 +32374,27 @@ func ParseDeleteAgentMemoryEntryResponse(rsp *http.Response) (*DeleteAgentMemory
 		}
 		response.JSON404 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest TooManyRequests
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
 	}
 
 	return response, nil
 }
 
-// ParsePutAgentMemoryEntryResponse parses an HTTP response from a PutAgentMemoryEntryWithResponse call
-func ParsePutAgentMemoryEntryResponse(rsp *http.Response) (*PutAgentMemoryEntryResponse, error) {
+// ParseSaveAgentMemoryEntryResponse parses an HTTP response from a SaveAgentMemoryEntryWithResponse call
+func ParseSaveAgentMemoryEntryResponse(rsp *http.Response) (*SaveAgentMemoryEntryResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
 	defer func() { _ = rsp.Body.Close() }()
 	if err != nil {
 		return nil, err
 	}
 
-	response := &PutAgentMemoryEntryResponse{
+	response := &SaveAgentMemoryEntryResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
@@ -31792,6 +32441,13 @@ func ParsePutAgentMemoryEntryResponse(rsp *http.Response) (*PutAgentMemoryEntryR
 			return nil, err
 		}
 		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest TooManyRequests
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
 
 	}
 
@@ -32999,7 +33655,7 @@ func ParseListCatalogWorkerModelsResponse(rsp *http.Response) (*ListCatalogWorke
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest WorkerModelCatalogResponse
+		var dest WorkerModelCatalogListResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -34599,6 +35255,13 @@ func ParseCompactSessionResponse(rsp *http.Response) (*CompactSessionResponse, e
 			return nil, err
 		}
 		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest TooManyRequests
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
 
 	}
 

@@ -389,6 +389,14 @@ class APIKey(BaseModel):
         description='First 8 characters of the key, used to identify it without exposing the secret.',
     )
     principal_id: str = Field(..., description='Principal this key authenticates as.')
+    scope_role_id: str | None = Field(
+        None,
+        description="Optional role whose permissions cap this key below its principal's full grants.",
+    )
+    org_role: str | None = Field(
+        None,
+        description='For organization-level keys, the system role the key acts as org-wide (e.g. `Admin`). Absent for project-scoped keys.',
+    )
     expires_at: AwareDatetime | None = Field(
         None,
         description='Hard expiry timestamp. Requests using an expired key receive 401.',
@@ -423,6 +431,14 @@ class APIKeyCreateResult(BaseModel):
         ..., description='First 8 characters of the key for identification.'
     )
     principal_id: str = Field(..., description='Principal this key authenticates as.')
+    scope_role_id: str | None = Field(
+        None,
+        description="Optional role whose permissions cap this key below its principal's full grants.",
+    )
+    org_role: str | None = Field(
+        None,
+        description='For organization-level keys, the system role the key acts as org-wide (e.g. `Admin`). Absent for project-scoped keys.',
+    )
     expires_at: AwareDatetime | None = Field(
         None,
         description='Timestamp when this key expires. Omitted if it does not expire.',
@@ -470,6 +486,44 @@ class CreateAPIKeyRequest(BaseModel):
         ..., description='Human-readable label, unique within the project.'
     )
     principal_id: str = Field(..., description='Principal this key authenticates as.')
+    scope_role_id: str | None = Field(
+        None,
+        description="Optional role whose permissions cap this key below its principal's full grants.",
+    )
+    expires_at: AwareDatetime | None = Field(
+        None, description='Optional hard expiry. Omit for a non-expiring key.'
+    )
+    tags: TagMap | None = Field(None, description='Labels to apply to the new API key.')
+
+
+class Role(StrEnum):
+    """
+    System role the key acts as, applied org-wide across every project. Defaults to `Admin`. `Owner` grants full control (including billing and org deletion); `Admin` covers org and project administration without billing; lower roles narrow to build/run, run-only, worker execution, or read-only.
+    """
+
+    Owner = 'Owner'
+    Admin = 'Admin'
+    Editor = 'Editor'
+    Operator = 'Operator'
+    Worker = 'Worker'
+    Viewer = 'Viewer'
+
+
+class CreateOrgAPIKeyRequest(BaseModel):
+    """
+    Request shape for creating an organization-level API key. The key authenticates as the organization's system principal and acts with the chosen `role` applied org-wide across every project.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    name: str = Field(
+        ..., description='Human-readable label, unique among organization API keys.'
+    )
+    role: Role = Field(
+        'Admin',
+        description='System role the key acts as, applied org-wide across every project. Defaults to `Admin`. `Owner` grants full control (including billing and org deletion); `Admin` covers org and project administration without billing; lower roles narrow to build/run, run-only, worker execution, or read-only.',
+    )
     expires_at: AwareDatetime | None = Field(
         None, description='Optional hard expiry. Omit for a non-expiring key.'
     )
@@ -637,17 +691,9 @@ class Action(BaseModel):
     tags: TagMap | None = Field(
         None, description='Free-form labels attached to this action.'
     )
-    secret_ref: str | None = Field(
-        None,
-        description="Project secret reference that stores this action's signing key. Present for HTTP-backed actions.",
-    )
-    secret_version: int | None = Field(
-        None,
-        description='Version of `secret_ref` created by this response. Only populated on create and rotate responses.',
-    )
     signing_secret: str | None = Field(
         None,
-        description='Base64-encoded 32-byte HMAC-SHA256 signing key. Only populated on create and rotate responses; null on all other reads. Store this value securely on first receipt — it cannot be retrieved again.',
+        description='Base64-encoded 32-byte HMAC-SHA256 signing key. Only populated on create and rotate responses; absent on all other reads. Store this value securely on first receipt — it cannot be retrieved again.',
     )
     created_at: AwareDatetime = Field(
         ..., description='Timestamp when this action was created.'
@@ -976,6 +1022,10 @@ class ModelOption(BaseModel):
 
 
 class Mode(StrEnum):
+    """
+    Model route mode. Worker catalog routes always use `worker`.
+    """
+
     worker = 'worker'
 
 
@@ -987,9 +1037,15 @@ class WorkerModelRoute(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    mode: Mode
-    provider: str
-    model: str
+    mode: Mode = Field(
+        ..., description='Model route mode. Worker catalog routes always use `worker`.'
+    )
+    provider: str = Field(
+        ..., description='Provider id advertised by the local worker.'
+    )
+    model: str = Field(
+        ..., description='Model identifier advertised by the local worker.'
+    )
 
 
 class EnvironmentProvider(StrEnum):
@@ -1004,11 +1060,10 @@ class EnvironmentProvider(StrEnum):
 
 class ProvisionEnvironmentProvider(StrEnum):
     """
-    Providers the control plane can provision on demand: `sprites` or `cloudflare_containers`. Excludes `worker`: worker-provided environments are registered out-of-band via the attach endpoint and are never provisioned through create/acquire.
+    Providers the control plane can provision on demand. Worker-provided environments are registered out-of-band via the attach endpoint and are never provisioned through create/acquire.
     """
 
     sprites = 'sprites'
-    cloudflare_containers = 'cloudflare_containers'
 
 
 class EnvironmentStatus(StrEnum):
@@ -1158,7 +1213,7 @@ class CreateEnvironmentRequest(BaseModel):
         None, description='Optional naming scope for the environment.'
     )
     provider: ProvisionEnvironmentProvider | None = Field(
-        None, description='Provider to provision: `sprites` or `cloudflare_containers`.'
+        None, description='Provider to provision.'
     )
     owned_by: str | None = Field(
         None, description='Canonical user owner ID. Defaults to the authenticated user.'
@@ -1691,7 +1746,7 @@ class Webhook(BaseModel):
     )
     signing_secret: str | None = Field(
         None,
-        description='Base64-encoded 32-byte HMAC-SHA256 signing key. Only populated on create and rotate responses; null on all other reads. Store this value securely on first receipt — it cannot be retrieved again.',
+        description='Base64-encoded 32-byte HMAC-SHA256 signing key. Only populated on create and rotate responses; absent on all other reads. Store this value securely on first receipt — it cannot be retrieved again.',
     )
     created_at: AwareDatetime = Field(
         ..., description='Timestamp when this webhook was created.'
@@ -1705,9 +1760,7 @@ class WebhookListResponse(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    items: list[Webhook] | None = Field(
-        None, description='The list of results for this page.'
-    )
+    items: list[Webhook] = Field(..., description='The list of results for this page.')
     next_cursor: str | None = Field(
         None,
         description='Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.',
@@ -1734,9 +1787,7 @@ class WebhookDeliveryRecord(BaseModel):
         ...,
         description='The event type that triggered this delivery (e.g. `run.completed`).',
     )
-    status: WebhookDeliveryStatus = Field(
-        ..., description='Current delivery status: `pending`, `delivered`, or `failed`.'
-    )
+    status: WebhookDeliveryStatus = Field(..., description='Current delivery status.')
     attempts: int = Field(
         ..., description='Number of delivery attempts made so far. Max 10.'
     )
@@ -1756,8 +1807,8 @@ class WebhookDeliveryListResponse(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    items: list[WebhookDeliveryRecord] | None = Field(
-        None, description='The list of results for this page.'
+    items: list[WebhookDeliveryRecord] = Field(
+        ..., description='The list of results for this page.'
     )
     next_cursor: str | None = Field(
         None,
@@ -1777,9 +1828,9 @@ class CreateWebhookRequest(BaseModel):
         None,
         description='The endpoint Mobius will POST event payloads to. May be left empty at creation time so a candidate URL can be tested via the ping endpoint before it is saved; events do not fire for webhooks with an empty URL.',
     )
-    events: list[str] = Field(
-        ...,
-        description='Event types to subscribe to. Use wildcards for broad subscriptions, e.g. `["run.*"]` for all run events. An empty list subscribes to all event types.',
+    events: list[str] | None = Field(
+        None,
+        description='Event types to subscribe to. Use wildcards for broad subscriptions, e.g. `["run.*"]` for all run events. Omit this field or send an empty list to subscribe to all event types.',
     )
     enabled: bool | None = Field(
         None,
@@ -1873,9 +1924,9 @@ class InteractionSpec(BaseModel):
     Declarative dialog contract for rendering and validating an interaction. Used at both authoring time (inside a loop definition) and runtime (persisted on an interaction). Protocol kind is decoupled from input shape: each kind declares which spec modes are *allowed*, not which is *implied*. An approval may now legitimately use `select` mode (approve/deny/defer), for example.
 
     Allowed combinations:
-    * `approval` → `confirm`, `select`
-    * `review` → `select`, `input`
-    * `request` → `select`, `multi_select`, `input`
+    * `request_approval` → `confirm`, `select`
+    * `request_review` → `select`, `input`
+    * `request_information` → `select`, `multi_select`, `input`
     """
 
     model_config = ConfigDict(
@@ -2583,7 +2634,7 @@ class AgentMemoryEntryListResponse(BaseModel):
     )
 
 
-class PutAgentMemoryEntryRequest(BaseModel):
+class SaveAgentMemoryEntryRequest(BaseModel):
     """
     Content for a memory entry. The key comes from the path.
     """
@@ -2591,7 +2642,9 @@ class PutAgentMemoryEntryRequest(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    content: str | None = Field(None, description='The content to remember.')
+    content: str = Field(
+        ..., description='The content to remember.', max_length=16384, min_length=1
+    )
     summary: str | None = Field(
         None,
         description='Optional short one-line summary (≤140 chars) shown in the memory index.',
@@ -2837,12 +2890,13 @@ class SessionStatus(StrEnum):
 
 class SessionOrigin(StrEnum):
     """
-    Surface that created the session: `manual`, `api`, or `loop`.
+    Surface that created the session: `manual`, `api`, `loop`, or `interaction`.
     """
 
     manual = 'manual'
     api = 'api'
     loop = 'loop'
+    interaction = 'interaction'
 
 
 class SessionScope(StrEnum):
@@ -3018,7 +3072,7 @@ class TurnStartedPayload(BaseModel):
     )
 
 
-class Role(StrEnum):
+class Role1(StrEnum):
     """
     Always `assistant`.
     """
@@ -3247,7 +3301,7 @@ class CreateSessionRequest(BaseModel):
     )
 
 
-class Role1(StrEnum):
+class Role2(StrEnum):
     """
     Role of the input message. A turn carries caller input, so only `user` is accepted; defaults to `user` when omitted.
     """
@@ -3263,7 +3317,7 @@ class StartTurnRequest(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    role: Role1 = Field(
+    role: Role2 = Field(
         'user',
         description='Role of the input message. A turn carries caller input, so only `user` is accepted; defaults to `user` when omitted.',
     )
@@ -3355,6 +3409,10 @@ class LoopSpecRepository(BaseModel):
     )
     private: bool | None = Field(
         None, description='Whether the provider reports this repository as private.'
+    )
+    push: bool = Field(
+        False,
+        description="Authorize the loop's managed environment to push to this repository. Defaults to `false`: the repository is cloned read-only and a `git push` from inside the environment fails with a permission error. Set `true` to let the environment obtain a write-scoped credential for this repository. Opt in per repository so environments are never write-capable by default.",
     )
 
 
@@ -3611,10 +3669,6 @@ class LoopAgentSessionPolicy(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    disabled: bool | None = Field(
-        None,
-        description='Reserved for internal synthesized agent executions. Authored loop agent steps are session-backed; setting this to `true` is rejected.',
-    )
     scope: Scope | None = Field(
         None,
         description='Named-session boundary. `auto` and omitted use `loop`. `agent` intentionally shares the named session across loops using the same agent.',
@@ -3726,9 +3780,6 @@ class LoopWaitForEventStep(BaseModel):
     )
     match: dict[str, Any] | None = Field(
         None, description='Structured field match applied to incoming event payloads.'
-    )
-    condition: str | None = Field(
-        None, description='Optional expr predicate evaluated against `{ event, meta }`.'
     )
     payload_mapping: dict[str, str] | None = Field(
         None, description='Optional output mapping evaluated against `{ event, meta }`.'
@@ -3974,10 +4025,6 @@ class LoopRunSource(BaseModel):
     label: str | None = Field(None, description='Display label.')
     trigger_id: str | None = Field(
         None, description='Trigger that fired this run, if any.'
-    )
-    trigger_fire_id: str | None = Field(
-        None,
-        description='Internal trigger-fire ledger id used to deduplicate trigger dispatch retries. Present only for trigger-started runs.',
     )
 
 
@@ -4510,7 +4557,6 @@ class Type25(StrEnum):
 
     http = 'http'
     worker = 'worker'
-    builtin = 'builtin'
 
 
 class BlueprintActionAnnotations(BaseModel):
@@ -4678,7 +4724,7 @@ class TableSchema(BaseModel):
     )
     secondary_key_column: str | None = Field(
         None,
-        description='Optional string column projected into the fixed physical `sk` column for efficient secondary lookups. It cannot be changed after creation.',
+        description='Optional string column optimized for secondary lookups. It cannot be changed after creation.',
     )
     columns: list[ColumnDef] = Field(
         ...,
@@ -4770,11 +4816,10 @@ class TableStats(BaseModel):
         ..., description='Approximate bytes used by table data.'
     )
     approx_index_bytes: int = Field(
-        ...,
-        description='Approximate proportional share of fixed table_rows index bytes.',
+        ..., description='Approximate bytes used by secondary lookup indexes.'
     )
     indexed_column_count: int = Field(
-        ..., description='Number of schema columns projected into fixed physical keys.'
+        ..., description='Number of schema columns optimized for secondary lookup.'
     )
     declared_index_count: int = Field(
         ...,
@@ -4949,7 +4994,7 @@ class TableRowQueryListResponse(BaseModel):
 
 class Mode4(StrEnum):
     """
-    Search mode. `keyword` uses token-prefix full-text search, `semantic` uses sidecar embedding similarity, and `hybrid` combines both.
+    Search mode. `keyword` uses token-prefix matching, `semantic` uses similarity over indexed row text, and `hybrid` combines both.
     """
 
     keyword = 'keyword'
@@ -4968,7 +5013,7 @@ class SearchRowsRequest(BaseModel):
     )
     mode: Mode4 = Field(
         'keyword',
-        description='Search mode. `keyword` uses token-prefix full-text search, `semantic` uses sidecar embedding similarity, and `hybrid` combines both.',
+        description='Search mode. `keyword` uses token-prefix matching, `semantic` uses similarity over indexed row text, and `hybrid` combines both.',
     )
     filter: dict[str, Any] | None = Field(
         None,
@@ -5061,43 +5106,61 @@ class ArtifactVisibility(StrEnum):
     shared = 'shared'
 
 
-class Status7(StrEnum):
+class Artifact(BaseModel):
     """
-    Current thumbnail state for the source artifact's content.
-    """
-
-    queued = 'queued'
-    processing = 'processing'
-    available = 'available'
-    skipped = 'skipped'
-    failed = 'failed'
-    stale = 'stale'
-
-
-class ArtifactThumbnailSummary(BaseModel):
-    """
-    Summary of the Mobius-generated thumbnail for an artifact's default variant. The UI uses `status` to decide whether to fetch the thumbnail image, render a placeholder, or show a typed fallback card.
+    Stored file or generated artifact metadata.
     """
 
     model_config = ConfigDict(
         extra='forbid',
     )
-    status: Status7 = Field(
-        ..., description="Current thumbnail state for the source artifact's content."
+    id: str = Field(..., description='Unique artifact identifier.')
+    visibility: ArtifactVisibility = Field(
+        ..., description='Visibility policy for the artifact.'
     )
-    variant: str = Field(
-        ..., description='Variant name this summary describes (e.g. `card`).'
-    )
-    mime_type: str | None = Field(
+    run_id: str | None = Field(
         None,
-        description='Thumbnail image MIME type when available (image/jpeg or image/png).',
+        description='Loop run that produced this artifact, derived from the active worker lease.',
     )
-    width: int | None = Field(None, description='Thumbnail pixel width when available.')
-    height: int | None = Field(
-        None, description='Thumbnail pixel height when available.'
+    step_id: str | None = Field(
+        None,
+        description='Loop step that produced this artifact, derived from the active worker lease.',
+    )
+    name: str = Field(
+        ...,
+        description='Display name or relative virtual path. Forward slash may be used to organize artifacts inside private or shared project space.',
+    )
+    mime_type: str = Field(
+        ..., description='MIME type recorded for the artifact content.'
+    )
+    size_bytes: int = Field(..., description='Artifact content size in bytes.')
+    sha256: str | None = Field(
+        None, description='SHA-256 digest of the artifact content, when available.'
+    )
+    created_at: AwareDatetime = Field(
+        ..., description='Time the artifact metadata was created.'
+    )
+    created_by: str | None = Field(
+        None,
+        description='Principal ID of the actor who created this artifact. Empty for system-initiated writes.',
     )
     updated_at: AwareDatetime | None = Field(
-        None, description='Time this thumbnail state was last updated.'
+        None, description='Time the artifact metadata was last updated.'
+    )
+    updated_by: str | None = Field(
+        None,
+        description='Principal ID of the actor who last updated this artifact. Empty for system-initiated writes.',
+    )
+
+
+class ArtifactListResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    items: list[Artifact] = Field(..., description='Artifacts in the current page.')
+    has_more: bool = Field(..., description='Whether another page is available.')
+    next_cursor: str | None = Field(
+        None, description='Cursor to pass on the next request when `has_more` is true.'
     )
 
 
@@ -5842,11 +5905,11 @@ class LoopAgentStep(BaseModel):
     )
     tool_names: list[str] | None = Field(
         None,
-        description="Optional per-step tool allow-list. When omitted, prompt-only managed agent steps default to no tools; set `disable_tools: false` to allow the agent's full granted tool set.",
+        description="Optional per-step tool allow-list. When omitted and `disable_tools` is not true, the agent's full granted tool set is available. Send an empty array to allow no tools.",
     )
     disable_tools: bool | None = Field(
         None,
-        description="Disable granted action and memory tools for this agent step. Reserved runtime tools such as `invoke_skill` and structured-output submission may still be present when applicable. When omitted, the agent's granted tools are available.",
+        description='Set true to disable granted action and memory tools for this step. When false or omitted, granted tools are available unless `tool_names` narrows the allow-list. Reserved runtime tools such as `invoke_skill` and structured-output submission may still be present when applicable.',
     )
     output_schema: dict[str, Any] | None = Field(
         None,
@@ -6108,7 +6171,7 @@ class RunEventPayload(
 
 class BlueprintResourceRef(BaseModel):
     """
-    A reference to a Mobius resource by direct `id`, by blueprint `key` (resolved within this apply first, then against existing bindings), or by `blueprint_ref` (namespace + key).
+    A reference to a Mobius resource by direct `id`, by blueprint `key` (resolved within this apply first, then against existing bindings), or by `blueprint_ref` (resolved by key; namespace is recorded as provenance and reserved for namespaced lookup).
     """
 
     model_config = ConfigDict(
@@ -6251,68 +6314,6 @@ class BlueprintApplyResult(BaseModel):
     bindings: list[BlueprintBinding]
 
 
-class Artifact(BaseModel):
-    """
-    Stored file or generated artifact metadata.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    id: str = Field(..., description='Unique artifact identifier.')
-    visibility: ArtifactVisibility = Field(
-        ..., description='Visibility policy for the artifact.'
-    )
-    run_id: str | None = Field(
-        None,
-        description='Loop run that produced this artifact, derived from the active worker lease.',
-    )
-    step_id: str | None = Field(
-        None,
-        description='Loop step that produced this artifact, derived from the active worker lease.',
-    )
-    name: str = Field(
-        ...,
-        description='Display name or relative virtual path. Forward slash may be used to organize artifacts inside private or shared project space.',
-    )
-    mime_type: str = Field(
-        ..., description='MIME type recorded for the artifact content.'
-    )
-    size_bytes: int = Field(..., description='Artifact content size in bytes.')
-    sha256: str | None = Field(
-        None, description='SHA-256 digest of the artifact content, when available.'
-    )
-    created_at: AwareDatetime = Field(
-        ..., description='Time the artifact metadata was created.'
-    )
-    created_by: str | None = Field(
-        None,
-        description='Principal ID of the actor who created this artifact. Empty for system-initiated writes.',
-    )
-    updated_at: AwareDatetime | None = Field(
-        None, description='Time the artifact metadata was last updated.'
-    )
-    updated_by: str | None = Field(
-        None,
-        description='Principal ID of the actor who last updated this artifact. Empty for system-initiated writes.',
-    )
-    thumbnail: ArtifactThumbnailSummary | None = Field(
-        None,
-        description='Thumbnail summary for the default variant, when available. Absent until thumbnail processing has produced a state for the current content.',
-    )
-
-
-class ArtifactListResponse(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    items: list[Artifact] = Field(..., description='Artifacts in the current page.')
-    has_more: bool = Field(..., description='Whether another page is available.')
-    next_cursor: str | None = Field(
-        None, description='Cursor to pass on the next request when `has_more` is true.'
-    )
-
-
 class EventCatalogResponse(BaseModel):
     """
     The triggerable event catalog available to a project.
@@ -6351,7 +6352,7 @@ class ModelCatalogResponse(BaseModel):
     )
 
 
-class WorkerModelCatalogResponse(BaseModel):
+class WorkerModelCatalogListResponse(BaseModel):
     """
     Local LLM models advertised by online project workers.
     """
@@ -6503,9 +6504,10 @@ class CreateStandaloneInteractionRequest(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    target_user_ids: list[str] | None = Field(
-        None,
-        description='Resolved user IDs to target directly. Agents use their agent principal IDs.',
+    target_user_ids: list[str] = Field(
+        ...,
+        description='Resolved user IDs to target directly. At least one target is required — every interaction needs someone who can answer it, even when a machine consumer is waiting on the outcome. Agents use their agent principal IDs.',
+        min_length=1,
     )
     kind: InteractionKind = Field(..., description='Protocol kind.')
     title: str = Field(
@@ -6564,16 +6566,15 @@ class CreateRunBackedInteractionRequest(BaseModel):
         extra='forbid',
     )
     run_id: str = Field(
-        ...,
-        description='ID of the loop run to resume when this interaction is completed.',
+        ..., description='ID of the loop run associated with this interaction.'
     )
     signal_name: str = Field(
-        ...,
-        description='Signal name the interaction will complete against when run-backed.',
+        ..., description='Legacy signal name recorded with the run association.'
     )
-    target_user_ids: list[str] | None = Field(
-        None,
-        description='Resolved user IDs to target directly. Agents use their agent principal IDs.',
+    target_user_ids: list[str] = Field(
+        ...,
+        description='Resolved user IDs to target directly. At least one target is required. Agents use their agent principal IDs.',
+        min_length=1,
     )
     kind: InteractionKind = Field(..., description='Protocol kind.')
     title: str = Field(
@@ -6887,10 +6888,6 @@ class Loop(BaseModel):
     last_run_at: AwareDatetime | None = Field(
         None, description='Timestamp of the most recent run start, if any.'
     )
-    deleted_at: AwareDatetime | None = Field(
-        None,
-        description='Timestamp when this loop was deleted; absent on active loops.',
-    )
     created_at: AwareDatetime = Field(..., description='Record creation timestamp.')
     updated_at: AwareDatetime = Field(..., description='Last update timestamp.')
 
@@ -7201,7 +7198,7 @@ class AgentMessagePayload(BaseModel):
     sequence: int = Field(
         ..., description="The mirrored message's per-session transcript sequence."
     )
-    role: Role = Field(..., description='Always `assistant`.')
+    role: Role1 = Field(..., description='Always `assistant`.')
     content: list[SessionContentBlock] = Field(
         ...,
         description="The assistant message's full canonical content blocks (text, thinking, tool_use).",
