@@ -451,7 +451,7 @@ func NewEnvironmentGitCloneAction() mobius.Action {
 // default git identity (`Sprite <noreply@sprites.dev>`) or `unknown <root@…>`.
 const (
 	environmentGitUserName  = "Mobius Agent"
-	environmentGitUserEmail = "agent@mobiusops.ai"
+	environmentGitUserEmail = "noreply@mobiusops.ai"
 )
 
 // configureEnvironmentGitCredentials writes the global git config that lets
