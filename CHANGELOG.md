@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 
 ## [Unreleased]
 
+## [0.0.34] - 2026-07-02
+
+### Changed
+
+- Environments: the bot git identity used for agent commits is now
+  `Mobius Agent <noreply@mobiusops.ai>` (was `agent@mobiusops.ai`). The
+  `noreply@` address follows the standard convention for an automated,
+  non-deliverable committer.
+
 ## [0.0.33] - 2026-07-02
 
 ### Fixed
