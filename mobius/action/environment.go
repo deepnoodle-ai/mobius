@@ -19,6 +19,19 @@ import (
 
 const defaultCommandTimeout = 5 * time.Minute
 
+// A git clone that exits non-zero produced an EMPTY workspace, so the synthetic
+// prepare_repository step must fail (and halt the run) rather than complete with
+// the exit code buried in its output — otherwise later steps run against nothing
+// and fail confusingly. The dominant transient failure is a freshly minted
+// repo-scoped GitHub App token that briefly 404s ("remote: Repository not found")
+// before it propagates on GitHub's side; a couple of quick re-mints clear it. The
+// attempt bound keeps a genuinely inaccessible repo failing fast.
+const gitCloneMaxAttempts = 3
+
+// gitCloneRetryDelay is a package var (not a const) so tests can shrink it; it is
+// read at call time. See the note above on the retry rationale.
+var gitCloneRetryDelay = 2 * time.Second
+
 // approxBytesPerToken converts a token budget into the byte limit the truncators
 // enforce. Roughly 4 bytes per token is the common rule of thumb; this is only a
 // coarse sizing approximation, so exact tokenizer variation across models and
@@ -426,7 +439,7 @@ func NewEnvironmentGitCloneAction() mobius.Action {
 			args = append(args, "--branch", in.Branch)
 		}
 		args = append(args, "https://github.com/"+in.RepoFullName+".git", target)
-		result, err := runGitWithCredential(ctx, in.RepoFullName, "clone", "", args)
+		result, err := cloneWithRetry(ctx, in.RepoFullName, target, args)
 		if err != nil {
 			return result, err
 		}
@@ -444,6 +457,131 @@ func NewEnvironmentGitCloneAction() mobius.Action {
 		}
 		return result, nil
 	})
+}
+
+// cloneWithRetry runs the git clone, retrying a non-zero git exit a bounded
+// number of times before failing the step. A non-zero exit means the clone did
+// not populate the workspace, so it MUST surface as a Go error: the worker then
+// reports the job failed and the run halts, instead of marching on against an
+// empty checkout. Each attempt re-mints a fresh credential (runGitWithCredential)
+// and, before a retry, clears any partial destination so git does not refuse a
+// non-empty directory. Infrastructure errors (credential broker, non-exit git
+// failure) are surfaced immediately — retrying will not help them.
+func cloneWithRetry(ctx mobius.Context, repoFullName, target string, args []string) (any, error) {
+	return cloneWithRetryFunc(ctx, repoFullName, target, func() (any, error) {
+		return runGitWithCredential(ctx, repoFullName, "clone", "", args)
+	})
+}
+
+// cloneWithRetryFunc is the retry state machine, with the single-attempt clone
+// injected so it can be exercised without a live credential broker. `run`
+// re-mints a fresh credential on each call.
+func cloneWithRetryFunc(ctx mobius.Context, repoFullName, target string, run func() (any, error)) (any, error) {
+	var result any
+	for attempt := 1; ; attempt++ {
+		if attempt > 1 {
+			// A failed clone can leave a partial destination behind; git refuses
+			// to clone into a non-empty directory, so clear it before retrying.
+			_ = os.RemoveAll(target)
+		}
+		var err error
+		result, err = run()
+		if err != nil {
+			return result, err
+		}
+		exitCode, ok := gitResultExitCode(result)
+		if ok && exitCode == 0 {
+			return result, nil
+		}
+		if attempt >= gitCloneMaxAttempts {
+			return result, cloneFailedError(repoFullName, exitCode, gitResultStderr(result))
+		}
+		if lg := ctx.Logger(); lg != nil {
+			lg.Warn("git clone failed; retrying",
+				"repo_full_name", repoFullName,
+				"attempt", attempt,
+				"max_attempts", gitCloneMaxAttempts,
+				"exit_code", exitCode)
+		}
+		if err := sleepContext(ctx, gitCloneRetryDelay); err != nil {
+			return result, err
+		}
+	}
+}
+
+// gitResultExitCode extracts the git exit code from a runCommand result map. The
+// value is an int in-process; the other numeric cases tolerate a JSON round-trip.
+// The bool is false when the result carries no usable exit code, which is itself
+// treated as a failed clone (there is no evidence it succeeded).
+func gitResultExitCode(result any) (int, bool) {
+	m, ok := result.(map[string]any)
+	if !ok {
+		return 0, false
+	}
+	switch v := m["exit_code"].(type) {
+	case int:
+		return v, true
+	case int64:
+		return int(v), true
+	case float64:
+		return int(v), true
+	default:
+		return 0, false
+	}
+}
+
+// gitResultStderr returns the captured stderr from a runCommand result map.
+func gitResultStderr(result any) string {
+	m, ok := result.(map[string]any)
+	if !ok {
+		return ""
+	}
+	s, _ := m["stderr"].(string)
+	return s
+}
+
+// cloneFailedError builds the run-level error for a git clone that exhausted its
+// attempts with a non-zero exit. It surfaces the exit code and the tail of git's
+// stderr (which carries the fatal line, e.g. "remote: Repository not found") so
+// the failure is diagnosable from the run without opening the worker logs.
+func cloneFailedError(repoFullName string, exitCode int, stderr string) error {
+	msg := fmt.Sprintf("git clone %s failed (exit %d)", repoFullName, exitCode)
+	if tail := lastNonEmptyLines(stderr, 3); tail != "" {
+		msg += ": " + tail
+	}
+	return fmt.Errorf("%s", msg)
+}
+
+// lastNonEmptyLines joins up to n trailing non-empty lines of s with "; " for a
+// compact single-line error suffix.
+func lastNonEmptyLines(s string, n int) string {
+	var lines []string
+	for _, ln := range strings.Split(s, "\n") {
+		if t := strings.TrimSpace(ln); t != "" {
+			lines = append(lines, t)
+		}
+	}
+	if len(lines) == 0 {
+		return ""
+	}
+	if len(lines) > n {
+		lines = lines[len(lines)-n:]
+	}
+	return strings.Join(lines, "; ")
+}
+
+// sleepContext pauses for d, returning early with the context error if the
+// context is cancelled first (e.g. the job lease is lost or the run is cancelled
+// mid-retry).
+func sleepContext(ctx context.Context, d time.Duration) error {
+	t := time.NewTimer(d)
+	defer t.Stop()
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-t.C:
+		return nil
+	}
 }
 
 // Bot identity stamped on commits made inside a managed environment, so agent

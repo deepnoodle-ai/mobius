@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/deepnoodle-ai/mobius/mobius"
 )
@@ -656,4 +657,162 @@ func gitOutput(t *testing.T, dir string, args ...string) string {
 		t.Fatalf("git %s: %v\n%s", strings.Join(args, " "), err, out)
 	}
 	return strings.TrimSpace(string(out))
+}
+
+// --- environment.git.clone failure/retry semantics ---
+
+func TestGitResultExitCode(t *testing.T) {
+	cases := []struct {
+		name     string
+		result   any
+		wantCode int
+		wantOK   bool
+	}{
+		{"int", map[string]any{"exit_code": 128}, 128, true},
+		{"zero", map[string]any{"exit_code": 0}, 0, true},
+		{"int64", map[string]any{"exit_code": int64(2)}, 2, true},
+		{"float64 from json", map[string]any{"exit_code": float64(1)}, 1, true},
+		{"missing key", map[string]any{"stderr": "boom"}, 0, false},
+		{"not a map", "nope", 0, false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			code, ok := gitResultExitCode(tc.result)
+			if code != tc.wantCode || ok != tc.wantOK {
+				t.Fatalf("gitResultExitCode(%#v) = (%d, %v), want (%d, %v)", tc.result, code, ok, tc.wantCode, tc.wantOK)
+			}
+		})
+	}
+}
+
+func TestCloneFailedErrorSurfacesExitAndStderrTail(t *testing.T) {
+	stderr := "Cloning into 'repo'...\nremote: Repository not found.\nfatal: repository 'https://github.com/acme/missing.git/' not found\n"
+	err := cloneFailedError("acme/missing", 128, stderr)
+	msg := err.Error()
+	if !strings.Contains(msg, "acme/missing") {
+		t.Fatalf("error should name the repo: %q", msg)
+	}
+	if !strings.Contains(msg, "exit 128") {
+		t.Fatalf("error should carry the exit code: %q", msg)
+	}
+	if !strings.Contains(msg, "Repository not found") || !strings.Contains(msg, "not found") {
+		t.Fatalf("error should carry the git stderr tail: %q", msg)
+	}
+}
+
+func TestLastNonEmptyLines(t *testing.T) {
+	if got := lastNonEmptyLines("a\n\nb\n \nc\n", 2); got != "b; c" {
+		t.Fatalf("lastNonEmptyLines = %q, want %q", got, "b; c")
+	}
+	if got := lastNonEmptyLines("   \n\n", 3); got != "" {
+		t.Fatalf("all-blank should yield empty, got %q", got)
+	}
+	if got := lastNonEmptyLines("only", 3); got != "only" {
+		t.Fatalf("single line = %q, want %q", got, "only")
+	}
+}
+
+func TestCloneWithRetrySucceedsOnFirstAttempt(t *testing.T) {
+	ctx := testActionContext{Context: context.Background()}
+	attempts := 0
+	res, err := cloneWithRetryFunc(ctx, "acme/repo", t.TempDir(), func() (any, error) {
+		attempts++
+		return map[string]any{"exit_code": 0, "stdout": "ok"}, nil
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if attempts != 1 {
+		t.Fatalf("attempts = %d, want 1 (no retry on success)", attempts)
+	}
+	if m, _ := res.(map[string]any); m["stdout"] != "ok" {
+		t.Fatalf("result not passed through: %#v", res)
+	}
+}
+
+func TestCloneWithRetryRecoversAfterTransientExit(t *testing.T) {
+	restore := gitCloneRetryDelay
+	gitCloneRetryDelay = time.Millisecond
+	defer func() { gitCloneRetryDelay = restore }()
+
+	ctx := testActionContext{Context: context.Background()}
+	attempts := 0
+	res, err := cloneWithRetryFunc(ctx, "acme/repo", t.TempDir(), func() (any, error) {
+		attempts++
+		if attempts < 2 {
+			// Transient 404: freshly minted token not yet propagated.
+			return map[string]any{"exit_code": 128, "stderr": "remote: Repository not found."}, nil
+		}
+		return map[string]any{"exit_code": 0}, nil
+	})
+	if err != nil {
+		t.Fatalf("expected recovery, got error: %v", err)
+	}
+	if attempts != 2 {
+		t.Fatalf("attempts = %d, want 2 (one retry then success)", attempts)
+	}
+	if code, _ := gitResultExitCode(res); code != 0 {
+		t.Fatalf("final result should be the successful clone, got exit %d", code)
+	}
+}
+
+func TestCloneWithRetryFailsHardAfterMaxAttempts(t *testing.T) {
+	restore := gitCloneRetryDelay
+	gitCloneRetryDelay = time.Millisecond
+	defer func() { gitCloneRetryDelay = restore }()
+
+	ctx := testActionContext{Context: context.Background()}
+	attempts := 0
+	_, err := cloneWithRetryFunc(ctx, "acme/missing", t.TempDir(), func() (any, error) {
+		attempts++
+		return map[string]any{"exit_code": 128, "stderr": "fatal: repository not found"}, nil
+	})
+	if err == nil {
+		t.Fatalf("a persistently failing clone must return an error, got nil")
+	}
+	if attempts != gitCloneMaxAttempts {
+		t.Fatalf("attempts = %d, want %d", attempts, gitCloneMaxAttempts)
+	}
+	if !strings.Contains(err.Error(), "exit 128") || !strings.Contains(err.Error(), "repository not found") {
+		t.Fatalf("error missing diagnostic detail: %v", err)
+	}
+}
+
+func TestCloneWithRetryReturnsInfraErrorImmediately(t *testing.T) {
+	ctx := testActionContext{Context: context.Background()}
+	attempts := 0
+	sentinel := fmt.Errorf("credential broker unavailable")
+	_, err := cloneWithRetryFunc(ctx, "acme/repo", t.TempDir(), func() (any, error) {
+		attempts++
+		return nil, sentinel
+	})
+	if err != sentinel {
+		t.Fatalf("infra error should surface as-is, got %v", err)
+	}
+	if attempts != 1 {
+		t.Fatalf("infra error must not retry, attempts = %d", attempts)
+	}
+}
+
+func TestCloneWithRetryMissingExitCodeIsFailure(t *testing.T) {
+	restore := gitCloneRetryDelay
+	gitCloneRetryDelay = time.Millisecond
+	defer func() { gitCloneRetryDelay = restore }()
+
+	ctx := testActionContext{Context: context.Background()}
+	_, err := cloneWithRetryFunc(ctx, "acme/repo", t.TempDir(), func() (any, error) {
+		// A result with no exit_code is not evidence of success.
+		return map[string]any{"stdout": ""}, nil
+	})
+	if err == nil {
+		t.Fatalf("a result lacking exit_code must be treated as failure")
+	}
+}
+
+func TestSleepContextCancels(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	if err := sleepContext(ctx, time.Hour); err == nil {
+		t.Fatalf("sleepContext should return the context error when cancelled")
+	}
 }
