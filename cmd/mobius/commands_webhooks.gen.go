@@ -23,7 +23,7 @@ func registerWebhooksCommands(app *cli.App) {
 		Description("Create webhook").
 		Flags(
 			cli.Bool("enabled", "").Help("Whether the webhook starts enabled. Defaults to true when omitted."),
-			cli.Strings("events", "").Help("[required] Event types to subscribe to. Use wildcards for broad subscriptions, e.g. `[\"run.*\"]` for all run events. An empty list subscribes to all…"),
+			cli.Strings("events", "").Help("Event types to subscribe to. Use wildcards for broad subscriptions, e.g. `[\"run.*\"]` for all run events. Omit this field or send an empty…"),
 			cli.String("name", "").Help("[required] Human-readable name, unique within the project."),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
 			cli.String("url", "").Help("The endpoint Mobius will POST event payloads to. May be left empty at creation time so a candidate URL can be tested via the ping endpoint…"),
@@ -47,7 +47,8 @@ func registerWebhooksCommands(app *cli.App) {
 				body.Enabled = &v
 			}
 			if ctx.IsSet("events") {
-				body.Events = ctx.Strings("events")
+				v := ctx.Strings("events")
+				body.Events = &v
 			}
 			if ctx.IsSet("name") {
 				body.Name = ctx.String("name")
@@ -61,9 +62,6 @@ func registerWebhooksCommands(app *cli.App) {
 			if ctx.IsSet("url") {
 				v := ctx.String("url")
 				body.Url = &v
-			}
-			if len(body.Events) == 0 {
-				return fmt.Errorf("--events is required (or supply it via --file)")
 			}
 			if body.Name == "" {
 				return fmt.Errorf("--name is required (or supply it via --file)")

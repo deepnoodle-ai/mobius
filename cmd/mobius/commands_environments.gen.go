@@ -24,7 +24,7 @@ func registerEnvironmentsCommands(app *cli.App) {
 		Flags(
 			cli.String("name", "").Help("Human-readable environment name."),
 			cli.String("owned-by", "").Help("Canonical user owner ID. Defaults to the authenticated user."),
-			cli.String("provider", "").Help("Providers the control plane can provision on demand: `sprites` or `cloudflare_containers`. Excludes `worker`: worker-provided environments…"),
+			cli.String("provider", "").Help("Providers the control plane can provision on demand. Worker-provided environments are registered out-of-band via the attach endpoint and…"),
 			cli.String("scope", "").Help("Optional namespace for named runtime resources. Omitted/null means the project/default scope; `owner` means names are unique within…"),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
 			cli.String("template-id", "").Help("V1 supports only coding-default."),

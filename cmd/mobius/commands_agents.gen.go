@@ -429,72 +429,6 @@ func registerAgentsCommands(app *cli.App) {
 			return printResponse(ctx, "provisionAgentInbox", resp.StatusCode(), resp.Body)
 		})
 
-	agentsGrp.Command("put-memory-entry").
-		Description("Create or update a memory entry").
-		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
-		AddArg(&cli.Arg{Name: "memory-key", Description: "The key identifying a memory entry. Restricted to a path-safe character set (letters, numbers, and `. _ : -`) so it stays reliably…", Required: true}).
-		Flags(
-			cli.String("content", "").Help("The content to remember."),
-			cli.Int("importance", "").Help("Optional importance from 0 to 100; higher is kept longer during compaction."),
-			cli.String("kind", "").Help("Classifies a memory entry. Kinds carry different retention and compaction semantics: facts and preferences are durable, episodes are the…"),
-			cli.String("metadata", "").Help("Optional structured metadata to store alongside the memory. Accepts JSON, @file, or @-."),
-			cli.Bool("pinned", "").Help("Pin to exempt this memory from compaction."),
-			cli.String("summary", "").Help("Optional short one-line summary (≤140 chars) shown in the memory index."),
-			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
-			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
-		).
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			p2 := ctx.Arg(1)
-			var body api.PutAgentMemoryEntryJSONRequestBody
-			if err := readJSONBody(ctx, &body); err != nil {
-				return err
-			}
-			if ctx.IsSet("content") {
-				v := ctx.String("content")
-				body.Content = &v
-			}
-			if ctx.IsSet("importance") {
-				v := ctx.Int("importance")
-				body.Importance = &v
-			}
-			if ctx.IsSet("kind") {
-				v := api.MemoryKind(ctx.String("kind"))
-				body.Kind = &v
-			}
-			if ctx.IsSet("metadata") {
-				if err := decodeFlagJSON(ctx, "metadata", ctx.String("metadata"), &body.Metadata); err != nil {
-					return err
-				}
-			}
-			if ctx.IsSet("pinned") {
-				v := ctx.Bool("pinned")
-				body.Pinned = &v
-			}
-			if ctx.IsSet("summary") {
-				v := ctx.String("summary")
-				body.Summary = &v
-			}
-			if ctx.String("file") == "" && !ctx.IsSet("content") && !ctx.IsSet("importance") && !ctx.IsSet("kind") && !ctx.IsSet("metadata") && !ctx.IsSet("pinned") && !ctx.IsSet("summary") {
-				return fmt.Errorf("at least one flag or --file is required")
-			}
-			if ctx.Bool("dry-run") {
-				return printDryRun(ctx, body)
-			}
-			resp, err := client.PutAgentMemoryEntryWithResponse(ctx.Context(), p0, p1, p2, body)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "putAgentMemoryEntry", resp.StatusCode(), resp.Body)
-		})
-
 	agentsGrp.Command("replace-skill-assignments").
 		Description("Replace agent skill assignments").
 		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
@@ -567,6 +501,71 @@ func registerAgentsCommands(app *cli.App) {
 				return err
 			}
 			return printResponse(ctx, "replaceAgentToolkitAssignments", resp.StatusCode(), resp.Body)
+		})
+
+	agentsGrp.Command("save-memory-entry").
+		Description("Save memory entry").
+		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
+		AddArg(&cli.Arg{Name: "memory-key", Description: "The key identifying a memory entry. Restricted to a path-safe character set (letters, numbers, and `. _ : -`) so it stays reliably…", Required: true}).
+		Flags(
+			cli.String("content", "").Help("[required] The content to remember."),
+			cli.Int("importance", "").Help("Optional importance from 0 to 100; higher is kept longer during compaction."),
+			cli.String("kind", "").Help("Classifies a memory entry. Kinds carry different retention and compaction semantics: facts and preferences are durable, episodes are the…"),
+			cli.String("metadata", "").Help("Optional structured metadata to store alongside the memory. Accepts JSON, @file, or @-."),
+			cli.Bool("pinned", "").Help("Pin to exempt this memory from compaction."),
+			cli.String("summary", "").Help("Optional short one-line summary (≤140 chars) shown in the memory index."),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			p1 := ctx.Arg(0)
+			p2 := ctx.Arg(1)
+			var body api.SaveAgentMemoryEntryJSONRequestBody
+			if err := readJSONBody(ctx, &body); err != nil {
+				return err
+			}
+			if ctx.IsSet("content") {
+				body.Content = ctx.String("content")
+			}
+			if ctx.IsSet("importance") {
+				v := ctx.Int("importance")
+				body.Importance = &v
+			}
+			if ctx.IsSet("kind") {
+				v := api.MemoryKind(ctx.String("kind"))
+				body.Kind = &v
+			}
+			if ctx.IsSet("metadata") {
+				if err := decodeFlagJSON(ctx, "metadata", ctx.String("metadata"), &body.Metadata); err != nil {
+					return err
+				}
+			}
+			if ctx.IsSet("pinned") {
+				v := ctx.Bool("pinned")
+				body.Pinned = &v
+			}
+			if ctx.IsSet("summary") {
+				v := ctx.String("summary")
+				body.Summary = &v
+			}
+			if body.Content == "" {
+				return fmt.Errorf("--content is required (or supply it via --file)")
+			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
+			}
+			resp, err := client.SaveAgentMemoryEntryWithResponse(ctx.Context(), p0, p1, p2, body)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "saveAgentMemoryEntry", resp.StatusCode(), resp.Body)
 		})
 
 	agentsGrp.Command("save-messaging-binding").

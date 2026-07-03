@@ -344,7 +344,7 @@ func registerTablesCommands(app *cli.App) {
 			cli.String("cursor", "").Help("Opaque cursor from a prior search response."),
 			cli.String("filter", "").Help("Optional column equality or operator filter applied before search. Accepts JSON, @file, or @-."),
 			cli.Int("limit", "").Help("Maximum number of rows to return (1–100, default 20)."),
-			cli.String("mode", "").Help("Search mode. `keyword` uses token-prefix full-text search, `semantic` uses sidecar embedding similarity, and `hybrid` combines both."),
+			cli.String("mode", "").Help("Search mode. `keyword` uses token-prefix matching, `semantic` uses similarity over indexed row text, and `hybrid` combines both."),
 			cli.String("query", "").Help("[required] Search query. Hyphens and other punctuation split terms for keyword matching."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
