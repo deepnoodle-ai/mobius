@@ -156,6 +156,7 @@ func registerSessionsCommands(app *cli.App) {
 			cli.String("mode", "").Help("`continue_or_create` (default) resolves an existing session for the `session_key` or creates one; `new` always creates a fresh session…"),
 			cli.String("model", "").Help("Model to record on the session."),
 			cli.String("session-key", "").Help("Stable key identifying the conversation within the agent."),
+			cli.String("thinking-effort", "").Help("Reasoning-effort level for a turn, lowest (`low`) to highest (`max`). Higher effort spends more tokens on reasoning, improving quality on…"),
 			cli.String("title", "").Help("Human-friendly session title."),
 			cli.String("visibility", "").Help("Visibility of the session in project surfaces: `project` or `private`."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
@@ -197,6 +198,10 @@ func registerSessionsCommands(app *cli.App) {
 			if ctx.IsSet("session-key") {
 				v := ctx.String("session-key")
 				body.SessionKey = &v
+			}
+			if ctx.IsSet("thinking-effort") {
+				v := api.ThinkingEffort(ctx.String("thinking-effort"))
+				body.ThinkingEffort = &v
 			}
 			if ctx.IsSet("title") {
 				v := ctx.String("title")
@@ -304,6 +309,7 @@ func registerSessionsCommands(app *cli.App) {
 		Flags(
 			cli.String("agent-ref", "").Help("[required] Reference to an agent in this project. Supply exactly one of `id` (the agent identifier) or `name` (the project-unique agent name). A… Accepts JSON, @file, or @-."),
 			cli.String("channel-context", "").Help("Optional messaging provider/channel routing context (Slack, Telegram, …). Persisted on the started turn's input-message metadata under a… Accepts JSON, @file, or @-."),
+			cli.String("config", "").Help("An agent definition sent with the invocation instead of one stored in Mobius ahead of time. Send it on the call that creates the session… Accepts JSON, @file, or @-."),
 			cli.String("input", "").Help("[required] The caller input message that starts the agent turn. Accepts JSON, @file, or @-."),
 			cli.String("session", "").Help("How to resolve or create the session this invocation runs in. Mirrors the create-session policy: `mode` + `session_key` resolve a durable… Accepts JSON, @file, or @-."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
@@ -328,6 +334,11 @@ func registerSessionsCommands(app *cli.App) {
 			}
 			if ctx.IsSet("channel-context") {
 				if err := decodeFlagJSON(ctx, "channel-context", ctx.String("channel-context"), &body.ChannelContext); err != nil {
+					return err
+				}
+			}
+			if ctx.IsSet("config") {
+				if err := decodeFlagJSON(ctx, "config", ctx.String("config"), &body.Config); err != nil {
 					return err
 				}
 			}
@@ -594,6 +605,7 @@ func registerSessionsCommands(app *cli.App) {
 		Flags(
 			cli.String("compaction-policy", "").Help("Controls how a session's transcript is automatically summarized as it grows. On create the supplied fields are merged over the owning… Accepts JSON, @file, or @-."),
 			cli.String("status", "").Help("Durable conversation session status: `active`, `archived`, or `deleted`."),
+			cli.String("thinking-effort", "").Help("Reasoning-effort level for a turn, lowest (`low`) to highest (`max`). Higher effort spends more tokens on reasoning, improving quality on…"),
 			cli.String("title", "").Help("Human-readable session title."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
@@ -620,11 +632,15 @@ func registerSessionsCommands(app *cli.App) {
 				v := api.SessionStatus(ctx.String("status"))
 				body.Status = &v
 			}
+			if ctx.IsSet("thinking-effort") {
+				v := api.ThinkingEffort(ctx.String("thinking-effort"))
+				body.ThinkingEffort = &v
+			}
 			if ctx.IsSet("title") {
 				v := ctx.String("title")
 				body.Title = &v
 			}
-			if ctx.String("file") == "" && !ctx.IsSet("compaction-policy") && !ctx.IsSet("status") && !ctx.IsSet("title") {
+			if ctx.String("file") == "" && !ctx.IsSet("compaction-policy") && !ctx.IsSet("status") && !ctx.IsSet("thinking-effort") && !ctx.IsSet("title") {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
 			if ctx.Bool("dry-run") {

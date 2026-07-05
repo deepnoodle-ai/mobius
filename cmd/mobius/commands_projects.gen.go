@@ -109,6 +109,23 @@ func registerProjectsCommands(app *cli.App) {
 			return printResponse(ctx, "getProject", resp.StatusCode(), resp.Body)
 		})
 
+	projectsGrp.Command("get-capabilities").
+		Description("Get project capabilities").
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			resp, err := client.GetProjectCapabilitiesWithResponse(ctx.Context(), p0)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "getProjectCapabilities", resp.StatusCode(), resp.Body)
+		})
+
 	projectsGrp.Command("list").
 		Description("List projects").
 		Flags(
