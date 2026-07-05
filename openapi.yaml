@@ -492,6 +492,11 @@ paths:
         description: Filter to invocations from a specific job.
         schema:
           type: string
+      - name: environment_id
+        in: query
+        description: Filter to invocations executed in a specific environment.
+        schema:
+          type: string
       - name: action_name
         in: query
         description: Filter to invocations of a specific action.
@@ -1080,6 +1085,30 @@ paths:
           $ref: '#/components/responses/Conflict'
         '429':
           $ref: '#/components/responses/TooManyRequests'
+  /v1/projects/{project_handle}/capabilities:
+    get:
+      operationId: getProjectCapabilities
+      tags:
+      - projects
+      summary: Get project capabilities
+      description: Returns route-local capability booleans for the current caller and project.
+        Clients use this response to show management affordances that match the same project-scoped
+        authorization enforced by write endpoints.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      responses:
+        '200':
+          description: Effective capabilities for this project.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectCapabilities'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /v1/projects/{project_handle}/webhooks:
     get:
       operationId: listWebhooks
@@ -2302,6 +2331,8 @@ paths:
       description: |-
         One compound runtime call for hosted apps: it resolves an agent, resolves or creates a session by `session_key`, appends the caller's input message, and starts an agent turn — collapsing the create-or-resolve-session plus start-turn sequence into a single retryable request. This is the entry point a product backend (an embedded app, a Slack handler, a Telegram bot) calls per inbound message; the lower-level session and turn APIs remain available for finer control.
 
+        The optional `config` block lets you send an agent definition with the request — instructions, model, effort, per-turn timeout, toolkits, and skills — instead of using the one stored in Mobius. A field you set replaces the agent's value; a field you leave out keeps it. Mobius remembers the config on the session and reuses it on later turns until you send a new one. If your organization limits values like the model or timeout, those limits still apply. Omit `config` to run the agent on its stored definition.
+
         By default it returns `202 Accepted` immediately with a durable `after_sequence` stream cursor; the turn keeps running even if the caller disconnects. When the request sets `Accept: text/event-stream`, the response is `200 OK` and the turn's activity is streamed inline on the same connection, identical to the `POST /v1/projects/{project_handle}/sessions/{session_id}/turns` stream. A repeated call with the same `input.idempotency_key` resolves the same session and resumes the existing turn rather than starting a second one, so a webhook handler can acknowledge fast and retry safely. Requires the `mobius.agent.invoke` permission (or the agent's own backing principal).
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
@@ -2321,6 +2352,15 @@ paths:
                 metadata:
                   account_id: acct_123
                   user_id: user_456
+              config:
+                instructions: You are Acme's support agent. Be concise and cite ticket numbers.
+                model: claude-sonnet-4-6
+                effort: medium
+                toolkits:
+                - name: tickets
+                  actions:
+                  - tickets.search
+                  - tickets.get
               input:
                 content:
                 - type: text
@@ -5357,6 +5397,22 @@ components:
         strategy: auto
         threshold: sm
         summary_model: claude-haiku-4-5-20251001
+    ThinkingEffort:
+      type: string
+      enum:
+      - inherit
+      - low
+      - medium
+      - high
+      - xhigh
+      - max
+      description: Reasoning-effort level for a turn, lowest (`low`) to highest (`max`). Higher
+        effort spends more tokens on reasoning, improving quality on hard tasks at the cost
+        of latency and credits. Levels above what the resolved model supports are clamped
+        down. Set on an agent it is the default; set on a session or loop step it overrides
+        the agent default. `inherit` (or omitting the field) defers to the layer below — the
+        agent default for a session/step, or the provider's own default when nothing sets
+        a level.
     Agent:
       type: object
       additionalProperties: false
@@ -5428,6 +5484,11 @@ components:
           $ref: '#/components/schemas/SessionCompactionPolicy'
           description: Default session-compaction policy. New sessions opened against this
             agent inherit it (below server defaults, above explicit per-session overrides).
+            Absent when the agent has no default.
+        thinking_effort:
+          $ref: '#/components/schemas/ThinkingEffort'
+          description: Default reasoning-effort level. New sessions and loop agent steps inherit
+            it, above the provider default and below explicit per-session/per-step overrides.
             Absent when the agent has no default.
         status:
           $ref: '#/components/schemas/AgentStatus'
@@ -5694,13 +5755,12 @@ components:
           - Admin
           - Editor
           - Operator
-          - Worker
           - Viewer
           default: Admin
           description: System role the key acts as, applied org-wide across every project.
             Defaults to `Admin`. `Owner` grants full control (including billing and org deletion);
             `Admin` covers org and project administration without billing; lower roles narrow
-            to build/run, run-only, worker execution, or read-only.
+            to build/run, run-only, or read-only.
         expires_at:
           type: string
           format: date-time
@@ -6167,6 +6227,9 @@ components:
         job_id:
           type: string
           description: Job that triggered this invocation, if job-backed.
+        environment_id:
+          type: string
+          description: Environment that executed this invocation, if environment-backed.
         step_name:
           type: string
           description: Loop step name that triggered this invocation.
@@ -7192,6 +7255,23 @@ components:
           $ref: '#/components/schemas/WorkerSocketMessageID'
         error:
           $ref: '#/components/schemas/WorkerSocketProtocolError'
+    ProjectCapabilities:
+      type: object
+      additionalProperties: false
+      description: Project-scoped capabilities for the current caller. These booleans are
+        resolved inside the project authorization context and can differ from coarse organization
+        role flags.
+      required:
+      - can_manage_project
+      - can_manage_access
+      properties:
+        can_manage_project:
+          type: boolean
+          description: True when the caller can update or archive this project.
+        can_manage_access:
+          type: boolean
+          description: True when the caller can manage project members, roles, and machine
+            identities.
     CreateProjectRequest:
       type: object
       additionalProperties: false
@@ -8677,6 +8757,10 @@ components:
         compaction_policy:
           $ref: '#/components/schemas/SessionCompactionPolicy'
           description: Default session-compaction policy new sessions inherit from this agent.
+        thinking_effort:
+          $ref: '#/components/schemas/ThinkingEffort'
+          description: Default reasoning-effort level new sessions and loop agent steps inherit
+            from this agent.
         tags:
           $ref: '#/components/schemas/TagMap'
           description: Initial labels used for filtering, ownership, or automation.
@@ -8747,6 +8831,10 @@ components:
           $ref: '#/components/schemas/SessionCompactionPolicy'
           description: Replacement default session-compaction policy. Send an empty object
             to clear the default and fall back to server defaults.
+        thinking_effort:
+          $ref: '#/components/schemas/ThinkingEffort'
+          description: Replacement default reasoning-effort level. Send `inherit` to clear
+            the default and leave the provider default in place.
         tags:
           $ref: '#/components/schemas/TagMap'
           description: Replacement labels; send an empty object to clear all tags.
@@ -9441,6 +9529,11 @@ components:
         compaction_policy:
           $ref: '#/components/schemas/SessionCompactionPolicy'
           description: Resolved message-compaction policy in effect for this session.
+        thinking_effort:
+          $ref: '#/components/schemas/ThinkingEffort'
+          description: This session's reasoning-effort override, or absent when the session
+            inherits the agent default. Turns resolve the effective level as agent default
+            then this override.
         latest_compaction:
           $ref: '#/components/schemas/SessionCompactionBoundary'
           nullable: true
@@ -9530,6 +9623,11 @@ components:
           $ref: '#/components/schemas/SessionCompactionPolicy'
           description: Partial patch to the session's compaction policy. Only the supplied
             fields change; omitted fields keep their current values.
+        thinking_effort:
+          $ref: '#/components/schemas/ThinkingEffort'
+          description: Reasoning-effort override for this session. Send a level to override,
+            or `inherit` to clear it and fall back to the agent default. Omit to leave the
+            current value unchanged.
     SessionStreamFrame:
       anyOf:
       - $ref: '#/components/schemas/SessionUserMessagePayload'
@@ -9951,10 +10049,83 @@ components:
           $ref: '#/components/schemas/AgentRef'
         session:
           $ref: '#/components/schemas/InvokeSessionSpec'
+        config:
+          $ref: '#/components/schemas/InlineAgentConfig'
         input:
           $ref: '#/components/schemas/InvokeInput'
         channel_context:
           $ref: '#/components/schemas/ChannelContext'
+    InlineAgentConfig:
+      type: object
+      additionalProperties: false
+      description: |-
+        An agent definition sent with the invocation instead of one stored in Mobius ahead of time. Send it on the call that creates the session and it becomes that session's definition; send it again on a later turn to replace it; leave it out and the session keeps the definition it already has.
+
+        Every field is optional. A field you set replaces the agent's value; a field you leave out keeps the agent's value. The `toolkits` and `skills` lists replace the agent's lists entirely — they are not merged item by item. If your organization sets limits on the model, effort, or timeout, those limits still apply, so a value here can never exceed them. Use `config` for one-off invocations only: loops and schedules must point to a stored agent, so creating or updating one with `config` is rejected.
+      properties:
+        instructions:
+          type: string
+          description: System-prompt instructions for the agent. Replaces the agent's configured
+            system prompt for this session. Empty falls back to the generated default.
+        model:
+          type: string
+          description: LLM model identifier. Resolves through the same model routing and allow
+            rules as a stored agent's model.
+        effort:
+          $ref: '#/components/schemas/ThinkingEffort'
+          description: Reasoning-effort level for the agent's turns.
+        timeout_seconds:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Per-turn execution timeout in seconds. Zero uses the platform default.
+            A loop step's own timeout still overrides this.
+        toolkits:
+          type: array
+          description: Toolkit selections that replace the agent's toolkit assignments for
+            this session. Each names the actions (from this project's action catalog) the
+            agent may call. Replaces wholesale — an omitted `toolkits` inherits the agent's
+            assignments.
+          items:
+            $ref: '#/components/schemas/InlineToolkit'
+        skills:
+          type: array
+          description: Skills that replace the agent's skill assignments for this session.
+            Each carries its full instruction body, lazy-loaded via the invoke_skill tool.
+            Replaces wholesale.
+          items:
+            $ref: '#/components/schemas/InlineSkill'
+    InlineToolkit:
+      type: object
+      additionalProperties: false
+      required:
+      - name
+      description: A toolkit selection carried in an inline agent config.
+      properties:
+        name:
+          type: string
+          description: Toolkit name.
+        actions:
+          type: array
+          description: Action names (from the project catalog) this toolkit grants.
+          items:
+            type: string
+    InlineSkill:
+      type: object
+      additionalProperties: false
+      required:
+      - name
+      description: A skill definition carried in an inline agent config.
+      properties:
+        name:
+          type: string
+          description: Skill name, referenced by the invoke_skill tool.
+        description:
+          type: string
+          description: One-line summary shown in the agent's skills list.
+        body:
+          type: string
+          description: The skill's full instructions, loaded on demand.
     AgentRef:
       type: object
       additionalProperties: false
@@ -10000,6 +10171,10 @@ components:
           description: Per-session compaction overrides applied when the session is first
             created. Merged over the agent's default policy and server defaults. Ignored when
             an existing session is resolved.
+        thinking_effort:
+          $ref: '#/components/schemas/ThinkingEffort'
+          description: Reasoning-effort override applied when the session is first created.
+            Overrides the agent default. Ignored when an existing session is resolved.
         metadata:
           type: object
           additionalProperties: true
@@ -10082,6 +10257,10 @@ components:
           description: Per-session compaction overrides applied when the session is first
             created. Merged over the agent's default policy and server defaults. Ignored when
             an existing session is resolved.
+        thinking_effort:
+          $ref: '#/components/schemas/ThinkingEffort'
+          description: Reasoning-effort override applied when the session is first created.
+            Overrides the agent default. Ignored when an existing session is resolved.
         metadata:
           type: object
           additionalProperties: true
@@ -11043,6 +11222,11 @@ components:
           description: Optional per-session compaction policy merged with server defaults
             when the session is first created. Existing sessions keep their current compaction
             policy unless edited through a session-specific operation.
+        thinking_effort:
+          $ref: '#/components/schemas/ThinkingEffort'
+          description: Optional reasoning-effort override for this step's session turns. Overrides
+            the agent default. Set as a loop default it applies to every agent step; set on
+            a step it overrides the loop default.
     LoopModelRoute:
       type: object
       additionalProperties: false

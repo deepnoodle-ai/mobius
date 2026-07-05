@@ -285,6 +285,19 @@ class SessionCompactionPolicy(BaseModel):
     )
 
 
+class ThinkingEffort(StrEnum):
+    """
+    Reasoning-effort level for a turn, lowest (`low`) to highest (`max`). Higher effort spends more tokens on reasoning, improving quality on hard tasks at the cost of latency and credits. Levels above what the resolved model supports are clamped down. Set on an agent it is the default; set on a session or loop step it overrides the agent default. `inherit` (or omitting the field) defers to the layer below — the agent default for a session/step, or the provider's own default when nothing sets a level.
+    """
+
+    inherit = 'inherit'
+    low = 'low'
+    medium = 'medium'
+    high = 'high'
+    xhigh = 'xhigh'
+    max = 'max'
+
+
 class Agent(BaseModel):
     """
     AI actor identity. An agent IS a principal (its permissions are role grants on that principal); agents are useful when loops need a named actor with instructions, configuration, and session presence.
@@ -339,6 +352,10 @@ class Agent(BaseModel):
     compaction_policy: SessionCompactionPolicy | None = Field(
         None,
         description='Default session-compaction policy. New sessions opened against this agent inherit it (below server defaults, above explicit per-session overrides). Absent when the agent has no default.',
+    )
+    thinking_effort: ThinkingEffort | None = Field(
+        None,
+        description='Default reasoning-effort level. New sessions and loop agent steps inherit it, above the provider default and below explicit per-session/per-step overrides. Absent when the agent has no default.',
     )
     status: AgentStatus = Field(
         ..., description='Current agent status: `active` or `inactive`.'
@@ -498,14 +515,13 @@ class CreateAPIKeyRequest(BaseModel):
 
 class Role(StrEnum):
     """
-    System role the key acts as, applied org-wide across every project. Defaults to `Admin`. `Owner` grants full control (including billing and org deletion); `Admin` covers org and project administration without billing; lower roles narrow to build/run, run-only, worker execution, or read-only.
+    System role the key acts as, applied org-wide across every project. Defaults to `Admin`. `Owner` grants full control (including billing and org deletion); `Admin` covers org and project administration without billing; lower roles narrow to build/run, run-only, or read-only.
     """
 
     Owner = 'Owner'
     Admin = 'Admin'
     Editor = 'Editor'
     Operator = 'Operator'
-    Worker = 'Worker'
     Viewer = 'Viewer'
 
 
@@ -522,7 +538,7 @@ class CreateOrgAPIKeyRequest(BaseModel):
     )
     role: Role = Field(
         'Admin',
-        description='System role the key acts as, applied org-wide across every project. Defaults to `Admin`. `Owner` grants full control (including billing and org deletion); `Admin` covers org and project administration without billing; lower roles narrow to build/run, run-only, worker execution, or read-only.',
+        description='System role the key acts as, applied org-wide across every project. Defaults to `Admin`. `Owner` grants full control (including billing and org deletion); `Admin` covers org and project administration without billing; lower roles narrow to build/run, run-only, or read-only.',
     )
     expires_at: AwareDatetime | None = Field(
         None, description='Optional hard expiry. Omit for a non-expiring key.'
@@ -869,6 +885,10 @@ class ActionInvocationEntry(BaseModel):
     )
     job_id: str | None = Field(
         None, description='Job that triggered this invocation, if job-backed.'
+    )
+    environment_id: str | None = Field(
+        None,
+        description='Environment that executed this invocation, if environment-backed.',
     )
     step_name: str | None = Field(
         None, description='Loop step name that triggered this invocation.'
@@ -1653,6 +1673,23 @@ class WorkerSocketErrorFrame(BaseModel):
     type: Type17
     message_id: WorkerSocketMessageID | None = None
     error: WorkerSocketProtocolError
+
+
+class ProjectCapabilities(BaseModel):
+    """
+    Project-scoped capabilities for the current caller. These booleans are resolved inside the project authorization context and can differ from coarse organization role flags.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    can_manage_project: bool = Field(
+        ..., description='True when the caller can update or archive this project.'
+    )
+    can_manage_access: bool = Field(
+        ...,
+        description='True when the caller can manage project members, roles, and machine identities.',
+    )
 
 
 class CreateProjectRequest(BaseModel):
@@ -2475,6 +2512,10 @@ class CreateAgentRequest(BaseModel):
         None,
         description='Default session-compaction policy new sessions inherit from this agent.',
     )
+    thinking_effort: ThinkingEffort | None = Field(
+        None,
+        description='Default reasoning-effort level new sessions and loop agent steps inherit from this agent.',
+    )
     tags: TagMap | None = Field(
         None, description='Initial labels used for filtering, ownership, or automation.'
     )
@@ -2542,6 +2583,10 @@ class UpdateAgentRequest(BaseModel):
     compaction_policy: SessionCompactionPolicy | None = Field(
         None,
         description='Replacement default session-compaction policy. Send an empty object to clear the default and fall back to server defaults.',
+    )
+    thinking_effort: ThinkingEffort | None = Field(
+        None,
+        description='Replacement default reasoning-effort level. Send `inherit` to clear the default and leave the provider default in place.',
     )
     tags: TagMap | None = Field(
         None, description='Replacement labels; send an empty object to clear all tags.'
@@ -3014,6 +3059,10 @@ class UpdateSessionRequest(BaseModel):
         None,
         description="Partial patch to the session's compaction policy. Only the supplied fields change; omitted fields keep their current values.",
     )
+    thinking_effort: ThinkingEffort | None = Field(
+        None,
+        description='Reasoning-effort override for this session. Send a level to override, or `inherit` to clear it and fall back to the agent default. Omit to leave the current value unchanged.',
+    )
 
 
 class EventType1(StrEnum):
@@ -3179,6 +3228,39 @@ class SessionCompactionBoundary(BaseModel):
     )
 
 
+class InlineToolkit(BaseModel):
+    """
+    A toolkit selection carried in an inline agent config.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    name: str = Field(..., description='Toolkit name.')
+    actions: list[str] | None = Field(
+        None, description='Action names (from the project catalog) this toolkit grants.'
+    )
+
+
+class InlineSkill(BaseModel):
+    """
+    A skill definition carried in an inline agent config.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    name: str = Field(
+        ..., description='Skill name, referenced by the invoke_skill tool.'
+    )
+    description: str | None = Field(
+        None, description="One-line summary shown in the agent's skills list."
+    )
+    body: str | None = Field(
+        None, description="The skill's full instructions, loaded on demand."
+    )
+
+
 class AgentRef(BaseModel):
     """
     Reference to an agent in this project. Supply exactly one of `id` (the agent identifier) or `name` (the project-unique agent name). A blueprint-binding reference form is reserved for a later release and is not resolvable yet.
@@ -3223,6 +3305,10 @@ class InvokeSessionSpec(BaseModel):
     compaction_policy: SessionCompactionPolicy | None = Field(
         None,
         description="Per-session compaction overrides applied when the session is first created. Merged over the agent's default policy and server defaults. Ignored when an existing session is resolved.",
+    )
+    thinking_effort: ThinkingEffort | None = Field(
+        None,
+        description='Reasoning-effort override applied when the session is first created. Overrides the agent default. Ignored when an existing session is resolved.',
     )
     metadata: dict[str, Any] | None = Field(
         None, description='Free-form caller metadata stored on a newly created session.'
@@ -3295,6 +3381,10 @@ class CreateSessionRequest(BaseModel):
     compaction_policy: SessionCompactionPolicy | None = Field(
         None,
         description="Per-session compaction overrides applied when the session is first created. Merged over the agent's default policy and server defaults. Ignored when an existing session is resolved.",
+    )
+    thinking_effort: ThinkingEffort | None = Field(
+        None,
+        description='Reasoning-effort override applied when the session is first created. Overrides the agent default. Ignored when an existing session is resolved.',
     )
     metadata: dict[str, Any] | None = Field(
         None, description='Free-form caller metadata for the session.'
@@ -3686,6 +3776,10 @@ class LoopAgentSessionPolicy(BaseModel):
     compaction_policy: SessionCompactionPolicy | None = Field(
         None,
         description='Optional per-session compaction policy merged with server defaults when the session is first created. Existing sessions keep their current compaction policy unless edited through a session-specific operation.',
+    )
+    thinking_effort: ThinkingEffort | None = Field(
+        None,
+        description="Optional reasoning-effort override for this step's session turns. Overrides the agent default. Set as a loop default it applies to every agent step; set on a step it overrides the loop default.",
     )
 
 
@@ -5587,6 +5681,10 @@ class Session(BaseModel):
         None,
         description='Resolved message-compaction policy in effect for this session.',
     )
+    thinking_effort: ThinkingEffort | None = Field(
+        None,
+        description="This session's reasoning-effort override, or absent when the session inherits the agent default. Turns resolve the effective level as agent default then this override.",
+    )
     latest_compaction: SessionCompactionBoundary | None = Field(
         None,
         description='The most recent compaction marker in the transcript, or null when the session has never been compacted. Delineates summarized history (sequences at or below `covers_through_sequence`) from the live tail. Returned on the single-session read; absent from list entries.',
@@ -5679,18 +5777,40 @@ class AppendSessionMessagesRequest(BaseModel):
     )
 
 
-class InvokeAgentRequest(BaseModel):
+class InlineAgentConfig(BaseModel):
     """
-    A single compound invocation: which agent to run, how to resolve the session, the caller's input message, and optional channel routing context.
+    An agent definition sent with the invocation instead of one stored in Mobius ahead of time. Send it on the call that creates the session and it becomes that session's definition; send it again on a later turn to replace it; leave it out and the session keeps the definition it already has.
+
+    Every field is optional. A field you set replaces the agent's value; a field you leave out keeps the agent's value. The `toolkits` and `skills` lists replace the agent's lists entirely — they are not merged item by item. If your organization sets limits on the model, effort, or timeout, those limits still apply, so a value here can never exceed them. Use `config` for one-off invocations only: loops and schedules must point to a stored agent, so creating or updating one with `config` is rejected.
     """
 
     model_config = ConfigDict(
         extra='forbid',
     )
-    agent_ref: AgentRef
-    session: InvokeSessionSpec | None = None
-    input: InvokeInput
-    channel_context: ChannelContext | None = None
+    instructions: str | None = Field(
+        None,
+        description="System-prompt instructions for the agent. Replaces the agent's configured system prompt for this session. Empty falls back to the generated default.",
+    )
+    model: str | None = Field(
+        None,
+        description="LLM model identifier. Resolves through the same model routing and allow rules as a stored agent's model.",
+    )
+    effort: ThinkingEffort | None = Field(
+        None, description="Reasoning-effort level for the agent's turns."
+    )
+    timeout_seconds: int | None = Field(
+        None,
+        description="Per-turn execution timeout in seconds. Zero uses the platform default. A loop step's own timeout still overrides this.",
+        ge=0,
+    )
+    toolkits: list[InlineToolkit] | None = Field(
+        None,
+        description="Toolkit selections that replace the agent's toolkit assignments for this session. Each names the actions (from this project's action catalog) the agent may call. Replaces wholesale — an omitted `toolkits` inherits the agent's assignments.",
+    )
+    skills: list[InlineSkill] | None = Field(
+        None,
+        description="Skills that replace the agent's skill assignments for this session. Each carries its full instruction body, lazy-loaded via the invoke_skill tool. Replaces wholesale.",
+    )
 
 
 class TurnAck(BaseModel):
@@ -6620,6 +6740,21 @@ class CreateRunBackedInteractionRequest(BaseModel):
         None,
         description='Timestamp after which this interaction expires if not responded to.',
     )
+
+
+class InvokeAgentRequest(BaseModel):
+    """
+    A single compound invocation: which agent to run, how to resolve the session, the caller's input message, and optional channel routing context.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    agent_ref: AgentRef
+    session: InvokeSessionSpec | None = None
+    config: InlineAgentConfig | None = None
+    input: InvokeInput
+    channel_context: ChannelContext | None = None
 
 
 class LoopAgentStepSpec(BaseModel):

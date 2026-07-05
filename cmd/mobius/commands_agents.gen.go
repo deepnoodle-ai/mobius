@@ -31,6 +31,7 @@ func registerAgentsCommands(app *cli.App) {
 			cli.String("name", "").Help("[required] Unique name for this agent. Free-form human-readable label, 1-63 characters."),
 			cli.String("system-prompt", "").Help("Custom system prompt for platform agents. Empty uses the generated default."),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
+			cli.String("thinking-effort", "").Help("Reasoning-effort level for a turn, lowest (`low`) to highest (`max`). Higher effort spends more tokens on reasoning, improving quality on…"),
 			cli.Int("timeout-seconds", "").Help("Per-turn execution timeout in seconds for this platform agent. Omit or `0` to use the platform default (600s / 10 minutes); a loop step's…"),
 			cli.String("tool-presentation", "").Help("Controls how granted actions are surfaced to the model in Mobius-hosted agent turns. `meta` (the default) groups related actions behind…"),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
@@ -86,6 +87,10 @@ func registerAgentsCommands(app *cli.App) {
 			} else if tags != nil {
 				v := api.TagMap(tags)
 				body.Tags = &v
+			}
+			if ctx.IsSet("thinking-effort") {
+				v := api.ThinkingEffort(ctx.String("thinking-effort"))
+				body.ThinkingEffort = &v
 			}
 			if ctx.IsSet("timeout-seconds") {
 				v := int64(ctx.Int("timeout-seconds"))
@@ -683,6 +688,7 @@ func registerAgentsCommands(app *cli.App) {
 			cli.String("status", "").Help("Replacement agent status: `active` or `inactive`. Use DELETE to delete the agent."),
 			cli.String("system-prompt", "").Help("Replacement system prompt for platform agents."),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
+			cli.String("thinking-effort", "").Help("Reasoning-effort level for a turn, lowest (`low`) to highest (`max`). Higher effort spends more tokens on reasoning, improving quality on…"),
 			cli.Int("timeout-seconds", "").Help("Replacement per-turn execution timeout in seconds for this platform agent. `0` resets to the platform default (600s / 10 minutes); a loop…"),
 			cli.String("tool-presentation", "").Help("Controls how granted actions are surfaced to the model in Mobius-hosted agent turns. `meta` (the default) groups related actions behind…"),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
@@ -745,6 +751,10 @@ func registerAgentsCommands(app *cli.App) {
 				v := api.TagMap(tags)
 				body.Tags = &v
 			}
+			if ctx.IsSet("thinking-effort") {
+				v := api.ThinkingEffort(ctx.String("thinking-effort"))
+				body.ThinkingEffort = &v
+			}
 			if ctx.IsSet("timeout-seconds") {
 				v := int64(ctx.Int("timeout-seconds"))
 				body.TimeoutSeconds = &v
@@ -753,7 +763,7 @@ func registerAgentsCommands(app *cli.App) {
 				v := api.AgentToolPresentation(ctx.String("tool-presentation"))
 				body.ToolPresentation = &v
 			}
-			if ctx.String("file") == "" && !ctx.IsSet("color") && !ctx.IsSet("compaction-policy") && !ctx.IsSet("description") && !ctx.IsSet("kind") && !ctx.IsSet("model") && !ctx.IsSet("model-route") && !ctx.IsSet("name") && !ctx.IsSet("status") && !ctx.IsSet("system-prompt") && !ctx.IsSet("tag") && !ctx.IsSet("timeout-seconds") && !ctx.IsSet("tool-presentation") {
+			if ctx.String("file") == "" && !ctx.IsSet("color") && !ctx.IsSet("compaction-policy") && !ctx.IsSet("description") && !ctx.IsSet("kind") && !ctx.IsSet("model") && !ctx.IsSet("model-route") && !ctx.IsSet("name") && !ctx.IsSet("status") && !ctx.IsSet("system-prompt") && !ctx.IsSet("tag") && !ctx.IsSet("thinking-effort") && !ctx.IsSet("timeout-seconds") && !ctx.IsSet("tool-presentation") {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
 			if ctx.Bool("dry-run") {

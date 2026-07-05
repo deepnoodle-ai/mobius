@@ -169,6 +169,7 @@ func registerActionsCommands(app *cli.App) {
 			cli.Int("limit", "").Help("Maximum number of items to return"),
 			cli.String("run-id", "").Help("Filter to invocations from a specific loop run."),
 			cli.String("job-id", "").Help("Filter to invocations from a specific job."),
+			cli.String("environment-id", "").Help("Filter to invocations executed in a specific environment."),
 			cli.String("action-name", "").Help("Filter to invocations of a specific action."),
 			cli.String("status", "").Help("Filter by terminal status (e.g. \"success\", \"failed\")."),
 		).
@@ -196,6 +197,10 @@ func registerActionsCommands(app *cli.App) {
 			if ctx.IsSet("job-id") {
 				v := ctx.String("job-id")
 				params.JobId = &v
+			}
+			if ctx.IsSet("environment-id") {
+				v := ctx.String("environment-id")
+				params.EnvironmentId = &v
 			}
 			if ctx.IsSet("action-name") {
 				v := ctx.String("action-name")

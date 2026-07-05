@@ -651,7 +651,6 @@ const (
 	CreateOrgAPIKeyRequestRoleOperator CreateOrgAPIKeyRequestRole = "Operator"
 	CreateOrgAPIKeyRequestRoleOwner    CreateOrgAPIKeyRequestRole = "Owner"
 	CreateOrgAPIKeyRequestRoleViewer   CreateOrgAPIKeyRequestRole = "Viewer"
-	CreateOrgAPIKeyRequestRoleWorker   CreateOrgAPIKeyRequestRole = "Worker"
 )
 
 // Valid indicates whether the value is a known member of the CreateOrgAPIKeyRequestRole enum.
@@ -666,8 +665,6 @@ func (e CreateOrgAPIKeyRequestRole) Valid() bool {
 	case CreateOrgAPIKeyRequestRoleOwner:
 		return true
 	case CreateOrgAPIKeyRequestRoleViewer:
-		return true
-	case CreateOrgAPIKeyRequestRoleWorker:
 		return true
 	default:
 		return false
@@ -2123,6 +2120,36 @@ func (e StartTurnRequestRole) Valid() bool {
 	}
 }
 
+// Defines values for ThinkingEffort.
+const (
+	ThinkingEffortHigh    ThinkingEffort = "high"
+	ThinkingEffortInherit ThinkingEffort = "inherit"
+	ThinkingEffortLow     ThinkingEffort = "low"
+	ThinkingEffortMax     ThinkingEffort = "max"
+	ThinkingEffortMedium  ThinkingEffort = "medium"
+	ThinkingEffortXhigh   ThinkingEffort = "xhigh"
+)
+
+// Valid indicates whether the value is a known member of the ThinkingEffort enum.
+func (e ThinkingEffort) Valid() bool {
+	switch e {
+	case ThinkingEffortHigh:
+		return true
+	case ThinkingEffortInherit:
+		return true
+	case ThinkingEffortLow:
+		return true
+	case ThinkingEffortMax:
+		return true
+	case ThinkingEffortMedium:
+		return true
+	case ThinkingEffortXhigh:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ToolkitSource.
 const (
 	ToolkitSourceProject ToolkitSource = "project"
@@ -2991,6 +3018,9 @@ type ActionInvocationEntry struct {
 	// ActionName Name of the action that was invoked.
 	ActionName string `json:"action_name"`
 
+	// EnvironmentId Environment that executed this invocation, if environment-backed.
+	EnvironmentId *string `json:"environment_id,omitempty"`
+
 	// ErrorMessage Human-readable error detail when status is "failed".
 	ErrorMessage *string `json:"error_message,omitempty"`
 
@@ -3125,6 +3155,9 @@ type Agent struct {
 
 	// Tags Key/value tags for organizing and filtering resources. Up to 8 per resource; keys 1–128 characters, values up to 256. Keys prefixed `mobius:` are system-managed and cannot be set by callers.
 	Tags *TagMap `json:"tags,omitempty"`
+
+	// ThinkingEffort Reasoning-effort level for a turn, lowest (`low`) to highest (`max`). Higher effort spends more tokens on reasoning, improving quality on hard tasks at the cost of latency and credits. Levels above what the resolved model supports are clamped down. Set on an agent it is the default; set on a session or loop step it overrides the agent default. `inherit` (or omitting the field) defers to the layer below — the agent default for a session/step, or the provider's own default when nothing sets a level.
+	ThinkingEffort *ThinkingEffort `json:"thinking_effort,omitempty"`
 
 	// TimeoutSeconds Execution timeout, in seconds, for a single turn of this platform agent. `0` (or omitted) uses the platform default (600s / 10 minutes). A loop step's own timeout overrides this for that step.
 	TimeoutSeconds *int64 `json:"timeout_seconds,omitempty"`
@@ -4057,6 +4090,9 @@ type CreateAgentRequest struct {
 	// Tags Key/value tags for organizing and filtering resources. Up to 8 per resource; keys 1–128 characters, values up to 256. Keys prefixed `mobius:` are system-managed and cannot be set by callers.
 	Tags *TagMap `json:"tags,omitempty"`
 
+	// ThinkingEffort Reasoning-effort level for a turn, lowest (`low`) to highest (`max`). Higher effort spends more tokens on reasoning, improving quality on hard tasks at the cost of latency and credits. Levels above what the resolved model supports are clamped down. Set on an agent it is the default; set on a session or loop step it overrides the agent default. `inherit` (or omitting the field) defers to the layer below — the agent default for a session/step, or the provider's own default when nothing sets a level.
+	ThinkingEffort *ThinkingEffort `json:"thinking_effort,omitempty"`
+
 	// TimeoutSeconds Per-turn execution timeout in seconds for this platform agent. Omit or `0` to use the platform default (600s / 10 minutes); a loop step's own timeout overrides it for that step.
 	TimeoutSeconds *int64 `json:"timeout_seconds,omitempty"`
 
@@ -4161,14 +4197,14 @@ type CreateOrgAPIKeyRequest struct {
 	// Name Human-readable label, unique among organization API keys.
 	Name string `json:"name"`
 
-	// Role System role the key acts as, applied org-wide across every project. Defaults to `Admin`. `Owner` grants full control (including billing and org deletion); `Admin` covers org and project administration without billing; lower roles narrow to build/run, run-only, worker execution, or read-only.
+	// Role System role the key acts as, applied org-wide across every project. Defaults to `Admin`. `Owner` grants full control (including billing and org deletion); `Admin` covers org and project administration without billing; lower roles narrow to build/run, run-only, or read-only.
 	Role *CreateOrgAPIKeyRequestRole `json:"role,omitempty"`
 
 	// Tags Key/value tags for organizing and filtering resources. Up to 8 per resource; keys 1–128 characters, values up to 256. Keys prefixed `mobius:` are system-managed and cannot be set by callers.
 	Tags *TagMap `json:"tags,omitempty"`
 }
 
-// CreateOrgAPIKeyRequestRole System role the key acts as, applied org-wide across every project. Defaults to `Admin`. `Owner` grants full control (including billing and org deletion); `Admin` covers org and project administration without billing; lower roles narrow to build/run, run-only, worker execution, or read-only.
+// CreateOrgAPIKeyRequestRole System role the key acts as, applied org-wide across every project. Defaults to `Admin`. `Owner` grants full control (including billing and org deletion); `Admin` covers org and project administration without billing; lower roles narrow to build/run, run-only, or read-only.
 type CreateOrgAPIKeyRequestRole string
 
 // CreateProjectRequest defines model for CreateProjectRequest.
@@ -4276,6 +4312,9 @@ type CreateSessionRequest struct {
 
 	// SessionKey Stable key identifying the conversation within the agent.
 	SessionKey *string `json:"session_key,omitempty"`
+
+	// ThinkingEffort Reasoning-effort level for a turn, lowest (`low`) to highest (`max`). Higher effort spends more tokens on reasoning, improving quality on hard tasks at the cost of latency and credits. Levels above what the resolved model supports are clamped down. Set on an agent it is the default; set on a session or loop step it overrides the agent default. `inherit` (or omitting the field) defers to the layer below — the agent default for a session/step, or the provider's own default when nothing sets a level.
+	ThinkingEffort *ThinkingEffort `json:"thinking_effort,omitempty"`
 
 	// Title Human-friendly session title.
 	Title *string `json:"title,omitempty"`
@@ -4648,6 +4687,50 @@ type IndexDef struct {
 	Name string `json:"name"`
 }
 
+// InlineAgentConfig An agent definition sent with the invocation instead of one stored in Mobius ahead of time. Send it on the call that creates the session and it becomes that session's definition; send it again on a later turn to replace it; leave it out and the session keeps the definition it already has.
+//
+// Every field is optional. A field you set replaces the agent's value; a field you leave out keeps the agent's value. The `toolkits` and `skills` lists replace the agent's lists entirely — they are not merged item by item. If your organization sets limits on the model, effort, or timeout, those limits still apply, so a value here can never exceed them. Use `config` for one-off invocations only: loops and schedules must point to a stored agent, so creating or updating one with `config` is rejected.
+type InlineAgentConfig struct {
+	// Effort Reasoning-effort level for a turn, lowest (`low`) to highest (`max`). Higher effort spends more tokens on reasoning, improving quality on hard tasks at the cost of latency and credits. Levels above what the resolved model supports are clamped down. Set on an agent it is the default; set on a session or loop step it overrides the agent default. `inherit` (or omitting the field) defers to the layer below — the agent default for a session/step, or the provider's own default when nothing sets a level.
+	Effort *ThinkingEffort `json:"effort,omitempty"`
+
+	// Instructions System-prompt instructions for the agent. Replaces the agent's configured system prompt for this session. Empty falls back to the generated default.
+	Instructions *string `json:"instructions,omitempty"`
+
+	// Model LLM model identifier. Resolves through the same model routing and allow rules as a stored agent's model.
+	Model *string `json:"model,omitempty"`
+
+	// Skills Skills that replace the agent's skill assignments for this session. Each carries its full instruction body, lazy-loaded via the invoke_skill tool. Replaces wholesale.
+	Skills *[]InlineSkill `json:"skills,omitempty"`
+
+	// TimeoutSeconds Per-turn execution timeout in seconds. Zero uses the platform default. A loop step's own timeout still overrides this.
+	TimeoutSeconds *int64 `json:"timeout_seconds,omitempty"`
+
+	// Toolkits Toolkit selections that replace the agent's toolkit assignments for this session. Each names the actions (from this project's action catalog) the agent may call. Replaces wholesale — an omitted `toolkits` inherits the agent's assignments.
+	Toolkits *[]InlineToolkit `json:"toolkits,omitempty"`
+}
+
+// InlineSkill A skill definition carried in an inline agent config.
+type InlineSkill struct {
+	// Body The skill's full instructions, loaded on demand.
+	Body *string `json:"body,omitempty"`
+
+	// Description One-line summary shown in the agent's skills list.
+	Description *string `json:"description,omitempty"`
+
+	// Name Skill name, referenced by the invoke_skill tool.
+	Name string `json:"name"`
+}
+
+// InlineToolkit A toolkit selection carried in an inline agent config.
+type InlineToolkit struct {
+	// Actions Action names (from the project catalog) this toolkit grants.
+	Actions *[]string `json:"actions,omitempty"`
+
+	// Name Toolkit name.
+	Name string `json:"name"`
+}
+
 // InsertRowRequest defines model for InsertRowRequest.
 type InsertRowRequest struct {
 	// Data JSON object keyed by table column name.
@@ -4942,6 +5025,11 @@ type InvokeAgentRequest struct {
 	// ChannelContext Optional messaging provider/channel routing context (Slack, Telegram, …). Persisted on the started turn's input-message metadata under a `channel_context` key so chat history and support views can trace a turn back to the provider thread it came from.
 	ChannelContext *ChannelContext `json:"channel_context,omitempty"`
 
+	// Config An agent definition sent with the invocation instead of one stored in Mobius ahead of time. Send it on the call that creates the session and it becomes that session's definition; send it again on a later turn to replace it; leave it out and the session keeps the definition it already has.
+	//
+	// Every field is optional. A field you set replaces the agent's value; a field you leave out keeps the agent's value. The `toolkits` and `skills` lists replace the agent's lists entirely — they are not merged item by item. If your organization sets limits on the model, effort, or timeout, those limits still apply, so a value here can never exceed them. Use `config` for one-off invocations only: loops and schedules must point to a stored agent, so creating or updating one with `config` is rejected.
+	Config *InlineAgentConfig `json:"config,omitempty"`
+
 	// Input The caller input message that starts the agent turn.
 	Input InvokeInput `json:"input"`
 
@@ -4974,6 +5062,9 @@ type InvokeSessionSpec struct {
 
 	// SessionKey Stable key identifying the conversation within the agent.
 	SessionKey *string `json:"session_key,omitempty"`
+
+	// ThinkingEffort Reasoning-effort level for a turn, lowest (`low`) to highest (`max`). Higher effort spends more tokens on reasoning, improving quality on hard tasks at the cost of latency and credits. Levels above what the resolved model supports are clamped down. Set on an agent it is the default; set on a session or loop step it overrides the agent default. `inherit` (or omitting the field) defers to the layer below — the agent default for a session/step, or the provider's own default when nothing sets a level.
+	ThinkingEffort *ThinkingEffort `json:"thinking_effort,omitempty"`
 
 	// Title Human-friendly title for a newly created session.
 	Title *string `json:"title,omitempty"`
@@ -5127,6 +5218,9 @@ type LoopAgentSessionPolicy struct {
 
 	// Scope Named-session boundary. `auto` and omitted use `loop`. `agent` intentionally shares the named session across loops using the same agent.
 	Scope *LoopAgentSessionPolicyScope `json:"scope,omitempty"`
+
+	// ThinkingEffort Reasoning-effort level for a turn, lowest (`low`) to highest (`max`). Higher effort spends more tokens on reasoning, improving quality on hard tasks at the cost of latency and credits. Levels above what the resolved model supports are clamped down. Set on an agent it is the default; set on a session or loop step it overrides the agent default. `inherit` (or omitting the field) defers to the layer below — the agent default for a session/step, or the provider's own default when nothing sets a level.
+	ThinkingEffort *ThinkingEffort `json:"thinking_effort,omitempty"`
 
 	// Title Optional Go-template string for the session display title.
 	Title *string `json:"title,omitempty"`
@@ -5987,6 +6081,15 @@ type Project struct {
 // ProjectAccessMode `open`: every org member can see and use the project, subject to role assignments. `restricted`: only listed project members (and org owners/admins) can see or use the project.
 type ProjectAccessMode string
 
+// ProjectCapabilities Project-scoped capabilities for the current caller. These booleans are resolved inside the project authorization context and can differ from coarse organization role flags.
+type ProjectCapabilities struct {
+	// CanManageAccess True when the caller can manage project members, roles, and machine identities.
+	CanManageAccess bool `json:"can_manage_access"`
+
+	// CanManageProject True when the caller can update or archive this project.
+	CanManageProject bool `json:"can_manage_project"`
+}
+
 // ProjectListResponse defines model for ProjectListResponse.
 type ProjectListResponse struct {
 	// HasMore Whether more results are available beyond this page.
@@ -6254,6 +6357,9 @@ type Session struct {
 
 	// Status Durable conversation session status: `active`, `archived`, or `deleted`.
 	Status SessionStatus `json:"status"`
+
+	// ThinkingEffort Reasoning-effort level for a turn, lowest (`low`) to highest (`max`). Higher effort spends more tokens on reasoning, improving quality on hard tasks at the cost of latency and credits. Levels above what the resolved model supports are clamped down. Set on an agent it is the default; set on a session or loop step it overrides the agent default. `inherit` (or omitting the field) defers to the layer below — the agent default for a session/step, or the provider's own default when nothing sets a level.
+	ThinkingEffort *ThinkingEffort `json:"thinking_effort,omitempty"`
 
 	// Title Human-readable session title.
 	Title string `json:"title"`
@@ -6926,6 +7032,9 @@ type TableStats struct {
 // TagMap Key/value tags for organizing and filtering resources. Up to 8 per resource; keys 1–128 characters, values up to 256. Keys prefixed `mobius:` are system-managed and cannot be set by callers.
 type TagMap map[string]string
 
+// ThinkingEffort Reasoning-effort level for a turn, lowest (`low`) to highest (`max`). Higher effort spends more tokens on reasoning, improving quality on hard tasks at the cost of latency and credits. Levels above what the resolved model supports are clamped down. Set on an agent it is the default; set on a session or loop step it overrides the agent default. `inherit` (or omitting the field) defers to the layer below — the agent default for a session/step, or the provider's own default when nothing sets a level.
+type ThinkingEffort string
+
 // ToolCallPayload Payload of a live-only `tool.call` frame — an in-flight preview that a tool was invoked during the active turn. Never persisted and carries no sequence: the durable record of the call is the `tool_use` content block of the assistant message, delivered as an `agent.message` event when the turn commits.
 type ToolCallPayload struct {
 	// EmittedAt Server timestamp when this live preview frame was emitted.
@@ -7151,6 +7260,9 @@ type UpdateAgentRequest struct {
 	// Tags Key/value tags for organizing and filtering resources. Up to 8 per resource; keys 1–128 characters, values up to 256. Keys prefixed `mobius:` are system-managed and cannot be set by callers.
 	Tags *TagMap `json:"tags,omitempty"`
 
+	// ThinkingEffort Reasoning-effort level for a turn, lowest (`low`) to highest (`max`). Higher effort spends more tokens on reasoning, improving quality on hard tasks at the cost of latency and credits. Levels above what the resolved model supports are clamped down. Set on an agent it is the default; set on a session or loop step it overrides the agent default. `inherit` (or omitting the field) defers to the layer below — the agent default for a session/step, or the provider's own default when nothing sets a level.
+	ThinkingEffort *ThinkingEffort `json:"thinking_effort,omitempty"`
+
 	// TimeoutSeconds Replacement per-turn execution timeout in seconds for this platform agent. `0` resets to the platform default (600s / 10 minutes); a loop step's own timeout overrides it for that step.
 	TimeoutSeconds *int64 `json:"timeout_seconds,omitempty"`
 
@@ -7270,6 +7382,9 @@ type UpdateSessionRequest struct {
 
 	// Status Durable conversation session status: `active`, `archived`, or `deleted`.
 	Status *SessionStatus `json:"status,omitempty"`
+
+	// ThinkingEffort Reasoning-effort level for a turn, lowest (`low`) to highest (`max`). Higher effort spends more tokens on reasoning, improving quality on hard tasks at the cost of latency and credits. Levels above what the resolved model supports are clamped down. Set on an agent it is the default; set on a session or loop step it overrides the agent default. `inherit` (or omitting the field) defers to the layer below — the agent default for a session/step, or the provider's own default when nothing sets a level.
+	ThinkingEffort *ThinkingEffort `json:"thinking_effort,omitempty"`
 
 	// Title Human-readable session title.
 	Title *string `json:"title,omitempty"`
@@ -7955,6 +8070,9 @@ type ListActionInvocationsParams struct {
 
 	// JobId Filter to invocations from a specific job.
 	JobId *string `form:"job_id,omitempty" json:"job_id,omitempty"`
+
+	// EnvironmentId Filter to invocations executed in a specific environment.
+	EnvironmentId *string `form:"environment_id,omitempty" json:"environment_id,omitempty"`
 
 	// ActionName Filter to invocations of a specific action.
 	ActionName *string `form:"action_name,omitempty" json:"action_name,omitempty"`
@@ -15509,6 +15627,9 @@ type ClientInterface interface {
 	// ListBlueprintBindings request
 	ListBlueprintBindings(ctx context.Context, projectHandle ProjectHandleParam, params *ListBlueprintBindingsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetProjectCapabilities request
+	GetProjectCapabilities(ctx context.Context, projectHandle ProjectHandleParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListCatalogActions request
 	ListCatalogActions(ctx context.Context, projectHandle ProjectHandleParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -16522,6 +16643,18 @@ func (c *Client) ApplyBlueprint(ctx context.Context, projectHandle ProjectHandle
 
 func (c *Client) ListBlueprintBindings(ctx context.Context, projectHandle ProjectHandleParam, params *ListBlueprintBindingsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListBlueprintBindingsRequest(c.Server, projectHandle, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetProjectCapabilities(ctx context.Context, projectHandle ProjectHandleParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetProjectCapabilitiesRequest(c.Server, projectHandle)
 	if err != nil {
 		return nil, err
 	}
@@ -18357,6 +18490,18 @@ func NewListActionInvocationsRequest(server string, projectHandle ProjectHandleP
 		if params.JobId != nil {
 
 			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "job_id", *params.JobId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.EnvironmentId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "environment_id", *params.EnvironmentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -20276,6 +20421,40 @@ func NewListBlueprintBindingsRequest(server string, projectHandle ProjectHandleP
 			rawQueryFragments = append(rawQueryFragments, encoded)
 		}
 		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetProjectCapabilitiesRequest generates requests for GetProjectCapabilities
+func NewGetProjectCapabilitiesRequest(server string, projectHandle ProjectHandleParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project_handle", projectHandle, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/capabilities", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
 	}
 
 	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
@@ -25000,6 +25179,9 @@ type ClientWithResponsesInterface interface {
 	// ListBlueprintBindingsWithResponse request
 	ListBlueprintBindingsWithResponse(ctx context.Context, projectHandle ProjectHandleParam, params *ListBlueprintBindingsParams, reqEditors ...RequestEditorFn) (*ListBlueprintBindingsResponse, error)
 
+	// GetProjectCapabilitiesWithResponse request
+	GetProjectCapabilitiesWithResponse(ctx context.Context, projectHandle ProjectHandleParam, reqEditors ...RequestEditorFn) (*GetProjectCapabilitiesResponse, error)
+
 	// ListCatalogActionsWithResponse request
 	ListCatalogActionsWithResponse(ctx context.Context, projectHandle ProjectHandleParam, reqEditors ...RequestEditorFn) (*ListCatalogActionsResponse, error)
 
@@ -26827,6 +27009,39 @@ func (r ListBlueprintBindingsResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r ListBlueprintBindingsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetProjectCapabilitiesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ProjectCapabilities
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r GetProjectCapabilitiesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetProjectCapabilitiesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetProjectCapabilitiesResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -30066,6 +30281,15 @@ func (c *ClientWithResponses) ListBlueprintBindingsWithResponse(ctx context.Cont
 		return nil, err
 	}
 	return ParseListBlueprintBindingsResponse(rsp)
+}
+
+// GetProjectCapabilitiesWithResponse request returning *GetProjectCapabilitiesResponse
+func (c *ClientWithResponses) GetProjectCapabilitiesWithResponse(ctx context.Context, projectHandle ProjectHandleParam, reqEditors ...RequestEditorFn) (*GetProjectCapabilitiesResponse, error) {
+	rsp, err := c.GetProjectCapabilities(ctx, projectHandle, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetProjectCapabilitiesResponse(rsp)
 }
 
 // ListCatalogActionsWithResponse request returning *ListCatalogActionsResponse
@@ -33460,6 +33684,53 @@ func ParseListBlueprintBindingsResponse(rsp *http.Response) (*ListBlueprintBindi
 			return nil, err
 		}
 		response.JSON429 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetProjectCapabilitiesResponse parses an HTTP response from a GetProjectCapabilitiesWithResponse call
+func ParseGetProjectCapabilitiesResponse(rsp *http.Response) (*GetProjectCapabilitiesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetProjectCapabilitiesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ProjectCapabilities
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
 
 	}
 
