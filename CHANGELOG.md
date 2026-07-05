@@ -6,6 +6,53 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 
 ## [Unreleased]
 
+## [0.0.37] - 2026-07-05
+
+### Added
+
+- ThinkingEffort (`inherit`/`low`/`medium`/`high`/`xhigh`/`max`) as an agent
+  default and an override on sessions, invoke sessions, and loop steps.
+- Inline agent config on `invoke-agent`: send `instructions`, `model`,
+  `effort`, `timeout`, `toolkits`, and `skills` with the request instead of
+  using the stored agent definition. Surfaced as a `config` option on the
+  ergonomic `InvokeAgent` helpers in all three SDKs, not just the raw client.
+- `getProjectCapabilities` endpoint (CLI `projects get-capabilities`) and the
+  `ProjectCapabilities` schema.
+- `environment_id` filter on list-invocations and an `environment_id` field on
+  the invocation record.
+
+### Removed
+
+- Dropped the `Worker` role from the org API key role enum.
+
+## [0.0.36] - 2026-07-03
+
+### Added
+
+- Organization API keys: create/list/get/delete org-wide keys with a chosen
+  role (defaults to Admin).
+- Loop repositories gain an opt-in `push` flag for write-capable clones.
+
+### Changed
+
+- Agent memory: `putAgentMemoryEntry` renamed to `saveAgentMemoryEntry` (CLI
+  `agents save-memory-entry`); `content` is now required (1..16384).
+- Action signing: `secret_ref`/`secret_version` replaced by a single
+  `signing_secret`, returned only on create/rotate.
+- Interactions: `target_user_ids` is now required (min 1 item).
+- `WorkerModelCatalogResponse` renamed to `WorkerModelCatalogListResponse`;
+  `ArtifactThumbnailSummary` and several internal-only fields removed.
+
+## [0.0.35] - 2026-07-02
+
+### Fixed
+
+- Environments: `environment.git.clone` now surfaces a non-zero git exit as an
+  error (with bounded retries to absorb a freshly minted repo token that
+  briefly 404s) instead of returning an empty workspace. A broken
+  `prepare_repository` clone now fails the run at the git error rather than
+  letting later steps run against an empty checkout.
+
 ## [0.0.34] - 2026-07-02
 
 ### Changed
