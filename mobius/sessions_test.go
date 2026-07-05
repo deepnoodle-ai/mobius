@@ -36,6 +36,14 @@ func TestInvokeAgent_HighLevelClient(t *testing.T) {
 		Session: &api.InvokeSessionSpec{
 			SessionKey: ptr("app:acct_1:user_2"),
 		},
+		Config: &api.InlineAgentConfig{
+			Instructions: ptr("Be concise."),
+			Model:        ptr("claude-sonnet-4-6"),
+			Effort:       ptr(api.ThinkingEffortMedium),
+			Toolkits: &[]api.InlineToolkit{
+				{Name: "tickets", Actions: &[]string{"tickets.search"}},
+			},
+		},
 	})
 
 	assert.NoError(t, err)
@@ -45,6 +53,11 @@ func TestInvokeAgent_HighLevelClient(t *testing.T) {
 	assert.Equal(t, body["agent_ref"].(map[string]any)["id"], "agent_1")
 	assert.Equal(t, body["input"].(map[string]any)["idempotency_key"], "evt_1")
 	assert.Equal(t, body["session"].(map[string]any)["session_key"], "app:acct_1:user_2")
+	config := body["config"].(map[string]any)
+	assert.Equal(t, config["instructions"], "Be concise.")
+	assert.Equal(t, config["model"], "claude-sonnet-4-6")
+	assert.Equal(t, config["effort"], "medium")
+	assert.Equal(t, config["toolkits"].([]any)[0].(map[string]any)["name"], "tickets")
 }
 
 func TestInvokeAgent_RequiresAgentRefAndContent(t *testing.T) {

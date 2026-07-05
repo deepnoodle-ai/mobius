@@ -318,6 +318,12 @@ test("client: invokeAgent posts the compound invoke request shape", async () => 
       content: [{ type: "text", text: "hi" }],
       idempotencyKey: "evt_1",
       session: { session_key: "app:acct_1:user_2" },
+      config: {
+        instructions: "Be concise.",
+        model: "claude-sonnet-4-6",
+        effort: "medium",
+        toolkits: [{ name: "tickets", actions: ["tickets.search"] }],
+      },
     });
     assert.equal(ack.after_sequence, 7);
     assert.equal(ack.session.id, "sess_1");
@@ -331,6 +337,11 @@ test("client: invokeAgent posts the compound invoke request shape", async () => 
   assert.match(requestBody, /"agent_ref":\{"id":"agent_1"\}/);
   assert.match(requestBody, /"idempotency_key":"evt_1"/);
   assert.match(requestBody, /"session_key":"app:acct_1:user_2"/);
+  assert.match(requestBody, /"config":\{/);
+  assert.match(requestBody, /"instructions":"Be concise\."/);
+  assert.match(requestBody, /"model":"claude-sonnet-4-6"/);
+  assert.match(requestBody, /"effort":"medium"/);
+  assert.match(requestBody, /"toolkits":\[\{"name":"tickets","actions":\["tickets\.search"\]\}\]/);
 });
 
 test("client: invokeAgent requires agent ref and content", async () => {
