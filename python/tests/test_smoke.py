@@ -36,6 +36,8 @@ from deepnoodle.mobius.client import (
     UpdateLoopOptions,
 )
 from deepnoodle.mobius._api.models import (
+    InlineAgentConfig,
+    InlineToolkit,
     InvokeSessionSpec,
     LoopRunSource,
     LoopRunStatus,
@@ -217,6 +219,12 @@ def test_invoke_agent_posts_the_compound_invoke_request_shape() -> None:
             content=[{"type": "text", "text": "hi"}],
             idempotency_key="evt_1",
             session=InvokeSessionSpec(session_key="app:acct_1:user_2"),
+            config=InlineAgentConfig(
+                instructions="Be concise.",
+                model="claude-sonnet-4-6",
+                effort="medium",
+                toolkits=[InlineToolkit(name="tickets", actions=["tickets.search"])],
+            ),
         )
     )
 
@@ -227,6 +235,10 @@ def test_invoke_agent_posts_the_compound_invoke_request_shape() -> None:
     assert '"agent_ref":{"id":"agent_1"}' in str(seen["body"])
     assert '"idempotency_key":"evt_1"' in str(seen["body"])
     assert '"session_key":"app:acct_1:user_2"' in str(seen["body"])
+    assert '"instructions":"Be concise."' in str(seen["body"])
+    assert '"model":"claude-sonnet-4-6"' in str(seen["body"])
+    assert '"effort":"medium"' in str(seen["body"])
+    assert '"toolkits":[{"name":"tickets","actions":["tickets.search"]}]' in str(seen["body"])
 
 
 def test_invoke_agent_requires_agent_ref_and_content() -> None:

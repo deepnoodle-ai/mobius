@@ -35,8 +35,16 @@ type InvokeAgentOptions struct {
 
 	// Session controls how the session this turn runs in is resolved or
 	// created. Omit to use a single default session per agent in
-	// continue_or_create mode.
+	// continue_or_create mode. Set Session.ThinkingEffort to override the
+	// agent's reasoning-effort default for this session.
 	Session *api.InvokeSessionSpec
+	// Config sends an inline agent definition (instructions, model, effort,
+	// timeout, toolkits, skills) with the invocation instead of using the
+	// agent stored in Mobius. Set fields replace the agent's values; omitted
+	// fields keep them. Mobius remembers the config on the session and reuses
+	// it on later turns until a new one is sent. Omit to run the agent on its
+	// stored definition.
+	Config *api.InlineAgentConfig
 	// ChannelContext records optional messaging provider/channel routing
 	// context (Slack, Telegram, …) on the started turn.
 	ChannelContext *api.ChannelContext
@@ -172,6 +180,9 @@ func invokeAgentRequest(opts InvokeAgentOptions) (api.InvokeAgentRequest, error)
 	req := api.InvokeAgentRequest{AgentRef: agentRef, Input: input}
 	if opts.Session != nil {
 		req.Session = opts.Session
+	}
+	if opts.Config != nil {
+		req.Config = opts.Config
 	}
 	if opts.ChannelContext != nil {
 		req.ChannelContext = opts.ChannelContext

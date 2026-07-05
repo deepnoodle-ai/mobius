@@ -3,6 +3,7 @@ import type {
   CancelLoopRunRequest,
   ChannelContext,
   CreateLoopRequest,
+  InlineAgentConfig,
   InvokeAgentRequest,
   InvokeInput,
   InvokeSessionSpec,
@@ -201,9 +202,19 @@ export interface InvokeAgentOptions {
   inputMetadata?: Record<string, unknown>;
   /**
    * How to resolve or create the session this invocation runs in. Omit to
-   * use a single default session per agent in continue_or_create mode.
+   * use a single default session per agent in continue_or_create mode. Set
+   * `session.thinking_effort` to override the agent's reasoning-effort
+   * default for this session.
    */
   session?: InvokeSessionSpec;
+  /**
+   * Inline agent definition (instructions, model, effort, timeout, toolkits,
+   * skills) sent with the invocation instead of using the agent stored in
+   * Mobius. Set fields replace the agent's values; omitted fields keep them.
+   * Mobius remembers the config on the session and reuses it on later turns
+   * until a new one is sent. Omit to run the agent on its stored definition.
+   */
+  config?: InlineAgentConfig;
   /**
    * Optional messaging provider/channel routing context (Slack, Telegram,
    * …) recorded on the started turn.
@@ -556,6 +567,7 @@ function invokeAgentRequest(opts: InvokeAgentOptions): InvokeAgentRequest {
       metadata: opts.inputMetadata,
     }) as InvokeInput,
     session: opts.session,
+    config: opts.config,
     channel_context: opts.channelContext,
   }) as InvokeAgentRequest;
 }
