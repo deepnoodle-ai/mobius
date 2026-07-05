@@ -52,7 +52,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/organization/api-keys": {
+    "/v1/api-keys": {
         parameters: {
             query?: never;
             header?: never;
@@ -61,13 +61,13 @@ export interface paths {
         };
         /**
          * List organization API keys
-         * @description Returns organization-level API keys, including pagination metadata. Requires org admin.
+         * @description Returns the active organization's org-level API keys, including pagination metadata. Requires org admin.
          */
         get: operations["listOrgAPIKeys"];
         put?: never;
         /**
          * Create organization API key
-         * @description Creates an organization-level API key. The key authenticates as the organization's system principal and acts with the chosen `role` applied org-wide across every project (defaults to `Admin`). The raw key value is returned in `key` and is never retrievable again after this response. Requires org admin.
+         * @description Creates an organization-level API key for the active organization. The key authenticates as the organization's system principal and acts with the chosen `role` applied org-wide across every project (defaults to `Admin`). The raw key value is returned in `key` and is never retrievable again after this response. Requires org admin.
          */
         post: operations["createOrgAPIKey"];
         delete?: never;
@@ -76,7 +76,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/organization/api-keys/{resource_id}": {
+    "/v1/api-keys/{resource_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -555,6 +555,30 @@ export interface paths {
          */
         get: operations["listWebhookDeliveries"];
         put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/organization/definition-resolver": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the org's definition-resolver config
+         * @description Returns the active org's pluggable definition-source configuration: where definitions resolve from (`mobius_stored` default or `client_resolver`) and, for the client resolver, the endpoint and caching policy. The bearer token is never returned — `auth_configured` reports whether one is set. Requires `Admin` or `Owner` membership.
+         */
+        get: operations["getDefinitionResolver"];
+        /**
+         * Replace the org's definition-resolver config
+         * @description Full-replace of the active org's definition-source configuration. All configurable fields are authoritative; `auth.token` is write-only — supply it to set or rotate the shared bearer token, omit `auth` to keep the existing token, or send an empty token to clear it. Execution behavior stays clamped by the org policy ceiling regardless of source. Requires `Admin` or `Owner` membership.
+         */
+        put: operations["replaceDefinitionResolver"];
         post?: never;
         delete?: never;
         options?: never;
@@ -3342,6 +3366,78 @@ export interface components {
             /** @description Round-trip latency in milliseconds. */
             latency_ms?: number;
         };
+        /** @description The org's pluggable definition-source configuration (redacted view). The bearer token is never included; `auth_configured` reports its presence. */
+        DefinitionResolverConfig: {
+            /**
+             * @description Where the org's definitions resolve from by default.
+             * @enum {string}
+             */
+            source: "mobius_stored" | "client_resolver";
+            /** @description HTTPS endpoint Mobius posts resolve requests to (client_resolver only). */
+            endpoint_url?: string;
+            /** @description Whether a shared bearer token is currently set for the resolver. */
+            auth_configured: boolean;
+            /** @description Per-request resolve timeout in milliseconds. */
+            timeout_ms?: number;
+            /** @description The resolve wire-protocol version Mobius speaks. */
+            protocol_version?: number;
+            /** @description Skip the network when the cached bundle is younger than this (seconds). */
+            revalidate_after_s?: number;
+            /** @description Hard ceiling on serving last-known-good (seconds); 0 is unbounded. */
+            stale_max_age_s?: number;
+            /**
+             * @description Behavior when the resolver endpoint is unreachable.
+             * @enum {string}
+             */
+            on_unavailable: "last_known_good" | "fail";
+            /** @description Digest of the durable last-known-good bundle, when one exists. */
+            last_good_digest?: string;
+            /**
+             * Format: date-time
+             * @description When the last-known-good bundle was recorded.
+             */
+            last_good_at?: string | null;
+            /**
+             * Format: date-time
+             * @description When the config was last updated.
+             */
+            updated_at: string;
+        };
+        /** @description Full-replace body for the org's definition-resolver config. */
+        PutDefinitionResolverRequest: {
+            /**
+             * @description Where the org's definitions resolve from by default.
+             * @enum {string}
+             */
+            source: "mobius_stored" | "client_resolver";
+            /** @description HTTPS endpoint Mobius posts resolve requests to. Required for client_resolver. */
+            endpoint_url?: string;
+            /** @description Shared-secret auth. Omit to keep the existing token. */
+            auth?: components["schemas"]["DefinitionResolverAuth"];
+            /** @description Per-request resolve timeout in milliseconds. Defaults to 2000 when omitted or non-positive. */
+            timeout_ms?: number;
+            /** @description The resolve wire-protocol version Mobius speaks. Defaults to 1. */
+            protocol_version?: number;
+            /** @description Skip the network when the cached bundle is younger than this (seconds). */
+            revalidate_after_s?: number;
+            /** @description Hard ceiling on serving last-known-good (seconds); 0 is unbounded. */
+            stale_max_age_s?: number;
+            /**
+             * @description Behavior when the resolver endpoint is unreachable. Defaults to last_known_good.
+             * @enum {string}
+             */
+            on_unavailable?: "last_known_good" | "fail";
+        };
+        /** @description Shared-secret auth for the client resolver. The token is write-only: supply it to set or rotate, send an empty string to clear. */
+        DefinitionResolverAuth: {
+            /**
+             * @description Auth mode. Only `bearer` is supported today.
+             * @enum {string}
+             */
+            mode?: "bearer";
+            /** @description Bearer token Mobius sends to the resolver. Write-only; never returned. */
+            token?: string;
+        };
         /**
          * @description Declarative UI/input primitive for collecting the response. This is a portable rendering contract, not executable code. Values are `confirm`, `select`, `multi_select`, and `input`.
          * @enum {string}
@@ -4720,6 +4816,8 @@ export interface components {
         };
         /**
          * @description An agent definition sent with the invocation instead of one stored in Mobius ahead of time. Send it on the call that creates the session and it becomes that session's definition; send it again on a later turn to replace it; leave it out and the session keeps the definition it already has.
+         *
+         *     A session holds one config at a time. If two calls share a session and both send `config`, the last one Mobius saves wins, so give each definition you want to run at the same time its own session.
          *
          *     Every field is optional. A field you set replaces the agent's value; a field you leave out keeps the agent's value. The `toolkits` and `skills` lists replace the agent's lists entirely — they are not merged item by item. If your organization sets limits on the model, effort, or timeout, those limits still apply, so a value here can never exceed them. Use `config` for one-off invocations only: loops and schedules must point to a stored agent, so creating or updating one with `config` is rejected.
          */
@@ -7129,6 +7227,8 @@ export interface components {
         IntegrationEventIDParam: string;
         /** @description Framework provider identifier from the integration provider catalog. */
         IntegrationProviderParam: string;
+        /** @description Organization ID. */
+        OrgIDParam: string;
         /** @description The key identifying a memory entry. Restricted to a path-safe character set (letters, numbers, and `. _ : -`) so it stays reliably addressable. */
         MemoryKeyParam: string;
         /** @description Table ID. */
@@ -8591,6 +8691,57 @@ export interface operations {
                     "application/json": components["schemas"]["WebhookDeliveryListResponse"];
                 };
             };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getDefinitionResolver: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DefinitionResolverConfig"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    replaceDefinitionResolver: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PutDefinitionResolverRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DefinitionResolverConfig"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];

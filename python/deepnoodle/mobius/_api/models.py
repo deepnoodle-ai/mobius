@@ -1926,6 +1926,106 @@ class PingWebhookResult(BaseModel):
     )
 
 
+class Source2(StrEnum):
+    """
+    Where the org's definitions resolve from by default.
+    """
+
+    mobius_stored = 'mobius_stored'
+    client_resolver = 'client_resolver'
+
+
+class OnUnavailable(StrEnum):
+    """
+    Behavior when the resolver endpoint is unreachable.
+    """
+
+    last_known_good = 'last_known_good'
+    fail = 'fail'
+
+
+class DefinitionResolverConfig(BaseModel):
+    """
+    The org's pluggable definition-source configuration (redacted view). The bearer token is never included; `auth_configured` reports its presence.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    source: Source2 = Field(
+        ..., description="Where the org's definitions resolve from by default."
+    )
+    endpoint_url: str | None = Field(
+        None,
+        description='HTTPS endpoint Mobius posts resolve requests to (client_resolver only).',
+    )
+    auth_configured: bool = Field(
+        ...,
+        description='Whether a shared bearer token is currently set for the resolver.',
+    )
+    timeout_ms: int | None = Field(
+        None, description='Per-request resolve timeout in milliseconds.'
+    )
+    protocol_version: int | None = Field(
+        None, description='The resolve wire-protocol version Mobius speaks.'
+    )
+    revalidate_after_s: int | None = Field(
+        None,
+        description='Skip the network when the cached bundle is younger than this (seconds).',
+    )
+    stale_max_age_s: int | None = Field(
+        None,
+        description='Hard ceiling on serving last-known-good (seconds); 0 is unbounded.',
+    )
+    on_unavailable: OnUnavailable = Field(
+        ..., description='Behavior when the resolver endpoint is unreachable.'
+    )
+    last_good_digest: str | None = Field(
+        None,
+        description='Digest of the durable last-known-good bundle, when one exists.',
+    )
+    last_good_at: AwareDatetime | None = Field(
+        None, description='When the last-known-good bundle was recorded.'
+    )
+    updated_at: AwareDatetime = Field(
+        ..., description='When the config was last updated.'
+    )
+
+
+class OnUnavailable1(StrEnum):
+    """
+    Behavior when the resolver endpoint is unreachable. Defaults to last_known_good.
+    """
+
+    last_known_good = 'last_known_good'
+    fail = 'fail'
+
+
+class Mode1(StrEnum):
+    """
+    Auth mode. Only `bearer` is supported today.
+    """
+
+    bearer = 'bearer'
+
+
+class DefinitionResolverAuth(BaseModel):
+    """
+    Shared-secret auth for the client resolver. The token is write-only: supply it to set or rotate, send an empty string to clear.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    mode: Mode1 | None = Field(
+        None, description='Auth mode. Only `bearer` is supported today.'
+    )
+    token: str | None = Field(
+        None,
+        description='Bearer token Mobius sends to the resolver. Write-only; never returned.',
+    )
+
+
 class InteractionMode(StrEnum):
     """
     Declarative UI/input primitive for collecting the response. This is a portable rendering contract, not executable code. Values are `confirm`, `select`, `multi_select`, and `input`.
@@ -2838,7 +2938,7 @@ class ToolkitAction(BaseModel):
     )
 
 
-class Source2(StrEnum):
+class Source4(StrEnum):
     """
     Provenance of this toolkit. `system` toolkits are built-in; `project` toolkits are user-authored.
     """
@@ -2860,7 +2960,7 @@ class Toolkit(BaseModel):
     description: str | None = Field(
         None, description="Markdown description of the toolkit's purpose."
     )
-    source: Source2 = Field(
+    source: Source4 = Field(
         ...,
         description='Provenance of this toolkit. `system` toolkits are built-in; `project` toolkits are user-authored.',
     )
@@ -2879,7 +2979,7 @@ class Toolkit(BaseModel):
     updated_at: AwareDatetime = Field(..., description='Last update timestamp.')
 
 
-class Source3(StrEnum):
+class Source5(StrEnum):
     """
     Provenance of this skill. `system` is built-in; `project` is project-local.
     """
@@ -2901,7 +3001,7 @@ class Skill(BaseModel):
     description: str | None = Field(
         None, description="Markdown description of the skill's purpose."
     )
-    source: Source3 = Field(
+    source: Source5 = Field(
         ...,
         description='Provenance of this skill. `system` is built-in; `project` is project-local.',
     )
@@ -3273,7 +3373,7 @@ class AgentRef(BaseModel):
     name: str | None = Field(None, description='Project-unique agent name.')
 
 
-class Mode1(StrEnum):
+class Mode2(StrEnum):
     """
     `continue_or_create` (default) resolves an existing session for the `session_key` or creates one; `new` always creates a fresh session; `continue` resolves an existing session and fails if none exists.
     """
@@ -3291,7 +3391,7 @@ class InvokeSessionSpec(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    mode: Mode1 | None = Field(
+    mode: Mode2 | None = Field(
         None,
         description='`continue_or_create` (default) resolves an existing session for the `session_key` or creates one; `new` always creates a fresh session; `continue` resolves an existing session and fails if none exists.',
     )
@@ -3368,7 +3468,7 @@ class CreateSessionRequest(BaseModel):
         extra='forbid',
     )
     agent_id: str = Field(..., description='Agent that owns the session.')
-    mode: Mode1 | None = Field(
+    mode: Mode2 | None = Field(
         None,
         description='`continue_or_create` (default) resolves an existing session for the `session_key` or creates one; `new` always creates a fresh session; `continue` resolves an existing session and fails if none exists.',
     )
@@ -3455,7 +3555,7 @@ class LoopStatus(StrEnum):
     deleted = 'deleted'
 
 
-class Source4(StrEnum):
+class Source6(StrEnum):
     """
     How the repository target is resolved. `static` clones `full_name`; `match` clones the repository the trigger event concerns.
     """
@@ -3480,7 +3580,7 @@ class LoopSpecRepository(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    source: Source4 = Field(
+    source: Source6 = Field(
         'static',
         description='How the repository target is resolved. `static` clones `full_name`; `match` clones the repository the trigger event concerns.',
     )
@@ -3783,7 +3883,7 @@ class LoopAgentSessionPolicy(BaseModel):
     )
 
 
-class Mode3(StrEnum):
+class Mode4(StrEnum):
     """
     Model route mode: `managed` or `worker`.
     """
@@ -3800,7 +3900,7 @@ class LoopModelRoute(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    mode: Mode3 = Field(..., description='Model route mode: `managed` or `worker`.')
+    mode: Mode4 = Field(..., description='Model route mode: `managed` or `worker`.')
     environment_id: str | None = Field(
         None, description='Managed environment to route worker-backed model calls to.'
     )
@@ -5086,7 +5186,7 @@ class TableRowQueryListResponse(BaseModel):
     )
 
 
-class Mode4(StrEnum):
+class Mode5(StrEnum):
     """
     Search mode. `keyword` uses token-prefix matching, `semantic` uses similarity over indexed row text, and `hybrid` combines both.
     """
@@ -5105,7 +5205,7 @@ class SearchRowsRequest(BaseModel):
         description='Search query. Hyphens and other punctuation split terms for keyword matching.',
         min_length=1,
     )
-    mode: Mode4 = Field(
+    mode: Mode5 = Field(
         'keyword',
         description='Search mode. `keyword` uses token-prefix matching, `semantic` uses similarity over indexed row text, and `hybrid` combines both.',
     )
@@ -5509,6 +5609,46 @@ class WorkerSocketFrame(
     )
 
 
+class PutDefinitionResolverRequest(BaseModel):
+    """
+    Full-replace body for the org's definition-resolver config.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    source: Source2 = Field(
+        ..., description="Where the org's definitions resolve from by default."
+    )
+    endpoint_url: str | None = Field(
+        None,
+        description='HTTPS endpoint Mobius posts resolve requests to. Required for client_resolver.',
+    )
+    auth: DefinitionResolverAuth | None = Field(
+        None, description='Shared-secret auth. Omit to keep the existing token.'
+    )
+    timeout_ms: int | None = Field(
+        None,
+        description='Per-request resolve timeout in milliseconds. Defaults to 2000 when omitted or non-positive.',
+    )
+    protocol_version: int | None = Field(
+        None,
+        description='The resolve wire-protocol version Mobius speaks. Defaults to 1.',
+    )
+    revalidate_after_s: int | None = Field(
+        None,
+        description='Skip the network when the cached bundle is younger than this (seconds).',
+    )
+    stale_max_age_s: int | None = Field(
+        None,
+        description='Hard ceiling on serving last-known-good (seconds); 0 is unbounded.',
+    )
+    on_unavailable: OnUnavailable1 | None = Field(
+        None,
+        description='Behavior when the resolver endpoint is unreachable. Defaults to last_known_good.',
+    )
+
+
 class DeliveryChannel(BaseModel):
     """
     A single delivery destination. `inbox_only` carries no payload; `email` requires the `email` variant.
@@ -5780,6 +5920,8 @@ class AppendSessionMessagesRequest(BaseModel):
 class InlineAgentConfig(BaseModel):
     """
     An agent definition sent with the invocation instead of one stored in Mobius ahead of time. Send it on the call that creates the session and it becomes that session's definition; send it again on a later turn to replace it; leave it out and the session keeps the definition it already has.
+
+    A session holds one config at a time. If two calls share a session and both send `config`, the last one Mobius saves wins, so give each definition you want to run at the same time its own session.
 
     Every field is optional. A field you set replaces the agent's value; a field you leave out keeps the agent's value. The `toolkits` and `skills` lists replace the agent's lists entirely — they are not merged item by item. If your organization sets limits on the model, effort, or timeout, those limits still apply, so a value here can never exceed them. Use `config` for one-off invocations only: loops and schedules must point to a stored agent, so creating or updating one with `config` is rejected.
     """
