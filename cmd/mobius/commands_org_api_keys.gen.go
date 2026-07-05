@@ -17,7 +17,7 @@ import (
 
 // registerOrgApiKeysCommands registers every generated subcommand in the "org-api-keys" group.
 func registerOrgApiKeysCommands(app *cli.App) {
-	orgApiKeysGrp := app.Group("org-api-keys").Description("Organization-level API keys with org-wide admin")
+	orgApiKeysGrp := app.Group("org-api-keys").Description("API keys acting org-wide across all projects")
 	orgApiKeysGrp.Alias("org-api-key")
 	orgApiKeysGrp.Command("create").
 		Description("Create organization API key").

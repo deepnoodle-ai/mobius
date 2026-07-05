@@ -140,8 +140,8 @@ var overrides = map[string]Override{
 var groupDescriptions = map[string]string{
 	"actions":       "Actions available to loops and agents",
 	"agents":        "Agent identities, presence, and lifecycle",
-	"api-keys":      "Project and organization API keys",
-	"org-api-keys":  "Organization-level API keys with org-wide admin",
+	"api-keys":      "API keys scoped to a single project",
+	"org-api-keys":  "API keys acting org-wide across all projects",
 	"artifacts":     "Run output artifacts and storage quota",
 	"blueprints":    "Project blueprint application and bindings",
 	"catalog":       "Available actions and triggerable events",

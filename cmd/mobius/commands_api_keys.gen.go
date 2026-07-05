@@ -17,7 +17,7 @@ import (
 
 // registerApiKeysCommands registers every generated subcommand in the "api-keys" group.
 func registerApiKeysCommands(app *cli.App) {
-	apiKeysGrp := app.Group("api-keys").Description("Project and organization API keys")
+	apiKeysGrp := app.Group("api-keys").Description("API keys scoped to a single project")
 	apiKeysGrp.Alias("api-key")
 	apiKeysGrp.Command("create").
 		Description("Create API key").
