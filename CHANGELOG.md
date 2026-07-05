@@ -6,6 +6,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 
 ## [Unreleased]
 
+## [0.0.38] - 2026-07-05
+
+### Added
+
+- Organization definition-resolver config: `GET`/`PUT
+  /v1/organization/definition-resolver` with the `DefinitionResolverConfig`,
+  `PutDefinitionResolverRequest`, and `DefinitionResolverAuth` schemas. CLI
+  `organizations get-definition-resolver` / `replace-definition-resolver`.
+
+### Changed
+
+- Organization API key endpoints moved from `/v1/organization/api-keys` to
+  `/v1/api-keys` (request/response schemas unchanged). The CLI keeps the
+  dedicated `org-api-keys` group.
+- Inline agent config docs clarify that a session holds one config at a time;
+  concurrent definitions need separate sessions.
+
 ## [0.0.37] - 2026-07-05
 
 ### Added
