@@ -692,6 +692,57 @@ func (e CreateSessionRequestMode) Valid() bool {
 	}
 }
 
+// Defines values for DefinitionResolverAuthMode.
+const (
+	DefinitionResolverAuthModeBearer DefinitionResolverAuthMode = "bearer"
+)
+
+// Valid indicates whether the value is a known member of the DefinitionResolverAuthMode enum.
+func (e DefinitionResolverAuthMode) Valid() bool {
+	switch e {
+	case DefinitionResolverAuthModeBearer:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DefinitionResolverConfigOnUnavailable.
+const (
+	DefinitionResolverConfigOnUnavailableFail          DefinitionResolverConfigOnUnavailable = "fail"
+	DefinitionResolverConfigOnUnavailableLastKnownGood DefinitionResolverConfigOnUnavailable = "last_known_good"
+)
+
+// Valid indicates whether the value is a known member of the DefinitionResolverConfigOnUnavailable enum.
+func (e DefinitionResolverConfigOnUnavailable) Valid() bool {
+	switch e {
+	case DefinitionResolverConfigOnUnavailableFail:
+		return true
+	case DefinitionResolverConfigOnUnavailableLastKnownGood:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DefinitionResolverConfigSource.
+const (
+	DefinitionResolverConfigSourceClientResolver DefinitionResolverConfigSource = "client_resolver"
+	DefinitionResolverConfigSourceMobiusStored   DefinitionResolverConfigSource = "mobius_stored"
+)
+
+// Valid indicates whether the value is a known member of the DefinitionResolverConfigSource enum.
+func (e DefinitionResolverConfigSource) Valid() bool {
+	switch e {
+	case DefinitionResolverConfigSourceClientResolver:
+		return true
+	case DefinitionResolverConfigSourceMobiusStored:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for DeliveryChannelKind.
 const (
 	DeliveryChannelKindEmail     DeliveryChannelKind = "email"
@@ -1709,6 +1760,42 @@ const (
 func (e ProvisionEnvironmentProvider) Valid() bool {
 	switch e {
 	case ProvisionEnvironmentProviderSprites:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PutDefinitionResolverRequestOnUnavailable.
+const (
+	PutDefinitionResolverRequestOnUnavailableFail          PutDefinitionResolverRequestOnUnavailable = "fail"
+	PutDefinitionResolverRequestOnUnavailableLastKnownGood PutDefinitionResolverRequestOnUnavailable = "last_known_good"
+)
+
+// Valid indicates whether the value is a known member of the PutDefinitionResolverRequestOnUnavailable enum.
+func (e PutDefinitionResolverRequestOnUnavailable) Valid() bool {
+	switch e {
+	case PutDefinitionResolverRequestOnUnavailableFail:
+		return true
+	case PutDefinitionResolverRequestOnUnavailableLastKnownGood:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PutDefinitionResolverRequestSource.
+const (
+	PutDefinitionResolverRequestSourceClientResolver PutDefinitionResolverRequestSource = "client_resolver"
+	PutDefinitionResolverRequestSourceMobiusStored   PutDefinitionResolverRequestSource = "mobius_stored"
+)
+
+// Valid indicates whether the value is a known member of the PutDefinitionResolverRequestSource enum.
+func (e PutDefinitionResolverRequestSource) Valid() bool {
+	switch e {
+	case PutDefinitionResolverRequestSourceClientResolver:
+		return true
+	case PutDefinitionResolverRequestSourceMobiusStored:
 		return true
 	default:
 		return false
@@ -4419,6 +4506,60 @@ type CreateWebhookRequest struct {
 	Url *string `json:"url,omitempty"`
 }
 
+// DefinitionResolverAuth Shared-secret auth for the client resolver. The token is write-only: supply it to set or rotate, send an empty string to clear.
+type DefinitionResolverAuth struct {
+	// Mode Auth mode. Only `bearer` is supported today.
+	Mode *DefinitionResolverAuthMode `json:"mode,omitempty"`
+
+	// Token Bearer token Mobius sends to the resolver. Write-only; never returned.
+	Token *string `json:"token,omitempty"`
+}
+
+// DefinitionResolverAuthMode Auth mode. Only `bearer` is supported today.
+type DefinitionResolverAuthMode string
+
+// DefinitionResolverConfig The org's pluggable definition-source configuration (redacted view). The bearer token is never included; `auth_configured` reports its presence.
+type DefinitionResolverConfig struct {
+	// AuthConfigured Whether a shared bearer token is currently set for the resolver.
+	AuthConfigured bool `json:"auth_configured"`
+
+	// EndpointUrl HTTPS endpoint Mobius posts resolve requests to (client_resolver only).
+	EndpointUrl *string `json:"endpoint_url,omitempty"`
+
+	// LastGoodAt When the last-known-good bundle was recorded.
+	LastGoodAt *time.Time `json:"last_good_at,omitempty"`
+
+	// LastGoodDigest Digest of the durable last-known-good bundle, when one exists.
+	LastGoodDigest *string `json:"last_good_digest,omitempty"`
+
+	// OnUnavailable Behavior when the resolver endpoint is unreachable.
+	OnUnavailable DefinitionResolverConfigOnUnavailable `json:"on_unavailable"`
+
+	// ProtocolVersion The resolve wire-protocol version Mobius speaks.
+	ProtocolVersion *int `json:"protocol_version,omitempty"`
+
+	// RevalidateAfterS Skip the network when the cached bundle is younger than this (seconds).
+	RevalidateAfterS *int `json:"revalidate_after_s,omitempty"`
+
+	// Source Where the org's definitions resolve from by default.
+	Source DefinitionResolverConfigSource `json:"source"`
+
+	// StaleMaxAgeS Hard ceiling on serving last-known-good (seconds); 0 is unbounded.
+	StaleMaxAgeS *int `json:"stale_max_age_s,omitempty"`
+
+	// TimeoutMs Per-request resolve timeout in milliseconds.
+	TimeoutMs *int `json:"timeout_ms,omitempty"`
+
+	// UpdatedAt When the config was last updated.
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+// DefinitionResolverConfigOnUnavailable Behavior when the resolver endpoint is unreachable.
+type DefinitionResolverConfigOnUnavailable string
+
+// DefinitionResolverConfigSource Where the org's definitions resolve from by default.
+type DefinitionResolverConfigSource string
+
 // Delivery Optional per-interaction delivery override. When absent, each participant is notified via the app inbox only.
 type Delivery struct {
 	Channels []DeliveryChannel `json:"channels"`
@@ -4688,6 +4829,8 @@ type IndexDef struct {
 }
 
 // InlineAgentConfig An agent definition sent with the invocation instead of one stored in Mobius ahead of time. Send it on the call that creates the session and it becomes that session's definition; send it again on a later turn to replace it; leave it out and the session keeps the definition it already has.
+//
+// A session holds one config at a time. If two calls share a session and both send `config`, the last one Mobius saves wins, so give each definition you want to run at the same time its own session.
 //
 // Every field is optional. A field you set replaces the agent's value; a field you leave out keeps the agent's value. The `toolkits` and `skills` lists replace the agent's lists entirely — they are not merged item by item. If your organization sets limits on the model, effort, or timeout, those limits still apply, so a value here can never exceed them. Use `config` for one-off invocations only: loops and schedules must point to a stored agent, so creating or updating one with `config` is rejected.
 type InlineAgentConfig struct {
@@ -5026,6 +5169,8 @@ type InvokeAgentRequest struct {
 	ChannelContext *ChannelContext `json:"channel_context,omitempty"`
 
 	// Config An agent definition sent with the invocation instead of one stored in Mobius ahead of time. Send it on the call that creates the session and it becomes that session's definition; send it again on a later turn to replace it; leave it out and the session keeps the definition it already has.
+	//
+	// A session holds one config at a time. If two calls share a session and both send `config`, the last one Mobius saves wins, so give each definition you want to run at the same time its own session.
 	//
 	// Every field is optional. A field you set replaces the agent's value; a field you leave out keeps the agent's value. The `toolkits` and `skills` lists replace the agent's lists entirely — they are not merged item by item. If your organization sets limits on the model, effort, or timeout, those limits still apply, so a value here can never exceed them. Use `config` for one-off invocations only: loops and schedules must point to a stored agent, so creating or updating one with `config` is rejected.
 	Config *InlineAgentConfig `json:"config,omitempty"`
@@ -6104,6 +6249,39 @@ type ProjectListResponse struct {
 
 // ProvisionEnvironmentProvider Providers the control plane can provision on demand. Worker-provided environments are registered out-of-band via the attach endpoint and are never provisioned through create/acquire.
 type ProvisionEnvironmentProvider string
+
+// PutDefinitionResolverRequest Full-replace body for the org's definition-resolver config.
+type PutDefinitionResolverRequest struct {
+	// Auth Shared-secret auth for the client resolver. The token is write-only: supply it to set or rotate, send an empty string to clear.
+	Auth *DefinitionResolverAuth `json:"auth,omitempty"`
+
+	// EndpointUrl HTTPS endpoint Mobius posts resolve requests to. Required for client_resolver.
+	EndpointUrl *string `json:"endpoint_url,omitempty"`
+
+	// OnUnavailable Behavior when the resolver endpoint is unreachable. Defaults to last_known_good.
+	OnUnavailable *PutDefinitionResolverRequestOnUnavailable `json:"on_unavailable,omitempty"`
+
+	// ProtocolVersion The resolve wire-protocol version Mobius speaks. Defaults to 1.
+	ProtocolVersion *int `json:"protocol_version,omitempty"`
+
+	// RevalidateAfterS Skip the network when the cached bundle is younger than this (seconds).
+	RevalidateAfterS *int `json:"revalidate_after_s,omitempty"`
+
+	// Source Where the org's definitions resolve from by default.
+	Source PutDefinitionResolverRequestSource `json:"source"`
+
+	// StaleMaxAgeS Hard ceiling on serving last-known-good (seconds); 0 is unbounded.
+	StaleMaxAgeS *int `json:"stale_max_age_s,omitempty"`
+
+	// TimeoutMs Per-request resolve timeout in milliseconds. Defaults to 2000 when omitted or non-positive.
+	TimeoutMs *int `json:"timeout_ms,omitempty"`
+}
+
+// PutDefinitionResolverRequestOnUnavailable Behavior when the resolver endpoint is unreachable. Defaults to last_known_good.
+type PutDefinitionResolverRequestOnUnavailable string
+
+// PutDefinitionResolverRequestSource Where the org's definitions resolve from by default.
+type PutDefinitionResolverRequestSource string
 
 // QueryRowsRequest defines model for QueryRowsRequest.
 type QueryRowsRequest struct {
@@ -8398,6 +8576,9 @@ type DeliverHTTPTriggerParams struct {
 
 // CreateOrgAPIKeyJSONRequestBody defines body for CreateOrgAPIKey for application/json ContentType.
 type CreateOrgAPIKeyJSONRequestBody = CreateOrgAPIKeyRequest
+
+// ReplaceDefinitionResolverJSONRequestBody defines body for ReplaceDefinitionResolver for application/json ContentType.
+type ReplaceDefinitionResolverJSONRequestBody = PutDefinitionResolverRequest
 
 // CreateProjectJSONRequestBody defines body for CreateProject for application/json ContentType.
 type CreateProjectJSONRequestBody = CreateProjectRequest
@@ -15476,6 +15657,14 @@ type ClientInterface interface {
 	// GetOrgAPIKey request
 	GetOrgAPIKey(ctx context.Context, resourceId IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetDefinitionResolver request
+	GetDefinitionResolver(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ReplaceDefinitionResolverWithBody request with any body
+	ReplaceDefinitionResolverWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	ReplaceDefinitionResolver(ctx context.Context, body ReplaceDefinitionResolverJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListProjects request
 	ListProjects(ctx context.Context, params *ListProjectsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -15983,6 +16172,42 @@ func (c *Client) DeleteOrgAPIKey(ctx context.Context, resourceId IDParam, reqEdi
 
 func (c *Client) GetOrgAPIKey(ctx context.Context, resourceId IDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetOrgAPIKeyRequest(c.Server, resourceId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetDefinitionResolver(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetDefinitionResolverRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ReplaceDefinitionResolverWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewReplaceDefinitionResolverRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ReplaceDefinitionResolver(ctx context.Context, body ReplaceDefinitionResolverJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewReplaceDefinitionResolverRequest(c.Server, body)
 	if err != nil {
 		return nil, err
 	}
@@ -18006,7 +18231,7 @@ func NewListOrgAPIKeysRequest(server string, params *ListOrgAPIKeysParams) (*htt
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/organization/api-keys")
+	operationPath := fmt.Sprintf("/v1/api-keys")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -18083,7 +18308,7 @@ func NewCreateOrgAPIKeyRequestWithBody(server string, contentType string, body i
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/organization/api-keys")
+	operationPath := fmt.Sprintf("/v1/api-keys")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -18119,7 +18344,7 @@ func NewDeleteOrgAPIKeyRequest(server string, resourceId IDParam) (*http.Request
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/organization/api-keys/%s", pathParam0)
+	operationPath := fmt.Sprintf("/v1/api-keys/%s", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -18153,7 +18378,7 @@ func NewGetOrgAPIKeyRequest(server string, resourceId IDParam) (*http.Request, e
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/v1/organization/api-keys/%s", pathParam0)
+	operationPath := fmt.Sprintf("/v1/api-keys/%s", pathParam0)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -18167,6 +18392,73 @@ func NewGetOrgAPIKeyRequest(server string, resourceId IDParam) (*http.Request, e
 	if err != nil {
 		return nil, err
 	}
+
+	return req, nil
+}
+
+// NewGetDefinitionResolverRequest generates requests for GetDefinitionResolver
+func NewGetDefinitionResolverRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/organization/definition-resolver")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewReplaceDefinitionResolverRequest calls the generic ReplaceDefinitionResolver builder with application/json body
+func NewReplaceDefinitionResolverRequest(server string, body ReplaceDefinitionResolverJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewReplaceDefinitionResolverRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewReplaceDefinitionResolverRequestWithBody generates requests for ReplaceDefinitionResolver with any type of body
+func NewReplaceDefinitionResolverRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/organization/definition-resolver")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
 }
@@ -25028,6 +25320,14 @@ type ClientWithResponsesInterface interface {
 	// GetOrgAPIKeyWithResponse request
 	GetOrgAPIKeyWithResponse(ctx context.Context, resourceId IDParam, reqEditors ...RequestEditorFn) (*GetOrgAPIKeyResponse, error)
 
+	// GetDefinitionResolverWithResponse request
+	GetDefinitionResolverWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetDefinitionResolverResponse, error)
+
+	// ReplaceDefinitionResolverWithBodyWithResponse request with any body
+	ReplaceDefinitionResolverWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ReplaceDefinitionResolverResponse, error)
+
+	ReplaceDefinitionResolverWithResponse(ctx context.Context, body ReplaceDefinitionResolverJSONRequestBody, reqEditors ...RequestEditorFn) (*ReplaceDefinitionResolverResponse, error)
+
 	// ListProjectsWithResponse request
 	ListProjectsWithResponse(ctx context.Context, params *ListProjectsParams, reqEditors ...RequestEditorFn) (*ListProjectsResponse, error)
 
@@ -25612,6 +25912,73 @@ func (r GetOrgAPIKeyResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r GetOrgAPIKeyResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetDefinitionResolverResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *DefinitionResolverConfig
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r GetDefinitionResolverResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetDefinitionResolverResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetDefinitionResolverResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ReplaceDefinitionResolverResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *DefinitionResolverConfig
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r ReplaceDefinitionResolverResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ReplaceDefinitionResolverResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ReplaceDefinitionResolverResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -29802,6 +30169,32 @@ func (c *ClientWithResponses) GetOrgAPIKeyWithResponse(ctx context.Context, reso
 	return ParseGetOrgAPIKeyResponse(rsp)
 }
 
+// GetDefinitionResolverWithResponse request returning *GetDefinitionResolverResponse
+func (c *ClientWithResponses) GetDefinitionResolverWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetDefinitionResolverResponse, error) {
+	rsp, err := c.GetDefinitionResolver(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetDefinitionResolverResponse(rsp)
+}
+
+// ReplaceDefinitionResolverWithBodyWithResponse request with arbitrary body returning *ReplaceDefinitionResolverResponse
+func (c *ClientWithResponses) ReplaceDefinitionResolverWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ReplaceDefinitionResolverResponse, error) {
+	rsp, err := c.ReplaceDefinitionResolverWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseReplaceDefinitionResolverResponse(rsp)
+}
+
+func (c *ClientWithResponses) ReplaceDefinitionResolverWithResponse(ctx context.Context, body ReplaceDefinitionResolverJSONRequestBody, reqEditors ...RequestEditorFn) (*ReplaceDefinitionResolverResponse, error) {
+	rsp, err := c.ReplaceDefinitionResolver(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseReplaceDefinitionResolverResponse(rsp)
+}
+
 // ListProjectsWithResponse request returning *ListProjectsResponse
 func (c *ClientWithResponses) ListProjectsWithResponse(ctx context.Context, params *ListProjectsParams, reqEditors ...RequestEditorFn) (*ListProjectsResponse, error) {
 	rsp, err := c.ListProjects(ctx, params, reqEditors...)
@@ -31428,6 +31821,107 @@ func ParseGetOrgAPIKeyResponse(rsp *http.Response) (*GetOrgAPIKeyResponse, error
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetDefinitionResolverResponse parses an HTTP response from a GetDefinitionResolverWithResponse call
+func ParseGetDefinitionResolverResponse(rsp *http.Response) (*GetDefinitionResolverResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetDefinitionResolverResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest DefinitionResolverConfig
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseReplaceDefinitionResolverResponse parses an HTTP response from a ReplaceDefinitionResolverWithResponse call
+func ParseReplaceDefinitionResolverResponse(rsp *http.Response) (*ReplaceDefinitionResolverResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ReplaceDefinitionResolverResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest DefinitionResolverConfig
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
 		var dest Unauthorized

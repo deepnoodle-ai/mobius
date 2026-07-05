@@ -67,14 +67,20 @@ var overrides = map[string]Override{
 	"deleteAPIKey": {Command: "delete"},
 
 	// --- org-api-keys -----------------------------------------------------
-	// The `APIKey` initialism can't be stripped after the non-matching `Org`
-	// token, so the auto-derive lands on `create-a-pi-key`. Spell out the
-	// leaves to match the `api-keys` group; the group name already carries
-	// the "org api key" meaning.
-	"createOrgAPIKey": {Command: "create"},
-	"listOrgAPIKeys":  {Command: "list"},
-	"getOrgAPIKey":    {Command: "get"},
-	"deleteOrgAPIKey": {Command: "delete"},
+	// The spec folded these into the `api-keys` tag (paths moved to
+	// /v1/api-keys), but sharing a group with the project-key ops would
+	// collide on the create/list/get/delete leaves (create-2, list-2, …).
+	// Keep the dedicated CLI group so the surface stays
+	// `mobius org-api-keys <verb>` as shipped in v0.0.36.
+	"createOrgAPIKey": {Group: "org-api-keys", Command: "create"},
+	"listOrgAPIKeys":  {Group: "org-api-keys", Command: "list"},
+	"getOrgAPIKey":    {Group: "org-api-keys", Command: "get"},
+	"deleteOrgAPIKey": {Group: "org-api-keys", Command: "delete"},
+
+	// --- organizations ------------------------------------------------------
+	// `get` strips only the first PascalCase word, landing on `get-resolver`;
+	// spell it out so it matches its sibling `replace-definition-resolver`.
+	"getDefinitionResolver": {Command: "get-definition-resolver"},
 
 	// --- blueprints -------------------------------------------------------
 	// Drop the redundant `blueprint` token; the group name already carries it.
@@ -132,21 +138,22 @@ var overrides = map[string]Override{
 // well when listed vertically in `mobius --help`. Prefer consistent
 // grammatical shape across entries.
 var groupDescriptions = map[string]string{
-	"actions":      "Actions available to loops and agents",
-	"agents":       "Agent identities, presence, and lifecycle",
-	"api-keys":     "Project and organization API keys",
-	"org-api-keys": "Organization-level API keys with org-wide admin",
-	"artifacts":    "Run output artifacts and storage quota",
-	"blueprints":   "Project blueprint application and bindings",
-	"catalog":      "Available actions and triggerable events",
-	"environments": "Managed execution environments",
-	"interactions": "Information, approval, and review requests between users and agents",
-	"loops":        "Loop definitions, versions, and runs",
-	"projects":     "Projects within the organization",
-	"runs":         "Loop runs",
-	"sessions":     "Conversation sessions, transcripts, and invocation",
-	"skills":       "Skill templates that shape agent behavior and tool access",
-	"tables":       "Project-scoped tables and rows",
-	"toolkits":     "Sets of tools agents can use to take action",
-	"webhooks":     "Outgoing webhook subscriptions",
+	"actions":       "Actions available to loops and agents",
+	"agents":        "Agent identities, presence, and lifecycle",
+	"api-keys":      "Project and organization API keys",
+	"org-api-keys":  "Organization-level API keys with org-wide admin",
+	"artifacts":     "Run output artifacts and storage quota",
+	"blueprints":    "Project blueprint application and bindings",
+	"catalog":       "Available actions and triggerable events",
+	"environments":  "Managed execution environments",
+	"interactions":  "Information, approval, and review requests between users and agents",
+	"loops":         "Loop definitions, versions, and runs",
+	"organizations": "Organization settings and control plane",
+	"projects":      "Projects within the organization",
+	"runs":          "Loop runs",
+	"sessions":      "Conversation sessions, transcripts, and invocation",
+	"skills":        "Skill templates that shape agent behavior and tool access",
+	"tables":        "Project-scoped tables and rows",
+	"toolkits":      "Sets of tools agents can use to take action",
+	"webhooks":      "Outgoing webhook subscriptions",
 }

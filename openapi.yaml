@@ -24,9 +24,6 @@ tags:
 - name: api-keys
   x-displayName: API Keys
   description: Organization and project API keys used for programmatic authentication.
-- name: org-api-keys
-  x-displayName: Organization API Keys
-  description: Organization-level API keys that act with full admin across every project.
 - name: actions
   x-displayName: Actions
   description: Project and catalog actions invoked by agents and loop steps.
@@ -46,6 +43,10 @@ tags:
 - name: webhooks
   x-displayName: Webhooks
   description: Outgoing webhook subscriptions, tests, and delivery history.
+- name: organizations
+  x-displayName: Organizations
+  description: Organization metadata, membership administration, and the current-org control
+    plane.
 - name: interactions
   x-displayName: Interactions
   description: Structured requests between users and agents (request information, approval,
@@ -201,16 +202,17 @@ paths:
           $ref: '#/components/responses/NotFound'
         '429':
           $ref: '#/components/responses/TooManyRequests'
-  /v1/organization/api-keys:
+  /v1/api-keys:
     post:
       operationId: createOrgAPIKey
       tags:
-      - org-api-keys
+      - api-keys
       summary: Create organization API key
-      description: Creates an organization-level API key. The key authenticates as the organization's
-        system principal and acts with the chosen `role` applied org-wide across every project
-        (defaults to `Admin`). The raw key value is returned in `key` and is never retrievable
-        again after this response. Requires org admin.
+      description: Creates an organization-level API key for the active organization. The
+        key authenticates as the organization's system principal and acts with the chosen
+        `role` applied org-wide across every project (defaults to `Admin`). The raw key value
+        is returned in `key` and is never retrievable again after this response. Requires
+        org admin.
       requestBody:
         required: true
         content:
@@ -242,10 +244,10 @@ paths:
     get:
       operationId: listOrgAPIKeys
       tags:
-      - org-api-keys
+      - api-keys
       summary: List organization API keys
-      description: Returns organization-level API keys, including pagination metadata. Requires
-        org admin.
+      description: Returns the active organization's org-level API keys, including pagination
+        metadata. Requires org admin.
       parameters:
       - $ref: '#/components/parameters/LimitParam'
       - $ref: '#/components/parameters/CursorParam'
@@ -260,11 +262,11 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
-  /v1/organization/api-keys/{resource_id}:
+  /v1/api-keys/{resource_id}:
     get:
       operationId: getOrgAPIKey
       tags:
-      - org-api-keys
+      - api-keys
       summary: Get organization API key
       description: Returns metadata for a single organization API key without exposing the
         raw secret. Requires org admin.
@@ -286,7 +288,7 @@ paths:
     delete:
       operationId: deleteOrgAPIKey
       tags:
-      - org-api-keys
+      - api-keys
       summary: Delete organization API key
       description: Revokes the organization API key. In-flight requests using this key will
         immediately start receiving 401 while credential metadata remains available for audit
@@ -1408,6 +1410,62 @@ paths:
                   created_at: '2026-06-15T14:44:00Z'
                   delivered_at: '2026-06-15T14:44:01Z'
                 has_more: false
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/organization/definition-resolver:
+    get:
+      operationId: getDefinitionResolver
+      tags:
+      - organizations
+      x-public: true
+      summary: Get the org's definition-resolver config
+      description: 'Returns the active org''s pluggable definition-source configuration: where
+        definitions resolve from (`mobius_stored` default or `client_resolver`) and, for the
+        client resolver, the endpoint and caching policy. The bearer token is never returned
+        — `auth_configured` reports whether one is set. Requires `Admin` or `Owner` membership.'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DefinitionResolverConfig'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      operationId: replaceDefinitionResolver
+      tags:
+      - organizations
+      x-public: true
+      summary: Replace the org's definition-resolver config
+      description: Full-replace of the active org's definition-source configuration. All configurable
+        fields are authoritative; `auth.token` is write-only — supply it to set or rotate
+        the shared bearer token, omit `auth` to keep the existing token, or send an empty
+        token to clear it. Execution behavior stays clamped by the org policy ceiling regardless
+        of source. Requires `Admin` or `Owner` membership.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PutDefinitionResolverRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DefinitionResolverConfig'
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -4979,6 +5037,13 @@ components:
       description: Framework provider identifier from the integration provider catalog.
       schema:
         type: string
+    OrgIDParam:
+      name: org_id
+      in: path
+      required: true
+      description: Organization ID.
+      schema:
+        type: string
     MemoryKeyParam:
       name: memory_key
       in: path
@@ -7596,6 +7661,111 @@ components:
         latency_ms:
           type: integer
           description: Round-trip latency in milliseconds.
+    DefinitionResolverConfig:
+      type: object
+      additionalProperties: false
+      description: The org's pluggable definition-source configuration (redacted view). The
+        bearer token is never included; `auth_configured` reports its presence.
+      required:
+      - source
+      - on_unavailable
+      - auth_configured
+      - updated_at
+      properties:
+        source:
+          type: string
+          enum:
+          - mobius_stored
+          - client_resolver
+          description: Where the org's definitions resolve from by default.
+        endpoint_url:
+          type: string
+          description: HTTPS endpoint Mobius posts resolve requests to (client_resolver only).
+        auth_configured:
+          type: boolean
+          description: Whether a shared bearer token is currently set for the resolver.
+        timeout_ms:
+          type: integer
+          description: Per-request resolve timeout in milliseconds.
+        protocol_version:
+          type: integer
+          description: The resolve wire-protocol version Mobius speaks.
+        revalidate_after_s:
+          type: integer
+          description: Skip the network when the cached bundle is younger than this (seconds).
+        stale_max_age_s:
+          type: integer
+          description: Hard ceiling on serving last-known-good (seconds); 0 is unbounded.
+        on_unavailable:
+          type: string
+          enum:
+          - last_known_good
+          - fail
+          description: Behavior when the resolver endpoint is unreachable.
+        last_good_digest:
+          type: string
+          description: Digest of the durable last-known-good bundle, when one exists.
+        last_good_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: When the last-known-good bundle was recorded.
+        updated_at:
+          type: string
+          format: date-time
+          description: When the config was last updated.
+    PutDefinitionResolverRequest:
+      type: object
+      additionalProperties: false
+      description: Full-replace body for the org's definition-resolver config.
+      required:
+      - source
+      properties:
+        source:
+          type: string
+          enum:
+          - mobius_stored
+          - client_resolver
+          description: Where the org's definitions resolve from by default.
+        endpoint_url:
+          type: string
+          description: HTTPS endpoint Mobius posts resolve requests to. Required for client_resolver.
+        auth:
+          $ref: '#/components/schemas/DefinitionResolverAuth'
+          description: Shared-secret auth. Omit to keep the existing token.
+        timeout_ms:
+          type: integer
+          description: Per-request resolve timeout in milliseconds. Defaults to 2000 when
+            omitted or non-positive.
+        protocol_version:
+          type: integer
+          description: The resolve wire-protocol version Mobius speaks. Defaults to 1.
+        revalidate_after_s:
+          type: integer
+          description: Skip the network when the cached bundle is younger than this (seconds).
+        stale_max_age_s:
+          type: integer
+          description: Hard ceiling on serving last-known-good (seconds); 0 is unbounded.
+        on_unavailable:
+          type: string
+          enum:
+          - last_known_good
+          - fail
+          description: Behavior when the resolver endpoint is unreachable. Defaults to last_known_good.
+    DefinitionResolverAuth:
+      type: object
+      additionalProperties: false
+      description: 'Shared-secret auth for the client resolver. The token is write-only: supply
+        it to set or rotate, send an empty string to clear.'
+      properties:
+        mode:
+          type: string
+          enum:
+          - bearer
+          description: Auth mode. Only `bearer` is supported today.
+        token:
+          type: string
+          description: Bearer token Mobius sends to the resolver. Write-only; never returned.
     InteractionMode:
       type: string
       enum:
@@ -10060,6 +10230,8 @@ components:
       additionalProperties: false
       description: |-
         An agent definition sent with the invocation instead of one stored in Mobius ahead of time. Send it on the call that creates the session and it becomes that session's definition; send it again on a later turn to replace it; leave it out and the session keeps the definition it already has.
+
+        A session holds one config at a time. If two calls share a session and both send `config`, the last one Mobius saves wins, so give each definition you want to run at the same time its own session.
 
         Every field is optional. A field you set replaces the agent's value; a field you leave out keeps the agent's value. The `toolkits` and `skills` lists replace the agent's lists entirely — they are not merged item by item. If your organization sets limits on the model, effort, or timeout, those limits still apply, so a value here can never exceed them. Use `config` for one-off invocations only: loops and schedules must point to a stored agent, so creating or updating one with `config` is rejected.
       properties:
@@ -13598,9 +13770,6 @@ x-tagGroups:
 - name: API Keys
   tags:
   - api-keys
-- name: Organization API Keys
-  tags:
-  - org-api-keys
 - name: Actions
   tags:
   - actions
@@ -13619,6 +13788,9 @@ x-tagGroups:
 - name: Webhooks
   tags:
   - webhooks
+- name: Organization Endpoints
+  tags:
+  - organizations
 - name: Interactions
   tags:
   - interactions
