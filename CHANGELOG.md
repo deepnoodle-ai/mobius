@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 
 ## [Unreleased]
 
+## [0.0.39] - 2026-07-06
+
+### Added
+
+- Projects now expose `external_ref` on create, update, and read models so
+  clients can carry an assign-once tenant/workspace correlation key through the
+  Go, Python, and TypeScript SDKs. The CLI adds `--external-ref` to project
+  create/update commands.
+
 ## [0.0.38] - 2026-07-05
 
 ### Added
