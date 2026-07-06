@@ -168,6 +168,10 @@ class Project(BaseModel):
     description: str | None = Field(
         None, description='Optional human-readable description.'
     )
+    external_ref: str | None = Field(
+        None,
+        description='Client-owned tenant/workspace correlation key. Unique within the org when present. Set this when provisioning one Mobius project per external workspace so client-resolver callbacks can map scheduled runs back to the owning tenant.',
+    )
     access_mode: ProjectAccessMode = Field(
         ..., description='Current project access policy: `open` or `restricted`.'
     )
@@ -1704,6 +1708,10 @@ class CreateProjectRequest(BaseModel):
     description: str | None = Field(
         None, description='Optional human-readable description.'
     )
+    external_ref: str | None = Field(
+        None,
+        description='Client-owned tenant/workspace correlation key. Unique within the org when present. Treat this as assign-once: create requests may set it; update requests may set it only while the project has no existing external_ref.',
+    )
     access_mode: ProjectAccessMode | None = Field(
         None, description='Initial project access policy: `open` or `restricted`.'
     )
@@ -1718,6 +1726,10 @@ class UpdateProjectRequest(BaseModel):
     )
     name: str | None = Field(None, description='Replacement human-readable name.')
     description: str | None = Field(None, description='Replacement description.')
+    external_ref: str | None = Field(
+        None,
+        description='Assign-once client tenant/workspace correlation key. Accepted when the current project has no external_ref, or when it repeats the current value. Changing an already-set value returns 409.',
+    )
     access_mode: ProjectAccessMode | None = Field(
         None, description='Replacement project access policy: `open` or `restricted`.'
     )

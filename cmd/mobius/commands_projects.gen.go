@@ -24,6 +24,7 @@ func registerProjectsCommands(app *cli.App) {
 		Flags(
 			cli.String("access-mode", "").Help("`open`: every org member can see and use the project, subject to role assignments. `restricted`: only listed project members (and org…"),
 			cli.String("description", "").Help("Optional human-readable description."),
+			cli.String("external-ref", "").Help("Client-owned tenant/workspace correlation key. Unique within the org when present. Treat this as assign-once: create requests may set it…"),
 			cli.String("handle", "").Help("URL-safe slug for API routes. Auto-derived from name if omitted. Must be unique within the org. Cannot be changed after creation."),
 			cli.String("name", "").Help("[required] Human-readable project name."),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
@@ -48,6 +49,10 @@ func registerProjectsCommands(app *cli.App) {
 			if ctx.IsSet("description") {
 				v := ctx.String("description")
 				body.Description = &v
+			}
+			if ctx.IsSet("external-ref") {
+				v := ctx.String("external-ref")
+				body.ExternalRef = &v
 			}
 			if ctx.IsSet("handle") {
 				v := ctx.String("handle")
@@ -170,6 +175,7 @@ func registerProjectsCommands(app *cli.App) {
 		Flags(
 			cli.String("access-mode", "").Help("`open`: every org member can see and use the project, subject to role assignments. `restricted`: only listed project members (and org…"),
 			cli.String("description", "").Help("Replacement description."),
+			cli.String("external-ref", "").Help("Assign-once client tenant/workspace correlation key. Accepted when the current project has no external_ref, or when it repeats the current…"),
 			cli.String("name", "").Help("Replacement human-readable name."),
 			cli.Bool("seed-existing-members", "").Help("When transitioning from `open` to `restricted`, set true to insert all current org members as project members so nobody loses visibility on…"),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
@@ -196,6 +202,10 @@ func registerProjectsCommands(app *cli.App) {
 				v := ctx.String("description")
 				body.Description = &v
 			}
+			if ctx.IsSet("external-ref") {
+				v := ctx.String("external-ref")
+				body.ExternalRef = &v
+			}
 			if ctx.IsSet("name") {
 				v := ctx.String("name")
 				body.Name = &v
@@ -210,7 +220,7 @@ func registerProjectsCommands(app *cli.App) {
 				v := api.TagMap(tags)
 				body.Tags = &v
 			}
-			if ctx.String("file") == "" && !ctx.IsSet("access-mode") && !ctx.IsSet("description") && !ctx.IsSet("name") && !ctx.IsSet("seed-existing-members") && !ctx.IsSet("tag") {
+			if ctx.String("file") == "" && !ctx.IsSet("access-mode") && !ctx.IsSet("description") && !ctx.IsSet("external-ref") && !ctx.IsSet("name") && !ctx.IsSet("seed-existing-members") && !ctx.IsSet("tag") {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
 			if ctx.Bool("dry-run") {
