@@ -128,6 +128,17 @@ type GitCloneInput struct {
 	Dest         string `json:"dest,omitempty"`
 	Branch       string `json:"branch,omitempty"`
 	Depth        int    `json:"depth,omitempty"`
+	// Commit pins the checkout to an immutable commit sha (e.g. a pull request
+	// head sha). When set, the action fetches and checks out this exact commit
+	// instead of `git clone --branch <Branch>`, so a branch deleted, merged, or
+	// force-pushed between the trigger event and this clone does not fail the
+	// step. Branch, if also set, names the local branch created at that commit so
+	// a later `git push origin <Branch>` still targets the PR branch.
+	Commit string `json:"commit,omitempty"`
+	// FetchRef is the remote ref the commit is fetched from — for pull requests,
+	// refs/pull/<n>/head, which the host retains even after the source branch is
+	// deleted. Empty falls back to fetching Commit by sha directly.
+	FetchRef string `json:"fetch_ref,omitempty"`
 }
 
 type GitFetchInput struct {
@@ -431,15 +442,23 @@ func NewEnvironmentGitCloneAction() mobius.Action {
 		if err != nil {
 			return nil, err
 		}
-		args := []string{"clone"}
-		if in.Depth > 0 {
-			args = append(args, "--depth", fmt.Sprint(in.Depth))
+		var result any
+		if strings.TrimSpace(in.Commit) != "" || strings.TrimSpace(in.FetchRef) != "" {
+			// Immutable checkout: fetch and check out an exact commit so a branch
+			// that vanished between the trigger event and this clone does not fail
+			// the run. See prepareImmutableCheckout.
+			result, err = prepareImmutableCheckout(ctx, in, target)
+		} else {
+			args := []string{"clone"}
+			if in.Depth > 0 {
+				args = append(args, "--depth", fmt.Sprint(in.Depth))
+			}
+			if in.Branch != "" {
+				args = append(args, "--branch", in.Branch)
+			}
+			args = append(args, "https://github.com/"+in.RepoFullName+".git", target)
+			result, err = cloneWithRetry(ctx, in.RepoFullName, target, args)
 		}
-		if in.Branch != "" {
-			args = append(args, "--branch", in.Branch)
-		}
-		args = append(args, "https://github.com/"+in.RepoFullName+".git", target)
-		result, err := cloneWithRetry(ctx, in.RepoFullName, target, args)
 		if err != nil {
 			return result, err
 		}
@@ -473,6 +492,107 @@ func cloneWithRetry(ctx mobius.Context, repoFullName, target string, args []stri
 	})
 }
 
+// prepareImmutableCheckout materializes the workspace at an exact commit rather
+// than a mutable branch name. It initializes an empty repo, fetches the immutable
+// target (a pull ref like refs/pull/<n>/head, or the commit sha directly), and
+// checks that commit out. Because the host retains the pull ref permanently, this
+// succeeds even after the PR's source branch is deleted, merged-and-deleted,
+// renamed, or force-pushed — the failure a `git clone --branch <name>` cannot
+// survive. The whole sequence runs under the same bounded retry as a clone (so a
+// transient credential 404 still recovers), and each attempt rebuilds from a
+// clean directory.
+func prepareImmutableCheckout(ctx mobius.Context, in GitCloneInput, target string) (any, error) {
+	url := "https://github.com/" + in.RepoFullName + ".git"
+	fetchTarget := strings.TrimSpace(in.FetchRef)
+	if fetchTarget == "" {
+		fetchTarget = strings.TrimSpace(in.Commit)
+	}
+	return cloneWithRetryFunc(ctx, in.RepoFullName, target, func() (any, error) {
+		// Every attempt starts clean so `git init`/`remote add` never trip over a
+		// partial prior attempt.
+		if err := os.RemoveAll(target); err != nil {
+			return nil, err
+		}
+		if err := os.MkdirAll(target, 0o755); err != nil {
+			return nil, err
+		}
+		if res, err := runLocalGit(ctx, target, "init", "-q"); err != nil {
+			return res, err
+		} else if code, _ := gitResultExitCode(res); code != 0 {
+			return res, nil
+		}
+		if res, err := runLocalGit(ctx, target, "remote", "add", "origin", url); err != nil {
+			return res, err
+		} else if code, _ := gitResultExitCode(res); code != 0 {
+			return res, nil
+		}
+		// Fetch the immutable target. A fresh credential is minted per attempt by
+		// runGitWithCredential, matching the clone path's retry semantics.
+		fetchArgs := []string{"fetch"}
+		if in.Depth > 0 {
+			fetchArgs = append(fetchArgs, "--depth", fmt.Sprint(in.Depth))
+		}
+		fetchArgs = append(fetchArgs, "origin", fetchTarget)
+		result, err := runGitWithCredential(ctx, in.RepoFullName, "fetch", target, fetchArgs)
+		if err != nil {
+			return result, err
+		}
+		if code, ok := gitResultExitCode(result); !ok || code != 0 {
+			// Surface the fetch result so the retry loop applies its policy: a
+			// permanent missing ref fails fast, a transient 404 retries.
+			return result, nil
+		}
+		// Check out the exact commit. Naming a local branch at it keeps a later
+		// `git push origin <branch>` pointed at the PR branch; without a branch
+		// name, detach at the commit.
+		checkoutRef := strings.TrimSpace(in.Commit)
+		if checkoutRef == "" {
+			checkoutRef = "FETCH_HEAD"
+		}
+		coArgs := []string{"checkout", "--detach", checkoutRef}
+		if b := strings.TrimSpace(in.Branch); b != "" {
+			coArgs = []string{"checkout", "-B", b, checkoutRef}
+		}
+		if res, err := runLocalGit(ctx, target, coArgs...); err != nil {
+			return res, err
+		} else if code, _ := gitResultExitCode(res); code != 0 {
+			// The fetched commit is unusable; surface the checkout stderr so the
+			// attempt fails (bounded) with a diagnosable message.
+			return res, nil
+		}
+		return result, nil
+	})
+}
+
+// runLocalGit runs a git subcommand that needs no remote credentials (init,
+// remote add, checkout) in dir, capturing output like runCommand. A nil error
+// with a non-zero exit_code in the result signals a git-level failure the caller
+// treats as an attempt failure.
+func runLocalGit(ctx context.Context, dir string, args ...string) (any, error) {
+	cmd := exec.CommandContext(ctx, "git", args...)
+	configureProcessGroup(cmd)
+	if dir != "" {
+		cmd.Dir = dir
+	}
+	limit := resolveOutputMaxBytes(0, gitCloneFetchCommandOutputMaxBytes)
+	return runCommand(cmd,
+		newHeadTailTruncator(limit, "stdout", gitRemoteOutputHint),
+		newHeadTailTruncator(limit, "stderr", gitRemoteOutputHint))
+}
+
+// isPermanentRefError reports whether git stderr indicates the requested
+// branch/ref does not exist on the remote — a permanent condition (the branch
+// was deleted, merged-and-deleted, renamed, or force-pushed away). It
+// deliberately does NOT match "Repository not found", which is the transient
+// case a freshly minted repo-scoped token briefly returns and which the retry
+// loop should still retry.
+func isPermanentRefError(stderr string) bool {
+	s := strings.ToLower(stderr)
+	return strings.Contains(s, "not found in upstream origin") ||
+		strings.Contains(s, "couldn't find remote ref") ||
+		strings.Contains(s, "could not find remote ref")
+}
+
 // cloneWithRetryFunc is the retry state machine, with the single-attempt clone
 // injected so it can be exercised without a live credential broker. `run`
 // re-mints a fresh credential on each call.
@@ -493,8 +613,17 @@ func cloneWithRetryFunc(ctx mobius.Context, repoFullName, target string, run fun
 		if ok && exitCode == 0 {
 			return result, nil
 		}
+		stderr := gitResultStderr(result)
+		// A missing branch/ref is permanent — the branch was deleted, merged, or
+		// force-pushed away — so retrying only burns attempts and widens the
+		// window for a mutable branch to vanish further. Fail fast. This is
+		// distinct from the transient "Repository not found" a freshly minted
+		// token briefly returns, which is retried below.
+		if isPermanentRefError(stderr) {
+			return result, cloneFailedError(repoFullName, exitCode, stderr)
+		}
 		if attempt >= gitCloneMaxAttempts {
-			return result, cloneFailedError(repoFullName, exitCode, gitResultStderr(result))
+			return result, cloneFailedError(repoFullName, exitCode, stderr)
 		}
 		if lg := ctx.Logger(); lg != nil {
 			lg.Warn("git clone failed; retrying",

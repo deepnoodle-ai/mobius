@@ -816,3 +816,59 @@ func TestSleepContextCancels(t *testing.T) {
 		t.Fatalf("sleepContext should return the context error when cancelled")
 	}
 }
+
+func TestCloneWithRetryFailsFastOnMissingBranch(t *testing.T) {
+	// "Remote branch X not found in upstream origin" is permanent — the branch
+	// was deleted, merged-and-deleted, renamed, or force-pushed — so the retry
+	// loop must fail on the FIRST attempt rather than burning every attempt on a
+	// ref that will never reappear (and widening the window for a mutable branch
+	// to vanish). This is the fix for the recurring PR-review clone failures.
+	restore := gitCloneRetryDelay
+	gitCloneRetryDelay = time.Millisecond
+	defer func() { gitCloneRetryDelay = restore }()
+
+	ctx := testActionContext{Context: context.Background()}
+	attempts := 0
+	_, err := cloneWithRetryFunc(ctx, "acme/app", t.TempDir(), func() (any, error) {
+		attempts++
+		return map[string]any{
+			"exit_code": 128,
+			"stderr":    "Cloning into 'app'...\nfatal: Remote branch codex/fix not found in upstream origin\n",
+		}, nil
+	})
+	if err == nil {
+		t.Fatalf("a missing branch must surface an error")
+	}
+	if attempts != 1 {
+		t.Fatalf("attempts = %d, want 1 (missing branch is permanent, no retry)", attempts)
+	}
+	if !strings.Contains(err.Error(), "not found in upstream origin") {
+		t.Fatalf("error should carry the git stderr tail: %v", err)
+	}
+}
+
+func TestIsPermanentRefError(t *testing.T) {
+	permanent := []string{
+		"fatal: Remote branch codex/fix not found in upstream origin",
+		"fatal: couldn't find remote ref refs/pull/47/head",
+		"fatal: Could not find remote ref refs/heads/gone",
+	}
+	for _, s := range permanent {
+		if !isPermanentRefError(s) {
+			t.Fatalf("expected permanent ref error: %q", s)
+		}
+	}
+	// "Repository not found" is the transient freshly-minted-token case and must
+	// stay retryable, not be swept up as permanent.
+	transient := []string{
+		"remote: Repository not found.",
+		"fatal: repository 'https://github.com/acme/missing.git/' not found",
+		"fatal: Authentication failed",
+		"",
+	}
+	for _, s := range transient {
+		if isPermanentRefError(s) {
+			t.Fatalf("must not classify transient/other as permanent: %q", s)
+		}
+	}
+}
