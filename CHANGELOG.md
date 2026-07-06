@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 
 ## [Unreleased]
 
+## [0.0.40] - 2026-07-06
+
+### Fixed
+
+- `environment.git.clone` no longer dies when a PR branch is deleted between the
+  trigger event and checkout. When the clone action receives a commit sha and/or
+  fetch ref (e.g. `refs/pull/<n>/head`), it now performs an immutable checkout —
+  init an empty repo, fetch the exact target, check out that commit, and recreate
+  the local branch — instead of `git clone --branch <name>`, which failed on
+  short-lived bot and release-automation branches. A missing branch/ref is now
+  classified as a permanent error so the retry loop fails fast instead of
+  widening the deletion window.
+
 ## [0.0.39] - 2026-07-06
 
 ### Added
