@@ -1973,6 +1973,7 @@ export interface components {
          *       "name": "Product Ops",
          *       "handle": "product-ops",
          *       "description": "Product operations workflows",
+         *       "external_ref": "workspace_789",
          *       "access_mode": "restricted",
          *       "created_by": "user_2f9s3k4m5n6p7q8r",
          *       "tags": {
@@ -1991,6 +1992,8 @@ export interface components {
             handle: string;
             /** @description Optional human-readable description. */
             description?: string;
+            /** @description Client-owned tenant/workspace correlation key. Unique within the org when present. Set this when provisioning one Mobius project per external workspace so client-resolver callbacks can map scheduled runs back to the owning tenant. */
+            external_ref?: string;
             /** @description Current project access policy: `open` or `restricted`. */
             access_mode: components["schemas"]["ProjectAccessMode"];
             /** @description Principal ID of whoever created this project. */
@@ -3147,6 +3150,7 @@ export interface components {
          *       "name": "Product Ops",
          *       "handle": "product-ops",
          *       "description": "Product operations workflows",
+         *       "external_ref": "workspace_789",
          *       "access_mode": "restricted",
          *       "tags": {
          *         "owner": "product"
@@ -3160,6 +3164,8 @@ export interface components {
             handle?: string;
             /** @description Optional human-readable description. */
             description?: string;
+            /** @description Client-owned tenant/workspace correlation key. Unique within the org when present. Treat this as assign-once: create requests may set it; update requests may set it only while the project has no existing external_ref. */
+            external_ref?: string;
             /** @description Initial project access policy: `open` or `restricted`. */
             access_mode?: components["schemas"]["ProjectAccessMode"];
             /** @description Initial labels used for filtering, ownership, or automation. */
@@ -3170,6 +3176,8 @@ export interface components {
             name?: string;
             /** @description Replacement description. */
             description?: string;
+            /** @description Assign-once client tenant/workspace correlation key. Accepted when the current project has no external_ref, or when it repeats the current value. Changing an already-set value returns 409. */
+            external_ref?: string;
             /** @description Replacement project access policy: `open` or `restricted`. */
             access_mode?: components["schemas"]["ProjectAccessMode"];
             /** @description When transitioning from `open` to `restricted`, set true to insert all current org members as project members so nobody loses visibility on the flip. Ignored on other transitions. */

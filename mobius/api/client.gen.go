@@ -4302,6 +4302,9 @@ type CreateProjectRequest struct {
 	// Description Optional human-readable description.
 	Description *string `json:"description,omitempty"`
 
+	// ExternalRef Client-owned tenant/workspace correlation key. Unique within the org when present. Treat this as assign-once: create requests may set it; update requests may set it only while the project has no existing external_ref.
+	ExternalRef *string `json:"external_ref,omitempty"`
+
 	// Handle URL-safe slug for API routes. Auto-derived from name if omitted. Must be unique within the org. Cannot be changed after creation.
 	Handle *string `json:"handle,omitempty"`
 
@@ -6207,6 +6210,9 @@ type Project struct {
 	// Description Optional human-readable description.
 	Description *string `json:"description,omitempty"`
 
+	// ExternalRef Client-owned tenant/workspace correlation key. Unique within the org when present. Set this when provisioning one Mobius project per external workspace so client-resolver callbacks can map scheduled runs back to the owning tenant.
+	ExternalRef *string `json:"external_ref,omitempty"`
+
 	// Handle URL-safe slug used as a path segment in project API routes. Unique within the org. Immutable after creation.
 	Handle string `json:"handle"`
 
@@ -7533,6 +7539,9 @@ type UpdateProjectRequest struct {
 
 	// Description Replacement description.
 	Description *string `json:"description,omitempty"`
+
+	// ExternalRef Assign-once client tenant/workspace correlation key. Accepted when the current project has no external_ref, or when it repeats the current value. Changing an already-set value returns 409.
+	ExternalRef *string `json:"external_ref,omitempty"`
 
 	// Name Replacement human-readable name.
 	Name *string `json:"name,omitempty"`
