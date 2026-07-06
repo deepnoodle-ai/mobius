@@ -204,6 +204,7 @@ export type ProjectListResponse = components["schemas"]["ProjectListResponse"];
 export type ProvisionEnvironmentProvider = components["schemas"]["ProvisionEnvironmentProvider"];
 export type PutDefinitionResolverRequest = components["schemas"]["PutDefinitionResolverRequest"];
 export type QueryRowsRequest = components["schemas"]["QueryRowsRequest"];
+export type RecoverLoopRunRequest = components["schemas"]["RecoverLoopRunRequest"];
 export type ReplaceSkillsRequest = components["schemas"]["ReplaceSkillsRequest"];
 export type ReplaceToolkitsRequest = components["schemas"]["ReplaceToolkitsRequest"];
 export type ResolutionPolicy = components["schemas"]["ResolutionPolicy"];

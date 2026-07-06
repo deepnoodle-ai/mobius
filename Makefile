@@ -2,6 +2,7 @@ OAPI_CODEGEN_VERSION    := v2.7.0
 OPENAPI_TS_VERSION      := 7.6.0
 DATAMODEL_CODEGEN_VER   := 0.56.1
 DATAMODEL_CODEGEN_PY    := 3.12
+PNPM                    ?= corepack pnpm
 
 GO_CLIENT       := mobius/api/client.gen.go
 GO_CLI_COMMANDS := cmd/mobius/commands.gen.go
@@ -39,7 +40,7 @@ generate-go-cli:
 generate-ts:
 	@echo "=> generating TypeScript schema"
 	@if [ ! -d typescript/node_modules ]; then $(MAKE) tools-ts; fi
-	cd typescript && pnpm --silent generate
+	cd typescript && $(PNPM) --silent generate
 
 generate-py:
 	@echo "=> generating Python models"
@@ -83,7 +84,7 @@ test-go:
 test-ts:
 	@echo "=> typescript test"
 	@if [ ! -d typescript/node_modules ]; then $(MAKE) tools-ts; fi
-	cd typescript && pnpm --silent test
+	cd typescript && $(PNPM) --silent test
 
 test-py:
 	@echo "=> python test"
@@ -97,4 +98,4 @@ tools-go:
 	go install github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@$(OAPI_CODEGEN_VERSION)
 
 tools-ts:
-	cd typescript && pnpm install --frozen-lockfile
+	cd typescript && $(PNPM) install --frozen-lockfile

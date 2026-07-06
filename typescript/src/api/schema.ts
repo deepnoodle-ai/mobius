@@ -1346,6 +1346,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/projects/{project_handle}/runs/{resource_id}/resume": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Resume failed run
+         * @description Re-arms a failed run in place from the last durable checkpoint. The run must still reference the current runnable loop version. Guardrail failures require a higher limit in the request body before the run can continue.
+         */
+        post: operations["resumeRun"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project_handle}/runs/{resource_id}/retry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Retry failed run
+         * @description Re-arms a failed run in place from the last durable checkpoint. This is equivalent to resume, but records the operator intent as a retry in the run event log.
+         */
+        post: operations["retryRun"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/projects/{project_handle}/runs/{resource_id}/steps": {
         parameters: {
             query?: never;
@@ -5762,6 +5802,30 @@ export interface components {
             reason?: string;
         };
         /**
+         * @description Body for resuming or retrying a failed loop run in place. Limit fields are optional unless the prior failure was caused by that guardrail; in that case the replacement limit must be greater than the amount already consumed by the run.
+         * @example {
+         *       "reason": "transient provider failure cleared"
+         *     }
+         */
+        RecoverLoopRunRequest: {
+            /** @description Human-readable recovery reason recorded on the run event log. */
+            reason?: string;
+            /**
+             * Format: double
+             * @description Replacement run budget in US dollars (1 credit = $0.01). Mutually exclusive with `credit_budget`; setting both is a `400`.
+             */
+            budget_usd?: number;
+            /**
+             * Format: int64
+             * @description Replacement run budget in whole credits (1 credit = $0.01). Must be greater than `credit_spent`.
+             */
+            credit_budget?: number;
+            /** @description Replacement run-wide agent turn cap. Must be greater than `agent_turns_used`. */
+            max_agent_turns?: number;
+            /** @description Additional wall-clock time, in seconds, granted from the recovery request time. */
+            wall_clock_timeout_seconds?: number;
+        };
+        /**
          * @description Body for resuming a suspended loop step.
          * @example {
          *       "step_key": "wait_for_external_result",
@@ -5832,6 +5896,8 @@ export interface components {
             loop_version: number;
             /** @description Current lifecycle state of this run. */
             status: components["schemas"]["LoopRunStatus"];
+            /** @description One-based execution attempt for this run. The original run starts at 1 and increments each time the run is resumed or retried in place. */
+            attempt?: number;
             /** @description Gate that placed this run in the durable queue. Present only while `status` is `queued`. */
             queue_reason?: components["schemas"]["LoopRunQueueReason"];
             /** @description Org-wide concurrent-run ceiling stamped at run start. Present when the run was evaluated against a plan concurrency limit. */
@@ -6117,6 +6183,9 @@ export interface components {
         RunResumedPayload: {
             step?: string;
             reason?: string;
+            /** @enum {string} */
+            recovery_action?: "resume" | "retry";
+            attempt?: number;
         } & {
             [key: string]: unknown;
         };
@@ -6163,8 +6232,14 @@ export interface components {
         };
         StepRetriedPayload: {
             step?: string;
+            kind?: string;
             attempt?: number;
             max_attempts?: number;
+            /** @description Retry source. `step_policy` means the authored step retry policy was consumed, `transient` means Mobius retried a transient provider failure before spending step retry budget, and `run_recovery` means an operator resumed or retried a failed run in place. */
+            retry_scope?: string;
+            /** @enum {string} */
+            recovery_mode?: "resume" | "retry";
+            error_type?: string;
             error?: string;
         } & {
             [key: string]: unknown;
@@ -10814,6 +10889,87 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    resumeRun: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
+                resource_id: components["parameters"]["IDParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                /**
+                 * @example {
+                 *       "reason": "operator raised run budget",
+                 *       "credit_budget": 1500
+                 *     }
+                 */
+                "application/json": components["schemas"]["RecoverLoopRunRequest"];
+            };
+        };
+        responses: {
+            /** @description Accepted. Returns the re-armed run. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoopRun"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    retryRun: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
+                resource_id: components["parameters"]["IDParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                /**
+                 * @example {
+                 *       "reason": "transient provider failure cleared"
+                 *     }
+                 */
+                "application/json": components["schemas"]["RecoverLoopRunRequest"];
+            };
+        };
+        responses: {
+            /** @description Accepted. Returns the re-armed run. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoopRun"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
             429: components["responses"]["TooManyRequests"];
         };
     };
