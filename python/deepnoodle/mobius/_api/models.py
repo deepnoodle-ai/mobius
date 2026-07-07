@@ -4185,6 +4185,40 @@ class CancelLoopRunRequest(BaseModel):
     )
 
 
+class RecoverLoopRunRequest(BaseModel):
+    """
+    Body for resuming or retrying a failed loop run in place. Limit fields are optional unless the prior failure was caused by that guardrail; in that case the replacement limit must be greater than the amount already consumed by the run.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    reason: str | None = Field(
+        None,
+        description='Human-readable recovery reason recorded on the run event log.',
+    )
+    budget_usd: float | None = Field(
+        None,
+        description='Replacement run budget in US dollars (1 credit = $0.01). Mutually exclusive with `credit_budget`; setting both is a `400`.',
+        ge=0.0,
+    )
+    credit_budget: int | None = Field(
+        None,
+        description='Replacement run budget in whole credits (1 credit = $0.01). Must be greater than `credit_spent`.',
+        ge=1,
+    )
+    max_agent_turns: int | None = Field(
+        None,
+        description='Replacement run-wide agent turn cap. Must be greater than `agent_turns_used`.',
+        ge=1,
+    )
+    wall_clock_timeout_seconds: int | None = Field(
+        None,
+        description='Additional wall-clock time, in seconds, granted from the recovery request time.',
+        ge=1,
+    )
+
+
 class SignalLoopRunRequest(BaseModel):
     """
     Body for resuming a suspended loop step.
@@ -4416,12 +4450,19 @@ class RunStartedPayload(BaseModel):
     trigger_id: str | None = None
 
 
+class RecoveryAction(StrEnum):
+    resume = 'resume'
+    retry = 'retry'
+
+
 class RunResumedPayload(BaseModel):
     model_config = ConfigDict(
         extra='allow',
     )
     step: str | None = None
     reason: str | None = None
+    recovery_action: RecoveryAction | None = None
+    attempt: int | None = None
 
 
 class RunCompletedPayload(BaseModel):
@@ -4473,13 +4514,25 @@ class StepFailedPayload(BaseModel):
     error_type: str | None = None
 
 
+class RecoveryMode(StrEnum):
+    resume = 'resume'
+    retry = 'retry'
+
+
 class StepRetriedPayload(BaseModel):
     model_config = ConfigDict(
         extra='allow',
     )
     step: str | None = None
+    kind: str | None = None
     attempt: int | None = None
     max_attempts: int | None = None
+    retry_scope: str | None = Field(
+        None,
+        description='Retry source. `step_policy` means the authored step retry policy was consumed, `transient` means Mobius retried a transient provider failure before spending step retry budget, and `run_recovery` means an operator resumed or retried a failed run in place.',
+    )
+    recovery_mode: RecoveryMode | None = None
+    error_type: str | None = None
     error: str | None = None
 
 
@@ -6285,6 +6338,11 @@ class LoopRun(BaseModel):
     )
     status: LoopRunStatus = Field(
         ..., description='Current lifecycle state of this run.'
+    )
+    attempt: int | None = Field(
+        None,
+        description='One-based execution attempt for this run. The original run starts at 1 and increments each time the run is resumed or retried in place.',
+        ge=1,
     )
     queue_reason: LoopRunQueueReason | None = Field(
         None,

@@ -1871,6 +1871,24 @@ func (e RespondToInteractionRequestAction) Valid() bool {
 	}
 }
 
+// Defines values for RunResumedPayloadRecoveryAction.
+const (
+	RunResumedPayloadRecoveryActionResume RunResumedPayloadRecoveryAction = "resume"
+	RunResumedPayloadRecoveryActionRetry  RunResumedPayloadRecoveryAction = "retry"
+)
+
+// Valid indicates whether the value is a known member of the RunResumedPayloadRecoveryAction enum.
+func (e RunResumedPayloadRecoveryAction) Valid() bool {
+	switch e {
+	case RunResumedPayloadRecoveryActionResume:
+		return true
+	case RunResumedPayloadRecoveryActionRetry:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for SearchRowsRequestMode.
 const (
 	SearchRowsRequestModeHybrid   SearchRowsRequestMode = "hybrid"
@@ -2201,6 +2219,24 @@ const (
 func (e StartTurnRequestRole) Valid() bool {
 	switch e {
 	case StartTurnRequestRoleUser:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for StepRetriedPayloadRecoveryMode.
+const (
+	StepRetriedPayloadRecoveryModeResume StepRetriedPayloadRecoveryMode = "resume"
+	StepRetriedPayloadRecoveryModeRetry  StepRetriedPayloadRecoveryMode = "retry"
+)
+
+// Valid indicates whether the value is a known member of the StepRetriedPayloadRecoveryMode enum.
+func (e StepRetriedPayloadRecoveryMode) Valid() bool {
+	switch e {
+	case StepRetriedPayloadRecoveryModeResume:
+		return true
+	case StepRetriedPayloadRecoveryModeRetry:
 		return true
 	default:
 		return false
@@ -5580,6 +5616,9 @@ type LoopRun struct {
 	// AgentTurnsUsed Number of agent turns started for this run so far. Compared against `max_agent_turns` when that cap is set.
 	AgentTurnsUsed *int `json:"agent_turns_used,omitempty"`
 
+	// Attempt One-based execution attempt for this run. The original run starts at 1 and increments each time the run is resumed or retried in place.
+	Attempt *int `json:"attempt,omitempty"`
+
 	// CompletedAt Time the run reached a terminal status.
 	CompletedAt *time.Time `json:"completed_at,omitempty"`
 
@@ -6313,6 +6352,24 @@ type QueryRowsRequest struct {
 // QueryRowsRequestSortOrder Sort direction for this field: `asc` or `desc`.
 type QueryRowsRequestSortOrder string
 
+// RecoverLoopRunRequest Body for resuming or retrying a failed loop run in place. Limit fields are optional unless the prior failure was caused by that guardrail; in that case the replacement limit must be greater than the amount already consumed by the run.
+type RecoverLoopRunRequest struct {
+	// BudgetUsd Replacement run budget in US dollars (1 credit = $0.01). Mutually exclusive with `credit_budget`; setting both is a `400`.
+	BudgetUsd *float64 `json:"budget_usd,omitempty"`
+
+	// CreditBudget Replacement run budget in whole credits (1 credit = $0.01). Must be greater than `credit_spent`.
+	CreditBudget *int64 `json:"credit_budget,omitempty"`
+
+	// MaxAgentTurns Replacement run-wide agent turn cap. Must be greater than `agent_turns_used`.
+	MaxAgentTurns *int `json:"max_agent_turns,omitempty"`
+
+	// Reason Human-readable recovery reason recorded on the run event log.
+	Reason *string `json:"reason,omitempty"`
+
+	// WallClockTimeoutSeconds Additional wall-clock time, in seconds, granted from the recovery request time.
+	WallClockTimeoutSeconds *int `json:"wall_clock_timeout_seconds,omitempty"`
+}
+
 // ReplaceSkillsRequest defines model for ReplaceSkillsRequest.
 type ReplaceSkillsRequest struct {
 	// SkillIds Full replace-set of skill IDs to assign to the agent, in desired order.
@@ -6409,10 +6466,15 @@ type RunFailedPayload struct {
 
 // RunResumedPayload defines model for RunResumedPayload.
 type RunResumedPayload struct {
-	Reason               *string                `json:"reason,omitempty"`
-	Step                 *string                `json:"step,omitempty"`
-	AdditionalProperties map[string]interface{} `json:"-"`
+	Attempt              *int                             `json:"attempt,omitempty"`
+	Reason               *string                          `json:"reason,omitempty"`
+	RecoveryAction       *RunResumedPayloadRecoveryAction `json:"recovery_action,omitempty"`
+	Step                 *string                          `json:"step,omitempty"`
+	AdditionalProperties map[string]interface{}           `json:"-"`
 }
+
+// RunResumedPayloadRecoveryAction defines model for RunResumedPayload.RecoveryAction.
+type RunResumedPayloadRecoveryAction string
 
 // RunStartedPayload defines model for RunStartedPayload.
 type RunStartedPayload struct {
@@ -7042,12 +7104,21 @@ type StepResumedPayload struct {
 
 // StepRetriedPayload defines model for StepRetriedPayload.
 type StepRetriedPayload struct {
-	Attempt              *int                   `json:"attempt,omitempty"`
-	Error                *string                `json:"error,omitempty"`
-	MaxAttempts          *int                   `json:"max_attempts,omitempty"`
+	Attempt      *int                            `json:"attempt,omitempty"`
+	Error        *string                         `json:"error,omitempty"`
+	ErrorType    *string                         `json:"error_type,omitempty"`
+	Kind         *string                         `json:"kind,omitempty"`
+	MaxAttempts  *int                            `json:"max_attempts,omitempty"`
+	RecoveryMode *StepRetriedPayloadRecoveryMode `json:"recovery_mode,omitempty"`
+
+	// RetryScope Retry source. `step_policy` means the authored step retry policy was consumed, `transient` means Mobius retried a transient provider failure before spending step retry budget, and `run_recovery` means an operator resumed or retried a failed run in place.
+	RetryScope           *string                `json:"retry_scope,omitempty"`
 	Step                 *string                `json:"step,omitempty"`
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
+
+// StepRetriedPayloadRecoveryMode defines model for StepRetriedPayload.RecoveryMode.
+type StepRetriedPayloadRecoveryMode string
 
 // StepSkippedPayload defines model for StepSkippedPayload.
 type StepSkippedPayload struct {
@@ -8657,6 +8728,12 @@ type StartRunJSONRequestBody = StartLoopRunRequest
 
 // CancelRunJSONRequestBody defines body for CancelRun for application/json ContentType.
 type CancelRunJSONRequestBody = CancelLoopRunRequest
+
+// ResumeRunJSONRequestBody defines body for ResumeRun for application/json ContentType.
+type ResumeRunJSONRequestBody = RecoverLoopRunRequest
+
+// RetryRunJSONRequestBody defines body for RetryRun for application/json ContentType.
+type RetryRunJSONRequestBody = RecoverLoopRunRequest
 
 // SignalRunJSONRequestBody defines body for SignalRun for application/json ContentType.
 type SignalRunJSONRequestBody = SignalLoopRunRequest
@@ -10745,12 +10822,28 @@ func (a *RunResumedPayload) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
+	if raw, found := object["attempt"]; found {
+		err = json.Unmarshal(raw, &a.Attempt)
+		if err != nil {
+			return fmt.Errorf("error reading 'attempt': %w", err)
+		}
+		delete(object, "attempt")
+	}
+
 	if raw, found := object["reason"]; found {
 		err = json.Unmarshal(raw, &a.Reason)
 		if err != nil {
 			return fmt.Errorf("error reading 'reason': %w", err)
 		}
 		delete(object, "reason")
+	}
+
+	if raw, found := object["recovery_action"]; found {
+		err = json.Unmarshal(raw, &a.RecoveryAction)
+		if err != nil {
+			return fmt.Errorf("error reading 'recovery_action': %w", err)
+		}
+		delete(object, "recovery_action")
 	}
 
 	if raw, found := object["step"]; found {
@@ -10780,10 +10873,24 @@ func (a RunResumedPayload) MarshalJSON() ([]byte, error) {
 	var err error
 	object := make(map[string]json.RawMessage)
 
+	if a.Attempt != nil {
+		object["attempt"], err = json.Marshal(a.Attempt)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'attempt': %w", err)
+		}
+	}
+
 	if a.Reason != nil {
 		object["reason"], err = json.Marshal(a.Reason)
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'reason': %w", err)
+		}
+	}
+
+	if a.RecoveryAction != nil {
+		object["recovery_action"], err = json.Marshal(a.RecoveryAction)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'recovery_action': %w", err)
 		}
 	}
 
@@ -12034,12 +12141,44 @@ func (a *StepRetriedPayload) UnmarshalJSON(b []byte) error {
 		delete(object, "error")
 	}
 
+	if raw, found := object["error_type"]; found {
+		err = json.Unmarshal(raw, &a.ErrorType)
+		if err != nil {
+			return fmt.Errorf("error reading 'error_type': %w", err)
+		}
+		delete(object, "error_type")
+	}
+
+	if raw, found := object["kind"]; found {
+		err = json.Unmarshal(raw, &a.Kind)
+		if err != nil {
+			return fmt.Errorf("error reading 'kind': %w", err)
+		}
+		delete(object, "kind")
+	}
+
 	if raw, found := object["max_attempts"]; found {
 		err = json.Unmarshal(raw, &a.MaxAttempts)
 		if err != nil {
 			return fmt.Errorf("error reading 'max_attempts': %w", err)
 		}
 		delete(object, "max_attempts")
+	}
+
+	if raw, found := object["recovery_mode"]; found {
+		err = json.Unmarshal(raw, &a.RecoveryMode)
+		if err != nil {
+			return fmt.Errorf("error reading 'recovery_mode': %w", err)
+		}
+		delete(object, "recovery_mode")
+	}
+
+	if raw, found := object["retry_scope"]; found {
+		err = json.Unmarshal(raw, &a.RetryScope)
+		if err != nil {
+			return fmt.Errorf("error reading 'retry_scope': %w", err)
+		}
+		delete(object, "retry_scope")
 	}
 
 	if raw, found := object["step"]; found {
@@ -12083,10 +12222,38 @@ func (a StepRetriedPayload) MarshalJSON() ([]byte, error) {
 		}
 	}
 
+	if a.ErrorType != nil {
+		object["error_type"], err = json.Marshal(a.ErrorType)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'error_type': %w", err)
+		}
+	}
+
+	if a.Kind != nil {
+		object["kind"], err = json.Marshal(a.Kind)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'kind': %w", err)
+		}
+	}
+
 	if a.MaxAttempts != nil {
 		object["max_attempts"], err = json.Marshal(a.MaxAttempts)
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'max_attempts': %w", err)
+		}
+	}
+
+	if a.RecoveryMode != nil {
+		object["recovery_mode"], err = json.Marshal(a.RecoveryMode)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'recovery_mode': %w", err)
+		}
+	}
+
+	if a.RetryScope != nil {
+		object["retry_scope"], err = json.Marshal(a.RetryScope)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'retry_scope': %w", err)
 		}
 	}
 
@@ -15924,6 +16091,16 @@ type ClientInterface interface {
 	// ListRunEvents request
 	ListRunEvents(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, params *ListRunEventsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ResumeRunWithBody request with any body
+	ResumeRunWithBody(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	ResumeRun(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, body ResumeRunJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RetryRunWithBody request with any body
+	RetryRunWithBody(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	RetryRun(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, body RetryRunJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// SignalRunWithBody request with any body
 	SignalRunWithBody(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -17309,6 +17486,54 @@ func (c *Client) CancelRun(ctx context.Context, projectHandle ProjectHandleParam
 
 func (c *Client) ListRunEvents(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, params *ListRunEventsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListRunEventsRequest(c.Server, projectHandle, resourceId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ResumeRunWithBody(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewResumeRunRequestWithBody(c.Server, projectHandle, resourceId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ResumeRun(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, body ResumeRunJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewResumeRunRequest(c.Server, projectHandle, resourceId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) RetryRunWithBody(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRetryRunRequestWithBody(c.Server, projectHandle, resourceId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) RetryRun(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, body RetryRunJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRetryRunRequest(c.Server, projectHandle, resourceId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -22250,6 +22475,114 @@ func NewListRunEventsRequest(server string, projectHandle ProjectHandleParam, re
 	return req, nil
 }
 
+// NewResumeRunRequest calls the generic ResumeRun builder with application/json body
+func NewResumeRunRequest(server string, projectHandle ProjectHandleParam, resourceId IDParam, body ResumeRunJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewResumeRunRequestWithBody(server, projectHandle, resourceId, "application/json", bodyReader)
+}
+
+// NewResumeRunRequestWithBody generates requests for ResumeRun with any type of body
+func NewResumeRunRequestWithBody(server string, projectHandle ProjectHandleParam, resourceId IDParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project_handle", projectHandle, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "resource_id", resourceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/runs/%s/resume", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewRetryRunRequest calls the generic RetryRun builder with application/json body
+func NewRetryRunRequest(server string, projectHandle ProjectHandleParam, resourceId IDParam, body RetryRunJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewRetryRunRequestWithBody(server, projectHandle, resourceId, "application/json", bodyReader)
+}
+
+// NewRetryRunRequestWithBody generates requests for RetryRun with any type of body
+func NewRetryRunRequestWithBody(server string, projectHandle ProjectHandleParam, resourceId IDParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project_handle", projectHandle, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "resource_id", resourceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/runs/%s/retry", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewSignalRunRequest calls the generic SignalRun builder with application/json body
 func NewSignalRunRequest(server string, projectHandle ProjectHandleParam, resourceId IDParam, body SignalRunJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
@@ -25587,6 +25920,16 @@ type ClientWithResponsesInterface interface {
 	// ListRunEventsWithResponse request
 	ListRunEventsWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, params *ListRunEventsParams, reqEditors ...RequestEditorFn) (*ListRunEventsResponse, error)
 
+	// ResumeRunWithBodyWithResponse request with any body
+	ResumeRunWithBodyWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ResumeRunResponse, error)
+
+	ResumeRunWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, body ResumeRunJSONRequestBody, reqEditors ...RequestEditorFn) (*ResumeRunResponse, error)
+
+	// RetryRunWithBodyWithResponse request with any body
+	RetryRunWithBodyWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RetryRunResponse, error)
+
+	RetryRunWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, body RetryRunJSONRequestBody, reqEditors ...RequestEditorFn) (*RetryRunResponse, error)
+
 	// SignalRunWithBodyWithResponse request with any body
 	SignalRunWithBodyWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SignalRunResponse, error)
 
@@ -28289,6 +28632,78 @@ func (r ListRunEventsResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r ListRunEventsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ResumeRunResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON202      *LoopRun
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+	JSON409      *Conflict
+	JSON429      *TooManyRequests
+}
+
+// Status returns HTTPResponse.Status
+func (r ResumeRunResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ResumeRunResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ResumeRunResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type RetryRunResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON202      *LoopRun
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+	JSON409      *Conflict
+	JSON429      *TooManyRequests
+}
+
+// Status returns HTTPResponse.Status
+func (r RetryRunResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r RetryRunResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r RetryRunResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -30998,6 +31413,40 @@ func (c *ClientWithResponses) ListRunEventsWithResponse(ctx context.Context, pro
 		return nil, err
 	}
 	return ParseListRunEventsResponse(rsp)
+}
+
+// ResumeRunWithBodyWithResponse request with arbitrary body returning *ResumeRunResponse
+func (c *ClientWithResponses) ResumeRunWithBodyWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ResumeRunResponse, error) {
+	rsp, err := c.ResumeRunWithBody(ctx, projectHandle, resourceId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseResumeRunResponse(rsp)
+}
+
+func (c *ClientWithResponses) ResumeRunWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, body ResumeRunJSONRequestBody, reqEditors ...RequestEditorFn) (*ResumeRunResponse, error) {
+	rsp, err := c.ResumeRun(ctx, projectHandle, resourceId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseResumeRunResponse(rsp)
+}
+
+// RetryRunWithBodyWithResponse request with arbitrary body returning *RetryRunResponse
+func (c *ClientWithResponses) RetryRunWithBodyWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RetryRunResponse, error) {
+	rsp, err := c.RetryRunWithBody(ctx, projectHandle, resourceId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRetryRunResponse(rsp)
+}
+
+func (c *ClientWithResponses) RetryRunWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, body RetryRunJSONRequestBody, reqEditors ...RequestEditorFn) (*RetryRunResponse, error) {
+	rsp, err := c.RetryRun(ctx, projectHandle, resourceId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRetryRunResponse(rsp)
 }
 
 // SignalRunWithBodyWithResponse request with arbitrary body returning *SignalRunResponse
@@ -35550,6 +35999,142 @@ func ParseListRunEventsResponse(rsp *http.Response) (*ListRunEventsResponse, err
 
 	case rsp.StatusCode == 200:
 		// Content-type (text/event-stream) unsupported
+
+	}
+
+	return response, nil
+}
+
+// ParseResumeRunResponse parses an HTTP response from a ResumeRunWithResponse call
+func ParseResumeRunResponse(rsp *http.Response) (*ResumeRunResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ResumeRunResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+		var dest LoopRun
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest TooManyRequests
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseRetryRunResponse parses an HTTP response from a RetryRunWithResponse call
+func ParseRetryRunResponse(rsp *http.Response) (*RetryRunResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &RetryRunResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+		var dest LoopRun
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest TooManyRequests
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
 
 	}
 

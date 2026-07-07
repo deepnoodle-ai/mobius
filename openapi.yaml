@@ -3437,6 +3437,85 @@ paths:
           $ref: '#/components/responses/NotFound'
         '429':
           $ref: '#/components/responses/TooManyRequests'
+  /v1/projects/{project_handle}/runs/{resource_id}/resume:
+    post:
+      operationId: resumeRun
+      tags:
+      - runs
+      summary: Resume failed run
+      description: Re-arms a failed run in place from the last durable checkpoint. The run
+        must still reference the current runnable loop version. Guardrail failures require
+        a higher limit in the request body before the run can continue.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/IDParam'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecoverLoopRunRequest'
+            example:
+              reason: operator raised run budget
+              credit_budget: 1500
+      responses:
+        '202':
+          description: Accepted. Returns the re-armed run.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoopRun'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /v1/projects/{project_handle}/runs/{resource_id}/retry:
+    post:
+      operationId: retryRun
+      tags:
+      - runs
+      summary: Retry failed run
+      description: Re-arms a failed run in place from the last durable checkpoint. This is
+        equivalent to resume, but records the operator intent as a retry in the run event
+        log.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/IDParam'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecoverLoopRunRequest'
+            example:
+              reason: transient provider failure cleared
+      responses:
+        '202':
+          description: Accepted. Returns the re-armed run.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoopRun'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
   /v1/projects/{project_handle}/runs/{resource_id}/steps:
     get:
       operationId: listRunSteps
@@ -11756,6 +11835,39 @@ components:
           description: Human-readable cancellation reason recorded on the run.
       example:
         reason: superseded by manual remediation
+    RecoverLoopRunRequest:
+      type: object
+      additionalProperties: false
+      description: Body for resuming or retrying a failed loop run in place. Limit fields
+        are optional unless the prior failure was caused by that guardrail; in that case the
+        replacement limit must be greater than the amount already consumed by the run.
+      properties:
+        reason:
+          type: string
+          description: Human-readable recovery reason recorded on the run event log.
+        budget_usd:
+          type: number
+          format: double
+          minimum: 0
+          description: Replacement run budget in US dollars (1 credit = $0.01). Mutually exclusive
+            with `credit_budget`; setting both is a `400`.
+        credit_budget:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Replacement run budget in whole credits (1 credit = $0.01). Must be
+            greater than `credit_spent`.
+        max_agent_turns:
+          type: integer
+          minimum: 1
+          description: Replacement run-wide agent turn cap. Must be greater than `agent_turns_used`.
+        wall_clock_timeout_seconds:
+          type: integer
+          minimum: 1
+          description: Additional wall-clock time, in seconds, granted from the recovery request
+            time.
+      example:
+        reason: transient provider failure cleared
     SignalLoopRunRequest:
       type: object
       additionalProperties: false
@@ -11833,6 +11945,11 @@ components:
         status:
           $ref: '#/components/schemas/LoopRunStatus'
           description: Current lifecycle state of this run.
+        attempt:
+          type: integer
+          minimum: 1
+          description: One-based execution attempt for this run. The original run starts at
+            1 and increments each time the run is resumed or retried in place.
         queue_reason:
           $ref: '#/components/schemas/LoopRunQueueReason'
           description: Gate that placed this run in the durable queue. Present only while
@@ -12294,6 +12411,13 @@ components:
           type: string
         reason:
           type: string
+        recovery_action:
+          type: string
+          enum:
+          - resume
+          - retry
+        attempt:
+          type: integer
     RunCompletedPayload:
       type: object
       additionalProperties: true
@@ -12352,10 +12476,25 @@ components:
       properties:
         step:
           type: string
+        kind:
+          type: string
         attempt:
           type: integer
         max_attempts:
           type: integer
+        retry_scope:
+          type: string
+          description: Retry source. `step_policy` means the authored step retry policy was
+            consumed, `transient` means Mobius retried a transient provider failure before
+            spending step retry budget, and `run_recovery` means an operator resumed or retried
+            a failed run in place.
+        recovery_mode:
+          type: string
+          enum:
+          - resume
+          - retry
+        error_type:
+          type: string
         error:
           type: string
     StepResumedPayload:

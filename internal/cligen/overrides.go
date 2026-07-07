@@ -101,6 +101,7 @@ var overrides = map[string]Override{
 
 	// --- runs -------------------------------------------------------------
 	// The group name already says "runs"; keep the leaf names verb-first.
+	"resumeRun": {Command: "resume"},
 	"signalRun": {Command: "signal"},
 	"startRun":  {Command: "start"},
 
