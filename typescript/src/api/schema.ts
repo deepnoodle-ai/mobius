@@ -1166,6 +1166,8 @@ export interface paths {
         /**
          * Cancel the session's active turn
          * @description Cancels whichever turn is currently active in the session. Queued and running turns for the session are marked cancelled and a terminal `turn.cancelled` event is emitted. Returns the updated session. Requires the `mobius.agent.invoke` permission (or the agent's own backing principal).
+         *
+         *     By default loop-owned turns are left to the loop engine and skipped. Set `force=true` to also cancel loop-owned turns — the recovery path for a session wedged on a turn whose run is dead or stuck. Forcing may leave that run inconsistent, so use it only to unlock an otherwise stuck session, not as a routine stop.
          */
         post: operations["cancelSession"];
         delete?: never;
@@ -1357,7 +1359,7 @@ export interface paths {
         put?: never;
         /**
          * Resume failed run
-         * @description Re-arms a failed run in place from the last durable checkpoint. The run must still reference the current runnable loop version. Guardrail failures require a higher limit in the request body before the run can continue.
+         * @description Resumes a failed run in place from the last durable checkpoint. The run must still reference the current runnable loop version. Guardrail failures require a higher limit in the request body before the run can continue.
          */
         post: operations["resumeRun"];
         delete?: never;
@@ -1377,7 +1379,7 @@ export interface paths {
         put?: never;
         /**
          * Retry failed run
-         * @description Re-arms a failed run in place from the last durable checkpoint. This is equivalent to resume, but records the operator intent as a retry in the run event log.
+         * @description Resumes a failed run in place from the last durable checkpoint. This is equivalent to resume, but records the operator intent as a retry in the run event log.
          */
         post: operations["retryRun"];
         delete?: never;
@@ -1962,7 +1964,7 @@ export interface components {
              * @description Server timestamp when this live preview frame was emitted.
              */
             emitted_at?: string | null;
-            /** @description Token preview payload, usually `{ "text": "..." }`. */
+            /** @description Token preview payload. Normal answer text arrives as `{ "text": "..." }`; summarized reasoning/thinking arrives as `{ "type": "thinking", "thinking": "..." }`. */
             delta: {
                 [key: string]: unknown;
             };
@@ -2184,6 +2186,376 @@ export interface components {
         AgentListResponse: {
             /** @description The list of results for this page. */
             items: components["schemas"]["Agent"][];
+        };
+        /**
+         * @description Step type: `agent`, `action`, `sleep`, `wait_for_event`, `interaction`, `loop`, `check`, or system-materialized `cleanup`. `cleanup` appears in run step listings for terminal cleanup work but cannot be authored in a `LoopSpec`.
+         * @enum {string}
+         */
+        LoopRunStepKind: "agent" | "action" | "sleep" | "wait_for_event" | "interaction" | "loop" | "check" | "cleanup";
+        /**
+         * @description Step lifecycle state: `pending`, `running`, `suspended`, `completed`, `failed`, `skipped`, or `cancelled`.
+         * @enum {string}
+         */
+        LoopRunStepStatus: "pending" | "running" | "suspended" | "completed" | "failed" | "skipped" | "cancelled";
+        /**
+         * @description One execution step inside a loop run.
+         * @example {
+         *       "id": "run_8q5m2x9v7p3n4r6t:review",
+         *       "run_id": "run_8q5m2x9v7p3n4r6t",
+         *       "step_key": "review",
+         *       "step_name": "Review pull requests",
+         *       "kind": "agent",
+         *       "status": "running",
+         *       "seq": 0,
+         *       "attempt": 1,
+         *       "inputs": {
+         *         "repository": "deepnoodle-ai/mobius-cloud"
+         *       },
+         *       "created_at": "2026-06-15T14:30:00Z",
+         *       "updated_at": "2026-06-15T14:31:00Z"
+         *     }
+         */
+        LoopRunStep: {
+            /** @description Stable step identifier. */
+            id: string;
+            /** @description Run this step belongs to. */
+            run_id: string;
+            /** @description Stable key for this step within its loop version. */
+            step_key: string;
+            /** @description Display name from the authored spec, when present. */
+            step_name?: string;
+            /** @description Step kind copied from the authored spec or system cleanup step. */
+            kind: components["schemas"]["LoopRunStepKind"];
+            /** @description Current lifecycle state of this run step. */
+            status: components["schemas"]["LoopRunStepStatus"];
+            /**
+             * Format: int64
+             * @description Zero-indexed ordinal of this step within its run.
+             */
+            seq: number;
+            /** @description Number of times this step has been attempted. */
+            attempt: number;
+            /** @description Resolved inputs passed into the step, after template rendering. */
+            inputs?: {
+                [key: string]: unknown;
+            };
+            /** @description Authored step parameters, before template rendering. */
+            parameters?: {
+                [key: string]: unknown;
+            };
+            /** @description Step output (shape varies by kind); absent until completion. Downstream step templates reach this value at `${{ steps.<id>.output }}` or `${{ steps[0].output }}`. */
+            result?: unknown;
+            /** @description Worker job that executed this step, when applicable. */
+            job_id?: string | null;
+            /** @description Wait record this step is suspended on, when applicable. */
+            wait_id?: string | null;
+            /** @description Session the agent ran in, for `agent`-kind steps. Present once the step has started a turn; links the step to its conversation so the UI can open the transcript with this step's messages highlighted. */
+            session_id?: string;
+            /** @description Agent that executed this step, for `agent`-kind steps. */
+            agent_id?: string;
+            /** @description Most recent AgentTurn this step ran (its latest attempt), for `agent`-kind steps. Resolves to the step's messages within the session via their `turn_id`. */
+            agent_turn_id?: string;
+            /** @description Machine-readable error code populated on failure. */
+            error_type?: string;
+            /** @description Human-readable error message populated on failure. */
+            error_message?: string;
+            /**
+             * @description Check outcome for `check`-kind steps: `pass` or `fail`; absent on every other kind. A failed check routed `on_fail: continue` completes the step with `verdict: fail` — status and verdict are separate axes (the step did its job: it checked).
+             * @enum {string}
+             */
+            verdict?: "pass" | "fail";
+            /** @description Verdict document for `check`-kind steps: `verdict`, `on_fail`, `checks` (per-assertion results — name, kind, pass, expr or judge reason, judge identity, evidence refs), `failed` (red assertion names), and `overridden_by` / `gate` records when an approval gate resolved the verdict. */
+            verdict_detail?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Format: date-time
+             * @description Time the step entered `running`; null until the step starts.
+             */
+            started_at?: string | null;
+            /**
+             * Format: date-time
+             * @description Time the step reached a terminal status; null until the step completes.
+             */
+            completed_at?: string | null;
+            /**
+             * Format: date-time
+             * @description Record creation timestamp.
+             */
+            created_at: string;
+            /**
+             * Format: date-time
+             * @description Last update timestamp.
+             */
+            updated_at: string;
+        };
+        RunStartedPayload: {
+            loop_id?: string;
+            loop_version_id?: string;
+            source_event_id?: string;
+            trigger_id?: string;
+        } & {
+            [key: string]: unknown;
+        };
+        WaitPayload: {
+            step?: string;
+            /** @description Source event type or pattern this wait is listening for. */
+            event_type?: string;
+            /** @description Optional source identifier that scopes event matching. */
+            source_id?: string;
+            /** @description Optional matcher fields required on the source event. */
+            match?: {
+                [key: string]: unknown;
+            };
+            wait_id?: string;
+            wait_kind?: string;
+            /**
+             * Format: date-time
+             * @description Wall-clock expiry for the wait, when bounded.
+             */
+            expires_at?: string;
+            /** Format: date-time */
+            deadline?: string;
+            subject?: {
+                [key: string]: unknown;
+            };
+        } & {
+            [key: string]: unknown;
+        };
+        RunResumedPayload: {
+            step?: string;
+            reason?: string;
+            /** @enum {string} */
+            recovery_action?: "resume" | "retry";
+            attempt?: number;
+        } & {
+            [key: string]: unknown;
+        };
+        RunCompletedPayload: {
+            output?: {
+                [key: string]: unknown;
+            };
+        } & {
+            [key: string]: unknown;
+        };
+        RunFailedPayload: {
+            error?: string;
+            error_type?: string;
+            step?: string;
+        } & {
+            [key: string]: unknown;
+        };
+        RunCancelledPayload: {
+            reason?: string;
+        } & {
+            [key: string]: unknown;
+        };
+        StepStartedPayload: {
+            step?: string;
+            kind?: string;
+            agent_id?: string;
+        } & {
+            [key: string]: unknown;
+        };
+        StepCompletedPayload: {
+            step?: string;
+            output?: {
+                [key: string]: unknown;
+            };
+        } & {
+            [key: string]: unknown;
+        };
+        StepFailedPayload: {
+            step?: string;
+            error?: string;
+            error_type?: string;
+        } & {
+            [key: string]: unknown;
+        };
+        StepRetriedPayload: {
+            step?: string;
+            kind?: string;
+            attempt?: number;
+            max_attempts?: number;
+            /**
+             * @description Retry source. `step_policy` means the authored step retry policy was consumed, `transient` means Mobius retried a transient provider failure before spending step retry budget, and `run_recovery` means an operator resumed or retried a failed run in place.
+             * @enum {string}
+             */
+            retry_scope?: "step_policy" | "transient" | "run_recovery";
+            /**
+             * @description Operator intent for a `run_recovery` retry. Named consistently with `RunResumedPayload.recovery_action`.
+             * @enum {string}
+             */
+            recovery_action?: "resume" | "retry";
+            error_type?: string;
+            error?: string;
+        } & {
+            [key: string]: unknown;
+        };
+        StepResumedPayload: {
+            step?: string;
+            kind?: string;
+        } & {
+            [key: string]: unknown;
+        };
+        StepSkippedPayload: {
+            step?: string;
+            kind?: string;
+            reason?: string;
+        } & {
+            [key: string]: unknown;
+        };
+        ActionCalledPayload: {
+            action?: string;
+            step?: string;
+            parameters?: {
+                [key: string]: unknown;
+            };
+        } & {
+            [key: string]: unknown;
+        };
+        ActionCompletedPayload: {
+            action?: string;
+            step?: string;
+            result?: {
+                [key: string]: unknown;
+            };
+        } & {
+            [key: string]: unknown;
+        };
+        ActionFailedPayload: {
+            action?: string;
+            step?: string;
+            error?: string;
+            error_type?: string;
+        } & {
+            [key: string]: unknown;
+        };
+        ActionRetriedPayload: {
+            action?: string;
+            attempt?: number;
+            max_attempts?: number;
+        } & {
+            [key: string]: unknown;
+        };
+        ActionResultPayload: {
+            action?: string;
+            result?: {
+                [key: string]: unknown;
+            };
+        } & {
+            [key: string]: unknown;
+        };
+        CheckVerdictPayload: {
+            step?: string;
+            verdict?: string;
+            on_fail?: string;
+            failed?: string[];
+        } & {
+            [key: string]: unknown;
+        };
+        InteractionRespondedPayload: {
+            interaction_id?: string;
+            response?: {
+                [key: string]: unknown;
+            };
+            responder?: {
+                [key: string]: unknown;
+            };
+        } & {
+            [key: string]: unknown;
+        };
+        WaitResumedPayload: {
+            step?: string;
+            wait_id?: string;
+            payload?: {
+                [key: string]: unknown;
+            };
+        } & {
+            [key: string]: unknown;
+        };
+        WaitTimedOutPayload: {
+            step?: string;
+            wait_id?: string;
+            reason?: string;
+        } & {
+            [key: string]: unknown;
+        };
+        BudgetExceededPayload: {
+            step?: string;
+            credit_spent?: number;
+            credit_budget?: number;
+            percent_used?: number;
+        } & {
+            [key: string]: unknown;
+        };
+        ProgressStalledPayload: {
+            step?: string;
+            tool?: string;
+            duplicate_calls?: number;
+            limit?: number;
+        } & {
+            [key: string]: unknown;
+        };
+        LimitReachedPayload: {
+            step?: string;
+            limit_kind?: string;
+            used?: number;
+            limit?: number;
+        } & {
+            [key: string]: unknown;
+        };
+        ArtifactCreatedPayload: {
+            artifact_id?: string;
+            name?: string;
+            content_type?: string;
+            step?: string;
+        } & {
+            [key: string]: unknown;
+        };
+        /** @description Typed payloads for common durable run event types. The containing `LoopRunEvent.event_type` selects the payload shape; payload objects do not duplicate that discriminator because some payloads use fields such as `event_type` for their own lifecycle data (for example, the external matcher recorded by `wait.opened`). */
+        RunEventPayload: components["schemas"]["RunStartedPayload"] | components["schemas"]["WaitPayload"] | components["schemas"]["RunResumedPayload"] | components["schemas"]["RunCompletedPayload"] | components["schemas"]["RunFailedPayload"] | components["schemas"]["RunCancelledPayload"] | components["schemas"]["StepStartedPayload"] | components["schemas"]["StepCompletedPayload"] | components["schemas"]["StepFailedPayload"] | components["schemas"]["StepRetriedPayload"] | components["schemas"]["StepResumedPayload"] | components["schemas"]["StepSkippedPayload"] | components["schemas"]["ActionCalledPayload"] | components["schemas"]["ActionCompletedPayload"] | components["schemas"]["ActionFailedPayload"] | components["schemas"]["ActionRetriedPayload"] | components["schemas"]["ActionResultPayload"] | components["schemas"]["CheckVerdictPayload"] | components["schemas"]["InteractionRespondedPayload"] | components["schemas"]["WaitResumedPayload"] | components["schemas"]["WaitTimedOutPayload"] | components["schemas"]["BudgetExceededPayload"] | components["schemas"]["ProgressStalledPayload"] | components["schemas"]["LimitReachedPayload"] | components["schemas"]["ArtifactCreatedPayload"] | components["schemas"]["GenericEventPayload"];
+        /**
+         * @description One durable event emitted while a loop run progresses.
+         * @example {
+         *       "id": "run_8q5m2x9v7p3n4r6t:evt:000001",
+         *       "run_id": "run_8q5m2x9v7p3n4r6t",
+         *       "sequence": 1,
+         *       "event_type": "step.started",
+         *       "step_id": "run_8q5m2x9v7p3n4r6t:review",
+         *       "step_key": "review",
+         *       "payload": {
+         *         "agent_id": "agent_5n8p2q7m4x9r3v6t"
+         *       },
+         *       "created_at": "2026-06-15T14:30:10Z"
+         *     }
+         */
+        LoopRunEvent: {
+            /** @description Stable event identifier. */
+            id: string;
+            /** @description Run this event belongs to. */
+            run_id: string;
+            /**
+             * Format: int64
+             * @description Monotonic per-run sequence number used for ordering and resume.
+             */
+            sequence: number;
+            /**
+             * @description Event type from the run-stream taxonomy (e.g. `run.started`, `step.completed`, `wait.opened`, `action.called`, `action.completed`, `action.failed`, `artifact.created`, `limit.reached`).
+             *
+             *     Guardrail events: `run.budget_exceeded` fires when the budget halts the run at a checkpoint (payload: `credit_budget`, `credit_spent`, `percent_used`, plus the `step` it halted before). Metered spend is recorded in the billing ledger and denormalized onto the run's `credit_spent`; it is not represented as a timeline event.
+             */
+            event_type: string;
+            /** @description ID of the step this event belongs to, when applicable. */
+            step_id?: string | null;
+            /** @description Legacy alias for the loop step ID this event belongs to, when applicable. */
+            step_key?: string | null;
+            payload?: components["schemas"]["RunEventPayload"];
+            /**
+             * Format: date-time
+             * @description Server timestamp when the event was recorded.
+             */
+            created_at: string;
         };
         /**
          * @description Stored API credential metadata for loop and service access. The raw secret is never returned here; use this object to list, audit, expire, or identify keys by prefix without exposing tokens.
@@ -5822,8 +6194,8 @@ export interface components {
             credit_budget?: number;
             /** @description Replacement run-wide agent turn cap. Must be greater than `agent_turns_used`. */
             max_agent_turns?: number;
-            /** @description Additional wall-clock time, in seconds, granted from the recovery request time. */
-            wall_clock_timeout_seconds?: number;
+            /** @description Additional wall-clock time, in seconds, granted from the recovery request time. Required when the run stopped on `wall_clock_exceeded`. */
+            wall_clock_extend_seconds?: number;
         };
         /**
          * @description Body for resuming a suspended loop step.
@@ -6018,378 +6390,14 @@ export interface components {
             /** @description True when more items exist after this page. */
             has_more?: boolean;
         };
-        /**
-         * @description Step type: `agent`, `action`, `sleep`, `wait_for_event`, `interaction`, `loop`, `check`, or system-materialized `cleanup`. `cleanup` appears in run step listings for terminal cleanup work but cannot be authored in a `LoopSpec`.
-         * @enum {string}
-         */
-        LoopRunStepKind: "agent" | "action" | "sleep" | "wait_for_event" | "interaction" | "loop" | "check" | "cleanup";
-        /**
-         * @description Step lifecycle state: `pending`, `running`, `suspended`, `completed`, `failed`, `skipped`, or `cancelled`.
-         * @enum {string}
-         */
-        LoopRunStepStatus: "pending" | "running" | "suspended" | "completed" | "failed" | "skipped" | "cancelled";
-        /**
-         * @description One execution step inside a loop run.
-         * @example {
-         *       "id": "run_8q5m2x9v7p3n4r6t:review",
-         *       "run_id": "run_8q5m2x9v7p3n4r6t",
-         *       "step_key": "review",
-         *       "step_name": "Review pull requests",
-         *       "kind": "agent",
-         *       "status": "running",
-         *       "seq": 0,
-         *       "attempt": 1,
-         *       "inputs": {
-         *         "repository": "deepnoodle-ai/mobius-cloud"
-         *       },
-         *       "created_at": "2026-06-15T14:30:00Z",
-         *       "updated_at": "2026-06-15T14:31:00Z"
-         *     }
-         */
-        LoopRunStep: {
-            /** @description Stable step identifier. */
-            id: string;
-            /** @description Run this step belongs to. */
-            run_id: string;
-            /** @description Stable key for this step within its loop version. */
-            step_key: string;
-            /** @description Display name from the authored spec, when present. */
-            step_name?: string;
-            /** @description Step kind copied from the authored spec or system cleanup step. */
-            kind: components["schemas"]["LoopRunStepKind"];
-            /** @description Current lifecycle state of this run step. */
-            status: components["schemas"]["LoopRunStepStatus"];
-            /**
-             * Format: int64
-             * @description Zero-indexed ordinal of this step within its run.
-             */
-            seq: number;
-            /** @description Number of times this step has been attempted. */
-            attempt: number;
-            /** @description Resolved inputs passed into the step, after template rendering. */
-            inputs?: {
-                [key: string]: unknown;
-            };
-            /** @description Authored step parameters, before template rendering. */
-            parameters?: {
-                [key: string]: unknown;
-            };
-            /** @description Step output (shape varies by kind); absent until completion. Downstream step templates reach this value at `${{ steps.<id>.output }}` or `${{ steps[0].output }}`. */
-            result?: unknown;
-            /** @description Worker job that executed this step, when applicable. */
-            job_id?: string | null;
-            /** @description Wait record this step is suspended on, when applicable. */
-            wait_id?: string | null;
-            /** @description Session the agent ran in, for `agent`-kind steps. Present once the step has started a turn; links the step to its conversation so the UI can open the transcript with this step's messages highlighted. */
-            session_id?: string;
-            /** @description Agent that executed this step, for `agent`-kind steps. */
-            agent_id?: string;
-            /** @description Most recent AgentTurn this step ran (its latest attempt), for `agent`-kind steps. Resolves to the step's messages within the session via their `turn_id`. */
-            agent_turn_id?: string;
-            /** @description Machine-readable error code populated on failure. */
-            error_type?: string;
-            /** @description Human-readable error message populated on failure. */
-            error_message?: string;
-            /**
-             * @description Check outcome for `check`-kind steps: `pass` or `fail`; absent on every other kind. A failed check routed `on_fail: continue` completes the step with `verdict: fail` — status and verdict are separate axes (the step did its job: it checked).
-             * @enum {string}
-             */
-            verdict?: "pass" | "fail";
-            /** @description Verdict document for `check`-kind steps: `verdict`, `on_fail`, `checks` (per-assertion results — name, kind, pass, expr or judge reason, judge identity, evidence refs), `failed` (red assertion names), and `overridden_by` / `gate` records when an approval gate resolved the verdict. */
-            verdict_detail?: {
-                [key: string]: unknown;
-            };
-            /**
-             * Format: date-time
-             * @description Time the step entered `running`; null until the step starts.
-             */
-            started_at?: string | null;
-            /**
-             * Format: date-time
-             * @description Time the step reached a terminal status; null until the step completes.
-             */
-            completed_at?: string | null;
-            /**
-             * Format: date-time
-             * @description Record creation timestamp.
-             */
-            created_at: string;
-            /**
-             * Format: date-time
-             * @description Last update timestamp.
-             */
-            updated_at: string;
-        };
         LoopRunStepListResponse: {
             /** @description Steps for this run in `seq` order. */
             items: components["schemas"]["LoopRunStep"][];
-        };
-        /**
-         * @description One durable event emitted while a loop run progresses.
-         * @example {
-         *       "id": "run_8q5m2x9v7p3n4r6t:evt:000001",
-         *       "run_id": "run_8q5m2x9v7p3n4r6t",
-         *       "sequence": 1,
-         *       "event_type": "step.started",
-         *       "step_id": "run_8q5m2x9v7p3n4r6t:review",
-         *       "step_key": "review",
-         *       "payload": {
-         *         "agent_id": "agent_5n8p2q7m4x9r3v6t"
-         *       },
-         *       "created_at": "2026-06-15T14:30:10Z"
-         *     }
-         */
-        LoopRunEvent: {
-            /** @description Stable event identifier. */
-            id: string;
-            /** @description Run this event belongs to. */
-            run_id: string;
-            /**
-             * Format: int64
-             * @description Monotonic per-run sequence number used for ordering and resume.
-             */
-            sequence: number;
-            /**
-             * @description Event type from the run-stream taxonomy (e.g. `run.started`, `step.completed`, `wait.opened`, `action.called`, `action.completed`, `action.failed`, `artifact.created`, `limit.reached`).
-             *
-             *     Guardrail events: `run.budget_exceeded` fires when the budget halts the run at a checkpoint (payload: `credit_budget`, `credit_spent`, `percent_used`, plus the `step` it halted before). Metered spend is recorded in the billing ledger and denormalized onto the run's `credit_spent`; it is not represented as a timeline event.
-             */
-            event_type: string;
-            /** @description ID of the step this event belongs to, when applicable. */
-            step_id?: string | null;
-            /** @description Legacy alias for the loop step ID this event belongs to, when applicable. */
-            step_key?: string | null;
-            payload?: components["schemas"]["RunEventPayload"];
-            /**
-             * Format: date-time
-             * @description Server timestamp when the event was recorded.
-             */
-            created_at: string;
         };
         /** @description Durable run lifecycle frame. SSE messages carrying this shape include `id: <sequence>`, and that value is the only cursor clients should persist for `after_sequence` or `Last-Event-ID` resume. */
         LoopRunLifecycleFrame: components["schemas"]["LoopRunEvent"];
         /** @description JSON payload of a single `data:` line on the run event SSE stream. Run stream frames are lifecycle/observability events and are replayable with an SSE `id:`. Agent transcript content is delivered by the referenced session stream. */
         LoopRunStreamFrame: components["schemas"]["LoopRunLifecycleFrame"];
-        /** @description Typed payloads for common durable run event types. The containing `LoopRunEvent.event_type` selects the payload shape; payload objects do not duplicate that discriminator because some payloads use fields such as `event_type` for their own lifecycle data (for example, the external matcher recorded by `wait.opened`). */
-        RunEventPayload: components["schemas"]["RunStartedPayload"] | components["schemas"]["WaitPayload"] | components["schemas"]["RunResumedPayload"] | components["schemas"]["RunCompletedPayload"] | components["schemas"]["RunFailedPayload"] | components["schemas"]["RunCancelledPayload"] | components["schemas"]["StepStartedPayload"] | components["schemas"]["StepCompletedPayload"] | components["schemas"]["StepFailedPayload"] | components["schemas"]["StepRetriedPayload"] | components["schemas"]["StepResumedPayload"] | components["schemas"]["StepSkippedPayload"] | components["schemas"]["ActionCalledPayload"] | components["schemas"]["ActionCompletedPayload"] | components["schemas"]["ActionFailedPayload"] | components["schemas"]["ActionRetriedPayload"] | components["schemas"]["ActionResultPayload"] | components["schemas"]["CheckVerdictPayload"] | components["schemas"]["InteractionRespondedPayload"] | components["schemas"]["WaitResumedPayload"] | components["schemas"]["WaitTimedOutPayload"] | components["schemas"]["BudgetExceededPayload"] | components["schemas"]["ProgressStalledPayload"] | components["schemas"]["LimitReachedPayload"] | components["schemas"]["ArtifactCreatedPayload"] | components["schemas"]["GenericEventPayload"];
-        RunStartedPayload: {
-            loop_id?: string;
-            loop_version_id?: string;
-            source_event_id?: string;
-            trigger_id?: string;
-        } & {
-            [key: string]: unknown;
-        };
-        RunResumedPayload: {
-            step?: string;
-            reason?: string;
-            /** @enum {string} */
-            recovery_action?: "resume" | "retry";
-            attempt?: number;
-        } & {
-            [key: string]: unknown;
-        };
-        RunCompletedPayload: {
-            output?: {
-                [key: string]: unknown;
-            };
-        } & {
-            [key: string]: unknown;
-        };
-        RunFailedPayload: {
-            error?: string;
-            error_type?: string;
-            step?: string;
-        } & {
-            [key: string]: unknown;
-        };
-        RunCancelledPayload: {
-            reason?: string;
-        } & {
-            [key: string]: unknown;
-        };
-        StepStartedPayload: {
-            step?: string;
-            kind?: string;
-            agent_id?: string;
-        } & {
-            [key: string]: unknown;
-        };
-        StepCompletedPayload: {
-            step?: string;
-            output?: {
-                [key: string]: unknown;
-            };
-        } & {
-            [key: string]: unknown;
-        };
-        StepFailedPayload: {
-            step?: string;
-            error?: string;
-            error_type?: string;
-        } & {
-            [key: string]: unknown;
-        };
-        StepRetriedPayload: {
-            step?: string;
-            kind?: string;
-            attempt?: number;
-            max_attempts?: number;
-            /** @description Retry source. `step_policy` means the authored step retry policy was consumed, `transient` means Mobius retried a transient provider failure before spending step retry budget, and `run_recovery` means an operator resumed or retried a failed run in place. */
-            retry_scope?: string;
-            /** @enum {string} */
-            recovery_mode?: "resume" | "retry";
-            error_type?: string;
-            error?: string;
-        } & {
-            [key: string]: unknown;
-        };
-        StepResumedPayload: {
-            step?: string;
-            kind?: string;
-        } & {
-            [key: string]: unknown;
-        };
-        StepSkippedPayload: {
-            step?: string;
-            kind?: string;
-            reason?: string;
-        } & {
-            [key: string]: unknown;
-        };
-        ActionCalledPayload: {
-            action?: string;
-            step?: string;
-            parameters?: {
-                [key: string]: unknown;
-            };
-        } & {
-            [key: string]: unknown;
-        };
-        ActionCompletedPayload: {
-            action?: string;
-            step?: string;
-            result?: {
-                [key: string]: unknown;
-            };
-        } & {
-            [key: string]: unknown;
-        };
-        ActionFailedPayload: {
-            action?: string;
-            step?: string;
-            error?: string;
-            error_type?: string;
-        } & {
-            [key: string]: unknown;
-        };
-        ActionRetriedPayload: {
-            action?: string;
-            attempt?: number;
-            max_attempts?: number;
-        } & {
-            [key: string]: unknown;
-        };
-        ActionResultPayload: {
-            action?: string;
-            result?: {
-                [key: string]: unknown;
-            };
-        } & {
-            [key: string]: unknown;
-        };
-        CheckVerdictPayload: {
-            step?: string;
-            verdict?: string;
-            on_fail?: string;
-            failed?: string[];
-        } & {
-            [key: string]: unknown;
-        };
-        InteractionRespondedPayload: {
-            interaction_id?: string;
-            response?: {
-                [key: string]: unknown;
-            };
-            responder?: {
-                [key: string]: unknown;
-            };
-        } & {
-            [key: string]: unknown;
-        };
-        WaitPayload: {
-            step?: string;
-            /** @description Source event type or pattern this wait is listening for. */
-            event_type?: string;
-            /** @description Optional source identifier that scopes event matching. */
-            source_id?: string;
-            /** @description Optional matcher fields required on the source event. */
-            match?: {
-                [key: string]: unknown;
-            };
-            wait_id?: string;
-            wait_kind?: string;
-            /**
-             * Format: date-time
-             * @description Wall-clock expiry for the wait, when bounded.
-             */
-            expires_at?: string;
-            /** Format: date-time */
-            deadline?: string;
-            subject?: {
-                [key: string]: unknown;
-            };
-        } & {
-            [key: string]: unknown;
-        };
-        WaitResumedPayload: {
-            step?: string;
-            wait_id?: string;
-            payload?: {
-                [key: string]: unknown;
-            };
-        } & {
-            [key: string]: unknown;
-        };
-        WaitTimedOutPayload: {
-            step?: string;
-            wait_id?: string;
-            reason?: string;
-        } & {
-            [key: string]: unknown;
-        };
-        BudgetExceededPayload: {
-            step?: string;
-            credit_spent?: number;
-            credit_budget?: number;
-            percent_used?: number;
-        } & {
-            [key: string]: unknown;
-        };
-        ProgressStalledPayload: {
-            step?: string;
-            tool?: string;
-            duplicate_calls?: number;
-            limit?: number;
-        } & {
-            [key: string]: unknown;
-        };
-        LimitReachedPayload: {
-            step?: string;
-            limit_kind?: string;
-            used?: number;
-            limit?: number;
-        } & {
-            [key: string]: unknown;
-        };
-        ArtifactCreatedPayload: {
-            artifact_id?: string;
-            name?: string;
-            content_type?: string;
-            step?: string;
-        } & {
-            [key: string]: unknown;
-        };
         LoopRunEventListResponse: {
             /** @description Run events in this page, ordered by `sequence` ascending. */
             items: components["schemas"]["LoopRunEvent"][];
@@ -7296,6 +7304,10 @@ export interface components {
         LastEventIDParam: number;
         /** @description ID of the target organization for the admin operation. */
         AdminOrgIDParam: string;
+        /** @description ID of the target loop run for the admin operation. */
+        AdminRunIDParam: string;
+        /** @description ID of the target human principal for the admin operation. */
+        AdminUserIDParam: string;
         /** @description Environment ID. */
         EnvironmentIDParam: string;
         /** @description Secret ID or secret name. */
@@ -10340,7 +10352,10 @@ export interface operations {
     };
     cancelSession: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description When true, also cancel loop-owned turns to unlock a wedged session. Use only for recovery; the owning run may be left inconsistent. */
+                force?: boolean;
+            };
             header?: never;
             path: {
                 /** @description Project handle */
@@ -10916,7 +10931,7 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Accepted. Returns the re-armed run. */
+            /** @description Accepted. Returns the resumed run. */
             202: {
                 headers: {
                     [name: string]: unknown;
@@ -10956,7 +10971,7 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Accepted. Returns the re-armed run. */
+            /** @description Accepted. Returns the resumed run. */
             202: {
                 headers: {
                     [name: string]: unknown;

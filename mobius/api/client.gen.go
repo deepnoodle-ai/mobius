@@ -2225,18 +2225,39 @@ func (e StartTurnRequestRole) Valid() bool {
 	}
 }
 
-// Defines values for StepRetriedPayloadRecoveryMode.
+// Defines values for StepRetriedPayloadRecoveryAction.
 const (
-	StepRetriedPayloadRecoveryModeResume StepRetriedPayloadRecoveryMode = "resume"
-	StepRetriedPayloadRecoveryModeRetry  StepRetriedPayloadRecoveryMode = "retry"
+	StepRetriedPayloadRecoveryActionResume StepRetriedPayloadRecoveryAction = "resume"
+	StepRetriedPayloadRecoveryActionRetry  StepRetriedPayloadRecoveryAction = "retry"
 )
 
-// Valid indicates whether the value is a known member of the StepRetriedPayloadRecoveryMode enum.
-func (e StepRetriedPayloadRecoveryMode) Valid() bool {
+// Valid indicates whether the value is a known member of the StepRetriedPayloadRecoveryAction enum.
+func (e StepRetriedPayloadRecoveryAction) Valid() bool {
 	switch e {
-	case StepRetriedPayloadRecoveryModeResume:
+	case StepRetriedPayloadRecoveryActionResume:
 		return true
-	case StepRetriedPayloadRecoveryModeRetry:
+	case StepRetriedPayloadRecoveryActionRetry:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for StepRetriedPayloadRetryScope.
+const (
+	StepRetriedPayloadRetryScopeRunRecovery StepRetriedPayloadRetryScope = "run_recovery"
+	StepRetriedPayloadRetryScopeStepPolicy  StepRetriedPayloadRetryScope = "step_policy"
+	StepRetriedPayloadRetryScopeTransient   StepRetriedPayloadRetryScope = "transient"
+)
+
+// Valid indicates whether the value is a known member of the StepRetriedPayloadRetryScope enum.
+func (e StepRetriedPayloadRetryScope) Valid() bool {
+	switch e {
+	case StepRetriedPayloadRetryScopeRunRecovery:
+		return true
+	case StepRetriedPayloadRetryScopeStepPolicy:
+		return true
+	case StepRetriedPayloadRetryScopeTransient:
 		return true
 	default:
 		return false
@@ -4786,7 +4807,7 @@ type EventTriggerConfig struct {
 
 // GenerationDeltaFrame Live-only token preview frame that can appear on run and session SSE streams. It is not persisted, does not carry an SSE `id:`, and cannot be replayed with `after_sequence` or `Last-Event-ID`.
 type GenerationDeltaFrame struct {
-	// Delta Token preview payload, usually `{ "text": "..." }`.
+	// Delta Token preview payload. Normal answer text arrives as `{ "text": "..." }`; summarized reasoning/thinking arrives as `{ "type": "thinking", "thinking": "..." }`.
 	Delta map[string]interface{} `json:"delta"`
 
 	// DeltaSequence Publisher-local ordering hint for deltas within a turn, not a replay cursor.
@@ -6366,8 +6387,8 @@ type RecoverLoopRunRequest struct {
 	// Reason Human-readable recovery reason recorded on the run event log.
 	Reason *string `json:"reason,omitempty"`
 
-	// WallClockTimeoutSeconds Additional wall-clock time, in seconds, granted from the recovery request time.
-	WallClockTimeoutSeconds *int `json:"wall_clock_timeout_seconds,omitempty"`
+	// WallClockExtendSeconds Additional wall-clock time, in seconds, granted from the recovery request time. Required when the run stopped on `wall_clock_exceeded`.
+	WallClockExtendSeconds *int `json:"wall_clock_extend_seconds,omitempty"`
 }
 
 // ReplaceSkillsRequest defines model for ReplaceSkillsRequest.
@@ -7104,21 +7125,26 @@ type StepResumedPayload struct {
 
 // StepRetriedPayload defines model for StepRetriedPayload.
 type StepRetriedPayload struct {
-	Attempt      *int                            `json:"attempt,omitempty"`
-	Error        *string                         `json:"error,omitempty"`
-	ErrorType    *string                         `json:"error_type,omitempty"`
-	Kind         *string                         `json:"kind,omitempty"`
-	MaxAttempts  *int                            `json:"max_attempts,omitempty"`
-	RecoveryMode *StepRetriedPayloadRecoveryMode `json:"recovery_mode,omitempty"`
+	Attempt     *int    `json:"attempt,omitempty"`
+	Error       *string `json:"error,omitempty"`
+	ErrorType   *string `json:"error_type,omitempty"`
+	Kind        *string `json:"kind,omitempty"`
+	MaxAttempts *int    `json:"max_attempts,omitempty"`
+
+	// RecoveryAction Operator intent for a `run_recovery` retry. Named consistently with `RunResumedPayload.recovery_action`.
+	RecoveryAction *StepRetriedPayloadRecoveryAction `json:"recovery_action,omitempty"`
 
 	// RetryScope Retry source. `step_policy` means the authored step retry policy was consumed, `transient` means Mobius retried a transient provider failure before spending step retry budget, and `run_recovery` means an operator resumed or retried a failed run in place.
-	RetryScope           *string                `json:"retry_scope,omitempty"`
-	Step                 *string                `json:"step,omitempty"`
-	AdditionalProperties map[string]interface{} `json:"-"`
+	RetryScope           *StepRetriedPayloadRetryScope `json:"retry_scope,omitempty"`
+	Step                 *string                       `json:"step,omitempty"`
+	AdditionalProperties map[string]interface{}        `json:"-"`
 }
 
-// StepRetriedPayloadRecoveryMode defines model for StepRetriedPayload.RecoveryMode.
-type StepRetriedPayloadRecoveryMode string
+// StepRetriedPayloadRecoveryAction Operator intent for a `run_recovery` retry. Named consistently with `RunResumedPayload.recovery_action`.
+type StepRetriedPayloadRecoveryAction string
+
+// StepRetriedPayloadRetryScope Retry source. `step_policy` means the authored step retry policy was consumed, `transient` means Mobius retried a transient provider failure before spending step retry budget, and `run_recovery` means an operator resumed or retried a failed run in place.
+type StepRetriedPayloadRetryScope string
 
 // StepSkippedPayload defines model for StepSkippedPayload.
 type StepSkippedPayload struct {
@@ -8541,6 +8567,12 @@ type ListSessionsParams struct {
 
 	// Limit Maximum number of items to return
 	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// CancelSessionParams defines parameters for CancelSession.
+type CancelSessionParams struct {
+	// Force When true, also cancel loop-owned turns to unlock a wedged session. Use only for recovery; the owning run may be left inconsistent.
+	Force *bool `form:"force,omitempty" json:"force,omitempty"`
 }
 
 // ListSessionMessagesParams defines parameters for ListSessionMessages.
@@ -12165,12 +12197,12 @@ func (a *StepRetriedPayload) UnmarshalJSON(b []byte) error {
 		delete(object, "max_attempts")
 	}
 
-	if raw, found := object["recovery_mode"]; found {
-		err = json.Unmarshal(raw, &a.RecoveryMode)
+	if raw, found := object["recovery_action"]; found {
+		err = json.Unmarshal(raw, &a.RecoveryAction)
 		if err != nil {
-			return fmt.Errorf("error reading 'recovery_mode': %w", err)
+			return fmt.Errorf("error reading 'recovery_action': %w", err)
 		}
-		delete(object, "recovery_mode")
+		delete(object, "recovery_action")
 	}
 
 	if raw, found := object["retry_scope"]; found {
@@ -12243,10 +12275,10 @@ func (a StepRetriedPayload) MarshalJSON() ([]byte, error) {
 		}
 	}
 
-	if a.RecoveryMode != nil {
-		object["recovery_mode"], err = json.Marshal(a.RecoveryMode)
+	if a.RecoveryAction != nil {
+		object["recovery_action"], err = json.Marshal(a.RecoveryAction)
 		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'recovery_mode': %w", err)
+			return nil, fmt.Errorf("error marshaling 'recovery_action': %w", err)
 		}
 	}
 
@@ -16129,7 +16161,7 @@ type ClientInterface interface {
 	UpdateSession(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, body UpdateSessionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// CancelSession request
-	CancelSession(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CancelSession(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, params *CancelSessionParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// CompactSession request
 	CompactSession(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -17664,8 +17696,8 @@ func (c *Client) UpdateSession(ctx context.Context, projectHandle ProjectHandleP
 	return c.Client.Do(req)
 }
 
-func (c *Client) CancelSession(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCancelSessionRequest(c.Server, projectHandle, sessionId)
+func (c *Client) CancelSession(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, params *CancelSessionParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCancelSessionRequest(c.Server, projectHandle, sessionId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -23019,7 +23051,7 @@ func NewUpdateSessionRequestWithBody(server string, projectHandle ProjectHandleP
 }
 
 // NewCancelSessionRequest generates requests for CancelSession
-func NewCancelSessionRequest(server string, projectHandle ProjectHandleParam, sessionId SessionIdParam) (*http.Request, error) {
+func NewCancelSessionRequest(server string, projectHandle ProjectHandleParam, sessionId SessionIdParam, params *CancelSessionParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -23049,6 +23081,33 @@ func NewCancelSessionRequest(server string, projectHandle ProjectHandleParam, se
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Force != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "force", *params.Force, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "boolean", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
 	}
 
 	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
@@ -25958,7 +26017,7 @@ type ClientWithResponsesInterface interface {
 	UpdateSessionWithResponse(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, body UpdateSessionJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateSessionResponse, error)
 
 	// CancelSessionWithResponse request
-	CancelSessionWithResponse(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, reqEditors ...RequestEditorFn) (*CancelSessionResponse, error)
+	CancelSessionWithResponse(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, params *CancelSessionParams, reqEditors ...RequestEditorFn) (*CancelSessionResponse, error)
 
 	// CompactSessionWithResponse request
 	CompactSessionWithResponse(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, reqEditors ...RequestEditorFn) (*CompactSessionResponse, error)
@@ -31537,8 +31596,8 @@ func (c *ClientWithResponses) UpdateSessionWithResponse(ctx context.Context, pro
 }
 
 // CancelSessionWithResponse request returning *CancelSessionResponse
-func (c *ClientWithResponses) CancelSessionWithResponse(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, reqEditors ...RequestEditorFn) (*CancelSessionResponse, error) {
-	rsp, err := c.CancelSession(ctx, projectHandle, sessionId, reqEditors...)
+func (c *ClientWithResponses) CancelSessionWithResponse(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, params *CancelSessionParams, reqEditors ...RequestEditorFn) (*CancelSessionResponse, error) {
+	rsp, err := c.CancelSession(ctx, projectHandle, sessionId, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}

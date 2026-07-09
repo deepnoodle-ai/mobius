@@ -87,7 +87,8 @@ class GenerationDeltaFrame(BaseModel):
         None, description='Server timestamp when this live preview frame was emitted.'
     )
     delta: dict[str, Any] = Field(
-        ..., description='Token preview payload, usually `{ "text": "..." }`.'
+        ...,
+        description='Token preview payload. Normal answer text arrives as `{ "text": "..." }`; summarized reasoning/thinking arrives as `{ "type": "thinking", "thinking": "..." }`.',
     )
     worker_id: str | None = None
     model: str | None = Field(
@@ -391,6 +392,495 @@ class AgentListResponse(BaseModel):
         extra='forbid',
     )
     items: list[Agent] = Field(..., description='The list of results for this page.')
+
+
+class LoopRunStepKind(StrEnum):
+    """
+    Step type: `agent`, `action`, `sleep`, `wait_for_event`, `interaction`, `loop`, `check`, or system-materialized `cleanup`. `cleanup` appears in run step listings for terminal cleanup work but cannot be authored in a `LoopSpec`.
+    """
+
+    agent = 'agent'
+    action = 'action'
+    sleep = 'sleep'
+    wait_for_event = 'wait_for_event'
+    interaction = 'interaction'
+    loop = 'loop'
+    check = 'check'
+    cleanup = 'cleanup'
+
+
+class LoopRunStepStatus(StrEnum):
+    """
+    Step lifecycle state: `pending`, `running`, `suspended`, `completed`, `failed`, `skipped`, or `cancelled`.
+    """
+
+    pending = 'pending'
+    running = 'running'
+    suspended = 'suspended'
+    completed = 'completed'
+    failed = 'failed'
+    skipped = 'skipped'
+    cancelled = 'cancelled'
+
+
+class Verdict(StrEnum):
+    """
+    Check outcome for `check`-kind steps: `pass` or `fail`; absent on every other kind. A failed check routed `on_fail: continue` completes the step with `verdict: fail` — status and verdict are separate axes (the step did its job: it checked).
+    """
+
+    pass_ = 'pass'
+    fail = 'fail'
+
+
+class LoopRunStep(BaseModel):
+    """
+    One execution step inside a loop run.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str = Field(..., description='Stable step identifier.')
+    run_id: str = Field(..., description='Run this step belongs to.')
+    step_key: str = Field(
+        ..., description='Stable key for this step within its loop version.'
+    )
+    step_name: str | None = Field(
+        None, description='Display name from the authored spec, when present.'
+    )
+    kind: LoopRunStepKind = Field(
+        ...,
+        description='Step kind copied from the authored spec or system cleanup step.',
+    )
+    status: LoopRunStepStatus = Field(
+        ..., description='Current lifecycle state of this run step.'
+    )
+    seq: int = Field(
+        ..., description='Zero-indexed ordinal of this step within its run.'
+    )
+    attempt: int = Field(
+        ..., description='Number of times this step has been attempted.'
+    )
+    inputs: dict[str, Any] | None = Field(
+        None,
+        description='Resolved inputs passed into the step, after template rendering.',
+    )
+    parameters: dict[str, Any] | None = Field(
+        None, description='Authored step parameters, before template rendering.'
+    )
+    result: Any | None = Field(
+        None,
+        description='Step output (shape varies by kind); absent until completion. Downstream step templates reach this value at `${{ steps.<id>.output }}` or `${{ steps[0].output }}`.',
+    )
+    job_id: str | None = Field(
+        None, description='Worker job that executed this step, when applicable.'
+    )
+    wait_id: str | None = Field(
+        None, description='Wait record this step is suspended on, when applicable.'
+    )
+    session_id: str | None = Field(
+        None,
+        description="Session the agent ran in, for `agent`-kind steps. Present once the step has started a turn; links the step to its conversation so the UI can open the transcript with this step's messages highlighted.",
+    )
+    agent_id: str | None = Field(
+        None, description='Agent that executed this step, for `agent`-kind steps.'
+    )
+    agent_turn_id: str | None = Field(
+        None,
+        description="Most recent AgentTurn this step ran (its latest attempt), for `agent`-kind steps. Resolves to the step's messages within the session via their `turn_id`.",
+    )
+    error_type: str | None = Field(
+        None, description='Machine-readable error code populated on failure.'
+    )
+    error_message: str | None = Field(
+        None, description='Human-readable error message populated on failure.'
+    )
+    verdict: Verdict | None = Field(
+        None,
+        description='Check outcome for `check`-kind steps: `pass` or `fail`; absent on every other kind. A failed check routed `on_fail: continue` completes the step with `verdict: fail` — status and verdict are separate axes (the step did its job: it checked).',
+    )
+    verdict_detail: dict[str, Any] | None = Field(
+        None,
+        description='Verdict document for `check`-kind steps: `verdict`, `on_fail`, `checks` (per-assertion results — name, kind, pass, expr or judge reason, judge identity, evidence refs), `failed` (red assertion names), and `overridden_by` / `gate` records when an approval gate resolved the verdict.',
+    )
+    started_at: AwareDatetime | None = Field(
+        None, description='Time the step entered `running`; null until the step starts.'
+    )
+    completed_at: AwareDatetime | None = Field(
+        None,
+        description='Time the step reached a terminal status; null until the step completes.',
+    )
+    created_at: AwareDatetime = Field(..., description='Record creation timestamp.')
+    updated_at: AwareDatetime = Field(..., description='Last update timestamp.')
+
+
+class RunStartedPayload(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    loop_id: str | None = None
+    loop_version_id: str | None = None
+    source_event_id: str | None = None
+    trigger_id: str | None = None
+
+
+class WaitPayload(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    step: str | None = None
+    event_type: str | None = Field(
+        None, description='Source event type or pattern this wait is listening for.'
+    )
+    source_id: str | None = Field(
+        None, description='Optional source identifier that scopes event matching.'
+    )
+    match: dict[str, Any] | None = Field(
+        None, description='Optional matcher fields required on the source event.'
+    )
+    wait_id: str | None = None
+    wait_kind: str | None = None
+    expires_at: AwareDatetime | None = Field(
+        None, description='Wall-clock expiry for the wait, when bounded.'
+    )
+    deadline: AwareDatetime | None = None
+    subject: dict[str, Any] | None = None
+
+
+class RecoveryAction(StrEnum):
+    resume = 'resume'
+    retry = 'retry'
+
+
+class RunResumedPayload(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    step: str | None = None
+    reason: str | None = None
+    recovery_action: RecoveryAction | None = None
+    attempt: int | None = None
+
+
+class RunCompletedPayload(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    output: dict[str, Any] | None = None
+
+
+class RunFailedPayload(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    error: str | None = None
+    error_type: str | None = None
+    step: str | None = None
+
+
+class RunCancelledPayload(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    reason: str | None = None
+
+
+class StepStartedPayload(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    step: str | None = None
+    kind: str | None = None
+    agent_id: str | None = None
+
+
+class StepCompletedPayload(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    step: str | None = None
+    output: dict[str, Any] | None = None
+
+
+class StepFailedPayload(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    step: str | None = None
+    error: str | None = None
+    error_type: str | None = None
+
+
+class RetryScope(StrEnum):
+    """
+    Retry source. `step_policy` means the authored step retry policy was consumed, `transient` means Mobius retried a transient provider failure before spending step retry budget, and `run_recovery` means an operator resumed or retried a failed run in place.
+    """
+
+    step_policy = 'step_policy'
+    transient = 'transient'
+    run_recovery = 'run_recovery'
+
+
+class RecoveryAction1(StrEnum):
+    """
+    Operator intent for a `run_recovery` retry. Named consistently with `RunResumedPayload.recovery_action`.
+    """
+
+    resume = 'resume'
+    retry = 'retry'
+
+
+class StepRetriedPayload(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    step: str | None = None
+    kind: str | None = None
+    attempt: int | None = None
+    max_attempts: int | None = None
+    retry_scope: RetryScope | None = Field(
+        None,
+        description='Retry source. `step_policy` means the authored step retry policy was consumed, `transient` means Mobius retried a transient provider failure before spending step retry budget, and `run_recovery` means an operator resumed or retried a failed run in place.',
+    )
+    recovery_action: RecoveryAction1 | None = Field(
+        None,
+        description='Operator intent for a `run_recovery` retry. Named consistently with `RunResumedPayload.recovery_action`.',
+    )
+    error_type: str | None = None
+    error: str | None = None
+
+
+class StepResumedPayload(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    step: str | None = None
+    kind: str | None = None
+
+
+class StepSkippedPayload(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    step: str | None = None
+    kind: str | None = None
+    reason: str | None = None
+
+
+class ActionCalledPayload(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    action: str | None = None
+    step: str | None = None
+    parameters: dict[str, Any] | None = None
+
+
+class ActionCompletedPayload(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    action: str | None = None
+    step: str | None = None
+    result: dict[str, Any] | None = None
+
+
+class ActionFailedPayload(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    action: str | None = None
+    step: str | None = None
+    error: str | None = None
+    error_type: str | None = None
+
+
+class ActionRetriedPayload(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    action: str | None = None
+    attempt: int | None = None
+    max_attempts: int | None = None
+
+
+class ActionResultPayload(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    action: str | None = None
+    result: dict[str, Any] | None = None
+
+
+class CheckVerdictPayload(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    step: str | None = None
+    verdict: str | None = None
+    on_fail: str | None = None
+    failed: list[str] | None = None
+
+
+class InteractionRespondedPayload(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    interaction_id: str | None = None
+    response: dict[str, Any] | None = None
+    responder: dict[str, Any] | None = None
+
+
+class WaitResumedPayload(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    step: str | None = None
+    wait_id: str | None = None
+    payload: dict[str, Any] | None = None
+
+
+class WaitTimedOutPayload(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    step: str | None = None
+    wait_id: str | None = None
+    reason: str | None = None
+
+
+class BudgetExceededPayload(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    step: str | None = None
+    credit_spent: float | None = None
+    credit_budget: float | None = None
+    percent_used: int | None = None
+
+
+class ProgressStalledPayload(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    step: str | None = None
+    tool: str | None = None
+    duplicate_calls: int | None = None
+    limit: int | None = None
+
+
+class LimitReachedPayload(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    step: str | None = None
+    limit_kind: str | None = None
+    used: int | None = None
+    limit: int | None = None
+
+
+class ArtifactCreatedPayload(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    artifact_id: str | None = None
+    name: str | None = None
+    content_type: str | None = None
+    step: str | None = None
+
+
+class RunEventPayload(
+    RootModel[
+        RunStartedPayload
+        | WaitPayload
+        | RunResumedPayload
+        | RunCompletedPayload
+        | RunFailedPayload
+        | RunCancelledPayload
+        | StepStartedPayload
+        | StepCompletedPayload
+        | StepFailedPayload
+        | StepRetriedPayload
+        | StepResumedPayload
+        | StepSkippedPayload
+        | ActionCalledPayload
+        | ActionCompletedPayload
+        | ActionFailedPayload
+        | ActionRetriedPayload
+        | ActionResultPayload
+        | CheckVerdictPayload
+        | InteractionRespondedPayload
+        | WaitResumedPayload
+        | WaitTimedOutPayload
+        | BudgetExceededPayload
+        | ProgressStalledPayload
+        | LimitReachedPayload
+        | ArtifactCreatedPayload
+        | GenericEventPayload
+    ]
+):
+    root: (
+        RunStartedPayload
+        | WaitPayload
+        | RunResumedPayload
+        | RunCompletedPayload
+        | RunFailedPayload
+        | RunCancelledPayload
+        | StepStartedPayload
+        | StepCompletedPayload
+        | StepFailedPayload
+        | StepRetriedPayload
+        | StepResumedPayload
+        | StepSkippedPayload
+        | ActionCalledPayload
+        | ActionCompletedPayload
+        | ActionFailedPayload
+        | ActionRetriedPayload
+        | ActionResultPayload
+        | CheckVerdictPayload
+        | InteractionRespondedPayload
+        | WaitResumedPayload
+        | WaitTimedOutPayload
+        | BudgetExceededPayload
+        | ProgressStalledPayload
+        | LimitReachedPayload
+        | ArtifactCreatedPayload
+        | GenericEventPayload
+    ) = Field(
+        ...,
+        description='Typed payloads for common durable run event types. The containing `LoopRunEvent.event_type` selects the payload shape; payload objects do not duplicate that discriminator because some payloads use fields such as `event_type` for their own lifecycle data (for example, the external matcher recorded by `wait.opened`).',
+    )
+
+
+class LoopRunEvent(BaseModel):
+    """
+    One durable event emitted while a loop run progresses.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str = Field(..., description='Stable event identifier.')
+    run_id: str = Field(..., description='Run this event belongs to.')
+    sequence: int = Field(
+        ...,
+        description='Monotonic per-run sequence number used for ordering and resume.',
+    )
+    event_type: str = Field(
+        ...,
+        description="Event type from the run-stream taxonomy (e.g. `run.started`, `step.completed`, `wait.opened`, `action.called`, `action.completed`, `action.failed`, `artifact.created`, `limit.reached`).\n\nGuardrail events: `run.budget_exceeded` fires when the budget halts the run at a checkpoint (payload: `credit_budget`, `credit_spent`, `percent_used`, plus the `step` it halted before). Metered spend is recorded in the billing ledger and denormalized onto the run's `credit_spent`; it is not represented as a timeline event.",
+    )
+    step_id: str | None = Field(
+        None, description='ID of the step this event belongs to, when applicable.'
+    )
+    step_key: str | None = Field(
+        None,
+        description='Legacy alias for the loop step ID this event belongs to, when applicable.',
+    )
+    payload: RunEventPayload | None = None
+    created_at: AwareDatetime = Field(
+        ..., description='Server timestamp when the event was recorded.'
+    )
 
 
 class APIKey(BaseModel):
@@ -4212,9 +4702,9 @@ class RecoverLoopRunRequest(BaseModel):
         description='Replacement run-wide agent turn cap. Must be greater than `agent_turns_used`.',
         ge=1,
     )
-    wall_clock_timeout_seconds: int | None = Field(
+    wall_clock_extend_seconds: int | None = Field(
         None,
-        description='Additional wall-clock time, in seconds, granted from the recovery request time.',
+        description='Additional wall-clock time, in seconds, granted from the recovery request time. Required when the run stopped on `wall_clock_exceeded`.',
         ge=1,
     )
 
@@ -4311,126 +4801,6 @@ class LoopRunStopReason(StrEnum):
     step_limit_reached = 'step_limit_reached'
 
 
-class LoopRunStepKind(StrEnum):
-    """
-    Step type: `agent`, `action`, `sleep`, `wait_for_event`, `interaction`, `loop`, `check`, or system-materialized `cleanup`. `cleanup` appears in run step listings for terminal cleanup work but cannot be authored in a `LoopSpec`.
-    """
-
-    agent = 'agent'
-    action = 'action'
-    sleep = 'sleep'
-    wait_for_event = 'wait_for_event'
-    interaction = 'interaction'
-    loop = 'loop'
-    check = 'check'
-    cleanup = 'cleanup'
-
-
-class LoopRunStepStatus(StrEnum):
-    """
-    Step lifecycle state: `pending`, `running`, `suspended`, `completed`, `failed`, `skipped`, or `cancelled`.
-    """
-
-    pending = 'pending'
-    running = 'running'
-    suspended = 'suspended'
-    completed = 'completed'
-    failed = 'failed'
-    skipped = 'skipped'
-    cancelled = 'cancelled'
-
-
-class Verdict(StrEnum):
-    """
-    Check outcome for `check`-kind steps: `pass` or `fail`; absent on every other kind. A failed check routed `on_fail: continue` completes the step with `verdict: fail` — status and verdict are separate axes (the step did its job: it checked).
-    """
-
-    pass_ = 'pass'
-    fail = 'fail'
-
-
-class LoopRunStep(BaseModel):
-    """
-    One execution step inside a loop run.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    id: str = Field(..., description='Stable step identifier.')
-    run_id: str = Field(..., description='Run this step belongs to.')
-    step_key: str = Field(
-        ..., description='Stable key for this step within its loop version.'
-    )
-    step_name: str | None = Field(
-        None, description='Display name from the authored spec, when present.'
-    )
-    kind: LoopRunStepKind = Field(
-        ...,
-        description='Step kind copied from the authored spec or system cleanup step.',
-    )
-    status: LoopRunStepStatus = Field(
-        ..., description='Current lifecycle state of this run step.'
-    )
-    seq: int = Field(
-        ..., description='Zero-indexed ordinal of this step within its run.'
-    )
-    attempt: int = Field(
-        ..., description='Number of times this step has been attempted.'
-    )
-    inputs: dict[str, Any] | None = Field(
-        None,
-        description='Resolved inputs passed into the step, after template rendering.',
-    )
-    parameters: dict[str, Any] | None = Field(
-        None, description='Authored step parameters, before template rendering.'
-    )
-    result: Any | None = Field(
-        None,
-        description='Step output (shape varies by kind); absent until completion. Downstream step templates reach this value at `${{ steps.<id>.output }}` or `${{ steps[0].output }}`.',
-    )
-    job_id: str | None = Field(
-        None, description='Worker job that executed this step, when applicable.'
-    )
-    wait_id: str | None = Field(
-        None, description='Wait record this step is suspended on, when applicable.'
-    )
-    session_id: str | None = Field(
-        None,
-        description="Session the agent ran in, for `agent`-kind steps. Present once the step has started a turn; links the step to its conversation so the UI can open the transcript with this step's messages highlighted.",
-    )
-    agent_id: str | None = Field(
-        None, description='Agent that executed this step, for `agent`-kind steps.'
-    )
-    agent_turn_id: str | None = Field(
-        None,
-        description="Most recent AgentTurn this step ran (its latest attempt), for `agent`-kind steps. Resolves to the step's messages within the session via their `turn_id`.",
-    )
-    error_type: str | None = Field(
-        None, description='Machine-readable error code populated on failure.'
-    )
-    error_message: str | None = Field(
-        None, description='Human-readable error message populated on failure.'
-    )
-    verdict: Verdict | None = Field(
-        None,
-        description='Check outcome for `check`-kind steps: `pass` or `fail`; absent on every other kind. A failed check routed `on_fail: continue` completes the step with `verdict: fail` — status and verdict are separate axes (the step did its job: it checked).',
-    )
-    verdict_detail: dict[str, Any] | None = Field(
-        None,
-        description='Verdict document for `check`-kind steps: `verdict`, `on_fail`, `checks` (per-assertion results — name, kind, pass, expr or judge reason, judge identity, evidence refs), `failed` (red assertion names), and `overridden_by` / `gate` records when an approval gate resolved the verdict.',
-    )
-    started_at: AwareDatetime | None = Field(
-        None, description='Time the step entered `running`; null until the step starts.'
-    )
-    completed_at: AwareDatetime | None = Field(
-        None,
-        description='Time the step reached a terminal status; null until the step completes.',
-    )
-    created_at: AwareDatetime = Field(..., description='Record creation timestamp.')
-    updated_at: AwareDatetime = Field(..., description='Last update timestamp.')
-
-
 class LoopRunStepListResponse(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
@@ -4440,262 +4810,32 @@ class LoopRunStepListResponse(BaseModel):
     )
 
 
-class RunStartedPayload(BaseModel):
+class LoopRunLifecycleFrame(LoopRunEvent):
+    """
+    Durable run lifecycle frame. SSE messages carrying this shape include `id: <sequence>`, and that value is the only cursor clients should persist for `after_sequence` or `Last-Event-ID` resume.
+    """
+
+
+class LoopRunStreamFrame(LoopRunLifecycleFrame):
+    """
+    JSON payload of a single `data:` line on the run event SSE stream. Run stream frames are lifecycle/observability events and are replayable with an SSE `id:`. Agent transcript content is delivered by the referenced session stream.
+    """
+
+
+class LoopRunEventListResponse(BaseModel):
     model_config = ConfigDict(
-        extra='allow',
+        extra='forbid',
     )
-    loop_id: str | None = None
-    loop_version_id: str | None = None
-    source_event_id: str | None = None
-    trigger_id: str | None = None
-
-
-class RecoveryAction(StrEnum):
-    resume = 'resume'
-    retry = 'retry'
-
-
-class RunResumedPayload(BaseModel):
-    model_config = ConfigDict(
-        extra='allow',
+    items: list[LoopRunEvent] = Field(
+        ..., description='Run events in this page, ordered by `sequence` ascending.'
     )
-    step: str | None = None
-    reason: str | None = None
-    recovery_action: RecoveryAction | None = None
-    attempt: int | None = None
-
-
-class RunCompletedPayload(BaseModel):
-    model_config = ConfigDict(
-        extra='allow',
-    )
-    output: dict[str, Any] | None = None
-
-
-class RunFailedPayload(BaseModel):
-    model_config = ConfigDict(
-        extra='allow',
-    )
-    error: str | None = None
-    error_type: str | None = None
-    step: str | None = None
-
-
-class RunCancelledPayload(BaseModel):
-    model_config = ConfigDict(
-        extra='allow',
-    )
-    reason: str | None = None
-
-
-class StepStartedPayload(BaseModel):
-    model_config = ConfigDict(
-        extra='allow',
-    )
-    step: str | None = None
-    kind: str | None = None
-    agent_id: str | None = None
-
-
-class StepCompletedPayload(BaseModel):
-    model_config = ConfigDict(
-        extra='allow',
-    )
-    step: str | None = None
-    output: dict[str, Any] | None = None
-
-
-class StepFailedPayload(BaseModel):
-    model_config = ConfigDict(
-        extra='allow',
-    )
-    step: str | None = None
-    error: str | None = None
-    error_type: str | None = None
-
-
-class RecoveryMode(StrEnum):
-    resume = 'resume'
-    retry = 'retry'
-
-
-class StepRetriedPayload(BaseModel):
-    model_config = ConfigDict(
-        extra='allow',
-    )
-    step: str | None = None
-    kind: str | None = None
-    attempt: int | None = None
-    max_attempts: int | None = None
-    retry_scope: str | None = Field(
+    next_sequence: int | None = Field(
         None,
-        description='Retry source. `step_policy` means the authored step retry policy was consumed, `transient` means Mobius retried a transient provider failure before spending step retry budget, and `run_recovery` means an operator resumed or retried a failed run in place.',
+        description='Sequence number of the most recent event in `items`; clients can pass this back as `after_sequence` on the next poll.',
     )
-    recovery_mode: RecoveryMode | None = None
-    error_type: str | None = None
-    error: str | None = None
-
-
-class StepResumedPayload(BaseModel):
-    model_config = ConfigDict(
-        extra='allow',
+    has_more: bool | None = Field(
+        None, description='True when more events exist after the returned page.'
     )
-    step: str | None = None
-    kind: str | None = None
-
-
-class StepSkippedPayload(BaseModel):
-    model_config = ConfigDict(
-        extra='allow',
-    )
-    step: str | None = None
-    kind: str | None = None
-    reason: str | None = None
-
-
-class ActionCalledPayload(BaseModel):
-    model_config = ConfigDict(
-        extra='allow',
-    )
-    action: str | None = None
-    step: str | None = None
-    parameters: dict[str, Any] | None = None
-
-
-class ActionCompletedPayload(BaseModel):
-    model_config = ConfigDict(
-        extra='allow',
-    )
-    action: str | None = None
-    step: str | None = None
-    result: dict[str, Any] | None = None
-
-
-class ActionFailedPayload(BaseModel):
-    model_config = ConfigDict(
-        extra='allow',
-    )
-    action: str | None = None
-    step: str | None = None
-    error: str | None = None
-    error_type: str | None = None
-
-
-class ActionRetriedPayload(BaseModel):
-    model_config = ConfigDict(
-        extra='allow',
-    )
-    action: str | None = None
-    attempt: int | None = None
-    max_attempts: int | None = None
-
-
-class ActionResultPayload(BaseModel):
-    model_config = ConfigDict(
-        extra='allow',
-    )
-    action: str | None = None
-    result: dict[str, Any] | None = None
-
-
-class CheckVerdictPayload(BaseModel):
-    model_config = ConfigDict(
-        extra='allow',
-    )
-    step: str | None = None
-    verdict: str | None = None
-    on_fail: str | None = None
-    failed: list[str] | None = None
-
-
-class InteractionRespondedPayload(BaseModel):
-    model_config = ConfigDict(
-        extra='allow',
-    )
-    interaction_id: str | None = None
-    response: dict[str, Any] | None = None
-    responder: dict[str, Any] | None = None
-
-
-class WaitPayload(BaseModel):
-    model_config = ConfigDict(
-        extra='allow',
-    )
-    step: str | None = None
-    event_type: str | None = Field(
-        None, description='Source event type or pattern this wait is listening for.'
-    )
-    source_id: str | None = Field(
-        None, description='Optional source identifier that scopes event matching.'
-    )
-    match: dict[str, Any] | None = Field(
-        None, description='Optional matcher fields required on the source event.'
-    )
-    wait_id: str | None = None
-    wait_kind: str | None = None
-    expires_at: AwareDatetime | None = Field(
-        None, description='Wall-clock expiry for the wait, when bounded.'
-    )
-    deadline: AwareDatetime | None = None
-    subject: dict[str, Any] | None = None
-
-
-class WaitResumedPayload(BaseModel):
-    model_config = ConfigDict(
-        extra='allow',
-    )
-    step: str | None = None
-    wait_id: str | None = None
-    payload: dict[str, Any] | None = None
-
-
-class WaitTimedOutPayload(BaseModel):
-    model_config = ConfigDict(
-        extra='allow',
-    )
-    step: str | None = None
-    wait_id: str | None = None
-    reason: str | None = None
-
-
-class BudgetExceededPayload(BaseModel):
-    model_config = ConfigDict(
-        extra='allow',
-    )
-    step: str | None = None
-    credit_spent: float | None = None
-    credit_budget: float | None = None
-    percent_used: int | None = None
-
-
-class ProgressStalledPayload(BaseModel):
-    model_config = ConfigDict(
-        extra='allow',
-    )
-    step: str | None = None
-    tool: str | None = None
-    duplicate_calls: int | None = None
-    limit: int | None = None
-
-
-class LimitReachedPayload(BaseModel):
-    model_config = ConfigDict(
-        extra='allow',
-    )
-    step: str | None = None
-    limit_kind: str | None = None
-    used: int | None = None
-    limit: int | None = None
-
-
-class ArtifactCreatedPayload(BaseModel):
-    model_config = ConfigDict(
-        extra='allow',
-    )
-    artifact_id: str | None = None
-    name: str | None = None
-    content_type: str | None = None
-    step: str | None = None
 
 
 class ToolkitRequest(BaseModel):
@@ -6438,69 +6578,6 @@ class LoopRunListResponse(BaseModel):
     )
 
 
-class RunEventPayload(
-    RootModel[
-        RunStartedPayload
-        | WaitPayload
-        | RunResumedPayload
-        | RunCompletedPayload
-        | RunFailedPayload
-        | RunCancelledPayload
-        | StepStartedPayload
-        | StepCompletedPayload
-        | StepFailedPayload
-        | StepRetriedPayload
-        | StepResumedPayload
-        | StepSkippedPayload
-        | ActionCalledPayload
-        | ActionCompletedPayload
-        | ActionFailedPayload
-        | ActionRetriedPayload
-        | ActionResultPayload
-        | CheckVerdictPayload
-        | InteractionRespondedPayload
-        | WaitResumedPayload
-        | WaitTimedOutPayload
-        | BudgetExceededPayload
-        | ProgressStalledPayload
-        | LimitReachedPayload
-        | ArtifactCreatedPayload
-        | GenericEventPayload
-    ]
-):
-    root: (
-        RunStartedPayload
-        | WaitPayload
-        | RunResumedPayload
-        | RunCompletedPayload
-        | RunFailedPayload
-        | RunCancelledPayload
-        | StepStartedPayload
-        | StepCompletedPayload
-        | StepFailedPayload
-        | StepRetriedPayload
-        | StepResumedPayload
-        | StepSkippedPayload
-        | ActionCalledPayload
-        | ActionCompletedPayload
-        | ActionFailedPayload
-        | ActionRetriedPayload
-        | ActionResultPayload
-        | CheckVerdictPayload
-        | InteractionRespondedPayload
-        | WaitResumedPayload
-        | WaitTimedOutPayload
-        | BudgetExceededPayload
-        | ProgressStalledPayload
-        | LimitReachedPayload
-        | ArtifactCreatedPayload
-        | GenericEventPayload
-    ) = Field(
-        ...,
-        description='Typed payloads for common durable run event types. The containing `LoopRunEvent.event_type` selects the payload shape; payload objects do not duplicate that discriminator because some payloads use fields such as `event_type` for their own lifecycle data (for example, the external matcher recorded by `wait.opened`).',
-    )
-
-
 class BlueprintResourceRef(BaseModel):
     """
     A reference to a Mobius resource by direct `id`, by blueprint `key` (resolved within this apply first, then against existing bindings), or by `blueprint_ref` (resolved by key; namespace is recorded as provenance and reserved for namespaced lookup).
@@ -7026,65 +7103,6 @@ class LoopCheckStepSpec(BaseModel):
     )
     timeout: LoopTimeoutPolicy | None = Field(
         None, description='Timeout policy for this step.'
-    )
-
-
-class LoopRunEvent(BaseModel):
-    """
-    One durable event emitted while a loop run progresses.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    id: str = Field(..., description='Stable event identifier.')
-    run_id: str = Field(..., description='Run this event belongs to.')
-    sequence: int = Field(
-        ...,
-        description='Monotonic per-run sequence number used for ordering and resume.',
-    )
-    event_type: str = Field(
-        ...,
-        description="Event type from the run-stream taxonomy (e.g. `run.started`, `step.completed`, `wait.opened`, `action.called`, `action.completed`, `action.failed`, `artifact.created`, `limit.reached`).\n\nGuardrail events: `run.budget_exceeded` fires when the budget halts the run at a checkpoint (payload: `credit_budget`, `credit_spent`, `percent_used`, plus the `step` it halted before). Metered spend is recorded in the billing ledger and denormalized onto the run's `credit_spent`; it is not represented as a timeline event.",
-    )
-    step_id: str | None = Field(
-        None, description='ID of the step this event belongs to, when applicable.'
-    )
-    step_key: str | None = Field(
-        None,
-        description='Legacy alias for the loop step ID this event belongs to, when applicable.',
-    )
-    payload: RunEventPayload | None = None
-    created_at: AwareDatetime = Field(
-        ..., description='Server timestamp when the event was recorded.'
-    )
-
-
-class LoopRunLifecycleFrame(LoopRunEvent):
-    """
-    Durable run lifecycle frame. SSE messages carrying this shape include `id: <sequence>`, and that value is the only cursor clients should persist for `after_sequence` or `Last-Event-ID` resume.
-    """
-
-
-class LoopRunStreamFrame(LoopRunLifecycleFrame):
-    """
-    JSON payload of a single `data:` line on the run event SSE stream. Run stream frames are lifecycle/observability events and are replayable with an SSE `id:`. Agent transcript content is delivered by the referenced session stream.
-    """
-
-
-class LoopRunEventListResponse(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    items: list[LoopRunEvent] = Field(
-        ..., description='Run events in this page, ordered by `sequence` ascending.'
-    )
-    next_sequence: int | None = Field(
-        None,
-        description='Sequence number of the most recent event in `items`; clients can pass this back as `after_sequence` on the next poll.',
-    )
-    has_more: bool | None = Field(
-        None, description='True when more events exist after the returned page.'
     )
 
 
