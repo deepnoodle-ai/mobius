@@ -12,8 +12,8 @@ github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ3
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
-github.com/deepnoodle-ai/dive v1.10.0 h1:4d0mPnVGEuZVf6Z9gd2Q7W9QEKk1zVINJVLWxvRI1lg=
-github.com/deepnoodle-ai/dive v1.10.0/go.mod h1:PZqY6yT5EPh17WY8WxpaZKwfPBPV+ZwoWVs6AThHELw=
+github.com/deepnoodle-ai/dive v1.12.0 h1:XhZIg7Z2rcFbZTnu+AKXZeApOwJ6NxzdMyS0wKVdvEs=
+github.com/deepnoodle-ai/dive v1.12.0/go.mod h1:PZqY6yT5EPh17WY8WxpaZKwfPBPV+ZwoWVs6AThHELw=
 github.com/deepnoodle-ai/wonton v0.0.37 h1:NL71j6NUKpqAQ+T0HorbG7Difo77v9Dfelt6XpnGZ6w=
 github.com/deepnoodle-ai/wonton v0.0.37/go.mod h1:rQ484HIdk0XfBACtcBuLDMTfn3keow1DspiXZv4IlL8=
 github.com/dlclark/regexp2 v1.11.5 h1:Q/sSnsKerHeCkc/jSTNq1oCm7KiVgUMZRDUoRu0JQZQ=
