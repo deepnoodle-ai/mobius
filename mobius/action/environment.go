@@ -442,6 +442,7 @@ func NewEnvironmentGitCloneAction() mobius.Action {
 		if err != nil {
 			return nil, err
 		}
+		remoteURL := gitHubRemoteURL(in.RepoFullName)
 		var result any
 		if strings.TrimSpace(in.Commit) != "" || strings.TrimSpace(in.FetchRef) != "" {
 			// Immutable checkout: fetch and check out an exact commit so a branch
@@ -456,11 +457,11 @@ func NewEnvironmentGitCloneAction() mobius.Action {
 			if in.Branch != "" {
 				args = append(args, "--branch", in.Branch)
 			}
-			args = append(args, "https://github.com/"+in.RepoFullName+".git", target)
+			args = append(args, remoteURL, target)
 			result, err = cloneWithRetry(ctx, in.RepoFullName, target, args)
 		}
 		if err != nil {
-			return result, err
+			return decorateGitCloneResult(ctx, result, in, dest, target, remoteURL, false), err
 		}
 		// Wire a persistent, broker-backed credential helper so ordinary git
 		// commands run later from the environment (fetch/pull/push via bash)
@@ -474,8 +475,49 @@ func NewEnvironmentGitCloneAction() mobius.Action {
 				}
 			}
 		}
-		return result, nil
+		return decorateGitCloneResult(ctx, result, in, dest, target, remoteURL, true), nil
 	})
+}
+
+func gitHubRemoteURL(repoFullName string) string {
+	return "https://github.com/" + repoFullName + ".git"
+}
+
+func decorateGitCloneResult(ctx context.Context, result any, in GitCloneInput, dir, path, remoteURL string, includeGitState bool) map[string]any {
+	out, ok := result.(map[string]any)
+	if !ok || out == nil {
+		out = map[string]any{}
+	}
+	out["repo_full_name"] = in.RepoFullName
+	out["dir"] = dir
+	out["path"] = path
+	out["remote_url"] = remoteURL
+	if in.Depth > 0 {
+		out["depth"] = in.Depth
+	}
+	if branch := strings.TrimSpace(in.Branch); branch != "" {
+		out["requested_branch"] = branch
+	}
+	if commit := strings.TrimSpace(in.Commit); commit != "" {
+		out["requested_commit"] = commit
+	}
+	if fetchRef := strings.TrimSpace(in.FetchRef); fetchRef != "" {
+		out["fetch_ref"] = fetchRef
+	}
+	if !includeGitState {
+		return out
+	}
+	if branch, err := gitCurrentBranch(ctx, path); err == nil && branch != "" {
+		out["branch"] = branch
+	}
+	if head, err := gitHeadSHA(ctx, path); err == nil && head != "" {
+		out["commit"] = head
+		out["head_sha"] = head
+	}
+	if shallow, err := gitIsShallowRepository(ctx, path); err == nil {
+		out["shallow"] = shallow
+	}
+	return out
 }
 
 // cloneWithRetry runs the git clone, retrying a non-zero git exit a bounded
@@ -1067,6 +1109,36 @@ func runCommand(cmd *exec.Cmd, stdout, stderr streamTruncator) (map[string]any, 
 		"stderr":    stderr.present(),
 		"exit_code": exitCode,
 	}, nil
+}
+
+func gitCurrentBranch(ctx context.Context, dir string) (string, error) {
+	cmd := exec.CommandContext(ctx, "git", "symbolic-ref", "--quiet", "--short", "HEAD")
+	cmd.Dir = dir
+	out, err := cmd.Output()
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(string(out)), nil
+}
+
+func gitHeadSHA(ctx context.Context, dir string) (string, error) {
+	cmd := exec.CommandContext(ctx, "git", "rev-parse", "HEAD")
+	cmd.Dir = dir
+	out, err := cmd.Output()
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(string(out)), nil
+}
+
+func gitIsShallowRepository(ctx context.Context, dir string) (bool, error) {
+	cmd := exec.CommandContext(ctx, "git", "rev-parse", "--is-shallow-repository")
+	cmd.Dir = dir
+	out, err := cmd.Output()
+	if err != nil {
+		return false, err
+	}
+	return strings.TrimSpace(string(out)) == "true", nil
 }
 
 func runGitWithCredential(ctx mobius.Context, repoFullName, operation, dir string, args []string) (any, error) {

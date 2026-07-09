@@ -712,6 +712,89 @@ func TestLastNonEmptyLines(t *testing.T) {
 	}
 }
 
+func TestDecorateGitCloneResultAddsCheckoutMetadata(t *testing.T) {
+	root := realPath(t, t.TempDir())
+	target := filepath.Join(root, "app")
+	if err := os.MkdirAll(target, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	runGit(t, target, "init")
+	runGit(t, target, "checkout", "-b", "main")
+	runGit(t, target, "config", "user.email", "test@example.com")
+	runGit(t, target, "config", "user.name", "Test User")
+	writeFile(t, target, "README.md", "hello\n")
+	runGit(t, target, "add", ".")
+	runGit(t, target, "commit", "-m", "initial")
+	head := gitOutput(t, target, "rev-parse", "HEAD")
+
+	out := decorateGitCloneResult(context.Background(), map[string]any{
+		"stdout":    "ok",
+		"stderr":    "",
+		"exit_code": 0,
+	}, GitCloneInput{
+		RepoFullName: "acme/app",
+		Dest:         "app",
+		Branch:       "main",
+		Commit:       "abc123",
+		FetchRef:     "refs/pull/7/head",
+		Depth:        1,
+	}, "app", target, "https://github.com/acme/app.git", true)
+
+	if out["stdout"] != "ok" || out["exit_code"] != 0 {
+		t.Fatalf("original command output was not preserved: %#v", out)
+	}
+	assertCloneMetadata(t, out, map[string]any{
+		"repo_full_name":   "acme/app",
+		"dir":              "app",
+		"path":             target,
+		"remote_url":       "https://github.com/acme/app.git",
+		"branch":           "main",
+		"requested_branch": "main",
+		"commit":           head,
+		"head_sha":         head,
+		"requested_commit": "abc123",
+		"fetch_ref":        "refs/pull/7/head",
+		"depth":            1,
+		"shallow":          false,
+	})
+}
+
+func TestDecorateGitCloneResultSkipsGitStateOnFailure(t *testing.T) {
+	target := filepath.Join(realPath(t, t.TempDir()), "missing")
+	out := decorateGitCloneResult(context.Background(), map[string]any{
+		"stderr":    "fatal",
+		"exit_code": 128,
+	}, GitCloneInput{
+		RepoFullName: "acme/app",
+		Dest:         "app",
+		Commit:       "abc123",
+		FetchRef:     "refs/pull/7/head",
+	}, "app", target, "https://github.com/acme/app.git", false)
+
+	assertCloneMetadata(t, out, map[string]any{
+		"repo_full_name":   "acme/app",
+		"dir":              "app",
+		"path":             target,
+		"remote_url":       "https://github.com/acme/app.git",
+		"requested_commit": "abc123",
+		"fetch_ref":        "refs/pull/7/head",
+	})
+	for _, key := range []string{"branch", "commit", "head_sha", "shallow"} {
+		if _, ok := out[key]; ok {
+			t.Fatalf("failure metadata should not include git state key %q: %#v", key, out)
+		}
+	}
+}
+
+func assertCloneMetadata(t *testing.T, got map[string]any, want map[string]any) {
+	t.Helper()
+	for key, value := range want {
+		if got[key] != value {
+			t.Fatalf("%s = %#v, want %#v in %#v", key, got[key], value, got)
+		}
+	}
+}
+
 func TestCloneWithRetrySucceedsOnFirstAttempt(t *testing.T) {
 	ctx := testActionContext{Context: context.Background()}
 	attempts := 0
