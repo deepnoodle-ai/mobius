@@ -6,6 +6,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 
 ## [Unreleased]
 
+## [0.0.41] - 2026-07-09
+
+### Changed
+
+- Loop run recovery fields renamed for consistency: `StepRetriedPayload.recovery_mode`
+  is now `recovery_action` (matching `RunResumedPayload.recovery_action`), and
+  `retry_scope` is now a typed enum (`run_recovery` | `step_policy` | `transient`).
+  `RecoverLoopRunRequest.wall_clock_timeout_seconds` is now `wall_clock_extend_seconds`
+  — surfaced as the `mobius runs resume` / `runs retry` flag `--wall-clock-extend-seconds`
+  and required when a run stopped on `wall_clock_exceeded`.
+- Bumped the Dive dependency (CLI Ollama bridge) to v1.12.0.
+
+### Added
+
+- `CancelSession` accepts a `force` query param to also cancel loop-owned turns and
+  unlock a wedged session (`mobius sessions cancel --force`). Use for recovery only;
+  the owning run may be left inconsistent.
+- `GenerationDeltaFrame` documents summarized thinking deltas, which arrive as
+  `{ "type": "thinking", "thinking": "..." }` alongside normal `{ "text": "..." }` deltas.
+
 ## [0.0.40] - 2026-07-06
 
 ### Fixed

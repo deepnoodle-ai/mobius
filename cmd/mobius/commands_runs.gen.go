@@ -182,7 +182,7 @@ func registerRunsCommands(app *cli.App) {
 			cli.Int("credit-budget", "").Help("Replacement run budget in whole credits (1 credit = $0.01). Must be greater than `credit_spent`."),
 			cli.Int("max-agent-turns", "").Help("Replacement run-wide agent turn cap. Must be greater than `agent_turns_used`."),
 			cli.String("reason", "").Help("Human-readable recovery reason recorded on the run event log."),
-			cli.Int("wall-clock-timeout-seconds", "").Help("Additional wall-clock time, in seconds, granted from the recovery request time."),
+			cli.Int("wall-clock-extend-seconds", "").Help("Additional wall-clock time, in seconds, granted from the recovery request time. Required when the run stopped on `wall_clock_exceeded`."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -216,9 +216,9 @@ func registerRunsCommands(app *cli.App) {
 				v := ctx.String("reason")
 				body.Reason = &v
 			}
-			if ctx.IsSet("wall-clock-timeout-seconds") {
-				v := ctx.Int("wall-clock-timeout-seconds")
-				body.WallClockTimeoutSeconds = &v
+			if ctx.IsSet("wall-clock-extend-seconds") {
+				v := ctx.Int("wall-clock-extend-seconds")
+				body.WallClockExtendSeconds = &v
 			}
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
@@ -238,7 +238,7 @@ func registerRunsCommands(app *cli.App) {
 			cli.Int("credit-budget", "").Help("Replacement run budget in whole credits (1 credit = $0.01). Must be greater than `credit_spent`."),
 			cli.Int("max-agent-turns", "").Help("Replacement run-wide agent turn cap. Must be greater than `agent_turns_used`."),
 			cli.String("reason", "").Help("Human-readable recovery reason recorded on the run event log."),
-			cli.Int("wall-clock-timeout-seconds", "").Help("Additional wall-clock time, in seconds, granted from the recovery request time."),
+			cli.Int("wall-clock-extend-seconds", "").Help("Additional wall-clock time, in seconds, granted from the recovery request time. Required when the run stopped on `wall_clock_exceeded`."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -272,9 +272,9 @@ func registerRunsCommands(app *cli.App) {
 				v := ctx.String("reason")
 				body.Reason = &v
 			}
-			if ctx.IsSet("wall-clock-timeout-seconds") {
-				v := ctx.Int("wall-clock-timeout-seconds")
-				body.WallClockTimeoutSeconds = &v
+			if ctx.IsSet("wall-clock-extend-seconds") {
+				v := ctx.Int("wall-clock-extend-seconds")
+				body.WallClockExtendSeconds = &v
 			}
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)

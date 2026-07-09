@@ -2913,13 +2913,21 @@ paths:
       tags:
       - sessions
       summary: Cancel the session's active turn
-      description: Cancels whichever turn is currently active in the session. Queued and running
-        turns for the session are marked cancelled and a terminal `turn.cancelled` event is
-        emitted. Returns the updated session. Requires the `mobius.agent.invoke` permission
-        (or the agent's own backing principal).
+      description: |-
+        Cancels whichever turn is currently active in the session. Queued and running turns for the session are marked cancelled and a terminal `turn.cancelled` event is emitted. Returns the updated session. Requires the `mobius.agent.invoke` permission (or the agent's own backing principal).
+
+        By default loop-owned turns are left to the loop engine and skipped. Set `force=true` to also cancel loop-owned turns — the recovery path for a session wedged on a turn whose run is dead or stuck. Forcing may leave that run inconsistent, so use it only to unlock an otherwise stuck session, not as a routine stop.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/SessionIdParam'
+      - name: force
+        in: query
+        required: false
+        schema:
+          type: boolean
+          default: false
+        description: When true, also cancel loop-owned turns to unlock a wedged session. Use
+          only for recovery; the owning run may be left inconsistent.
       responses:
         '200':
           description: OK
@@ -3443,7 +3451,7 @@ paths:
       tags:
       - runs
       summary: Resume failed run
-      description: Re-arms a failed run in place from the last durable checkpoint. The run
+      description: Resumes a failed run in place from the last durable checkpoint. The run
         must still reference the current runnable loop version. Guardrail failures require
         a higher limit in the request body before the run can continue.
       parameters:
@@ -3460,7 +3468,7 @@ paths:
               credit_budget: 1500
       responses:
         '202':
-          description: Accepted. Returns the re-armed run.
+          description: Accepted. Returns the resumed run.
           content:
             application/json:
               schema:
@@ -3483,7 +3491,7 @@ paths:
       tags:
       - runs
       summary: Retry failed run
-      description: Re-arms a failed run in place from the last durable checkpoint. This is
+      description: Resumes a failed run in place from the last durable checkpoint. This is
         equivalent to resume, but records the operator intent as a retry in the run event
         log.
       parameters:
@@ -3499,7 +3507,7 @@ paths:
               reason: transient provider failure cleared
       responses:
         '202':
-          description: Accepted. Returns the re-armed run.
+          description: Accepted. Returns the resumed run.
           content:
             application/json:
               schema:
@@ -5065,6 +5073,20 @@ components:
       schema:
         type: string
       description: ID of the target organization for the admin operation.
+    AdminRunIDParam:
+      name: run_id
+      in: path
+      required: true
+      schema:
+        type: string
+      description: ID of the target loop run for the admin operation.
+    AdminUserIDParam:
+      name: user_id
+      in: path
+      required: true
+      schema:
+        type: string
+      description: ID of the target human principal for the admin operation.
     EnvironmentIDParam:
       name: environment_id
       in: path
@@ -5325,7 +5347,9 @@ components:
         delta:
           type: object
           additionalProperties: true
-          description: 'Token preview payload, usually `{ "text": "..." }`.'
+          description: 'Token preview payload. Normal answer text arrives as `{ "text": "..."
+            }`; summarized reasoning/thinking arrives as `{ "type": "thinking", "thinking":
+            "..." }`.'
         worker_id:
           type: string
           nullable: true
@@ -5694,6 +5718,548 @@ components:
           description: The list of results for this page.
           items:
             $ref: '#/components/schemas/Agent'
+    LoopRunStepKind:
+      type: string
+      enum:
+      - agent
+      - action
+      - sleep
+      - wait_for_event
+      - interaction
+      - loop
+      - check
+      - cleanup
+      description: 'Step type: `agent`, `action`, `sleep`, `wait_for_event`, `interaction`,
+        `loop`, `check`, or system-materialized `cleanup`. `cleanup` appears in run step listings
+        for terminal cleanup work but cannot be authored in a `LoopSpec`.'
+    LoopRunStepStatus:
+      type: string
+      enum:
+      - pending
+      - running
+      - suspended
+      - completed
+      - failed
+      - skipped
+      - cancelled
+      description: 'Step lifecycle state: `pending`, `running`, `suspended`, `completed`,
+        `failed`, `skipped`, or `cancelled`.'
+    LoopRunStep:
+      type: object
+      additionalProperties: false
+      description: One execution step inside a loop run.
+      required:
+      - id
+      - run_id
+      - step_key
+      - kind
+      - status
+      - seq
+      - attempt
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+          description: Stable step identifier.
+        run_id:
+          type: string
+          description: Run this step belongs to.
+        step_key:
+          type: string
+          description: Stable key for this step within its loop version.
+        step_name:
+          type: string
+          description: Display name from the authored spec, when present.
+        kind:
+          $ref: '#/components/schemas/LoopRunStepKind'
+          description: Step kind copied from the authored spec or system cleanup step.
+        status:
+          $ref: '#/components/schemas/LoopRunStepStatus'
+          description: Current lifecycle state of this run step.
+        seq:
+          type: integer
+          format: int64
+          description: Zero-indexed ordinal of this step within its run.
+        attempt:
+          type: integer
+          description: Number of times this step has been attempted.
+        inputs:
+          type: object
+          additionalProperties: true
+          description: Resolved inputs passed into the step, after template rendering.
+        parameters:
+          type: object
+          additionalProperties: true
+          description: Authored step parameters, before template rendering.
+        result:
+          description: Step output (shape varies by kind); absent until completion. Downstream
+            step templates reach this value at `${{ steps.<id>.output }}` or `${{ steps[0].output
+            }}`.
+        job_id:
+          type: string
+          nullable: true
+          description: Worker job that executed this step, when applicable.
+        wait_id:
+          type: string
+          nullable: true
+          description: Wait record this step is suspended on, when applicable.
+        session_id:
+          type: string
+          description: Session the agent ran in, for `agent`-kind steps. Present once the
+            step has started a turn; links the step to its conversation so the UI can open
+            the transcript with this step's messages highlighted.
+        agent_id:
+          type: string
+          description: Agent that executed this step, for `agent`-kind steps.
+        agent_turn_id:
+          type: string
+          description: Most recent AgentTurn this step ran (its latest attempt), for `agent`-kind
+            steps. Resolves to the step's messages within the session via their `turn_id`.
+        error_type:
+          type: string
+          description: Machine-readable error code populated on failure.
+        error_message:
+          type: string
+          description: Human-readable error message populated on failure.
+        verdict:
+          type: string
+          enum:
+          - pass
+          - fail
+          description: 'Check outcome for `check`-kind steps: `pass` or `fail`; absent on
+            every other kind. A failed check routed `on_fail: continue` completes the step
+            with `verdict: fail` — status and verdict are separate axes (the step did its
+            job: it checked).'
+        verdict_detail:
+          type: object
+          additionalProperties: true
+          description: 'Verdict document for `check`-kind steps: `verdict`, `on_fail`, `checks`
+            (per-assertion results — name, kind, pass, expr or judge reason, judge identity,
+            evidence refs), `failed` (red assertion names), and `overridden_by` / `gate` records
+            when an approval gate resolved the verdict.'
+        started_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Time the step entered `running`; null until the step starts.
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Time the step reached a terminal status; null until the step completes.
+        created_at:
+          type: string
+          format: date-time
+          description: Record creation timestamp.
+        updated_at:
+          type: string
+          format: date-time
+          description: Last update timestamp.
+      example:
+        id: run_8q5m2x9v7p3n4r6t:review
+        run_id: run_8q5m2x9v7p3n4r6t
+        step_key: review
+        step_name: Review pull requests
+        kind: agent
+        status: running
+        seq: 0
+        attempt: 1
+        inputs:
+          repository: deepnoodle-ai/mobius-cloud
+        created_at: '2026-06-15T14:30:00Z'
+        updated_at: '2026-06-15T14:31:00Z'
+    RunStartedPayload:
+      type: object
+      additionalProperties: true
+      properties:
+        loop_id:
+          type: string
+        loop_version_id:
+          type: string
+        source_event_id:
+          type: string
+        trigger_id:
+          type: string
+    WaitPayload:
+      type: object
+      additionalProperties: true
+      properties:
+        step:
+          type: string
+        event_type:
+          type: string
+          description: Source event type or pattern this wait is listening for.
+        source_id:
+          type: string
+          description: Optional source identifier that scopes event matching.
+        match:
+          type: object
+          additionalProperties: true
+          description: Optional matcher fields required on the source event.
+        wait_id:
+          type: string
+        wait_kind:
+          type: string
+        expires_at:
+          type: string
+          format: date-time
+          description: Wall-clock expiry for the wait, when bounded.
+        deadline:
+          type: string
+          format: date-time
+        subject:
+          type: object
+          additionalProperties: true
+    RunResumedPayload:
+      type: object
+      additionalProperties: true
+      properties:
+        step:
+          type: string
+        reason:
+          type: string
+        recovery_action:
+          type: string
+          enum:
+          - resume
+          - retry
+        attempt:
+          type: integer
+    RunCompletedPayload:
+      type: object
+      additionalProperties: true
+      properties:
+        output:
+          type: object
+          additionalProperties: true
+    RunFailedPayload:
+      type: object
+      additionalProperties: true
+      properties:
+        error:
+          type: string
+        error_type:
+          type: string
+        step:
+          type: string
+    RunCancelledPayload:
+      type: object
+      additionalProperties: true
+      properties:
+        reason:
+          type: string
+    StepStartedPayload:
+      type: object
+      additionalProperties: true
+      properties:
+        step:
+          type: string
+        kind:
+          type: string
+        agent_id:
+          type: string
+    StepCompletedPayload:
+      type: object
+      additionalProperties: true
+      properties:
+        step:
+          type: string
+        output:
+          type: object
+          additionalProperties: true
+    StepFailedPayload:
+      type: object
+      additionalProperties: true
+      properties:
+        step:
+          type: string
+        error:
+          type: string
+        error_type:
+          type: string
+    StepRetriedPayload:
+      type: object
+      additionalProperties: true
+      properties:
+        step:
+          type: string
+        kind:
+          type: string
+        attempt:
+          type: integer
+        max_attempts:
+          type: integer
+        retry_scope:
+          type: string
+          enum:
+          - step_policy
+          - transient
+          - run_recovery
+          description: Retry source. `step_policy` means the authored step retry policy was
+            consumed, `transient` means Mobius retried a transient provider failure before
+            spending step retry budget, and `run_recovery` means an operator resumed or retried
+            a failed run in place.
+        recovery_action:
+          type: string
+          enum:
+          - resume
+          - retry
+          description: Operator intent for a `run_recovery` retry. Named consistently with
+            `RunResumedPayload.recovery_action`.
+        error_type:
+          type: string
+        error:
+          type: string
+    StepResumedPayload:
+      type: object
+      additionalProperties: true
+      properties:
+        step:
+          type: string
+        kind:
+          type: string
+    StepSkippedPayload:
+      type: object
+      additionalProperties: true
+      properties:
+        step:
+          type: string
+        kind:
+          type: string
+        reason:
+          type: string
+    ActionCalledPayload:
+      type: object
+      additionalProperties: true
+      properties:
+        action:
+          type: string
+        step:
+          type: string
+        parameters:
+          type: object
+          additionalProperties: true
+    ActionCompletedPayload:
+      type: object
+      additionalProperties: true
+      properties:
+        action:
+          type: string
+        step:
+          type: string
+        result:
+          type: object
+          additionalProperties: true
+    ActionFailedPayload:
+      type: object
+      additionalProperties: true
+      properties:
+        action:
+          type: string
+        step:
+          type: string
+        error:
+          type: string
+        error_type:
+          type: string
+    ActionRetriedPayload:
+      type: object
+      additionalProperties: true
+      properties:
+        action:
+          type: string
+        attempt:
+          type: integer
+        max_attempts:
+          type: integer
+    ActionResultPayload:
+      type: object
+      additionalProperties: true
+      properties:
+        action:
+          type: string
+        result:
+          type: object
+          additionalProperties: true
+    CheckVerdictPayload:
+      type: object
+      additionalProperties: true
+      properties:
+        step:
+          type: string
+        verdict:
+          type: string
+        on_fail:
+          type: string
+        failed:
+          type: array
+          items:
+            type: string
+    InteractionRespondedPayload:
+      type: object
+      additionalProperties: true
+      properties:
+        interaction_id:
+          type: string
+        response:
+          type: object
+          additionalProperties: true
+        responder:
+          type: object
+          additionalProperties: true
+    WaitResumedPayload:
+      type: object
+      additionalProperties: true
+      properties:
+        step:
+          type: string
+        wait_id:
+          type: string
+        payload:
+          type: object
+          additionalProperties: true
+    WaitTimedOutPayload:
+      type: object
+      additionalProperties: true
+      properties:
+        step:
+          type: string
+        wait_id:
+          type: string
+        reason:
+          type: string
+    BudgetExceededPayload:
+      type: object
+      additionalProperties: true
+      properties:
+        step:
+          type: string
+        credit_spent:
+          type: number
+        credit_budget:
+          type: number
+        percent_used:
+          type: integer
+    ProgressStalledPayload:
+      type: object
+      additionalProperties: true
+      properties:
+        step:
+          type: string
+        tool:
+          type: string
+        duplicate_calls:
+          type: integer
+        limit:
+          type: integer
+    LimitReachedPayload:
+      type: object
+      additionalProperties: true
+      properties:
+        step:
+          type: string
+        limit_kind:
+          type: string
+        used:
+          type: integer
+        limit:
+          type: integer
+    ArtifactCreatedPayload:
+      type: object
+      additionalProperties: true
+      properties:
+        artifact_id:
+          type: string
+        name:
+          type: string
+        content_type:
+          type: string
+        step:
+          type: string
+    RunEventPayload:
+      anyOf:
+      - $ref: '#/components/schemas/RunStartedPayload'
+      - $ref: '#/components/schemas/WaitPayload'
+      - $ref: '#/components/schemas/RunResumedPayload'
+      - $ref: '#/components/schemas/RunCompletedPayload'
+      - $ref: '#/components/schemas/RunFailedPayload'
+      - $ref: '#/components/schemas/RunCancelledPayload'
+      - $ref: '#/components/schemas/StepStartedPayload'
+      - $ref: '#/components/schemas/StepCompletedPayload'
+      - $ref: '#/components/schemas/StepFailedPayload'
+      - $ref: '#/components/schemas/StepRetriedPayload'
+      - $ref: '#/components/schemas/StepResumedPayload'
+      - $ref: '#/components/schemas/StepSkippedPayload'
+      - $ref: '#/components/schemas/ActionCalledPayload'
+      - $ref: '#/components/schemas/ActionCompletedPayload'
+      - $ref: '#/components/schemas/ActionFailedPayload'
+      - $ref: '#/components/schemas/ActionRetriedPayload'
+      - $ref: '#/components/schemas/ActionResultPayload'
+      - $ref: '#/components/schemas/CheckVerdictPayload'
+      - $ref: '#/components/schemas/InteractionRespondedPayload'
+      - $ref: '#/components/schemas/WaitResumedPayload'
+      - $ref: '#/components/schemas/WaitTimedOutPayload'
+      - $ref: '#/components/schemas/BudgetExceededPayload'
+      - $ref: '#/components/schemas/ProgressStalledPayload'
+      - $ref: '#/components/schemas/LimitReachedPayload'
+      - $ref: '#/components/schemas/ArtifactCreatedPayload'
+      - $ref: '#/components/schemas/GenericEventPayload'
+      description: Typed payloads for common durable run event types. The containing `LoopRunEvent.event_type`
+        selects the payload shape; payload objects do not duplicate that discriminator because
+        some payloads use fields such as `event_type` for their own lifecycle data (for example,
+        the external matcher recorded by `wait.opened`).
+    LoopRunEvent:
+      type: object
+      additionalProperties: false
+      description: One durable event emitted while a loop run progresses.
+      required:
+      - id
+      - run_id
+      - sequence
+      - event_type
+      - created_at
+      properties:
+        id:
+          type: string
+          description: Stable event identifier.
+        run_id:
+          type: string
+          description: Run this event belongs to.
+        sequence:
+          type: integer
+          format: int64
+          description: Monotonic per-run sequence number used for ordering and resume.
+        event_type:
+          type: string
+          description: |-
+            Event type from the run-stream taxonomy (e.g. `run.started`, `step.completed`, `wait.opened`, `action.called`, `action.completed`, `action.failed`, `artifact.created`, `limit.reached`).
+
+            Guardrail events: `run.budget_exceeded` fires when the budget halts the run at a checkpoint (payload: `credit_budget`, `credit_spent`, `percent_used`, plus the `step` it halted before). Metered spend is recorded in the billing ledger and denormalized onto the run's `credit_spent`; it is not represented as a timeline event.
+        step_id:
+          type: string
+          nullable: true
+          description: ID of the step this event belongs to, when applicable.
+        step_key:
+          type: string
+          nullable: true
+          description: Legacy alias for the loop step ID this event belongs to, when applicable.
+        payload:
+          $ref: '#/components/schemas/RunEventPayload'
+        created_at:
+          type: string
+          format: date-time
+          description: Server timestamp when the event was recorded.
+      example:
+        id: run_8q5m2x9v7p3n4r6t:evt:000001
+        run_id: run_8q5m2x9v7p3n4r6t
+        sequence: 1
+        event_type: step.started
+        step_id: run_8q5m2x9v7p3n4r6t:review
+        step_key: review
+        payload:
+          agent_id: agent_5n8p2q7m4x9r3v6t
+        created_at: '2026-06-15T14:30:10Z'
     APIKey:
       type: object
       additionalProperties: false
@@ -11861,11 +12427,11 @@ components:
           type: integer
           minimum: 1
           description: Replacement run-wide agent turn cap. Must be greater than `agent_turns_used`.
-        wall_clock_timeout_seconds:
+        wall_clock_extend_seconds:
           type: integer
           minimum: 1
           description: Additional wall-clock time, in seconds, granted from the recovery request
-            time.
+            time. Required when the run stopped on `wall_clock_exceeded`.
       example:
         reason: transient provider failure cleared
     SignalLoopRunRequest:
@@ -12134,157 +12700,6 @@ components:
           created_at: '2026-06-15T14:30:00Z'
           updated_at: '2026-06-15T14:31:00Z'
         has_more: false
-    LoopRunStepKind:
-      type: string
-      enum:
-      - agent
-      - action
-      - sleep
-      - wait_for_event
-      - interaction
-      - loop
-      - check
-      - cleanup
-      description: 'Step type: `agent`, `action`, `sleep`, `wait_for_event`, `interaction`,
-        `loop`, `check`, or system-materialized `cleanup`. `cleanup` appears in run step listings
-        for terminal cleanup work but cannot be authored in a `LoopSpec`.'
-    LoopRunStepStatus:
-      type: string
-      enum:
-      - pending
-      - running
-      - suspended
-      - completed
-      - failed
-      - skipped
-      - cancelled
-      description: 'Step lifecycle state: `pending`, `running`, `suspended`, `completed`,
-        `failed`, `skipped`, or `cancelled`.'
-    LoopRunStep:
-      type: object
-      additionalProperties: false
-      description: One execution step inside a loop run.
-      required:
-      - id
-      - run_id
-      - step_key
-      - kind
-      - status
-      - seq
-      - attempt
-      - created_at
-      - updated_at
-      properties:
-        id:
-          type: string
-          description: Stable step identifier.
-        run_id:
-          type: string
-          description: Run this step belongs to.
-        step_key:
-          type: string
-          description: Stable key for this step within its loop version.
-        step_name:
-          type: string
-          description: Display name from the authored spec, when present.
-        kind:
-          $ref: '#/components/schemas/LoopRunStepKind'
-          description: Step kind copied from the authored spec or system cleanup step.
-        status:
-          $ref: '#/components/schemas/LoopRunStepStatus'
-          description: Current lifecycle state of this run step.
-        seq:
-          type: integer
-          format: int64
-          description: Zero-indexed ordinal of this step within its run.
-        attempt:
-          type: integer
-          description: Number of times this step has been attempted.
-        inputs:
-          type: object
-          additionalProperties: true
-          description: Resolved inputs passed into the step, after template rendering.
-        parameters:
-          type: object
-          additionalProperties: true
-          description: Authored step parameters, before template rendering.
-        result:
-          description: Step output (shape varies by kind); absent until completion. Downstream
-            step templates reach this value at `${{ steps.<id>.output }}` or `${{ steps[0].output
-            }}`.
-        job_id:
-          type: string
-          nullable: true
-          description: Worker job that executed this step, when applicable.
-        wait_id:
-          type: string
-          nullable: true
-          description: Wait record this step is suspended on, when applicable.
-        session_id:
-          type: string
-          description: Session the agent ran in, for `agent`-kind steps. Present once the
-            step has started a turn; links the step to its conversation so the UI can open
-            the transcript with this step's messages highlighted.
-        agent_id:
-          type: string
-          description: Agent that executed this step, for `agent`-kind steps.
-        agent_turn_id:
-          type: string
-          description: Most recent AgentTurn this step ran (its latest attempt), for `agent`-kind
-            steps. Resolves to the step's messages within the session via their `turn_id`.
-        error_type:
-          type: string
-          description: Machine-readable error code populated on failure.
-        error_message:
-          type: string
-          description: Human-readable error message populated on failure.
-        verdict:
-          type: string
-          enum:
-          - pass
-          - fail
-          description: 'Check outcome for `check`-kind steps: `pass` or `fail`; absent on
-            every other kind. A failed check routed `on_fail: continue` completes the step
-            with `verdict: fail` — status and verdict are separate axes (the step did its
-            job: it checked).'
-        verdict_detail:
-          type: object
-          additionalProperties: true
-          description: 'Verdict document for `check`-kind steps: `verdict`, `on_fail`, `checks`
-            (per-assertion results — name, kind, pass, expr or judge reason, judge identity,
-            evidence refs), `failed` (red assertion names), and `overridden_by` / `gate` records
-            when an approval gate resolved the verdict.'
-        started_at:
-          type: string
-          format: date-time
-          nullable: true
-          description: Time the step entered `running`; null until the step starts.
-        completed_at:
-          type: string
-          format: date-time
-          nullable: true
-          description: Time the step reached a terminal status; null until the step completes.
-        created_at:
-          type: string
-          format: date-time
-          description: Record creation timestamp.
-        updated_at:
-          type: string
-          format: date-time
-          description: Last update timestamp.
-      example:
-        id: run_8q5m2x9v7p3n4r6t:review
-        run_id: run_8q5m2x9v7p3n4r6t
-        step_key: review
-        step_name: Review pull requests
-        kind: agent
-        status: running
-        seq: 0
-        attempt: 1
-        inputs:
-          repository: deepnoodle-ai/mobius-cloud
-        created_at: '2026-06-15T14:30:00Z'
-        updated_at: '2026-06-15T14:31:00Z'
     LoopRunStepListResponse:
       type: object
       additionalProperties: false
@@ -12296,57 +12711,6 @@ components:
           description: Steps for this run in `seq` order.
           items:
             $ref: '#/components/schemas/LoopRunStep'
-    LoopRunEvent:
-      type: object
-      additionalProperties: false
-      description: One durable event emitted while a loop run progresses.
-      required:
-      - id
-      - run_id
-      - sequence
-      - event_type
-      - created_at
-      properties:
-        id:
-          type: string
-          description: Stable event identifier.
-        run_id:
-          type: string
-          description: Run this event belongs to.
-        sequence:
-          type: integer
-          format: int64
-          description: Monotonic per-run sequence number used for ordering and resume.
-        event_type:
-          type: string
-          description: |-
-            Event type from the run-stream taxonomy (e.g. `run.started`, `step.completed`, `wait.opened`, `action.called`, `action.completed`, `action.failed`, `artifact.created`, `limit.reached`).
-
-            Guardrail events: `run.budget_exceeded` fires when the budget halts the run at a checkpoint (payload: `credit_budget`, `credit_spent`, `percent_used`, plus the `step` it halted before). Metered spend is recorded in the billing ledger and denormalized onto the run's `credit_spent`; it is not represented as a timeline event.
-        step_id:
-          type: string
-          nullable: true
-          description: ID of the step this event belongs to, when applicable.
-        step_key:
-          type: string
-          nullable: true
-          description: Legacy alias for the loop step ID this event belongs to, when applicable.
-        payload:
-          $ref: '#/components/schemas/RunEventPayload'
-        created_at:
-          type: string
-          format: date-time
-          description: Server timestamp when the event was recorded.
-      example:
-        id: run_8q5m2x9v7p3n4r6t:evt:000001
-        run_id: run_8q5m2x9v7p3n4r6t
-        sequence: 1
-        event_type: step.started
-        step_id: run_8q5m2x9v7p3n4r6t:review
-        step_key: review
-        payload:
-          agent_id: agent_5n8p2q7m4x9r3v6t
-        created_at: '2026-06-15T14:30:10Z'
     LoopRunLifecycleFrame:
       allOf:
       - $ref: '#/components/schemas/LoopRunEvent'
@@ -12359,340 +12723,6 @@ components:
       description: JSON payload of a single `data:` line on the run event SSE stream. Run
         stream frames are lifecycle/observability events and are replayable with an SSE `id:`.
         Agent transcript content is delivered by the referenced session stream.
-    RunEventPayload:
-      anyOf:
-      - $ref: '#/components/schemas/RunStartedPayload'
-      - $ref: '#/components/schemas/WaitPayload'
-      - $ref: '#/components/schemas/RunResumedPayload'
-      - $ref: '#/components/schemas/RunCompletedPayload'
-      - $ref: '#/components/schemas/RunFailedPayload'
-      - $ref: '#/components/schemas/RunCancelledPayload'
-      - $ref: '#/components/schemas/StepStartedPayload'
-      - $ref: '#/components/schemas/StepCompletedPayload'
-      - $ref: '#/components/schemas/StepFailedPayload'
-      - $ref: '#/components/schemas/StepRetriedPayload'
-      - $ref: '#/components/schemas/StepResumedPayload'
-      - $ref: '#/components/schemas/StepSkippedPayload'
-      - $ref: '#/components/schemas/ActionCalledPayload'
-      - $ref: '#/components/schemas/ActionCompletedPayload'
-      - $ref: '#/components/schemas/ActionFailedPayload'
-      - $ref: '#/components/schemas/ActionRetriedPayload'
-      - $ref: '#/components/schemas/ActionResultPayload'
-      - $ref: '#/components/schemas/CheckVerdictPayload'
-      - $ref: '#/components/schemas/InteractionRespondedPayload'
-      - $ref: '#/components/schemas/WaitResumedPayload'
-      - $ref: '#/components/schemas/WaitTimedOutPayload'
-      - $ref: '#/components/schemas/BudgetExceededPayload'
-      - $ref: '#/components/schemas/ProgressStalledPayload'
-      - $ref: '#/components/schemas/LimitReachedPayload'
-      - $ref: '#/components/schemas/ArtifactCreatedPayload'
-      - $ref: '#/components/schemas/GenericEventPayload'
-      description: Typed payloads for common durable run event types. The containing `LoopRunEvent.event_type`
-        selects the payload shape; payload objects do not duplicate that discriminator because
-        some payloads use fields such as `event_type` for their own lifecycle data (for example,
-        the external matcher recorded by `wait.opened`).
-    RunStartedPayload:
-      type: object
-      additionalProperties: true
-      properties:
-        loop_id:
-          type: string
-        loop_version_id:
-          type: string
-        source_event_id:
-          type: string
-        trigger_id:
-          type: string
-    RunResumedPayload:
-      type: object
-      additionalProperties: true
-      properties:
-        step:
-          type: string
-        reason:
-          type: string
-        recovery_action:
-          type: string
-          enum:
-          - resume
-          - retry
-        attempt:
-          type: integer
-    RunCompletedPayload:
-      type: object
-      additionalProperties: true
-      properties:
-        output:
-          type: object
-          additionalProperties: true
-    RunFailedPayload:
-      type: object
-      additionalProperties: true
-      properties:
-        error:
-          type: string
-        error_type:
-          type: string
-        step:
-          type: string
-    RunCancelledPayload:
-      type: object
-      additionalProperties: true
-      properties:
-        reason:
-          type: string
-    StepStartedPayload:
-      type: object
-      additionalProperties: true
-      properties:
-        step:
-          type: string
-        kind:
-          type: string
-        agent_id:
-          type: string
-    StepCompletedPayload:
-      type: object
-      additionalProperties: true
-      properties:
-        step:
-          type: string
-        output:
-          type: object
-          additionalProperties: true
-    StepFailedPayload:
-      type: object
-      additionalProperties: true
-      properties:
-        step:
-          type: string
-        error:
-          type: string
-        error_type:
-          type: string
-    StepRetriedPayload:
-      type: object
-      additionalProperties: true
-      properties:
-        step:
-          type: string
-        kind:
-          type: string
-        attempt:
-          type: integer
-        max_attempts:
-          type: integer
-        retry_scope:
-          type: string
-          description: Retry source. `step_policy` means the authored step retry policy was
-            consumed, `transient` means Mobius retried a transient provider failure before
-            spending step retry budget, and `run_recovery` means an operator resumed or retried
-            a failed run in place.
-        recovery_mode:
-          type: string
-          enum:
-          - resume
-          - retry
-        error_type:
-          type: string
-        error:
-          type: string
-    StepResumedPayload:
-      type: object
-      additionalProperties: true
-      properties:
-        step:
-          type: string
-        kind:
-          type: string
-    StepSkippedPayload:
-      type: object
-      additionalProperties: true
-      properties:
-        step:
-          type: string
-        kind:
-          type: string
-        reason:
-          type: string
-    ActionCalledPayload:
-      type: object
-      additionalProperties: true
-      properties:
-        action:
-          type: string
-        step:
-          type: string
-        parameters:
-          type: object
-          additionalProperties: true
-    ActionCompletedPayload:
-      type: object
-      additionalProperties: true
-      properties:
-        action:
-          type: string
-        step:
-          type: string
-        result:
-          type: object
-          additionalProperties: true
-    ActionFailedPayload:
-      type: object
-      additionalProperties: true
-      properties:
-        action:
-          type: string
-        step:
-          type: string
-        error:
-          type: string
-        error_type:
-          type: string
-    ActionRetriedPayload:
-      type: object
-      additionalProperties: true
-      properties:
-        action:
-          type: string
-        attempt:
-          type: integer
-        max_attempts:
-          type: integer
-    ActionResultPayload:
-      type: object
-      additionalProperties: true
-      properties:
-        action:
-          type: string
-        result:
-          type: object
-          additionalProperties: true
-    CheckVerdictPayload:
-      type: object
-      additionalProperties: true
-      properties:
-        step:
-          type: string
-        verdict:
-          type: string
-        on_fail:
-          type: string
-        failed:
-          type: array
-          items:
-            type: string
-    InteractionRespondedPayload:
-      type: object
-      additionalProperties: true
-      properties:
-        interaction_id:
-          type: string
-        response:
-          type: object
-          additionalProperties: true
-        responder:
-          type: object
-          additionalProperties: true
-    WaitPayload:
-      type: object
-      additionalProperties: true
-      properties:
-        step:
-          type: string
-        event_type:
-          type: string
-          description: Source event type or pattern this wait is listening for.
-        source_id:
-          type: string
-          description: Optional source identifier that scopes event matching.
-        match:
-          type: object
-          additionalProperties: true
-          description: Optional matcher fields required on the source event.
-        wait_id:
-          type: string
-        wait_kind:
-          type: string
-        expires_at:
-          type: string
-          format: date-time
-          description: Wall-clock expiry for the wait, when bounded.
-        deadline:
-          type: string
-          format: date-time
-        subject:
-          type: object
-          additionalProperties: true
-    WaitResumedPayload:
-      type: object
-      additionalProperties: true
-      properties:
-        step:
-          type: string
-        wait_id:
-          type: string
-        payload:
-          type: object
-          additionalProperties: true
-    WaitTimedOutPayload:
-      type: object
-      additionalProperties: true
-      properties:
-        step:
-          type: string
-        wait_id:
-          type: string
-        reason:
-          type: string
-    BudgetExceededPayload:
-      type: object
-      additionalProperties: true
-      properties:
-        step:
-          type: string
-        credit_spent:
-          type: number
-        credit_budget:
-          type: number
-        percent_used:
-          type: integer
-    ProgressStalledPayload:
-      type: object
-      additionalProperties: true
-      properties:
-        step:
-          type: string
-        tool:
-          type: string
-        duplicate_calls:
-          type: integer
-        limit:
-          type: integer
-    LimitReachedPayload:
-      type: object
-      additionalProperties: true
-      properties:
-        step:
-          type: string
-        limit_kind:
-          type: string
-        used:
-          type: integer
-        limit:
-          type: integer
-    ArtifactCreatedPayload:
-      type: object
-      additionalProperties: true
-      properties:
-        artifact_id:
-          type: string
-        name:
-          type: string
-        content_type:
-          type: string
-        step:
-          type: string
     LoopRunEventListResponse:
       type: object
       additionalProperties: false
