@@ -434,6 +434,36 @@ func (e BlueprintChangeAction) Valid() bool {
 	}
 }
 
+// Defines values for BlueprintDeleteResultStatus.
+const (
+	BlueprintDeleteResultStatusDeleted BlueprintDeleteResultStatus = "deleted"
+)
+
+// Valid indicates whether the value is a known member of the BlueprintDeleteResultStatus enum.
+func (e BlueprintDeleteResultStatus) Valid() bool {
+	switch e {
+	case BlueprintDeleteResultStatusDeleted:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for BlueprintLoopInputSchemaVersion.
+const (
+	BlueprintLoopInputSchemaVersionN1 BlueprintLoopInputSchemaVersion = "1"
+)
+
+// Valid indicates whether the value is a known member of the BlueprintLoopInputSchemaVersion enum.
+func (e BlueprintLoopInputSchemaVersion) Valid() bool {
+	switch e {
+	case BlueprintLoopInputSchemaVersionN1:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for BlueprintLoopInputStatus.
 const (
 	BlueprintLoopInputStatusActive BlueprintLoopInputStatus = "active"
@@ -479,6 +509,33 @@ func (e BlueprintResourceType) Valid() bool {
 	case BlueprintResourceTypeTable:
 		return true
 	case BlueprintResourceTypeToolkit:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for BlueprintToolkitActionGrantSelectorType.
+const (
+	BlueprintToolkitActionGrantSelectorTypeCustom   BlueprintToolkitActionGrantSelectorType = "custom"
+	BlueprintToolkitActionGrantSelectorTypeExact    BlueprintToolkitActionGrantSelectorType = "exact"
+	BlueprintToolkitActionGrantSelectorTypeGroup    BlueprintToolkitActionGrantSelectorType = "group"
+	BlueprintToolkitActionGrantSelectorTypePlatform BlueprintToolkitActionGrantSelectorType = "platform"
+	BlueprintToolkitActionGrantSelectorTypeWildcard BlueprintToolkitActionGrantSelectorType = "wildcard"
+)
+
+// Valid indicates whether the value is a known member of the BlueprintToolkitActionGrantSelectorType enum.
+func (e BlueprintToolkitActionGrantSelectorType) Valid() bool {
+	switch e {
+	case BlueprintToolkitActionGrantSelectorTypeCustom:
+		return true
+	case BlueprintToolkitActionGrantSelectorTypeExact:
+		return true
+	case BlueprintToolkitActionGrantSelectorTypeGroup:
+		return true
+	case BlueprintToolkitActionGrantSelectorTypePlatform:
+		return true
+	case BlueprintToolkitActionGrantSelectorTypeWildcard:
 		return true
 	default:
 		return false
@@ -2036,6 +2093,45 @@ func (e SessionMessageRole) Valid() bool {
 	}
 }
 
+// Defines values for SessionNudgeDelivery.
+const (
+	SessionNudgeDeliveryCurrentTurn SessionNudgeDelivery = "current_turn"
+	SessionNudgeDeliveryNewTurn     SessionNudgeDelivery = "new_turn"
+)
+
+// Valid indicates whether the value is a known member of the SessionNudgeDelivery enum.
+func (e SessionNudgeDelivery) Valid() bool {
+	switch e {
+	case SessionNudgeDeliveryCurrentTurn:
+		return true
+	case SessionNudgeDeliveryNewTurn:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SessionNudgeStatus.
+const (
+	SessionNudgeStatusCancelled SessionNudgeStatus = "cancelled"
+	SessionNudgeStatusDelivered SessionNudgeStatus = "delivered"
+	SessionNudgeStatusPending   SessionNudgeStatus = "pending"
+)
+
+// Valid indicates whether the value is a known member of the SessionNudgeStatus enum.
+func (e SessionNudgeStatus) Valid() bool {
+	switch e {
+	case SessionNudgeStatusCancelled:
+		return true
+	case SessionNudgeStatusDelivered:
+		return true
+	case SessionNudgeStatusPending:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for SessionOrigin.
 const (
 	SessionOriginApi         SessionOrigin = "api"
@@ -2876,6 +2972,24 @@ func (e ListSessionMessagesParamsOrder) Valid() bool {
 	}
 }
 
+// Defines values for ListSessionNudgesParamsOrder.
+const (
+	ListSessionNudgesParamsOrderAsc  ListSessionNudgesParamsOrder = "asc"
+	ListSessionNudgesParamsOrderDesc ListSessionNudgesParamsOrder = "desc"
+)
+
+// Valid indicates whether the value is a known member of the ListSessionNudgesParamsOrder enum.
+func (e ListSessionNudgesParamsOrder) Valid() bool {
+	switch e {
+	case ListSessionNudgesParamsOrderAsc:
+		return true
+	case ListSessionNudgesParamsOrderDesc:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ListSessionTurnsParamsOrder.
 const (
 	ListSessionTurnsParamsOrderAsc  ListSessionTurnsParamsOrder = "asc"
@@ -3664,7 +3778,7 @@ type AgentTurnStatus string
 
 // AppendSessionMessage Message payload to append to an existing durable session.
 type AppendSessionMessage struct {
-	// Content Ordered content blocks (text, tool calls, tool results, images).
+	// Content Ordered content blocks (text, tool calls, tool results, images). Blocks of type `reminder` are host-managed runtime context and are rejected on this surface.
 	Content []map[string]interface{} `json:"content"`
 
 	// CreatedAt Caller-supplied creation timestamp. The server assigns one if absent.
@@ -3703,7 +3817,7 @@ type AppendSessionMessagesRequest struct {
 
 // ApplyBlueprintRequest A desired blueprint plus the apply mode.
 type ApplyBlueprintRequest struct {
-	// BlueprintKey Optional blueprint identifier recorded as provenance.
+	// BlueprintKey Optional blueprint identifier that forms part of the blueprint identity.
 	BlueprintKey *string `json:"blueprint_key,omitempty"`
 
 	// BlueprintVersion Optional blueprint version recorded as provenance.
@@ -3712,8 +3826,11 @@ type ApplyBlueprintRequest struct {
 	// Mode `apply` performs the change; `preview` validates and returns a plan without mutating resources.
 	Mode *BlueprintApplyMode `json:"mode,omitempty"`
 
-	// Namespace Optional namespace recorded as provenance on each binding.
+	// Namespace Optional namespace that forms part of the blueprint identity.
 	Namespace *string `json:"namespace,omitempty"`
+
+	// ProtectResources When set, controls whether ordinary update and delete operations may change resources managed by this blueprint. Blueprint Apply and blueprint deletion remain allowed. Omit to preserve protection on existing bindings; new bindings default to unprotected.
+	ProtectResources *bool `json:"protect_resources,omitempty"`
 
 	// Resources The desired resources grouped by type. All groups are optional.
 	Resources BlueprintResources `json:"resources"`
@@ -3851,18 +3968,36 @@ type BlueprintActionInputType string
 
 // BlueprintAgentInput A desired agent. `toolkits` and `skills`, when present, replace the agent's full assignment set; omit them to leave existing assignments untouched.
 type BlueprintAgentInput struct {
-	Color        *string                 `json:"color,omitempty"`
-	Description  *string                 `json:"description,omitempty"`
-	Key          string                  `json:"key"`
-	Kind         *string                 `json:"kind,omitempty"`
-	Model        *string                 `json:"model,omitempty"`
-	Name         string                  `json:"name"`
-	Skills       *[]BlueprintResourceRef `json:"skills,omitempty"`
-	SystemPrompt *string                 `json:"system_prompt,omitempty"`
+	Color *string `json:"color,omitempty"`
+
+	// CompactionPolicy Controls how a session's transcript is automatically summarized as it grows. On create the supplied fields are merged over the owning agent's default policy and the server defaults; on update they patch the session's current policy. Omitted fields keep their resolved values.
+	CompactionPolicy *SessionCompactionPolicy `json:"compaction_policy,omitempty"`
+	Description      *string                  `json:"description,omitempty"`
+	Key              string                   `json:"key"`
+	Kind             *string                  `json:"kind,omitempty"`
+	Model            *string                  `json:"model,omitempty"`
+
+	// ModelRoute Default model route used by built-in messaging and by loop agent steps that do not override the route.
+	ModelRoute *AgentModelRoute        `json:"model_route,omitempty"`
+	Name       string                  `json:"name"`
+	Skills     *[]BlueprintResourceRef `json:"skills,omitempty"`
+
+	// Status Administrative status. Inactive agents cannot claim new jobs. Deleted agents are excluded from normal reads.
+	Status       *AgentStatus `json:"status,omitempty"`
+	SystemPrompt *string      `json:"system_prompt,omitempty"`
 
 	// Tags Key/value tags for organizing and filtering resources. Up to 8 per resource; keys 1–128 characters, values up to 256. Keys prefixed `mobius:` are system-managed and cannot be set by callers.
-	Tags     *TagMap                 `json:"tags,omitempty"`
-	Toolkits *[]BlueprintResourceRef `json:"toolkits,omitempty"`
+	Tags *TagMap `json:"tags,omitempty"`
+
+	// ThinkingEffort Reasoning-effort level for a turn, lowest (`low`) to highest (`max`). Higher effort spends more tokens on reasoning, improving quality on hard tasks at the cost of latency and credits. Levels above what the resolved model supports are clamped down. Set on an agent it is the default; set on a session or loop step it overrides the agent default. `inherit` (or omitting the field) defers to the layer below — the agent default for a session/step, or the provider's own default when nothing sets a level.
+	ThinkingEffort *ThinkingEffort `json:"thinking_effort,omitempty"`
+
+	// TimeoutSeconds Per-turn execution timeout; `0` uses the platform default.
+	TimeoutSeconds *int64 `json:"timeout_seconds,omitempty"`
+
+	// ToolPresentation Controls how granted actions are surfaced to the model in Mobius-hosted agent turns. `meta` (the default) groups related actions behind compact command routers, while `flat` exposes one tool per action.
+	ToolPresentation *AgentToolPresentation  `json:"tool_presentation,omitempty"`
+	Toolkits         *[]BlueprintResourceRef `json:"toolkits,omitempty"`
 }
 
 // BlueprintApplyMode `apply` performs the change; `preview` validates and returns a plan without mutating resources.
@@ -3887,9 +4022,15 @@ type BlueprintApplyResultStatus string
 type BlueprintBinding struct {
 	BlueprintKey     *string `json:"blueprint_key,omitempty"`
 	BlueprintVersion *string `json:"blueprint_version,omitempty"`
-	Key              string  `json:"key"`
-	Namespace        *string `json:"namespace,omitempty"`
-	ResourceId       string  `json:"resource_id"`
+
+	// DeleteOnDestroy Whether deleting the blueprint will delete this resource instead of retaining it.
+	DeleteOnDestroy bool    `json:"delete_on_destroy"`
+	Key             string  `json:"key"`
+	Namespace       *string `json:"namespace,omitempty"`
+
+	// Protected Whether ordinary definition mutations are blocked.
+	Protected  bool   `json:"protected"`
+	ResourceId string `json:"resource_id"`
 
 	// ResourceType The kind of Mobius resource a binding or change refers to.
 	ResourceType BlueprintResourceType `json:"resource_type"`
@@ -3916,17 +4057,36 @@ type BlueprintChange struct {
 // BlueprintChangeAction What apply did (or, in preview, would do): `created` a new resource, `updated` a managed one, `adopted` a matching unmanaged one, or left an `unchanged` resource untouched.
 type BlueprintChangeAction string
 
-// BlueprintLoopInput A desired loop. The spec-bearing fields (`steps`, `triggers`, `event`, `config`, `limits`, `output`, `concurrency`, `repositories`, `cleanup`, `defaults`) mirror the loop authoring shape and are compiled by the loop engine. Applied loops default to `draft` unless `status` is set.
+// BlueprintDeleteResult defines model for BlueprintDeleteResult.
+type BlueprintDeleteResult struct {
+	BlueprintKey string `json:"blueprint_key"`
+
+	// Deleted Resources deleted with the blueprint.
+	Deleted   []BlueprintBinding `json:"deleted"`
+	Namespace *string            `json:"namespace,omitempty"`
+
+	// Retained Adopted or legacy resources retained after their bindings were removed.
+	Retained []BlueprintBinding          `json:"retained"`
+	Status   BlueprintDeleteResultStatus `json:"status"`
+}
+
+// BlueprintDeleteResultStatus defines model for BlueprintDeleteResult.Status.
+type BlueprintDeleteResultStatus string
+
+// BlueprintLoopInput A desired loop. The spec-bearing fields (`steps`, `triggers`, `event`, `config`, `limits`, `output`, `concurrency`, `repositories`, `cleanup`, `defaults`, `run_name`) mirror the loop authoring shape and are compiled by the loop engine. Applied loops default to `draft` unless `status` is set. `default_config`, `settings`, and `tags` configure Loop row state.
 type BlueprintLoopInput struct {
-	// Agent A reference to a Mobius resource by direct `id`, by blueprint `key` (resolved within this apply first, then against existing bindings), or by `blueprint_ref` (resolved by key; namespace is recorded as provenance and reserved for namespaced lookup).
+	// Agent A reference to a Mobius resource by direct `id`, by blueprint `key` (resolved within this apply first, then against existing bindings), or by `blueprint_ref` (resolved by key; its namespace is recorded as provenance and is not used for reference resolution in this version).
 	Agent *BlueprintResourceRef `json:"agent,omitempty"`
 
 	// Cleanup Cleanup steps run at the end of the run (maps to the loop spec `cleanup`).
 	Cleanup     *[]map[string]interface{} `json:"cleanup,omitempty"`
 	Concurrency *string                   `json:"concurrency,omitempty"`
 	Config      *map[string]interface{}   `json:"config,omitempty"`
-	Defaults    *map[string]interface{}   `json:"defaults,omitempty"`
-	Description *string                   `json:"description,omitempty"`
+
+	// DefaultConfig Default config values used when a run starts without overrides.
+	DefaultConfig *map[string]interface{} `json:"default_config,omitempty"`
+	Defaults      *map[string]interface{} `json:"defaults,omitempty"`
+	Description   *string                 `json:"description,omitempty"`
 
 	// Event Declared event input contract for the run (maps to the loop spec `event`).
 	Event        *map[string]interface{}   `json:"event,omitempty"`
@@ -3935,13 +4095,25 @@ type BlueprintLoopInput struct {
 	Name         string                    `json:"name"`
 	Output       *map[string]interface{}   `json:"output,omitempty"`
 	Repositories *[]map[string]interface{} `json:"repositories,omitempty"`
-	Status       *BlueprintLoopInputStatus `json:"status,omitempty"`
-	Steps        *[]map[string]interface{} `json:"steps,omitempty"`
+
+	// RunName Templates for assigning an operator-facing title and optional description to each run. The object form leaves room for additional naming strategies without changing the loop spec shape.
+	RunName *RunNameSpec `json:"run_name,omitempty"`
+
+	// SchemaVersion Loop authoring schema version. Only version 1 is accepted.
+	SchemaVersion *BlueprintLoopInputSchemaVersion `json:"schema_version,omitempty"`
+
+	// Settings Free-form Loop-level settings consumed by the engine.
+	Settings *map[string]interface{}   `json:"settings,omitempty"`
+	Status   *BlueprintLoopInputStatus `json:"status,omitempty"`
+	Steps    *[]map[string]interface{} `json:"steps,omitempty"`
 
 	// Tags Key/value tags for organizing and filtering resources. Up to 8 per resource; keys 1–128 characters, values up to 256. Keys prefixed `mobius:` are system-managed and cannot be set by callers.
 	Tags     *TagMap                   `json:"tags,omitempty"`
 	Triggers *[]map[string]interface{} `json:"triggers,omitempty"`
 }
+
+// BlueprintLoopInputSchemaVersion Loop authoring schema version. Only version 1 is accepted.
+type BlueprintLoopInputSchemaVersion string
 
 // BlueprintLoopInputStatus defines model for BlueprintLoopInput.Status.
 type BlueprintLoopInputStatus string
@@ -3952,7 +4124,7 @@ type BlueprintRef struct {
 	Namespace *string `json:"namespace,omitempty"`
 }
 
-// BlueprintResourceRef A reference to a Mobius resource by direct `id`, by blueprint `key` (resolved within this apply first, then against existing bindings), or by `blueprint_ref` (resolved by key; namespace is recorded as provenance and reserved for namespaced lookup).
+// BlueprintResourceRef A reference to a Mobius resource by direct `id`, by blueprint `key` (resolved within this apply first, then against existing bindings), or by `blueprint_ref` (resolved by key; its namespace is recorded as provenance and is not used for reference resolution in this version).
 type BlueprintResourceRef struct {
 	// BlueprintRef A namespaced blueprint key reference.
 	BlueprintRef *BlueprintRef `json:"blueprint_ref,omitempty"`
@@ -3979,17 +4151,19 @@ type BlueprintResources struct {
 
 // BlueprintSkillInput A desired skill.
 type BlueprintSkillInput struct {
-	Description  *string `json:"description,omitempty"`
-	Instructions *string `json:"instructions,omitempty"`
-	Key          string  `json:"key"`
-	Name         string  `json:"name"`
+	// AllowedTools Tool selectors that narrow the agent's effective tool set while this skill is active.
+	AllowedTools *[]string `json:"allowed_tools,omitempty"`
+	Description  *string   `json:"description,omitempty"`
+	Instructions *string   `json:"instructions,omitempty"`
+	Key          string    `json:"key"`
+	Name         string    `json:"name"`
 
 	// Tags Key/value tags for organizing and filtering resources. Up to 8 per resource; keys 1–128 characters, values up to 256. Keys prefixed `mobius:` are system-managed and cannot be set by callers.
 	Tags  *TagMap `json:"tags,omitempty"`
 	Title *string `json:"title,omitempty"`
 }
 
-// BlueprintTableInput A desired table. `name` is its immutable project-unique identity (lower snake_case). `schema` carries the full column and identity definition and is validated on apply. The identity column and the required-ness of existing columns are immutable after create, so a re-apply that changes them is rejected.
+// BlueprintTableInput A desired table. `key` is its stable Blueprint handle; `name` is project-unique (lower snake_case) and may be changed after binding. `schema` carries the full column and identity definition and is validated on apply. The identity column and the required-ness of existing columns are immutable after create, so a re-apply that changes them is rejected.
 type BlueprintTableInput struct {
 	Description *string `json:"description,omitempty"`
 
@@ -4004,14 +4178,25 @@ type BlueprintTableInput struct {
 	Schema TableSchema `json:"schema"`
 }
 
-// BlueprintToolkitActionGrant Grants one action into a toolkit by its name.
+// BlueprintToolkitActionGrant Grants actions into a toolkit using the canonical Toolkit selector vocabulary. Supply `selector`; `selector_type` defaults to `exact`. `action_name` is a backwards-compatible alias for an exact selector and cannot be combined with `selector`.
 type BlueprintToolkitActionGrant struct {
-	ActionName string `json:"action_name"`
+	// ActionName Legacy alias for an exact action-name selector.
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
+	ActionName *string `json:"action_name,omitempty"`
+
+	// Selector Canonical selector value, such as `github.*` or `*`.
+	Selector *string `json:"selector,omitempty"`
+
+	// SelectorType Selector type used to resolve matching actions.
+	SelectorType *BlueprintToolkitActionGrantSelectorType `json:"selector_type,omitempty"`
 }
+
+// BlueprintToolkitActionGrantSelectorType Selector type used to resolve matching actions.
+type BlueprintToolkitActionGrantSelectorType string
 
 // BlueprintToolkitInput A desired toolkit. Resolved only through its binding (toolkits have no unique name).
 type BlueprintToolkitInput struct {
-	// Actions Actions granted into the toolkit by exact action name.
+	// Actions Actions granted into the toolkit by canonical selector or legacy exact action name.
 	Actions     *[]BlueprintToolkitActionGrant `json:"actions,omitempty"`
 	Description *string                        `json:"description,omitempty"`
 	Key         string                         `json:"key"`
@@ -4310,6 +4495,9 @@ type CreateLoopRequest struct {
 
 	// Repositories Source repositories the loop targets.
 	Repositories *[]LoopSpecRepository `json:"repositories,omitempty"`
+
+	// RunName Templates for assigning an operator-facing title and optional description to each run. The object form leaves room for additional naming strategies without changing the loop spec shape.
+	RunName *RunNameSpec `json:"run_name,omitempty"`
 
 	// SchemaVersion Loop authoring schema version. Only schema version 1 is accepted.
 	SchemaVersion *CreateLoopRequestSchemaVersion `json:"schema_version,omitempty"`
@@ -5340,6 +5528,9 @@ type Loop struct {
 	// Repositories Source repositories the loop targets.
 	Repositories *[]LoopSpecRepository `json:"repositories,omitempty"`
 
+	// RunName Templates for assigning an operator-facing title and optional description to each run. The object form leaves room for additional naming strategies without changing the loop spec shape.
+	RunName *RunNameSpec `json:"run_name,omitempty"`
+
 	// SchemaVersion Loop authoring schema version. Only schema version 1 is accepted.
 	SchemaVersion *LoopSchemaVersion `json:"schema_version,omitempty"`
 
@@ -5655,6 +5846,9 @@ type LoopRun struct {
 	// CreditSpent Metered spend attributed to this run so far, in credits (up to 3 decimal places). Incremented atomically with each usage-ledger insert that carries this run's id. Counts all metered work regardless of credential source (BYOK calls count at their rate-card equivalent even though they bill zero credits).
 	CreditSpent *float64 `json:"credit_spent,omitempty"`
 
+	// Description Optional secondary description for this run.
+	Description *string `json:"description,omitempty"`
+
 	// ErrorMessage Human-readable failure summary; populated on `failed` runs.
 	ErrorMessage *string `json:"error_message,omitempty"`
 
@@ -5684,6 +5878,9 @@ type LoopRun struct {
 
 	// Meta Run and trigger metadata envelope, reachable in templates at `${{ meta.* }}`: `run_id`, `loop_id`, `source`, `trigger`, plus trigger-supplied facts such as `event_type`, `source_event_id`, and `scheduled_at`.
 	Meta *map[string]interface{} `json:"meta,omitempty"`
+
+	// Name Human-readable title for this run.
+	Name *string `json:"name,omitempty"`
 
 	// ParentLoopId Loop that triggered this run via an `loop` step. Present only on child runs.
 	ParentLoopId *string `json:"parent_loop_id,omitempty"`
@@ -6226,6 +6423,33 @@ type ModelProviderGroup struct {
 // ModelProviderGroupSource Where credentials come from — a project integration (`byok`) or a platform-managed key (`platform`).
 type ModelProviderGroupSource string
 
+// NudgeEventPayload Live reconciliation hint emitted for `nudge.queued`, `nudge.delivered`, and `nudge.cancelled`. Re-read the queue resource after receiving it; this pulse is not durable replay state.
+type NudgeEventPayload struct {
+	// Delivery `current_turn` means the input targets an in-flight turn; `new_turn` means Mobius queued a direct-session turn because none was nudgeable.
+	Delivery SessionNudgeDelivery `json:"delivery"`
+	NudgeId  string               `json:"nudge_id"`
+
+	// Status Durable nudge queue lifecycle status.
+	Status               SessionNudgeStatus     `json:"status"`
+	TurnId               string                 `json:"turn_id"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// NudgeSessionRequest defines model for NudgeSessionRequest.
+type NudgeSessionRequest struct {
+	// Content User direction to deliver at the next iteration boundary.
+	Content string `json:"content"`
+
+	// IdempotencyKey Dedup key scoped to the session. Reusing the key with identical content returns the original nudge request; different content conflicts.
+	IdempotencyKey *string `json:"idempotency_key,omitempty"`
+
+	// Metadata Free-form caller metadata retained with the nudge request.
+	Metadata *map[string]interface{} `json:"metadata,omitempty"`
+
+	// Wake When true and the target turn is waiting on an interruptible agent tool, resolve that tool call with `{ "interrupted": true, "reason": "user_direction" }` and resume the same turn. Running and newly queued turns ignore this field.
+	Wake *bool `json:"wake,omitempty"`
+}
+
 // PingWebhookRequest defines model for PingWebhookRequest.
 type PingWebhookRequest struct {
 	// Url URL to test. When supplied, the ping is sent to this URL instead of the webhook's saved URL — use this to validate a candidate URL before saving it. When omitted, the webhook's current saved URL is used.
@@ -6483,6 +6707,15 @@ type RunFailedPayload struct {
 	ErrorType            *string                `json:"error_type,omitempty"`
 	Step                 *string                `json:"step,omitempty"`
 	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// RunNameSpec Templates for assigning an operator-facing title and optional description to each run. The object form leaves room for additional naming strategies without changing the loop spec shape.
+type RunNameSpec struct {
+	// DescriptionTemplate Optional `${{ event.* }}`, `${{ meta.* }}`, and `${{ config.* }}` template rendered as secondary descriptive text when the run is created.
+	DescriptionTemplate *string `json:"description_template,omitempty"`
+
+	// Template `${{ event.* }}`, `${{ meta.* }}`, and `${{ config.* }}` template rendered as the run title when the run is created. When blank, the run title falls back to the loop name. This property remains required for compatibility, but may be blank when only description_template is configured. Send empty title and description templates in an update to clear the run display configuration.
+	Template string `json:"template"`
 }
 
 // RunResumedPayload defines model for RunResumedPayload.
@@ -6817,6 +7050,76 @@ type SessionMessagePreviewFrameEventType string
 // SessionMessageRole Message role: `system`, `user`, `assistant`, `tool`, or `compaction`.
 type SessionMessageRole string
 
+// SessionNudge defines model for SessionNudge.
+type SessionNudge struct {
+	CancelledAt *time.Time `json:"cancelled_at,omitempty"`
+
+	// Content Exact user direction supplied when the nudge was queued.
+	Content     string     `json:"content"`
+	CreatedAt   time.Time  `json:"created_at"`
+	DeliveredAt *time.Time `json:"delivered_at,omitempty"`
+
+	// Delivery `current_turn` means the input targets an in-flight turn; `new_turn` means Mobius queued a direct-session turn because none was nudgeable.
+	Delivery SessionNudgeDelivery `json:"delivery"`
+
+	// Id Stable nudge identifier.
+	Id string `json:"id"`
+
+	// SenderPrincipalId Principal that queued the nudge.
+	SenderPrincipalId string `json:"sender_principal_id"`
+
+	// Status Durable nudge queue lifecycle status.
+	Status SessionNudgeStatus `json:"status"`
+	Turn   SessionNudgeTurn   `json:"turn"`
+}
+
+// SessionNudgeAck defines model for SessionNudgeAck.
+type SessionNudgeAck struct {
+	// AfterSequence Current transcript sequence cursor for following the target turn.
+	AfterSequence int64 `json:"after_sequence"`
+
+	// Deduped True when an existing idempotent nudge request was returned.
+	Deduped bool `json:"deduped"`
+
+	// Delivery `current_turn` means the input targets an in-flight turn; `new_turn` means Mobius queued a direct-session turn because none was nudgeable.
+	Delivery SessionNudgeDelivery `json:"delivery"`
+
+	// NudgeId Stable id of the durable nudge mailbox row.
+	NudgeId string `json:"nudge_id"`
+
+	// Session Durable conversation transcript owned by an agent.
+	Session Session `json:"session"`
+
+	// Turn One attempt of an agent running the agent loop — the unit that produces a transcript. A turn is triggered by a direct send to the session, a loop step (run_id + step_key), or an inbound channel message (channel_exchange_id). Its messages are read via the turn's transcript endpoint.
+	Turn AgentTurn `json:"turn"`
+
+	// WokeTurn True when wake interrupted a waiting tool and requeued this turn.
+	WokeTurn bool `json:"woke_turn"`
+}
+
+// SessionNudgeDelivery `current_turn` means the input targets an in-flight turn; `new_turn` means Mobius queued a direct-session turn because none was nudgeable.
+type SessionNudgeDelivery string
+
+// SessionNudgeListResponse defines model for SessionNudgeListResponse.
+type SessionNudgeListResponse struct {
+	HasMore bool           `json:"has_more"`
+	Items   []SessionNudge `json:"items"`
+
+	// NextCursor Opaque continuation cursor, or null at the end.
+	NextCursor *string `json:"next_cursor,omitempty"`
+}
+
+// SessionNudgeStatus Durable nudge queue lifecycle status.
+type SessionNudgeStatus string
+
+// SessionNudgeTurn defines model for SessionNudgeTurn.
+type SessionNudgeTurn struct {
+	Id string `json:"id"`
+
+	// Status Agent turn lifecycle status: `queued`, `running`, `waiting`, `completed`, `failed`, or `cancelled`.
+	Status AgentTurnStatus `json:"status"`
+}
+
 // SessionOrigin Surface that created the session: `manual`, `api`, `loop`, or `interaction`.
 type SessionOrigin string
 
@@ -6842,7 +7145,7 @@ type SessionStatus string
 //
 // The `event:` line is the authoritative frame selector. This union is reference-only: several payloads are structurally identical (e.g. `user.message` and `agent.message`) or permissive open objects, so the `data:` body alone cannot be shape-matched to a single variant. Consumers MUST dispatch on the `event:` name and decode the body as the corresponding payload — never validate the bare body against the union.
 //
-// Durable message frames (`user.message`, `agent.message`, `compaction.created`) are replayed from the transcript and carry an SSE `id: <sequence>` — that `sequence` is the only cursor a client persists for `after_sequence` / `Last-Event-ID` resume. Terminal `turn.*` frames mark the active turn settling. `session.message.preview`, `session.resync`, `tool.call`, `tool.result`, and `generation.delta` frames are live-only and carry no `id:`.
+// Durable message frames (`user.message`, `agent.message`, `compaction.created`) are replayed from the transcript and carry an SSE `id: <sequence>` — that `sequence` is the only cursor a client persists for `after_sequence` / `Last-Event-ID` resume. Terminal `turn.*` frames mark the active turn settling. `session.message.preview`, `session.resync`, `nudge.queued`, `nudge.delivered`, `nudge.cancelled`, `tool.call`, `tool.result`, and `generation.delta` frames are live-only and carry no `id:`.
 type SessionStreamFrame struct {
 	union json.RawMessage
 }
@@ -6938,6 +7241,11 @@ type SessionUserMessagePayload struct {
 
 // SessionVisibility Visibility of the session in project surfaces: `project` or `private`.
 type SessionVisibility string
+
+// SetBlueprintProtectionRequest defines model for SetBlueprintProtectionRequest.
+type SetBlueprintProtectionRequest struct {
+	Protected bool `json:"protected"`
+}
 
 // SignalLoopRunRequest Body for resuming a suspended loop step.
 type SignalLoopRunRequest struct {
@@ -7603,6 +7911,9 @@ type UpdateLoopRequest struct {
 
 	// Repositories Replacement source repositories the loop targets.
 	Repositories *[]LoopSpecRepository `json:"repositories,omitempty"`
+
+	// RunName Templates for assigning an operator-facing title and optional description to each run. The object form leaves room for additional naming strategies without changing the loop spec shape.
+	RunName *RunNameSpec `json:"run_name,omitempty"`
 
 	// SchemaVersion Loop authoring schema version. Only schema version 1 is accepted.
 	SchemaVersion *UpdateLoopRequestSchemaVersion `json:"schema_version,omitempty"`
@@ -8278,6 +8589,9 @@ type LimitParam = int
 // MemoryKeyParam defines model for MemoryKeyParam.
 type MemoryKeyParam = string
 
+// NudgeIdParam defines model for NudgeIdParam.
+type NudgeIdParam = string
+
 // OrderParam defines model for OrderParam.
 type OrderParam string
 
@@ -8439,7 +8753,25 @@ type CreateArtifactSignedUrlParams struct {
 
 // ListBlueprintBindingsParams defines parameters for ListBlueprintBindings.
 type ListBlueprintBindingsParams struct {
-	// Namespace Optional namespace filter (matches the binding's stored provenance).
+	// Namespace Optional namespace filter for the owning blueprint identity.
+	Namespace *string `form:"namespace,omitempty" json:"namespace,omitempty"`
+
+	// BlueprintKey Optional blueprint identifier filter.
+	BlueprintKey *string `form:"blueprint_key,omitempty" json:"blueprint_key,omitempty"`
+}
+
+// DeleteBlueprintParams defines parameters for DeleteBlueprint.
+type DeleteBlueprintParams struct {
+	// Namespace Blueprint namespace. Omit for an unnamespaced blueprint.
+	Namespace *string `form:"namespace,omitempty" json:"namespace,omitempty"`
+
+	// DeleteRetained Also delete adopted resources and legacy bindings whose ownership is unknown. Defaults to false. Use only after inspecting the blueprint bindings because these resources may contain customer-authored data.
+	DeleteRetained *bool `form:"delete_retained,omitempty" json:"delete_retained,omitempty"`
+}
+
+// SetBlueprintProtectionParams defines parameters for SetBlueprintProtection.
+type SetBlueprintProtectionParams struct {
+	// Namespace Blueprint namespace. Omit for an unnamespaced blueprint.
 	Namespace *string `form:"namespace,omitempty" json:"namespace,omitempty"`
 }
 
@@ -8593,6 +8925,24 @@ type ListSessionMessagesParams struct {
 // ListSessionMessagesParamsOrder defines parameters for ListSessionMessages.
 type ListSessionMessagesParamsOrder string
 
+// ListSessionNudgesParams defines parameters for ListSessionNudges.
+type ListSessionNudgesParams struct {
+	// Status Filter by one or more nudge statuses.
+	Status *[]SessionNudgeStatus `form:"status,omitempty" json:"status,omitempty"`
+
+	// Order Scan direction for the page. `asc` (the default) returns oldest-first; `desc` returns newest-first — the way to fetch the latest rows of a long list (the tail) in a single request. Items in the response are always ordered ascending regardless of this value; `order` only selects which end of the list the page is taken from.
+	Order *ListSessionNudgesParamsOrder `form:"order,omitempty" json:"order,omitempty"`
+
+	// Cursor Cursor for pagination (opaque string from previous response)
+	Cursor *CursorParam `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Limit Maximum number of items to return
+	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// ListSessionNudgesParamsOrder defines parameters for ListSessionNudges.
+type ListSessionNudgesParamsOrder string
+
 // StreamSessionParams defines parameters for StreamSession.
 type StreamSessionParams struct {
 	// AfterSequence Continuation cursor for sequence-ordered lists. Only include rows whose monotonic per-resource sequence is strictly greater than this value. Pass the `next_sequence` from the previous response to fetch the next page.
@@ -8734,6 +9084,9 @@ type CreateAPIKeyJSONRequestBody = CreateAPIKeyRequest
 // ApplyBlueprintJSONRequestBody defines body for ApplyBlueprint for application/json ContentType.
 type ApplyBlueprintJSONRequestBody = ApplyBlueprintRequest
 
+// SetBlueprintProtectionJSONRequestBody defines body for SetBlueprintProtection for application/json ContentType.
+type SetBlueprintProtectionJSONRequestBody = SetBlueprintProtectionRequest
+
 // CreateEnvironmentJSONRequestBody defines body for CreateEnvironment for application/json ContentType.
 type CreateEnvironmentJSONRequestBody = CreateEnvironmentRequest
 
@@ -8778,6 +9131,9 @@ type UpdateSessionJSONRequestBody = UpdateSessionRequest
 
 // AppendSessionMessagesJSONRequestBody defines body for AppendSessionMessages for application/json ContentType.
 type AppendSessionMessagesJSONRequestBody = AppendSessionMessagesRequest
+
+// NudgeSessionJSONRequestBody defines body for NudgeSession for application/json ContentType.
+type NudgeSessionJSONRequestBody = NudgeSessionRequest
 
 // StartTurnJSONRequestBody defines body for StartTurn for application/json ContentType.
 type StartTurnJSONRequestBody = StartTurnRequest
@@ -10471,6 +10827,111 @@ func (a LimitReachedPayload) MarshalJSON() ([]byte, error) {
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'used': %w", err)
 		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for NudgeEventPayload. Returns the specified
+// element and whether it was found
+func (a NudgeEventPayload) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for NudgeEventPayload
+func (a *NudgeEventPayload) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for NudgeEventPayload to handle AdditionalProperties
+func (a *NudgeEventPayload) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["delivery"]; found {
+		err = json.Unmarshal(raw, &a.Delivery)
+		if err != nil {
+			return fmt.Errorf("error reading 'delivery': %w", err)
+		}
+		delete(object, "delivery")
+	}
+
+	if raw, found := object["nudge_id"]; found {
+		err = json.Unmarshal(raw, &a.NudgeId)
+		if err != nil {
+			return fmt.Errorf("error reading 'nudge_id': %w", err)
+		}
+		delete(object, "nudge_id")
+	}
+
+	if raw, found := object["status"]; found {
+		err = json.Unmarshal(raw, &a.Status)
+		if err != nil {
+			return fmt.Errorf("error reading 'status': %w", err)
+		}
+		delete(object, "status")
+	}
+
+	if raw, found := object["turn_id"]; found {
+		err = json.Unmarshal(raw, &a.TurnId)
+		if err != nil {
+			return fmt.Errorf("error reading 'turn_id': %w", err)
+		}
+		delete(object, "turn_id")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for NudgeEventPayload to handle AdditionalProperties
+func (a NudgeEventPayload) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["delivery"], err = json.Marshal(a.Delivery)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'delivery': %w", err)
+	}
+
+	object["nudge_id"], err = json.Marshal(a.NudgeId)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'nudge_id': %w", err)
+	}
+
+	object["status"], err = json.Marshal(a.Status)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'status': %w", err)
+	}
+
+	object["turn_id"], err = json.Marshal(a.TurnId)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'turn_id': %w", err)
 	}
 
 	for fieldName, field := range a.AdditionalProperties {
@@ -15098,6 +15559,32 @@ func (t *SessionStreamFrame) MergeTurnCancelledPayload(v TurnCancelledPayload) e
 	return err
 }
 
+// AsNudgeEventPayload returns the union data inside the SessionStreamFrame as a NudgeEventPayload
+func (t SessionStreamFrame) AsNudgeEventPayload() (NudgeEventPayload, error) {
+	var body NudgeEventPayload
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromNudgeEventPayload overwrites any union data inside the SessionStreamFrame as the provided NudgeEventPayload
+func (t *SessionStreamFrame) FromNudgeEventPayload(v NudgeEventPayload) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeNudgeEventPayload performs a merge with any union data inside the SessionStreamFrame, using the provided NudgeEventPayload
+func (t *SessionStreamFrame) MergeNudgeEventPayload(v NudgeEventPayload) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
 // AsSessionMessagePreviewFrame returns the union data inside the SessionStreamFrame as a SessionMessagePreviewFrame
 func (t SessionStreamFrame) AsSessionMessagePreviewFrame() (SessionMessagePreviewFrame, error) {
 	var body SessionMessagePreviewFrame
@@ -16024,6 +16511,14 @@ type ClientInterface interface {
 	// ListBlueprintBindings request
 	ListBlueprintBindings(ctx context.Context, projectHandle ProjectHandleParam, params *ListBlueprintBindingsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// DeleteBlueprint request
+	DeleteBlueprint(ctx context.Context, projectHandle ProjectHandleParam, blueprintKey string, params *DeleteBlueprintParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// SetBlueprintProtectionWithBody request with any body
+	SetBlueprintProtectionWithBody(ctx context.Context, projectHandle ProjectHandleParam, blueprintKey string, params *SetBlueprintProtectionParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	SetBlueprintProtection(ctx context.Context, projectHandle ProjectHandleParam, blueprintKey string, params *SetBlueprintProtectionParams, body SetBlueprintProtectionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetProjectCapabilities request
 	GetProjectCapabilities(ctx context.Context, projectHandle ProjectHandleParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -16173,6 +16668,20 @@ type ClientInterface interface {
 	AppendSessionMessagesWithBody(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	AppendSessionMessages(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, body AppendSessionMessagesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListSessionNudges request
+	ListSessionNudges(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, params *ListSessionNudgesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// NudgeSessionWithBody request with any body
+	NudgeSessionWithBody(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	NudgeSession(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, body NudgeSessionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetSessionNudge request
+	GetSessionNudge(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, nudgeId NudgeIdParam, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CancelNudge request
+	CancelNudge(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, nudgeId NudgeIdParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// StreamSession request
 	StreamSession(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, params *StreamSessionParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -17096,6 +17605,42 @@ func (c *Client) ListBlueprintBindings(ctx context.Context, projectHandle Projec
 	return c.Client.Do(req)
 }
 
+func (c *Client) DeleteBlueprint(ctx context.Context, projectHandle ProjectHandleParam, blueprintKey string, params *DeleteBlueprintParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteBlueprintRequest(c.Server, projectHandle, blueprintKey, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) SetBlueprintProtectionWithBody(ctx context.Context, projectHandle ProjectHandleParam, blueprintKey string, params *SetBlueprintProtectionParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSetBlueprintProtectionRequestWithBody(c.Server, projectHandle, blueprintKey, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) SetBlueprintProtection(ctx context.Context, projectHandle ProjectHandleParam, blueprintKey string, params *SetBlueprintProtectionParams, body SetBlueprintProtectionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSetBlueprintProtectionRequest(c.Server, projectHandle, blueprintKey, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) GetProjectCapabilities(ctx context.Context, projectHandle ProjectHandleParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetProjectCapabilitiesRequest(c.Server, projectHandle)
 	if err != nil {
@@ -17746,6 +18291,66 @@ func (c *Client) AppendSessionMessagesWithBody(ctx context.Context, projectHandl
 
 func (c *Client) AppendSessionMessages(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, body AppendSessionMessagesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewAppendSessionMessagesRequest(c.Server, projectHandle, sessionId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListSessionNudges(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, params *ListSessionNudgesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListSessionNudgesRequest(c.Server, projectHandle, sessionId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) NudgeSessionWithBody(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewNudgeSessionRequestWithBody(c.Server, projectHandle, sessionId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) NudgeSession(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, body NudgeSessionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewNudgeSessionRequest(c.Server, projectHandle, sessionId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetSessionNudge(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, nudgeId NudgeIdParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetSessionNudgeRequest(c.Server, projectHandle, sessionId, nudgeId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CancelNudge(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, nudgeId NudgeIdParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCancelNudgeRequest(c.Server, projectHandle, sessionId, nudgeId)
 	if err != nil {
 		return nil, err
 	}
@@ -20975,6 +21580,18 @@ func NewListBlueprintBindingsRequest(server string, projectHandle ProjectHandleP
 
 		}
 
+		if params.BlueprintKey != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "blueprint_key", *params.BlueprintKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
 		if encoded := queryValues.Encode(); encoded != "" {
 			rawQueryFragments = append(rawQueryFragments, encoded)
 		}
@@ -20985,6 +21602,167 @@ func NewListBlueprintBindingsRequest(server string, projectHandle ProjectHandleP
 	if err != nil {
 		return nil, err
 	}
+
+	return req, nil
+}
+
+// NewDeleteBlueprintRequest generates requests for DeleteBlueprint
+func NewDeleteBlueprintRequest(server string, projectHandle ProjectHandleParam, blueprintKey string, params *DeleteBlueprintParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project_handle", projectHandle, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "blueprint_key", blueprintKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/blueprints/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Namespace != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "namespace", *params.Namespace, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.DeleteRetained != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "delete_retained", *params.DeleteRetained, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "boolean", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewSetBlueprintProtectionRequest calls the generic SetBlueprintProtection builder with application/json body
+func NewSetBlueprintProtectionRequest(server string, projectHandle ProjectHandleParam, blueprintKey string, params *SetBlueprintProtectionParams, body SetBlueprintProtectionJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewSetBlueprintProtectionRequestWithBody(server, projectHandle, blueprintKey, params, "application/json", bodyReader)
+}
+
+// NewSetBlueprintProtectionRequestWithBody generates requests for SetBlueprintProtection with any type of body
+func NewSetBlueprintProtectionRequestWithBody(server string, projectHandle ProjectHandleParam, blueprintKey string, params *SetBlueprintProtectionParams, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project_handle", projectHandle, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "blueprint_key", blueprintKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/blueprints/%s/protection", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Namespace != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "namespace", *params.Namespace, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
 }
@@ -23313,6 +24091,260 @@ func NewAppendSessionMessagesRequestWithBody(server string, projectHandle Projec
 	}
 
 	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewListSessionNudgesRequest generates requests for ListSessionNudges
+func NewListSessionNudgesRequest(server string, projectHandle ProjectHandleParam, sessionId SessionIdParam, params *ListSessionNudgesParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project_handle", projectHandle, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "session_id", sessionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/sessions/%s/nudges", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Status != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "status", *params.Status, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "array", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Order != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "order", *params.Order, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Cursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "cursor", *params.Cursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewNudgeSessionRequest calls the generic NudgeSession builder with application/json body
+func NewNudgeSessionRequest(server string, projectHandle ProjectHandleParam, sessionId SessionIdParam, body NudgeSessionJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewNudgeSessionRequestWithBody(server, projectHandle, sessionId, "application/json", bodyReader)
+}
+
+// NewNudgeSessionRequestWithBody generates requests for NudgeSession with any type of body
+func NewNudgeSessionRequestWithBody(server string, projectHandle ProjectHandleParam, sessionId SessionIdParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project_handle", projectHandle, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "session_id", sessionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/sessions/%s/nudges", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetSessionNudgeRequest generates requests for GetSessionNudge
+func NewGetSessionNudgeRequest(server string, projectHandle ProjectHandleParam, sessionId SessionIdParam, nudgeId NudgeIdParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project_handle", projectHandle, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "session_id", sessionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam2 string
+
+	pathParam2, err = runtime.StyleParamWithOptions("simple", false, "nudge_id", nudgeId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/sessions/%s/nudges/%s", pathParam0, pathParam1, pathParam2)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCancelNudgeRequest generates requests for CancelNudge
+func NewCancelNudgeRequest(server string, projectHandle ProjectHandleParam, sessionId SessionIdParam, nudgeId NudgeIdParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project_handle", projectHandle, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "session_id", sessionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam2 string
+
+	pathParam2, err = runtime.StyleParamWithOptions("simple", false, "nudge_id", nudgeId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/sessions/%s/nudges/%s/cancel", pathParam0, pathParam1, pathParam2)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
 
 	return req, nil
 }
@@ -25880,6 +26912,14 @@ type ClientWithResponsesInterface interface {
 	// ListBlueprintBindingsWithResponse request
 	ListBlueprintBindingsWithResponse(ctx context.Context, projectHandle ProjectHandleParam, params *ListBlueprintBindingsParams, reqEditors ...RequestEditorFn) (*ListBlueprintBindingsResponse, error)
 
+	// DeleteBlueprintWithResponse request
+	DeleteBlueprintWithResponse(ctx context.Context, projectHandle ProjectHandleParam, blueprintKey string, params *DeleteBlueprintParams, reqEditors ...RequestEditorFn) (*DeleteBlueprintResponse, error)
+
+	// SetBlueprintProtectionWithBodyWithResponse request with any body
+	SetBlueprintProtectionWithBodyWithResponse(ctx context.Context, projectHandle ProjectHandleParam, blueprintKey string, params *SetBlueprintProtectionParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetBlueprintProtectionResponse, error)
+
+	SetBlueprintProtectionWithResponse(ctx context.Context, projectHandle ProjectHandleParam, blueprintKey string, params *SetBlueprintProtectionParams, body SetBlueprintProtectionJSONRequestBody, reqEditors ...RequestEditorFn) (*SetBlueprintProtectionResponse, error)
+
 	// GetProjectCapabilitiesWithResponse request
 	GetProjectCapabilitiesWithResponse(ctx context.Context, projectHandle ProjectHandleParam, reqEditors ...RequestEditorFn) (*GetProjectCapabilitiesResponse, error)
 
@@ -26029,6 +27069,20 @@ type ClientWithResponsesInterface interface {
 	AppendSessionMessagesWithBodyWithResponse(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*AppendSessionMessagesResponse, error)
 
 	AppendSessionMessagesWithResponse(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, body AppendSessionMessagesJSONRequestBody, reqEditors ...RequestEditorFn) (*AppendSessionMessagesResponse, error)
+
+	// ListSessionNudgesWithResponse request
+	ListSessionNudgesWithResponse(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, params *ListSessionNudgesParams, reqEditors ...RequestEditorFn) (*ListSessionNudgesResponse, error)
+
+	// NudgeSessionWithBodyWithResponse request with any body
+	NudgeSessionWithBodyWithResponse(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*NudgeSessionResponse, error)
+
+	NudgeSessionWithResponse(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, body NudgeSessionJSONRequestBody, reqEditors ...RequestEditorFn) (*NudgeSessionResponse, error)
+
+	// GetSessionNudgeWithResponse request
+	GetSessionNudgeWithResponse(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, nudgeId NudgeIdParam, reqEditors ...RequestEditorFn) (*GetSessionNudgeResponse, error)
+
+	// CancelNudgeWithResponse request
+	CancelNudgeWithResponse(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, nudgeId NudgeIdParam, reqEditors ...RequestEditorFn) (*CancelNudgeResponse, error)
 
 	// StreamSessionWithResponse request
 	StreamSessionWithResponse(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, params *StreamSessionParams, reqEditors ...RequestEditorFn) (*StreamSessionResponse, error)
@@ -27793,6 +28847,78 @@ func (r ListBlueprintBindingsResponse) ContentType() string {
 	return ""
 }
 
+type DeleteBlueprintResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *BlueprintDeleteResult
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+	JSON409      *Conflict
+	JSON429      *TooManyRequests
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteBlueprintResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteBlueprintResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r DeleteBlueprintResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type SetBlueprintProtectionResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *BlueprintBindingListResponse
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+	JSON409      *Conflict
+	JSON429      *TooManyRequests
+}
+
+// Status returns HTTPResponse.Status
+func (r SetBlueprintProtectionResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r SetBlueprintProtectionResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r SetBlueprintProtectionResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type GetProjectCapabilitiesResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -29137,6 +30263,143 @@ func (r AppendSessionMessagesResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r AppendSessionMessagesResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ListSessionNudgesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *SessionNudgeListResponse
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r ListSessionNudgesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListSessionNudgesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListSessionNudgesResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type NudgeSessionResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON202      *SessionNudgeAck
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+	JSON409      *Conflict
+	JSON429      *TooManyRequests
+}
+
+// Status returns HTTPResponse.Status
+func (r NudgeSessionResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r NudgeSessionResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r NudgeSessionResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetSessionNudgeResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *SessionNudge
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r GetSessionNudgeResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetSessionNudgeResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetSessionNudgeResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type CancelNudgeResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *SessionNudge
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+	JSON409      *Conflict
+}
+
+// Status returns HTTPResponse.Status
+func (r CancelNudgeResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CancelNudgeResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CancelNudgeResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -31159,6 +32422,32 @@ func (c *ClientWithResponses) ListBlueprintBindingsWithResponse(ctx context.Cont
 	return ParseListBlueprintBindingsResponse(rsp)
 }
 
+// DeleteBlueprintWithResponse request returning *DeleteBlueprintResponse
+func (c *ClientWithResponses) DeleteBlueprintWithResponse(ctx context.Context, projectHandle ProjectHandleParam, blueprintKey string, params *DeleteBlueprintParams, reqEditors ...RequestEditorFn) (*DeleteBlueprintResponse, error) {
+	rsp, err := c.DeleteBlueprint(ctx, projectHandle, blueprintKey, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteBlueprintResponse(rsp)
+}
+
+// SetBlueprintProtectionWithBodyWithResponse request with arbitrary body returning *SetBlueprintProtectionResponse
+func (c *ClientWithResponses) SetBlueprintProtectionWithBodyWithResponse(ctx context.Context, projectHandle ProjectHandleParam, blueprintKey string, params *SetBlueprintProtectionParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetBlueprintProtectionResponse, error) {
+	rsp, err := c.SetBlueprintProtectionWithBody(ctx, projectHandle, blueprintKey, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSetBlueprintProtectionResponse(rsp)
+}
+
+func (c *ClientWithResponses) SetBlueprintProtectionWithResponse(ctx context.Context, projectHandle ProjectHandleParam, blueprintKey string, params *SetBlueprintProtectionParams, body SetBlueprintProtectionJSONRequestBody, reqEditors ...RequestEditorFn) (*SetBlueprintProtectionResponse, error) {
+	rsp, err := c.SetBlueprintProtection(ctx, projectHandle, blueprintKey, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSetBlueprintProtectionResponse(rsp)
+}
+
 // GetProjectCapabilitiesWithResponse request returning *GetProjectCapabilitiesResponse
 func (c *ClientWithResponses) GetProjectCapabilitiesWithResponse(ctx context.Context, projectHandle ProjectHandleParam, reqEditors ...RequestEditorFn) (*GetProjectCapabilitiesResponse, error) {
 	rsp, err := c.GetProjectCapabilities(ctx, projectHandle, reqEditors...)
@@ -31637,6 +32926,50 @@ func (c *ClientWithResponses) AppendSessionMessagesWithResponse(ctx context.Cont
 		return nil, err
 	}
 	return ParseAppendSessionMessagesResponse(rsp)
+}
+
+// ListSessionNudgesWithResponse request returning *ListSessionNudgesResponse
+func (c *ClientWithResponses) ListSessionNudgesWithResponse(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, params *ListSessionNudgesParams, reqEditors ...RequestEditorFn) (*ListSessionNudgesResponse, error) {
+	rsp, err := c.ListSessionNudges(ctx, projectHandle, sessionId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListSessionNudgesResponse(rsp)
+}
+
+// NudgeSessionWithBodyWithResponse request with arbitrary body returning *NudgeSessionResponse
+func (c *ClientWithResponses) NudgeSessionWithBodyWithResponse(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*NudgeSessionResponse, error) {
+	rsp, err := c.NudgeSessionWithBody(ctx, projectHandle, sessionId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseNudgeSessionResponse(rsp)
+}
+
+func (c *ClientWithResponses) NudgeSessionWithResponse(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, body NudgeSessionJSONRequestBody, reqEditors ...RequestEditorFn) (*NudgeSessionResponse, error) {
+	rsp, err := c.NudgeSession(ctx, projectHandle, sessionId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseNudgeSessionResponse(rsp)
+}
+
+// GetSessionNudgeWithResponse request returning *GetSessionNudgeResponse
+func (c *ClientWithResponses) GetSessionNudgeWithResponse(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, nudgeId NudgeIdParam, reqEditors ...RequestEditorFn) (*GetSessionNudgeResponse, error) {
+	rsp, err := c.GetSessionNudge(ctx, projectHandle, sessionId, nudgeId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetSessionNudgeResponse(rsp)
+}
+
+// CancelNudgeWithResponse request returning *CancelNudgeResponse
+func (c *ClientWithResponses) CancelNudgeWithResponse(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, nudgeId NudgeIdParam, reqEditors ...RequestEditorFn) (*CancelNudgeResponse, error) {
+	rsp, err := c.CancelNudge(ctx, projectHandle, sessionId, nudgeId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCancelNudgeResponse(rsp)
 }
 
 // StreamSessionWithResponse request returning *StreamSessionResponse
@@ -34701,6 +36034,142 @@ func ParseListBlueprintBindingsResponse(rsp *http.Response) (*ListBlueprintBindi
 	return response, nil
 }
 
+// ParseDeleteBlueprintResponse parses an HTTP response from a DeleteBlueprintWithResponse call
+func ParseDeleteBlueprintResponse(rsp *http.Response) (*DeleteBlueprintResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteBlueprintResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest BlueprintDeleteResult
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest TooManyRequests
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseSetBlueprintProtectionResponse parses an HTTP response from a SetBlueprintProtectionWithResponse call
+func ParseSetBlueprintProtectionResponse(rsp *http.Response) (*SetBlueprintProtectionResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &SetBlueprintProtectionResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest BlueprintBindingListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest TooManyRequests
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseGetProjectCapabilitiesResponse parses an HTTP response from a GetProjectCapabilitiesWithResponse call
 func ParseGetProjectCapabilitiesResponse(rsp *http.Response) (*GetProjectCapabilitiesResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -36788,6 +38257,229 @@ func ParseAppendSessionMessagesResponse(rsp *http.Response) (*AppendSessionMessa
 			return nil, err
 		}
 		response.JSON429 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListSessionNudgesResponse parses an HTTP response from a ListSessionNudgesWithResponse call
+func ParseListSessionNudgesResponse(rsp *http.Response) (*ListSessionNudgesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListSessionNudgesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest SessionNudgeListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseNudgeSessionResponse parses an HTTP response from a NudgeSessionWithResponse call
+func ParseNudgeSessionResponse(rsp *http.Response) (*NudgeSessionResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &NudgeSessionResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+		var dest SessionNudgeAck
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON202 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest TooManyRequests
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetSessionNudgeResponse parses an HTTP response from a GetSessionNudgeWithResponse call
+func ParseGetSessionNudgeResponse(rsp *http.Response) (*GetSessionNudgeResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetSessionNudgeResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest SessionNudge
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCancelNudgeResponse parses an HTTP response from a CancelNudgeWithResponse call
+func ParseCancelNudgeResponse(rsp *http.Response) (*CancelNudgeResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CancelNudgeResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest SessionNudge
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	}
 

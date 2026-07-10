@@ -22,10 +22,11 @@ func registerBlueprintsCommands(app *cli.App) {
 	blueprintsGrp.Command("apply").
 		Description("Apply a blueprint to a project").
 		Flags(
-			cli.String("blueprint-key", "").Help("Optional blueprint identifier recorded as provenance."),
+			cli.String("blueprint-key", "").Help("Optional blueprint identifier that forms part of the blueprint identity."),
 			cli.String("blueprint-version", "").Help("Optional blueprint version recorded as provenance."),
 			cli.String("mode", "").Help("`apply` performs the change; `preview` validates and returns a plan without mutating resources."),
-			cli.String("namespace", "").Help("Optional namespace recorded as provenance on each binding."),
+			cli.String("namespace", "").Help("Optional namespace that forms part of the blueprint identity."),
+			cli.Bool("protect-resources", "").Help("When set, controls whether ordinary update and delete operations may change resources managed by this blueprint. Blueprint Apply and…"),
 			cli.String("resources", "").Help("[required] The desired resources grouped by type. All groups are optional. Accepts JSON, @file, or @-."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
@@ -58,6 +59,10 @@ func registerBlueprintsCommands(app *cli.App) {
 				v := ctx.String("namespace")
 				body.Namespace = &v
 			}
+			if ctx.IsSet("protect-resources") {
+				v := ctx.Bool("protect-resources")
+				body.ProtectResources = &v
+			}
 			if ctx.IsSet("resources") {
 				if err := decodeFlagJSON(ctx, "resources", ctx.String("resources"), &body.Resources); err != nil {
 					return err
@@ -76,10 +81,43 @@ func registerBlueprintsCommands(app *cli.App) {
 			return printResponse(ctx, "applyBlueprint", resp.StatusCode(), resp.Body)
 		})
 
+	blueprintsGrp.Command("delete").
+		Description("Delete an applied blueprint").
+		Args("blueprint-key").
+		Flags(
+			cli.String("namespace", "").Help("Blueprint namespace. Omit for an unnamespaced blueprint."),
+			cli.Bool("delete-retained", "").Help("Also delete adopted resources and legacy bindings whose ownership is unknown. Defaults to false. Use only after inspecting the blueprint…"),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			p1 := ctx.Arg(0)
+			params := &api.DeleteBlueprintParams{}
+			if ctx.IsSet("namespace") {
+				v := ctx.String("namespace")
+				params.Namespace = &v
+			}
+			if ctx.IsSet("delete-retained") {
+				v := ctx.Bool("delete-retained")
+				params.DeleteRetained = &v
+			}
+			resp, err := client.DeleteBlueprintWithResponse(ctx.Context(), p0, p1, params)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "deleteBlueprint", resp.StatusCode(), resp.Body)
+		})
+
 	blueprintsGrp.Command("list-bindings").
 		Description("List blueprint bindings").
 		Flags(
-			cli.String("namespace", "").Help("Optional namespace filter (matches the binding's stored provenance)."),
+			cli.String("namespace", "").Help("Optional namespace filter for the owning blueprint identity."),
+			cli.String("blueprint-key", "").Help("Optional blueprint identifier filter."),
 		).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -94,11 +132,55 @@ func registerBlueprintsCommands(app *cli.App) {
 				v := ctx.String("namespace")
 				params.Namespace = &v
 			}
+			if ctx.IsSet("blueprint-key") {
+				v := ctx.String("blueprint-key")
+				params.BlueprintKey = &v
+			}
 			resp, err := client.ListBlueprintBindingsWithResponse(ctx.Context(), p0, params)
 			if err != nil {
 				return err
 			}
 			return printResponse(ctx, "listBlueprintBindings", resp.StatusCode(), resp.Body)
+		})
+
+	blueprintsGrp.Command("set-blueprint-protection").
+		Description("Set blueprint resource protection").
+		Args("blueprint-key").
+		Flags(
+			cli.String("namespace", "").Help("Blueprint namespace. Omit for an unnamespaced blueprint."),
+			cli.Bool("protected", "").Help("[required] protected"),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			p1 := ctx.Arg(0)
+			params := &api.SetBlueprintProtectionParams{}
+			if ctx.IsSet("namespace") {
+				v := ctx.String("namespace")
+				params.Namespace = &v
+			}
+			var body api.SetBlueprintProtectionJSONRequestBody
+			if err := readJSONBody(ctx, &body); err != nil {
+				return err
+			}
+			if ctx.IsSet("protected") {
+				body.Protected = ctx.Bool("protected")
+			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
+			}
+			resp, err := client.SetBlueprintProtectionWithResponse(ctx.Context(), p0, p1, params, body)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "setBlueprintProtection", resp.StatusCode(), resp.Body)
 		})
 
 }

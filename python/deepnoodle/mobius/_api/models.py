@@ -387,6 +387,157 @@ class Agent(BaseModel):
     )
 
 
+class SessionStatus(StrEnum):
+    """
+    Durable conversation session status: `active`, `archived`, or `deleted`.
+    """
+
+    active = 'active'
+    archived = 'archived'
+    deleted = 'deleted'
+
+
+class SessionOrigin(StrEnum):
+    """
+    Surface that created the session: `manual`, `api`, `loop`, or `interaction`.
+    """
+
+    manual = 'manual'
+    api = 'api'
+    loop = 'loop'
+    interaction = 'interaction'
+
+
+class SessionScope(StrEnum):
+    """
+    Boundary used to resolve named sessions: `agent` or `loop`.
+    """
+
+    agent = 'agent'
+    loop = 'loop'
+
+
+class SessionVisibility(StrEnum):
+    """
+    Visibility of the session in project surfaces: `project` or `private`.
+    """
+
+    project = 'project'
+    private = 'private'
+
+
+class SessionCompactionBoundary(BaseModel):
+    """
+    Pointer to the latest compaction marker in a session's transcript. The marker is itself a transcript message (role `compaction`); everything at or below `covers_through_sequence` is summarized history.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    message_id: str = Field(
+        ..., description='Id of the compaction summary message in the transcript.'
+    )
+    sequence: int = Field(
+        ..., description='Transcript sequence of the compaction marker itself.'
+    )
+    covers_through_sequence: int = Field(
+        ...,
+        description='Highest message sequence this summary covers — the before/after boundary.',
+    )
+
+
+class Session(BaseModel):
+    """
+    Durable conversation transcript owned by an agent.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str = Field(..., description='Stable session identifier.')
+    agent_id: str = Field(..., description='Agent that owns this session.')
+    title: str = Field(..., description='Human-readable session title.')
+    status: SessionStatus = Field(..., description='Lifecycle status of the session.')
+    origin: SessionOrigin = Field(..., description='Surface that created the session.')
+    scope: SessionScope = Field(
+        ..., description='Boundary used to resolve the session key.'
+    )
+    scope_ref_id: str = Field(
+        ...,
+        description='Identifier of the resource the session is scoped to (e.g. the agent for agent-scoped sessions).',
+    )
+    scope_name: str = Field(
+        ...,
+        description='Caller-assigned name identifying this conversation within its scope (`scope` + `scope_ref_id`); reused as the session routing key.',
+    )
+    session_key: str = Field(
+        ...,
+        description='Stable session routing key used to look up a scoped conversation (mirrors `scope_name`).',
+    )
+    visibility: SessionVisibility = Field(
+        ..., description='Where the session appears in project UI surfaces.'
+    )
+    model: str | None = Field(
+        None, description='Model the session most recently exchanged tokens with.'
+    )
+    model_provider: str | None = Field(
+        None, description='Provider for the recorded `model`.'
+    )
+    compaction_policy: SessionCompactionPolicy | None = Field(
+        None,
+        description='Resolved message-compaction policy in effect for this session.',
+    )
+    thinking_effort: ThinkingEffort | None = Field(
+        None,
+        description="This session's reasoning-effort override, or absent when the session inherits the agent default. Turns resolve the effective level as agent default then this override.",
+    )
+    latest_compaction: SessionCompactionBoundary | None = Field(
+        None,
+        description='The most recent compaction marker in the transcript, or null when the session has never been compacted. Delineates summarized history (sequences at or below `covers_through_sequence`) from the live tail. Returned on the single-session read; absent from list entries.',
+    )
+    message_count: int = Field(
+        ...,
+        description='Total messages currently in the session, including compaction summaries.',
+    )
+    token_input_total: int = Field(
+        ...,
+        description='Lifetime fresh (uncached) input-token total for this session. Prompt-cache tokens are reported separately in `cache_read_input_total` and `cache_creation_input_total`.',
+    )
+    token_output_total: int = Field(
+        ..., description='Lifetime output-token total reported for this session.'
+    )
+    cache_read_input_total: int = Field(
+        ...,
+        description='Lifetime prompt-cache-read input-token total for this session.',
+    )
+    cache_creation_input_total: int = Field(
+        ...,
+        description='Lifetime prompt-cache-write (cache creation) input-token total for this session.',
+    )
+    version: int = Field(
+        ..., description='Optimistic-concurrency version. Increments on every mutation.'
+    )
+    last_message_at: AwareDatetime | None = Field(
+        None,
+        description='Timestamp of the most recent message append; null before any messages are stored.',
+    )
+    forked_from_session_id: str | None = Field(
+        None, description='Source session this one was forked from, if any.'
+    )
+    forked_from_sequence: int | None = Field(
+        None,
+        description='Sequence number in the source session at which the fork was taken.',
+    )
+    created_by: str | None = Field(
+        None, description='User who created this session, if attribution was captured.'
+    )
+    metadata: dict[str, Any] | None = Field(
+        None, description='Free-form caller metadata.'
+    )
+    created_at: AwareDatetime = Field(..., description='Record creation timestamp.')
+    updated_at: AwareDatetime = Field(..., description='Last update timestamp.')
+
+
 class AgentListResponse(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
@@ -3525,45 +3676,6 @@ class Skill(BaseModel):
     updated_at: AwareDatetime = Field(..., description='Last update timestamp.')
 
 
-class SessionStatus(StrEnum):
-    """
-    Durable conversation session status: `active`, `archived`, or `deleted`.
-    """
-
-    active = 'active'
-    archived = 'archived'
-    deleted = 'deleted'
-
-
-class SessionOrigin(StrEnum):
-    """
-    Surface that created the session: `manual`, `api`, `loop`, or `interaction`.
-    """
-
-    manual = 'manual'
-    api = 'api'
-    loop = 'loop'
-    interaction = 'interaction'
-
-
-class SessionScope(StrEnum):
-    """
-    Boundary used to resolve named sessions: `agent` or `loop`.
-    """
-
-    agent = 'agent'
-    loop = 'loop'
-
-
-class SessionVisibility(StrEnum):
-    """
-    Visibility of the session in project surfaces: `project` or `private`.
-    """
-
-    project = 'project'
-    private = 'private'
-
-
 class AgentTurnStatus(StrEnum):
     """
     Agent turn lifecycle status: `queued`, `running`, `waiting`, `completed`, `failed`, or `cancelled`.
@@ -3641,6 +3753,20 @@ class AgentTurnListResponse(BaseModel):
     next_cursor: str | None = Field(
         None,
         description='Opaque cursor to pass as `cursor` on the next request. Null when `has_more` is false.',
+    )
+
+
+class SessionListResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    items: list[Session] = Field(..., description='The list of results for this page.')
+    has_more: bool | None = Field(
+        None, description='True when more sessions exist past this page.'
+    )
+    next_cursor: str | None = Field(
+        None,
+        description='Opaque cursor for the next page — pass back as `cursor`. Null when `has_more` is false.',
     )
 
 
@@ -3799,7 +3925,7 @@ class AppendSessionMessage(BaseModel):
     )
     content: list[dict[str, Any]] = Field(
         ...,
-        description='Ordered content blocks (text, tool calls, tool results, images).',
+        description='Ordered content blocks (text, tool calls, tool results, images). Blocks of type `reminder` are host-managed runtime context and are rejected on this surface.',
     )
     metadata: dict[str, Any] | None = Field(
         None, description='Free-form caller metadata for this message.'
@@ -3807,26 +3933,6 @@ class AppendSessionMessage(BaseModel):
     created_at: AwareDatetime | None = Field(
         None,
         description='Caller-supplied creation timestamp. The server assigns one if absent.',
-    )
-
-
-class SessionCompactionBoundary(BaseModel):
-    """
-    Pointer to the latest compaction marker in a session's transcript. The marker is itself a transcript message (role `compaction`); everything at or below `covers_through_sequence` is summarized history.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    message_id: str = Field(
-        ..., description='Id of the compaction summary message in the transcript.'
-    )
-    sequence: int = Field(
-        ..., description='Transcript sequence of the compaction marker itself.'
-    )
-    covers_through_sequence: int = Field(
-        ...,
-        description='Highest message sequence this summary covers — the before/after boundary.',
     )
 
 
@@ -4027,6 +4133,130 @@ class StartTurnRequest(BaseModel):
     )
 
 
+class TurnAck(BaseModel):
+    """
+    Acknowledgement that a turn started, with a stream cursor.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    session: Session
+    turn: AgentTurn
+    after_sequence: int = Field(
+        ...,
+        description='The transcript message `sequence` cursor to stream from. Pass it as `after_sequence` to `GET .../stream` to follow this turn.',
+    )
+    deduped: bool | None = Field(
+        None,
+        description='True when a repeated idempotency key resumed an existing turn.',
+    )
+
+
+class NudgeSessionRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    content: str = Field(
+        ...,
+        description='User direction to deliver at the next iteration boundary.',
+        max_length=32768,
+        min_length=1,
+    )
+    idempotency_key: str | None = Field(
+        None,
+        description='Dedup key scoped to the session. Reusing the key with identical content returns the original nudge request; different content conflicts.',
+        max_length=255,
+    )
+    metadata: dict[str, Any] | None = Field(
+        None, description='Free-form caller metadata retained with the nudge request.'
+    )
+    wake: bool = Field(
+        False,
+        description='When true and the target turn is waiting on an interruptible agent tool, resolve that tool call with `{ "interrupted": true, "reason": "user_direction" }` and resume the same turn. Running and newly queued turns ignore this field.',
+    )
+
+
+class SessionNudgeStatus(StrEnum):
+    """
+    Durable nudge queue lifecycle status.
+    """
+
+    pending = 'pending'
+    delivered = 'delivered'
+    cancelled = 'cancelled'
+
+
+class SessionNudgeDelivery(StrEnum):
+    """
+    `current_turn` means the input targets an in-flight turn; `new_turn` means Mobius queued a direct-session turn because none was nudgeable.
+    """
+
+    current_turn = 'current_turn'
+    new_turn = 'new_turn'
+
+
+class SessionNudgeTurn(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str
+    status: AgentTurnStatus
+
+
+class SessionNudge(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str = Field(..., description='Stable nudge identifier.')
+    status: SessionNudgeStatus
+    delivery: SessionNudgeDelivery
+    content: str = Field(
+        ..., description='Exact user direction supplied when the nudge was queued.'
+    )
+    turn: SessionNudgeTurn
+    sender_principal_id: str = Field(
+        ..., description='Principal that queued the nudge.'
+    )
+    created_at: AwareDatetime
+    delivered_at: AwareDatetime | None = None
+    cancelled_at: AwareDatetime | None = None
+
+
+class SessionNudgeListResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    items: list[SessionNudge]
+    has_more: bool
+    next_cursor: str | None = Field(
+        None, description='Opaque continuation cursor, or null at the end.'
+    )
+
+
+class SessionNudgeAck(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    nudge_id: str = Field(
+        ..., description='Stable id of the durable nudge mailbox row.'
+    )
+    delivery: SessionNudgeDelivery
+    session: Session
+    turn: AgentTurn
+    after_sequence: int = Field(
+        ...,
+        description='Current transcript sequence cursor for following the target turn.',
+    )
+    deduped: bool = Field(
+        ..., description='True when an existing idempotent nudge request was returned.'
+    )
+    woke_turn: bool = Field(
+        ...,
+        description='True when wake interrupted a waiting tool and requeued this turn.',
+    )
+
+
 class SchemaVersion(StrEnum):
     """
     Loop authoring schema version. Only schema version 1 is accepted.
@@ -4055,6 +4285,24 @@ class LoopStatus(StrEnum):
     active = 'active'
     paused = 'paused'
     deleted = 'deleted'
+
+
+class RunNameSpec(BaseModel):
+    """
+    Templates for assigning an operator-facing title and optional description to each run. The object form leaves room for additional naming strategies without changing the loop spec shape.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    template: str = Field(
+        ...,
+        description='`${{ event.* }}`, `${{ meta.* }}`, and `${{ config.* }}` template rendered as the run title when the run is created. When blank, the run title falls back to the loop name. This property remains required for compatibility, but may be blank when only description_template is configured. Send empty title and description templates in an update to clear the run display configuration.',
+    )
+    description_template: str | None = Field(
+        None,
+        description='Optional `${{ event.* }}`, `${{ meta.* }}`, and `${{ config.* }}` template rendered as secondary descriptive text when the run is created.',
+    )
 
 
 class Source6(StrEnum):
@@ -4972,15 +5220,37 @@ class BlueprintActionAnnotations(BaseModel):
     long_running: bool | None = None
 
 
+class SelectorType1(StrEnum):
+    """
+    Selector type used to resolve matching actions.
+    """
+
+    exact = 'exact'
+    group = 'group'
+    platform = 'platform'
+    custom = 'custom'
+    wildcard = 'wildcard'
+
+
 class BlueprintToolkitActionGrant(BaseModel):
     """
-    Grants one action into a toolkit by its name.
+    Grants actions into a toolkit using the canonical Toolkit selector vocabulary. Supply `selector`; `selector_type` defaults to `exact`. `action_name` is a backwards-compatible alias for an exact selector and cannot be combined with `selector`.
     """
 
     model_config = ConfigDict(
         extra='forbid',
     )
-    action_name: str
+    selector_type: SelectorType1 = Field(
+        'exact', description='Selector type used to resolve matching actions.'
+    )
+    selector: str | None = Field(
+        None, description='Canonical selector value, such as `github.*` or `*`.'
+    )
+    action_name: str | None = Field(
+        None,
+        deprecated=True,
+        description='Legacy alias for an exact action-name selector.',
+    )
 
 
 class BlueprintSkillInput(BaseModel):
@@ -4996,6 +5266,10 @@ class BlueprintSkillInput(BaseModel):
     title: str | None = None
     description: str | None = None
     instructions: str | None = None
+    allowed_tools: list[str] | None = Field(
+        None,
+        description="Tool selectors that narrow the agent's effective tool set while this skill is active.",
+    )
     tags: TagMap | None = None
 
 
@@ -5003,6 +5277,14 @@ class Status5(StrEnum):
     draft = 'draft'
     active = 'active'
     paused = 'paused'
+
+
+class SchemaVersion3(StrEnum):
+    """
+    Loop authoring schema version. Only version 1 is accepted.
+    """
+
+    field_1 = '1'
 
 
 class Status6(StrEnum):
@@ -5037,6 +5319,13 @@ class BlueprintBinding(BaseModel):
     namespace: str | None = None
     blueprint_key: str | None = None
     blueprint_version: str | None = None
+    protected: bool = Field(
+        ..., description='Whether ordinary definition mutations are blocked.'
+    )
+    delete_on_destroy: bool = Field(
+        ...,
+        description='Whether deleting the blueprint will delete this resource instead of retaining it.',
+    )
 
 
 class BlueprintBindingListResponse(BaseModel):
@@ -5044,6 +5333,33 @@ class BlueprintBindingListResponse(BaseModel):
         extra='forbid',
     )
     items: list[BlueprintBinding]
+
+
+class SetBlueprintProtectionRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    protected: bool
+
+
+class Status7(StrEnum):
+    deleted = 'deleted'
+
+
+class BlueprintDeleteResult(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    status: Status7
+    namespace: str | None = None
+    blueprint_key: str
+    deleted: list[BlueprintBinding] = Field(
+        ..., description='Resources deleted with the blueprint.'
+    )
+    retained: list[BlueprintBinding] = Field(
+        ...,
+        description='Adopted or legacy resources retained after their bindings were removed.',
+    )
 
 
 class ColumnType(StrEnum):
@@ -5985,110 +6301,18 @@ class AgentToolManifest(BaseModel):
     )
 
 
-class Session(BaseModel):
+class NudgeEventPayload(BaseModel):
     """
-    Durable conversation transcript owned by an agent.
+    Live reconciliation hint emitted for `nudge.queued`, `nudge.delivered`, and `nudge.cancelled`. Re-read the queue resource after receiving it; this pulse is not durable replay state.
     """
 
     model_config = ConfigDict(
-        extra='forbid',
+        extra='allow',
     )
-    id: str = Field(..., description='Stable session identifier.')
-    agent_id: str = Field(..., description='Agent that owns this session.')
-    title: str = Field(..., description='Human-readable session title.')
-    status: SessionStatus = Field(..., description='Lifecycle status of the session.')
-    origin: SessionOrigin = Field(..., description='Surface that created the session.')
-    scope: SessionScope = Field(
-        ..., description='Boundary used to resolve the session key.'
-    )
-    scope_ref_id: str = Field(
-        ...,
-        description='Identifier of the resource the session is scoped to (e.g. the agent for agent-scoped sessions).',
-    )
-    scope_name: str = Field(
-        ...,
-        description='Caller-assigned name identifying this conversation within its scope (`scope` + `scope_ref_id`); reused as the session routing key.',
-    )
-    session_key: str = Field(
-        ...,
-        description='Stable session routing key used to look up a scoped conversation (mirrors `scope_name`).',
-    )
-    visibility: SessionVisibility = Field(
-        ..., description='Where the session appears in project UI surfaces.'
-    )
-    model: str | None = Field(
-        None, description='Model the session most recently exchanged tokens with.'
-    )
-    model_provider: str | None = Field(
-        None, description='Provider for the recorded `model`.'
-    )
-    compaction_policy: SessionCompactionPolicy | None = Field(
-        None,
-        description='Resolved message-compaction policy in effect for this session.',
-    )
-    thinking_effort: ThinkingEffort | None = Field(
-        None,
-        description="This session's reasoning-effort override, or absent when the session inherits the agent default. Turns resolve the effective level as agent default then this override.",
-    )
-    latest_compaction: SessionCompactionBoundary | None = Field(
-        None,
-        description='The most recent compaction marker in the transcript, or null when the session has never been compacted. Delineates summarized history (sequences at or below `covers_through_sequence`) from the live tail. Returned on the single-session read; absent from list entries.',
-    )
-    message_count: int = Field(
-        ...,
-        description='Total messages currently in the session, including compaction summaries.',
-    )
-    token_input_total: int = Field(
-        ...,
-        description='Lifetime fresh (uncached) input-token total for this session. Prompt-cache tokens are reported separately in `cache_read_input_total` and `cache_creation_input_total`.',
-    )
-    token_output_total: int = Field(
-        ..., description='Lifetime output-token total reported for this session.'
-    )
-    cache_read_input_total: int = Field(
-        ...,
-        description='Lifetime prompt-cache-read input-token total for this session.',
-    )
-    cache_creation_input_total: int = Field(
-        ...,
-        description='Lifetime prompt-cache-write (cache creation) input-token total for this session.',
-    )
-    version: int = Field(
-        ..., description='Optimistic-concurrency version. Increments on every mutation.'
-    )
-    last_message_at: AwareDatetime | None = Field(
-        None,
-        description='Timestamp of the most recent message append; null before any messages are stored.',
-    )
-    forked_from_session_id: str | None = Field(
-        None, description='Source session this one was forked from, if any.'
-    )
-    forked_from_sequence: int | None = Field(
-        None,
-        description='Sequence number in the source session at which the fork was taken.',
-    )
-    created_by: str | None = Field(
-        None, description='User who created this session, if attribution was captured.'
-    )
-    metadata: dict[str, Any] | None = Field(
-        None, description='Free-form caller metadata.'
-    )
-    created_at: AwareDatetime = Field(..., description='Record creation timestamp.')
-    updated_at: AwareDatetime = Field(..., description='Last update timestamp.')
-
-
-class SessionListResponse(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    items: list[Session] = Field(..., description='The list of results for this page.')
-    has_more: bool | None = Field(
-        None, description='True when more sessions exist past this page.'
-    )
-    next_cursor: str | None = Field(
-        None,
-        description='Opaque cursor for the next page — pass back as `cursor`. Null when `has_more` is false.',
-    )
+    nudge_id: str
+    turn_id: str
+    delivery: SessionNudgeDelivery
+    status: SessionNudgeStatus
 
 
 class AppendSessionMessagesRequest(BaseModel):
@@ -6157,26 +6381,6 @@ class InlineAgentConfig(BaseModel):
     skills: list[InlineSkill] | None = Field(
         None,
         description="Skills that replace the agent's skill assignments for this session. Each carries its full instruction body, lazy-loaded via the invoke_skill tool. Replaces wholesale.",
-    )
-
-
-class TurnAck(BaseModel):
-    """
-    Acknowledgement that a turn started, with a stream cursor.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    session: Session
-    turn: AgentTurn
-    after_sequence: int = Field(
-        ...,
-        description='The transcript message `sequence` cursor to stream from. Pass it as `after_sequence` to `GET .../stream` to follow this turn.',
-    )
-    deduped: bool | None = Field(
-        None,
-        description='True when a repeated idempotency key resumed an existing turn.',
     )
 
 
@@ -6467,6 +6671,12 @@ class LoopRun(BaseModel):
     )
     id: str = Field(..., description='Stable run identifier.')
     loop_id: str = Field(..., description='Loop this run belongs to.')
+    name: str | None = Field(
+        None, description='Human-readable title for this run.', max_length=160
+    )
+    description: str | None = Field(
+        None, description='Optional secondary description for this run.', max_length=320
+    )
     loop_name: str | None = Field(
         None, description='Human-readable name of the loop this run belongs to.'
     )
@@ -6580,7 +6790,7 @@ class LoopRunListResponse(BaseModel):
 
 class BlueprintResourceRef(BaseModel):
     """
-    A reference to a Mobius resource by direct `id`, by blueprint `key` (resolved within this apply first, then against existing bindings), or by `blueprint_ref` (resolved by key; namespace is recorded as provenance and reserved for namespaced lookup).
+    A reference to a Mobius resource by direct `id`, by blueprint `key` (resolved within this apply first, then against existing bindings), or by `blueprint_ref` (resolved by key; its namespace is recorded as provenance and is not used for reference resolution in this version).
     """
 
     model_config = ConfigDict(
@@ -6627,7 +6837,8 @@ class BlueprintToolkitInput(BaseModel):
     name: str
     description: str | None = None
     actions: list[BlueprintToolkitActionGrant] | None = Field(
-        None, description='Actions granted into the toolkit by exact action name.'
+        None,
+        description='Actions granted into the toolkit by canonical selector or legacy exact action name.',
     )
     tags: TagMap | None = None
     metadata: dict[str, Any] | None = None
@@ -6645,7 +6856,28 @@ class BlueprintAgentInput(BaseModel):
     name: str
     description: str | None = None
     model: str | None = None
+    model_route: AgentModelRoute | None = Field(
+        None, description='Default route for model calls made by this agent.'
+    )
+    tool_presentation: AgentToolPresentation | None = Field(
+        None, description='How granted actions are presented to the model.'
+    )
     system_prompt: str | None = None
+    timeout_seconds: int | None = Field(
+        None,
+        description='Per-turn execution timeout; `0` uses the platform default.',
+        ge=0,
+    )
+    status: AgentStatus | None = Field(
+        None, description='Desired agent lifecycle status.'
+    )
+    compaction_policy: SessionCompactionPolicy | None = Field(
+        None, description='Default session-compaction policy inherited by new sessions.'
+    )
+    thinking_effort: ThinkingEffort | None = Field(
+        None,
+        description='Default reasoning-effort level for sessions and Loop agent steps.',
+    )
     kind: str | None = None
     color: str | None = None
     toolkits: list[BlueprintResourceRef] | None = None
@@ -6655,7 +6887,7 @@ class BlueprintAgentInput(BaseModel):
 
 class BlueprintLoopInput(BaseModel):
     """
-    A desired loop. The spec-bearing fields (`steps`, `triggers`, `event`, `config`, `limits`, `output`, `concurrency`, `repositories`, `cleanup`, `defaults`) mirror the loop authoring shape and are compiled by the loop engine. Applied loops default to `draft` unless `status` is set.
+    A desired loop. The spec-bearing fields (`steps`, `triggers`, `event`, `config`, `limits`, `output`, `concurrency`, `repositories`, `cleanup`, `defaults`, `run_name`) mirror the loop authoring shape and are compiled by the loop engine. Applied loops default to `draft` unless `status` is set. `default_config`, `settings`, and `tags` configure Loop row state.
     """
 
     model_config = ConfigDict(
@@ -6666,6 +6898,9 @@ class BlueprintLoopInput(BaseModel):
     description: str | None = None
     agent: BlueprintResourceRef | None = None
     status: Status5 | None = None
+    schema_version: SchemaVersion3 = Field(
+        '1', description='Loop authoring schema version. Only version 1 is accepted.'
+    )
     steps: list[dict[str, Any]] | None = None
     triggers: list[dict[str, Any]] | None = None
     event: dict[str, Any] | None = Field(
@@ -6682,12 +6917,23 @@ class BlueprintLoopInput(BaseModel):
         description='Cleanup steps run at the end of the run (maps to the loop spec `cleanup`).',
     )
     defaults: dict[str, Any] | None = None
+    run_name: RunNameSpec | None = Field(
+        None,
+        description='Templates for the operator-facing title and description of each run.',
+    )
+    default_config: dict[str, Any] | None = Field(
+        None,
+        description='Default config values used when a run starts without overrides.',
+    )
+    settings: dict[str, Any] | None = Field(
+        None, description='Free-form Loop-level settings consumed by the engine.'
+    )
     tags: TagMap | None = None
 
 
 class BlueprintTableInput(BaseModel):
     """
-    A desired table. `name` is its immutable project-unique identity (lower snake_case). `schema` carries the full column and identity definition and is validated on apply. The identity column and the required-ness of existing columns are immutable after create, so a re-apply that changes them is rejected.
+    A desired table. `key` is its stable Blueprint handle; `name` is project-unique (lower snake_case) and may be changed after binding. `schema` carries the full column and identity definition and is validated on apply. The identity column and the required-ness of existing columns are immutable after create, so a re-apply that changes them is rejected.
     """
 
     model_config = ConfigDict(
@@ -7166,13 +7412,19 @@ class ApplyBlueprintRequest(BaseModel):
         extra='forbid',
     )
     namespace: str | None = Field(
-        None, description='Optional namespace recorded as provenance on each binding.'
+        None,
+        description='Optional namespace that forms part of the blueprint identity.',
     )
     blueprint_key: str | None = Field(
-        None, description='Optional blueprint identifier recorded as provenance.'
+        None,
+        description='Optional blueprint identifier that forms part of the blueprint identity.',
     )
     blueprint_version: str | None = Field(
         None, description='Optional blueprint version recorded as provenance.'
+    )
+    protect_resources: bool | None = Field(
+        None,
+        description='When set, controls whether ordinary update and delete operations may change resources managed by this blueprint. Blueprint Apply and blueprint deletion remain allowed. Omit to preserve protection on existing bindings; new bindings default to unprotected.',
     )
     mode: BlueprintApplyMode | None = None
     resources: BlueprintResources
@@ -7238,6 +7490,10 @@ class Loop(BaseModel):
     defaults: LoopSpecDefaults | None = Field(
         None,
         description='Run-level defaults applied when individual steps omit a policy.',
+    )
+    run_name: RunNameSpec | None = Field(
+        None,
+        description='Optional templates for generating an operator-facing title and description for each run.',
     )
     default_config: dict[str, Any] | None = Field(
         None,
@@ -7321,6 +7577,10 @@ class CreateLoopRequest(BaseModel):
         None,
         description='Run-level defaults applied when individual steps omit a policy.',
     )
+    run_name: RunNameSpec | None = Field(
+        None,
+        description='Optional templates for generating an operator-facing title and description for each run.',
+    )
     default_config: dict[str, Any] | None = Field(
         None,
         description='Default config values used when a run is started without overrides.',
@@ -7388,6 +7648,10 @@ class UpdateLoopRequest(BaseModel):
     )
     defaults: LoopSpecDefaults | None = Field(
         None, description='Replacement run-level defaults.'
+    )
+    run_name: RunNameSpec | None = Field(
+        None,
+        description='Replacement templates for generating an operator-facing title and description for each run.',
     )
     default_config: dict[str, Any] | None = Field(
         None,
@@ -7662,6 +7926,7 @@ class SessionStreamFrame(
         | TurnCompletedPayload
         | TurnFailedPayload
         | TurnCancelledPayload
+        | NudgeEventPayload
         | SessionMessagePreviewFrame
         | SessionResyncFrame
         | ToolCallPayload
@@ -7678,6 +7943,7 @@ class SessionStreamFrame(
         | TurnCompletedPayload
         | TurnFailedPayload
         | TurnCancelledPayload
+        | NudgeEventPayload
         | SessionMessagePreviewFrame
         | SessionResyncFrame
         | ToolCallPayload
@@ -7685,7 +7951,7 @@ class SessionStreamFrame(
         | GenerationDeltaFrame
     ) = Field(
         ...,
-        description='JSON payload of a single `data:` line on the session SSE stream, paired with an `event: <event type>` line.\n\nThe `event:` line is the authoritative frame selector. This union is reference-only: several payloads are structurally identical (e.g. `user.message` and `agent.message`) or permissive open objects, so the `data:` body alone cannot be shape-matched to a single variant. Consumers MUST dispatch on the `event:` name and decode the body as the corresponding payload — never validate the bare body against the union.\n\nDurable message frames (`user.message`, `agent.message`, `compaction.created`) are replayed from the transcript and carry an SSE `id: <sequence>` — that `sequence` is the only cursor a client persists for `after_sequence` / `Last-Event-ID` resume. Terminal `turn.*` frames mark the active turn settling. `session.message.preview`, `session.resync`, `tool.call`, `tool.result`, and `generation.delta` frames are live-only and carry no `id:`.',
+        description='JSON payload of a single `data:` line on the session SSE stream, paired with an `event: <event type>` line.\n\nThe `event:` line is the authoritative frame selector. This union is reference-only: several payloads are structurally identical (e.g. `user.message` and `agent.message`) or permissive open objects, so the `data:` body alone cannot be shape-matched to a single variant. Consumers MUST dispatch on the `event:` name and decode the body as the corresponding payload — never validate the bare body against the union.\n\nDurable message frames (`user.message`, `agent.message`, `compaction.created`) are replayed from the transcript and carry an SSE `id: <sequence>` — that `sequence` is the only cursor a client persists for `after_sequence` / `Last-Event-ID` resume. Terminal `turn.*` frames mark the active turn settling. `session.message.preview`, `session.resync`, `nudge.queued`, `nudge.delivered`, `nudge.cancelled`, `tool.call`, `tool.result`, and `generation.delta` frames are live-only and carry no `id:`.',
     )
 
 

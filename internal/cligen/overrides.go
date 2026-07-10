@@ -111,6 +111,11 @@ var overrides = map[string]Override{
 	// Name the turn-scoped op explicitly so it joins the turn family
 	// (`get-turn`/`start-turn`/`list-turns`); `cancelSession` keeps `cancel`.
 	"cancelTurn": {Command: "cancel-turn"},
+	// Keep nudge lifecycle commands explicit. Without overrides, `cancelNudge`
+	// steals the existing `cancel` leaf from `cancelSession`, and `nudgeSession`
+	// redundantly renders as `nudge-session` inside the sessions group.
+	"nudgeSession": {Command: "nudge"},
+	"cancelNudge":  {Command: "cancel-nudge"},
 	// `compact` isn't in the verb list, so the auto-derive keeps the
 	// redundant `-session` suffix; strip it (the group already carries it).
 	"compactSession": {Command: "compact"},
