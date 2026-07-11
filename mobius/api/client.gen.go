@@ -8807,6 +8807,9 @@ type ListInteractionsParams struct {
 	// RunId Filter by originating run ID
 	RunId *string `form:"run_id,omitempty" json:"run_id,omitempty"`
 
+	// SessionId Filter to interactions raised by an agent tool call (`consumer.kind=agent_tool`) whose invocation is a turn of the given chat session. Lets a chat surface the pending `request_human_input` interactions its own turns are waiting on.
+	SessionId *string `form:"session_id,omitempty" json:"session_id,omitempty"`
+
 	// TargetUserId Filter by resolved target user ID.
 	TargetUserId *string `form:"target_user_id,omitempty" json:"target_user_id,omitempty"`
 
@@ -22344,6 +22347,18 @@ func NewListInteractionsRequest(server string, projectHandle ProjectHandleParam,
 		if params.RunId != nil {
 
 			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "run_id", *params.RunId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.SessionId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "session_id", *params.SessionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {

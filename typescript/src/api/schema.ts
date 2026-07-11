@@ -595,7 +595,7 @@ export interface paths {
         };
         /**
          * List interactions
-         * @description Returns interactions newest-first, optionally filtered by kind, status, run, target, or the current caller's inbox. Inbox filtering includes direct targets.
+         * @description Returns interactions newest-first, optionally filtered by kind, status, run, session, target, or the current caller's inbox. Inbox filtering includes direct targets.
          */
         get: operations["listInteractions"];
         put?: never;
@@ -7580,6 +7580,8 @@ export interface components {
         IntegrationEventIDParam: string;
         /** @description Framework provider identifier from the integration provider catalog. */
         IntegrationProviderParam: string;
+        /** @description Stable caller-generated key. Reusing it returns the original operation. */
+        IdempotencyKey: string;
         /** @description Organization ID. */
         OrgIDParam: string;
         /** @description The key identifying a memory entry. Restricted to a path-safe character set (letters, numbers, and `. _ : -`) so it stays reliably addressable. */
@@ -9111,6 +9113,8 @@ export interface operations {
                 kind?: components["schemas"]["InteractionKind"];
                 /** @description Filter by originating run ID */
                 run_id?: string;
+                /** @description Filter to interactions raised by an agent tool call (`consumer.kind=agent_tool`) whose invocation is a turn of the given chat session. Lets a chat surface the pending `request_human_input` interactions its own turns are waiting on. */
+                session_id?: string;
                 /** @description Filter by resolved target user ID. */
                 target_user_id?: string;
                 /** @description When true, returns only interactions visible to the authenticated user. */

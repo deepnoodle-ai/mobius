@@ -1544,7 +1544,8 @@ paths:
       - interactions
       summary: List interactions
       description: Returns interactions newest-first, optionally filtered by kind, status,
-        run, target, or the current caller's inbox. Inbox filtering includes direct targets.
+        run, session, target, or the current caller's inbox. Inbox filtering includes direct
+        targets.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - name: status
@@ -1567,6 +1568,13 @@ paths:
         schema:
           type: string
         description: Filter by originating run ID
+      - name: session_id
+        in: query
+        schema:
+          type: string
+        description: Filter to interactions raised by an agent tool call (`consumer.kind=agent_tool`)
+          whose invocation is a turn of the given chat session. Lets a chat surface the pending
+          `request_human_input` interactions its own turns are waiting on.
       - name: target_user_id
         in: query
         schema:
@@ -5352,6 +5360,15 @@ components:
       description: Framework provider identifier from the integration provider catalog.
       schema:
         type: string
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: false
+      description: Stable caller-generated key. Reusing it returns the original operation.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 255
     OrgIDParam:
       name: org_id
       in: path
