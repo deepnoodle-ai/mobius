@@ -595,7 +595,7 @@ export interface paths {
         };
         /**
          * List interactions
-         * @description Returns interactions newest-first, optionally filtered by kind, status, run, target, or the current caller's inbox. Inbox filtering includes direct targets.
+         * @description Returns interactions newest-first, optionally filtered by kind, status, run, session, target, or the current caller's inbox. Inbox filtering includes direct targets.
          */
         get: operations["listInteractions"];
         put?: never;
@@ -1082,6 +1082,70 @@ export interface paths {
         get: operations["getSessionTurn"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project_handle}/sessions/{session_id}/nudges": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List session nudges
+         * @description Returns the durable nudge queue in creation order. Repeat `status` to reconcile one or more lifecycle states. Live `nudge.*` stream events are low-latency hints; this list is the authoritative queue view.
+         */
+        get: operations["listSessionNudges"];
+        put?: never;
+        /**
+         * Nudge a session
+         * @description Adds user direction to the newest running or waiting turn. The agent receives it as contextual runtime input at the next safe iteration boundary, after any in-flight provider request or tool call finishes. If no turn remains nudgeable, Mobius creates a queued direct-session turn so accepted input is not lost. Reusing an `idempotency_key` with identical content returns the original acknowledgement; reusing it with different content returns `409 Conflict`. Requires the `mobius.agent.invoke` permission (or the agent's own backing principal).
+         */
+        post: operations["nudgeSession"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project_handle}/sessions/{session_id}/nudges/{nudge_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a session nudge
+         * @description Returns one durable nudge queue entry.
+         */
+        get: operations["getSessionNudge"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project_handle}/sessions/{session_id}/nudges/{nudge_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cancel a pending session nudge
+         * @description Cancels a pending nudge. Repeating cancellation is idempotent. If delivery wins the race, returns `409 nudge_already_delivered` with the current nudge resource in `error.details.nudge`.
+         */
+        post: operations["cancelNudge"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1603,12 +1667,52 @@ export interface paths {
         };
         /**
          * List blueprint bindings
-         * @description Returns the project's blueprint bindings: the mapping from each blueprint-defined resource key to the Mobius resource it provisions. Optionally filtered by namespace.
+         * @description Returns the project's blueprint bindings: the mapping from each blueprint-defined resource key to the Mobius resource it provisions. Optionally filtered by namespace and blueprint identifier.
          */
         get: operations["listBlueprintBindings"];
         put?: never;
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project_handle}/blueprints/{blueprint_key}/protection": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set blueprint resource protection
+         * @description Protects or unprotects every resource definition managed by one named blueprint. Protected resources can still be changed by Blueprint Apply or removed by deleting the blueprint, but ordinary resource update and delete operations return `blueprint_resource_protected`.
+         */
+        put: operations["setBlueprintProtection"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project_handle}/blueprints/{blueprint_key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete an applied blueprint
+         * @description Deletes resources that Mobius created for one named blueprint, in reverse dependency order. Adopted resources and legacy bindings whose origin is unknown are retained and unbound unless `delete_retained` is explicitly true. Deletion commits one resource at a time; retry the request after a partial failure to continue from the remaining bindings. After a non-2xx response, list the exact blueprint bindings again to see what remains. Omitting `namespace` targets only the unnamespaced blueprint; it is not a wildcard across namespaces.
+         */
+        delete: operations["deleteBlueprint"];
         options?: never;
         head?: never;
         patch?: never;
@@ -2180,6 +2284,105 @@ export interface components {
             /**
              * Format: date-time
              * @description Timestamp when this agent was last updated.
+             */
+            updated_at: string;
+        };
+        /**
+         * @description Durable conversation session status: `active`, `archived`, or `deleted`.
+         * @enum {string}
+         */
+        SessionStatus: "active" | "archived" | "deleted";
+        /**
+         * @description Surface that created the session: `manual`, `api`, `loop`, or `interaction`.
+         * @enum {string}
+         */
+        SessionOrigin: "manual" | "api" | "loop" | "interaction";
+        /**
+         * @description Boundary used to resolve named sessions: `agent` or `loop`.
+         * @enum {string}
+         */
+        SessionScope: "agent" | "loop";
+        /**
+         * @description Visibility of the session in project surfaces: `project` or `private`.
+         * @enum {string}
+         */
+        SessionVisibility: "project" | "private";
+        /** @description Pointer to the latest compaction marker in a session's transcript. The marker is itself a transcript message (role `compaction`); everything at or below `covers_through_sequence` is summarized history. */
+        SessionCompactionBoundary: {
+            /** @description Id of the compaction summary message in the transcript. */
+            message_id: string;
+            /** @description Transcript sequence of the compaction marker itself. */
+            sequence: number;
+            /** @description Highest message sequence this summary covers — the before/after boundary. */
+            covers_through_sequence: number;
+        };
+        /** @description Durable conversation transcript owned by an agent. */
+        Session: {
+            /** @description Stable session identifier. */
+            id: string;
+            /** @description Agent that owns this session. */
+            agent_id: string;
+            /** @description Human-readable session title. */
+            title: string;
+            /** @description Lifecycle status of the session. */
+            status: components["schemas"]["SessionStatus"];
+            /** @description Surface that created the session. */
+            origin: components["schemas"]["SessionOrigin"];
+            /** @description Boundary used to resolve the session key. */
+            scope: components["schemas"]["SessionScope"];
+            /** @description Identifier of the resource the session is scoped to (e.g. the agent for agent-scoped sessions). */
+            scope_ref_id: string;
+            /** @description Caller-assigned name identifying this conversation within its scope (`scope` + `scope_ref_id`); reused as the session routing key. */
+            scope_name: string;
+            /** @description Stable session routing key used to look up a scoped conversation (mirrors `scope_name`). */
+            session_key: string;
+            /** @description Where the session appears in project UI surfaces. */
+            visibility: components["schemas"]["SessionVisibility"];
+            /** @description Model the session most recently exchanged tokens with. */
+            model?: string;
+            /** @description Provider for the recorded `model`. */
+            model_provider?: string;
+            /** @description Resolved message-compaction policy in effect for this session. */
+            compaction_policy?: components["schemas"]["SessionCompactionPolicy"];
+            /** @description This session's reasoning-effort override, or absent when the session inherits the agent default. Turns resolve the effective level as agent default then this override. */
+            thinking_effort?: components["schemas"]["ThinkingEffort"];
+            /** @description The most recent compaction marker in the transcript, or null when the session has never been compacted. Delineates summarized history (sequences at or below `covers_through_sequence`) from the live tail. Returned on the single-session read; absent from list entries. */
+            latest_compaction?: components["schemas"]["SessionCompactionBoundary"];
+            /** @description Total messages currently in the session, including compaction summaries. */
+            message_count: number;
+            /** @description Lifetime fresh (uncached) input-token total for this session. Prompt-cache tokens are reported separately in `cache_read_input_total` and `cache_creation_input_total`. */
+            token_input_total: number;
+            /** @description Lifetime output-token total reported for this session. */
+            token_output_total: number;
+            /** @description Lifetime prompt-cache-read input-token total for this session. */
+            cache_read_input_total: number;
+            /** @description Lifetime prompt-cache-write (cache creation) input-token total for this session. */
+            cache_creation_input_total: number;
+            /** @description Optimistic-concurrency version. Increments on every mutation. */
+            version: number;
+            /**
+             * Format: date-time
+             * @description Timestamp of the most recent message append; null before any messages are stored.
+             */
+            last_message_at?: string | null;
+            /** @description Source session this one was forked from, if any. */
+            forked_from_session_id?: string;
+            /** @description Sequence number in the source session at which the fork was taken. */
+            forked_from_sequence?: number;
+            /** @description User who created this session, if attribution was captured. */
+            created_by?: string;
+            /** @description Free-form caller metadata. */
+            metadata?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Format: date-time
+             * @description Record creation timestamp.
+             */
+            created_at: string;
+            /**
+             * Format: date-time
+             * @description Last update timestamp.
              */
             updated_at: string;
         };
@@ -4817,26 +5020,6 @@ export interface components {
             updated_at: string;
         };
         /**
-         * @description Durable conversation session status: `active`, `archived`, or `deleted`.
-         * @enum {string}
-         */
-        SessionStatus: "active" | "archived" | "deleted";
-        /**
-         * @description Surface that created the session: `manual`, `api`, `loop`, or `interaction`.
-         * @enum {string}
-         */
-        SessionOrigin: "manual" | "api" | "loop" | "interaction";
-        /**
-         * @description Boundary used to resolve named sessions: `agent` or `loop`.
-         * @enum {string}
-         */
-        SessionScope: "agent" | "loop";
-        /**
-         * @description Visibility of the session in project surfaces: `project` or `private`.
-         * @enum {string}
-         */
-        SessionVisibility: "project" | "private";
-        /**
          * @description Agent turn lifecycle status: `queued`, `running`, `waiting`, `completed`, `failed`, or `cancelled`.
          * @enum {string}
          */
@@ -4889,76 +5072,6 @@ export interface components {
             /** @description Opaque cursor to pass as `cursor` on the next request. Null when `has_more` is false. */
             next_cursor?: string | null;
         };
-        /** @description Durable conversation transcript owned by an agent. */
-        Session: {
-            /** @description Stable session identifier. */
-            id: string;
-            /** @description Agent that owns this session. */
-            agent_id: string;
-            /** @description Human-readable session title. */
-            title: string;
-            /** @description Lifecycle status of the session. */
-            status: components["schemas"]["SessionStatus"];
-            /** @description Surface that created the session. */
-            origin: components["schemas"]["SessionOrigin"];
-            /** @description Boundary used to resolve the session key. */
-            scope: components["schemas"]["SessionScope"];
-            /** @description Identifier of the resource the session is scoped to (e.g. the agent for agent-scoped sessions). */
-            scope_ref_id: string;
-            /** @description Caller-assigned name identifying this conversation within its scope (`scope` + `scope_ref_id`); reused as the session routing key. */
-            scope_name: string;
-            /** @description Stable session routing key used to look up a scoped conversation (mirrors `scope_name`). */
-            session_key: string;
-            /** @description Where the session appears in project UI surfaces. */
-            visibility: components["schemas"]["SessionVisibility"];
-            /** @description Model the session most recently exchanged tokens with. */
-            model?: string;
-            /** @description Provider for the recorded `model`. */
-            model_provider?: string;
-            /** @description Resolved message-compaction policy in effect for this session. */
-            compaction_policy?: components["schemas"]["SessionCompactionPolicy"];
-            /** @description This session's reasoning-effort override, or absent when the session inherits the agent default. Turns resolve the effective level as agent default then this override. */
-            thinking_effort?: components["schemas"]["ThinkingEffort"];
-            /** @description The most recent compaction marker in the transcript, or null when the session has never been compacted. Delineates summarized history (sequences at or below `covers_through_sequence`) from the live tail. Returned on the single-session read; absent from list entries. */
-            latest_compaction?: components["schemas"]["SessionCompactionBoundary"];
-            /** @description Total messages currently in the session, including compaction summaries. */
-            message_count: number;
-            /** @description Lifetime fresh (uncached) input-token total for this session. Prompt-cache tokens are reported separately in `cache_read_input_total` and `cache_creation_input_total`. */
-            token_input_total: number;
-            /** @description Lifetime output-token total reported for this session. */
-            token_output_total: number;
-            /** @description Lifetime prompt-cache-read input-token total for this session. */
-            cache_read_input_total: number;
-            /** @description Lifetime prompt-cache-write (cache creation) input-token total for this session. */
-            cache_creation_input_total: number;
-            /** @description Optimistic-concurrency version. Increments on every mutation. */
-            version: number;
-            /**
-             * Format: date-time
-             * @description Timestamp of the most recent message append; null before any messages are stored.
-             */
-            last_message_at?: string | null;
-            /** @description Source session this one was forked from, if any. */
-            forked_from_session_id?: string;
-            /** @description Sequence number in the source session at which the fork was taken. */
-            forked_from_sequence?: number;
-            /** @description User who created this session, if attribution was captured. */
-            created_by?: string;
-            /** @description Free-form caller metadata. */
-            metadata?: {
-                [key: string]: unknown;
-            };
-            /**
-             * Format: date-time
-             * @description Record creation timestamp.
-             */
-            created_at: string;
-            /**
-             * Format: date-time
-             * @description Last update timestamp.
-             */
-            updated_at: string;
-        };
         SessionListResponse: {
             /** @description The list of results for this page. */
             items: components["schemas"]["Session"][];
@@ -4983,9 +5096,9 @@ export interface components {
          *
          *     The `event:` line is the authoritative frame selector. This union is reference-only: several payloads are structurally identical (e.g. `user.message` and `agent.message`) or permissive open objects, so the `data:` body alone cannot be shape-matched to a single variant. Consumers MUST dispatch on the `event:` name and decode the body as the corresponding payload — never validate the bare body against the union.
          *
-         *     Durable message frames (`user.message`, `agent.message`, `compaction.created`) are replayed from the transcript and carry an SSE `id: <sequence>` — that `sequence` is the only cursor a client persists for `after_sequence` / `Last-Event-ID` resume. Terminal `turn.*` frames mark the active turn settling. `session.message.preview`, `session.resync`, `tool.call`, `tool.result`, and `generation.delta` frames are live-only and carry no `id:`.
+         *     Durable message frames (`user.message`, `agent.message`, `compaction.created`) are replayed from the transcript and carry an SSE `id: <sequence>` — that `sequence` is the only cursor a client persists for `after_sequence` / `Last-Event-ID` resume. Terminal `turn.*` frames mark the active turn settling. `session.message.preview`, `session.resync`, `nudge.queued`, `nudge.delivered`, `nudge.cancelled`, `tool.call`, `tool.result`, and `generation.delta` frames are live-only and carry no `id:`.
          */
-        SessionStreamFrame: components["schemas"]["SessionUserMessagePayload"] | components["schemas"]["AgentMessagePayload"] | components["schemas"]["CompactionCreatedPayload"] | components["schemas"]["TurnStartedPayload"] | components["schemas"]["TurnWaitingPayload"] | components["schemas"]["TurnCompletedPayload"] | components["schemas"]["TurnFailedPayload"] | components["schemas"]["TurnCancelledPayload"] | components["schemas"]["SessionMessagePreviewFrame"] | components["schemas"]["SessionResyncFrame"] | components["schemas"]["ToolCallPayload"] | components["schemas"]["ToolResultPayload"] | components["schemas"]["GenerationDeltaFrame"];
+        SessionStreamFrame: components["schemas"]["SessionUserMessagePayload"] | components["schemas"]["AgentMessagePayload"] | components["schemas"]["CompactionCreatedPayload"] | components["schemas"]["TurnStartedPayload"] | components["schemas"]["TurnWaitingPayload"] | components["schemas"]["TurnCompletedPayload"] | components["schemas"]["TurnFailedPayload"] | components["schemas"]["TurnCancelledPayload"] | components["schemas"]["NudgeEventPayload"] | components["schemas"]["SessionMessagePreviewFrame"] | components["schemas"]["SessionResyncFrame"] | components["schemas"]["ToolCallPayload"] | components["schemas"]["ToolResultPayload"] | components["schemas"]["GenerationDeltaFrame"];
         /** @description Live-only, SessionMessage-compatible transcript preview for an in-flight agent response segment. It carries no durable `seq`, transcript `sequence`, or stable `message_id`; the committed row later replaces it by `turn_id` plus `metadata.response_message_index`. */
         SessionMessagePreviewFrame: {
             /** @enum {string} */
@@ -5161,6 +5274,15 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /** @description Live reconciliation hint emitted for `nudge.queued`, `nudge.delivered`, and `nudge.cancelled`. Re-read the queue resource after receiving it; this pulse is not durable replay state. */
+        NudgeEventPayload: {
+            nudge_id: string;
+            turn_id: string;
+            delivery: components["schemas"]["SessionNudgeDelivery"];
+            status: components["schemas"]["SessionNudgeStatus"];
+        } & {
+            [key: string]: unknown;
+        };
         /** @description Payload of a `compaction.created` event, emitted when the session transcript is summarized. The event is non-terminal: it never closes the session stream, so a live consumer observes a compaction landing inline. */
         CompactionCreatedPayload: {
             /** @description Id of the compaction summary message appended to the transcript. */
@@ -5203,7 +5325,7 @@ export interface components {
         AppendSessionMessage: {
             /** @description Role to store for this appended message. */
             role: components["schemas"]["SessionMessageRole"];
-            /** @description Ordered content blocks (text, tool calls, tool results, images). */
+            /** @description Ordered content blocks (text, tool calls, tool results, images). Blocks of type `reminder` are host-managed runtime context and are rejected on this surface. */
             content: {
                 [key: string]: unknown;
             }[];
@@ -5216,15 +5338,6 @@ export interface components {
              * @description Caller-supplied creation timestamp. The server assigns one if absent.
              */
             created_at?: string;
-        };
-        /** @description Pointer to the latest compaction marker in a session's transcript. The marker is itself a transcript message (role `compaction`); everything at or below `covers_through_sequence` is summarized history. */
-        SessionCompactionBoundary: {
-            /** @description Id of the compaction summary message in the transcript. */
-            message_id: string;
-            /** @description Transcript sequence of the compaction marker itself. */
-            sequence: number;
-            /** @description Highest message sequence this summary covers — the before/after boundary. */
-            covers_through_sequence: number;
         };
         /** @description A single compound invocation: which agent to run, how to resolve the session, the caller's input message, and optional channel routing context. */
         InvokeAgentRequest: {
@@ -5382,6 +5495,74 @@ export interface components {
             /** @description True when a repeated idempotency key resumed an existing turn. */
             deduped?: boolean;
         };
+        NudgeSessionRequest: {
+            /** @description User direction to deliver at the next iteration boundary. */
+            content: string;
+            /** @description Dedup key scoped to the session. Reusing the key with identical content returns the original nudge request; different content conflicts. */
+            idempotency_key?: string;
+            /** @description Free-form caller metadata retained with the nudge request. */
+            metadata?: {
+                [key: string]: unknown;
+            };
+            /**
+             * @description When true and the target turn is waiting on an interruptible agent tool, resolve that tool call with `{ "interrupted": true, "reason": "user_direction" }` and resume the same turn. Running and newly queued turns ignore this field.
+             * @default false
+             */
+            wake: boolean;
+        };
+        /**
+         * @description Durable nudge queue lifecycle status.
+         * @enum {string}
+         */
+        SessionNudgeStatus: "pending" | "delivered" | "cancelled";
+        /**
+         * @description `current_turn` means the input targets an in-flight turn; `new_turn` means Mobius queued a direct-session turn because none was nudgeable.
+         * @enum {string}
+         */
+        SessionNudgeDelivery: "current_turn" | "new_turn";
+        SessionNudgeTurn: {
+            id: string;
+            status: components["schemas"]["AgentTurnStatus"];
+        };
+        SessionNudge: {
+            /** @description Stable nudge identifier. */
+            id: string;
+            status: components["schemas"]["SessionNudgeStatus"];
+            delivery: components["schemas"]["SessionNudgeDelivery"];
+            /** @description Exact user direction supplied when the nudge was queued. */
+            content: string;
+            turn: components["schemas"]["SessionNudgeTurn"];
+            /** @description Principal that queued the nudge. */
+            sender_principal_id: string;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            delivered_at?: string | null;
+            /** Format: date-time */
+            cancelled_at?: string | null;
+        };
+        SessionNudgeListResponse: {
+            items: components["schemas"]["SessionNudge"][];
+            has_more: boolean;
+            /** @description Opaque continuation cursor, or null at the end. */
+            next_cursor?: string | null;
+        };
+        SessionNudgeAck: {
+            /** @description Stable id of the durable nudge mailbox row. */
+            nudge_id: string;
+            delivery: components["schemas"]["SessionNudgeDelivery"];
+            session: components["schemas"]["Session"];
+            turn: components["schemas"]["AgentTurn"];
+            /**
+             * Format: int64
+             * @description Current transcript sequence cursor for following the target turn.
+             */
+            after_sequence: number;
+            /** @description True when an existing idempotent nudge request was returned. */
+            deduped: boolean;
+            /** @description True when wake interrupted a waiting tool and requeued this turn. */
+            woke_turn: boolean;
+        };
         /**
          * @description A loop and its current authored definition. Updating any authoring field creates an internal revision and makes it runnable immediately.
          * @example {
@@ -5473,6 +5654,8 @@ export interface components {
             limits?: components["schemas"]["LoopSpecLimits"];
             /** @description Run-level defaults applied when individual steps omit a policy. */
             defaults?: components["schemas"]["LoopSpecDefaults"];
+            /** @description Optional templates for generating an operator-facing title and description for each run. */
+            run_name?: components["schemas"]["RunNameSpec"];
             /** @description Default config values used when a run is started without overrides. */
             default_config?: {
                 [key: string]: unknown;
@@ -5604,6 +5787,8 @@ export interface components {
             limits?: components["schemas"]["LoopSpecLimits"];
             /** @description Run-level defaults applied when individual steps omit a policy. */
             defaults?: components["schemas"]["LoopSpecDefaults"];
+            /** @description Optional templates for generating an operator-facing title and description for each run. */
+            run_name?: components["schemas"]["RunNameSpec"];
             /** @description Default config values used when a run is started without overrides. */
             default_config?: {
                 [key: string]: unknown;
@@ -5661,6 +5846,8 @@ export interface components {
             limits?: components["schemas"]["LoopSpecLimits"];
             /** @description Replacement run-level defaults. */
             defaults?: components["schemas"]["LoopSpecDefaults"];
+            /** @description Replacement templates for generating an operator-facing title and description for each run. */
+            run_name?: components["schemas"]["RunNameSpec"];
             /** @description Default config values used when a run is started without overrides. */
             default_config?: {
                 [key: string]: unknown;
@@ -5671,6 +5858,13 @@ export interface components {
             };
             /** @description Replacement labels; send an empty object to clear all tags. */
             tags?: components["schemas"]["TagMap"];
+        };
+        /** @description Templates for assigning an operator-facing title and optional description to each run. The object form leaves room for additional naming strategies without changing the loop spec shape. */
+        RunNameSpec: {
+            /** @description `${{ event.* }}`, `${{ meta.* }}`, and `${{ config.* }}` template rendered as the run title when the run is created. When blank, the run title falls back to the loop name. This property remains required for compatibility, but may be blank when only description_template is configured. Send empty title and description templates in an update to clear the run display configuration. */
+            template: string;
+            /** @description Optional `${{ event.* }}`, `${{ meta.* }}`, and `${{ config.* }}` template rendered as secondary descriptive text when the run is created. */
+            description_template?: string;
         };
         /** @description Source repository target attached to a loop spec. A `static` repository clones the named `full_name`. A `match` repository resolves the repository from the run's trigger event (for example the base repository of an opened GitHub pull request) and requires the loop to have an event trigger; pull requests opened from a fork are never cloned. `full_name` is required for `static` repositories and ignored for `match` repositories. */
         LoopSpecRepository: {
@@ -6234,6 +6428,8 @@ export interface components {
          * @example {
          *       "id": "run_8q5m2x9v7p3n4r6t",
          *       "loop_id": "loop_9q2m7x5v3p8n4r6t",
+         *       "name": "Review pull request #1268",
+         *       "description": "deepnoodle-ai/mobius-cloud · Add run descriptions",
          *       "loop_name": "Daily security check",
          *       "loop_version_id": "lver_4v9n2q7m5x8p3r6t",
          *       "loop_version": 3,
@@ -6260,6 +6456,10 @@ export interface components {
             id: string;
             /** @description Loop this run belongs to. */
             loop_id: string;
+            /** @description Human-readable title for this run. */
+            name?: string;
+            /** @description Optional secondary description for this run. */
+            description?: string;
             /** @description Human-readable name of the loop this run belongs to. */
             loop_name?: string;
             /** @description LoopVersion record this run is executing. */
@@ -6491,7 +6691,7 @@ export interface components {
          * @enum {string}
          */
         BlueprintChangeAction: "created" | "updated" | "adopted" | "unchanged";
-        /** @description A reference to a Mobius resource by direct `id`, by blueprint `key` (resolved within this apply first, then against existing bindings), or by `blueprint_ref` (resolved by key; namespace is recorded as provenance and reserved for namespaced lookup). */
+        /** @description A reference to a Mobius resource by direct `id`, by blueprint `key` (resolved within this apply first, then against existing bindings), or by `blueprint_ref` (resolved by key; its namespace is recorded as provenance and is not used for reference resolution in this version). */
         BlueprintResourceRef: {
             /** @description Direct resource id. */
             id?: string;
@@ -6506,12 +6706,14 @@ export interface components {
         };
         /** @description A desired blueprint plus the apply mode. */
         ApplyBlueprintRequest: {
-            /** @description Optional namespace recorded as provenance on each binding. */
+            /** @description Optional namespace that forms part of the blueprint identity. */
             namespace?: string;
-            /** @description Optional blueprint identifier recorded as provenance. */
+            /** @description Optional blueprint identifier that forms part of the blueprint identity. */
             blueprint_key?: string;
             /** @description Optional blueprint version recorded as provenance. */
             blueprint_version?: string;
+            /** @description When set, controls whether ordinary update and delete operations may change resources managed by this blueprint. Blueprint Apply and blueprint deletion remain allowed. Omit to preserve protection on existing bindings; new bindings default to unprotected. */
+            protect_resources?: boolean;
             mode?: components["schemas"]["BlueprintApplyMode"];
             resources: components["schemas"]["BlueprintResources"];
         };
@@ -6559,16 +6761,28 @@ export interface components {
             key: string;
             name: string;
             description?: string;
-            /** @description Actions granted into the toolkit by exact action name. */
+            /** @description Actions granted into the toolkit by canonical selector or legacy exact action name. */
             actions?: components["schemas"]["BlueprintToolkitActionGrant"][];
             tags?: components["schemas"]["TagMap"];
             metadata?: {
                 [key: string]: unknown;
             };
         };
-        /** @description Grants one action into a toolkit by its name. */
+        /** @description Grants actions into a toolkit using the canonical Toolkit selector vocabulary. Supply `selector`; `selector_type` defaults to `exact`. `action_name` is a backwards-compatible alias for an exact selector and cannot be combined with `selector`. */
         BlueprintToolkitActionGrant: {
-            action_name: string;
+            /**
+             * @description Selector type used to resolve matching actions.
+             * @default exact
+             * @enum {string}
+             */
+            selector_type: "exact" | "group" | "platform" | "custom" | "wildcard";
+            /** @description Canonical selector value, such as `github.*` or `*`. */
+            selector?: string;
+            /**
+             * @deprecated
+             * @description Legacy alias for an exact action-name selector.
+             */
+            action_name?: string;
         };
         /** @description A desired skill. */
         BlueprintSkillInput: {
@@ -6577,6 +6791,8 @@ export interface components {
             title?: string;
             description?: string;
             instructions?: string;
+            /** @description Tool selectors that narrow the agent's effective tool set while this skill is active. */
+            allowed_tools?: string[];
             tags?: components["schemas"]["TagMap"];
         };
         /** @description A desired agent. `toolkits` and `skills`, when present, replace the agent's full assignment set; omit them to leave existing assignments untouched. */
@@ -6585,14 +6801,29 @@ export interface components {
             name: string;
             description?: string;
             model?: string;
+            /** @description Default route for model calls made by this agent. */
+            model_route?: components["schemas"]["AgentModelRoute"];
+            /** @description How granted actions are presented to the model. */
+            tool_presentation?: components["schemas"]["AgentToolPresentation"];
             system_prompt?: string;
+            /**
+             * Format: int64
+             * @description Per-turn execution timeout; `0` uses the platform default.
+             */
+            timeout_seconds?: number;
+            /** @description Desired agent lifecycle status. */
+            status?: components["schemas"]["AgentStatus"];
+            /** @description Default session-compaction policy inherited by new sessions. */
+            compaction_policy?: components["schemas"]["SessionCompactionPolicy"];
+            /** @description Default reasoning-effort level for sessions and Loop agent steps. */
+            thinking_effort?: components["schemas"]["ThinkingEffort"];
             kind?: string;
             color?: string;
             toolkits?: components["schemas"]["BlueprintResourceRef"][];
             skills?: components["schemas"]["BlueprintResourceRef"][];
             tags?: components["schemas"]["TagMap"];
         };
-        /** @description A desired loop. The spec-bearing fields (`steps`, `triggers`, `event`, `config`, `limits`, `output`, `concurrency`, `repositories`, `cleanup`, `defaults`) mirror the loop authoring shape and are compiled by the loop engine. Applied loops default to `draft` unless `status` is set. */
+        /** @description A desired loop. The spec-bearing fields (`steps`, `triggers`, `event`, `config`, `limits`, `output`, `concurrency`, `repositories`, `cleanup`, `defaults`, `run_name`) mirror the loop authoring shape and are compiled by the loop engine. Applied loops default to `draft` unless `status` is set. `default_config`, `settings`, and `tags` configure Loop row state. */
         BlueprintLoopInput: {
             key: string;
             name: string;
@@ -6600,6 +6831,12 @@ export interface components {
             agent?: components["schemas"]["BlueprintResourceRef"];
             /** @enum {string} */
             status?: "draft" | "active" | "paused";
+            /**
+             * @description Loop authoring schema version. Only version 1 is accepted.
+             * @default 1
+             * @enum {string}
+             */
+            schema_version: "1";
             steps?: {
                 [key: string]: unknown;
             }[];
@@ -6630,9 +6867,19 @@ export interface components {
             defaults?: {
                 [key: string]: unknown;
             };
+            /** @description Templates for the operator-facing title and description of each run. */
+            run_name?: components["schemas"]["RunNameSpec"];
+            /** @description Default config values used when a run starts without overrides. */
+            default_config?: {
+                [key: string]: unknown;
+            };
+            /** @description Free-form Loop-level settings consumed by the engine. */
+            settings?: {
+                [key: string]: unknown;
+            };
             tags?: components["schemas"]["TagMap"];
         };
-        /** @description A desired table. `name` is its immutable project-unique identity (lower snake_case). `schema` carries the full column and identity definition and is validated on apply. The identity column and the required-ness of existing columns are immutable after create, so a re-apply that changes them is rejected. */
+        /** @description A desired table. `key` is its stable Blueprint handle; `name` is project-unique (lower snake_case) and may be changed after binding. `schema` carries the full column and identity definition and is validated on apply. The identity column and the required-ness of existing columns are immutable after create, so a re-apply that changes them is rejected. */
         BlueprintTableInput: {
             /** @description Blueprint-defined handle other resources use to reference it. */
             key: string;
@@ -6669,9 +6916,26 @@ export interface components {
             namespace?: string;
             blueprint_key?: string;
             blueprint_version?: string;
+            /** @description Whether ordinary definition mutations are blocked. */
+            protected: boolean;
+            /** @description Whether deleting the blueprint will delete this resource instead of retaining it. */
+            delete_on_destroy: boolean;
         };
         BlueprintBindingListResponse: {
             items: components["schemas"]["BlueprintBinding"][];
+        };
+        SetBlueprintProtectionRequest: {
+            protected: boolean;
+        };
+        BlueprintDeleteResult: {
+            /** @enum {string} */
+            status: "deleted";
+            namespace?: string;
+            blueprint_key: string;
+            /** @description Resources deleted with the blueprint. */
+            deleted: components["schemas"]["BlueprintBinding"][];
+            /** @description Adopted or legacy resources retained after their bindings were removed. */
+            retained: components["schemas"]["BlueprintBinding"][];
         };
         /**
          * @description Column value type: `string`, `number`, `boolean`, `date`, `object`, `array`, or `any`.
@@ -7302,12 +7566,6 @@ export interface components {
         OrderParam: "asc" | "desc";
         /** @description SSE reconnect cursor. The browser EventSource API replays the last event's `id` in this header on automatic reconnect; the server resumes the stream after that sequence number. When both this header and the `after_sequence` query parameter are supplied, the larger sequence wins, so an explicit `after_sequence` never rewinds a live reconnect. Ignored for non-streaming (JSON) requests. */
         LastEventIDParam: number;
-        /** @description ID of the target organization for the admin operation. */
-        AdminOrgIDParam: string;
-        /** @description ID of the target loop run for the admin operation. */
-        AdminRunIDParam: string;
-        /** @description ID of the target human principal for the admin operation. */
-        AdminUserIDParam: string;
         /** @description Environment ID. */
         EnvironmentIDParam: string;
         /** @description Secret ID or secret name. */
@@ -7322,10 +7580,14 @@ export interface components {
         IntegrationEventIDParam: string;
         /** @description Framework provider identifier from the integration provider catalog. */
         IntegrationProviderParam: string;
+        /** @description Stable caller-generated key. Reusing it returns the original operation. */
+        IdempotencyKey: string;
         /** @description Organization ID. */
         OrgIDParam: string;
         /** @description The key identifying a memory entry. Restricted to a path-safe character set (letters, numbers, and `. _ : -`) so it stays reliably addressable. */
         MemoryKeyParam: string;
+        /** @description Session nudge identifier. */
+        NudgeIdParam: string;
         /** @description Table ID. */
         TableIDParam: string;
         /** @description Filter tables by name. Table names are unique within a project; use this as a discovery filter and use the returned table `id` for follow-up operations. */
@@ -8851,6 +9113,8 @@ export interface operations {
                 kind?: components["schemas"]["InteractionKind"];
                 /** @description Filter by originating run ID */
                 run_id?: string;
+                /** @description Filter to interactions raised by an agent tool call (`consumer.kind=agent_tool`) whose invocation is a turn of the given chat session. Lets a chat surface the pending `request_human_input` interactions its own turns are waiting on. */
+                session_id?: string;
                 /** @description Filter by resolved target user ID. */
                 target_user_id?: string;
                 /** @description When true, returns only interactions visible to the authenticated user. */
@@ -10256,6 +10520,140 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
+    listSessionNudges: {
+        parameters: {
+            query?: {
+                /** @description Filter by one or more nudge statuses. */
+                status?: components["schemas"]["SessionNudgeStatus"][];
+                /** @description Scan direction for the page. `asc` (the default) returns oldest-first; `desc` returns newest-first — the way to fetch the latest rows of a long list (the tail) in a single request. Items in the response are always ordered ascending regardless of this value; `order` only selects which end of the list the page is taken from. */
+                order?: components["parameters"]["OrderParam"];
+                /** @description Cursor for pagination (opaque string from previous response) */
+                cursor?: components["parameters"]["CursorParam"];
+                /** @description Maximum number of items to return */
+                limit?: components["parameters"]["LimitParam"];
+            };
+            header?: never;
+            path: {
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
+                /** @description Identifier of the conversation session. */
+                session_id: components["parameters"]["SessionIdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionNudgeListResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    nudgeSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
+                /** @description Identifier of the conversation session. */
+                session_id: components["parameters"]["SessionIdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NudgeSessionRequest"];
+            };
+        };
+        responses: {
+            /** @description The nudge input was accepted for delivery. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionNudgeAck"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    getSessionNudge: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
+                /** @description Identifier of the conversation session. */
+                session_id: components["parameters"]["SessionIdParam"];
+                /** @description Session nudge identifier. */
+                nudge_id: components["parameters"]["NudgeIdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionNudge"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    cancelNudge: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
+                /** @description Identifier of the conversation session. */
+                session_id: components["parameters"]["SessionIdParam"];
+                /** @description Session nudge identifier. */
+                nudge_id: components["parameters"]["NudgeIdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The nudge is cancelled. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionNudge"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
     getSessionTurnLive: {
         parameters: {
             query?: never;
@@ -11627,8 +12025,10 @@ export interface operations {
     listBlueprintBindings: {
         parameters: {
             query?: {
-                /** @description Optional namespace filter (matches the binding's stored provenance). */
+                /** @description Optional namespace filter for the owning blueprint identity. */
                 namespace?: string;
+                /** @description Optional blueprint identifier filter. */
+                blueprint_key?: string;
             };
             header?: never;
             path: {
@@ -11651,6 +12051,78 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    setBlueprintProtection: {
+        parameters: {
+            query?: {
+                /** @description Blueprint namespace. Omit for an unnamespaced blueprint. */
+                namespace?: string;
+            };
+            header?: never;
+            path: {
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
+                blueprint_key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetBlueprintProtectionRequest"];
+            };
+        };
+        responses: {
+            /** @description Protection updated. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BlueprintBindingListResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    deleteBlueprint: {
+        parameters: {
+            query?: {
+                /** @description Blueprint namespace. Omit for an unnamespaced blueprint. */
+                namespace?: string;
+                /** @description Also delete adopted resources and legacy bindings whose ownership is unknown. Defaults to false. Use only after inspecting the blueprint bindings because these resources may contain customer-authored data. */
+                delete_retained?: boolean;
+            };
+            header?: never;
+            path: {
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
+                blueprint_key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Blueprint bindings removed and selected resources deleted. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BlueprintDeleteResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
             429: components["responses"]["TooManyRequests"];
         };
     };

@@ -33,6 +33,7 @@ func registerLoopsCommands(app *cli.App) {
 			cli.String("limits", "").Help("Run guardrails. Lives at `spec.limits` in the JSON the engine compiles. Every limit is optional; absent or zero means unbounded (plan-level… Accepts JSON, @file, or @-."),
 			cli.String("name", "").Help("[required] Human-readable display name."),
 			cli.String("repositories", "").Help("Source repositories the loop targets. Accepts JSON, @file, or @-."),
+			cli.String("run-name", "").Help("Templates for assigning an operator-facing title and optional description to each run. The object form leaves room for additional naming… Accepts JSON, @file, or @-."),
 			cli.String("schema-version", "").Help("Loop authoring schema version. Only schema version 1 is accepted."),
 			cli.String("settings", "").Help("Free-form loop-level settings consumed by the engine. Accepts JSON, @file, or @-."),
 			cli.String("steps", "").Help("Ordered user-authored steps to execute for each run. When present, the definition is runnable immediately. Accepts JSON, @file, or @-."),
@@ -100,6 +101,11 @@ func registerLoopsCommands(app *cli.App) {
 			}
 			if ctx.IsSet("repositories") {
 				if err := decodeFlagJSON(ctx, "repositories", ctx.String("repositories"), &body.Repositories); err != nil {
+					return err
+				}
+			}
+			if ctx.IsSet("run-name") {
+				if err := decodeFlagJSON(ctx, "run-name", ctx.String("run-name"), &body.RunName); err != nil {
 					return err
 				}
 			}
@@ -279,6 +285,7 @@ func registerLoopsCommands(app *cli.App) {
 			cli.String("limits", "").Help("Run guardrails. Lives at `spec.limits` in the JSON the engine compiles. Every limit is optional; absent or zero means unbounded (plan-level… Accepts JSON, @file, or @-."),
 			cli.String("name", "").Help("Human-readable display name."),
 			cli.String("repositories", "").Help("Replacement source repositories the loop targets. Accepts JSON, @file, or @-."),
+			cli.String("run-name", "").Help("Templates for assigning an operator-facing title and optional description to each run. The object form leaves room for additional naming… Accepts JSON, @file, or @-."),
 			cli.String("schema-version", "").Help("Loop authoring schema version. Only schema version 1 is accepted."),
 			cli.String("settings", "").Help("Free-form loop-level settings consumed by the engine. Accepts JSON, @file, or @-."),
 			cli.String("status", "").Help("Loop lifecycle status: `draft`, `active`, `paused`, or `deleted`."),
@@ -352,6 +359,11 @@ func registerLoopsCommands(app *cli.App) {
 					return err
 				}
 			}
+			if ctx.IsSet("run-name") {
+				if err := decodeFlagJSON(ctx, "run-name", ctx.String("run-name"), &body.RunName); err != nil {
+					return err
+				}
+			}
 			if ctx.IsSet("schema-version") {
 				v := api.UpdateLoopRequestSchemaVersion(ctx.String("schema-version"))
 				body.SchemaVersion = &v
@@ -381,7 +393,7 @@ func registerLoopsCommands(app *cli.App) {
 					return err
 				}
 			}
-			if ctx.String("file") == "" && !ctx.IsSet("agent-id") && !ctx.IsSet("cleanup") && !ctx.IsSet("concurrency") && !ctx.IsSet("config") && !ctx.IsSet("default-config") && !ctx.IsSet("defaults") && !ctx.IsSet("description") && !ctx.IsSet("event") && !ctx.IsSet("limits") && !ctx.IsSet("name") && !ctx.IsSet("repositories") && !ctx.IsSet("schema-version") && !ctx.IsSet("settings") && !ctx.IsSet("status") && !ctx.IsSet("steps") && !ctx.IsSet("tag") && !ctx.IsSet("triggers") {
+			if ctx.String("file") == "" && !ctx.IsSet("agent-id") && !ctx.IsSet("cleanup") && !ctx.IsSet("concurrency") && !ctx.IsSet("config") && !ctx.IsSet("default-config") && !ctx.IsSet("defaults") && !ctx.IsSet("description") && !ctx.IsSet("event") && !ctx.IsSet("limits") && !ctx.IsSet("name") && !ctx.IsSet("repositories") && !ctx.IsSet("run-name") && !ctx.IsSet("schema-version") && !ctx.IsSet("settings") && !ctx.IsSet("status") && !ctx.IsSet("steps") && !ctx.IsSet("tag") && !ctx.IsSet("triggers") {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
 			if ctx.Bool("dry-run") {

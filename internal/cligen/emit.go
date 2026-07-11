@@ -825,8 +825,9 @@ func renderCommand(b *bytes.Buffer, group string, c PlannedCommand) error {
 				fmt.Fprintf(b, "\t\t\tif ctx.IsSet(%q) { v := ctx.Bool(%q); params.%s = &v }\n",
 					f.FlagName, f.FlagName, f.GoField)
 			case "strings":
-				fmt.Fprintf(b, "\t\t\tif ctx.IsSet(%q) { v := ctx.Strings(%q); params.%s = &v }\n",
-					f.FlagName, f.FlagName, f.GoField)
+				fmt.Fprintf(b, "\t\t\tif ctx.IsSet(%q) {\n", f.FlagName)
+				emitStringSliceValue(b, "\t\t\t\t", "v", f.ElemType, fmt.Sprintf("ctx.Strings(%q)", f.FlagName))
+				fmt.Fprintf(b, "\t\t\t\tparams.%s = &v\n\t\t\t}\n", f.GoField)
 			}
 		}
 	}
@@ -885,13 +886,14 @@ func renderCommand(b *bytes.Buffer, group string, c PlannedCommand) error {
 						f.FlagName, f.FlagName, f.GoField)
 				}
 			case "strings":
+				fmt.Fprintf(b, "\t\t\tif ctx.IsSet(%q) {\n", f.FlagName)
+				emitStringSliceValue(b, "\t\t\t\t", "v", f.ElemType, fmt.Sprintf("ctx.Strings(%q)", f.FlagName))
 				if f.Required {
-					fmt.Fprintf(b, "\t\t\tif ctx.IsSet(%q) { body.%s = ctx.Strings(%q) }\n",
-						f.FlagName, f.GoField, f.FlagName)
+					fmt.Fprintf(b, "\t\t\t\tbody.%s = v\n", f.GoField)
 				} else {
-					fmt.Fprintf(b, "\t\t\tif ctx.IsSet(%q) { v := ctx.Strings(%q); body.%s = &v }\n",
-						f.FlagName, f.FlagName, f.GoField)
+					fmt.Fprintf(b, "\t\t\t\tbody.%s = &v\n", f.GoField)
 				}
+				fmt.Fprintf(b, "\t\t\t}\n")
 			case "json":
 				fmt.Fprintf(b, "\t\t\tif ctx.IsSet(%q) { if err := decodeFlagJSON(ctx, %q, ctx.String(%q), &body.%s); err != nil { return err } }\n",
 					f.FlagName, f.FlagName, f.FlagName, f.GoField)
@@ -1001,6 +1003,20 @@ func renderCommand(b *bytes.Buffer, group string, c PlannedCommand) error {
 	fmt.Fprintf(b, "\t\t\treturn printResponse(ctx, %q, resp.StatusCode(), resp.Body)\n", c.OperationID)
 	fmt.Fprintf(b, "\t\t})\n\n")
 	return nil
+}
+
+// emitStringSliceValue declares name from a cli.Strings expression. Named
+// string element types need an element-wise conversion because Go does not
+// permit assigning []string directly to []MyStringEnum.
+func emitStringSliceValue(b *bytes.Buffer, indent, name, sliceType, expression string) {
+	itemType := strings.TrimPrefix(sliceType, "[]")
+	if itemType == "string" {
+		fmt.Fprintf(b, "%s%s := %s\n", indent, name, expression)
+		return
+	}
+	fmt.Fprintf(b, "%sraw := %s\n", indent, expression)
+	fmt.Fprintf(b, "%s%s := make([]api.%s, len(raw))\n", indent, name, itemType)
+	fmt.Fprintf(b, "%sfor i, item := range raw { %s[i] = api.%s(item) }\n", indent, name, itemType)
 }
 
 // renderHelpers writes the runtime helpers the generated commands rely on.

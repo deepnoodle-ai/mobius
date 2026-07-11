@@ -129,6 +129,7 @@ func registerInteractionsCommands(app *cli.App) {
 			cli.String("status", "").Help("Filter by status"),
 			cli.String("kind", "").Help("Filter by interaction protocol kind"),
 			cli.String("run-id", "").Help("Filter by originating run ID"),
+			cli.String("session-id", "").Help("Filter to interactions raised by an agent tool call (`consumer.kind=agent_tool`) whose invocation is a turn of the given chat session. Lets…"),
 			cli.String("target-user-id", "").Help("Filter by resolved target user ID."),
 			cli.Bool("inbox", "").Help("When true, returns only interactions visible to the authenticated user."),
 			cli.String("cursor", "").Help("Cursor for pagination (opaque string from previous response)"),
@@ -154,6 +155,10 @@ func registerInteractionsCommands(app *cli.App) {
 			if ctx.IsSet("run-id") {
 				v := ctx.String("run-id")
 				params.RunId = &v
+			}
+			if ctx.IsSet("session-id") {
+				v := ctx.String("session-id")
+				params.SessionId = &v
 			}
 			if ctx.IsSet("target-user-id") {
 				v := ctx.String("target-user-id")

@@ -456,7 +456,8 @@ func registerAgentsCommands(app *cli.App) {
 				return err
 			}
 			if ctx.IsSet("skill-ids") {
-				body.SkillIds = ctx.Strings("skill-ids")
+				v := ctx.Strings("skill-ids")
+				body.SkillIds = v
 			}
 			if len(body.SkillIds) == 0 {
 				return fmt.Errorf("--skill-ids is required (or supply it via --file)")
@@ -493,7 +494,8 @@ func registerAgentsCommands(app *cli.App) {
 				return err
 			}
 			if ctx.IsSet("toolkit-ids") {
-				body.ToolkitIds = ctx.Strings("toolkit-ids")
+				v := ctx.Strings("toolkit-ids")
+				body.ToolkitIds = v
 			}
 			if len(body.ToolkitIds) == 0 {
 				return fmt.Errorf("--toolkit-ids is required (or supply it via --file)")

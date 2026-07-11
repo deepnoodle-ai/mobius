@@ -115,6 +115,27 @@ func registerSessionsCommands(app *cli.App) {
 			return printResponse(ctx, "cancelSession", resp.StatusCode(), resp.Body)
 		})
 
+	sessionsGrp.Command("cancel-nudge").
+		Description("Cancel a pending session nudge").
+		AddArg(&cli.Arg{Name: "session-id", Description: "Identifier of the conversation session.", Required: true}).
+		AddArg(&cli.Arg{Name: "nudge-id", Description: "Session nudge identifier.", Required: true}).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			p1 := ctx.Arg(0)
+			p2 := ctx.Arg(1)
+			resp, err := client.CancelNudgeWithResponse(ctx.Context(), p0, p1, p2)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "cancelNudge", resp.StatusCode(), resp.Body)
+		})
+
 	sessionsGrp.Command("cancel-turn").
 		Description("Cancel a session turn").
 		AddArg(&cli.Arg{Name: "session-id", Description: "Identifier of the conversation session.", Required: true}).
@@ -268,6 +289,27 @@ func registerSessionsCommands(app *cli.App) {
 				return err
 			}
 			return printResponse(ctx, "getSession", resp.StatusCode(), resp.Body)
+		})
+
+	sessionsGrp.Command("get-nudge").
+		Description("Get a session nudge").
+		AddArg(&cli.Arg{Name: "session-id", Description: "Identifier of the conversation session.", Required: true}).
+		AddArg(&cli.Arg{Name: "nudge-id", Description: "Session nudge identifier.", Required: true}).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			p1 := ctx.Arg(0)
+			p2 := ctx.Arg(1)
+			resp, err := client.GetSessionNudgeWithResponse(ctx.Context(), p0, p1, p2)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "getSessionNudge", resp.StatusCode(), resp.Body)
 		})
 
 	sessionsGrp.Command("get-turn").
@@ -478,6 +520,52 @@ func registerSessionsCommands(app *cli.App) {
 			return printResponse(ctx, "listSessionMessages", resp.StatusCode(), resp.Body)
 		})
 
+	sessionsGrp.Command("list-nudges").
+		Description("List session nudges").
+		AddArg(&cli.Arg{Name: "session-id", Description: "Identifier of the conversation session.", Required: true}).
+		Flags(
+			cli.Strings("status", "").Help("Filter by one or more nudge statuses."),
+			cli.String("order", "").Help("Scan direction for the page. `asc` (the default) returns oldest-first; `desc` returns newest-first — the way to fetch the latest rows of…"),
+			cli.String("cursor", "").Help("Cursor for pagination (opaque string from previous response)"),
+			cli.Int("limit", "").Help("Maximum number of items to return"),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			p1 := ctx.Arg(0)
+			params := &api.ListSessionNudgesParams{}
+			if ctx.IsSet("status") {
+				raw := ctx.Strings("status")
+				v := make([]api.SessionNudgeStatus, len(raw))
+				for i, item := range raw {
+					v[i] = api.SessionNudgeStatus(item)
+				}
+				params.Status = &v
+			}
+			if ctx.IsSet("order") {
+				v := api.ListSessionNudgesParamsOrder(ctx.String("order"))
+				params.Order = &v
+			}
+			if ctx.IsSet("cursor") {
+				v := api.CursorParam(ctx.String("cursor"))
+				params.Cursor = &v
+			}
+			if ctx.IsSet("limit") {
+				v := api.LimitParam(ctx.Int("limit"))
+				params.Limit = &v
+			}
+			resp, err := client.ListSessionNudgesWithResponse(ctx.Context(), p0, p1, params)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "listSessionNudges", resp.StatusCode(), resp.Body)
+		})
+
 	sessionsGrp.Command("list-turns").
 		Description("List session turns").
 		AddArg(&cli.Arg{Name: "session-id", Description: "Identifier of the conversation session.", Required: true}).
@@ -518,6 +606,59 @@ func registerSessionsCommands(app *cli.App) {
 				return err
 			}
 			return printResponse(ctx, "listSessionTurns", resp.StatusCode(), resp.Body)
+		})
+
+	sessionsGrp.Command("nudge").
+		Description("Nudge a session").
+		AddArg(&cli.Arg{Name: "session-id", Description: "Identifier of the conversation session.", Required: true}).
+		Flags(
+			cli.String("content", "").Help("[required] User direction to deliver at the next iteration boundary."),
+			cli.String("idempotency-key", "").Help("Dedup key scoped to the session. Reusing the key with identical content returns the original nudge request; different content conflicts."),
+			cli.String("metadata", "").Help("Free-form caller metadata retained with the nudge request. Accepts JSON, @file, or @-."),
+			cli.Bool("wake", "").Help("When true and the target turn is waiting on an interruptible agent tool, resolve that tool call with `{ \"interrupted\": true, \"reason\"…"),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			p1 := ctx.Arg(0)
+			var body api.NudgeSessionJSONRequestBody
+			if err := readJSONBody(ctx, &body); err != nil {
+				return err
+			}
+			if ctx.IsSet("content") {
+				body.Content = ctx.String("content")
+			}
+			if ctx.IsSet("idempotency-key") {
+				v := ctx.String("idempotency-key")
+				body.IdempotencyKey = &v
+			}
+			if ctx.IsSet("metadata") {
+				if err := decodeFlagJSON(ctx, "metadata", ctx.String("metadata"), &body.Metadata); err != nil {
+					return err
+				}
+			}
+			if ctx.IsSet("wake") {
+				v := ctx.Bool("wake")
+				body.Wake = &v
+			}
+			if body.Content == "" {
+				return fmt.Errorf("--content is required (or supply it via --file)")
+			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
+			}
+			resp, err := client.NudgeSessionWithResponse(ctx.Context(), p0, p1, body)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "nudgeSession", resp.StatusCode(), resp.Body)
 		})
 
 	sessionsGrp.Command("start-turn").

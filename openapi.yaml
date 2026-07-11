@@ -1544,7 +1544,8 @@ paths:
       - interactions
       summary: List interactions
       description: Returns interactions newest-first, optionally filtered by kind, status,
-        run, target, or the current caller's inbox. Inbox filtering includes direct targets.
+        run, session, target, or the current caller's inbox. Inbox filtering includes direct
+        targets.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - name: status
@@ -1567,6 +1568,13 @@ paths:
         schema:
           type: string
         description: Filter by originating run ID
+      - name: session_id
+        in: query
+        schema:
+          type: string
+        description: Filter to interactions raised by an agent tool call (`consumer.kind=agent_tool`)
+          whose invocation is a turn of the given chat session. Lets a chat surface the pending
+          `request_human_input` interactions its own turns are waiting on.
       - name: target_user_id
         in: query
         schema:
@@ -2817,6 +2825,137 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /v1/projects/{project_handle}/sessions/{session_id}/nudges:
+    get:
+      operationId: listSessionNudges
+      tags:
+      - sessions
+      summary: List session nudges
+      description: Returns the durable nudge queue in creation order. Repeat `status` to reconcile
+        one or more lifecycle states. Live `nudge.*` stream events are low-latency hints;
+        this list is the authoritative queue view.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/SessionIdParam'
+      - name: status
+        in: query
+        description: Filter by one or more nudge statuses.
+        schema:
+          type: array
+          items:
+            $ref: '#/components/schemas/SessionNudgeStatus'
+        style: form
+        explode: true
+      - $ref: '#/components/parameters/OrderParam'
+      - $ref: '#/components/parameters/CursorParam'
+      - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionNudgeListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      operationId: nudgeSession
+      tags:
+      - sessions
+      summary: Nudge a session
+      description: Adds user direction to the newest running or waiting turn. The agent receives
+        it as contextual runtime input at the next safe iteration boundary, after any in-flight
+        provider request or tool call finishes. If no turn remains nudgeable, Mobius creates
+        a queued direct-session turn so accepted input is not lost. Reusing an `idempotency_key`
+        with identical content returns the original acknowledgement; reusing it with different
+        content returns `409 Conflict`. Requires the `mobius.agent.invoke` permission (or
+        the agent's own backing principal).
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/SessionIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NudgeSessionRequest'
+      responses:
+        '202':
+          description: The nudge input was accepted for delivery.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionNudgeAck'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /v1/projects/{project_handle}/sessions/{session_id}/nudges/{nudge_id}:
+    get:
+      operationId: getSessionNudge
+      tags:
+      - sessions
+      summary: Get a session nudge
+      description: Returns one durable nudge queue entry.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/SessionIdParam'
+      - $ref: '#/components/parameters/NudgeIdParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionNudge'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/projects/{project_handle}/sessions/{session_id}/nudges/{nudge_id}/cancel:
+    post:
+      operationId: cancelNudge
+      tags:
+      - sessions
+      summary: Cancel a pending session nudge
+      description: Cancels a pending nudge. Repeating cancellation is idempotent. If delivery
+        wins the race, returns `409 nudge_already_delivered` with the current nudge resource
+        in `error.details.nudge`.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/SessionIdParam'
+      - $ref: '#/components/parameters/NudgeIdParam'
+      responses:
+        '200':
+          description: The nudge is cancelled.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionNudge'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
   /v1/projects/{project_handle}/sessions/{session_id}/turns/{turn_id}/live:
     get:
       operationId: getSessionTurnLive
@@ -4127,12 +4266,18 @@ paths:
       - blueprints
       summary: List blueprint bindings
       description: 'Returns the project''s blueprint bindings: the mapping from each blueprint-defined
-        resource key to the Mobius resource it provisions. Optionally filtered by namespace.'
+        resource key to the Mobius resource it provisions. Optionally filtered by namespace
+        and blueprint identifier.'
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - name: namespace
         in: query
-        description: Optional namespace filter (matches the binding's stored provenance).
+        description: Optional namespace filter for the owning blueprint identity.
+        schema:
+          type: string
+      - name: blueprint_key
+        in: query
+        description: Optional blueprint identifier filter.
         schema:
           type: string
       responses:
@@ -4148,6 +4293,104 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /v1/projects/{project_handle}/blueprints/{blueprint_key}/protection:
+    put:
+      operationId: setBlueprintProtection
+      tags:
+      - blueprints
+      summary: Set blueprint resource protection
+      description: Protects or unprotects every resource definition managed by one named blueprint.
+        Protected resources can still be changed by Blueprint Apply or removed by deleting
+        the blueprint, but ordinary resource update and delete operations return `blueprint_resource_protected`.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - name: blueprint_key
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: namespace
+        in: query
+        description: Blueprint namespace. Omit for an unnamespaced blueprint.
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetBlueprintProtectionRequest'
+      responses:
+        '200':
+          description: Protection updated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BlueprintBindingListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /v1/projects/{project_handle}/blueprints/{blueprint_key}:
+    delete:
+      operationId: deleteBlueprint
+      tags:
+      - blueprints
+      summary: Delete an applied blueprint
+      description: Deletes resources that Mobius created for one named blueprint, in reverse
+        dependency order. Adopted resources and legacy bindings whose origin is unknown are
+        retained and unbound unless `delete_retained` is explicitly true. Deletion commits
+        one resource at a time; retry the request after a partial failure to continue from
+        the remaining bindings. After a non-2xx response, list the exact blueprint bindings
+        again to see what remains. Omitting `namespace` targets only the unnamespaced blueprint;
+        it is not a wildcard across namespaces.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - name: blueprint_key
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: namespace
+        in: query
+        description: Blueprint namespace. Omit for an unnamespaced blueprint.
+        schema:
+          type: string
+      - name: delete_retained
+        in: query
+        description: Also delete adopted resources and legacy bindings whose ownership is
+          unknown. Defaults to false. Use only after inspecting the blueprint bindings because
+          these resources may contain customer-authored data.
+        schema:
+          type: boolean
+          default: false
+      responses:
+        '200':
+          description: Blueprint bindings removed and selected resources deleted.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BlueprintDeleteResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
         '429':
           $ref: '#/components/responses/TooManyRequests'
   /v1/projects/{project_handle}/tables:
@@ -5066,27 +5309,6 @@ components:
         type: integer
         format: int64
         minimum: 0
-    AdminOrgIDParam:
-      name: org_id
-      in: path
-      required: true
-      schema:
-        type: string
-      description: ID of the target organization for the admin operation.
-    AdminRunIDParam:
-      name: run_id
-      in: path
-      required: true
-      schema:
-        type: string
-      description: ID of the target loop run for the admin operation.
-    AdminUserIDParam:
-      name: user_id
-      in: path
-      required: true
-      schema:
-        type: string
-      description: ID of the target human principal for the admin operation.
     EnvironmentIDParam:
       name: environment_id
       in: path
@@ -5138,6 +5360,15 @@ components:
       description: Framework provider identifier from the integration provider catalog.
       schema:
         type: string
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: false
+      description: Stable caller-generated key. Reusing it returns the original operation.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 255
     OrgIDParam:
       name: org_id
       in: path
@@ -5156,6 +5387,13 @@ components:
         minLength: 1
         maxLength: 256
         pattern: ^[A-Za-z0-9._:-]+$
+    NudgeIdParam:
+      name: nudge_id
+      in: path
+      required: true
+      description: Session nudge identifier.
+      schema:
+        type: string
     TableIDParam:
       name: table_id
       in: path
@@ -5707,6 +5945,178 @@ components:
         updated_by: user_2f9s3k4m5n6p7q8r
         created_at: '2026-06-15T14:30:00Z'
         updated_at: '2026-06-15T14:30:00Z'
+    SessionStatus:
+      type: string
+      enum:
+      - active
+      - archived
+      - deleted
+      description: 'Durable conversation session status: `active`, `archived`, or `deleted`.'
+    SessionOrigin:
+      type: string
+      enum:
+      - manual
+      - api
+      - loop
+      - interaction
+      description: 'Surface that created the session: `manual`, `api`, `loop`, or `interaction`.'
+    SessionScope:
+      type: string
+      enum:
+      - agent
+      - loop
+      description: 'Boundary used to resolve named sessions: `agent` or `loop`.'
+    SessionVisibility:
+      type: string
+      enum:
+      - project
+      - private
+      description: 'Visibility of the session in project surfaces: `project` or `private`.'
+    SessionCompactionBoundary:
+      type: object
+      additionalProperties: false
+      description: Pointer to the latest compaction marker in a session's transcript. The
+        marker is itself a transcript message (role `compaction`); everything at or below
+        `covers_through_sequence` is summarized history.
+      required:
+      - message_id
+      - sequence
+      - covers_through_sequence
+      properties:
+        message_id:
+          type: string
+          description: Id of the compaction summary message in the transcript.
+        sequence:
+          type: integer
+          description: Transcript sequence of the compaction marker itself.
+        covers_through_sequence:
+          type: integer
+          description: Highest message sequence this summary covers — the before/after boundary.
+    Session:
+      type: object
+      additionalProperties: false
+      description: Durable conversation transcript owned by an agent.
+      required:
+      - id
+      - agent_id
+      - title
+      - status
+      - origin
+      - scope
+      - scope_ref_id
+      - scope_name
+      - session_key
+      - visibility
+      - message_count
+      - token_input_total
+      - token_output_total
+      - cache_read_input_total
+      - cache_creation_input_total
+      - version
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+          description: Stable session identifier.
+        agent_id:
+          type: string
+          description: Agent that owns this session.
+        title:
+          type: string
+          description: Human-readable session title.
+        status:
+          $ref: '#/components/schemas/SessionStatus'
+          description: Lifecycle status of the session.
+        origin:
+          $ref: '#/components/schemas/SessionOrigin'
+          description: Surface that created the session.
+        scope:
+          $ref: '#/components/schemas/SessionScope'
+          description: Boundary used to resolve the session key.
+        scope_ref_id:
+          type: string
+          description: Identifier of the resource the session is scoped to (e.g. the agent
+            for agent-scoped sessions).
+        scope_name:
+          type: string
+          description: Caller-assigned name identifying this conversation within its scope
+            (`scope` + `scope_ref_id`); reused as the session routing key.
+        session_key:
+          type: string
+          description: Stable session routing key used to look up a scoped conversation (mirrors
+            `scope_name`).
+        visibility:
+          $ref: '#/components/schemas/SessionVisibility'
+          description: Where the session appears in project UI surfaces.
+        model:
+          type: string
+          description: Model the session most recently exchanged tokens with.
+        model_provider:
+          type: string
+          description: Provider for the recorded `model`.
+        compaction_policy:
+          $ref: '#/components/schemas/SessionCompactionPolicy'
+          description: Resolved message-compaction policy in effect for this session.
+        thinking_effort:
+          $ref: '#/components/schemas/ThinkingEffort'
+          description: This session's reasoning-effort override, or absent when the session
+            inherits the agent default. Turns resolve the effective level as agent default
+            then this override.
+        latest_compaction:
+          $ref: '#/components/schemas/SessionCompactionBoundary'
+          nullable: true
+          description: The most recent compaction marker in the transcript, or null when the
+            session has never been compacted. Delineates summarized history (sequences at
+            or below `covers_through_sequence`) from the live tail. Returned on the single-session
+            read; absent from list entries.
+        message_count:
+          type: integer
+          description: Total messages currently in the session, including compaction summaries.
+        token_input_total:
+          type: integer
+          description: Lifetime fresh (uncached) input-token total for this session. Prompt-cache
+            tokens are reported separately in `cache_read_input_total` and `cache_creation_input_total`.
+        token_output_total:
+          type: integer
+          description: Lifetime output-token total reported for this session.
+        cache_read_input_total:
+          type: integer
+          description: Lifetime prompt-cache-read input-token total for this session.
+        cache_creation_input_total:
+          type: integer
+          description: Lifetime prompt-cache-write (cache creation) input-token total for
+            this session.
+        version:
+          type: integer
+          description: Optimistic-concurrency version. Increments on every mutation.
+        last_message_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Timestamp of the most recent message append; null before any messages
+            are stored.
+        forked_from_session_id:
+          type: string
+          description: Source session this one was forked from, if any.
+        forked_from_sequence:
+          type: integer
+          description: Sequence number in the source session at which the fork was taken.
+        created_by:
+          type: string
+          description: User who created this session, if attribution was captured.
+        metadata:
+          type: object
+          additionalProperties: true
+          description: Free-form caller metadata.
+        created_at:
+          type: string
+          format: date-time
+          description: Record creation timestamp.
+        updated_at:
+          type: string
+          format: date-time
+          description: Last update timestamp.
     AgentListResponse:
       type: object
       additionalProperties: false
@@ -10174,33 +10584,6 @@ components:
         updated_by: user_2f9s3k4m5n6p7q8r
         created_at: '2026-06-15T14:30:00Z'
         updated_at: '2026-06-15T14:30:00Z'
-    SessionStatus:
-      type: string
-      enum:
-      - active
-      - archived
-      - deleted
-      description: 'Durable conversation session status: `active`, `archived`, or `deleted`.'
-    SessionOrigin:
-      type: string
-      enum:
-      - manual
-      - api
-      - loop
-      - interaction
-      description: 'Surface that created the session: `manual`, `api`, `loop`, or `interaction`.'
-    SessionScope:
-      type: string
-      enum:
-      - agent
-      - loop
-      description: 'Boundary used to resolve named sessions: `agent` or `loop`.'
-    SessionVisibility:
-      type: string
-      enum:
-      - project
-      - private
-      description: 'Visibility of the session in project surfaces: `project` or `private`.'
     AgentTurnStatus:
       type: string
       enum:
@@ -10295,131 +10678,6 @@ components:
           nullable: true
           description: Opaque cursor to pass as `cursor` on the next request. Null when `has_more`
             is false.
-    Session:
-      type: object
-      additionalProperties: false
-      description: Durable conversation transcript owned by an agent.
-      required:
-      - id
-      - agent_id
-      - title
-      - status
-      - origin
-      - scope
-      - scope_ref_id
-      - scope_name
-      - session_key
-      - visibility
-      - message_count
-      - token_input_total
-      - token_output_total
-      - cache_read_input_total
-      - cache_creation_input_total
-      - version
-      - created_at
-      - updated_at
-      properties:
-        id:
-          type: string
-          description: Stable session identifier.
-        agent_id:
-          type: string
-          description: Agent that owns this session.
-        title:
-          type: string
-          description: Human-readable session title.
-        status:
-          $ref: '#/components/schemas/SessionStatus'
-          description: Lifecycle status of the session.
-        origin:
-          $ref: '#/components/schemas/SessionOrigin'
-          description: Surface that created the session.
-        scope:
-          $ref: '#/components/schemas/SessionScope'
-          description: Boundary used to resolve the session key.
-        scope_ref_id:
-          type: string
-          description: Identifier of the resource the session is scoped to (e.g. the agent
-            for agent-scoped sessions).
-        scope_name:
-          type: string
-          description: Caller-assigned name identifying this conversation within its scope
-            (`scope` + `scope_ref_id`); reused as the session routing key.
-        session_key:
-          type: string
-          description: Stable session routing key used to look up a scoped conversation (mirrors
-            `scope_name`).
-        visibility:
-          $ref: '#/components/schemas/SessionVisibility'
-          description: Where the session appears in project UI surfaces.
-        model:
-          type: string
-          description: Model the session most recently exchanged tokens with.
-        model_provider:
-          type: string
-          description: Provider for the recorded `model`.
-        compaction_policy:
-          $ref: '#/components/schemas/SessionCompactionPolicy'
-          description: Resolved message-compaction policy in effect for this session.
-        thinking_effort:
-          $ref: '#/components/schemas/ThinkingEffort'
-          description: This session's reasoning-effort override, or absent when the session
-            inherits the agent default. Turns resolve the effective level as agent default
-            then this override.
-        latest_compaction:
-          $ref: '#/components/schemas/SessionCompactionBoundary'
-          nullable: true
-          description: The most recent compaction marker in the transcript, or null when the
-            session has never been compacted. Delineates summarized history (sequences at
-            or below `covers_through_sequence`) from the live tail. Returned on the single-session
-            read; absent from list entries.
-        message_count:
-          type: integer
-          description: Total messages currently in the session, including compaction summaries.
-        token_input_total:
-          type: integer
-          description: Lifetime fresh (uncached) input-token total for this session. Prompt-cache
-            tokens are reported separately in `cache_read_input_total` and `cache_creation_input_total`.
-        token_output_total:
-          type: integer
-          description: Lifetime output-token total reported for this session.
-        cache_read_input_total:
-          type: integer
-          description: Lifetime prompt-cache-read input-token total for this session.
-        cache_creation_input_total:
-          type: integer
-          description: Lifetime prompt-cache-write (cache creation) input-token total for
-            this session.
-        version:
-          type: integer
-          description: Optimistic-concurrency version. Increments on every mutation.
-        last_message_at:
-          type: string
-          format: date-time
-          nullable: true
-          description: Timestamp of the most recent message append; null before any messages
-            are stored.
-        forked_from_session_id:
-          type: string
-          description: Source session this one was forked from, if any.
-        forked_from_sequence:
-          type: integer
-          description: Sequence number in the source session at which the fork was taken.
-        created_by:
-          type: string
-          description: User who created this session, if attribution was captured.
-        metadata:
-          type: object
-          additionalProperties: true
-          description: Free-form caller metadata.
-        created_at:
-          type: string
-          format: date-time
-          description: Record creation timestamp.
-        updated_at:
-          type: string
-          format: date-time
-          description: Last update timestamp.
     SessionListResponse:
       type: object
       additionalProperties: false
@@ -10470,6 +10728,7 @@ components:
       - $ref: '#/components/schemas/TurnCompletedPayload'
       - $ref: '#/components/schemas/TurnFailedPayload'
       - $ref: '#/components/schemas/TurnCancelledPayload'
+      - $ref: '#/components/schemas/NudgeEventPayload'
       - $ref: '#/components/schemas/SessionMessagePreviewFrame'
       - $ref: '#/components/schemas/SessionResyncFrame'
       - $ref: '#/components/schemas/ToolCallPayload'
@@ -10480,7 +10739,7 @@ components:
 
         The `event:` line is the authoritative frame selector. This union is reference-only: several payloads are structurally identical (e.g. `user.message` and `agent.message`) or permissive open objects, so the `data:` body alone cannot be shape-matched to a single variant. Consumers MUST dispatch on the `event:` name and decode the body as the corresponding payload — never validate the bare body against the union.
 
-        Durable message frames (`user.message`, `agent.message`, `compaction.created`) are replayed from the transcript and carry an SSE `id: <sequence>` — that `sequence` is the only cursor a client persists for `after_sequence` / `Last-Event-ID` resume. Terminal `turn.*` frames mark the active turn settling. `session.message.preview`, `session.resync`, `tool.call`, `tool.result`, and `generation.delta` frames are live-only and carry no `id:`.
+        Durable message frames (`user.message`, `agent.message`, `compaction.created`) are replayed from the transcript and carry an SSE `id: <sequence>` — that `sequence` is the only cursor a client persists for `after_sequence` / `Last-Event-ID` resume. Terminal `turn.*` frames mark the active turn settling. `session.message.preview`, `session.resync`, `nudge.queued`, `nudge.delivered`, `nudge.cancelled`, `tool.call`, `tool.result`, and `generation.delta` frames are live-only and carry no `id:`.
     SessionMessagePreviewFrame:
       type: object
       additionalProperties: true
@@ -10756,6 +11015,26 @@ components:
       properties:
         reason:
           type: string
+    NudgeEventPayload:
+      type: object
+      additionalProperties: true
+      required:
+      - nudge_id
+      - turn_id
+      - delivery
+      - status
+      description: Live reconciliation hint emitted for `nudge.queued`, `nudge.delivered`,
+        and `nudge.cancelled`. Re-read the queue resource after receiving it; this pulse is
+        not durable replay state.
+      properties:
+        nudge_id:
+          type: string
+        turn_id:
+          type: string
+        delivery:
+          $ref: '#/components/schemas/SessionNudgeDelivery'
+        status:
+          $ref: '#/components/schemas/SessionNudgeStatus'
     CompactionCreatedPayload:
       type: object
       additionalProperties: true
@@ -10836,7 +11115,8 @@ components:
           description: Role to store for this appended message.
         content:
           type: array
-          description: Ordered content blocks (text, tool calls, tool results, images).
+          description: Ordered content blocks (text, tool calls, tool results, images). Blocks
+            of type `reminder` are host-managed runtime context and are rejected on this surface.
           items:
             type: object
             additionalProperties: true
@@ -10848,26 +11128,6 @@ components:
           type: string
           format: date-time
           description: Caller-supplied creation timestamp. The server assigns one if absent.
-    SessionCompactionBoundary:
-      type: object
-      additionalProperties: false
-      description: Pointer to the latest compaction marker in a session's transcript. The
-        marker is itself a transcript message (role `compaction`); everything at or below
-        `covers_through_sequence` is summarized history.
-      required:
-      - message_id
-      - sequence
-      - covers_through_sequence
-      properties:
-        message_id:
-          type: string
-          description: Id of the compaction summary message in the transcript.
-        sequence:
-          type: integer
-          description: Transcript sequence of the compaction marker itself.
-        covers_through_sequence:
-          type: integer
-          description: Highest message sequence this summary covers — the before/after boundary.
     InvokeAgentRequest:
       type: object
       additionalProperties: false
@@ -11149,6 +11409,143 @@ components:
         deduped:
           type: boolean
           description: True when a repeated idempotency key resumed an existing turn.
+    NudgeSessionRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - content
+      properties:
+        content:
+          type: string
+          minLength: 1
+          maxLength: 32768
+          description: User direction to deliver at the next iteration boundary.
+        idempotency_key:
+          type: string
+          maxLength: 255
+          description: Dedup key scoped to the session. Reusing the key with identical content
+            returns the original nudge request; different content conflicts.
+        metadata:
+          type: object
+          additionalProperties: true
+          description: Free-form caller metadata retained with the nudge request.
+        wake:
+          type: boolean
+          default: false
+          description: 'When true and the target turn is waiting on an interruptible agent
+            tool, resolve that tool call with `{ "interrupted": true, "reason": "user_direction"
+            }` and resume the same turn. Running and newly queued turns ignore this field.'
+    SessionNudgeStatus:
+      type: string
+      enum:
+      - pending
+      - delivered
+      - cancelled
+      description: Durable nudge queue lifecycle status.
+    SessionNudgeDelivery:
+      type: string
+      enum:
+      - current_turn
+      - new_turn
+      description: '`current_turn` means the input targets an in-flight turn; `new_turn` means
+        Mobius queued a direct-session turn because none was nudgeable.'
+    SessionNudgeTurn:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - status
+      properties:
+        id:
+          type: string
+        status:
+          $ref: '#/components/schemas/AgentTurnStatus'
+    SessionNudge:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - status
+      - delivery
+      - content
+      - turn
+      - sender_principal_id
+      - created_at
+      properties:
+        id:
+          type: string
+          description: Stable nudge identifier.
+        status:
+          $ref: '#/components/schemas/SessionNudgeStatus'
+        delivery:
+          $ref: '#/components/schemas/SessionNudgeDelivery'
+        content:
+          type: string
+          description: Exact user direction supplied when the nudge was queued.
+        turn:
+          $ref: '#/components/schemas/SessionNudgeTurn'
+        sender_principal_id:
+          type: string
+          description: Principal that queued the nudge.
+        created_at:
+          type: string
+          format: date-time
+        delivered_at:
+          type: string
+          format: date-time
+          nullable: true
+        cancelled_at:
+          type: string
+          format: date-time
+          nullable: true
+    SessionNudgeListResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - has_more
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/SessionNudge'
+        has_more:
+          type: boolean
+        next_cursor:
+          type: string
+          nullable: true
+          description: Opaque continuation cursor, or null at the end.
+    SessionNudgeAck:
+      type: object
+      additionalProperties: false
+      required:
+      - nudge_id
+      - delivery
+      - session
+      - turn
+      - after_sequence
+      - deduped
+      - woke_turn
+      properties:
+        nudge_id:
+          type: string
+          description: Stable id of the durable nudge mailbox row.
+        delivery:
+          $ref: '#/components/schemas/SessionNudgeDelivery'
+        session:
+          $ref: '#/components/schemas/Session'
+        turn:
+          $ref: '#/components/schemas/AgentTurn'
+        after_sequence:
+          type: integer
+          format: int64
+          description: Current transcript sequence cursor for following the target turn.
+        deduped:
+          type: boolean
+          description: True when an existing idempotent nudge request was returned.
+        woke_turn:
+          type: boolean
+          description: True when wake interrupted a waiting tool and requeued this turn.
     Loop:
       type: object
       additionalProperties: false
@@ -11235,6 +11632,10 @@ components:
         defaults:
           $ref: '#/components/schemas/LoopSpecDefaults'
           description: Run-level defaults applied when individual steps omit a policy.
+        run_name:
+          $ref: '#/components/schemas/RunNameSpec'
+          description: Optional templates for generating an operator-facing title and description
+            for each run.
         default_config:
           type: object
           additionalProperties: true
@@ -11391,6 +11792,10 @@ components:
         defaults:
           $ref: '#/components/schemas/LoopSpecDefaults'
           description: Run-level defaults applied when individual steps omit a policy.
+        run_name:
+          $ref: '#/components/schemas/RunNameSpec'
+          description: Optional templates for generating an operator-facing title and description
+            for each run.
         default_config:
           type: object
           additionalProperties: true
@@ -11495,6 +11900,10 @@ components:
         defaults:
           $ref: '#/components/schemas/LoopSpecDefaults'
           description: Replacement run-level defaults.
+        run_name:
+          $ref: '#/components/schemas/RunNameSpec'
+          description: Replacement templates for generating an operator-facing title and description
+            for each run.
         default_config:
           type: object
           additionalProperties: true
@@ -11506,6 +11915,26 @@ components:
         tags:
           $ref: '#/components/schemas/TagMap'
           description: Replacement labels; send an empty object to clear all tags.
+    RunNameSpec:
+      type: object
+      additionalProperties: false
+      description: Templates for assigning an operator-facing title and optional description
+        to each run. The object form leaves room for additional naming strategies without
+        changing the loop spec shape.
+      properties:
+        template:
+          type: string
+          description: '`${{ event.* }}`, `${{ meta.* }}`, and `${{ config.* }}` template
+            rendered as the run title when the run is created. When blank, the run title falls
+            back to the loop name. This property remains required for compatibility, but may
+            be blank when only description_template is configured. Send empty title and description
+            templates in an update to clear the run display configuration.'
+        description_template:
+          type: string
+          description: Optional `${{ event.* }}`, `${{ meta.* }}`, and `${{ config.* }}` template
+            rendered as secondary descriptive text when the run is created.
+      required:
+      - template
     LoopSpecRepository:
       type: object
       additionalProperties: false
@@ -12499,6 +12928,14 @@ components:
         loop_id:
           type: string
           description: Loop this run belongs to.
+        name:
+          type: string
+          maxLength: 160
+          description: Human-readable title for this run.
+        description:
+          type: string
+          maxLength: 320
+          description: Optional secondary description for this run.
         loop_name:
           type: string
           description: Human-readable name of the loop this run belongs to.
@@ -12619,6 +13056,8 @@ components:
       example:
         id: run_8q5m2x9v7p3n4r6t
         loop_id: loop_9q2m7x5v3p8n4r6t
+        name: 'Review pull request #1268'
+        description: deepnoodle-ai/mobius-cloud · Add run descriptions
         loop_name: Daily security check
         loop_version_id: lver_4v9n2q7m5x8p3r6t
         loop_version: 3
@@ -12877,7 +13316,8 @@ components:
       additionalProperties: false
       description: A reference to a Mobius resource by direct `id`, by blueprint `key` (resolved
         within this apply first, then against existing bindings), or by `blueprint_ref` (resolved
-        by key; namespace is recorded as provenance and reserved for namespaced lookup).
+        by key; its namespace is recorded as provenance and is not used for reference resolution
+        in this version).
       properties:
         id:
           type: string
@@ -12907,13 +13347,19 @@ components:
       properties:
         namespace:
           type: string
-          description: Optional namespace recorded as provenance on each binding.
+          description: Optional namespace that forms part of the blueprint identity.
         blueprint_key:
           type: string
-          description: Optional blueprint identifier recorded as provenance.
+          description: Optional blueprint identifier that forms part of the blueprint identity.
         blueprint_version:
           type: string
           description: Optional blueprint version recorded as provenance.
+        protect_resources:
+          type: boolean
+          description: When set, controls whether ordinary update and delete operations may
+            change resources managed by this blueprint. Blueprint Apply and blueprint deletion
+            remain allowed. Omit to preserve protection on existing bindings; new bindings
+            default to unprotected.
         mode:
           $ref: '#/components/schemas/BlueprintApplyMode'
         resources:
@@ -13013,7 +13459,8 @@ components:
           type: string
         actions:
           type: array
-          description: Actions granted into the toolkit by exact action name.
+          description: Actions granted into the toolkit by canonical selector or legacy exact
+            action name.
           items:
             $ref: '#/components/schemas/BlueprintToolkitActionGrant'
         tags:
@@ -13024,12 +13471,27 @@ components:
     BlueprintToolkitActionGrant:
       type: object
       additionalProperties: false
-      description: Grants one action into a toolkit by its name.
-      required:
-      - action_name
+      description: Grants actions into a toolkit using the canonical Toolkit selector vocabulary.
+        Supply `selector`; `selector_type` defaults to `exact`. `action_name` is a backwards-compatible
+        alias for an exact selector and cannot be combined with `selector`.
       properties:
+        selector_type:
+          type: string
+          enum:
+          - exact
+          - group
+          - platform
+          - custom
+          - wildcard
+          default: exact
+          description: Selector type used to resolve matching actions.
+        selector:
+          type: string
+          description: Canonical selector value, such as `github.*` or `*`.
         action_name:
           type: string
+          deprecated: true
+          description: Legacy alias for an exact action-name selector.
     BlueprintSkillInput:
       type: object
       additionalProperties: false
@@ -13048,6 +13510,12 @@ components:
           type: string
         instructions:
           type: string
+        allowed_tools:
+          type: array
+          description: Tool selectors that narrow the agent's effective tool set while this
+            skill is active.
+          items:
+            type: string
         tags:
           $ref: '#/components/schemas/TagMap'
     BlueprintAgentInput:
@@ -13067,8 +13535,28 @@ components:
           type: string
         model:
           type: string
+        model_route:
+          $ref: '#/components/schemas/AgentModelRoute'
+          description: Default route for model calls made by this agent.
+        tool_presentation:
+          $ref: '#/components/schemas/AgentToolPresentation'
+          description: How granted actions are presented to the model.
         system_prompt:
           type: string
+        timeout_seconds:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Per-turn execution timeout; `0` uses the platform default.
+        status:
+          $ref: '#/components/schemas/AgentStatus'
+          description: Desired agent lifecycle status.
+        compaction_policy:
+          $ref: '#/components/schemas/SessionCompactionPolicy'
+          description: Default session-compaction policy inherited by new sessions.
+        thinking_effort:
+          $ref: '#/components/schemas/ThinkingEffort'
+          description: Default reasoning-effort level for sessions and Loop agent steps.
         kind:
           type: string
         color:
@@ -13087,9 +13575,10 @@ components:
       type: object
       additionalProperties: false
       description: A desired loop. The spec-bearing fields (`steps`, `triggers`, `event`,
-        `config`, `limits`, `output`, `concurrency`, `repositories`, `cleanup`, `defaults`)
-        mirror the loop authoring shape and are compiled by the loop engine. Applied loops
-        default to `draft` unless `status` is set.
+        `config`, `limits`, `output`, `concurrency`, `repositories`, `cleanup`, `defaults`,
+        `run_name`) mirror the loop authoring shape and are compiled by the loop engine. Applied
+        loops default to `draft` unless `status` is set. `default_config`, `settings`, and
+        `tags` configure Loop row state.
       required:
       - key
       - name
@@ -13108,6 +13597,12 @@ components:
           - draft
           - active
           - paused
+        schema_version:
+          type: string
+          enum:
+          - '1'
+          default: '1'
+          description: Loop authoring schema version. Only version 1 is accepted.
         steps:
           type: array
           items:
@@ -13147,15 +13642,27 @@ components:
         defaults:
           type: object
           additionalProperties: true
+        run_name:
+          $ref: '#/components/schemas/RunNameSpec'
+          description: Templates for the operator-facing title and description of each run.
+        default_config:
+          type: object
+          additionalProperties: true
+          description: Default config values used when a run starts without overrides.
+        settings:
+          type: object
+          additionalProperties: true
+          description: Free-form Loop-level settings consumed by the engine.
         tags:
           $ref: '#/components/schemas/TagMap'
     BlueprintTableInput:
       type: object
       additionalProperties: false
-      description: A desired table. `name` is its immutable project-unique identity (lower
-        snake_case). `schema` carries the full column and identity definition and is validated
-        on apply. The identity column and the required-ness of existing columns are immutable
-        after create, so a re-apply that changes them is rejected.
+      description: A desired table. `key` is its stable Blueprint handle; `name` is project-unique
+        (lower snake_case) and may be changed after binding. `schema` carries the full column
+        and identity definition and is validated on apply. The identity column and the required-ness
+        of existing columns are immutable after create, so a re-apply that changes them is
+        rejected.
       required:
       - key
       - name
@@ -13227,6 +13734,8 @@ components:
       - resource_type
       - key
       - resource_id
+      - protected
+      - delete_on_destroy
       properties:
         resource_type:
           $ref: '#/components/schemas/BlueprintResourceType'
@@ -13240,6 +13749,13 @@ components:
           type: string
         blueprint_version:
           type: string
+        protected:
+          type: boolean
+          description: Whether ordinary definition mutations are blocked.
+        delete_on_destroy:
+          type: boolean
+          description: Whether deleting the blueprint will delete this resource instead of
+            retaining it.
     BlueprintBindingListResponse:
       type: object
       additionalProperties: false
@@ -13248,6 +13764,41 @@ components:
       properties:
         items:
           type: array
+          items:
+            $ref: '#/components/schemas/BlueprintBinding'
+    SetBlueprintProtectionRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - protected
+      properties:
+        protected:
+          type: boolean
+    BlueprintDeleteResult:
+      type: object
+      additionalProperties: false
+      required:
+      - status
+      - blueprint_key
+      - deleted
+      - retained
+      properties:
+        status:
+          type: string
+          enum:
+          - deleted
+        namespace:
+          type: string
+        blueprint_key:
+          type: string
+        deleted:
+          type: array
+          description: Resources deleted with the blueprint.
+          items:
+            $ref: '#/components/schemas/BlueprintBinding'
+        retained:
+          type: array
+          description: Adopted or legacy resources retained after their bindings were removed.
           items:
             $ref: '#/components/schemas/BlueprintBinding'
     ColumnType:
