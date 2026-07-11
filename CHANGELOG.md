@@ -6,6 +6,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 
 ## [Unreleased]
 
+## [0.0.42] - 2026-07-11
+
+### Added
+
+- Session nudge queue: a durable queue for injecting user direction into a running
+  session. New endpoints and generated Go/TypeScript/Python clients, plus CLI commands
+  `mobius sessions nudge`, `sessions list-nudges`, `sessions get-nudge`, and
+  `sessions cancel-nudge`. A nudge lands on the newest nudgeable turn
+  (`delivery: current_turn`); if no turn is nudgeable, Mobius queues a direct-session
+  turn (`delivery: new_turn`) so accepted input is not lost. Queue entries have a
+  `pending` | `delivered` | `cancelled` lifecycle, and reusing an `idempotency_key`
+  with identical content returns the original acknowledgement (different content
+  conflicts).
+- Interactions `session_id` filter (`mobius interactions list --session-id`): returns
+  the pending `request_human_input` interactions raised by agent tool calls
+  (`consumer.kind=agent_tool`) whose invocation is a turn of the given chat session, so
+  a chat surface can show which interactions its own turns are waiting on.
+
 ## [0.0.41] - 2026-07-09
 
 ### Changed
