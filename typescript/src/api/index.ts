@@ -27,6 +27,7 @@ export type ActionInvocationResult = components["schemas"]["ActionInvocationResu
 export type ActionResultPayload = components["schemas"]["ActionResultPayload"];
 export type ActionRetriedPayload = components["schemas"]["ActionRetriedPayload"];
 export type Agent = components["schemas"]["Agent"];
+export type AgentBuiltInTool = components["schemas"]["AgentBuiltInTool"];
 export type AgentListResponse = components["schemas"]["AgentListResponse"];
 export type AgentManifestWarning = components["schemas"]["AgentManifestWarning"];
 export type AgentMemory = components["schemas"]["AgentMemory"];

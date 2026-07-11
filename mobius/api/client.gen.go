@@ -3316,6 +3316,24 @@ type Agent struct {
 	UpdatedBy *string `json:"updated_by,omitempty"`
 }
 
+// AgentBuiltInTool A platform-owned tool available to agents independently of toolkit assignments.
+type AgentBuiltInTool struct {
+	// Description Concise explanation of the tool's behavior.
+	Description string `json:"description"`
+
+	// Enabled Whether deployment policy makes this tool available on tool-enabled turns.
+	Enabled bool `json:"enabled"`
+
+	// Name Canonical Mobius tool name, such as `mobius.explore`.
+	Name string `json:"name"`
+
+	// Title Human-readable tool name.
+	Title string `json:"title"`
+
+	// WireName Provider-safe name sent to the model, such as `mobius_explore`.
+	WireName string `json:"wire_name"`
+}
+
 // AgentListResponse defines model for AgentListResponse.
 type AgentListResponse struct {
 	// Items The list of results for this page.
@@ -3575,15 +3593,18 @@ type AgentToolConsumer struct {
 	ToolCallId   string `json:"tool_call_id"`
 }
 
-// AgentToolManifest The flat, resolved tool set visible to one agent. Replaces the prior Capability/Action split: every entry in `tools` is an action catalog entry the agent can invoke as its own named tool.
+// AgentToolManifest The resolved tool manifest visible to one agent. `built_in_tools` reports platform-owned capabilities; every entry in `tools` is an assignable action catalog entry.
 type AgentToolManifest struct {
 	// AgentId Agent this manifest was resolved for.
 	AgentId string `json:"agent_id"`
 
+	// BuiltInTools Platform-owned tools that do not require toolkit assignment. An entry may be disabled by deployment policy; all tools are absent from turns that explicitly disable tool use.
+	BuiltInTools []AgentBuiltInTool `json:"built_in_tools"`
+
 	// GroupsResolved Audit trail of group selectors that contributed to the resolved tool set. Operators see groups; the LLM only sees the flat `tools` list.
 	GroupsResolved *[]ResolvedActionGroup `json:"groups_resolved,omitempty"`
 
-	// PolicyHash Stable hash over the resolved tool + skill set; bumps when assigned toolkits or skills change.
+	// PolicyHash Stable hash over built-in availability and the resolved action + skill set.
 	PolicyHash string `json:"policy_hash"`
 
 	// Skills Skills active for this agent in the resolved manifest.

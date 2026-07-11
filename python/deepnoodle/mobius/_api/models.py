@@ -3070,6 +3070,31 @@ class ResolvedActionGroup(BaseModel):
     )
 
 
+class AgentBuiltInTool(BaseModel):
+    """
+    A platform-owned tool available to agents independently of toolkit assignments.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    name: str = Field(
+        ..., description='Canonical Mobius tool name, such as `mobius.explore`.'
+    )
+    wire_name: str = Field(
+        ...,
+        description='Provider-safe name sent to the model, such as `mobius_explore`.',
+    )
+    title: str = Field(..., description='Human-readable tool name.')
+    description: str = Field(
+        ..., description="Concise explanation of the tool's behavior."
+    )
+    enabled: bool = Field(
+        ...,
+        description='Whether deployment policy makes this tool available on tool-enabled turns.',
+    )
+
+
 class CreateAgentRequest(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
@@ -5955,7 +5980,7 @@ class SkillAssignmentListResponse(BaseModel):
 
 class AgentToolManifest(BaseModel):
     """
-    The flat, resolved tool set visible to one agent. Replaces the prior Capability/Action split: every entry in `tools` is an action catalog entry the agent can invoke as its own named tool.
+    The resolved tool manifest visible to one agent. `built_in_tools` reports platform-owned capabilities; every entry in `tools` is an assignable action catalog entry.
     """
 
     model_config = ConfigDict(
@@ -5964,7 +5989,7 @@ class AgentToolManifest(BaseModel):
     agent_id: str = Field(..., description='Agent this manifest was resolved for.')
     policy_hash: str = Field(
         ...,
-        description='Stable hash over the resolved tool + skill set; bumps when assigned toolkits or skills change.',
+        description='Stable hash over built-in availability and the resolved action + skill set.',
     )
     toolkit_ids: list[str] = Field(
         ..., description='Toolkit IDs that contributed to the resolved manifest.'
@@ -5972,6 +5997,10 @@ class AgentToolManifest(BaseModel):
     tools: list[ActionCatalogEntry] = Field(
         ...,
         description='Catalog entries the agent can invoke. Each entry surfaces to the LLM as its own named tool. Built-in, integration, loop, and custom-HTTP actions are intermingled here.',
+    )
+    built_in_tools: list[AgentBuiltInTool] = Field(
+        ...,
+        description='Platform-owned tools that do not require toolkit assignment. An entry may be disabled by deployment policy; all tools are absent from turns that explicitly disable tool use.',
     )
     groups_resolved: list[ResolvedActionGroup] | None = Field(
         None,

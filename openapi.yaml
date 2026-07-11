@@ -2211,9 +2211,9 @@ paths:
       tags:
       - agents
       summary: Get agent tools
-      description: 'Resolves the effective set of tools an agent can invoke: the flat union
-        of the assigned toolkits'' actions, optionally restricted by a toolkit subset, per-invocation
-        tool filters, and active skill narrowing.'
+      description: 'Resolves the effective tool manifest for an agent: platform-owned built-in
+        tools plus the flat union of assigned toolkit actions, optionally restricted by a
+        toolkit subset, per-invocation tool filters, and active skill narrowing.'
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/IDParam'
@@ -9491,6 +9491,33 @@ components:
           description: Action names the group expanded to during this resolution.
           items:
             type: string
+    AgentBuiltInTool:
+      type: object
+      additionalProperties: false
+      description: A platform-owned tool available to agents independently of toolkit assignments.
+      required:
+      - name
+      - wire_name
+      - title
+      - description
+      - enabled
+      properties:
+        name:
+          type: string
+          description: Canonical Mobius tool name, such as `mobius.explore`.
+        wire_name:
+          type: string
+          description: Provider-safe name sent to the model, such as `mobius_explore`.
+        title:
+          type: string
+          description: Human-readable tool name.
+        description:
+          type: string
+          description: Concise explanation of the tool's behavior.
+        enabled:
+          type: boolean
+          description: Whether deployment policy makes this tool available on tool-enabled
+            turns.
     AgentToolManifest:
       type: object
       additionalProperties: false
@@ -9499,19 +9526,20 @@ components:
       - policy_hash
       - toolkit_ids
       - tools
+      - built_in_tools
       - skills
       - warnings
-      description: 'The flat, resolved tool set visible to one agent. Replaces the prior Capability/Action
-        split: every entry in `tools` is an action catalog entry the agent can invoke as its
-        own named tool.'
+      description: The resolved tool manifest visible to one agent. `built_in_tools` reports
+        platform-owned capabilities; every entry in `tools` is an assignable action catalog
+        entry.
       properties:
         agent_id:
           type: string
           description: Agent this manifest was resolved for.
         policy_hash:
           type: string
-          description: Stable hash over the resolved tool + skill set; bumps when assigned
-            toolkits or skills change.
+          description: Stable hash over built-in availability and the resolved action + skill
+            set.
         toolkit_ids:
           type: array
           description: Toolkit IDs that contributed to the resolved manifest.
@@ -9524,6 +9552,13 @@ components:
             intermingled here.
           items:
             $ref: '#/components/schemas/ActionCatalogEntry'
+        built_in_tools:
+          type: array
+          description: Platform-owned tools that do not require toolkit assignment. An entry
+            may be disabled by deployment policy; all tools are absent from turns that explicitly
+            disable tool use.
+          items:
+            $ref: '#/components/schemas/AgentBuiltInTool'
         groups_resolved:
           type: array
           description: Audit trail of group selectors that contributed to the resolved tool
