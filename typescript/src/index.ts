@@ -14,15 +14,37 @@ export {
 } from "./client.js";
 export type {
   ClientOptions,
+  GetSessionTranscriptOptions,
+  InvokeAgentOptions,
   ListLoopsOptions,
   ListRunsOptions,
   LoopOptions,
   RunEvent,
+  SessionStreamEvent,
   StartRunOptions,
+  StreamSessionTranscriptOptions,
   UpdateLoopOptions,
   WaitRunOptions,
   WatchRunOptions,
+  WatchSessionTranscriptOptions,
 } from "./client.js";
+export {
+  SessionTranscriptReducer,
+  isTerminalTurnStatus,
+} from "./transcript.js";
+export type { TranscriptStreamEvent } from "./transcript.js";
+export type {
+  MessageBlockFrame,
+  MessageBlockPatchFrame,
+  MessageDeltaFrame,
+  SessionTranscriptFrame,
+  SessionTranscriptMessage,
+  SessionTranscriptSnapshot,
+  SessionTranscriptTurn,
+  StreamEndFrame,
+  StreamReadyFrame,
+  TurnAck,
+} from "./api/index.js";
 export {
   WEBHOOK_EVENT_PING,
   WEBHOOK_EVENT_RUN_COMPLETED,

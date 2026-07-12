@@ -21,6 +21,14 @@ from .client import (
 )
 from .errors import AuthRevokedError, RateLimitError, WorkerInstanceConflictError
 from .retry import RetryingTransport
+from .transcript import (
+    GetSessionTranscriptOptions,
+    SessionTranscriptReducer,
+    StreamSessionTranscriptOptions,
+    TranscriptStreamEvent,
+    WatchSessionTranscriptOptions,
+    is_terminal_turn_status,
+)
 from .signing import (
     MOBIUS_DELIVERY_ID_HEADER,
     MOBIUS_SECRET_REF_HEADER,
@@ -62,6 +70,7 @@ __all__ = [
     "Client",
     "ClientOptions",
     "DEFAULT_BASE_URL",
+    "GetSessionTranscriptOptions",
     "InvokeAgentOptions",
     "LeaseLostError",
     "ListLoopsOptions",
@@ -74,9 +83,13 @@ __all__ = [
     "RateLimitedError",
     "RetryingTransport",
     "SessionStreamEvent",
+    "SessionTranscriptReducer",
     "StartRunOptions",
+    "StreamSessionTranscriptOptions",
+    "TranscriptStreamEvent",
     "UpdateLoopOptions",
     "WaitRunOptions",
+    "WatchSessionTranscriptOptions",
     "Worker",
     "WorkerConfig",
     "WorkerInstanceConflictError",
@@ -100,6 +113,7 @@ __all__ = [
     "build_synthetic_webhook_payload",
     "deliver_synthetic_webhook",
     "is_terminal_run_status",
+    "is_terminal_turn_status",
     "parse_action_invocation",
     "parse_interaction_callback",
     "parse_webhook_delivery",

@@ -27,6 +27,7 @@ from ._api.models import (
     LoopRunSource,
     LoopRunStatus,
     LoopStatus,
+    SessionTranscriptSnapshot,
     SignalLoopRunRequest,
     StartLoopRunRequest,
     TagMap,
@@ -35,6 +36,14 @@ from ._api.models import (
 )
 from .errors import AuthRevokedError, RateLimitError
 from .retry import DEFAULT_MAX_RETRIES, RetryingTransport
+from .transcript import (
+    GetSessionTranscriptOptions,
+    SessionTranscriptReducer,
+    StreamSessionTranscriptOptions,
+    TranscriptStreamEvent,
+    WatchSessionTranscriptOptions,
+    is_terminal_turn_status,
+)
 
 DEFAULT_BASE_URL = "https://api.mobiusops.ai"
 _HANDLE_RE = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
@@ -349,6 +358,118 @@ class Client:
                         continue
                     yield SessionStreamEvent(event_type=event_type, data=json.loads(data))
 
+    # Fetch a session transcript snapshot (session-stream v2). Without a cursor
+    # this is a bootstrap tail (latest final page + all live rows and turns);
+    # with a cursor it drains everything after it toward a fixed upper cut —
+    # continue with the returned next_page_token until has_more is false. Fold
+    # each page into a SessionTranscriptReducer with apply_snapshot.
+    def get_session_transcript(
+        self,
+        session_id: str,
+        opts: GetSessionTranscriptOptions | None = None,
+    ) -> SessionTranscriptSnapshot:
+        params: dict[str, Any] = {}
+        if opts is not None:
+            if opts.cursor:
+                params["cursor"] = opts.cursor
+            if opts.page_token:
+                params["page_token"] = opts.page_token
+            if opts.limit:
+                params["limit"] = opts.limit
+        path = f"/v1/projects/{{project}}/sessions/{quote(session_id, safe='')}/transcript"
+        resp = self._request("GET", path, params=params)
+        return SessionTranscriptSnapshot.model_validate(resp.json())
+
+    # Open one session-transcript SSE connection and yield each decoded frame
+    # with its resume cursor (TranscriptStreamEvent.id). Apply the frames to a
+    # SessionTranscriptReducer, or use watch_session_transcript for the managed
+    # connection loop (reconnect on rotate, stop on idle).
+    def stream_session_transcript(
+        self,
+        session_id: str,
+        opts: StreamSessionTranscriptOptions | None = None,
+    ) -> Iterator[TranscriptStreamEvent]:
+        params = {"cursor": opts.cursor} if opts and opts.cursor else None
+        path = f"/v1/projects/{{project}}/sessions/{quote(session_id, safe='')}/transcript/stream"
+        with self._client.stream(
+            "GET", self._path(path, params=params), headers={"Accept": "text/event-stream"}
+        ) as resp:
+            resp.raise_for_status()
+            yield from _iter_transcript_frames(resp)
+
+    # Follow a session-transcript stream across the full connection lifecycle,
+    # yielding every decoded frame. Reconnects with the current cursor on a
+    # stream.end rotate (and after a dropped connection), and returns on a
+    # stream.end idle. Apply the frames to a SessionTranscriptReducer; reconnect
+    # is the same code path as the first connect. On idle the caller can poll
+    # get_session_transcript and reopen when resume_cursor moves.
+    def watch_session_transcript(
+        self,
+        session_id: str,
+        opts: WatchSessionTranscriptOptions | None = None,
+    ) -> Iterator[TranscriptStreamEvent]:
+        cursor = opts.cursor if opts else None
+        delay = opts.reconnect_delay if opts is not None else 1.0
+        yield from self._transcript_loop(session_id, cursor, None, delay)
+
+    # Behaves like invoke_agent but returns the started turn's transcript stream
+    # (session-stream v2) alongside the ack. Returns (ack, iterator): the
+    # iterator opens the transcript stream from the ack's resume cursor,
+    # forwards every frame across reconnects, and stops when this turn reaches a
+    # terminal turn.upsert (or on idle). Seed a SessionTranscriptReducer with
+    # the ack's user_message and turn, then apply the iterator's frames; filter
+    # with messages_for_turn(ack.turn.id) to render only this turn.
+    def invoke_agent_transcript(
+        self,
+        opts: InvokeAgentOptions,
+    ) -> tuple[TurnAck, Iterator[TranscriptStreamEvent]]:
+        ack = self.invoke_agent(opts)
+        stream = self._transcript_loop(ack.session.id, ack.resume_cursor, ack.turn.id, 1.0)
+        return ack, stream
+
+    def _transcript_loop(
+        self,
+        session_id: str,
+        cursor: str | None,
+        stop_turn_id: str | None,
+        delay: float,
+    ) -> Iterator[TranscriptStreamEvent]:
+        path = f"/v1/projects/{{project}}/sessions/{quote(session_id, safe='')}/transcript/stream"
+        while True:
+            params = {"cursor": cursor} if cursor else None
+            rotate = False
+            try:
+                with self._client.stream(
+                    "GET",
+                    self._path(path, params=params),
+                    headers={"Accept": "text/event-stream"},
+                ) as resp:
+                    resp.raise_for_status()
+                    for event in _iter_transcript_frames(resp):
+                        if event.id:
+                            cursor = event.id
+                        frame = event.frame
+                        if frame.get("event_type") == "stream.ready":
+                            cursor = frame.get("resume_cursor", cursor)
+                        yield event
+                        event_type = frame.get("event_type")
+                        if event_type == "stream.end":
+                            if frame.get("reason") == "idle":
+                                return
+                            rotate = True  # reconnect immediately
+                            break
+                        if (
+                            event_type == "turn.upsert"
+                            and stop_turn_id
+                            and frame.get("id") == stop_turn_id
+                            and is_terminal_turn_status(frame.get("status", ""))
+                        ):
+                            return
+            except httpx.HTTPError:
+                rotate = False  # reconnect after the delay
+            if not rotate:
+                time.sleep(delay)
+
     def watch_run(self, run_id: str, since: int = 0) -> Iterator[RunEvent]:
         params = {"after_sequence": since} if since > 0 else None
         path = f"/v1/projects/{{project}}/runs/{quote(run_id, safe='')}/events.stream"
@@ -416,6 +537,46 @@ class Client:
             if clean:
                 out = f"{out}?{urlencode(clean)}"
         return out
+
+
+def _iter_transcript_frames(resp: httpx.Response) -> Iterator[TranscriptStreamEvent]:
+    """Parse a transcript SSE body into TranscriptStreamEvents.
+
+    Per the SSE spec the last-event-id persists across events until an ``id:``
+    line changes it — the transcript stream relies on this so a frame that
+    repeats already-delivered state can omit ``id:`` without regressing the
+    resume cursor.
+    """
+    buf = ""
+    last_id: str | None = None
+    for chunk in resp.iter_text():
+        buf += chunk
+        while "\n\n" in buf:
+            raw, buf = buf.split("\n\n", 1)
+            lines = raw.splitlines()
+            data = "\n".join(
+                line.removeprefix("data:").lstrip()
+                for line in lines
+                if line.startswith("data:")
+            )
+            if not data:
+                continue
+            event_type = next(
+                (line.removeprefix("event:").lstrip() for line in lines if line.startswith("event:")),
+                None,
+            )
+            id_line = next(
+                (line.removeprefix("id:").lstrip() for line in lines if line.startswith("id:")),
+                None,
+            )
+            if id_line is not None:
+                last_id = id_line
+            frame = json.loads(data)
+            yield TranscriptStreamEvent(
+                event_type=event_type or frame.get("event_type", ""),
+                frame=frame,
+                id=last_id,
+            )
 
 
 def _extract_handle_from_api_key(api_key: str) -> str | None:
