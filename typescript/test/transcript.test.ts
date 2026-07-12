@@ -1,7 +1,7 @@
 import { strict as assert } from "node:assert";
 import { test } from "node:test";
 
-import { Client } from "../src/client.js";
+import { AuthRevokedError, Client, StreamHTTPError } from "../src/client.js";
 import {
   SessionTranscriptReducer,
   isTerminalTurnStatus,
@@ -393,6 +393,55 @@ test("client: watchSessionTranscript reconnects on rotate and stops on idle", as
   assert.equal(cursors[0], null); // first connect: no cursor
   assert.equal(cursors[1], "42.7"); // reconnect carries the advanced cursor
   assert.equal(last!.turns.get("t1")!.status, "completed");
+});
+
+test("client: watchSessionTranscript surfaces a permanent error, no reconnect", async () => {
+  let calls = 0;
+  const original = globalThis.fetch;
+  globalThis.fetch = (async () => {
+    calls += 1;
+    return new Response(JSON.stringify({ error: { code: "not_found" } }), {
+      status: 404,
+      headers: { "Content-Type": "application/json" },
+    });
+  }) as typeof fetch;
+
+  try {
+    await assert.rejects(
+      (async () => {
+        for await (const r of newClient().watchSessionTranscript("sess_1")) {
+          void r;
+        }
+      })(),
+      (err: unknown) => err instanceof StreamHTTPError && err.status === 404,
+    );
+  } finally {
+    globalThis.fetch = original;
+  }
+  assert.equal(calls, 1); // surfaced on the first attempt, no reconnect loop
+});
+
+test("client: watchSessionTranscript raises AuthRevokedError on 401", async () => {
+  let calls = 0;
+  const original = globalThis.fetch;
+  globalThis.fetch = (async () => {
+    calls += 1;
+    return new Response("", { status: 401 });
+  }) as typeof fetch;
+
+  try {
+    await assert.rejects(
+      (async () => {
+        for await (const r of newClient().watchSessionTranscript("sess_1")) {
+          void r;
+        }
+      })(),
+      (err: unknown) => err instanceof AuthRevokedError,
+    );
+  } finally {
+    globalThis.fetch = original;
+  }
+  assert.equal(calls, 1);
 });
 
 test("client: invokeAgentTranscript streams a turn to its terminal upsert", async () => {

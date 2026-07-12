@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import httpx
+import pytest
 
 from deepnoodle.mobius import (
+    AuthRevokedError,
     Client,
     ClientOptions,
     GetSessionTranscriptOptions,
@@ -169,6 +171,57 @@ def test_stream_session_transcript_decodes_frames_with_id() -> None:
     assert events[0].event_type == "turn.upsert"
     # The ready frame has no id: line; last-event-id persists as the cursor.
     assert events[1].id == "42.7"
+
+
+def test_stream_session_transcript_handles_crlf_framing() -> None:
+    # An SSE stream framed with CRLF (\r\n\r\n) is valid per the spec and must
+    # decode identically to an LF-framed one.
+    def handler(request: httpx.Request) -> httpx.Response:
+        body = (
+            'id: 42.7\r\nevent: turn.upsert\r\ndata: {"event_type":"turn.upsert","id":"t1","session_id":"s1","agent_id":"a1","attempt":1,"status":"running","created_at":"%s","updated_at":"%s"}\r\n\r\n'
+            % (AT, AT)
+            + 'event: stream.ready\r\ndata: {"event_type":"stream.ready","session_id":"s1","resume_cursor":"42.7"}\r\n\r\n'
+        )
+        return httpx.Response(200, text=body, headers={"Content-Type": "text/event-stream"})
+
+    client = _client_with(handler)
+    events = list(client.stream_session_transcript("sess_1"))
+    assert len(events) == 2
+    assert events[0].id == "42.7"
+    assert events[0].event_type == "turn.upsert"
+    assert events[0].frame["status"] == "running"
+    # The ready frame has no id: line; last-event-id persists as the cursor.
+    assert events[1].id == "42.7"
+
+
+def test_watch_session_transcript_propagates_permanent_error() -> None:
+    # A permanent status (here 404) must surface immediately, not trigger an
+    # endless reconnect loop.
+    calls = 0
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal calls
+        calls += 1
+        return httpx.Response(404, json={"error": {"code": "not_found", "message": "no such session"}})
+
+    client = _client_with(handler)
+    with pytest.raises(httpx.HTTPStatusError):
+        list(client.watch_session_transcript("sess_1"))
+    assert calls == 1  # surfaced on the first attempt, no reconnect
+
+
+def test_watch_session_transcript_raises_auth_revoked_on_401() -> None:
+    calls = 0
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal calls
+        calls += 1
+        return httpx.Response(401, json={"error": {"code": "unauthorized", "message": "revoked"}})
+
+    client = _client_with(handler)
+    with pytest.raises(AuthRevokedError):
+        list(client.watch_session_transcript("sess_1"))
+    assert calls == 1
 
 
 def test_watch_session_transcript_reconnects_on_rotate_stops_on_idle() -> None:

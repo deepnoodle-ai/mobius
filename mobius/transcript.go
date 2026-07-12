@@ -32,10 +32,17 @@ func IsTerminalTurnStatus(status string) bool {
 // SSE id: line only on state frames that advance the delivered watermark, and
 // per the SSE spec the last-event-id persists, so ID carries that watermark and
 // is empty only before the connection's first id: line.
+//
+// Err is set only on the final event WatchSessionTranscript or
+// InvokeAgentTranscript emits before giving up on a non-retryable failure — a
+// permanent HTTP status such as 401/403/404, or a 5xx other than 503. The
+// channel closes immediately after, and Frame is the zero value. Err is nil on
+// every decoded frame.
 type TranscriptStreamEvent struct {
 	EventType string
 	ID        string
 	Frame     api.SessionTranscriptFrame
+	Err       error
 }
 
 // SessionTranscriptReducer folds session-transcript v2 frames (or snapshot
@@ -430,6 +437,12 @@ func (c *Client) streamTranscriptLoop(ctx context.Context, sessionID, cursor, st
 			if ctx.Err() != nil {
 				return
 			}
+			if !isRetryableStreamStatus(resp.StatusCode) {
+				// A permanent status (401/403/404, or a 5xx other than 503) is
+				// not transient — surface it instead of reconnecting forever.
+				emitStreamError(ctx, ch, fmt.Errorf("mobius: session transcript stream: unexpected status %d", resp.StatusCode))
+				return
+			}
 			c.config.Logger.Error("session transcript stream status", "status", resp.StatusCode)
 			if !sleepCtx(ctx, delay) {
 				return
@@ -614,6 +627,23 @@ func derefInt(i *int) int {
 		return *i
 	}
 	return 0
+}
+
+// isRetryableStreamStatus reports whether a non-200 stream open should be
+// retried by reconnecting. It mirrors the transport retry policy
+// (docs/retries.md): only 429 and 503 are transient. Every other status —
+// including 401/403/404 and the other 5xx — is surfaced to the caller.
+func isRetryableStreamStatus(status int) bool {
+	return status == http.StatusTooManyRequests || status == http.StatusServiceUnavailable
+}
+
+// emitStreamError forwards a terminal error event on ch unless ctx is already
+// done. The caller (streamTranscriptLoop) closes ch afterward.
+func emitStreamError(ctx context.Context, ch chan<- TranscriptStreamEvent, err error) {
+	select {
+	case ch <- TranscriptStreamEvent{Err: err}:
+	case <-ctx.Done():
+	}
 }
 
 func sleepCtx(ctx context.Context, d time.Duration) bool {

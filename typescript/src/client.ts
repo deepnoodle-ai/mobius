@@ -63,6 +63,23 @@ export class AuthRevokedError extends Error {
   }
 }
 
+/**
+ * Thrown when a streaming request (e.g. {@link Client.streamSessionTranscript})
+ * returns a non-OK HTTP status. `status` carries the response code so callers
+ * of {@link Client.watchSessionTranscript} can branch on it — the watch loop
+ * reconnects only on transient statuses (429/503) and surfaces every other
+ * status by throwing this error.
+ */
+export class StreamHTTPError extends Error {
+  readonly status: number;
+
+  constructor(status: number, message: string) {
+    super(message);
+    this.name = "StreamHTTPError";
+    this.status = status;
+  }
+}
+
 export class ConfigError extends Error {
   constructor(message: string) {
     super(message);
@@ -523,8 +540,12 @@ export class Client {
       signal: opts.signal,
     });
     if (!resp.ok) {
+      if (resp.status === 401) throw new AuthRevokedError();
       const text = await resp.text().catch(() => "");
-      throw new Error(`mobius API GET ${path}: HTTP ${resp.status}: ${text}`);
+      throw new StreamHTTPError(
+        resp.status,
+        `mobius API GET ${path}: HTTP ${resp.status}: ${text}`,
+      );
     }
     if (!resp.body) {
       throw new Error(
@@ -575,7 +596,10 @@ export class Client {
         }
       } catch (err) {
         if (opts.signal?.aborted) throw err;
-        // otherwise fall through and reconnect
+        // Reconnect only on transient failures; a permanent status
+        // (401/403/404, or a 5xx other than 503) is surfaced to the caller
+        // instead of looping forever.
+        if (!isRetryableStreamError(err)) throw err;
       }
       if (opts.signal?.aborted) return;
       if (!rotate) await delay(reconnectDelayMs, opts.signal);
@@ -746,6 +770,19 @@ function removeUndefined<T extends object>(obj: T): T {
   return Object.fromEntries(
     Object.entries(obj).filter(([, v]) => v !== undefined),
   ) as T;
+}
+
+// isRetryableStreamError reports whether a failed stream connection should be
+// reconnected. Mirrors docs/retries.md: reconnect only on 429/503 and
+// transport/parse failures; 401 (AuthRevokedError) and every other HTTP status
+// propagate to the caller.
+function isRetryableStreamError(err: unknown): boolean {
+  if (err instanceof AuthRevokedError) return false;
+  if (err instanceof RateLimitError) return true; // 429 the transport gave up on
+  if (err instanceof StreamHTTPError) {
+    return err.status === 429 || err.status === 503;
+  }
+  return true; // fetch rejection / body dropped mid-stream
 }
 
 async function delay(ms: number, signal?: AbortSignal): Promise<void> {

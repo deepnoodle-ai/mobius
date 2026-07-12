@@ -394,7 +394,7 @@ class Client:
         with self._client.stream(
             "GET", self._path(path, params=params), headers={"Accept": "text/event-stream"}
         ) as resp:
-            resp.raise_for_status()
+            _raise_for_stream_status(resp)
             yield from _iter_transcript_frames(resp)
 
     # Follow a session-transcript stream across the full connection lifecycle,
@@ -444,7 +444,7 @@ class Client:
                     self._path(path, params=params),
                     headers={"Accept": "text/event-stream"},
                 ) as resp:
-                    resp.raise_for_status()
+                    _raise_for_stream_status(resp)
                     for event in _iter_transcript_frames(resp):
                         if event.id:
                             cursor = event.id
@@ -465,8 +465,14 @@ class Client:
                             and is_terminal_turn_status(frame.get("status", ""))
                         ):
                             return
-            except httpx.HTTPError:
-                rotate = False  # reconnect after the delay
+            except httpx.HTTPStatusError as exc:
+                # A permanent status (401/403/404, or a 5xx other than 503) is
+                # not transient — surface it instead of reconnecting forever.
+                if not _is_retryable_stream_status(exc.response.status_code):
+                    raise
+                rotate = False  # 429/503 — reconnect after the delay
+            except httpx.TransportError:
+                rotate = False  # dropped connection / EOF — reconnect after delay
             if not rotate:
                 time.sleep(delay)
 
@@ -478,8 +484,11 @@ class Client:
             buf = ""
             for chunk in resp.iter_text():
                 buf += chunk
-                while "\n\n" in buf:
-                    raw, buf = buf.split("\n\n", 1)
+                while True:
+                    sep = _SSE_FRAME_SEP.search(buf)
+                    if sep is None:
+                        break
+                    raw, buf = buf[: sep.start()], buf[sep.end() :]
                     data = "\n".join(
                         line.removeprefix("data:").lstrip()
                         for line in raw.splitlines()
@@ -539,6 +548,27 @@ class Client:
         return out
 
 
+# SSE events are separated by a blank line, which may be framed with LF or
+# CRLF — both are valid per the spec. Match either so a CRLF-framed stream
+# still splits into frames instead of buffering forever.
+_SSE_FRAME_SEP = re.compile(r"\r?\n\r?\n")
+
+
+def _raise_for_stream_status(resp: httpx.Response) -> None:
+    # Mirror _request: a revoked credential is surfaced as AuthRevokedError so
+    # callers get the same typed error whether they stream or not.
+    if resp.status_code == 401:
+        raise AuthRevokedError()
+    resp.raise_for_status()
+
+
+def _is_retryable_stream_status(status: int) -> bool:
+    # Mirror the transport retry policy (docs/retries.md): only 429 and 503 are
+    # transient. Every other status — including 401/403/404 and the other 5xx —
+    # is surfaced to the caller instead of triggering an endless reconnect.
+    return status in (429, 503)
+
+
 def _iter_transcript_frames(resp: httpx.Response) -> Iterator[TranscriptStreamEvent]:
     """Parse a transcript SSE body into TranscriptStreamEvents.
 
@@ -551,8 +581,11 @@ def _iter_transcript_frames(resp: httpx.Response) -> Iterator[TranscriptStreamEv
     last_id: str | None = None
     for chunk in resp.iter_text():
         buf += chunk
-        while "\n\n" in buf:
-            raw, buf = buf.split("\n\n", 1)
+        while True:
+            sep = _SSE_FRAME_SEP.search(buf)
+            if sep is None:
+                break
+            raw, buf = buf[: sep.start()], buf[sep.end() :]
             lines = raw.splitlines()
             data = "\n".join(
                 line.removeprefix("data:").lstrip()

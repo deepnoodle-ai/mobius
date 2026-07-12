@@ -189,6 +189,31 @@ func TestWatchSessionTranscript_ReconnectsOnRotateStopsOnIdle(t *testing.T) {
 	assert.Equal(t, r.Turns["t1"].Status, "completed")
 }
 
+func TestWatchSessionTranscript_SurfacesPermanentError(t *testing.T) {
+	var calls int32
+	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		atomic.AddInt32(&calls, 1)
+		http.Error(w, `{"error":{"code":"not_found"}}`, http.StatusNotFound)
+	})
+	c, srv := newTestClient(t, h)
+	defer srv.Close()
+
+	var streamErr error
+	var frames int
+	for ev := range c.WatchSessionTranscript(context.Background(), "sess_1", nil) {
+		if ev.Err != nil {
+			streamErr = ev.Err
+			continue
+		}
+		frames++
+	}
+
+	assert.Error(t, streamErr)                          // permanent status surfaced to the caller
+	assert.ErrorContains(t, streamErr, "404")           // carries the status
+	assert.Equal(t, frames, 0)                          // no frames on a failed open
+	assert.Equal(t, atomic.LoadInt32(&calls), int32(1)) // no reconnect on a permanent status
+}
+
 func TestInvokeAgentTranscript_StreamsTurnToTerminal(t *testing.T) {
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {

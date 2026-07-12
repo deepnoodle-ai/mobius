@@ -9,6 +9,7 @@ export {
   PayloadTooLargeError,
   RateLimitedError,
   RateLimitError,
+  StreamHTTPError,
   WorkerInstanceConflictError,
   isTerminalRunStatus,
 } from "./client.js";
