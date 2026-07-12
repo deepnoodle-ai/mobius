@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 
 ## [Unreleased]
 
+## [0.0.43] - 2026-07-12
+
+### Added
+
+- Session transcripts: `getSessionTranscript` (snapshot) and `streamSessionTranscript` (SSE)
+  endpoints with their transcript schemas and frames, plus generated Go/TypeScript/Python clients.
+- Session transcript v2 SDK helpers: a `SessionTranscriptReducer` and the `getSessionTranscript` /
+  `streamSessionTranscript` / `watchSessionTranscript` / `invokeAgentTranscript` client helpers.
+  See `docs/sdk-helpers.md`.
+
 ## [0.0.42] - 2026-07-11
 
 ### Added
