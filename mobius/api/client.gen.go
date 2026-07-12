@@ -1754,6 +1754,66 @@ func (e MemoryKind) Valid() bool {
 	}
 }
 
+// Defines values for MessageBlockFrameEventType.
+const (
+	MessageBlockFrameEventTypeMessageBlock MessageBlockFrameEventType = "message.block"
+)
+
+// Valid indicates whether the value is a known member of the MessageBlockFrameEventType enum.
+func (e MessageBlockFrameEventType) Valid() bool {
+	switch e {
+	case MessageBlockFrameEventTypeMessageBlock:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MessageBlockPatchFrameEventType.
+const (
+	MessageBlockPatchFrameEventTypeMessageBlockPatch MessageBlockPatchFrameEventType = "message.block.patch"
+)
+
+// Valid indicates whether the value is a known member of the MessageBlockPatchFrameEventType enum.
+func (e MessageBlockPatchFrameEventType) Valid() bool {
+	switch e {
+	case MessageBlockPatchFrameEventTypeMessageBlockPatch:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MessageDeltaFrameEventType.
+const (
+	MessageDeltaFrameEventTypeMessageDelta MessageDeltaFrameEventType = "message.delta"
+)
+
+// Valid indicates whether the value is a known member of the MessageDeltaFrameEventType enum.
+func (e MessageDeltaFrameEventType) Valid() bool {
+	switch e {
+	case MessageDeltaFrameEventTypeMessageDelta:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MessageUpsertFrameEventType.
+const (
+	MessageUpsertFrameEventTypeMessageUpsert MessageUpsertFrameEventType = "message.upsert"
+)
+
+// Valid indicates whether the value is a known member of the MessageUpsertFrameEventType enum.
+func (e MessageUpsertFrameEventType) Valid() bool {
+	switch e {
+	case MessageUpsertFrameEventTypeMessageUpsert:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ModelCatalogResponseReason.
 const (
 	ModelCatalogResponseReasonCredentialsUnavailable ModelCatalogResponseReason = "credentials_unavailable"
@@ -2360,6 +2420,54 @@ func (e StepRetriedPayloadRetryScope) Valid() bool {
 	}
 }
 
+// Defines values for StreamEndFrameEventType.
+const (
+	StreamEndFrameEventTypeStreamEnd StreamEndFrameEventType = "stream.end"
+)
+
+// Valid indicates whether the value is a known member of the StreamEndFrameEventType enum.
+func (e StreamEndFrameEventType) Valid() bool {
+	switch e {
+	case StreamEndFrameEventTypeStreamEnd:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for StreamEndFrameReason.
+const (
+	StreamEndFrameReasonIdle   StreamEndFrameReason = "idle"
+	StreamEndFrameReasonRotate StreamEndFrameReason = "rotate"
+)
+
+// Valid indicates whether the value is a known member of the StreamEndFrameReason enum.
+func (e StreamEndFrameReason) Valid() bool {
+	switch e {
+	case StreamEndFrameReasonIdle:
+		return true
+	case StreamEndFrameReasonRotate:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for StreamReadyFrameEventType.
+const (
+	StreamReadyFrameEventTypeStreamReady StreamReadyFrameEventType = "stream.ready"
+)
+
+// Valid indicates whether the value is a known member of the StreamReadyFrameEventType enum.
+func (e StreamReadyFrameEventType) Valid() bool {
+	switch e {
+	case StreamReadyFrameEventTypeStreamReady:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ThinkingEffort.
 const (
 	ThinkingEffortHigh    ThinkingEffort = "high"
@@ -2429,6 +2537,21 @@ func (e ToolkitActionSelectorType) Valid() bool {
 	case ToolkitActionSelectorTypePlatform:
 		return true
 	case ToolkitActionSelectorTypeWildcard:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for TurnUpsertFrameEventType.
+const (
+	TurnUpsertFrameEventTypeTurnUpsert TurnUpsertFrameEventType = "turn.upsert"
+)
+
+// Valid indicates whether the value is a known member of the TurnUpsertFrameEventType enum.
+func (e TurnUpsertFrameEventType) Valid() bool {
+	switch e {
+	case TurnUpsertFrameEventTypeTurnUpsert:
 		return true
 	default:
 		return false
@@ -6372,6 +6495,74 @@ type LoopWaitForEventStepSpecKind string
 // MemoryKind Classifies a memory entry. Kinds carry different retention and compaction semantics: facts and preferences are durable, episodes are the primary input to compaction, and a summary is the compacted product of other entries.
 type MemoryKind string
 
+// MessageBlockFrame defines model for MessageBlockFrame.
+type MessageBlockFrame struct {
+	// Block One content block in a session transcript message — the canonical, frozen JSON shape Mobius persists and replays, discriminated by `type`. The variants are `text`, `thinking`, `tool_use`, `tool_result`, and `image`. Each variant permits provider-specific extra fields (citations, signatures, cache hints, and the like), and unknown fields are preserved rather than rejected, so the transcript round-trips losslessly across providers.
+	Block        SessionContentBlock        `json:"block"`
+	ContentIndex int                        `json:"content_index"`
+	EventType    MessageBlockFrameEventType `json:"event_type"`
+	MessageId    string                     `json:"message_id"`
+	SessionId    string                     `json:"session_id"`
+}
+
+// MessageBlockFrameEventType defines model for MessageBlockFrame.EventType.
+type MessageBlockFrameEventType string
+
+// MessageBlockPatchFrame defines model for MessageBlockPatchFrame.
+type MessageBlockPatchFrame struct {
+	ContentIndex int                             `json:"content_index"`
+	EventType    MessageBlockPatchFrameEventType `json:"event_type"`
+	MessageId    string                          `json:"message_id"`
+	Progress     *map[string]interface{}         `json:"progress,omitempty"`
+	SessionId    string                          `json:"session_id"`
+
+	// Status Known values are pending, running, ok, error, and cancelled.
+	Status *string `json:"status,omitempty"`
+}
+
+// MessageBlockPatchFrameEventType defines model for MessageBlockPatchFrame.EventType.
+type MessageBlockPatchFrameEventType string
+
+// MessageDeltaFrame defines model for MessageDeltaFrame.
+type MessageDeltaFrame struct {
+	ContentIndex int                        `json:"content_index"`
+	EventType    MessageDeltaFrameEventType `json:"event_type"`
+	MessageId    string                     `json:"message_id"`
+	SessionId    string                     `json:"session_id"`
+	Text         *string                    `json:"text,omitempty"`
+	Thinking     *string                    `json:"thinking,omitempty"`
+}
+
+// MessageDeltaFrameEventType defines model for MessageDeltaFrame.EventType.
+type MessageDeltaFrameEventType string
+
+// MessageUpsertFrame defines model for MessageUpsertFrame.
+type MessageUpsertFrame struct {
+	AgentId               string                `json:"agent_id"`
+	Content               []SessionContentBlock `json:"content"`
+	CoversThroughSequence *int                  `json:"covers_through_sequence,omitempty"`
+	CreatedAt             time.Time             `json:"created_at"`
+
+	// EntryType Known values include message and compaction; unknown values must be preserved.
+	EntryType string                      `json:"entry_type"`
+	EventType MessageUpsertFrameEventType `json:"event_type"`
+	Id        string                      `json:"id"`
+	Metadata  *map[string]interface{}     `json:"metadata,omitempty"`
+
+	// Role Message role: `system`, `user`, `assistant`, `tool`, or `compaction`.
+	Role      SessionMessageRole `json:"role"`
+	Sequence  *int               `json:"sequence"`
+	SessionId string             `json:"session_id"`
+
+	// Status Known values are streaming and final; unknown values must be preserved.
+	Status    string  `json:"status"`
+	TurnId    *string `json:"turn_id,omitempty"`
+	TurnIndex *int    `json:"turn_index"`
+}
+
+// MessageUpsertFrameEventType defines model for MessageUpsertFrame.EventType.
+type MessageUpsertFrameEventType string
+
 // ModelCatalogResponse Models a platform agent can be assigned in this project, grouped by available provider.
 type ModelCatalogResponse struct {
 	// DefaultModel Model id assigned when an agent specifies no model.
@@ -6938,7 +7129,7 @@ type SessionListResponse struct {
 	NextCursor *string `json:"next_cursor,omitempty"`
 }
 
-// SessionLiveSnapshot Ephemeral, process-local live transcript snapshot for an in-flight turn.
+// SessionLiveSnapshot Ephemeral live transcript snapshot for an in-flight turn. Deployments with shared cache support make it available across backend replicas.
 type SessionLiveSnapshot struct {
 	// Frames Live-only frame payloads in live_sequence order. Each item has the same shape as its SSE `data:` payload.
 	Frames []map[string]interface{} `json:"frames"`
@@ -7145,7 +7336,7 @@ type SessionStatus string
 //
 // The `event:` line is the authoritative frame selector. This union is reference-only: several payloads are structurally identical (e.g. `user.message` and `agent.message`) or permissive open objects, so the `data:` body alone cannot be shape-matched to a single variant. Consumers MUST dispatch on the `event:` name and decode the body as the corresponding payload — never validate the bare body against the union.
 //
-// Durable message frames (`user.message`, `agent.message`, `compaction.created`) are replayed from the transcript and carry an SSE `id: <sequence>` — that `sequence` is the only cursor a client persists for `after_sequence` / `Last-Event-ID` resume. Terminal `turn.*` frames mark the active turn settling. `session.message.preview`, `session.resync`, `nudge.queued`, `nudge.delivered`, `nudge.cancelled`, `tool.call`, `tool.result`, and `generation.delta` frames are live-only and carry no `id:`.
+// Durable message frames (`user.message`, `agent.message`, `compaction.created`) are replayed from the transcript and carry an SSE `id: <sequence>` — that `sequence` is the only cursor a client persists for `after_sequence` / `Last-Event-ID` resume. Terminal `turn.*` frames mark the active turn settling. `session.message.preview`, `session.resync`, `nudge.queued`, `nudge.delivered`, `nudge.cancelled`, `tool.call`, `tool.result`, and `generation.delta` frames are live-only and carry no `id:`. `stream.end` is the final envelope on every deliberate server-side close and also carries no `id:`.
 type SessionStreamFrame struct {
 	union json.RawMessage
 }
@@ -7212,13 +7403,79 @@ type SessionToolUseBlock struct {
 	Input map[string]interface{} `json:"input"`
 
 	// Name Tool name.
-	Name                 string                  `json:"name"`
+	Name string `json:"name"`
+
+	// Progress Latest in-flight progress snapshot. Absent on final transcript rows.
+	Progress *map[string]interface{} `json:"progress,omitempty"`
+
+	// Status Known values are pending, running, ok, error, and cancelled; unknown values must be preserved.
+	Status               *string                 `json:"status,omitempty"`
 	Type                 SessionToolUseBlockType `json:"type"`
 	AdditionalProperties map[string]interface{}  `json:"-"`
 }
 
 // SessionToolUseBlockType defines model for SessionToolUseBlock.Type.
 type SessionToolUseBlockType string
+
+// SessionTranscriptFrame defines model for SessionTranscriptFrame.
+type SessionTranscriptFrame struct {
+	union json.RawMessage
+}
+
+// SessionTranscriptMessage defines model for SessionTranscriptMessage.
+type SessionTranscriptMessage struct {
+	AgentId               string                `json:"agent_id"`
+	Content               []SessionContentBlock `json:"content"`
+	CoversThroughSequence *int                  `json:"covers_through_sequence,omitempty"`
+	CreatedAt             time.Time             `json:"created_at"`
+
+	// EntryType Known values include message and compaction; unknown values must be preserved.
+	EntryType string                  `json:"entry_type"`
+	Id        string                  `json:"id"`
+	Metadata  *map[string]interface{} `json:"metadata,omitempty"`
+
+	// Role Message role: `system`, `user`, `assistant`, `tool`, or `compaction`.
+	Role      SessionMessageRole `json:"role"`
+	Sequence  *int               `json:"sequence"`
+	SessionId string             `json:"session_id"`
+
+	// Status Known values are streaming and final; unknown values must be preserved.
+	Status    string  `json:"status"`
+	TurnId    *string `json:"turn_id,omitempty"`
+	TurnIndex *int    `json:"turn_index"`
+}
+
+// SessionTranscriptSnapshot defines model for SessionTranscriptSnapshot.
+type SessionTranscriptSnapshot struct {
+	HasMore       bool                       `json:"has_more"`
+	Messages      []SessionTranscriptMessage `json:"messages"`
+	NextPageToken *string                    `json:"next_page_token,omitempty"`
+	ResumeCursor  string                     `json:"resume_cursor"`
+	Turns         []SessionTranscriptTurn    `json:"turns"`
+}
+
+// SessionTranscriptTurn defines model for SessionTranscriptTurn.
+type SessionTranscriptTurn struct {
+	AgentId           string     `json:"agent_id"`
+	Attempt           int        `json:"attempt"`
+	ChannelExchangeId *string    `json:"channel_exchange_id,omitempty"`
+	CompletedAt       *time.Time `json:"completed_at,omitempty"`
+	CreatedAt         time.Time  `json:"created_at"`
+	ErrorMessage      *string    `json:"error_message,omitempty"`
+	ErrorType         *string    `json:"error_type,omitempty"`
+	Id                string     `json:"id"`
+	RunId             *string    `json:"run_id,omitempty"`
+	Seq               *int       `json:"seq,omitempty"`
+	SessionId         string     `json:"session_id"`
+
+	// Status Known AgentTurn status; unknown values must be preserved.
+	Status    string    `json:"status"`
+	StepKey   *string   `json:"step_key,omitempty"`
+	UpdatedAt time.Time `json:"updated_at"`
+
+	// Usage Token usage recorded when the turn terminalized, when available.
+	Usage *map[string]interface{} `json:"usage,omitempty"`
+}
 
 // SessionUserMessagePayload Payload of a `user.message` content event: the durable encoding of one non-assistant transcript message — caller input, or a user-role message carrying tool results. It mirrors the transcript row exactly, carrying the message identity (`message_id` + `sequence`) and full content. Replaying these events reconstructs the same view as reading the messages API.
 type SessionUserMessagePayload struct {
@@ -7469,6 +7726,29 @@ type StepStartedPayload struct {
 	Step                 *string                `json:"step,omitempty"`
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
+
+// StreamEndFrame Final envelope on a deliberate session-stream close. An idle close means no non-terminal turn remains; a rotate close asks the client to reconnect immediately with the same durable transcript cursor.
+type StreamEndFrame struct {
+	EventType StreamEndFrameEventType `json:"event_type"`
+	Reason    StreamEndFrameReason    `json:"reason"`
+	SessionId string                  `json:"session_id"`
+}
+
+// StreamEndFrameEventType defines model for StreamEndFrame.EventType.
+type StreamEndFrameEventType string
+
+// StreamEndFrameReason defines model for StreamEndFrame.Reason.
+type StreamEndFrameReason string
+
+// StreamReadyFrame defines model for StreamReadyFrame.
+type StreamReadyFrame struct {
+	EventType    StreamReadyFrameEventType `json:"event_type"`
+	ResumeCursor string                    `json:"resume_cursor"`
+	SessionId    string                    `json:"session_id"`
+}
+
+// StreamReadyFrameEventType defines model for StreamReadyFrame.EventType.
+type StreamReadyFrameEventType string
 
 // Table Project table metadata and schema.
 type Table struct {
@@ -7756,11 +8036,15 @@ type TurnAck struct {
 	// Deduped True when a repeated idempotency key resumed an existing turn.
 	Deduped *bool `json:"deduped,omitempty"`
 
+	// ResumeCursor Opaque v2 cursor captured immediately before the user_message and turn admission.
+	ResumeCursor *string `json:"resume_cursor,omitempty"`
+
 	// Session Durable conversation transcript owned by an agent.
 	Session Session `json:"session"`
 
 	// Turn One attempt of an agent running the agent loop — the unit that produces a transcript. A turn is triggered by a direct send to the session, a loop step (run_id + step_key), or an inbound channel message (channel_exchange_id). Its messages are read via the turn's transcript endpoint.
-	Turn AgentTurn `json:"turn"`
+	Turn        AgentTurn                 `json:"turn"`
+	UserMessage *SessionTranscriptMessage `json:"user_message,omitempty"`
 }
 
 // TurnCancelledPayload defines model for TurnCancelledPayload.
@@ -7784,6 +8068,33 @@ type TurnFailedPayload struct {
 
 // TurnStartedPayload Payload of a `turn.started` event. Empty: the turn is identified by the envelope `turn_id`, so nothing is duplicated in the payload.
 type TurnStartedPayload map[string]interface{}
+
+// TurnUpsertFrame defines model for TurnUpsertFrame.
+type TurnUpsertFrame struct {
+	AgentId           string                   `json:"agent_id"`
+	Attempt           int                      `json:"attempt"`
+	ChannelExchangeId *string                  `json:"channel_exchange_id,omitempty"`
+	CompletedAt       *time.Time               `json:"completed_at,omitempty"`
+	CreatedAt         time.Time                `json:"created_at"`
+	ErrorMessage      *string                  `json:"error_message,omitempty"`
+	ErrorType         *string                  `json:"error_type,omitempty"`
+	EventType         TurnUpsertFrameEventType `json:"event_type"`
+	Id                string                   `json:"id"`
+	RunId             *string                  `json:"run_id,omitempty"`
+	Seq               *int                     `json:"seq,omitempty"`
+	SessionId         string                   `json:"session_id"`
+
+	// Status Known AgentTurn status; unknown values must be preserved.
+	Status    string    `json:"status"`
+	StepKey   *string   `json:"step_key,omitempty"`
+	UpdatedAt time.Time `json:"updated_at"`
+
+	// Usage Token usage recorded when the turn terminalized, when available.
+	Usage *map[string]interface{} `json:"usage,omitempty"`
+}
+
+// TurnUpsertFrameEventType defines model for TurnUpsertFrame.EventType.
+type TurnUpsertFrameEventType string
 
 // TurnWaitingPayload defines model for TurnWaitingPayload.
 type TurnWaitingPayload struct {
@@ -8953,6 +9264,27 @@ type StreamSessionParams struct {
 
 	// LastEventID SSE reconnect cursor. The browser EventSource API replays the last event's `id` in this header on automatic reconnect; the server resumes the stream after that sequence number. When both this header and the `after_sequence` query parameter are supplied, the larger sequence wins, so an explicit `after_sequence` never rewinds a live reconnect. Ignored for non-streaming (JSON) requests.
 	LastEventID *LastEventIDParam `json:"Last-Event-ID,omitempty"`
+}
+
+// GetSessionTranscriptParams defines parameters for GetSessionTranscript.
+type GetSessionTranscriptParams struct {
+	// Cursor Opaque resume_cursor from a prior snapshot or stream.
+	Cursor *string `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// PageToken Opaque fixed-cut continuation returned as next_page_token.
+	PageToken *string `form:"page_token,omitempty" json:"page_token,omitempty"`
+
+	// Limit Maximum number of items to return
+	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// StreamSessionTranscriptParams defines parameters for StreamSessionTranscript.
+type StreamSessionTranscriptParams struct {
+	// Cursor Opaque resume cursor.
+	Cursor *string `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// LastEventID Opaque resume cursor from the last delivered state frame.
+	LastEventID *string `json:"Last-Event-ID,omitempty"`
 }
 
 // ListSessionTurnsParams defines parameters for ListSessionTurns.
@@ -12152,6 +12484,22 @@ func (a *SessionToolUseBlock) UnmarshalJSON(b []byte) error {
 		delete(object, "name")
 	}
 
+	if raw, found := object["progress"]; found {
+		err = json.Unmarshal(raw, &a.Progress)
+		if err != nil {
+			return fmt.Errorf("error reading 'progress': %w", err)
+		}
+		delete(object, "progress")
+	}
+
+	if raw, found := object["status"]; found {
+		err = json.Unmarshal(raw, &a.Status)
+		if err != nil {
+			return fmt.Errorf("error reading 'status': %w", err)
+		}
+		delete(object, "status")
+	}
+
 	if raw, found := object["type"]; found {
 		err = json.Unmarshal(raw, &a.Type)
 		if err != nil {
@@ -12194,6 +12542,20 @@ func (a SessionToolUseBlock) MarshalJSON() ([]byte, error) {
 	object["name"], err = json.Marshal(a.Name)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling 'name': %w", err)
+	}
+
+	if a.Progress != nil {
+		object["progress"], err = json.Marshal(a.Progress)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'progress': %w", err)
+		}
+	}
+
+	if a.Status != nil {
+		object["status"], err = json.Marshal(a.Status)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'status': %w", err)
+		}
 	}
 
 	object["type"], err = json.Marshal(a.Type)
@@ -15640,6 +16002,32 @@ func (t *SessionStreamFrame) MergeSessionResyncFrame(v SessionResyncFrame) error
 	return err
 }
 
+// AsStreamEndFrame returns the union data inside the SessionStreamFrame as a StreamEndFrame
+func (t SessionStreamFrame) AsStreamEndFrame() (StreamEndFrame, error) {
+	var body StreamEndFrame
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromStreamEndFrame overwrites any union data inside the SessionStreamFrame as the provided StreamEndFrame
+func (t *SessionStreamFrame) FromStreamEndFrame(v StreamEndFrame) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeStreamEndFrame performs a merge with any union data inside the SessionStreamFrame, using the provided StreamEndFrame
+func (t *SessionStreamFrame) MergeStreamEndFrame(v StreamEndFrame) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
 // AsToolCallPayload returns the union data inside the SessionStreamFrame as a ToolCallPayload
 func (t SessionStreamFrame) AsToolCallPayload() (ToolCallPayload, error) {
 	var body ToolCallPayload
@@ -15786,6 +16174,245 @@ func (t SessionToolResultBlock_Content) MarshalJSON() ([]byte, error) {
 }
 
 func (t *SessionToolResultBlock_Content) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsMessageUpsertFrame returns the union data inside the SessionTranscriptFrame as a MessageUpsertFrame
+func (t SessionTranscriptFrame) AsMessageUpsertFrame() (MessageUpsertFrame, error) {
+	var body MessageUpsertFrame
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromMessageUpsertFrame overwrites any union data inside the SessionTranscriptFrame as the provided MessageUpsertFrame
+func (t *SessionTranscriptFrame) FromMessageUpsertFrame(v MessageUpsertFrame) error {
+	v.EventType = "message.upsert"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeMessageUpsertFrame performs a merge with any union data inside the SessionTranscriptFrame, using the provided MessageUpsertFrame
+func (t *SessionTranscriptFrame) MergeMessageUpsertFrame(v MessageUpsertFrame) error {
+	v.EventType = "message.upsert"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsMessageBlockFrame returns the union data inside the SessionTranscriptFrame as a MessageBlockFrame
+func (t SessionTranscriptFrame) AsMessageBlockFrame() (MessageBlockFrame, error) {
+	var body MessageBlockFrame
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromMessageBlockFrame overwrites any union data inside the SessionTranscriptFrame as the provided MessageBlockFrame
+func (t *SessionTranscriptFrame) FromMessageBlockFrame(v MessageBlockFrame) error {
+	v.EventType = "message.block"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeMessageBlockFrame performs a merge with any union data inside the SessionTranscriptFrame, using the provided MessageBlockFrame
+func (t *SessionTranscriptFrame) MergeMessageBlockFrame(v MessageBlockFrame) error {
+	v.EventType = "message.block"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsMessageBlockPatchFrame returns the union data inside the SessionTranscriptFrame as a MessageBlockPatchFrame
+func (t SessionTranscriptFrame) AsMessageBlockPatchFrame() (MessageBlockPatchFrame, error) {
+	var body MessageBlockPatchFrame
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromMessageBlockPatchFrame overwrites any union data inside the SessionTranscriptFrame as the provided MessageBlockPatchFrame
+func (t *SessionTranscriptFrame) FromMessageBlockPatchFrame(v MessageBlockPatchFrame) error {
+	v.EventType = "message.block.patch"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeMessageBlockPatchFrame performs a merge with any union data inside the SessionTranscriptFrame, using the provided MessageBlockPatchFrame
+func (t *SessionTranscriptFrame) MergeMessageBlockPatchFrame(v MessageBlockPatchFrame) error {
+	v.EventType = "message.block.patch"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsMessageDeltaFrame returns the union data inside the SessionTranscriptFrame as a MessageDeltaFrame
+func (t SessionTranscriptFrame) AsMessageDeltaFrame() (MessageDeltaFrame, error) {
+	var body MessageDeltaFrame
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromMessageDeltaFrame overwrites any union data inside the SessionTranscriptFrame as the provided MessageDeltaFrame
+func (t *SessionTranscriptFrame) FromMessageDeltaFrame(v MessageDeltaFrame) error {
+	v.EventType = "message.delta"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeMessageDeltaFrame performs a merge with any union data inside the SessionTranscriptFrame, using the provided MessageDeltaFrame
+func (t *SessionTranscriptFrame) MergeMessageDeltaFrame(v MessageDeltaFrame) error {
+	v.EventType = "message.delta"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsTurnUpsertFrame returns the union data inside the SessionTranscriptFrame as a TurnUpsertFrame
+func (t SessionTranscriptFrame) AsTurnUpsertFrame() (TurnUpsertFrame, error) {
+	var body TurnUpsertFrame
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromTurnUpsertFrame overwrites any union data inside the SessionTranscriptFrame as the provided TurnUpsertFrame
+func (t *SessionTranscriptFrame) FromTurnUpsertFrame(v TurnUpsertFrame) error {
+	v.EventType = "turn.upsert"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeTurnUpsertFrame performs a merge with any union data inside the SessionTranscriptFrame, using the provided TurnUpsertFrame
+func (t *SessionTranscriptFrame) MergeTurnUpsertFrame(v TurnUpsertFrame) error {
+	v.EventType = "turn.upsert"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsStreamReadyFrame returns the union data inside the SessionTranscriptFrame as a StreamReadyFrame
+func (t SessionTranscriptFrame) AsStreamReadyFrame() (StreamReadyFrame, error) {
+	var body StreamReadyFrame
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromStreamReadyFrame overwrites any union data inside the SessionTranscriptFrame as the provided StreamReadyFrame
+func (t *SessionTranscriptFrame) FromStreamReadyFrame(v StreamReadyFrame) error {
+	v.EventType = "stream.ready"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeStreamReadyFrame performs a merge with any union data inside the SessionTranscriptFrame, using the provided StreamReadyFrame
+func (t *SessionTranscriptFrame) MergeStreamReadyFrame(v StreamReadyFrame) error {
+	v.EventType = "stream.ready"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsStreamEndFrame returns the union data inside the SessionTranscriptFrame as a StreamEndFrame
+func (t SessionTranscriptFrame) AsStreamEndFrame() (StreamEndFrame, error) {
+	var body StreamEndFrame
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromStreamEndFrame overwrites any union data inside the SessionTranscriptFrame as the provided StreamEndFrame
+func (t *SessionTranscriptFrame) FromStreamEndFrame(v StreamEndFrame) error {
+	v.EventType = "stream.end"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeStreamEndFrame performs a merge with any union data inside the SessionTranscriptFrame, using the provided StreamEndFrame
+func (t *SessionTranscriptFrame) MergeStreamEndFrame(v StreamEndFrame) error {
+	v.EventType = "stream.end"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t SessionTranscriptFrame) Discriminator() (string, error) {
+	var discriminator struct {
+		Discriminator string `json:"event_type"`
+	}
+	err := json.Unmarshal(t.union, &discriminator)
+	return discriminator.Discriminator, err
+}
+
+func (t SessionTranscriptFrame) ValueByDiscriminator() (interface{}, error) {
+	discriminator, err := t.Discriminator()
+	if err != nil {
+		return nil, err
+	}
+	switch discriminator {
+	case "message.block":
+		return t.AsMessageBlockFrame()
+	case "message.block.patch":
+		return t.AsMessageBlockPatchFrame()
+	case "message.delta":
+		return t.AsMessageDeltaFrame()
+	case "message.upsert":
+		return t.AsMessageUpsertFrame()
+	case "stream.end":
+		return t.AsStreamEndFrame()
+	case "stream.ready":
+		return t.AsStreamReadyFrame()
+	case "turn.upsert":
+		return t.AsTurnUpsertFrame()
+	default:
+		return nil, errors.New("unknown discriminator value: " + discriminator)
+	}
+}
+
+func (t SessionTranscriptFrame) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *SessionTranscriptFrame) UnmarshalJSON(b []byte) error {
 	err := t.union.UnmarshalJSON(b)
 	return err
 }
@@ -16688,6 +17315,12 @@ type ClientInterface interface {
 
 	// StreamSession request
 	StreamSession(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, params *StreamSessionParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetSessionTranscript request
+	GetSessionTranscript(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, params *GetSessionTranscriptParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// StreamSessionTranscript request
+	StreamSessionTranscript(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, params *StreamSessionTranscriptParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListSessionTurns request
 	ListSessionTurns(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, params *ListSessionTurnsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -18366,6 +18999,30 @@ func (c *Client) CancelNudge(ctx context.Context, projectHandle ProjectHandlePar
 
 func (c *Client) StreamSession(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, params *StreamSessionParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewStreamSessionRequest(c.Server, projectHandle, sessionId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetSessionTranscript(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, params *GetSessionTranscriptParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetSessionTranscriptRequest(c.Server, projectHandle, sessionId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) StreamSessionTranscript(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, params *StreamSessionTranscriptParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewStreamSessionTranscriptRequest(c.Server, projectHandle, sessionId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -24447,6 +25104,181 @@ func NewStreamSessionRequest(server string, projectHandle ProjectHandleParam, se
 	return req, nil
 }
 
+// NewGetSessionTranscriptRequest generates requests for GetSessionTranscript
+func NewGetSessionTranscriptRequest(server string, projectHandle ProjectHandleParam, sessionId SessionIdParam, params *GetSessionTranscriptParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project_handle", projectHandle, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "session_id", sessionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/sessions/%s/transcript", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Cursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "cursor", *params.Cursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.PageToken != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page_token", *params.PageToken, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewStreamSessionTranscriptRequest generates requests for StreamSessionTranscript
+func NewStreamSessionTranscriptRequest(server string, projectHandle ProjectHandleParam, sessionId SessionIdParam, params *StreamSessionTranscriptParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project_handle", projectHandle, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "session_id", sessionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/sessions/%s/transcript/stream", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Cursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "cursor", *params.Cursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+
+		if params.LastEventID != nil {
+			var headerParam0 string
+
+			headerParam0, err = runtime.StyleParamWithOptions("simple", false, "Last-Event-ID", *params.LastEventID, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("Last-Event-ID", headerParam0)
+		}
+
+	}
+
+	return req, nil
+}
+
 // NewListSessionTurnsRequest generates requests for ListSessionTurns
 func NewListSessionTurnsRequest(server string, projectHandle ProjectHandleParam, sessionId SessionIdParam, params *ListSessionTurnsParams) (*http.Request, error) {
 	var err error
@@ -27101,6 +27933,12 @@ type ClientWithResponsesInterface interface {
 
 	// StreamSessionWithResponse request
 	StreamSessionWithResponse(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, params *StreamSessionParams, reqEditors ...RequestEditorFn) (*StreamSessionResponse, error)
+
+	// GetSessionTranscriptWithResponse request
+	GetSessionTranscriptWithResponse(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, params *GetSessionTranscriptParams, reqEditors ...RequestEditorFn) (*GetSessionTranscriptResponse, error)
+
+	// StreamSessionTranscriptWithResponse request
+	StreamSessionTranscriptWithResponse(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, params *StreamSessionTranscriptParams, reqEditors ...RequestEditorFn) (*StreamSessionTranscriptResponse, error)
 
 	// ListSessionTurnsWithResponse request
 	ListSessionTurnsWithResponse(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, params *ListSessionTurnsParams, reqEditors ...RequestEditorFn) (*ListSessionTurnsResponse, error)
@@ -30453,6 +31291,73 @@ func (r StreamSessionResponse) ContentType() string {
 	return ""
 }
 
+type GetSessionTranscriptResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *SessionTranscriptSnapshot
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r GetSessionTranscriptResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetSessionTranscriptResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetSessionTranscriptResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type StreamSessionTranscriptResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r StreamSessionTranscriptResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r StreamSessionTranscriptResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r StreamSessionTranscriptResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type ListSessionTurnsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -32994,6 +33899,24 @@ func (c *ClientWithResponses) StreamSessionWithResponse(ctx context.Context, pro
 		return nil, err
 	}
 	return ParseStreamSessionResponse(rsp)
+}
+
+// GetSessionTranscriptWithResponse request returning *GetSessionTranscriptResponse
+func (c *ClientWithResponses) GetSessionTranscriptWithResponse(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, params *GetSessionTranscriptParams, reqEditors ...RequestEditorFn) (*GetSessionTranscriptResponse, error) {
+	rsp, err := c.GetSessionTranscript(ctx, projectHandle, sessionId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetSessionTranscriptResponse(rsp)
+}
+
+// StreamSessionTranscriptWithResponse request returning *StreamSessionTranscriptResponse
+func (c *ClientWithResponses) StreamSessionTranscriptWithResponse(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, params *StreamSessionTranscriptParams, reqEditors ...RequestEditorFn) (*StreamSessionTranscriptResponse, error) {
+	rsp, err := c.StreamSessionTranscript(ctx, projectHandle, sessionId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseStreamSessionTranscriptResponse(rsp)
 }
 
 // ListSessionTurnsWithResponse request returning *ListSessionTurnsResponse
@@ -38515,6 +39438,107 @@ func ParseStreamSessionResponse(rsp *http.Response) (*StreamSessionResponse, err
 	}
 
 	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetSessionTranscriptResponse parses an HTTP response from a GetSessionTranscriptWithResponse call
+func ParseGetSessionTranscriptResponse(rsp *http.Response) (*GetSessionTranscriptResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetSessionTranscriptResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest SessionTranscriptSnapshot
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseStreamSessionTranscriptResponse parses an HTTP response from a StreamSessionTranscriptWithResponse call
+func ParseStreamSessionTranscriptResponse(rsp *http.Response) (*StreamSessionTranscriptResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &StreamSessionTranscriptResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
 		var dest Unauthorized
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {

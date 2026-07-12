@@ -16,8 +16,12 @@ import type {
   LoopRunStatus,
   LoopStatus,
   SessionStreamFrame,
+  SessionTranscriptFrame,
+  SessionTranscriptSnapshot,
+  SessionTranscriptTurn,
   SignalLoopRunRequest,
   StartLoopRunRequest,
+  StreamEndFrame,
   TagMap,
   TurnAck,
   UpdateLoopRequest,
@@ -27,6 +31,11 @@ import {
   RateLimitError,
   wrapFetchWithRetry,
 } from "./retry.js";
+import {
+  SessionTranscriptReducer,
+  isTerminalTurnStatus,
+  type TranscriptStreamEvent,
+} from "./transcript.js";
 
 export { RateLimitError } from "./retry.js";
 
@@ -51,6 +60,23 @@ export class AuthRevokedError extends Error {
   constructor() {
     super("mobius: credential revoked");
     this.name = "AuthRevokedError";
+  }
+}
+
+/**
+ * Thrown when a streaming request (e.g. {@link Client.streamSessionTranscript})
+ * returns a non-OK HTTP status. `status` carries the response code so callers
+ * of {@link Client.watchSessionTranscript} can branch on it — the watch loop
+ * reconnects only on transient statuses (429/503) and surfaces every other
+ * status by throwing this error.
+ */
+export class StreamHTTPError extends Error {
+  readonly status: number;
+
+  constructor(status: number, message: string) {
+    super(message);
+    this.name = "StreamHTTPError";
+    this.status = status;
   }
 }
 
@@ -232,6 +258,35 @@ export interface InvokeAgentOptions {
 export interface SessionStreamEvent {
   eventType: string;
   data: SessionStreamFrame;
+}
+
+export interface GetSessionTranscriptOptions {
+  /** Opaque resume cursor from a prior snapshot or stream; omit for a bootstrap tail. */
+  cursor?: string;
+  /** Opaque fixed-cut continuation (`next_page_token`) when draining an incremental cycle. */
+  pageToken?: string;
+  /** Max messages per page. */
+  limit?: number;
+  signal?: AbortSignal;
+}
+
+export interface StreamSessionTranscriptOptions {
+  /** Opaque resume cursor; omit to hydrate from the live tail. */
+  cursor?: string;
+  signal?: AbortSignal;
+}
+
+export interface WatchSessionTranscriptOptions {
+  /** Opaque resume cursor for the first connection. Ignored if `reducer` carries one. */
+  cursor?: string;
+  /**
+   * Reducer to fold frames into. Omit to start fresh. Pass a pre-seeded reducer
+   * (e.g. from a bootstrap snapshot or a StartTurn ack) to continue its state.
+   */
+  reducer?: SessionTranscriptReducer;
+  /** Delay before reconnecting after a dropped connection (not a clean `rotate`). Defaults to 1000. */
+  reconnectDelayMs?: number;
+  signal?: AbortSignal;
 }
 
 export class Client {
@@ -444,6 +499,145 @@ export class Client {
     }
   }
 
+  /**
+   * Fetch a session transcript snapshot (session-stream v2). Without a cursor
+   * this is a bootstrap tail (latest final page + all live rows and turns);
+   * with a cursor it drains everything after it toward a fixed upper cut —
+   * continue with the returned `next_page_token` until `has_more` is false.
+   * Fold each page into a {@link SessionTranscriptReducer} with
+   * `applySnapshot`; polling is the same protocol the stream accelerates.
+   */
+  async getSessionTranscript(
+    sessionId: string,
+    opts: GetSessionTranscriptOptions = {},
+  ): Promise<SessionTranscriptSnapshot> {
+    const path = withQuery(
+      `/v1/projects/:project/sessions/${encodeURIComponent(sessionId)}/transcript`,
+      { cursor: opts.cursor, page_token: opts.pageToken, limit: opts.limit },
+    );
+    const resp = await this.request(path, { method: "GET", signal: opts.signal });
+    return (await resp.json()) as SessionTranscriptSnapshot;
+  }
+
+  /**
+   * Open one session-transcript SSE connection and yield each decoded frame
+   * with its SSE `id:` (the resume cursor). This is the low-level primitive;
+   * feed the frames to a {@link SessionTranscriptReducer}, or use
+   * {@link Client.watchSessionTranscript} for the managed connection loop
+   * (reconnect on `rotate`, stop on `idle`).
+   */
+  async *streamSessionTranscript(
+    sessionId: string,
+    opts: StreamSessionTranscriptOptions = {},
+  ): AsyncGenerator<TranscriptStreamEvent> {
+    const path = withQuery(
+      `/v1/projects/:project/sessions/${encodeURIComponent(sessionId)}/transcript/stream`,
+      { cursor: opts.cursor },
+    );
+    const resp = await this.fetchFn(this.url(path), {
+      method: "GET",
+      headers: { ...this.headers, Accept: "text/event-stream" },
+      signal: opts.signal,
+    });
+    if (!resp.ok) {
+      if (resp.status === 401) throw new AuthRevokedError();
+      const text = await resp.text().catch(() => "");
+      throw new StreamHTTPError(
+        resp.status,
+        `mobius API GET ${path}: HTTP ${resp.status}: ${text}`,
+      );
+    }
+    if (!resp.body) {
+      throw new Error(
+        "mobius API GET session transcript stream: response body is not readable",
+      );
+    }
+    for await (const evt of parseSSE(resp.body)) {
+      if (!evt.data) continue;
+      yield {
+        frame: JSON.parse(evt.data) as SessionTranscriptFrame,
+        id: evt.id,
+      };
+    }
+  }
+
+  /**
+   * Drive a {@link SessionTranscriptReducer} across the full session-transcript
+   * stream, yielding it after every applied frame. Owns the connection loop:
+   * reconnects with the current cursor on `stream.end rotate` (and after a
+   * dropped connection), and returns on `stream.end idle`. Reconnect is the
+   * same code path as the first connect — the reducer keeps its rows and only
+   * resets `ready`. On `idle` the caller can poll {@link
+   * Client.getSessionTranscript} and reopen when `resume_cursor` moves.
+   */
+  async *watchSessionTranscript(
+    sessionId: string,
+    opts: WatchSessionTranscriptOptions = {},
+  ): AsyncGenerator<SessionTranscriptReducer> {
+    const reducer = opts.reducer ?? new SessionTranscriptReducer();
+    if (opts.cursor && !reducer.cursor) reducer.cursor = opts.cursor;
+    const reconnectDelayMs = opts.reconnectDelayMs ?? 1000;
+    for (;;) {
+      reducer.ready = false;
+      let rotate = false;
+      try {
+        for await (const { frame, id } of this.streamSessionTranscript(sessionId, {
+          cursor: reducer.cursor ?? undefined,
+          signal: opts.signal,
+        })) {
+          reducer.apply(frame, id);
+          const eventType = (frame as { event_type?: string }).event_type;
+          if (eventType === "stream.end") {
+            if ((frame as StreamEndFrame).reason === "idle") return;
+            rotate = true; // reconnect immediately with the current cursor
+            break;
+          }
+          yield reducer;
+        }
+      } catch (err) {
+        if (opts.signal?.aborted) throw err;
+        // Reconnect only on transient failures; a permanent status
+        // (401/403/404, or a 5xx other than 503) is surfaced to the caller
+        // instead of looping forever.
+        if (!isRetryableStreamError(err)) throw err;
+      }
+      if (opts.signal?.aborted) return;
+      if (!rotate) await delay(reconnectDelayMs, opts.signal);
+    }
+  }
+
+  /**
+   * Behaves like {@link Client.invokeAgent} but streams the started turn's
+   * transcript inline (session-stream v2). Starts the turn, seeds a reducer
+   * with the ack's caller row and turn, then opens the transcript stream from
+   * the ack's cursor and yields the reducer after each change, returning when
+   * this turn reaches a terminal `turn.upsert`. The full session stream is
+   * consumed internally so the resume cursor stays valid even when other turns
+   * interleave; filter the reducer with `messagesForTurn(turnId)` to render
+   * only this turn.
+   */
+  async *invokeAgentTranscript(
+    opts: InvokeAgentOptions,
+    streamOpts: { signal?: AbortSignal } = {},
+  ): AsyncGenerator<SessionTranscriptReducer> {
+    const ack = await this.invokeAgent(opts);
+    const turnId = ack.turn.id;
+    const reducer = new SessionTranscriptReducer();
+    if (ack.user_message) reducer.rows.set(ack.user_message.id, ack.user_message);
+    reducer.turns.set(turnId, ack.turn as unknown as SessionTranscriptTurn);
+    reducer.cursor = ack.resume_cursor ?? null;
+    yield reducer;
+    if (isTerminalTurnStatus(ack.turn.status)) return; // deduped/already-terminal
+    for await (const r of this.watchSessionTranscript(ack.session.id, {
+      reducer,
+      signal: streamOpts.signal,
+    })) {
+      yield r;
+      const turn = r.turns.get(turnId);
+      if (turn && isTerminalTurnStatus(turn.status)) return;
+    }
+  }
+
   async *watchRun(
     runId: string,
     opts: WatchRunOptions = {},
@@ -578,6 +772,19 @@ function removeUndefined<T extends object>(obj: T): T {
   ) as T;
 }
 
+// isRetryableStreamError reports whether a failed stream connection should be
+// reconnected. Mirrors docs/retries.md: reconnect only on 429/503 and
+// transport/parse failures; 401 (AuthRevokedError) and every other HTTP status
+// propagate to the caller.
+function isRetryableStreamError(err: unknown): boolean {
+  if (err instanceof AuthRevokedError) return false;
+  if (err instanceof RateLimitError) return true; // 429 the transport gave up on
+  if (err instanceof StreamHTTPError) {
+    return err.status === 429 || err.status === 503;
+  }
+  return true; // fetch rejection / body dropped mid-stream
+}
+
 async function delay(ms: number, signal?: AbortSignal): Promise<void> {
   if (ms <= 0) return;
   await new Promise<void>((resolve, reject) => {
@@ -597,6 +804,7 @@ async function delay(ms: number, signal?: AbortSignal): Promise<void> {
 
 interface SSEEvent {
   event?: string;
+  id?: string;
   data: string;
 }
 
@@ -604,6 +812,11 @@ async function* parseSSE(body: ReadableStream<Uint8Array>): AsyncGenerator<SSEEv
   const reader = body.getReader();
   const decoder = new TextDecoder();
   let buffer = "";
+  // Per the SSE spec the last-event-id persists across events until an `id:`
+  // line changes it — the transcript stream relies on this so a frame that
+  // repeats already-delivered state can omit `id:` without regressing the
+  // resume cursor.
+  let lastId: string | undefined;
   try {
     for (;;) {
       const { value, done } = await reader.read();
@@ -621,7 +834,9 @@ async function* parseSSE(body: ReadableStream<Uint8Array>): AsyncGenerator<SSEEv
           .join("\n");
         const eventLine = lines.find((line) => line.startsWith("event:"));
         const event = eventLine ? eventLine.slice(6).trimStart() : undefined;
-        yield { event, data };
+        const idLine = lines.find((line) => line.startsWith("id:"));
+        if (idLine) lastId = idLine.slice(3).trimStart();
+        yield { event, id: lastId, data };
       }
     }
   } finally {

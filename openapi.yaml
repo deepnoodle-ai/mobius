@@ -3010,6 +3010,81 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /v1/projects/{project_handle}/sessions/{session_id}/transcript:
+    get:
+      operationId: getSessionTranscript
+      tags:
+      - sessions
+      summary: Get the live transcript snapshot
+      description: Returns the transcript tail and authoritative turn state consumed by SessionTranscriptReducer.
+        Without a cursor this is a bootstrap tail. With cursor it incrementally drains a fixed
+        upper cut; continue with next_page_token until has_more is false.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/SessionIdParam'
+      - name: cursor
+        in: query
+        schema:
+          type: string
+        description: Opaque resume_cursor from a prior snapshot or stream.
+      - name: page_token
+        in: query
+        schema:
+          type: string
+        description: Opaque fixed-cut continuation returned as next_page_token.
+      - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: Transcript snapshot.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionTranscriptSnapshot'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/projects/{project_handle}/sessions/{session_id}/transcript/stream:
+    get:
+      operationId: streamSessionTranscript
+      tags:
+      - sessions
+      summary: Stream authoritative transcript upserts
+      description: Resumable SSE view of the transcript snapshot. The explicit cursor query
+        parameter takes precedence over Last-Event-ID. State-frame ids are delivered watermarks
+        and never regress.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/SessionIdParam'
+      - name: cursor
+        in: query
+        schema:
+          type: string
+        description: Opaque resume cursor.
+      - name: Last-Event-ID
+        in: header
+        schema:
+          type: string
+        description: Opaque resume cursor from the last delivered state frame.
+      responses:
+        '200':
+          description: Authoritative transcript SSE stream.
+          content:
+            text/event-stream:
+              schema:
+                $ref: '#/components/schemas/SessionTranscriptFrame'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /v1/projects/{project_handle}/sessions/{session_id}/stream:
     get:
       operationId: streamSession
@@ -10285,6 +10360,14 @@ components:
           type: object
           additionalProperties: true
           description: Tool input arguments.
+        status:
+          type: string
+          description: Known values are pending, running, ok, error, and cancelled; unknown
+            values must be preserved.
+        progress:
+          type: object
+          additionalProperties: true
+          description: Latest in-flight progress snapshot. Absent on final transcript rows.
     SessionContentBlock:
       oneOf:
       - $ref: '#/components/schemas/SessionTextBlock'
@@ -10718,6 +10801,260 @@ components:
           description: Reasoning-effort override for this session. Send a level to override,
             or `inherit` to clear it and fall back to the agent default. Omit to leave the
             current value unchanged.
+    SessionTranscriptMessage:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - session_id
+      - agent_id
+      - role
+      - content
+      - entry_type
+      - status
+      - turn_index
+      - sequence
+      - created_at
+      properties:
+        id:
+          type: string
+        session_id:
+          type: string
+        agent_id:
+          type: string
+        turn_id:
+          type: string
+          nullable: true
+        role:
+          $ref: '#/components/schemas/SessionMessageRole'
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/SessionContentBlock'
+        entry_type:
+          type: string
+          description: Known values include message and compaction; unknown values must be
+            preserved.
+        status:
+          type: string
+          description: Known values are streaming and final; unknown values must be preserved.
+        turn_index:
+          type: integer
+          nullable: true
+        sequence:
+          type: integer
+          nullable: true
+        covers_through_sequence:
+          type: integer
+          nullable: true
+        metadata:
+          type: object
+          additionalProperties: true
+        created_at:
+          type: string
+          format: date-time
+    SessionTranscriptTurn:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - agent_id
+      - session_id
+      - attempt
+      - status
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+        agent_id:
+          type: string
+        session_id:
+          type: string
+        run_id:
+          type: string
+        step_key:
+          type: string
+        channel_exchange_id:
+          type: string
+        attempt:
+          type: integer
+        status:
+          type: string
+          description: Known AgentTurn status; unknown values must be preserved.
+        seq:
+          type: integer
+        error_type:
+          type: string
+        error_message:
+          type: string
+        usage:
+          type: object
+          additionalProperties: true
+          description: Token usage recorded when the turn terminalized, when available.
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+    SessionTranscriptSnapshot:
+      type: object
+      additionalProperties: false
+      required:
+      - messages
+      - turns
+      - has_more
+      - resume_cursor
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/SessionTranscriptMessage'
+        turns:
+          type: array
+          items:
+            $ref: '#/components/schemas/SessionTranscriptTurn'
+        has_more:
+          type: boolean
+        resume_cursor:
+          type: string
+        next_page_token:
+          type: string
+    SessionTranscriptFrame:
+      oneOf:
+      - $ref: '#/components/schemas/MessageUpsertFrame'
+      - $ref: '#/components/schemas/MessageBlockFrame'
+      - $ref: '#/components/schemas/MessageBlockPatchFrame'
+      - $ref: '#/components/schemas/MessageDeltaFrame'
+      - $ref: '#/components/schemas/TurnUpsertFrame'
+      - $ref: '#/components/schemas/StreamReadyFrame'
+      - $ref: '#/components/schemas/StreamEndFrame'
+      discriminator:
+        propertyName: event_type
+        mapping:
+          message.upsert: '#/components/schemas/MessageUpsertFrame'
+          message.block: '#/components/schemas/MessageBlockFrame'
+          message.block.patch: '#/components/schemas/MessageBlockPatchFrame'
+          message.delta: '#/components/schemas/MessageDeltaFrame'
+          turn.upsert: '#/components/schemas/TurnUpsertFrame'
+          stream.ready: '#/components/schemas/StreamReadyFrame'
+          stream.end: '#/components/schemas/StreamEndFrame'
+    MessageUpsertFrame:
+      allOf:
+      - $ref: '#/components/schemas/SessionTranscriptMessage'
+      - type: object
+        required:
+        - event_type
+        properties:
+          event_type:
+            type: string
+            enum:
+            - message.upsert
+    MessageBlockFrame:
+      type: object
+      additionalProperties: false
+      required:
+      - event_type
+      - session_id
+      - message_id
+      - content_index
+      - block
+      properties:
+        event_type:
+          type: string
+          enum:
+          - message.block
+        session_id:
+          type: string
+        message_id:
+          type: string
+        content_index:
+          type: integer
+          minimum: 0
+        block:
+          $ref: '#/components/schemas/SessionContentBlock'
+    MessageBlockPatchFrame:
+      type: object
+      additionalProperties: false
+      required:
+      - event_type
+      - session_id
+      - message_id
+      - content_index
+      properties:
+        event_type:
+          type: string
+          enum:
+          - message.block.patch
+        session_id:
+          type: string
+        message_id:
+          type: string
+        content_index:
+          type: integer
+          minimum: 0
+        status:
+          type: string
+          description: Known values are pending, running, ok, error, and cancelled.
+        progress:
+          type: object
+          nullable: true
+          additionalProperties: true
+    MessageDeltaFrame:
+      type: object
+      additionalProperties: false
+      required:
+      - event_type
+      - session_id
+      - message_id
+      - content_index
+      properties:
+        event_type:
+          type: string
+          enum:
+          - message.delta
+        session_id:
+          type: string
+        message_id:
+          type: string
+        content_index:
+          type: integer
+          minimum: 0
+        text:
+          type: string
+        thinking:
+          type: string
+    TurnUpsertFrame:
+      allOf:
+      - $ref: '#/components/schemas/SessionTranscriptTurn'
+      - type: object
+        required:
+        - event_type
+        properties:
+          event_type:
+            type: string
+            enum:
+            - turn.upsert
+    StreamReadyFrame:
+      type: object
+      additionalProperties: false
+      required:
+      - event_type
+      - session_id
+      - resume_cursor
+      properties:
+        event_type:
+          type: string
+          enum:
+          - stream.ready
+        session_id:
+          type: string
+        resume_cursor:
+          type: string
     SessionStreamFrame:
       anyOf:
       - $ref: '#/components/schemas/SessionUserMessagePayload'
@@ -10731,6 +11068,7 @@ components:
       - $ref: '#/components/schemas/NudgeEventPayload'
       - $ref: '#/components/schemas/SessionMessagePreviewFrame'
       - $ref: '#/components/schemas/SessionResyncFrame'
+      - $ref: '#/components/schemas/StreamEndFrame'
       - $ref: '#/components/schemas/ToolCallPayload'
       - $ref: '#/components/schemas/ToolResultPayload'
       - $ref: '#/components/schemas/GenerationDeltaFrame'
@@ -10739,7 +11077,7 @@ components:
 
         The `event:` line is the authoritative frame selector. This union is reference-only: several payloads are structurally identical (e.g. `user.message` and `agent.message`) or permissive open objects, so the `data:` body alone cannot be shape-matched to a single variant. Consumers MUST dispatch on the `event:` name and decode the body as the corresponding payload — never validate the bare body against the union.
 
-        Durable message frames (`user.message`, `agent.message`, `compaction.created`) are replayed from the transcript and carry an SSE `id: <sequence>` — that `sequence` is the only cursor a client persists for `after_sequence` / `Last-Event-ID` resume. Terminal `turn.*` frames mark the active turn settling. `session.message.preview`, `session.resync`, `nudge.queued`, `nudge.delivered`, `nudge.cancelled`, `tool.call`, `tool.result`, and `generation.delta` frames are live-only and carry no `id:`.
+        Durable message frames (`user.message`, `agent.message`, `compaction.created`) are replayed from the transcript and carry an SSE `id: <sequence>` — that `sequence` is the only cursor a client persists for `after_sequence` / `Last-Event-ID` resume. Terminal `turn.*` frames mark the active turn settling. `session.message.preview`, `session.resync`, `nudge.queued`, `nudge.delivered`, `nudge.cancelled`, `tool.call`, `tool.result`, and `generation.delta` frames are live-only and carry no `id:`. `stream.end` is the final envelope on every deliberate server-side close and also carries no `id:`.
     SessionMessagePreviewFrame:
       type: object
       additionalProperties: true
@@ -10807,7 +11145,8 @@ components:
       - frames
       - last_live_sequence
       - updated_at
-      description: Ephemeral, process-local live transcript snapshot for an in-flight turn.
+      description: Ephemeral live transcript snapshot for an in-flight turn. Deployments with
+        shared cache support make it available across backend replicas.
       properties:
         session_id:
           type: string
@@ -10848,6 +11187,28 @@ components:
         reason:
           type: string
           description: Machine-readable resync reason, e.g. `subscriber_overflow`.
+    StreamEndFrame:
+      type: object
+      additionalProperties: false
+      required:
+      - event_type
+      - session_id
+      - reason
+      description: Final envelope on a deliberate session-stream close. An idle close means
+        no non-terminal turn remains; a rotate close asks the client to reconnect immediately
+        with the same durable transcript cursor.
+      properties:
+        event_type:
+          type: string
+          enum:
+          - stream.end
+        session_id:
+          type: string
+        reason:
+          type: string
+          enum:
+          - idle
+          - rotate
     SessionUserMessagePayload:
       type: object
       additionalProperties: true
@@ -11401,6 +11762,13 @@ components:
           $ref: '#/components/schemas/Session'
         turn:
           $ref: '#/components/schemas/AgentTurn'
+        user_message:
+          $ref: '#/components/schemas/SessionTranscriptMessage'
+          description: Durable caller row created for this turn.
+        resume_cursor:
+          type: string
+          description: Opaque v2 cursor captured immediately before the user_message and turn
+            admission.
         after_sequence:
           type: integer
           format: int64

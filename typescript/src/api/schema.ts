@@ -1192,6 +1192,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/projects/{project_handle}/sessions/{session_id}/transcript": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the live transcript snapshot
+         * @description Returns the transcript tail and authoritative turn state consumed by SessionTranscriptReducer. Without a cursor this is a bootstrap tail. With cursor it incrementally drains a fixed upper cut; continue with next_page_token until has_more is false.
+         */
+        get: operations["getSessionTranscript"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project_handle}/sessions/{session_id}/transcript/stream": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Stream authoritative transcript upserts
+         * @description Resumable SSE view of the transcript snapshot. The explicit cursor query parameter takes precedence over Last-Event-ID. State-frame ids are delivered watermarks and never regress.
+         */
+        get: operations["streamSessionTranscript"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/projects/{project_handle}/sessions/{session_id}/stream": {
         parameters: {
             query?: never;
@@ -4817,6 +4857,12 @@ export interface components {
             input: {
                 [key: string]: unknown;
             };
+            /** @description Known values are pending, running, ok, error, and cancelled; unknown values must be preserved. */
+            status?: string;
+            /** @description Latest in-flight progress snapshot. Absent on final transcript rows. */
+            progress?: {
+                [key: string]: unknown;
+            };
         } & {
             [key: string]: unknown;
         };
@@ -5091,14 +5137,133 @@ export interface components {
             /** @description Reasoning-effort override for this session. Send a level to override, or `inherit` to clear it and fall back to the agent default. Omit to leave the current value unchanged. */
             thinking_effort?: components["schemas"]["ThinkingEffort"];
         };
+        SessionTranscriptMessage: {
+            id: string;
+            session_id: string;
+            agent_id: string;
+            turn_id?: string | null;
+            role: components["schemas"]["SessionMessageRole"];
+            content: components["schemas"]["SessionContentBlock"][];
+            /** @description Known values include message and compaction; unknown values must be preserved. */
+            entry_type: string;
+            /** @description Known values are streaming and final; unknown values must be preserved. */
+            status: string;
+            turn_index: number | null;
+            sequence: number | null;
+            covers_through_sequence?: number | null;
+            metadata?: {
+                [key: string]: unknown;
+            };
+            /** Format: date-time */
+            created_at: string;
+        };
+        SessionTranscriptTurn: {
+            id: string;
+            agent_id: string;
+            session_id: string;
+            run_id?: string;
+            step_key?: string;
+            channel_exchange_id?: string;
+            attempt: number;
+            /** @description Known AgentTurn status; unknown values must be preserved. */
+            status: string;
+            seq?: number;
+            error_type?: string;
+            error_message?: string;
+            /** @description Token usage recorded when the turn terminalized, when available. */
+            usage?: {
+                [key: string]: unknown;
+            };
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+            /** Format: date-time */
+            completed_at?: string;
+        };
+        SessionTranscriptSnapshot: {
+            messages: components["schemas"]["SessionTranscriptMessage"][];
+            turns: components["schemas"]["SessionTranscriptTurn"][];
+            has_more: boolean;
+            resume_cursor: string;
+            next_page_token?: string;
+        };
+        SessionTranscriptFrame: components["schemas"]["MessageUpsertFrame"] | components["schemas"]["MessageBlockFrame"] | components["schemas"]["MessageBlockPatchFrame"] | components["schemas"]["MessageDeltaFrame"] | components["schemas"]["TurnUpsertFrame"] | components["schemas"]["StreamReadyFrame"] | components["schemas"]["StreamEndFrame"];
+        MessageUpsertFrame: components["schemas"]["SessionTranscriptMessage"] & {
+            /** @enum {string} */
+            event_type: "message.upsert";
+        } & {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            event_type: "message.upsert";
+        };
+        MessageBlockFrame: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            event_type: "message.block";
+            session_id: string;
+            message_id: string;
+            content_index: number;
+            block: components["schemas"]["SessionContentBlock"];
+        };
+        MessageBlockPatchFrame: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            event_type: "message.block.patch";
+            session_id: string;
+            message_id: string;
+            content_index: number;
+            /** @description Known values are pending, running, ok, error, and cancelled. */
+            status?: string;
+            progress?: {
+                [key: string]: unknown;
+            } | null;
+        };
+        MessageDeltaFrame: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            event_type: "message.delta";
+            session_id: string;
+            message_id: string;
+            content_index: number;
+            text?: string;
+            thinking?: string;
+        };
+        TurnUpsertFrame: components["schemas"]["SessionTranscriptTurn"] & {
+            /** @enum {string} */
+            event_type: "turn.upsert";
+        } & {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            event_type: "turn.upsert";
+        };
+        StreamReadyFrame: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            event_type: "stream.ready";
+            session_id: string;
+            resume_cursor: string;
+        };
         /**
          * @description JSON payload of a single `data:` line on the session SSE stream, paired with an `event: <event type>` line.
          *
          *     The `event:` line is the authoritative frame selector. This union is reference-only: several payloads are structurally identical (e.g. `user.message` and `agent.message`) or permissive open objects, so the `data:` body alone cannot be shape-matched to a single variant. Consumers MUST dispatch on the `event:` name and decode the body as the corresponding payload — never validate the bare body against the union.
          *
-         *     Durable message frames (`user.message`, `agent.message`, `compaction.created`) are replayed from the transcript and carry an SSE `id: <sequence>` — that `sequence` is the only cursor a client persists for `after_sequence` / `Last-Event-ID` resume. Terminal `turn.*` frames mark the active turn settling. `session.message.preview`, `session.resync`, `nudge.queued`, `nudge.delivered`, `nudge.cancelled`, `tool.call`, `tool.result`, and `generation.delta` frames are live-only and carry no `id:`.
+         *     Durable message frames (`user.message`, `agent.message`, `compaction.created`) are replayed from the transcript and carry an SSE `id: <sequence>` — that `sequence` is the only cursor a client persists for `after_sequence` / `Last-Event-ID` resume. Terminal `turn.*` frames mark the active turn settling. `session.message.preview`, `session.resync`, `nudge.queued`, `nudge.delivered`, `nudge.cancelled`, `tool.call`, `tool.result`, and `generation.delta` frames are live-only and carry no `id:`. `stream.end` is the final envelope on every deliberate server-side close and also carries no `id:`.
          */
-        SessionStreamFrame: components["schemas"]["SessionUserMessagePayload"] | components["schemas"]["AgentMessagePayload"] | components["schemas"]["CompactionCreatedPayload"] | components["schemas"]["TurnStartedPayload"] | components["schemas"]["TurnWaitingPayload"] | components["schemas"]["TurnCompletedPayload"] | components["schemas"]["TurnFailedPayload"] | components["schemas"]["TurnCancelledPayload"] | components["schemas"]["NudgeEventPayload"] | components["schemas"]["SessionMessagePreviewFrame"] | components["schemas"]["SessionResyncFrame"] | components["schemas"]["ToolCallPayload"] | components["schemas"]["ToolResultPayload"] | components["schemas"]["GenerationDeltaFrame"];
+        SessionStreamFrame: components["schemas"]["SessionUserMessagePayload"] | components["schemas"]["AgentMessagePayload"] | components["schemas"]["CompactionCreatedPayload"] | components["schemas"]["TurnStartedPayload"] | components["schemas"]["TurnWaitingPayload"] | components["schemas"]["TurnCompletedPayload"] | components["schemas"]["TurnFailedPayload"] | components["schemas"]["TurnCancelledPayload"] | components["schemas"]["NudgeEventPayload"] | components["schemas"]["SessionMessagePreviewFrame"] | components["schemas"]["SessionResyncFrame"] | components["schemas"]["StreamEndFrame"] | components["schemas"]["ToolCallPayload"] | components["schemas"]["ToolResultPayload"] | components["schemas"]["GenerationDeltaFrame"];
         /** @description Live-only, SessionMessage-compatible transcript preview for an in-flight agent response segment. It carries no durable `seq`, transcript `sequence`, or stable `message_id`; the committed row later replaces it by `turn_id` plus `metadata.response_message_index`. */
         SessionMessagePreviewFrame: {
             /** @enum {string} */
@@ -5134,7 +5299,7 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
-        /** @description Ephemeral, process-local live transcript snapshot for an in-flight turn. */
+        /** @description Ephemeral live transcript snapshot for an in-flight turn. Deployments with shared cache support make it available across backend replicas. */
         SessionLiveSnapshot: {
             session_id: string;
             turn_id: string;
@@ -5160,6 +5325,17 @@ export interface components {
             session_id: string;
             /** @description Machine-readable resync reason, e.g. `subscriber_overflow`. */
             reason: string;
+        };
+        /** @description Final envelope on a deliberate session-stream close. An idle close means no non-terminal turn remains; a rotate close asks the client to reconnect immediately with the same durable transcript cursor. */
+        StreamEndFrame: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            event_type: "stream.end";
+            session_id: string;
+            /** @enum {string} */
+            reason: "idle" | "rotate";
         };
         /** @description Payload of a `user.message` content event: the durable encoding of one non-assistant transcript message — caller input, or a user-role message carrying tool results. It mirrors the transcript row exactly, carrying the message identity (`message_id` + `sequence`) and full content. Replaying these events reconstructs the same view as reading the messages API. */
         SessionUserMessagePayload: {
@@ -5487,6 +5663,10 @@ export interface components {
         TurnAck: {
             session: components["schemas"]["Session"];
             turn: components["schemas"]["AgentTurn"];
+            /** @description Durable caller row created for this turn. */
+            user_message?: components["schemas"]["SessionTranscriptMessage"];
+            /** @description Opaque v2 cursor captured immediately before the user_message and turn admission. */
+            resume_cursor?: string;
             /**
              * Format: int64
              * @description The transcript message `sequence` cursor to stream from. Pass it as `after_sequence` to `GET .../stream` to follow this turn.
@@ -10709,6 +10889,77 @@ export interface operations {
                     "application/json": components["schemas"]["AgentTurn"];
                 };
             };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getSessionTranscript: {
+        parameters: {
+            query?: {
+                /** @description Opaque resume_cursor from a prior snapshot or stream. */
+                cursor?: string;
+                /** @description Opaque fixed-cut continuation returned as next_page_token. */
+                page_token?: string;
+                /** @description Maximum number of items to return */
+                limit?: components["parameters"]["LimitParam"];
+            };
+            header?: never;
+            path: {
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
+                /** @description Identifier of the conversation session. */
+                session_id: components["parameters"]["SessionIdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Transcript snapshot. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionTranscriptSnapshot"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    streamSessionTranscript: {
+        parameters: {
+            query?: {
+                /** @description Opaque resume cursor. */
+                cursor?: string;
+            };
+            header?: {
+                /** @description Opaque resume cursor from the last delivered state frame. */
+                "Last-Event-ID"?: string;
+            };
+            path: {
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
+                /** @description Identifier of the conversation session. */
+                session_id: components["parameters"]["SessionIdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Authoritative transcript SSE stream. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/event-stream": components["schemas"]["SessionTranscriptFrame"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
