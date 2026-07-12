@@ -3528,6 +3528,14 @@ class SessionToolUseBlock(BaseModel):
     )
     name: str = Field(..., description='Tool name.')
     input: dict[str, Any] = Field(..., description='Tool input arguments.')
+    status: str | None = Field(
+        None,
+        description='Known values are pending, running, ok, error, and cancelled; unknown values must be preserved.',
+    )
+    progress: dict[str, Any] | None = Field(
+        None,
+        description='Latest in-flight progress snapshot. Absent on final transcript rows.',
+    )
 
 
 class Type22(StrEnum):
@@ -3793,13 +3801,102 @@ class UpdateSessionRequest(BaseModel):
     )
 
 
+class SessionTranscriptTurn(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str
+    agent_id: str
+    session_id: str
+    run_id: str | None = None
+    step_key: str | None = None
+    channel_exchange_id: str | None = None
+    attempt: int
+    status: str = Field(
+        ..., description='Known AgentTurn status; unknown values must be preserved.'
+    )
+    seq: int | None = None
+    error_type: str | None = None
+    error_message: str | None = None
+    usage: dict[str, Any] | None = Field(
+        None,
+        description='Token usage recorded when the turn terminalized, when available.',
+    )
+    created_at: AwareDatetime
+    updated_at: AwareDatetime
+    completed_at: AwareDatetime | None = None
+
+
 class EventType1(StrEnum):
+    message_upsert = 'message.upsert'
+
+
+class EventType2(StrEnum):
+    message_block = 'message.block'
+
+
+class EventType3(StrEnum):
+    message_block_patch = 'message.block.patch'
+
+
+class MessageBlockPatchFrame(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    event_type: Literal['message.block.patch']
+    session_id: str
+    message_id: str
+    content_index: int = Field(..., ge=0)
+    status: str | None = Field(
+        None, description='Known values are pending, running, ok, error, and cancelled.'
+    )
+    progress: dict[str, Any] | None = None
+
+
+class EventType4(StrEnum):
+    message_delta = 'message.delta'
+
+
+class MessageDeltaFrame(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    event_type: Literal['message.delta']
+    session_id: str
+    message_id: str
+    content_index: int = Field(..., ge=0)
+    text: str | None = None
+    thinking: str | None = None
+
+
+class EventType5(StrEnum):
+    turn_upsert = 'turn.upsert'
+
+
+class TurnUpsertFrame(SessionTranscriptTurn):
+    event_type: Literal['turn.upsert']
+
+
+class EventType6(StrEnum):
+    stream_ready = 'stream.ready'
+
+
+class StreamReadyFrame(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    event_type: Literal['stream.ready']
+    session_id: str
+    resume_cursor: str
+
+
+class EventType7(StrEnum):
     session_message_preview = 'session.message.preview'
 
 
 class SessionLiveSnapshot(BaseModel):
     """
-    Ephemeral, process-local live transcript snapshot for an in-flight turn.
+    Ephemeral live transcript snapshot for an in-flight turn. Deployments with shared cache support make it available across backend replicas.
     """
 
     model_config = ConfigDict(
@@ -3820,7 +3917,7 @@ class SessionLiveSnapshot(BaseModel):
     )
 
 
-class EventType2(StrEnum):
+class EventType8(StrEnum):
     session_resync = 'session.resync'
 
 
@@ -3832,11 +3929,33 @@ class SessionResyncFrame(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    event_type: EventType2
+    event_type: EventType8
     session_id: str
     reason: str = Field(
         ..., description='Machine-readable resync reason, e.g. `subscriber_overflow`.'
     )
+
+
+class EventType9(StrEnum):
+    stream_end = 'stream.end'
+
+
+class Reason1(StrEnum):
+    idle = 'idle'
+    rotate = 'rotate'
+
+
+class StreamEndFrame(BaseModel):
+    """
+    Final envelope on a deliberate session-stream close. An idle close means no non-terminal turn remains; a rotate close asks the client to reconnect immediately with the same durable transcript cursor.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    event_type: Literal['stream.end']
+    session_id: str
+    reason: Reason1
 
 
 class TurnStartedPayload(BaseModel):
@@ -4130,26 +4249,6 @@ class StartTurnRequest(BaseModel):
     )
     metadata: dict[str, Any] | None = Field(
         None, description='Free-form caller metadata attached to the input message.'
-    )
-
-
-class TurnAck(BaseModel):
-    """
-    Acknowledgement that a turn started, with a stream cursor.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    session: Session
-    turn: AgentTurn
-    after_sequence: int = Field(
-        ...,
-        description='The transcript message `sequence` cursor to stream from. Pass it as `after_sequence` to `GET .../stream` to follow this turn.',
-    )
-    deduped: bool | None = Field(
-        None,
-        description='True when a repeated idempotency key resumed an existing turn.',
     )
 
 
@@ -7746,6 +7845,53 @@ class SessionMessageListResponse(BaseModel):
     )
 
 
+class SessionTranscriptMessage(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str
+    session_id: str
+    agent_id: str
+    turn_id: str | None = None
+    role: SessionMessageRole
+    content: list[SessionContentBlock]
+    entry_type: str = Field(
+        ...,
+        description='Known values include message and compaction; unknown values must be preserved.',
+    )
+    status: str = Field(
+        ...,
+        description='Known values are streaming and final; unknown values must be preserved.',
+    )
+    turn_index: int | None = Field(...)
+    sequence: int | None = Field(...)
+    covers_through_sequence: int | None = None
+    metadata: dict[str, Any] | None = None
+    created_at: AwareDatetime
+
+
+class SessionTranscriptSnapshot(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    messages: list[SessionTranscriptMessage]
+    turns: list[SessionTranscriptTurn]
+    has_more: bool
+    resume_cursor: str
+    next_page_token: str | None = None
+
+
+class MessageBlockFrame(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    event_type: Literal['message.block']
+    session_id: str
+    message_id: str
+    content_index: int = Field(..., ge=0)
+    block: SessionContentBlock
+
+
 class SessionMessagePreviewFrame(BaseModel):
     """
     Live-only, SessionMessage-compatible transcript preview for an in-flight agent response segment. It carries no durable `seq`, transcript `sequence`, or stable `message_id`; the committed row later replaces it by `turn_id` plus `metadata.response_message_index`.
@@ -7754,7 +7900,7 @@ class SessionMessagePreviewFrame(BaseModel):
     model_config = ConfigDict(
         extra='allow',
     )
-    event_type: EventType1
+    event_type: EventType7
     id: str = Field(
         ...,
         description='Provisional live id. Do not persist or use as the durable message id.',
@@ -7895,6 +8041,33 @@ class CompactionCreatedPayload(BaseModel):
     )
 
 
+class TurnAck(BaseModel):
+    """
+    Acknowledgement that a turn started, with a stream cursor.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    session: Session
+    turn: AgentTurn
+    user_message: SessionTranscriptMessage | None = Field(
+        None, description='Durable caller row created for this turn.'
+    )
+    resume_cursor: str | None = Field(
+        None,
+        description='Opaque v2 cursor captured immediately before the user_message and turn admission.',
+    )
+    after_sequence: int = Field(
+        ...,
+        description='The transcript message `sequence` cursor to stream from. Pass it as `after_sequence` to `GET .../stream` to follow this turn.',
+    )
+    deduped: bool | None = Field(
+        None,
+        description='True when a repeated idempotency key resumed an existing turn.',
+    )
+
+
 class SessionContentBlock(
     RootModel[
         SessionTextBlock
@@ -7916,6 +8089,10 @@ class SessionContentBlock(
     )
 
 
+class MessageUpsertFrame(SessionTranscriptMessage):
+    event_type: Literal['message.upsert']
+
+
 class SessionStreamFrame(
     RootModel[
         SessionUserMessagePayload
@@ -7929,6 +8106,7 @@ class SessionStreamFrame(
         | NudgeEventPayload
         | SessionMessagePreviewFrame
         | SessionResyncFrame
+        | StreamEndFrame
         | ToolCallPayload
         | ToolResultPayload
         | GenerationDeltaFrame
@@ -7946,19 +8124,45 @@ class SessionStreamFrame(
         | NudgeEventPayload
         | SessionMessagePreviewFrame
         | SessionResyncFrame
+        | StreamEndFrame
         | ToolCallPayload
         | ToolResultPayload
         | GenerationDeltaFrame
     ) = Field(
         ...,
-        description='JSON payload of a single `data:` line on the session SSE stream, paired with an `event: <event type>` line.\n\nThe `event:` line is the authoritative frame selector. This union is reference-only: several payloads are structurally identical (e.g. `user.message` and `agent.message`) or permissive open objects, so the `data:` body alone cannot be shape-matched to a single variant. Consumers MUST dispatch on the `event:` name and decode the body as the corresponding payload — never validate the bare body against the union.\n\nDurable message frames (`user.message`, `agent.message`, `compaction.created`) are replayed from the transcript and carry an SSE `id: <sequence>` — that `sequence` is the only cursor a client persists for `after_sequence` / `Last-Event-ID` resume. Terminal `turn.*` frames mark the active turn settling. `session.message.preview`, `session.resync`, `nudge.queued`, `nudge.delivered`, `nudge.cancelled`, `tool.call`, `tool.result`, and `generation.delta` frames are live-only and carry no `id:`.',
+        description='JSON payload of a single `data:` line on the session SSE stream, paired with an `event: <event type>` line.\n\nThe `event:` line is the authoritative frame selector. This union is reference-only: several payloads are structurally identical (e.g. `user.message` and `agent.message`) or permissive open objects, so the `data:` body alone cannot be shape-matched to a single variant. Consumers MUST dispatch on the `event:` name and decode the body as the corresponding payload — never validate the bare body against the union.\n\nDurable message frames (`user.message`, `agent.message`, `compaction.created`) are replayed from the transcript and carry an SSE `id: <sequence>` — that `sequence` is the only cursor a client persists for `after_sequence` / `Last-Event-ID` resume. Terminal `turn.*` frames mark the active turn settling. `session.message.preview`, `session.resync`, `nudge.queued`, `nudge.delivered`, `nudge.cancelled`, `tool.call`, `tool.result`, and `generation.delta` frames are live-only and carry no `id:`. `stream.end` is the final envelope on every deliberate server-side close and also carries no `id:`.',
     )
+
+
+class SessionTranscriptFrame(
+    RootModel[
+        MessageUpsertFrame
+        | MessageBlockFrame
+        | MessageBlockPatchFrame
+        | MessageDeltaFrame
+        | TurnUpsertFrame
+        | StreamReadyFrame
+        | StreamEndFrame
+    ]
+):
+    root: (
+        MessageUpsertFrame
+        | MessageBlockFrame
+        | MessageBlockPatchFrame
+        | MessageDeltaFrame
+        | TurnUpsertFrame
+        | StreamReadyFrame
+        | StreamEndFrame
+    ) = Field(..., discriminator='event_type')
 
 
 SessionToolResultBlock.model_rebuild()
 SessionMessage.model_rebuild()
+SessionTranscriptMessage.model_rebuild()
+MessageBlockFrame.model_rebuild()
 SessionMessagePreviewFrame.model_rebuild()
 SessionUserMessagePayload.model_rebuild()
 AgentMessagePayload.model_rebuild()
 ToolResultPayload.model_rebuild()
 CompactionCreatedPayload.model_rebuild()
+MessageUpsertFrame.model_rebuild()

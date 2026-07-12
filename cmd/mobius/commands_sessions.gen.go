@@ -312,6 +312,43 @@ func registerSessionsCommands(app *cli.App) {
 			return printResponse(ctx, "getSessionNudge", resp.StatusCode(), resp.Body)
 		})
 
+	sessionsGrp.Command("get-transcript").
+		Description("Get the live transcript snapshot").
+		AddArg(&cli.Arg{Name: "session-id", Description: "Identifier of the conversation session.", Required: true}).
+		Flags(
+			cli.String("cursor", "").Help("Opaque resume_cursor from a prior snapshot or stream."),
+			cli.String("page-token", "").Help("Opaque fixed-cut continuation returned as next_page_token."),
+			cli.Int("limit", "").Help("Maximum number of items to return"),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			p1 := ctx.Arg(0)
+			params := &api.GetSessionTranscriptParams{}
+			if ctx.IsSet("cursor") {
+				v := ctx.String("cursor")
+				params.Cursor = &v
+			}
+			if ctx.IsSet("page-token") {
+				v := ctx.String("page-token")
+				params.PageToken = &v
+			}
+			if ctx.IsSet("limit") {
+				v := api.LimitParam(ctx.Int("limit"))
+				params.Limit = &v
+			}
+			resp, err := client.GetSessionTranscriptWithResponse(ctx.Context(), p0, p1, params)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "getSessionTranscript", resp.StatusCode(), resp.Body)
+		})
+
 	sessionsGrp.Command("get-turn").
 		Description("Get a session turn").
 		AddArg(&cli.Arg{Name: "session-id", Description: "Identifier of the conversation session.", Required: true}).
@@ -746,6 +783,38 @@ func registerSessionsCommands(app *cli.App) {
 				return err
 			}
 			return printResponse(ctx, "streamSession", resp.StatusCode(), resp.Body)
+		})
+
+	sessionsGrp.Command("stream-session-transcript").
+		Description("Stream authoritative transcript upserts").
+		AddArg(&cli.Arg{Name: "session-id", Description: "Identifier of the conversation session.", Required: true}).
+		Flags(
+			cli.String("cursor", "").Help("Opaque resume cursor."),
+			cli.String("last-event-id", "").Help("Opaque resume cursor from the last delivered state frame."),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			p1 := ctx.Arg(0)
+			params := &api.StreamSessionTranscriptParams{}
+			if ctx.IsSet("cursor") {
+				v := ctx.String("cursor")
+				params.Cursor = &v
+			}
+			if ctx.IsSet("last-event-id") {
+				v := ctx.String("last-event-id")
+				params.LastEventID = &v
+			}
+			resp, err := client.StreamSessionTranscriptWithResponse(ctx.Context(), p0, p1, params)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "streamSessionTranscript", resp.StatusCode(), resp.Body)
 		})
 
 	sessionsGrp.Command("update").
