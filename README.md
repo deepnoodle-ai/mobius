@@ -97,7 +97,7 @@ The SDKs expose two layers:
   level escape hatch.
 
 See [`docs/sdk-helpers.md`](./docs/sdk-helpers.md) for cross-language examples
-of the webhook, loop, run, and worker helpers.
+of the webhook, loop, run, session-transcript, and worker helpers.
 
 All three SDKs share the same retry and rate-limit handling: `429` and
 `503` responses are retried transparently (respecting `Retry-After`), and
