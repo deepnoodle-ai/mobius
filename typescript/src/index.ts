@@ -43,6 +43,10 @@ export type {
   WatchSessionTranscriptOptions,
 } from "./client.js";
 export {
+  MOBIUS_ACTION_CONTENT_TYPE,
+  type ActionResponseEnvelope,
+} from "./action-response.js";
+export {
   SessionTranscript,
   isTerminalTurnStatus,
   normalizeToolUse,
