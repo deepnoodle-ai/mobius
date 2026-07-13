@@ -141,7 +141,14 @@ export class SessionTranscript {
         break;
       case "message.block": {
         const row = this.#rows.get(f.message_id as string);
-        if (row) row.content[f.content_index as number] = f.block as never;
+        const index = f.content_index as number;
+        if (row && index >= 0) {
+          // message.block opens (or completes) a block, so it may extend the
+          // content list — unlike patch/delta. Pad with empty blocks rather
+          // than index-assign so a gap never leaves a sparse array behind.
+          while (row.content.length <= index) row.content.push({} as never);
+          row.content[index] = f.block as never;
+        }
         break;
       }
       case "message.block.patch": {

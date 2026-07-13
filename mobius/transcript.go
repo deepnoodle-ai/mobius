@@ -180,8 +180,10 @@ func (t *SessionTranscript) Apply(ev TranscriptStreamEvent) {
 		}
 		// message.block opens (or completes) a block, so it may extend the
 		// content slice — unlike patch/delta, which target an existing block.
+		// Pad with `{}` blocks (not zero values, which marshal as `null`) so
+		// later patch/delta frames can mutate them.
 		for len(row.Content) <= mbf.ContentIndex {
-			row.Content = append(row.Content, api.SessionContentBlock{})
+			row.Content = append(row.Content, emptyContentBlock())
 		}
 		row.Content[mbf.ContentIndex] = mbf.Block
 	case "message.block.patch":
@@ -818,6 +820,12 @@ func frameProgress(frame api.SessionTranscriptFrame) (value interface{}, present
 
 // mutateBlock applies fn to a content block as an open JSON map, preserving
 // unknown fields — the Go analogue of the reducer-style in-place mutation.
+func emptyContentBlock() api.SessionContentBlock {
+	var b api.SessionContentBlock
+	_ = b.UnmarshalJSON([]byte("{}"))
+	return b
+}
+
 func mutateBlock(block *api.SessionContentBlock, fn func(m map[string]interface{})) {
 	raw, err := block.MarshalJSON()
 	if err != nil {
@@ -826,6 +834,9 @@ func mutateBlock(block *api.SessionContentBlock, fn func(m map[string]interface{
 	var m map[string]interface{}
 	if err := json.Unmarshal(raw, &m); err != nil {
 		return
+	}
+	if m == nil {
+		m = map[string]interface{}{} // a `null` block (zero value) still mutates safely
 	}
 	fn(m)
 	updated, err := json.Marshal(m)

@@ -84,6 +84,22 @@ def test_transcript_upsert_block_delta_converge() -> None:
     assert t.message("m_a")["content"][0]["text"] == "hello world"
 
 
+def test_transcript_block_at_gap_index_pads_content() -> None:
+    t = SessionTranscript()
+    _apply(t, _upsert())
+    # Opening index 2 on empty content pads indexes 0 and 1 with empty blocks.
+    _apply(t, {"event_type": "message.block", "session_id": "s1", "message_id": "m_a", "content_index": 2, "block": {"type": "text", "text": "third"}})
+    content = t.message("m_a")["content"]
+    assert len(content) == 3
+    assert content[2]["text"] == "third"
+    # Deltas target the padded blocks, not a hole.
+    _apply(t, {"event_type": "message.delta", "session_id": "s1", "message_id": "m_a", "content_index": 0, "text": "pad"})
+    assert t.message("m_a")["content"][0]["text"] == "pad"
+    # A late message.block fills a padded index in place.
+    _apply(t, {"event_type": "message.block", "session_id": "s1", "message_id": "m_a", "content_index": 1, "block": {"type": "text", "text": "second"}})
+    assert t.message("m_a")["content"][1]["text"] == "second"
+
+
 def test_transcript_block_patch_merge_and_null_clear() -> None:
     t = SessionTranscript()
     _apply(t, _upsert(content=[{"type": "tool_use", "id": "toolu_1", "name": "fetch", "input": {}, "status": "pending"}]))

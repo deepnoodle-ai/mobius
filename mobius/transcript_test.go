@@ -58,6 +58,25 @@ func TestSessionTranscript_UpsertBlockDeltaConverge(t *testing.T) {
 	assert.Equal(t, blockMap(t, mustMessage(t, view, "m_a").Content[0])["text"], "hello world")
 }
 
+func TestSessionTranscript_BlockAtGapIndexPadsContent(t *testing.T) {
+	view := NewSessionTranscript()
+	applyJSON(t, view, "", upsertAssistantStreaming)
+	// Opening index 2 on empty content pads indexes 0 and 1 with empty blocks.
+	applyJSON(t, view, "", `{"event_type":"message.block","session_id":"s1","message_id":"m_a","content_index":2,"block":{"type":"text","text":"third"}}`)
+
+	content := mustMessage(t, view, "m_a").Content
+	assert.Equal(t, len(content), 3)
+	assert.Equal(t, blockMap(t, content[2])["text"], "third")
+
+	// Deltas target the padded blocks, not a hole.
+	applyJSON(t, view, "", `{"event_type":"message.delta","session_id":"s1","message_id":"m_a","content_index":0,"text":"pad"}`)
+	assert.Equal(t, blockMap(t, mustMessage(t, view, "m_a").Content[0])["text"], "pad")
+
+	// A late message.block fills a padded index in place.
+	applyJSON(t, view, "", `{"event_type":"message.block","session_id":"s1","message_id":"m_a","content_index":1,"block":{"type":"text","text":"second"}}`)
+	assert.Equal(t, blockMap(t, mustMessage(t, view, "m_a").Content[1])["text"], "second")
+}
+
 func TestSessionTranscript_BlockPatchMergeAndNullClear(t *testing.T) {
 	view := NewSessionTranscript()
 	applyJSON(t, view, "", `{"event_type":"message.upsert","id":"m_a","session_id":"s1","agent_id":"a1","role":"assistant","status":"streaming","turn_id":"t1","turn_index":1,"sequence":null,"entry_type":"message","content":[{"type":"tool_use","id":"toolu_1","name":"fetch","input":{},"status":"pending"}],"created_at":"2026-07-11T17:03:21Z"}`)

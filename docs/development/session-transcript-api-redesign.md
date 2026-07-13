@@ -202,7 +202,7 @@ turn.status                       # "completed"
 watch = client.watch_session_transcript(session_id)
 for t in watch:
     render(t.messages())          # full session view
-save_cursor(watch.cursor)
+save_cursor(watch.transcript.cursor)
 ```
 
 `SessionTranscript` (renamed class) keeps `apply(event)` /

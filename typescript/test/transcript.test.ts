@@ -84,6 +84,56 @@ test("transcript: upsert/block/delta/block-complete converge on a row", () => {
   );
 });
 
+test("transcript: block at gap index pads content (no sparse holes)", () => {
+  const t = new SessionTranscript();
+  apply(t, {
+    event_type: "message.upsert",
+    id: "m_a",
+    session_id: "s1",
+    role: "assistant",
+    status: "streaming",
+    turn_id: "t1",
+    turn_index: 1,
+    sequence: null,
+    content: [],
+    created_at: AT,
+  });
+  // Opening index 2 on empty content pads indexes 0 and 1 with empty blocks.
+  apply(t, {
+    event_type: "message.block",
+    session_id: "s1",
+    message_id: "m_a",
+    content_index: 2,
+    block: { type: "text", text: "third" },
+  });
+  const content = t.message("m_a")!.content;
+  assert.equal(content.length, 3);
+  assert.notEqual(content[0], undefined); // padded, not a sparse hole
+  assert.notEqual(content[1], undefined);
+  assert.equal((content[2] as { text: string }).text, "third");
+  // Deltas target the padded blocks, not a hole.
+  apply(t, {
+    event_type: "message.delta",
+    session_id: "s1",
+    message_id: "m_a",
+    content_index: 0,
+    text: "pad",
+  });
+  assert.equal((t.message("m_a")!.content[0] as { text: string }).text, "pad");
+  // A late message.block fills a padded index in place.
+  apply(t, {
+    event_type: "message.block",
+    session_id: "s1",
+    message_id: "m_a",
+    content_index: 1,
+    block: { type: "text", text: "second" },
+  });
+  assert.equal(
+    (t.message("m_a")!.content[1] as { text: string }).text,
+    "second",
+  );
+});
+
 test("transcript: block.patch merges tool status/progress; null clears", () => {
   const t = new SessionTranscript();
   apply(t, {
