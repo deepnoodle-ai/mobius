@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 
 ## [Unreleased]
 
+### Fixed
+
+- Turn transcript iterators now reconcile the durable snapshot before exposing
+  their terminal update, so final tool artifacts are present when iteration ends.
+
 ## [0.0.45] - 2026-07-13
 
 ### Added

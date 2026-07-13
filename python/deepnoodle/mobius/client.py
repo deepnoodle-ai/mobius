@@ -797,12 +797,13 @@ class TurnTranscript:
         turn.status  # "completed"
 
     Iteration yields after every state change and stops once this turn
-    reaches a terminal ``turn.upsert`` (already applied — ``status`` reflects
-    it), reconnecting through stream rotations and dropped connections along
-    the way; permanent stream errors raise. The full session stream is
-    consumed internally so the resume cursor stays valid when other turns
-    interleave; :meth:`messages` is scoped to this turn, and ``transcript``
-    exposes the whole session view.
+    reaches a terminal ``turn.upsert``, reconnecting through stream rotations
+    and dropped connections along the way. Before yielding that terminal
+    update it reconciles the incremental durable snapshot, so :meth:`messages`
+    includes the rows committed with completion; permanent stream or snapshot
+    errors raise. The full session stream is consumed internally so the resume
+    cursor stays valid when other turns interleave; :meth:`messages` is scoped
+    to this turn, and ``transcript`` exposes the whole session view.
     """
 
     def __init__(self, client: Client, ack: TurnAck, transcript: SessionTranscript) -> None:
@@ -896,6 +897,19 @@ class TurnTranscript:
             for update in self._client._watch_transcript_updates(
                 self.session_id, self.transcript, self.id, 1.0
             ):
+                turn = update.transcript.turn(self.id)
+                terminal = bool(turn) and is_terminal_turn_status(
+                    str(turn.get("status") or "")
+                )
+                if terminal:
+                    self._reconcile_snapshot(update.cursor)
+                    update = TranscriptUpdate(
+                        frame=update.frame,
+                        cursor=self.transcript.cursor,
+                        transcript=self.transcript,
+                        connection="ended",
+                        reconnect_count=update.reconnect_count,
+                    )
                 self._diagnostics = TranscriptDiagnostics(
                     status=self.status,
                     cursor=update.cursor,
@@ -906,6 +920,8 @@ class TurnTranscript:
                     connection=update.connection,
                 )
                 yield update
+                if terminal:
+                    return
         finally:
             self._diagnostics = TranscriptDiagnostics(
                 status=self.status,
@@ -931,13 +947,7 @@ class TurnTranscript:
 
     def _hydrate_snapshot(self) -> None:
         self._hydrate = False
-        opts = GetSessionTranscriptOptions()
-        while True:
-            snap = self._client.get_session_transcript(self.session_id, opts)
-            self.transcript.apply_snapshot(snap)
-            if not snap.has_more or not snap.next_page_token:
-                break
-            opts.page_token = snap.next_page_token
+        self._reconcile_snapshot()
         self._diagnostics = TranscriptDiagnostics(
             status=self.status,
             cursor=self.transcript.cursor,
@@ -947,6 +957,15 @@ class TurnTranscript:
             last_frame_at=None,
             connection="ended",
         )
+
+    def _reconcile_snapshot(self, cursor: str | None = None) -> None:
+        opts = GetSessionTranscriptOptions(cursor=cursor)
+        while True:
+            snap = self._client.get_session_transcript(self.session_id, opts)
+            self.transcript.apply_snapshot(snap)
+            if not snap.has_more or not snap.next_page_token:
+                break
+            opts = GetSessionTranscriptOptions(page_token=snap.next_page_token)
 
 
 class TranscriptWatcher:
