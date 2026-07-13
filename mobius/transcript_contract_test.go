@@ -21,6 +21,8 @@ type transcriptFrameContract struct {
 		Cursor                  string   `json:"cursor"`
 		MessageIDs              []string `json:"message_ids"`
 		RenderableIDs           []string `json:"renderable_ids"`
+		RenderableTurnID        string   `json:"renderable_turn_id"`
+		RenderableTurnIDs       []string `json:"renderable_turn_ids"`
 		NullContentID           string   `json:"null_content_id"`
 		ResolvedActionMessageID string   `json:"resolved_action_message_id"`
 		ResolvedActionName      string   `json:"resolved_action_name"`
@@ -29,6 +31,8 @@ type transcriptFrameContract struct {
 		MetaResolvedActionName  string   `json:"meta_resolved_action_name"`
 		HelpWireName            string   `json:"help_wire_name"`
 		DedupedToolBlockCount   int      `json:"deduped_tool_block_count"`
+		ToolResultTextMessageID string   `json:"tool_result_text_message_id"`
+		ToolResultText          string   `json:"tool_result_text"`
 		FailedTurnID            string   `json:"failed_turn_id"`
 		FailedTurnErrorType     string   `json:"failed_turn_error_type"`
 		FailedTurnErrorMessage  string   `json:"failed_turn_error_message"`
@@ -49,6 +53,7 @@ func TestTranscriptFrameContract(t *testing.T) {
 	assert.Equal(t, transcriptMessageIDs(view.Messages()), fixture.Expected.MessageIDs)
 	visible := view.RenderableMessages()
 	assert.Equal(t, transcriptMessageIDs(visible), fixture.Expected.RenderableIDs)
+	assert.Equal(t, transcriptMessageIDs(view.RenderableMessagesForTurn(fixture.Expected.RenderableTurnID)), fixture.Expected.RenderableTurnIDs)
 	assert.NotNil(t, mustMessage(t, view, fixture.Expected.NullContentID).Content)
 
 	resolvedMessage := mustMessage(t, view, fixture.Expected.ResolvedActionMessageID)
@@ -76,6 +81,11 @@ func TestTranscriptFrameContract(t *testing.T) {
 	}
 	assert.NotNil(t, final)
 	assert.Equal(t, len(final.Content), fixture.Expected.DedupedToolBlockCount)
+
+	resultMessage := mustMessage(t, view, fixture.Expected.ToolResultTextMessageID)
+	result, err := resultMessage.Content[0].AsSessionToolResultBlock()
+	assert.NoError(t, err)
+	assert.Equal(t, ToolResultText(result), fixture.Expected.ToolResultText)
 
 	failed, ok := view.Turn(fixture.Expected.FailedTurnID)
 	assert.True(t, ok)

@@ -251,6 +251,143 @@
       }
     },
     {
+      "frame": {
+        "event_type": "turn.upsert",
+        "id": "t_terminal_empty",
+        "session_id": "s1",
+        "agent_id": "a1",
+        "attempt": 1,
+        "status": "completed",
+        "created_at": "2026-07-13T12:00:06Z",
+        "updated_at": "2026-07-13T12:00:06Z"
+      }
+    },
+    {
+      "frame": {
+        "event_type": "message.upsert",
+        "id": "terminal_empty_1",
+        "session_id": "s1",
+        "agent_id": "a1",
+        "role": "assistant",
+        "status": "streaming",
+        "turn_id": "t_terminal_empty",
+        "turn_index": 1,
+        "sequence": null,
+        "entry_type": "message",
+        "content": [],
+        "created_at": "2026-07-13T12:00:06Z"
+      }
+    },
+    {
+      "frame": {
+        "event_type": "message.upsert",
+        "id": "terminal_empty_2",
+        "session_id": "s1",
+        "agent_id": "a1",
+        "role": "assistant",
+        "status": "streaming",
+        "turn_id": "t_terminal_empty",
+        "turn_index": 2,
+        "sequence": null,
+        "entry_type": "message",
+        "content": [],
+        "created_at": "2026-07-13T12:00:07Z"
+      }
+    },
+    {
+      "frame": {
+        "event_type": "turn.upsert",
+        "id": "t_mixed",
+        "session_id": "s1",
+        "agent_id": "a1",
+        "attempt": 1,
+        "status": "running",
+        "created_at": "2026-07-13T12:00:08Z",
+        "updated_at": "2026-07-13T12:00:08Z"
+      }
+    },
+    {
+      "frame": {
+        "event_type": "message.upsert",
+        "id": "m_legacy_preview",
+        "session_id": "s1",
+        "agent_id": "a1",
+        "role": "assistant",
+        "status": "streaming",
+        "turn_id": "t_mixed",
+        "sequence": null,
+        "entry_type": "message",
+        "content": [
+          {
+            "type": "text",
+            "text": "partial legacy row"
+          }
+        ],
+        "metadata": {
+          "response_message_index": 1
+        },
+        "created_at": "2026-07-13T12:00:08Z"
+      }
+    },
+    {
+      "frame": {
+        "event_type": "message.upsert",
+        "id": "m_modern_final",
+        "session_id": "s1",
+        "agent_id": "a1",
+        "role": "assistant",
+        "status": "final",
+        "turn_id": "t_mixed",
+        "turn_index": 1,
+        "sequence": 5,
+        "entry_type": "message",
+        "content": [
+          {
+            "type": "text",
+            "text": "final modern row"
+          }
+        ],
+        "created_at": "2026-07-13T12:00:09Z"
+      }
+    },
+    {
+      "frame": {
+        "event_type": "message.upsert",
+        "id": "m_tool_result_text",
+        "session_id": "s1",
+        "agent_id": "a1",
+        "role": "user",
+        "status": "final",
+        "turn_id": "t_shapes",
+        "turn_index": 2,
+        "sequence": 4,
+        "entry_type": "message",
+        "content": [
+          {
+            "type": "tool_result",
+            "tool_use_id": "call_text",
+            "content": [
+              {
+                "type": "text",
+                "text": "first"
+              },
+              {
+                "type": "image",
+                "source": {
+                  "url": "https://example.invalid/result.png"
+                }
+              },
+              {
+                "type": "text",
+                "text": "second"
+              }
+            ]
+          }
+        ],
+        "created_at": "2026-07-13T12:00:10Z"
+      }
+    },
+    {
       "id": "12.4",
       "frame": {
         "event_type": "turn.upsert",
@@ -272,17 +409,31 @@
       "m_null",
       "m_final",
       "m_tool_shapes",
+      "m_tool_result_text",
+      "m_modern_final",
       "empty_1",
       "empty_2",
       "m_tool_live",
-      "m_preview"
+      "m_preview",
+      "terminal_empty_1",
+      "terminal_empty_2",
+      "m_legacy_preview"
     ],
     "renderable_ids": [
       "m_null",
       "m_final",
       "m_tool_shapes",
+      "m_tool_result_text",
+      "m_modern_final",
       "empty_2",
-      "m_tool_live"
+      "m_tool_live",
+      "terminal_empty_1",
+      "terminal_empty_2"
+    ],
+    "renderable_turn_id": "t_terminal_empty",
+    "renderable_turn_ids": [
+      "terminal_empty_1",
+      "terminal_empty_2"
     ],
     "null_content_id": "m_null",
     "resolved_action_message_id": "m_tool_live",
@@ -292,6 +443,8 @@
     "meta_resolved_action_name": "github.issues.get",
     "help_wire_name": "github",
     "deduped_tool_block_count": 3,
+    "tool_result_text_message_id": "m_tool_result_text",
+    "tool_result_text": "firstsecond",
     "failed_turn_id": "t_failed",
     "failed_turn_error_type": "invalid_conversation_state",
     "failed_turn_error_message": "history ended with assistant content"

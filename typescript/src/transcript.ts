@@ -77,17 +77,12 @@ export function toolResultText(block: SessionToolResultBlock): string {
   if (typeof content === "string") return content;
   if (!Array.isArray(content)) return "";
   return content
-    .map((item) => {
-      if (isRecord(item) && typeof item.text === "string") return item.text;
-      if (typeof item === "string") return item;
-      try {
-        return JSON.stringify(item);
-      } catch {
-        return String(item);
-      }
-    })
-    .filter(Boolean)
-    .join("\n");
+    .map((item) =>
+      isRecord(item) && item.type === "text" && typeof item.text === "string"
+        ? item.text
+        : "",
+    )
+    .join("");
 }
 
 /**
@@ -228,7 +223,8 @@ export class SessionTranscript {
         row.status !== "streaming" ||
         row.role !== "assistant" ||
         row.content.length !== 0 ||
-        !row.turn_id
+        !row.turn_id ||
+        !this.#turnIsActive(row.turn_id)
       ) {
         continue;
       }
@@ -243,9 +239,15 @@ export class SessionTranscript {
         row.role !== "assistant" ||
         row.content.length !== 0 ||
         !row.turn_id ||
+        !this.#turnIsActive(row.turn_id) ||
         newestEmpty.get(row.turn_id)?.id === row.id,
     );
     return dedupeToolBlocks(visible);
+  }
+
+  /** Renderable rows belonging to one turn. */
+  renderableMessagesForTurn(turnId: string): SessionTranscriptMessage[] {
+    return this.renderableMessages().filter((row) => row.turn_id === turnId);
   }
 
   /**
@@ -364,6 +366,11 @@ export class SessionTranscript {
       if (row.turn_id === turnId && row.status === "streaming")
         this.#rows.delete(id);
     }
+  }
+
+  #turnIsActive(turnId: string): boolean {
+    const turn = this.#turns.get(turnId);
+    return turn !== undefined && !isTerminalTurnStatus(turn.status);
   }
 }
 

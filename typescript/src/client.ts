@@ -356,7 +356,7 @@ export interface TranscriptUpdate {
   reconnectCount: number;
 }
 
-export interface TurnDiagnostics {
+export interface TranscriptDiagnostics {
   status: string;
   cursor: string | null;
   ready: boolean;
@@ -365,6 +365,9 @@ export interface TurnDiagnostics {
   lastFrameAt?: string;
   connection: TranscriptConnectionState | "idle";
 }
+
+/** @deprecated Use {@link TranscriptDiagnostics}. */
+export type TurnDiagnostics = TranscriptDiagnostics;
 
 export interface ListSessionsOptions {
   agentId?: string;
@@ -1059,7 +1062,7 @@ export class TurnTranscript implements AsyncIterable<TurnTranscript> {
   // completed turn): there is nothing to stream, so iteration fetches the
   // snapshot (all pages) instead, making messages() complete either way.
   #hydrate: boolean;
-  #diagnostics: TurnDiagnostics = {
+  #diagnostics: TranscriptDiagnostics = {
     status: "",
     cursor: null,
     ready: false,
@@ -1116,13 +1119,11 @@ export class TurnTranscript implements AsyncIterable<TurnTranscript> {
 
   /** This turn's policy-light rendering projection. */
   renderableMessages(): SessionTranscriptMessage[] {
-    return this.transcript
-      .renderableMessages()
-      .filter((message) => message.turn_id === this.id);
+    return this.transcript.renderableMessagesForTurn(this.id);
   }
 
   /** Last observed transport and turn facts; no backend state is inferred. */
-  diagnostics(): TurnDiagnostics {
+  diagnostics(): TranscriptDiagnostics {
     return { ...this.#diagnostics, status: this.status, cursor: this.transcript.cursor, ready: this.transcript.ready };
   }
 

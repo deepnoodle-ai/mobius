@@ -18,6 +18,7 @@ import type {
   SessionTranscriptFrame,
   SessionTranscriptSnapshot,
 } from "../src/api/index.js";
+import type { TranscriptDiagnostics } from "../src/index.js";
 
 const AT = "2026-07-11T17:03:21Z";
 
@@ -341,6 +342,27 @@ test("transcript: renderable projection and content/tool helpers", () => {
     toolResultText({ content: [{ type: "text", text: "blocks" }] } as never),
     "blocks",
   );
+  assert.equal(
+    toolResultText({
+      content: [
+        { type: "text", text: "first" },
+        { type: "image", source: {} },
+        { type: "text", text: "second" },
+      ],
+    } as never),
+    "firstsecond",
+  );
+});
+
+test("transcript: exports shared diagnostics naming", () => {
+  const diagnostics: TranscriptDiagnostics = {
+    status: "running",
+    cursor: null,
+    ready: true,
+    reconnectCount: 0,
+    connection: "open",
+  };
+  assert.equal(diagnostics.status, "running");
 });
 
 test("transcript: resolved_action patches enrich live tool blocks", () => {

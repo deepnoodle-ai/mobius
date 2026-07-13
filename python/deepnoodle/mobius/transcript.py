@@ -427,7 +427,7 @@ def _render_logical_key(message: dict[str, Any]) -> str:
         metadata = message.get("metadata")
         if isinstance(metadata, dict) and metadata.get("response_message_index") is not None:
             return (
-                f"legacy:{turn_id}:{message.get('role')}:"
+                f"logical:{turn_id}:{message.get('role')}:"
                 f"{metadata['response_message_index']}"
             )
     return f"id:{message.get('id')}"

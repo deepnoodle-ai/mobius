@@ -1204,7 +1204,7 @@ func renderLogicalKey(message *api.SessionTranscriptMessage) string {
 		}
 		if message.Metadata != nil {
 			if index, ok := (*message.Metadata)["response_message_index"]; ok {
-				return fmt.Sprintf("legacy:%s:%s:%v", *message.TurnId, message.Role, index)
+				return fmt.Sprintf("logical:%s:%s:%v", *message.TurnId, message.Role, index)
 			}
 		}
 	}

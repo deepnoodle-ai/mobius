@@ -20,6 +20,7 @@ import type {
 import {
   SessionTranscript,
   normalizeToolUse,
+  toolResultText,
 } from "../src/transcript.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -82,6 +83,8 @@ test("contract: transcript frame sequence folds identically", () => {
       cursor: string;
       message_ids: string[];
       renderable_ids: string[];
+      renderable_turn_id: string;
+      renderable_turn_ids: string[];
       null_content_id: string;
       resolved_action_message_id: string;
       resolved_action_name: string;
@@ -90,6 +93,8 @@ test("contract: transcript frame sequence folds identically", () => {
       meta_resolved_action_name: string;
       help_wire_name: string;
       deduped_tool_block_count: number;
+      tool_result_text_message_id: string;
+      tool_result_text: string;
       failed_turn_id: string;
       failed_turn_error_type: string;
       failed_turn_error_message: string;
@@ -107,6 +112,12 @@ test("contract: transcript frame sequence folds identically", () => {
   assert.deepEqual(
     visible.map((message) => message.id),
     fixture.expected.renderable_ids,
+  );
+  assert.deepEqual(
+    transcript
+      .renderableMessagesForTurn(fixture.expected.renderable_turn_id)
+      .map((message) => message.id),
+    fixture.expected.renderable_turn_ids,
   );
   assert.deepEqual(
     transcript.message(fixture.expected.null_content_id)?.content,
@@ -138,6 +149,13 @@ test("contract: transcript frame sequence folds identically", () => {
   assert.equal(
     visible.find((message) => message.id === "m_final")?.content.length,
     fixture.expected.deduped_tool_block_count,
+  );
+  const resultMessage = transcript.message(
+    fixture.expected.tool_result_text_message_id,
+  )!;
+  assert.equal(
+    toolResultText(resultMessage.content[0] as never),
+    fixture.expected.tool_result_text,
   );
   const failed = transcript.turn(fixture.expected.failed_turn_id)!;
   assert.equal(failed.error_type, fixture.expected.failed_turn_error_type);

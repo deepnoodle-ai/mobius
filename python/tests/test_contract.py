@@ -24,7 +24,12 @@ from deepnoodle.mobius._api.models import (
     WorkerSocketRegisterFrame,
     WorkerSocketRegisteredFrame,
 )
-from deepnoodle.mobius import SessionTranscript, TranscriptStreamEvent, normalize_tool_use
+from deepnoodle.mobius import (
+    SessionTranscript,
+    TranscriptStreamEvent,
+    normalize_tool_use,
+    tool_result_text,
+)
 
 from .conftest import canonicalize, load_fixture, load_manifest
 
@@ -93,6 +98,10 @@ def test_transcript_frame_contract() -> None:
     assert [row["id"] for row in transcript.messages()] == expected["message_ids"]
     visible = transcript.renderable_messages()
     assert [row["id"] for row in visible] == expected["renderable_ids"]
+    assert [
+        row["id"]
+        for row in transcript.renderable_messages_for_turn(expected["renderable_turn_id"])
+    ] == expected["renderable_turn_ids"]
     assert transcript.message(expected["null_content_id"])["content"] == []
 
     resolved_message = transcript.message(expected["resolved_action_message_id"])
@@ -108,6 +117,8 @@ def test_transcript_frame_contract() -> None:
     assert help_call.resolved_action is None
     final = next(row for row in visible if row["id"] == "m_final")
     assert len(final["content"]) == expected["deduped_tool_block_count"]
+    result_message = transcript.message(expected["tool_result_text_message_id"])
+    assert tool_result_text(result_message["content"][0]) == expected["tool_result_text"]
 
     failed = transcript.turn(expected["failed_turn_id"])
     assert failed["error_type"] == expected["failed_turn_error_type"]

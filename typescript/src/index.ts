@@ -33,6 +33,7 @@ export type {
   StartRunOptions,
   StreamSessionTranscriptOptions,
   TranscriptConnectionState,
+  TranscriptDiagnostics,
   TranscriptUpdate,
   TurnDiagnostics,
   UpdateLoopOptions,
