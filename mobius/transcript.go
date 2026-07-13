@@ -350,7 +350,8 @@ type TurnTranscript struct {
 	deduped       bool
 	// hydrate is set when the acked turn was already terminal (a deduped
 	// resume of a completed turn): there is nothing to stream, so the first
-	// Next fetches one snapshot instead, making Messages complete either way.
+	// Next fetches the snapshot (all pages) instead, making Messages complete
+	// either way.
 	hydrate bool
 }
 
@@ -385,13 +386,20 @@ func (t *TurnTranscript) Next() bool {
 	if t.hydrate {
 		t.hydrate = false
 		t.stream.done = true
-		snap, err := t.stream.client.GetSessionTranscript(t.stream.ctx, t.sessionID, nil)
-		if err != nil {
-			t.stream.err = err
-			return false
+		// The snapshot may span pages; fold them all so Messages is complete.
+		opts := &GetSessionTranscriptOptions{}
+		for {
+			snap, err := t.stream.client.GetSessionTranscript(t.stream.ctx, t.sessionID, opts)
+			if err != nil {
+				t.stream.err = err
+				return false
+			}
+			t.stream.view.ApplySnapshot(snap)
+			if !snap.HasMore || snap.NextPageToken == nil || *snap.NextPageToken == "" {
+				return true
+			}
+			opts.PageToken = *snap.NextPageToken
 		}
-		t.stream.view.ApplySnapshot(snap)
-		return true
 	}
 	return t.stream.next()
 }

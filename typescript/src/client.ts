@@ -727,8 +727,8 @@ export class TurnTranscript implements AsyncIterable<TurnTranscript> {
   readonly #client: Client;
   readonly #signal?: AbortSignal;
   // Set when the acked turn was already terminal (a deduped resume of a
-  // completed turn): there is nothing to stream, so iteration fetches one
-  // snapshot instead, making messages() complete either way.
+  // completed turn): there is nothing to stream, so iteration fetches the
+  // snapshot (all pages) instead, making messages() complete either way.
   #hydrate: boolean;
 
   /** @internal Constructed by {@link Client.invokeAgent}. */
@@ -764,10 +764,16 @@ export class TurnTranscript implements AsyncIterable<TurnTranscript> {
   async *[Symbol.asyncIterator](): AsyncIterator<TurnTranscript> {
     if (this.#hydrate) {
       this.#hydrate = false;
-      const snap = await this.#client.getSessionTranscript(this.sessionId, {
-        signal: this.#signal,
-      });
-      this.transcript.applySnapshot(snap);
+      // The snapshot may span pages; fold them all so messages() is complete.
+      let pageToken: string | undefined;
+      do {
+        const snap = await this.#client.getSessionTranscript(this.sessionId, {
+          pageToken,
+          signal: this.#signal,
+        });
+        this.transcript.applySnapshot(snap);
+        pageToken = snap.has_more ? snap.next_page_token : undefined;
+      } while (pageToken);
       yield this;
       return;
     }

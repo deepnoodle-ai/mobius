@@ -584,7 +584,8 @@ class TurnTranscript:
         self.transcript: SessionTranscript = transcript
         # Set when the acked turn was already terminal (a deduped resume of a
         # completed turn): there is nothing to stream, so iteration fetches
-        # one snapshot instead, making messages() complete either way.
+        # the snapshot (all pages) instead, making messages() complete either
+        # way.
         self._hydrate = is_terminal_turn_status(str(ack.turn.status))
 
     @property
@@ -602,8 +603,14 @@ class TurnTranscript:
     def __iter__(self) -> Iterator[TurnTranscript]:
         if self._hydrate:
             self._hydrate = False
-            snap = self._client.get_session_transcript(self.session_id)
-            self.transcript.apply_snapshot(snap)
+            # The snapshot may span pages; fold them all so messages() is complete.
+            opts = GetSessionTranscriptOptions()
+            while True:
+                snap = self._client.get_session_transcript(self.session_id, opts)
+                self.transcript.apply_snapshot(snap)
+                if not snap.has_more or not snap.next_page_token:
+                    break
+                opts.page_token = snap.next_page_token
             yield self
             return
         # Already terminal (a completed prior iteration): nothing left to stream.

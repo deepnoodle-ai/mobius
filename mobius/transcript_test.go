@@ -373,7 +373,13 @@ func TestInvokeAgent_TerminalAckHydratesFromSnapshot(t *testing.T) {
 			_, _ = io.WriteString(w, invokeAckTerminal("s1", "t1"))
 		case r.Method == http.MethodGet && r.URL.Path == "/v1/projects/test-project/sessions/s1/transcript":
 			w.Header().Set("Content-Type", "application/json")
-			_, _ = io.WriteString(w, `{"messages":[{"id":"m_user","session_id":"s1","agent_id":"a1","role":"user","status":"final","turn_id":"t1","turn_index":0,"sequence":42,"entry_type":"message","content":[],"created_at":"2026-07-11T17:03:21Z"},{"id":"m_a","session_id":"s1","agent_id":"a1","role":"assistant","status":"final","turn_id":"t1","turn_index":1,"sequence":43,"entry_type":"message","content":[{"type":"text","text":"done"}],"created_at":"2026-07-11T17:03:21Z"}],"turns":[{"id":"t1","session_id":"s1","agent_id":"a1","attempt":1,"status":"completed","created_at":"2026-07-11T17:03:20Z","updated_at":"2026-07-11T17:03:40Z"}],"has_more":false,"resume_cursor":"43.9"}`)
+			// Two pages: hydration must follow next_page_token until has_more
+			// is false so Messages includes the older page.
+			if r.URL.Query().Get("page_token") == "pt_2" {
+				_, _ = io.WriteString(w, `{"messages":[{"id":"m_a","session_id":"s1","agent_id":"a1","role":"assistant","status":"final","turn_id":"t1","turn_index":1,"sequence":43,"entry_type":"message","content":[{"type":"text","text":"done"}],"created_at":"2026-07-11T17:03:21Z"}],"turns":[{"id":"t1","session_id":"s1","agent_id":"a1","attempt":1,"status":"completed","created_at":"2026-07-11T17:03:20Z","updated_at":"2026-07-11T17:03:40Z"}],"has_more":false,"resume_cursor":"43.9"}`)
+				return
+			}
+			_, _ = io.WriteString(w, `{"messages":[{"id":"m_user","session_id":"s1","agent_id":"a1","role":"user","status":"final","turn_id":"t1","turn_index":0,"sequence":42,"entry_type":"message","content":[],"created_at":"2026-07-11T17:03:21Z"}],"turns":[],"has_more":true,"next_page_token":"pt_2","resume_cursor":"42.1"}`)
 		default:
 			atomic.AddInt32(&streamCalls, 1)
 			http.NotFound(w, r)

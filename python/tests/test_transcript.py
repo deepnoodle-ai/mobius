@@ -338,16 +338,30 @@ def test_invoke_agent_hydrates_terminal_turn_from_snapshot() -> None:
             ack["turn"]["status"] = "completed"
             return httpx.Response(202, json=ack)
         if request.url.path.endswith("/sessions/s1/transcript"):
+            # Two pages: hydration must follow next_page_token until has_more
+            # is false so messages() includes the older page.
+            if request.url.params.get("page_token") == "pt_2":
+                return httpx.Response(
+                    200,
+                    json={
+                        "messages": [
+                            {"id": "m_a", "session_id": "s1", "agent_id": "a1", "role": "assistant", "status": "final", "turn_id": "t1", "turn_index": 1, "sequence": 43, "entry_type": "message", "content": [{"type": "text", "text": "done"}], "created_at": AT},
+                        ],
+                        "turns": [{"id": "t1", "session_id": "s1", "agent_id": "a1", "attempt": 1, "status": "completed", "created_at": AT, "updated_at": AT}],
+                        "has_more": False,
+                        "resume_cursor": "43.9",
+                    },
+                )
             return httpx.Response(
                 200,
                 json={
                     "messages": [
                         {"id": "m_user", "session_id": "s1", "agent_id": "a1", "role": "user", "status": "final", "turn_id": "t1", "turn_index": 0, "sequence": 42, "entry_type": "message", "content": [], "created_at": AT},
-                        {"id": "m_a", "session_id": "s1", "agent_id": "a1", "role": "assistant", "status": "final", "turn_id": "t1", "turn_index": 1, "sequence": 43, "entry_type": "message", "content": [{"type": "text", "text": "done"}], "created_at": AT},
                     ],
-                    "turns": [{"id": "t1", "session_id": "s1", "agent_id": "a1", "attempt": 1, "status": "completed", "created_at": AT, "updated_at": AT}],
-                    "has_more": False,
-                    "resume_cursor": "43.9",
+                    "turns": [],
+                    "has_more": True,
+                    "next_page_token": "pt_2",
+                    "resume_cursor": "42.1",
                 },
             )
         stream_calls += 1

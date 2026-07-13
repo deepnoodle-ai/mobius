@@ -574,39 +574,51 @@ test("client: invokeAgent hydrates an already-terminal turn from the snapshot", 
       });
     }
     if (url.pathname.endsWith("/transcript")) {
-      const snap: SessionTranscriptSnapshot = {
-        messages: [
-          {
-            id: "m_user",
-            session_id: "s1",
-            agent_id: "a1",
-            role: "user",
-            content: [],
-            entry_type: "message",
-            status: "final",
-            turn_index: 0,
-            sequence: 42,
-            turn_id: "t1",
-            created_at: AT,
-          },
-          {
-            id: "m_a",
-            session_id: "s1",
-            agent_id: "a1",
-            role: "assistant",
-            content: [{ type: "text", text: "done" }],
-            entry_type: "message",
-            status: "final",
-            turn_index: 1,
-            sequence: 43,
-            turn_id: "t1",
-            created_at: AT,
-          },
-        ],
-        turns: [],
-        has_more: false,
-        resume_cursor: "43.9",
-      };
+      // Two pages: hydration must follow next_page_token until has_more is
+      // false so messages() includes the older page.
+      const snap: SessionTranscriptSnapshot =
+        url.searchParams.get("page_token") === "pt_2"
+          ? {
+              messages: [
+                {
+                  id: "m_a",
+                  session_id: "s1",
+                  agent_id: "a1",
+                  role: "assistant",
+                  content: [{ type: "text", text: "done" }],
+                  entry_type: "message",
+                  status: "final",
+                  turn_index: 1,
+                  sequence: 43,
+                  turn_id: "t1",
+                  created_at: AT,
+                },
+              ],
+              turns: [],
+              has_more: false,
+              resume_cursor: "43.9",
+            }
+          : {
+              messages: [
+                {
+                  id: "m_user",
+                  session_id: "s1",
+                  agent_id: "a1",
+                  role: "user",
+                  content: [],
+                  entry_type: "message",
+                  status: "final",
+                  turn_index: 0,
+                  sequence: 42,
+                  turn_id: "t1",
+                  created_at: AT,
+                },
+              ],
+              turns: [],
+              has_more: true,
+              next_page_token: "pt_2",
+              resume_cursor: "42.1",
+            };
       return new Response(JSON.stringify(snap), {
         status: 200,
         headers: { "Content-Type": "application/json" },

@@ -16,9 +16,12 @@ the v1 stream cursor for raw-API interop), and the view gained a
 `Message(id)` accessor alongside `Turn(id)`. No deprecated
 `SessionTranscriptReducer` alias was kept — clean break at v0.
 
-No wire changes. The session-stream v2 protocol, the snapshot endpoint, and
-every fixture in `internal/testdata/contract/` are untouched. This is a
-repackaging of the client-side helpers only.
+No wire changes. The session-stream v2 protocol, the snapshot endpoint's
+behavior, and every fixture in `internal/testdata/contract/` are unchanged.
+The one spec edit is documentation: the `getSessionTranscript` description
+in `openapi.yaml` named the old reducer, so it (and the regenerated
+TypeScript doc comment) now says `SessionTranscript`. This is a repackaging
+of the client-side helpers only.
 
 ## Problem
 
