@@ -3,6 +3,7 @@ package mobius
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -92,6 +93,61 @@ func TestSessionTranscript_BlockPatchMergeAndNullClear(t *testing.T) {
 	assert.Equal(t, block["status"], "ok")
 	_, hasProgress := block["progress"]
 	assert.False(t, hasProgress)
+}
+
+func TestSessionTranscript_NormalizesNullContentAtEveryIngress(t *testing.T) {
+	view := NewSessionTranscript()
+	applyJSON(t, view, "", `{"event_type":"message.upsert","id":"m_apply","session_id":"s1","agent_id":"a1","role":"assistant","status":"streaming","turn_id":"t1","turn_index":1,"sequence":null,"entry_type":"message","content":null,"created_at":"2026-07-11T17:03:21Z"}`)
+	assert.NotNil(t, mustMessage(t, view, "m_apply").Content)
+	assert.Equal(t, len(mustMessage(t, view, "m_apply").Content), 0)
+
+	var snap api.SessionTranscriptSnapshot
+	assert.NoError(t, json.Unmarshal([]byte(`{"messages":[{"id":"m_snapshot","session_id":"s1","agent_id":"a1","role":"assistant","status":"streaming","turn_id":"t1","turn_index":2,"sequence":null,"entry_type":"message","content":null,"created_at":"2026-07-11T17:03:21Z"}],"turns":[],"has_more":true,"resume_cursor":"1.1"}`), &snap))
+	view.ApplySnapshot(&snap)
+	assert.NotNil(t, mustMessage(t, view, "m_snapshot").Content)
+
+	var ack api.TurnAck
+	assert.NoError(t, json.Unmarshal([]byte(invokeAckWithCursor("s1", "t1", 42)), &ack))
+	ack.UserMessage.Content = nil
+	view.Seed(&ack)
+	assert.NotNil(t, mustMessage(t, view, "m_user").Content)
+}
+
+func TestSessionTranscript_RenderableMessagesAndContentHelpers(t *testing.T) {
+	view := NewSessionTranscript()
+	applyJSON(t, view, "", `{"event_type":"turn.upsert","id":"t1","session_id":"s1","agent_id":"a1","attempt":1,"status":"running","created_at":"2026-07-11T17:03:20Z","updated_at":"2026-07-11T17:03:20Z"}`)
+	applyJSON(t, view, "", `{"event_type":"message.upsert","id":"empty_1","session_id":"s1","agent_id":"a1","role":"assistant","status":"streaming","turn_id":"t1","turn_index":1,"sequence":null,"entry_type":"message","content":[],"created_at":"2026-07-11T17:03:21Z"}`)
+	applyJSON(t, view, "", `{"event_type":"message.upsert","id":"empty_2","session_id":"s1","agent_id":"a1","role":"assistant","status":"streaming","turn_id":"t1","turn_index":2,"sequence":null,"entry_type":"message","content":[],"created_at":"2026-07-11T17:03:21Z"}`)
+	applyJSON(t, view, "", `{"event_type":"message.upsert","id":"preview","session_id":"s1","agent_id":"a1","role":"assistant","status":"streaming","turn_id":"t1","turn_index":3,"sequence":null,"entry_type":"message","content":[{"type":"tool_use","id":"call_1","name":"catalog","input":{"command":"check","args":{"domain":"x.test"}}}],"created_at":"2026-07-11T17:03:21Z"}`)
+	applyJSON(t, view, "", `{"event_type":"message.upsert","id":"final","session_id":"s1","agent_id":"a1","role":"assistant","status":"final","turn_id":"t1","turn_index":3,"sequence":4,"entry_type":"message","content":[{"type":"tool_use","id":"call_1","name":"catalog","input":{"command":"check","args":{"domain":"x.test"}},"resolved_action":{"name":"naming.domain.check","input":{"domain":"x.test"}}},{"type":"text","text":"done"}],"created_at":"2026-07-11T17:03:21Z"}`)
+
+	visible := view.RenderableMessages()
+	assert.Equal(t, len(visible), 2)
+	assert.Equal(t, visible[0].Id, "final")
+	assert.Equal(t, visible[1].Id, "empty_2")
+	tool, err := visible[0].Content[0].AsSessionToolUseBlock()
+	assert.NoError(t, err)
+	normalized := NormalizeToolUse(tool)
+	assert.Equal(t, normalized.WireName, "catalog")
+	assert.Equal(t, normalized.ResolvedAction.Name, "naming.domain.check")
+	assert.Equal(t, normalized.WireInput["command"], "check")
+	assert.Equal(t, TextOf(visible[0]), "done")
+
+	var stringResult api.SessionToolResultBlock
+	assert.NoError(t, json.Unmarshal([]byte(`{"type":"tool_result","tool_use_id":"call_1","content":"plain"}`), &stringResult))
+	assert.Equal(t, ToolResultText(stringResult), "plain")
+	var blockResult api.SessionToolResultBlock
+	assert.NoError(t, json.Unmarshal([]byte(`{"type":"tool_result","tool_use_id":"call_1","content":[{"type":"text","text":"blocks"}]}`), &blockResult))
+	assert.Equal(t, ToolResultText(blockResult), "blocks")
+}
+
+func TestSessionTranscript_ResolvedActionPatchEnrichesLiveBlock(t *testing.T) {
+	view := NewSessionTranscript()
+	applyJSON(t, view, "", `{"event_type":"message.upsert","id":"m_tool","session_id":"s1","agent_id":"a1","role":"assistant","status":"streaming","turn_id":"t1","turn_index":1,"sequence":null,"entry_type":"message","content":[{"type":"tool_use","id":"call_1","name":"wire","input":{}}],"created_at":"2026-07-11T17:03:21Z"}`)
+	applyJSON(t, view, "", `{"event_type":"message.block.patch","session_id":"s1","message_id":"m_tool","content_index":0,"resolved_action":{"name":"naming.domain.check","input":{"domain":"x.test"}}}`)
+	block := blockMap(t, mustMessage(t, view, "m_tool").Content[0])
+	resolved := block["resolved_action"].(map[string]interface{})
+	assert.Equal(t, resolved["name"], "naming.domain.check")
 }
 
 func TestSessionTranscript_TerminalTurnPrunesStreamingRows(t *testing.T) {
@@ -258,8 +314,11 @@ func TestWatchSessionTranscript_SurfacesPermanentError(t *testing.T) {
 		steps++
 	}
 
-	assert.Error(t, watch.Err())                        // permanent status surfaced to the caller
-	assert.ErrorContains(t, watch.Err(), "404")         // carries the status
+	assert.Error(t, watch.Err())                // permanent status surfaced to the caller
+	assert.ErrorContains(t, watch.Err(), "404") // carries the status
+	var apiErr *APIError
+	assert.True(t, errors.As(watch.Err(), &apiErr))
+	assert.Equal(t, apiErr.Code, "not_found")
 	assert.Equal(t, steps, 0)                           // no state changes on a failed open
 	assert.Equal(t, atomic.LoadInt32(&calls), int32(1)) // no reconnect on a permanent status
 }

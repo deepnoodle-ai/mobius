@@ -71,6 +71,18 @@
       "schema": "WorkerSocketJobCancelFrame",
       "kind": "websocket_frame",
       "endpoint": "WS /v1/projects/{project}/workers/socket"
+    },
+    {
+      "file": "transcript_frames.json",
+      "schema": "SessionTranscriptFrameSequence",
+      "kind": "transcript_frames",
+      "endpoint": "GET /v1/projects/{project}/sessions/{session}/transcript/stream"
+    },
+    {
+      "file": "transcript_snapshot.json",
+      "schema": "SessionTranscriptSnapshotPages",
+      "kind": "transcript_snapshot",
+      "endpoint": "GET /v1/projects/{project}/sessions/{session}/transcript"
     }
   ]
 }

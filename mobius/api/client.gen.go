@@ -5030,7 +5030,7 @@ type EnvironmentStatus string
 type ErrorResponse struct {
 	// Error Error detail.
 	Error struct {
-		// Code Stable, machine-readable error code in lower_snake_case. The cross-cutting codes clients can rely on across endpoints are: `bad_request` (malformed input / failed validation), `unauthorized`, `forbidden`, `not_found`, `conflict` / `already_exists`, `rate_limit_exceeded`, and `service_unavailable`. Endpoint-specific codes (e.g. `loop_paused`, `invalid_signature`) extend this set; an unrecognized code should be handled by its HTTP status family.
+		// Code Stable, machine-readable error code in lower_snake_case. The cross-cutting codes clients can rely on across endpoints are: `bad_request` (malformed input / failed validation), `unauthorized`, `forbidden`, `not_found`, `conflict` / `already_exists`, `rate_limit_exceeded`, and `service_unavailable`. Direct session invocation conflicts use `session_turn_active` with the blocking `turn_id` and `status` in `details`. Endpoint-specific codes (e.g. `loop_paused`, `invalid_signature`) extend this set; an unrecognized code should be handled by its HTTP status family.
 		Code string `json:"code"`
 
 		// Details Optional structured details specific to a `code`. Endpoints that set this document the per-code shape inline. Absent for codes whose `code` + `message` are sufficient.
@@ -5558,7 +5558,7 @@ type InvokeInput struct {
 	// Content Ordered content blocks (text, images) for the input message.
 	Content []map[string]interface{} `json:"content"`
 
-	// IdempotencyKey Dedup key scoped to the resolved session. A repeat call with the same key resumes the existing turn and writes nothing new — derive it from the provider event id for Slack/Telegram webhook retries.
+	// IdempotencyKey Dedup key scoped to the resolved session. A repeat call with the same key resumes the existing turn and writes nothing new — derive it from the provider event id for Slack/Telegram webhook retries. Omitting it or sending a blank value disables retry deduplication.
 	IdempotencyKey *string `json:"idempotency_key,omitempty"`
 
 	// Metadata Free-form caller metadata attached to the input message.
@@ -6514,7 +6514,10 @@ type MessageBlockPatchFrame struct {
 	EventType    MessageBlockPatchFrameEventType `json:"event_type"`
 	MessageId    string                          `json:"message_id"`
 	Progress     *map[string]interface{}         `json:"progress,omitempty"`
-	SessionId    string                          `json:"session_id"`
+
+	// ResolvedAction Canonical project action resolved by a catalog tool dispatch.
+	ResolvedAction *SessionResolvedAction `json:"resolved_action,omitempty"`
+	SessionId      string                 `json:"session_id"`
 
 	// Status Known values are pending, running, ok, error, and cancelled.
 	Status *string `json:"status,omitempty"`
@@ -7314,6 +7317,15 @@ type SessionNudgeTurn struct {
 // SessionOrigin Surface that created the session: `manual`, `api`, `loop`, or `interaction`.
 type SessionOrigin string
 
+// SessionResolvedAction Canonical project action resolved by a catalog tool dispatch.
+type SessionResolvedAction struct {
+	// Input Resolved action arguments. Meta-router command wrappers are removed.
+	Input map[string]interface{} `json:"input"`
+
+	// Name Canonical project action name, before provider-safe wire-name mangling.
+	Name string `json:"name"`
+}
+
 // SessionResyncFrame Live-only marker asking the client to reconcile the active turn from the live snapshot endpoint.
 type SessionResyncFrame struct {
 	EventType SessionResyncFrameEventType `json:"event_type"`
@@ -7407,6 +7419,9 @@ type SessionToolUseBlock struct {
 
 	// Progress Latest in-flight progress snapshot. Absent on final transcript rows.
 	Progress *map[string]interface{} `json:"progress,omitempty"`
+
+	// ResolvedAction Canonical project action resolved by a catalog tool dispatch.
+	ResolvedAction *SessionResolvedAction `json:"resolved_action,omitempty"`
 
 	// Status Known values are pending, running, ok, error, and cancelled; unknown values must be preserved.
 	Status               *string                 `json:"status,omitempty"`
@@ -7653,7 +7668,7 @@ type StartTurnRequest struct {
 	// Content Ordered content blocks (text, images) for the input message.
 	Content []map[string]interface{} `json:"content"`
 
-	// IdempotencyKey Dedup key scoped to the session. A repeat call with the same key resumes the existing turn and writes nothing new.
+	// IdempotencyKey Dedup key scoped to the session. A repeat call with the same key resumes the existing turn and writes nothing new. Omitting it or sending a blank value disables retry deduplication.
 	IdempotencyKey *string `json:"idempotency_key,omitempty"`
 
 	// Metadata Free-form caller metadata attached to the input message.
@@ -12492,6 +12507,14 @@ func (a *SessionToolUseBlock) UnmarshalJSON(b []byte) error {
 		delete(object, "progress")
 	}
 
+	if raw, found := object["resolved_action"]; found {
+		err = json.Unmarshal(raw, &a.ResolvedAction)
+		if err != nil {
+			return fmt.Errorf("error reading 'resolved_action': %w", err)
+		}
+		delete(object, "resolved_action")
+	}
+
 	if raw, found := object["status"]; found {
 		err = json.Unmarshal(raw, &a.Status)
 		if err != nil {
@@ -12548,6 +12571,13 @@ func (a SessionToolUseBlock) MarshalJSON() ([]byte, error) {
 		object["progress"], err = json.Marshal(a.Progress)
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'progress': %w", err)
+		}
+	}
+
+	if a.ResolvedAction != nil {
+		object["resolved_action"], err = json.Marshal(a.ResolvedAction)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'resolved_action': %w", err)
 		}
 	}
 
@@ -28757,7 +28787,7 @@ type InvokeAgentResponse struct {
 	JSON401      *Unauthorized
 	JSON403      *Forbidden
 	JSON404      *NotFound
-	JSON409      *Conflict
+	JSON409      *ErrorResponse
 	JSON429      *TooManyRequests
 }
 
@@ -31399,7 +31429,7 @@ type StartTurnResponse struct {
 	JSON401      *Unauthorized
 	JSON403      *Forbidden
 	JSON404      *NotFound
-	JSON409      *Conflict
+	JSON409      *ErrorResponse
 	JSON429      *TooManyRequests
 }
 
@@ -35517,7 +35547,7 @@ func ParseInvokeAgentResponse(rsp *http.Response) (*InvokeAgentResponse, error) 
 		response.JSON404 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
-		var dest Conflict
+		var dest ErrorResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -39662,7 +39692,7 @@ func ParseStartTurnResponse(rsp *http.Response) (*StartTurnResponse, error) {
 		response.JSON404 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
-		var dest Conflict
+		var dest ErrorResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

@@ -3,6 +3,7 @@ package mobius
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -60,6 +61,12 @@ func TestInvokeAgent_HighLevelClient(t *testing.T) {
 	assert.Equal(t, config["model"], "claude-sonnet-4-6")
 	assert.Equal(t, config["effort"], "medium")
 	assert.Equal(t, config["toolkits"].([]any)[0].(map[string]any)["name"], "tickets")
+
+	turn.Transcript().Apply(TranscriptStreamEvent{Frame: mustFrame(t,
+		`{"event_type":"turn.upsert","id":"turn_1","session_id":"sess_1","agent_id":"agent_1","attempt":1,"status":"failed","error_type":"invalid_conversation_state","error_message":"history ended with assistant content","created_at":"2026-05-27T00:00:00Z","updated_at":"2026-05-27T00:00:01Z"}`)})
+	assert.Equal(t, turn.ErrorType(), "invalid_conversation_state")
+	assert.Equal(t, turn.ErrorMessage(), "history ended with assistant content")
+	assert.Error(t, turn.TurnError())
 }
 
 func TestInvokeAgent_RequiresAgentRefAndContent(t *testing.T) {
@@ -75,6 +82,56 @@ func TestInvokeAgent_RequiresAgentRefAndContent(t *testing.T) {
 
 	_, err = c.InvokeAgent(context.Background(), InvokeAgentOptions{AgentID: "agent_1"})
 	assert.Error(t, err)
+}
+
+func TestInvokeAgent_StructuredAPIError(t *testing.T) {
+	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("X-Request-ID", "req_1")
+		w.Header().Set("Retry-After", "2")
+		w.WriteHeader(http.StatusConflict)
+		_, _ = io.WriteString(w, `{"error":{"code":"session_turn_active","message":"another direct turn is active","details":{"turn_id":"turn_blocking","status":"running"}}}`)
+	})
+	c, srv := newTestClient(t, h)
+	defer srv.Close()
+
+	_, err := c.InvokeAgent(context.Background(), InvokeAgentOptions{
+		AgentName: "support",
+		Content:   []map[string]interface{}{{"type": "text", "text": "next"}},
+	})
+	var apiErr *APIError
+	assert.True(t, errors.As(err, &apiErr))
+	assert.Equal(t, apiErr.Status, http.StatusConflict)
+	assert.Equal(t, apiErr.Code, "session_turn_active")
+	assert.Equal(t, apiErr.Details["turn_id"], "turn_blocking")
+	assert.Equal(t, apiErr.RequestID, "req_1")
+	assert.Equal(t, apiErr.RetryAfter.String(), "2s")
+}
+
+func TestNudgeSession_HighLevelClient(t *testing.T) {
+	var body map[string]interface{}
+	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, r.Method, http.MethodPost)
+		assert.Equal(t, r.URL.Path, "/v1/projects/test-project/sessions/s1/nudges")
+		raw, _ := io.ReadAll(r.Body)
+		assert.NoError(t, json.Unmarshal(raw, &body))
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusAccepted)
+		_, _ = io.WriteString(w, `{"nudge_id":"nudge_1","delivery":"current_turn","session":{"id":"s1","agent_id":"a1","origin":"api","scope":"agent","scope_name":"app","scope_ref_id":"a1","session_key":"app","status":"active","title":"","visibility":"private","version":1,"message_count":1,"token_input_total":0,"cache_read_input_total":0,"cache_creation_input_total":0,"token_output_total":0,"created_at":"2026-05-27T00:00:00Z","updated_at":"2026-05-27T00:00:00Z"},"turn":{"id":"t1","agent_id":"a1","session_id":"s1","attempt":1,"status":"running","created_at":"2026-05-27T00:00:00Z","updated_at":"2026-05-27T00:00:00Z"},"after_sequence":2,"deduped":false,"woke_turn":true}`)
+	})
+	c, srv := newTestClient(t, h)
+	defer srv.Close()
+
+	ack, err := c.NudgeSession(context.Background(), "s1", NudgeSessionOptions{
+		Content:        "Use the shorter name",
+		IdempotencyKey: "event_2",
+		Wake:           true,
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, ack.NudgeId, "nudge_1")
+	assert.Equal(t, body["content"], "Use the shorter name")
+	assert.Equal(t, body["idempotency_key"], "event_2")
+	assert.Equal(t, body["wake"], true)
 }
 
 func TestInvokeAgentStream_HighLevelClient(t *testing.T) {

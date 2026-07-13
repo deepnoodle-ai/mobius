@@ -1,15 +1,24 @@
 import { strict as assert } from "node:assert";
 import { test } from "node:test";
 
-import { AuthRevokedError, Client, StreamHTTPError } from "../src/client.js";
+import {
+  AuthRevokedError,
+  Client,
+  MobiusAPIError,
+  StreamHTTPError,
+} from "../src/client.js";
 import {
   SessionTranscript,
   isTerminalTurnStatus,
+  normalizeToolUse,
+  textOf,
+  toolResultText,
 } from "../src/transcript.js";
 import type {
   SessionTranscriptFrame,
   SessionTranscriptSnapshot,
 } from "../src/api/index.js";
+import type { TranscriptDiagnostics } from "../src/index.js";
 
 const AT = "2026-07-11T17:03:21Z";
 
@@ -176,6 +185,214 @@ test("transcript: block.patch merges tool status/progress; null clears", () => {
   block = t.message("m_a")!.content[0] as { status: string; progress?: unknown };
   assert.equal(block.status, "ok");
   assert.equal(block.progress, undefined);
+});
+
+test("transcript: null content is normalized at apply, snapshot, and seed", () => {
+  const t = new SessionTranscript();
+  apply(t, {
+    event_type: "message.upsert",
+    id: "m_apply",
+    session_id: "s1",
+    agent_id: "a1",
+    role: "assistant",
+    status: "streaming",
+    turn_id: "t1",
+    turn_index: 1,
+    sequence: null,
+    entry_type: "message",
+    content: null,
+    created_at: AT,
+  });
+  assert.deepEqual(t.message("m_apply")!.content, []);
+
+  t.applySnapshot({
+    messages: [
+      {
+        id: "m_snapshot",
+        session_id: "s1",
+        agent_id: "a1",
+        role: "assistant",
+        status: "streaming",
+        turn_id: "t1",
+        turn_index: 2,
+        sequence: null,
+        entry_type: "message",
+        content: null,
+        created_at: AT,
+      },
+    ],
+    turns: [],
+    has_more: true,
+    resume_cursor: "1.1",
+  } as unknown as SessionTranscriptSnapshot);
+  assert.deepEqual(t.message("m_snapshot")!.content, []);
+
+  t.seed({
+    user_message: {
+      id: "m_seed",
+      session_id: "s1",
+      agent_id: "a1",
+      role: "user",
+      status: "final",
+      turn_id: "t1",
+      turn_index: 0,
+      sequence: 1,
+      entry_type: "message",
+      content: null,
+      created_at: AT,
+    },
+    turn: {
+      id: "t1",
+      session_id: "s1",
+      agent_id: "a1",
+      attempt: 1,
+      status: "queued",
+      created_at: AT,
+      updated_at: AT,
+    },
+  } as never);
+  assert.deepEqual(t.message("m_seed")!.content, []);
+});
+
+test("transcript: renderable projection and content/tool helpers", () => {
+  const t = new SessionTranscript();
+  apply(t, {
+    event_type: "turn.upsert",
+    id: "t1",
+    session_id: "s1",
+    agent_id: "a1",
+    attempt: 1,
+    status: "running",
+    created_at: AT,
+    updated_at: AT,
+  });
+  for (const [id, turnIndex] of [["empty_1", 1], ["empty_2", 2]] as const) {
+    apply(t, {
+      event_type: "message.upsert",
+      id,
+      session_id: "s1",
+      agent_id: "a1",
+      role: "assistant",
+      status: "streaming",
+      turn_id: "t1",
+      turn_index: turnIndex,
+      sequence: null,
+      entry_type: "message",
+      content: [],
+      created_at: AT,
+    });
+  }
+  apply(t, {
+    event_type: "message.upsert",
+    id: "preview",
+    session_id: "s1",
+    agent_id: "a1",
+    role: "assistant",
+    status: "streaming",
+    turn_id: "t1",
+    turn_index: 3,
+    sequence: null,
+    entry_type: "message",
+    content: [
+      {
+        type: "tool_use",
+        id: "call_1",
+        name: "catalog",
+        input: { command: "check", args: { domain: "x.test" } },
+      },
+    ],
+    created_at: AT,
+  });
+  apply(t, {
+    event_type: "message.upsert",
+    id: "final",
+    session_id: "s1",
+    agent_id: "a1",
+    role: "assistant",
+    status: "final",
+    turn_id: "t1",
+    turn_index: 3,
+    sequence: 4,
+    entry_type: "message",
+    content: [
+      {
+        type: "tool_use",
+        id: "call_1",
+        name: "catalog",
+        input: { command: "check", args: { domain: "x.test" } },
+        resolved_action: {
+          name: "naming.domain.check",
+          input: { domain: "x.test" },
+        },
+      },
+      { type: "text", text: "done" },
+    ],
+    created_at: AT,
+  });
+
+  const visible = t.renderableMessages();
+  assert.deepEqual(visible.map((message) => message.id), ["final", "empty_2"]);
+  const normalized = normalizeToolUse(visible[0]!.content[0] as never);
+  assert.equal(normalized.wireName, "catalog");
+  assert.equal(normalized.resolvedAction?.name, "naming.domain.check");
+  assert.equal(normalized.wireInput.command, "check");
+  assert.equal(textOf(visible[0]!), "done");
+  assert.equal(toolResultText({ content: "plain" } as never), "plain");
+  assert.equal(
+    toolResultText({ content: [{ type: "text", text: "blocks" }] } as never),
+    "blocks",
+  );
+  assert.equal(
+    toolResultText({
+      content: [
+        { type: "text", text: "first" },
+        { type: "image", source: {} },
+        { type: "text", text: "second" },
+      ],
+    } as never),
+    "firstsecond",
+  );
+});
+
+test("transcript: exports shared diagnostics naming", () => {
+  const diagnostics: TranscriptDiagnostics = {
+    status: "running",
+    cursor: null,
+    ready: true,
+    reconnectCount: 0,
+    connection: "open",
+  };
+  assert.equal(diagnostics.status, "running");
+});
+
+test("transcript: resolved_action patches enrich live tool blocks", () => {
+  const t = new SessionTranscript();
+  apply(t, {
+    event_type: "message.upsert",
+    id: "m_tool",
+    session_id: "s1",
+    agent_id: "a1",
+    role: "assistant",
+    status: "streaming",
+    turn_id: "t1",
+    turn_index: 1,
+    sequence: null,
+    entry_type: "message",
+    content: [{ type: "tool_use", id: "call_1", name: "wire", input: {} }],
+    created_at: AT,
+  });
+  apply(t, {
+    event_type: "message.block.patch",
+    session_id: "s1",
+    message_id: "m_tool",
+    content_index: 0,
+    resolved_action: { name: "naming.domain.check", input: { domain: "x.test" } },
+  });
+  assert.deepEqual(
+    (t.message("m_tool")!.content[0] as { resolved_action: unknown })
+      .resolved_action,
+    { name: "naming.domain.check", input: { domain: "x.test" } },
+  );
 });
 
 test("transcript: terminal turn prunes its leftover streaming rows", () => {
@@ -452,6 +669,91 @@ test("client: watchSessionTranscript surfaces a permanent error, no reconnect", 
   assert.equal(calls, 1); // surfaced on the first attempt, no reconnect loop
 });
 
+test("client: ordinary requests expose structured MobiusAPIError", async () => {
+  const original = globalThis.fetch;
+  globalThis.fetch = (async () =>
+    new Response(
+      JSON.stringify({
+        error: {
+          code: "session_turn_active",
+          message: "another direct turn is active",
+          details: { turn_id: "turn_blocking", status: "running" },
+        },
+      }),
+      {
+        status: 409,
+        headers: {
+          "Content-Type": "application/json",
+          "X-Request-ID": "req_1",
+          "Retry-After": "2",
+        },
+      },
+    )) as typeof fetch;
+  try {
+    await assert.rejects(
+      newClient().invokeAgent({
+        agentName: "support",
+        content: [{ type: "text", text: "next" }],
+      }),
+      (error: unknown) => {
+        assert.ok(error instanceof MobiusAPIError);
+        assert.equal(error.status, 409);
+        assert.equal(error.code, "session_turn_active");
+        assert.deepEqual(error.details, {
+          turn_id: "turn_blocking",
+          status: "running",
+        });
+        assert.equal(error.requestId, "req_1");
+        assert.equal(error.retryAfter, 2);
+        return true;
+      },
+    );
+  } finally {
+    globalThis.fetch = original;
+  }
+});
+
+test("client: nudgeSession is a typed thin wrapper", async () => {
+  let requestedURL = "";
+  let requestedBody = "";
+  const original = globalThis.fetch;
+  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    requestedURL = typeof input === "string" ? input : input.toString();
+    requestedBody = String(init?.body ?? "");
+    return new Response(
+      JSON.stringify({
+        nudge_id: "nudge_1",
+        delivery: "current_turn",
+        session: { id: "s1" },
+        turn: { id: "t1", status: "running" },
+        after_sequence: 2,
+        deduped: false,
+        woke_turn: true,
+      }),
+      { status: 202, headers: { "Content-Type": "application/json" } },
+    );
+  }) as typeof fetch;
+  try {
+    const ack = await newClient().nudgeSession("s1", {
+      content: "Use the shorter name",
+      idempotencyKey: "event_2",
+      wake: true,
+    });
+    assert.equal(ack.nudge_id, "nudge_1");
+  } finally {
+    globalThis.fetch = original;
+  }
+  assert.equal(
+    new URL(requestedURL).pathname,
+    "/v1/projects/test-project/sessions/s1/nudges",
+  );
+  assert.deepEqual(JSON.parse(requestedBody), {
+    content: "Use the shorter name",
+    idempotency_key: "event_2",
+    wake: true,
+  });
+});
+
 test("client: watchSessionTranscript raises AuthRevokedError on 401", async () => {
   let calls = 0;
   const original = globalThis.fetch;
@@ -551,6 +853,40 @@ test("client: invokeAgent streams the turn to its terminal upsert", async () => 
       ["m_user", "m_a"],
     );
     assert.equal(turn.transcript.cursor, "43.9");
+    assert.equal(turn.diagnostics().status, "completed");
+    assert.equal(turn.diagnostics().lastFrameType, "turn.upsert");
+    assert.equal(turn.diagnostics().connection, "ended");
+  } finally {
+    globalThis.fetch = original;
+  }
+});
+
+test("client: TurnTranscript exposes live failed-turn errors", async () => {
+  const original = globalThis.fetch;
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    const url = new URL(typeof input === "string" ? input : input.toString());
+    if (url.pathname.endsWith("/agents/invoke")) {
+      return new Response(JSON.stringify(invokeAck), {
+        status: 202,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    return new Response(
+      `id: 43.9\nevent: turn.upsert\ndata: {"event_type":"turn.upsert","id":"t1","session_id":"s1","agent_id":"a1","attempt":1,"status":"failed","error_type":"invalid_conversation_state","error_message":"history ended with assistant content","created_at":"${AT}","updated_at":"${AT}"}\n\n`,
+      { status: 200, headers: { "Content-Type": "text/event-stream" } },
+    );
+  }) as typeof fetch;
+  try {
+    const turn = await newClient().invokeAgent({
+      agentName: "support",
+      content: [{ type: "text", text: "hi" }],
+    });
+    for await (const _ of turn) {
+      // Fold the terminal update.
+    }
+    assert.equal(turn.errorType, "invalid_conversation_state");
+    assert.equal(turn.errorMessage, "history ended with assistant content");
+    assert.equal(turn.error?.name, "invalid_conversation_state");
   } finally {
     globalThis.fetch = original;
   }

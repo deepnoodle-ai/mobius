@@ -15,6 +15,33 @@ should catch ``RateLimitError``.
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Any
+
+
+class MobiusAPIError(Exception):
+    """A structured Mobius API error envelope.
+
+    Branch on ``code`` and ``status``; ``message`` is for people. For
+    ``session_turn_active``, ``details`` includes the blocking turn id/status.
+    """
+
+    def __init__(
+        self,
+        *,
+        status: int,
+        code: str,
+        message: str,
+        details: dict[str, Any] | None = None,
+        request_id: str | None = None,
+        retry_after: float | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.status = status
+        self.code = code
+        self.message = message
+        self.details = details
+        self.request_id = request_id
+        self.retry_after = retry_after
 
 
 class AuthRevokedError(Exception):

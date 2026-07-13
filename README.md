@@ -99,6 +99,43 @@ The SDKs expose two layers:
 See [`docs/sdk-helpers.md`](./docs/sdk-helpers.md) for cross-language examples
 of the webhook, loop, run, session-transcript, and worker helpers.
 
+Start and render a real multi-tool turn with the Go SDK:
+
+```go
+turn, err := client.InvokeAgent(ctx, mobius.InvokeAgentOptions{
+	AgentName: "launch-scout",
+	Content: []map[string]any{{
+		"type": "text", "text": "Check the name and create a shortlist.",
+	}},
+	IdempotencyKey: inboundMessageID,
+	Config: &api.InlineAgentConfig{Toolkits: &[]api.InlineToolkit{
+		{Name: "naming", Actions: &[]string{"naming.domain.check"}},
+		{Name: "shortlists", Actions: &[]string{"shortlists.create"}},
+	}},
+})
+if err != nil { return err }
+for turn.Next() {
+	for _, message := range turn.RenderableMessages() {
+		fmt.Println(mobius.TextOf(message))
+		for _, block := range message.Content {
+			if tool, err := block.AsSessionToolUseBlock(); err == nil {
+				normalized := mobius.NormalizeToolUse(tool)
+				if normalized.ResolvedAction != nil {
+					fmt.Println(normalized.ResolvedAction.Name)
+				}
+			}
+		}
+	}
+}
+if err := turn.Err(); err != nil { return err }
+if err := turn.TurnError(); err != nil { return err }
+```
+
+Imports omitted above: `github.com/deepnoodle-ai/mobius/mobius`, its generated
+`mobius/api` package, and `fmt`. An overlapping distinct direct invoke returns
+typed `*mobius.APIError` code `session_turn_active`; explicitly wait or call
+`NudgeSession` rather than silently turning another message into direction.
+
 All three SDKs share the same retry and rate-limit handling: `429` and
 `503` responses are retried transparently (respecting `Retry-After`), and
 `429`s that can't be retried surface as a typed `RateLimitError` carrying

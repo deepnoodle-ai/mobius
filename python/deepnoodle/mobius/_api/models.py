@@ -27,7 +27,7 @@ class Error(BaseModel):
     )
     code: str = Field(
         ...,
-        description='Stable, machine-readable error code in lower_snake_case. The cross-cutting codes clients can rely on across endpoints are: `bad_request` (malformed input / failed validation), `unauthorized`, `forbidden`, `not_found`, `conflict` / `already_exists`, `rate_limit_exceeded`, and `service_unavailable`. Endpoint-specific codes (e.g. `loop_paused`, `invalid_signature`) extend this set; an unrecognized code should be handled by its HTTP status family.',
+        description='Stable, machine-readable error code in lower_snake_case. The cross-cutting codes clients can rely on across endpoints are: `bad_request` (malformed input / failed validation), `unauthorized`, `forbidden`, `not_found`, `conflict` / `already_exists`, `rate_limit_exceeded`, and `service_unavailable`. Direct session invocation conflicts use `session_turn_active` with the blocking `turn_id` and `status` in `details`. Endpoint-specific codes (e.g. `loop_paused`, `invalid_signature`) extend this set; an unrecognized code should be handled by its HTTP status family.',
     )
     message: str = Field(..., description='Human-readable error message')
     details: dict[str, Any] | None = Field(
@@ -3510,6 +3510,24 @@ class SessionThinkingBlock(BaseModel):
     )
 
 
+class SessionResolvedAction(BaseModel):
+    """
+    Canonical project action resolved by a catalog tool dispatch.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    name: str = Field(
+        ...,
+        description='Canonical project action name, before provider-safe wire-name mangling.',
+    )
+    input: dict[str, Any] = Field(
+        ...,
+        description='Resolved action arguments. Meta-router command wrappers are removed.',
+    )
+
+
 class Type21(StrEnum):
     tool_use = 'tool_use'
 
@@ -3536,6 +3554,7 @@ class SessionToolUseBlock(BaseModel):
         None,
         description='Latest in-flight progress snapshot. Absent on final transcript rows.',
     )
+    resolved_action: SessionResolvedAction | None = None
 
 
 class Type22(StrEnum):
@@ -3851,6 +3870,7 @@ class MessageBlockPatchFrame(BaseModel):
         None, description='Known values are pending, running, ok, error, and cancelled.'
     )
     progress: dict[str, Any] | None = None
+    resolved_action: SessionResolvedAction | None = None
 
 
 class EventType4(StrEnum):
@@ -4157,7 +4177,7 @@ class InvokeInput(BaseModel):
     )
     idempotency_key: str | None = Field(
         None,
-        description='Dedup key scoped to the resolved session. A repeat call with the same key resumes the existing turn and writes nothing new — derive it from the provider event id for Slack/Telegram webhook retries.',
+        description='Dedup key scoped to the resolved session. A repeat call with the same key resumes the existing turn and writes nothing new — derive it from the provider event id for Slack/Telegram webhook retries. Omitting it or sending a blank value disables retry deduplication.',
     )
     metadata: dict[str, Any] | None = Field(
         None, description='Free-form caller metadata attached to the input message.'
@@ -4245,7 +4265,7 @@ class StartTurnRequest(BaseModel):
     )
     idempotency_key: str | None = Field(
         None,
-        description='Dedup key scoped to the session. A repeat call with the same key resumes the existing turn and writes nothing new.',
+        description='Dedup key scoped to the session. A repeat call with the same key resumes the existing turn and writes nothing new. Omitting it or sending a blank value disables retry deduplication.',
     )
     metadata: dict[str, Any] | None = Field(
         None, description='Free-form caller metadata attached to the input message.'

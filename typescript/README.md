@@ -23,6 +23,66 @@ Requires Node.js 22+ (the worker uses the global `WebSocket`, stable since Node 
 
 ## Quick start
 
+### Invoke a multi-tool agent
+
+```ts
+import {
+  Client,
+  MobiusAPIError,
+  normalizeToolUse,
+  textOf,
+} from "@deepnoodle/mobius";
+
+const client = new Client({
+  apiKey: process.env.MOBIUS_API_KEY!,
+  project: process.env.MOBIUS_PROJECT!,
+});
+
+try {
+  const turn = await client.invokeAgent({
+    agentName: "launch-scout",
+    session: {
+      mode: "continue_or_create",
+      session_key: `research:${customerId}`,
+    },
+    idempotencyKey: inboundMessageId,
+    content: [{ type: "text", text: "Check the name and create a shortlist." }],
+    config: {
+      toolkits: [
+        { name: "naming", actions: ["naming.domain.check"] },
+        { name: "shortlists", actions: ["shortlists.create"] },
+      ],
+    },
+  });
+
+  for await (const update of turn.updates()) {
+    for (const message of update.transcript.renderableMessages()) {
+      console.log(textOf(message));
+      for (const block of message.content) {
+        if (block.type === "tool_use") {
+          const tool = normalizeToolUse(block);
+          console.log(tool.resolvedAction?.name ?? tool.wireName);
+        }
+      }
+    }
+  }
+  if (turn.error) throw turn.error;
+} catch (error) {
+  if (error instanceof MobiusAPIError && error.code === "session_turn_active") {
+    // Choose explicitly: wait and re-invoke, or client.nudgeSession(...).
+  } else {
+    throw error;
+  }
+}
+```
+
+`messages()` is lossless; `renderableMessages()` is the UI projection.
+Canonical catalog identity lives in `resolvedAction`, while `wireName` and
+`wireInput` preserve what the model saw. See the
+[cross-language SDK helper guide](https://github.com/deepnoodle-ai/mobius/blob/main/docs/sdk-helpers.md)
+for nudges, reconnection, diagnostics, session management, and the
+server-to-browser boundary.
+
 ### Worker
 
 ```ts

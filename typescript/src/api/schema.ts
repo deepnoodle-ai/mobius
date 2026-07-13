@@ -960,6 +960,8 @@ export interface paths {
          *     The optional `config` block lets you send an agent definition with the request — instructions, model, effort, per-turn timeout, toolkits, and skills — instead of using the one stored in Mobius. A field you set replaces the agent's value; a field you leave out keeps it. Mobius remembers the config on the session and reuses it on later turns until you send a new one. If your organization limits values like the model or timeout, those limits still apply. Omit `config` to run the agent on its stored definition.
          *
          *     By default it returns `202 Accepted` immediately with a durable `after_sequence` stream cursor; the turn keeps running even if the caller disconnects. When the request sets `Accept: text/event-stream`, the response is `200 OK` and the turn's activity is streamed inline on the same connection, identical to the `POST /v1/projects/{project_handle}/sessions/{session_id}/turns` stream. A repeated call with the same `input.idempotency_key` resolves the same session and resumes the existing turn rather than starting a second one, so a webhook handler can acknowledge fast and retry safely. Requires the `mobius.agent.invoke` permission (or the agent's own backing principal).
+         *
+         *     Only one direct invocation may be nonterminal in a session. A distinct input while a turn is queued, running, or waiting returns `409` with `error.code = session_turn_active` and `error.details = {turn_id, status}` before the new input is appended. Use the session nudge endpoint explicitly to steer a running or waiting turn; Mobius never converts a second send into a nudge implicitly.
          */
         post: operations["invokeAgent"];
         delete?: never;
@@ -1059,7 +1061,7 @@ export interface paths {
         put?: never;
         /**
          * Start an agent turn
-         * @description Appends one caller input message to the session and starts an agent turn to respond. By default returns `202 Accepted` immediately with a durable `after_sequence` cursor (a message `sequence`) to stream from. The turn keeps running even if the caller disconnects. When the request sets `Accept: text/event-stream`, the response is `200 OK` and the turn's activity is streamed inline on the same connection, equivalent to opening `GET .../stream` at the returned cursor. A repeated call with the same `idempotency_key` resumes the existing turn rather than starting a second one. Requires the `mobius.agent.invoke` permission (or the agent's own backing principal).
+         * @description Appends one caller input message to the session and starts an agent turn to respond. By default returns `202 Accepted` immediately with a durable `after_sequence` cursor (a message `sequence`) to stream from. The turn keeps running even if the caller disconnects. When the request sets `Accept: text/event-stream`, the response is `200 OK` and the turn's activity is streamed inline on the same connection, equivalent to opening `GET .../stream` at the returned cursor. A repeated call with the same `idempotency_key` resumes the existing turn rather than starting a second invocation. A distinct send while a direct turn is queued, running, or waiting returns `409 session_turn_active` before appending the new input; use the nudge endpoint explicitly to steer an active turn. Requires the `mobius.agent.invoke` permission (or the agent's own backing principal).
          */
         post: operations["startTurn"];
         delete?: never;
@@ -1201,7 +1203,7 @@ export interface paths {
         };
         /**
          * Get the live transcript snapshot
-         * @description Returns the transcript tail and authoritative turn state consumed by the SDKs' SessionTranscript view. Without a cursor this is a bootstrap tail. With cursor it incrementally drains a fixed upper cut; continue with next_page_token until has_more is false.
+         * @description Returns the transcript tail and authoritative turn state consumed by SessionTranscriptReducer. Without a cursor this is a bootstrap tail. With cursor it incrementally drains a fixed upper cut; continue with next_page_token until has_more is false.
          */
         get: operations["getSessionTranscript"];
         put?: never;
@@ -2070,7 +2072,7 @@ export interface components {
         ErrorResponse: {
             /** @description Error detail. */
             error: {
-                /** @description Stable, machine-readable error code in lower_snake_case. The cross-cutting codes clients can rely on across endpoints are: `bad_request` (malformed input / failed validation), `unauthorized`, `forbidden`, `not_found`, `conflict` / `already_exists`, `rate_limit_exceeded`, and `service_unavailable`. Endpoint-specific codes (e.g. `loop_paused`, `invalid_signature`) extend this set; an unrecognized code should be handled by its HTTP status family. */
+                /** @description Stable, machine-readable error code in lower_snake_case. The cross-cutting codes clients can rely on across endpoints are: `bad_request` (malformed input / failed validation), `unauthorized`, `forbidden`, `not_found`, `conflict` / `already_exists`, `rate_limit_exceeded`, and `service_unavailable`. Direct session invocation conflicts use `session_turn_active` with the blocking `turn_id` and `status` in `details`. Endpoint-specific codes (e.g. `loop_paused`, `invalid_signature`) extend this set; an unrecognized code should be handled by its HTTP status family. */
                 code: string;
                 /** @description Human-readable error message */
                 message: string;
@@ -4845,6 +4847,15 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /** @description Canonical project action resolved by a catalog tool dispatch. */
+        SessionResolvedAction: {
+            /** @description Canonical project action name, before provider-safe wire-name mangling. */
+            name: string;
+            /** @description Resolved action arguments. Meta-router command wrappers are removed. */
+            input: {
+                [key: string]: unknown;
+            };
+        };
         /** @description A tool call the agent issued. */
         SessionToolUseBlock: {
             /** @enum {string} */
@@ -4863,6 +4874,7 @@ export interface components {
             progress?: {
                 [key: string]: unknown;
             };
+            resolved_action?: components["schemas"]["SessionResolvedAction"];
         } & {
             [key: string]: unknown;
         };
@@ -5224,6 +5236,7 @@ export interface components {
             progress?: {
                 [key: string]: unknown;
             } | null;
+            resolved_action?: components["schemas"]["SessionResolvedAction"];
         };
         MessageDeltaFrame: {
             /**
@@ -5597,7 +5610,7 @@ export interface components {
             content: {
                 [key: string]: unknown;
             }[];
-            /** @description Dedup key scoped to the resolved session. A repeat call with the same key resumes the existing turn and writes nothing new — derive it from the provider event id for Slack/Telegram webhook retries. */
+            /** @description Dedup key scoped to the resolved session. A repeat call with the same key resumes the existing turn and writes nothing new — derive it from the provider event id for Slack/Telegram webhook retries. Omitting it or sending a blank value disables retry deduplication. */
             idempotency_key?: string;
             /** @description Free-form caller metadata attached to the input message. */
             metadata?: {
@@ -5652,7 +5665,7 @@ export interface components {
             content: {
                 [key: string]: unknown;
             }[];
-            /** @description Dedup key scoped to the session. A repeat call with the same key resumes the existing turn and writes nothing new. */
+            /** @description Dedup key scoped to the session. A repeat call with the same key resumes the existing turn and writes nothing new. Omitting it or sending a blank value disables retry deduplication. */
             idempotency_key?: string;
             /** @description Free-form caller metadata attached to the input message. */
             metadata?: {
@@ -10347,7 +10360,15 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
-            409: components["responses"]["Conflict"];
+            /** @description A distinct direct invocation is already queued, running, or waiting. The `session_turn_active` error details contain its `turn_id` and `status`. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             429: components["responses"]["TooManyRequests"];
         };
     };
@@ -10666,7 +10687,15 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
-            409: components["responses"]["Conflict"];
+            /** @description A distinct direct invocation is already queued, running, or waiting. The `session_turn_active` error details contain its `turn_id` and `status`. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             429: components["responses"]["TooManyRequests"];
         };
     };
