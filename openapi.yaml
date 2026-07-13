@@ -5485,9 +5485,7 @@ components:
       description: Set to `context` to include caller-supplied runtime context rows whose
         model-visible names begin with `app-`. Platform-owned runtime context remains hidden.
       schema:
-        type: string
-        enum:
-        - context
+        $ref: '#/components/schemas/ContextIncludeParam'
     NudgeIdParam:
       name: nudge_id
       in: path
@@ -10322,6 +10320,10 @@ components:
         pinned:
           type: boolean
           description: Pin to exempt this memory from compaction.
+    ContextIncludeParam:
+      type: string
+      enum:
+      - context
     SessionMessageRole:
       type: string
       enum:
@@ -10420,9 +10422,11 @@ components:
       - $ref: '#/components/schemas/SessionToolUseBlock'
       - $ref: '#/components/schemas/SessionToolResultBlock'
       - $ref: '#/components/schemas/SessionImageBlock'
+      - $ref: '#/components/schemas/SessionReminderBlock'
       description: One content block in a session transcript message — the canonical, frozen
         JSON shape Mobius persists and replays, discriminated by `type`. The variants are
-        `text`, `thinking`, `tool_use`, `tool_result`, and `image`. Each variant permits provider-specific
+        `text`, `thinking`, `tool_use`, `tool_result`, and `image`, plus host-managed `reminder`
+        blocks when caller runtime context is explicitly included. Each variant permits provider-specific
         extra fields (citations, signatures, cache hints, and the like), and unknown fields
         are preserved rather than rejected, so the transcript round-trips losslessly across
         providers.
@@ -10467,6 +10471,33 @@ components:
           type: object
           additionalProperties: true
           description: Provider-specific image source descriptor.
+    SessionReminderBlock:
+      type: object
+      additionalProperties: true
+      required:
+      - type
+      - name
+      - tier
+      - content
+      description: Host-managed runtime context returned only when the request explicitly
+        includes caller-supplied context.
+      properties:
+        type:
+          type: string
+          enum:
+          - reminder
+        name:
+          type: string
+          description: Model-visible reminder name, including the `app-` namespace.
+        tier:
+          type: string
+          enum:
+          - contextual
+          - operator
+          description: Reminder authority tier.
+        content:
+          type: string
+          description: Reminder content rendered to the model.
     SessionMessageEntryType:
       type: string
       enum:
@@ -11693,13 +11724,24 @@ components:
           pattern: ^[a-z][a-z0-9-]*$
           maxLength: 64
           description: Stable application-defined context name. Delivered to the model namespaced
-            as `app-<name>`.
+            as `app-<name>`. Supply the application name without that namespace; for example,
+            `app-board` is delivered as `app-app-board`.
         content:
           type: string
           minLength: 1
           maxLength: 8192
-          description: Current value of this context, rendered verbatim to the model. The
-            UTF-8 encoding may not exceed 8,192 bytes.
+          description: Current value of this context, rendered verbatim to the model. OpenAPI
+            `maxLength` counts Unicode code points; Mobius separately enforces an 8,192-byte
+            UTF-8 limit server-side.
+    RuntimeContext:
+      type: array
+      maxItems: 8
+      description: |-
+        Ordered application-owned runtime context for this turn. Send the full current value for each named item. Mobius records an item only on first use, material change, or after compaction removes its prior value from the active model window. Omitting a name leaves its last value standing; send an explicit value such as `none` to clear application state. Names must be unique within the request. Content is limited to 8,192 UTF-8 bytes per item and 16,384 bytes total.
+
+        Context remains at contextual authority and cannot grant permissions. A retry using the same `idempotency_key` returns the original turn and ignores any newly supplied context.
+      items:
+        $ref: '#/components/schemas/RuntimeContextItem'
     InvokeInput:
       type: object
       additionalProperties: false
@@ -11721,14 +11763,7 @@ components:
             event id for Slack/Telegram webhook retries. Omitting it or sending a blank value
             disables retry deduplication.
         context:
-          type: array
-          maxItems: 8
-          description: |-
-            Ordered application-owned runtime context for this turn. Send the full current value for each named item. Mobius records an item only on first use, material change, or after compaction removes its prior value from the active model window. Omitting a name leaves its last value standing; send an explicit value such as `none` to clear application state. Names must be unique within the request. Content is limited to 8,192 UTF-8 bytes per item and 16,384 bytes total.
-
-            Context remains at contextual authority and cannot grant permissions. A retry using the same `idempotency_key` returns the original turn and ignores any newly supplied context.
-          items:
-            $ref: '#/components/schemas/RuntimeContextItem'
+          $ref: '#/components/schemas/RuntimeContext'
         metadata:
           type: object
           additionalProperties: true
@@ -11823,14 +11858,7 @@ components:
             the existing turn and writes nothing new. Omitting it or sending a blank value
             disables retry deduplication.
         context:
-          type: array
-          maxItems: 8
-          description: |-
-            Ordered application-owned runtime context for this turn. Send the full current value for each named item. Mobius records an item only on first use, material change, or after compaction removes its prior value from the active model window. Omitting a name leaves its last value standing; send an explicit value such as `none` to clear application state. Names must be unique within the request. Content is limited to 8,192 UTF-8 bytes per item and 16,384 bytes total.
-
-            Context remains at contextual authority and cannot grant permissions. A retry using the same `idempotency_key` returns the original turn and ignores any newly supplied context.
-          items:
-            $ref: '#/components/schemas/RuntimeContextItem'
+          $ref: '#/components/schemas/RuntimeContext'
         metadata:
           type: object
           additionalProperties: true

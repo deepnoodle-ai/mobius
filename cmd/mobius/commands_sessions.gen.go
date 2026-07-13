@@ -552,7 +552,7 @@ func registerSessionsCommands(app *cli.App) {
 				params.Limit = &v
 			}
 			if ctx.IsSet("include") {
-				v := api.ListSessionMessagesParamsInclude(ctx.String("include"))
+				v := api.ContextIncludeParam(ctx.String("include"))
 				params.Include = &v
 			}
 			resp, err := client.ListSessionMessagesWithResponse(ctx.Context(), p0, p1, params)

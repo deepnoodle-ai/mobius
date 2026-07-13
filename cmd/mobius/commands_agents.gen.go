@@ -353,7 +353,7 @@ func registerAgentsCommands(app *cli.App) {
 				params.Limit = &v
 			}
 			if ctx.IsSet("include") {
-				v := api.ListTurnMessagesParamsInclude(ctx.String("include"))
+				v := api.ContextIncludeParam(ctx.String("include"))
 				params.Include = &v
 			}
 			resp, err := client.ListTurnMessagesWithResponse(ctx.Context(), p0, p1, params)
