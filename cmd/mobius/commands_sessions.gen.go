@@ -459,6 +459,7 @@ func registerSessionsCommands(app *cli.App) {
 		Description("List sessions").
 		Flags(
 			cli.String("agent-id", "").Help("Filter to sessions owned by this agent."),
+			cli.String("agent-name", "").Help("Filter to sessions owned by the project-unique agent with this exact name. Mutually exclusive with `agent_id`."),
 			cli.String("session-key", "").Help("Look up the session with this exact routing key — a read-only deterministic lookup that avoids a create-or-resolve round trip, returning…"),
 			cli.String("status", "").Help("Filter by session status."),
 			cli.String("scope", "").Help("Filter by session scope."),
@@ -479,6 +480,10 @@ func registerSessionsCommands(app *cli.App) {
 			if ctx.IsSet("agent-id") {
 				v := ctx.String("agent-id")
 				params.AgentId = &v
+			}
+			if ctx.IsSet("agent-name") {
+				v := ctx.String("agent-name")
+				params.AgentName = &v
 			}
 			if ctx.IsSet("session-key") {
 				v := ctx.String("session-key")

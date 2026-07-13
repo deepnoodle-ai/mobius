@@ -112,7 +112,7 @@ test("client: startRun posts the new request shape", async () => {
       project: "test-project",
     });
     const run = await client.startRun("loop_1", {
-      external_id: "external-1",
+      idempotencyKey: "run-request-1",
       event: { topic: "sdk" },
     });
     assert.equal(run.id, "run_1");
@@ -123,8 +123,30 @@ test("client: startRun posts the new request shape", async () => {
     requestedURL,
     "https://api.example.invalid/v1/projects/test-project/loops/loop_1/runs",
   );
-  assert.match(requestBody, /"idempotency_key":"external-1"/);
+  assert.match(requestBody, /"idempotency_key":"run-request-1"/);
   assert.match(requestBody, /"event":\{"topic":"sdk"\}/);
+});
+
+test("client: startRun keeps external_id as a deprecated alias", async () => {
+  let requestBody = "";
+  const restore = installFakeFetch({
+    status: 202,
+    body: loopRun("run_1", "running"),
+    capture: (_input, init) => {
+      requestBody = String(init?.body ?? "");
+    },
+  });
+  try {
+    const client = new Client({ apiKey: "mbx_test", project: "test-project" });
+    await client.startRun("loop_1", { external_id: "legacy-1" });
+    await assert.rejects(
+      client.startRun("loop_1", { idempotencyKey: "a", external_id: "b" }),
+      ConfigError,
+    );
+  } finally {
+    restore();
+  }
+  assert.match(requestBody, /"idempotency_key":"legacy-1"/);
 });
 
 test("client: run control helpers use loop run endpoints", async () => {
@@ -159,6 +181,56 @@ test("client: run control helpers use loop run endpoints", async () => {
       url.endsWith("/v1/projects/test-project/runs/run_1/signals"),
     ),
   );
+});
+
+test("client: resolves agents by name and sessions by agent name plus key", async () => {
+  const seen: string[] = [];
+  const original = globalThis.fetch;
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    const url = new URL(typeof input === "string" ? input : input.toString());
+    seen.push(url.toString());
+    if (url.pathname.endsWith("/agents/agent_1")) {
+      return new Response(JSON.stringify({ id: "agent_1", name: "Scout" }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    if (url.pathname.endsWith("/agents")) {
+      assert.equal(url.searchParams.get("name"), "Scout");
+      return new Response(
+        JSON.stringify({ items: [{ id: "agent_1", name: "Scout" }] }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      );
+    }
+    assert.ok(url.pathname.endsWith("/sessions"));
+    assert.equal(url.searchParams.get("agent_name"), "Scout");
+    assert.equal(url.searchParams.get("session_key"), "conversation-1");
+    return new Response(
+      JSON.stringify({
+        items: [{ id: "session_1", agent_id: "agent_1", session_key: "conversation-1" }],
+        has_more: false,
+      }),
+      { status: 200, headers: { "Content-Type": "application/json" } },
+    );
+  }) as typeof fetch;
+
+  try {
+    const client = new Client({
+      apiKey: "mbx_test",
+      baseURL: "https://api.example.invalid",
+      project: "test-project",
+    });
+    assert.equal((await client.resolveAgent("Scout")).id, "agent_1");
+    assert.equal((await client.resolveAgent("Scout")).id, "agent_1");
+    assert.equal((await client.getAgent("agent_1")).name, "Scout");
+    assert.equal(
+      (await client.getSessionByKey("conversation-1", { agentName: "Scout" }))!.id,
+      "session_1",
+    );
+  } finally {
+    globalThis.fetch = original;
+  }
+  assert.equal(seen.filter((url) => url.includes("/agents?name=")).length, 1);
 });
 
 test("smoke: waitRun fetches after stream closes before terminal", async () => {

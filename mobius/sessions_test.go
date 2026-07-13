@@ -13,6 +13,24 @@ import (
 	"github.com/deepnoodle-ai/wonton/assert"
 )
 
+func TestListSessionsFiltersByAgentNameAndSessionKey(t *testing.T) {
+	var query string
+	c, srv := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		query = r.URL.RawQuery
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"items":[],"has_more":false}`))
+	}))
+	defer srv.Close()
+
+	_, err := c.ListSessions(context.Background(), &ListSessionsOptions{
+		AgentName:  "Scout",
+		SessionKey: "conversation-1",
+	})
+	assert.NoError(t, err)
+	assert.Contains(t, query, "agent_name=Scout")
+	assert.Contains(t, query, "session_key=conversation-1")
+}
+
 func TestInvokeAgent_HighLevelClient(t *testing.T) {
 	var body map[string]interface{}
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

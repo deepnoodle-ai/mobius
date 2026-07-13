@@ -6,6 +6,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 
 ## [Unreleased]
 
+### Added
+
+- Agent discovery, session lookup by `agent_name` plus `session_key`, and
+  opt-in transcript following across the Go, Python, and TypeScript SDKs.
+- CLI surfaces for permissions, principals, and roles, including one-command
+  principal creation with a role and first API key.
+
+### Changed
+
+- **Behavior change:** project API-key creation now rejects principals with no
+  role assignments. Assign a role before minting the key, use `mobius
+  principals create --role ... --with-key`, or explicitly pass
+  `--allow-unassigned-principal` for a deliberately dormant credential.
+- `idempotency_key` is the canonical run deduplication term. The high-level
+  `external_id` aliases remain compatible but are deprecated.
+- TypeScript now exposes edge-safe `./client`, `./transcript`, and `./worker`
+  entrypoints that avoid importing Node-only worker dependencies.
+
 ## [0.0.48] - 2026-07-13
 
 ### Added

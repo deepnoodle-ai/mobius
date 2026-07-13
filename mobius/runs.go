@@ -11,17 +11,20 @@ import (
 const defaultWaitRunReconnectDelay = time.Second
 
 // StartRunOptions contains common fields for starting loop runs.
-// ExternalID is a caller-supplied correlation and idempotency key.
 //
 // Event is the exact event object that starts the run, reachable in templates
 // at ${{ event.<key> }}. Config is optional static or caller-provided
 // configuration reachable at config.*. Meta is optional caller-supplied event
 // metadata; Mobius adds its own provenance (run, loop, source, trigger ids).
 type StartRunOptions struct {
-	Event      map[string]interface{}
-	Config     map[string]interface{}
-	Meta       map[string]interface{}
-	Source     *api.LoopRunSource
+	Event  map[string]interface{}
+	Config map[string]interface{}
+	Meta   map[string]interface{}
+	Source *api.LoopRunSource
+	// IdempotencyKey deduplicates run creation within the project.
+	IdempotencyKey string
+	// ExternalID is the deprecated name for IdempotencyKey.
+	// Deprecated: use IdempotencyKey.
 	ExternalID string
 }
 
@@ -44,6 +47,9 @@ type WaitRunOptions struct {
 
 // StartRun starts a published loop run by loop ID.
 func (c *Client) StartRun(ctx context.Context, loopID string, opts *StartRunOptions) (*api.LoopRun, error) {
+	if opts != nil && opts.IdempotencyKey != "" && opts.ExternalID != "" && opts.IdempotencyKey != opts.ExternalID {
+		return nil, fmt.Errorf("mobius: start run: IdempotencyKey and deprecated ExternalID must match when both are set")
+	}
 	req := startRunRequest(opts)
 	resp, err := c.ac.StartRunWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.IDParam(loopID), req)
 	if err != nil {
@@ -187,8 +193,12 @@ func startRunRequest(opts *StartRunOptions) api.StartLoopRunRequest {
 	if opts.Source != nil {
 		req.Source = opts.Source
 	}
-	if opts.ExternalID != "" {
-		req.IdempotencyKey = &opts.ExternalID
+	key := opts.IdempotencyKey
+	if key == "" {
+		key = opts.ExternalID
+	}
+	if key != "" {
+		req.IdempotencyKey = &key
 	}
 	return req
 }

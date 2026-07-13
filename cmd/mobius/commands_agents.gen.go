@@ -252,6 +252,7 @@ func registerAgentsCommands(app *cli.App) {
 	agentsGrp.Command("list").
 		Description("List agents").
 		Flags(
+			cli.String("name", "").Help("Filter to the project-unique agent with this exact name."),
 			cli.String("principal-id", "").Help("Filter to the agent backed by this principal."),
 			cli.String("status", "").Help("Filter by administrative status (active/inactive), independent of presence."),
 			cli.Int("limit", "").Help("Maximum number of items to return"),
@@ -265,6 +266,10 @@ func registerAgentsCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := authFor(ctx).Project
 			params := &api.ListAgentsParams{}
+			if ctx.IsSet("name") {
+				v := ctx.String("name")
+				params.Name = &v
+			}
 			if ctx.IsSet("principal-id") {
 				v := ctx.String("principal-id")
 				params.PrincipalId = &v

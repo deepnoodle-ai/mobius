@@ -1,4 +1,6 @@
 import type {
+  Agent,
+  AgentListResponse,
   AgentTurn,
   AgentTurnListResponse,
   AgentRef,
@@ -248,6 +250,9 @@ export interface StartRunOptions {
   /** Optional caller-supplied event metadata; Mobius adds its own provenance. */
   meta?: Record<string, unknown>;
   source?: LoopRunSource;
+  /** Dedup key scoped to the project for this loop run. */
+  idempotencyKey?: string;
+  /** @deprecated Use `idempotencyKey`. */
   external_id?: string;
 }
 
@@ -362,7 +367,17 @@ export interface WatchSessionTranscriptOptions {
   transcript?: SessionTranscript;
   /** Delay before reconnecting after a dropped connection (not a clean `rotate`). Defaults to 1000. */
   reconnectDelayMs?: number;
+  /** Reopen after an idle close so turns started later are observed. Defaults to false. */
+  follow?: boolean;
   signal?: AbortSignal;
+}
+
+export interface ListAgentsOptions {
+  /** Exact project-unique agent name. */
+  name?: string;
+  principalId?: string;
+  status?: string;
+  limit?: number;
 }
 
 export type TranscriptConnectionState = "open" | "reconnecting" | "ended";
@@ -390,6 +405,7 @@ export type TurnDiagnostics = TranscriptDiagnostics;
 
 export interface ListSessionsOptions {
   agentId?: string;
+  agentName?: string;
   sessionKey?: string;
   status?: string;
   scope?: string;
@@ -437,6 +453,7 @@ export class Client {
   private readonly timeoutMs: number;
   private readonly fetchFn: typeof globalThis.fetch;
   private readonly logger?: (event: ClientLogEvent) => void;
+  private readonly agentNameCache = new Map<string, Agent>();
 
   constructor(opts: ClientOptions) {
     this.baseURL = (opts.baseURL ?? DEFAULT_BASE_URL).replace(/\/$/, "");
@@ -547,12 +564,21 @@ export class Client {
     loopId: string,
     opts: StartRunOptions = {},
   ): Promise<LoopRun> {
+    if (
+      opts.idempotencyKey &&
+      opts.external_id &&
+      opts.idempotencyKey !== opts.external_id
+    ) {
+      throw new ConfigError(
+        "idempotencyKey and deprecated external_id must match when both are set",
+      );
+    }
     const body: StartLoopRunRequest = removeUndefined({
       event: opts.event,
       config: opts.config,
       meta: opts.meta,
       source: opts.source,
-      idempotency_key: opts.external_id,
+      idempotency_key: opts.idempotencyKey ?? opts.external_id,
     });
     const resp = await this.request(
       `/v1/projects/:project/loops/${encodeURIComponent(loopId)}/runs`,
@@ -605,6 +631,7 @@ export class Client {
   async listSessions(opts: ListSessionsOptions = {}): Promise<SessionListResponse> {
     const path = withQuery("/v1/projects/:project/sessions", {
       agent_id: opts.agentId,
+      agent_name: opts.agentName,
       session_key: opts.sessionKey,
       status: opts.status,
       scope: opts.scope,
@@ -616,6 +643,61 @@ export class Client {
     });
     const resp = await this.request(path, { method: "GET" });
     return (await resp.json()) as SessionListResponse;
+  }
+
+  async getSessionByKey(
+    sessionKey: string,
+    agent: { agentId?: string; agentName?: string },
+  ): Promise<Session | null> {
+    if (!sessionKey) throw new ConfigError("sessionKey is required");
+    if (!!agent.agentId === !!agent.agentName) {
+      throw new ConfigError("exactly one of agentId or agentName is required");
+    }
+    const page = await this.listSessions({
+      agentId: agent.agentId,
+      agentName: agent.agentName,
+      sessionKey,
+      limit: 1,
+    });
+    return page.items[0] ?? null;
+  }
+
+  async listAgents(opts: ListAgentsOptions = {}): Promise<AgentListResponse> {
+    const path = withQuery("/v1/projects/:project/agents", {
+      name: opts.name,
+      principal_id: opts.principalId,
+      status: opts.status,
+      limit: opts.limit,
+    });
+    const resp = await this.request(path, { method: "GET" });
+    const page = (await resp.json()) as AgentListResponse;
+    for (const agent of page.items) this.agentNameCache.set(agent.name, agent);
+    return page;
+  }
+
+  async getAgent(agentId: string): Promise<Agent> {
+    const resp = await this.request(
+      `/v1/projects/:project/agents/${encodeURIComponent(agentId)}`,
+      { method: "GET" },
+    );
+    const agent = (await resp.json()) as Agent;
+    this.agentNameCache.set(agent.name, agent);
+    return agent;
+  }
+
+  async resolveAgent(name: string): Promise<Agent> {
+    const cached = this.agentNameCache.get(name);
+    if (cached) return cached;
+    const page = await this.listAgents({ name, limit: 1 });
+    const agent = page.items[0];
+    if (!agent) {
+      throw new MobiusAPIError({
+        status: 404,
+        code: "not_found",
+        message: `agent ${JSON.stringify(name)} not found`,
+      });
+    }
+    return agent;
   }
 
   async getSession(sessionId: string): Promise<Session> {
@@ -929,7 +1011,8 @@ export class Client {
           let connection: TranscriptConnectionState = "open";
           if (eventType === "stream.end") {
             if ((ev.frame as StreamEndFrame).reason === "idle") {
-              connection = "ended";
+              connection = opts.follow ? "reconnecting" : "ended";
+              rotate = false;
             } else {
               connection = "reconnecting";
               rotate = true;

@@ -599,10 +599,9 @@ func (t *TurnTranscript) Transcript() *SessionTranscript { return t.stream.view 
 // from the embedded SessionTranscript.
 //
 // Next reconnects with the current cursor on a stream.end rotate and after
-// dropped connections, and returns false on a stream.end idle, ctx
-// cancellation, or a permanent stream error (recorded in Err). On idle the
-// caller can poll GetSessionTranscript and reopen when the resume cursor
-// moves.
+// dropped connections. It returns false on a stream.end idle unless Follow
+// is enabled, and always stops on ctx cancellation or a permanent stream
+// error (recorded in Err).
 type TranscriptWatcher struct {
 	stream transcriptStream
 }
@@ -671,6 +670,7 @@ type transcriptStream struct {
 	sessionID  string
 	stopTurnID string // when set, stop after this turn's terminal turn.upsert
 	delay      time.Duration
+	follow     bool
 	view       *SessionTranscript
 
 	body   io.ReadCloser
@@ -726,6 +726,16 @@ func (s *transcriptStream) next() bool {
 		disc, _ := frame.Discriminator()
 		if disc == "stream.end" {
 			if sef, err := frame.AsStreamEndFrame(); err == nil && string(sef.Reason) == "idle" {
+				if s.follow {
+					s.disconnect()
+					s.connection = TranscriptConnectionReconnecting
+					s.reconnects++
+					if !sleepCtx(s.ctx, s.delay) {
+						s.stop()
+						return false
+					}
+					continue
+				}
 				s.connection = TranscriptConnectionEnded
 				s.stop()
 				return false
@@ -875,6 +885,9 @@ type WatchSessionTranscriptOptions struct {
 	// ReconnectDelay is the pause before reconnecting after a dropped
 	// connection (not a clean rotate). Zero uses one second.
 	ReconnectDelay time.Duration
+	// Follow reconnects after an idle close so turns started later are
+	// observed. The default false preserves request/response behavior.
+	Follow bool
 }
 
 // GetSessionTranscript fetches a session transcript snapshot (session-stream
@@ -974,12 +987,14 @@ func (c *Client) WatchSessionTranscript(ctx context.Context, sessionID string, o
 	view := (*SessionTranscript)(nil)
 	cursor := ""
 	delay := defaultTranscriptReconnectDelay
+	follow := false
 	if opts != nil {
 		view = opts.Transcript
 		cursor = opts.Cursor
 		if opts.ReconnectDelay > 0 {
 			delay = opts.ReconnectDelay
 		}
+		follow = opts.Follow
 	}
 	if view == nil {
 		view = NewSessionTranscript()
@@ -992,6 +1007,7 @@ func (c *Client) WatchSessionTranscript(ctx context.Context, sessionID string, o
 		ctx:        ctx,
 		sessionID:  sessionID,
 		delay:      delay,
+		follow:     follow,
 		view:       view,
 		connection: TranscriptConnectionIdle,
 	}}

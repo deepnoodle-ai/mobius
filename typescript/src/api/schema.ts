@@ -562,6 +562,122 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/projects/{project_handle}/permissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List project permissions
+         * @description Returns the canonical permission definitions, role presets, and action execution permission groups available when building project roles. Use this endpoint to source the permission IDs accepted by the role creation and update endpoints.
+         */
+        get: operations["listProjectPermissions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project_handle}/roles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List roles
+         * @description Returns system-defined roles plus custom roles scoped to this project.
+         */
+        get: operations["listRoles"];
+        put?: never;
+        /**
+         * Create role
+         * @description Creates a custom role scoped to the project. Only system-defined roles exist at the org/global tier and are created automatically by the platform.
+         */
+        post: operations["createRole"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project_handle}/roles/{resource_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get role
+         * @description Returns a role by ID. Both system-defined and custom roles belonging to this project are accessible via this endpoint.
+         */
+        get: operations["getRole"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete role
+         * @description Hard-deletes the role and all its assignments. System-defined roles cannot be deleted.
+         */
+        delete: operations["deleteRole"];
+        options?: never;
+        head?: never;
+        /**
+         * Update role
+         * @description Updates description or permissions of a custom role. Role names are immutable. System-defined roles (system_defined=true) cannot be updated and return 403.
+         */
+        patch: operations["updateRole"];
+        trace?: never;
+    };
+    "/v1/projects/{project_handle}/role-assignments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List role assignments
+         * @description Returns role assignments optionally filtered by principal or role.
+         */
+        get: operations["listRoleAssignments"];
+        put?: never;
+        /**
+         * Create role assignment
+         * @description Binds a role to a principal in this project (human or machine). The assignment records the creating user in `granted_by`. To manage a machine principal's roles without referencing its ID directly, use `role_ids` on the principal create and update endpoints.
+         */
+        post: operations["createRoleAssignment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project_handle}/role-assignments/{resource_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete role assignment
+         * @description Deletes a single role assignment by ID. The underlying role and principal are not deleted, but the principal immediately loses permissions granted only through this assignment.
+         */
+        delete: operations["deleteRoleAssignment"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/organization/definition-resolver": {
         parameters: {
             query?: never;
@@ -685,7 +801,7 @@ export interface paths {
         };
         /**
          * List agents
-         * @description Returns active and inactive agents with computed presence. Deleted agents are excluded. Filter by principal_id to find the agent backed by a specific identity.
+         * @description Returns active and inactive agents with computed presence. Deleted agents are excluded. Filter by exact name or principal_id to resolve a configured agent without copying its Mobius ID into application state.
          */
         get: operations["listAgents"];
         put?: never;
@@ -979,7 +1095,7 @@ export interface paths {
         };
         /**
          * List sessions
-         * @description Returns durable conversation sessions for the project, newest activity first. Pass `agent_id` to scope the list to one agent's remembered conversations.
+         * @description Returns durable conversation sessions for the project, newest activity first. Pass `agent_id` or `agent_name` to scope the list to one agent's remembered conversations.
          */
         get: operations["listSessions"];
         put?: never;
@@ -1760,6 +1876,58 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/projects/{project_handle}/principals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List machine principals
+         * @description Returns project machine principals (`service`, `agent`, `system`) used by workers, agents, and loop. Only active principals are returned by default; pass `include_disabled=true` to also include disabled ones (e.g. for an admin audit). Filter by `kind` to narrow to a single kind.
+         */
+        get: operations["listPrincipals"];
+        put?: never;
+        /**
+         * Create service principal
+         * @description Creates a standalone `service` principal within the project. Supply `role_ids` to assign roles at creation time; agent and system principals are created by their own flows.
+         */
+        post: operations["createPrincipal"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project_handle}/principals/{resource_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get principal
+         * @description Returns one machine principal, including disabled state, owner, metadata, and timestamps. API keys belonging to the principal are managed through the API key endpoints.
+         */
+        get: operations["getPrincipal"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete principal
+         * @description Archives the principal so it disappears from normal use while the record remains available for attribution and audit history. Returns `409 Conflict` while an agent or active API key still references the principal; disable instead for an immediate kill switch.
+         */
+        delete: operations["deletePrincipal"];
+        options?: never;
+        head?: never;
+        /**
+         * Update principal
+         * @description Updates mutable fields. To disable without deleting, set `state` to `disabled`. The `name` field is immutable after creation.
+         */
+        patch: operations["updatePrincipal"];
+        trace?: never;
+    };
     "/v1/projects/{project_handle}/tables": {
         parameters: {
             query?: never;
@@ -2072,7 +2240,7 @@ export interface components {
         ErrorResponse: {
             /** @description Error detail. */
             error: {
-                /** @description Stable, machine-readable error code in lower_snake_case. The cross-cutting codes clients can rely on across endpoints are: `bad_request` (malformed input / failed validation), `unauthorized`, `forbidden`, `not_found`, `conflict` / `already_exists`, `rate_limit_exceeded`, and `service_unavailable`. Direct session invocation conflicts use `session_turn_active` with the blocking `turn_id` and `status` in `details`. Endpoint-specific codes (e.g. `loop_paused`, `invalid_signature`) extend this set; an unrecognized code should be handled by its HTTP status family. */
+                /** @description Stable, machine-readable error code in lower_snake_case. The cross-cutting codes clients can rely on across endpoints are: `bad_request` (malformed input / failed validation), `unauthorized`, `permission_denied`, `forbidden`, `not_found`, `conflict` / `already_exists`, `rate_limit_exceeded`, and `service_unavailable`. Direct session invocation conflicts use `session_turn_active` with the blocking `turn_id` and `status` in `details`. Session-key lookups without an agent scope use `session_key_scope_required`; supplying both agent ID and name uses `session_agent_ref_conflict`. Project API-key creation for a principal with no role assignments uses `principal_has_no_roles`. Authenticated callers missing a permission receive `permission_denied` with the required permission in `details`. Endpoint-specific codes (e.g. `loop_paused`, `invalid_signature`) extend this set; an unrecognized code should be handled by its HTTP status family. */
                 code: string;
                 /** @description Human-readable error message */
                 message: string;
@@ -2372,11 +2540,14 @@ export interface components {
             origin: components["schemas"]["SessionOrigin"];
             /** @description Boundary used to resolve the session key. */
             scope: components["schemas"]["SessionScope"];
-            /** @description Identifier of the resource the session is scoped to (e.g. the agent for agent-scoped sessions). */
+            /** @description Advanced provenance identifying the resource that owns the session namespace. Mobius derives this from `agent_id` for normal agent sessions. */
             scope_ref_id: string;
-            /** @description Caller-assigned name identifying this conversation within its scope (`scope` + `scope_ref_id`); reused as the session routing key. */
+            /**
+             * @deprecated
+             * @description Deprecated legacy alias of `session_key`. Kept for compatibility while clients migrate to the canonical conversation-key field.
+             */
             scope_name: string;
-            /** @description Stable session routing key used to look up a scoped conversation (mirrors `scope_name`). */
+            /** @description Stable caller-assigned conversation key, unique within one agent. */
             session_key: string;
             /** @description Where the session appears in project UI surfaces. */
             visibility: components["schemas"]["SessionVisibility"];
@@ -2948,6 +3119,11 @@ export interface components {
             principal_id: string;
             /** @description Optional role whose permissions cap this key below its principal's full grants. */
             scope_role_id?: string;
+            /**
+             * @description Allow minting a key for a principal with no project role assignments. The resulting key cannot access project resources until a role is assigned. Omit this for normal onboarding so a missing assignment fails with `principal_has_no_roles`.
+             * @default false
+             */
+            allow_unassigned_principal: boolean;
             /**
              * Format: date-time
              * @description Optional hard expiry. Omit for a non-expiring key.
@@ -4031,6 +4207,126 @@ export interface components {
             /** @description Round-trip latency in milliseconds. */
             latency_ms?: number;
         };
+        PermissionDefinition: {
+            /** @description Stable permission ID stored on roles. */
+            id: string;
+            /** @description Human-readable label for product UI. */
+            label: string;
+            /** @description Short explanation of what the permission grants. */
+            description: string;
+            /** @enum {string} */
+            scope: "project" | "org" | "platform" | "action";
+            /** @enum {string} */
+            category: "project" | "access" | "loops" | "runs" | "work" | "integrations" | "audit" | "billing" | "platform" | "actions";
+            /** @enum {string} */
+            risk: "low" | "medium" | "high" | "critical";
+            /** @description Whether this permission should be selectable in the current project role builder. */
+            assignable: boolean;
+            /** @description User kinds this permission is intended for. */
+            user_kinds: ("human" | "agent" | "service" | "system")[];
+        };
+        PermissionPreset: {
+            id: string;
+            label: string;
+            description: string;
+            /** @enum {string} */
+            scope: "project" | "org" | "platform" | "action";
+            permissions: string[];
+        };
+        ActionPermissionGroup: {
+            /** @description Wildcard permission ID, for example `actions.execute.slack.*`. */
+            id: string;
+            label: string;
+            /** @enum {string} */
+            source: "platform" | "integration" | "custom";
+            /** @description Concrete action execution permission IDs included in this group. */
+            children: string[];
+        };
+        PermissionCatalogResponse: {
+            items: components["schemas"]["PermissionDefinition"][];
+            presets: components["schemas"]["PermissionPreset"][];
+            action_groups: components["schemas"]["ActionPermissionGroup"][];
+        };
+        /** @description Named bundle of permissions assignable to human or machine principals. Roles let admins grant loop, project, and integration capabilities consistently without editing every user individually. */
+        Role: {
+            /** @description Unique identifier for this role. */
+            id: string;
+            /** @description Scoping project. Empty for system-defined roles. */
+            project_id?: string;
+            /** @description Human-readable role name, unique within org+project scope. */
+            name: string;
+            /** @description Optional human-readable description of what this role grants. */
+            description?: string;
+            /** @description Permission strings granted by this role. Source allowed values from `GET /v1/projects/{project_handle}/permissions`; legacy IDs or values not present in that catalog are rejected. */
+            permissions: string[];
+            /** @description True for built-in platform roles that cannot be modified or deleted. */
+            system_defined: boolean;
+            tags?: components["schemas"]["TagMap"];
+            /**
+             * Format: date-time
+             * @description Timestamp when this role was created.
+             */
+            created_at: string;
+            /**
+             * Format: date-time
+             * @description Timestamp when this role was last updated.
+             */
+            updated_at: string;
+        };
+        /** @description Binding between a principal and a role in one project. Use assignments to explain why a principal (human or machine) has access and to audit who granted it. */
+        RoleAssignment: {
+            /** @description Unique identifier for this role assignment. */
+            id: string;
+            /** @description Principal ID receiving the role. */
+            principal_id: string;
+            /** @description ID of the assigned role. */
+            role_id: string;
+            /** @description Name of the assigned role. */
+            role_name: string;
+            /** @description Principal ID of the caller who created this assignment. */
+            granted_by?: string;
+            /**
+             * Format: date-time
+             * @description Timestamp when this assignment was created.
+             */
+            created_at: string;
+        };
+        RoleListResponse: {
+            /** @description The list of results for this page. */
+            items: components["schemas"]["Role"][];
+            /** @description Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false. */
+            next_cursor?: string;
+            /** @description Whether additional pages are available. */
+            has_more: boolean;
+        };
+        RoleAssignmentListResponse: {
+            /** @description The list of results for this page. */
+            items: components["schemas"]["RoleAssignment"][];
+        };
+        CreateRoleRequest: {
+            /** @description Unique name within the project. */
+            name: string;
+            /** @description Optional human-readable description of what this role grants. */
+            description?: string;
+            /** @description Permission strings to include. Source allowed values from `GET /v1/projects/{project_handle}/permissions`; legacy IDs or values not present in that catalog are rejected. */
+            permissions: string[];
+            tags?: components["schemas"]["TagMap"];
+        };
+        UpdateRoleRequest: {
+            /** @description Replacement description. */
+            description?: string;
+            /** @description Replaces the existing permissions array entirely. Source allowed values from `GET /v1/projects/{project_handle}/permissions`; legacy IDs or values not present in that catalog are rejected. */
+            permissions?: string[];
+            tags?: components["schemas"]["TagMap"];
+        };
+        CreateRoleAssignmentRequest: {
+            /** @description Principal ID to assign the role to (human or machine). */
+            principal_id: string;
+            /** @description Mutually exclusive with `role_name`. */
+            role_id?: string;
+            /** @description Resolved to a role ID server-side. Mutually exclusive with `role_id`. */
+            role_name?: string;
+        } & (unknown | unknown);
         /** @description The org's pluggable definition-source configuration (redacted view). The bearer token is never included; `auth_configured` reports its presence. */
         DefinitionResolverConfig: {
             /**
@@ -7221,6 +7517,84 @@ export interface components {
             open: boolean;
         };
         /**
+         * @description Machine principal kind. `service` is the standalone user-facing API client identity. `agent` and `system` are internal backing identities for agent execution and platform-internal work. (Human principals are managed as organization members, not on this surface.)
+         * @enum {string}
+         */
+        PrincipalKind: "service" | "agent" | "system";
+        /**
+         * @description Canonical business-lifecycle state. `active` allows authentication and job claims; `disabled` is a reversible kill switch that blocks them but preserves the record and its assignments; `deleted` is the retained archived state used for audit, attribution, and history.
+         * @enum {string}
+         */
+        PrincipalState: "active" | "disabled" | "deleted";
+        /** @description Non-human identity used by loop, agents, and API keys. A principal makes ownership, permissions, and credential rotation explicit without tying machine access to a human user. The `id` is the principal id used as the `owned_by` value when filtering or claiming resources. */
+        Principal: {
+            /** @description Unique identifier for this principal. */
+            id: string;
+            /** @description Machine kind of this principal. */
+            kind: components["schemas"]["PrincipalKind"];
+            /** @description Current lifecycle state: `active`, `disabled`, or retained `deleted`. */
+            state: components["schemas"]["PrincipalState"];
+            /** @description Human-readable name for this principal. Immutable after creation. */
+            name: string;
+            /** @description Optional human-readable description. */
+            description?: string;
+            /** @description Typed, human-readable stable reference for this machine principal (`svc:acme-ci`, `agent:harry`, `system`). Replaces the synthetic email for non-humans (PRD 2026-06-04 FR-3). */
+            handle?: string;
+            /** @description Optional human principal accountable for this machine principal. */
+            owner_id?: string;
+            /** @description Role IDs currently assigned to this principal in the project. */
+            role_ids?: string[];
+            /** @description Arbitrary key-value metadata. Subject to size and nesting depth limits. */
+            metadata?: {
+                [key: string]: unknown;
+            };
+            tags?: components["schemas"]["TagMap"];
+            /**
+             * Format: date-time
+             * @description Timestamp when this principal was created.
+             */
+            created_at: string;
+            /**
+             * Format: date-time
+             * @description Timestamp when this principal was last updated.
+             */
+            updated_at: string;
+        };
+        PrincipalListResponse: {
+            /** @description The list of results for this page. */
+            items: components["schemas"]["Principal"][];
+        };
+        CreatePrincipalRequest: {
+            /** @description Human-readable name for this principal. Immutable after creation. */
+            name: string;
+            /** @description Optional human-readable description. */
+            description?: string;
+            /** @description Human principal accountable for this service principal. */
+            owner_id?: string;
+            /** @description Arbitrary metadata to attach to the principal. */
+            metadata?: {
+                [key: string]: unknown;
+            };
+            /** @description One or more role IDs to assign at creation time. All assignments are created atomically with the principal. Requires `mobius.project.admin`. Each role must belong to this project or be system-defined. */
+            role_ids?: string[];
+            tags?: components["schemas"]["TagMap"];
+        };
+        UpdatePrincipalRequest: {
+            /** @description Replacement description. */
+            description?: string;
+            /** @description Replacement lifecycle state: `active` or `disabled`. */
+            state?: components["schemas"]["PrincipalState"];
+            /** @description Human principal accountable for this principal. */
+            owner_id?: string;
+            /** @description Replacement metadata. */
+            metadata?: {
+                [key: string]: unknown;
+            };
+            /** @description Replacement role IDs for this principal in the project. Send an empty array to remove all project role assignments. Requires `mobius.project.admin`. */
+            role_ids?: string[];
+            tags?: components["schemas"]["TagMap"];
+        };
+        /**
          * @description Project table metadata and schema.
          * @example {
          *       "id": "table_2x7q5m9v3p8r4n6t",
@@ -9280,6 +9654,269 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
+    listProjectPermissions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PermissionCatalogResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listRoles: {
+        parameters: {
+            query?: {
+                /** @description Maximum number of items to return */
+                limit?: components["parameters"]["LimitParam"];
+                /** @description Cursor for pagination (opaque string from previous response) */
+                cursor?: components["parameters"]["CursorParam"];
+            };
+            header?: never;
+            path: {
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoleListResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    createRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateRoleRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Role"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    getRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
+                resource_id: components["parameters"]["IDParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Role"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    deleteRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
+                resource_id: components["parameters"]["IDParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    updateRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
+                resource_id: components["parameters"]["IDParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateRoleRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Role"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    listRoleAssignments: {
+        parameters: {
+            query?: {
+                /** @description Filter to assignments for a specific principal. */
+                principal_id?: string;
+                /** @description Filter to assignments for a specific role. */
+                role_id?: string;
+            };
+            header?: never;
+            path: {
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoleAssignmentListResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    createRoleAssignment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateRoleAssignmentRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoleAssignment"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    deleteRoleAssignment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
+                resource_id: components["parameters"]["IDParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
     getDefinitionResolver: {
         parameters: {
             query?: never;
@@ -9626,6 +10263,8 @@ export interface operations {
     listAgents: {
         parameters: {
             query?: {
+                /** @description Filter to the project-unique agent with this exact name. */
+                name?: string;
                 /** @description Filter to the agent backed by this principal. */
                 principal_id?: string;
                 /** @description Filter by administrative status (active/inactive), independent of presence. */
@@ -10413,7 +11052,9 @@ export interface operations {
             query?: {
                 /** @description Filter to sessions owned by this agent. */
                 agent_id?: string;
-                /** @description Look up the session with this exact routing key — a read-only deterministic lookup that avoids a create-or-resolve round trip, returning the one matching session or an empty list. Requires `agent_id`, since session keys are scoped to an agent. */
+                /** @description Filter to sessions owned by the project-unique agent with this exact name. Mutually exclusive with `agent_id`. */
+                agent_name?: string;
+                /** @description Look up the session with this exact routing key — a read-only deterministic lookup that avoids a create-or-resolve round trip, returning the one matching session or an empty list. Requires exactly one of `agent_id` or `agent_name`, since session keys are scoped to an agent. */
                 session_key?: string;
                 /** @description Filter by session status. */
                 status?: components["schemas"]["SessionStatus"];
@@ -12442,6 +13083,159 @@ export interface operations {
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
             429: components["responses"]["TooManyRequests"];
+        };
+    };
+    listPrincipals: {
+        parameters: {
+            query?: {
+                /** @description Filter principals by kind. */
+                kind?: components["schemas"]["PrincipalKind"];
+                /** @description Include disabled principals. By default only active ones are returned. */
+                include_disabled?: boolean;
+                /** @description Maximum number of items to return */
+                limit?: components["parameters"]["LimitParam"];
+            };
+            header?: never;
+            path: {
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PrincipalListResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    createPrincipal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreatePrincipalRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Principal"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    getPrincipal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
+                resource_id: components["parameters"]["IDParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Principal"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    deletePrincipal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
+                resource_id: components["parameters"]["IDParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    updatePrincipal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
+                resource_id: components["parameters"]["IDParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdatePrincipalRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Principal"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
         };
     };
     listTables: {

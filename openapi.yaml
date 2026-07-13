@@ -43,6 +43,12 @@ tags:
 - name: webhooks
   x-displayName: Webhooks
   description: Outgoing webhook subscriptions, tests, and delivery history.
+- name: permissions
+  x-displayName: Permissions
+  description: Permission definitions and presets used to build project roles.
+- name: roles
+  x-displayName: Roles
+  description: System and custom roles plus user role assignments.
 - name: organizations
   x-displayName: Organizations
   description: Organization metadata, membership administration, and the current-org control
@@ -74,6 +80,9 @@ tags:
 - name: blueprints
   x-displayName: Blueprints
   description: Blueprints API operations.
+- name: principals
+  x-displayName: Principals
+  description: Principals API operations.
 - name: tables
   x-displayName: Tables
   description: Agent-readable and -writable project tables.
@@ -1416,6 +1425,242 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /v1/projects/{project_handle}/permissions:
+    get:
+      operationId: listProjectPermissions
+      tags:
+      - permissions
+      summary: List project permissions
+      description: Returns the canonical permission definitions, role presets, and action
+        execution permission groups available when building project roles. Use this endpoint
+        to source the permission IDs accepted by the role creation and update endpoints.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PermissionCatalogResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/projects/{project_handle}/roles:
+    get:
+      operationId: listRoles
+      tags:
+      - roles
+      summary: List roles
+      description: Returns system-defined roles plus custom roles scoped to this project.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/LimitParam'
+      - $ref: '#/components/parameters/CursorParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      operationId: createRole
+      tags:
+      - roles
+      summary: Create role
+      description: Creates a custom role scoped to the project. Only system-defined roles
+        exist at the org/global tier and are created automatically by the platform.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRoleRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /v1/projects/{project_handle}/roles/{resource_id}:
+    get:
+      operationId: getRole
+      tags:
+      - roles
+      summary: Get role
+      description: Returns a role by ID. Both system-defined and custom roles belonging to
+        this project are accessible via this endpoint.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/IDParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      operationId: updateRole
+      tags:
+      - roles
+      summary: Update role
+      description: Updates description or permissions of a custom role. Role names are immutable.
+        System-defined roles (system_defined=true) cannot be updated and return 403.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/IDParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateRoleRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+    delete:
+      operationId: deleteRole
+      tags:
+      - roles
+      summary: Delete role
+      description: Hard-deletes the role and all its assignments. System-defined roles cannot
+        be deleted.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/IDParam'
+      responses:
+        '204':
+          description: No Content
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/projects/{project_handle}/role-assignments:
+    get:
+      operationId: listRoleAssignments
+      tags:
+      - roles
+      summary: List role assignments
+      description: Returns role assignments optionally filtered by principal or role.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - name: principal_id
+        in: query
+        description: Filter to assignments for a specific principal.
+        schema:
+          type: string
+      - name: role_id
+        in: query
+        description: Filter to assignments for a specific role.
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleAssignmentListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      operationId: createRoleAssignment
+      tags:
+      - roles
+      summary: Create role assignment
+      description: Binds a role to a principal in this project (human or machine). The assignment
+        records the creating user in `granted_by`. To manage a machine principal's roles without
+        referencing its ID directly, use `role_ids` on the principal create and update endpoints.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRoleAssignmentRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleAssignment'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /v1/projects/{project_handle}/role-assignments/{resource_id}:
+    delete:
+      operationId: deleteRoleAssignment
+      tags:
+      - roles
+      summary: Delete role assignment
+      description: Deletes a single role assignment by ID. The underlying role and principal
+        are not deleted, but the principal immediately loses permissions granted only through
+        this assignment.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/IDParam'
+      responses:
+        '204':
+          description: No Content
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /v1/organization/definition-resolver:
     get:
       operationId: getDefinitionResolver
@@ -1829,9 +2074,15 @@ paths:
       - agents
       summary: List agents
       description: Returns active and inactive agents with computed presence. Deleted agents
-        are excluded. Filter by principal_id to find the agent backed by a specific identity.
+        are excluded. Filter by exact name or principal_id to resolve a configured agent without
+        copying its Mobius ID into application state.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
+      - name: name
+        in: query
+        description: Filter to the project-unique agent with this exact name.
+        schema:
+          type: string
       - name: principal_id
         in: query
         description: Filter to the agent backed by this principal.
@@ -2478,7 +2729,8 @@ paths:
       - sessions
       summary: List sessions
       description: Returns durable conversation sessions for the project, newest activity
-        first. Pass `agent_id` to scope the list to one agent's remembered conversations.
+        first. Pass `agent_id` or `agent_name` to scope the list to one agent's remembered
+        conversations.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - name: agent_id
@@ -2486,11 +2738,18 @@ paths:
         description: Filter to sessions owned by this agent.
         schema:
           type: string
+      - name: agent_name
+        in: query
+        description: Filter to sessions owned by the project-unique agent with this exact
+          name. Mutually exclusive with `agent_id`.
+        schema:
+          type: string
       - name: session_key
         in: query
         description: Look up the session with this exact routing key — a read-only deterministic
           lookup that avoids a create-or-resolve round trip, returning the one matching session
-          or an empty list. Requires `agent_id`, since session keys are scoped to an agent.
+          or an empty list. Requires exactly one of `agent_id` or `agent_name`, since session
+          keys are scoped to an agent.
         schema:
           type: string
       - name: status
@@ -4484,6 +4743,157 @@ paths:
           $ref: '#/components/responses/Conflict'
         '429':
           $ref: '#/components/responses/TooManyRequests'
+  /v1/projects/{project_handle}/principals:
+    post:
+      operationId: createPrincipal
+      tags:
+      - principals
+      summary: Create service principal
+      description: Creates a standalone `service` principal within the project. Supply `role_ids`
+        to assign roles at creation time; agent and system principals are created by their
+        own flows.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePrincipalRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Principal'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+    get:
+      operationId: listPrincipals
+      tags:
+      - principals
+      summary: List machine principals
+      description: Returns project machine principals (`service`, `agent`, `system`) used
+        by workers, agents, and loop. Only active principals are returned by default; pass
+        `include_disabled=true` to also include disabled ones (e.g. for an admin audit). Filter
+        by `kind` to narrow to a single kind.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - name: kind
+        in: query
+        required: false
+        description: Filter principals by kind.
+        schema:
+          $ref: '#/components/schemas/PrincipalKind'
+      - name: include_disabled
+        in: query
+        required: false
+        description: Include disabled principals. By default only active ones are returned.
+        schema:
+          type: boolean
+          default: false
+      - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrincipalListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/projects/{project_handle}/principals/{resource_id}:
+    get:
+      operationId: getPrincipal
+      tags:
+      - principals
+      summary: Get principal
+      description: Returns one machine principal, including disabled state, owner, metadata,
+        and timestamps. API keys belonging to the principal are managed through the API key
+        endpoints.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/IDParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Principal'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      operationId: updatePrincipal
+      tags:
+      - principals
+      summary: Update principal
+      description: Updates mutable fields. To disable without deleting, set `state` to `disabled`.
+        The `name` field is immutable after creation.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/IDParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePrincipalRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Principal'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      operationId: deletePrincipal
+      tags:
+      - principals
+      summary: Delete principal
+      description: Archives the principal so it disappears from normal use while the record
+        remains available for attribution and audit history. Returns `409 Conflict` while
+        an agent or active API key still references the principal; disable instead for an
+        immediate kill switch.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/IDParam'
+      responses:
+        '204':
+          description: No Content
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
   /v1/projects/{project_handle}/tables:
     get:
       operationId: listTables
@@ -5618,12 +6028,16 @@ components:
               type: string
               description: 'Stable, machine-readable error code in lower_snake_case. The cross-cutting
                 codes clients can rely on across endpoints are: `bad_request` (malformed input
-                / failed validation), `unauthorized`, `forbidden`, `not_found`, `conflict`
-                / `already_exists`, `rate_limit_exceeded`, and `service_unavailable`. Direct
-                session invocation conflicts use `session_turn_active` with the blocking `turn_id`
-                and `status` in `details`. Endpoint-specific codes (e.g. `loop_paused`, `invalid_signature`)
-                extend this set; an unrecognized code should be handled by its HTTP status
-                family.'
+                / failed validation), `unauthorized`, `permission_denied`, `forbidden`, `not_found`,
+                `conflict` / `already_exists`, `rate_limit_exceeded`, and `service_unavailable`.
+                Direct session invocation conflicts use `session_turn_active` with the blocking
+                `turn_id` and `status` in `details`. Session-key lookups without an agent
+                scope use `session_key_scope_required`; supplying both agent ID and name uses
+                `session_agent_ref_conflict`. Project API-key creation for a principal with
+                no role assignments uses `principal_has_no_roles`. Authenticated callers missing
+                a permission receive `permission_denied` with the required permission in `details`.
+                Endpoint-specific codes (e.g. `loop_paused`, `invalid_signature`) extend this
+                set; an unrecognized code should be handled by its HTTP status family.'
             message:
               type: string
               description: Human-readable error message
@@ -6137,16 +6551,16 @@ components:
           description: Boundary used to resolve the session key.
         scope_ref_id:
           type: string
-          description: Identifier of the resource the session is scoped to (e.g. the agent
-            for agent-scoped sessions).
+          description: Advanced provenance identifying the resource that owns the session
+            namespace. Mobius derives this from `agent_id` for normal agent sessions.
         scope_name:
           type: string
-          description: Caller-assigned name identifying this conversation within its scope
-            (`scope` + `scope_ref_id`); reused as the session routing key.
+          deprecated: true
+          description: Deprecated legacy alias of `session_key`. Kept for compatibility while
+            clients migrate to the canonical conversation-key field.
         session_key:
           type: string
-          description: Stable session routing key used to look up a scoped conversation (mirrors
-            `scope_name`).
+          description: Stable caller-assigned conversation key, unique within one agent.
         visibility:
           $ref: '#/components/schemas/SessionVisibility'
           description: Where the session appears in project UI surfaces.
@@ -6951,6 +7365,12 @@ components:
           type: string
           description: Optional role whose permissions cap this key below its principal's
             full grants.
+        allow_unassigned_principal:
+          type: boolean
+          default: false
+          description: Allow minting a key for a principal with no project role assignments.
+            The resulting key cannot access project resources until a role is assigned. Omit
+            this for normal onboarding so a missing assignment fails with `principal_has_no_roles`.
         expires_at:
           type: string
           format: date-time
@@ -8834,6 +9254,314 @@ components:
         latency_ms:
           type: integer
           description: Round-trip latency in milliseconds.
+    PermissionDefinition:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - label
+      - description
+      - scope
+      - category
+      - risk
+      - assignable
+      - user_kinds
+      properties:
+        id:
+          type: string
+          description: Stable permission ID stored on roles.
+        label:
+          type: string
+          description: Human-readable label for product UI.
+        description:
+          type: string
+          description: Short explanation of what the permission grants.
+        scope:
+          type: string
+          enum:
+          - project
+          - org
+          - platform
+          - action
+        category:
+          type: string
+          enum:
+          - project
+          - access
+          - loops
+          - runs
+          - work
+          - integrations
+          - audit
+          - billing
+          - platform
+          - actions
+        risk:
+          type: string
+          enum:
+          - low
+          - medium
+          - high
+          - critical
+        assignable:
+          type: boolean
+          description: Whether this permission should be selectable in the current project
+            role builder.
+        user_kinds:
+          type: array
+          minItems: 1
+          maxItems: 4
+          uniqueItems: true
+          items:
+            type: string
+            enum:
+            - human
+            - agent
+            - service
+            - system
+          description: User kinds this permission is intended for.
+    PermissionPreset:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - label
+      - description
+      - scope
+      - permissions
+      properties:
+        id:
+          type: string
+        label:
+          type: string
+        description:
+          type: string
+        scope:
+          type: string
+          enum:
+          - project
+          - org
+          - platform
+          - action
+        permissions:
+          type: array
+          maxItems: 64
+          items:
+            type: string
+    ActionPermissionGroup:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - label
+      - source
+      - children
+      properties:
+        id:
+          type: string
+          description: Wildcard permission ID, for example `actions.execute.slack.*`.
+        label:
+          type: string
+        source:
+          type: string
+          enum:
+          - platform
+          - integration
+          - custom
+        children:
+          type: array
+          maxItems: 200
+          items:
+            type: string
+          description: Concrete action execution permission IDs included in this group.
+    PermissionCatalogResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - presets
+      - action_groups
+      properties:
+        items:
+          type: array
+          maxItems: 64
+          items:
+            $ref: '#/components/schemas/PermissionDefinition'
+        presets:
+          type: array
+          maxItems: 32
+          items:
+            $ref: '#/components/schemas/PermissionPreset'
+        action_groups:
+          type: array
+          maxItems: 64
+          items:
+            $ref: '#/components/schemas/ActionPermissionGroup'
+    Role:
+      type: object
+      additionalProperties: false
+      description: Named bundle of permissions assignable to human or machine principals.
+        Roles let admins grant loop, project, and integration capabilities consistently without
+        editing every user individually.
+      required:
+      - id
+      - name
+      - permissions
+      - system_defined
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+          description: Unique identifier for this role.
+        project_id:
+          type: string
+          description: Scoping project. Empty for system-defined roles.
+        name:
+          type: string
+          description: Human-readable role name, unique within org+project scope.
+        description:
+          type: string
+          description: Optional human-readable description of what this role grants.
+        permissions:
+          type: array
+          items:
+            type: string
+          description: Permission strings granted by this role. Source allowed values from
+            `GET /v1/projects/{project_handle}/permissions`; legacy IDs or values not present
+            in that catalog are rejected.
+        system_defined:
+          type: boolean
+          description: True for built-in platform roles that cannot be modified or deleted.
+        tags:
+          $ref: '#/components/schemas/TagMap'
+        created_at:
+          type: string
+          format: date-time
+          description: Timestamp when this role was created.
+        updated_at:
+          type: string
+          format: date-time
+          description: Timestamp when this role was last updated.
+    RoleAssignment:
+      type: object
+      additionalProperties: false
+      description: Binding between a principal and a role in one project. Use assignments
+        to explain why a principal (human or machine) has access and to audit who granted
+        it.
+      required:
+      - id
+      - principal_id
+      - role_id
+      - role_name
+      - created_at
+      properties:
+        id:
+          type: string
+          description: Unique identifier for this role assignment.
+        principal_id:
+          type: string
+          description: Principal ID receiving the role.
+        role_id:
+          type: string
+          description: ID of the assigned role.
+        role_name:
+          type: string
+          description: Name of the assigned role.
+        granted_by:
+          type: string
+          description: Principal ID of the caller who created this assignment.
+        created_at:
+          type: string
+          format: date-time
+          description: Timestamp when this assignment was created.
+    RoleListResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - has_more
+      properties:
+        items:
+          type: array
+          description: The list of results for this page.
+          items:
+            $ref: '#/components/schemas/Role'
+        next_cursor:
+          type: string
+          description: Opaque cursor to pass as `cursor` on the next request. Absent when
+            `has_more` is false.
+        has_more:
+          type: boolean
+          description: Whether additional pages are available.
+    RoleAssignmentListResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      properties:
+        items:
+          type: array
+          description: The list of results for this page.
+          items:
+            $ref: '#/components/schemas/RoleAssignment'
+    CreateRoleRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - name
+      - permissions
+      properties:
+        name:
+          type: string
+          description: Unique name within the project.
+        description:
+          type: string
+          description: Optional human-readable description of what this role grants.
+        permissions:
+          type: array
+          items:
+            type: string
+          description: Permission strings to include. Source allowed values from `GET /v1/projects/{project_handle}/permissions`;
+            legacy IDs or values not present in that catalog are rejected.
+        tags:
+          $ref: '#/components/schemas/TagMap'
+    UpdateRoleRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        description:
+          type: string
+          description: Replacement description.
+        permissions:
+          type: array
+          items:
+            type: string
+          description: Replaces the existing permissions array entirely. Source allowed values
+            from `GET /v1/projects/{project_handle}/permissions`; legacy IDs or values not
+            present in that catalog are rejected.
+        tags:
+          $ref: '#/components/schemas/TagMap'
+    CreateRoleAssignmentRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - principal_id
+      oneOf:
+      - required:
+        - role_id
+      - required:
+        - role_name
+      properties:
+        principal_id:
+          type: string
+          description: Principal ID to assign the role to (human or machine).
+        role_id:
+          type: string
+          description: Mutually exclusive with `role_name`.
+        role_name:
+          type: string
+          description: Resolved to a role ID server-side. Mutually exclusive with `role_id`.
     DefinitionResolverConfig:
       type: object
       additionalProperties: false
@@ -14387,6 +15115,151 @@ components:
           default: false
           description: Allows rows to include undeclared keys while declared columns continue
             to be validated.
+    PrincipalKind:
+      type: string
+      enum:
+      - service
+      - agent
+      - system
+      description: Machine principal kind. `service` is the standalone user-facing API client
+        identity. `agent` and `system` are internal backing identities for agent execution
+        and platform-internal work. (Human principals are managed as organization members,
+        not on this surface.)
+    PrincipalState:
+      type: string
+      enum:
+      - active
+      - disabled
+      - deleted
+      description: Canonical business-lifecycle state. `active` allows authentication and
+        job claims; `disabled` is a reversible kill switch that blocks them but preserves
+        the record and its assignments; `deleted` is the retained archived state used for
+        audit, attribution, and history.
+    Principal:
+      type: object
+      additionalProperties: false
+      description: Non-human identity used by loop, agents, and API keys. A principal makes
+        ownership, permissions, and credential rotation explicit without tying machine access
+        to a human user. The `id` is the principal id used as the `owned_by` value when filtering
+        or claiming resources.
+      required:
+      - id
+      - kind
+      - state
+      - name
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+          description: Unique identifier for this principal.
+        kind:
+          $ref: '#/components/schemas/PrincipalKind'
+          description: Machine kind of this principal.
+        state:
+          $ref: '#/components/schemas/PrincipalState'
+          description: 'Current lifecycle state: `active`, `disabled`, or retained `deleted`.'
+        name:
+          type: string
+          description: Human-readable name for this principal. Immutable after creation.
+        description:
+          type: string
+          description: Optional human-readable description.
+        handle:
+          type: string
+          description: Typed, human-readable stable reference for this machine principal (`svc:acme-ci`,
+            `agent:harry`, `system`). Replaces the synthetic email for non-humans (PRD 2026-06-04
+            FR-3).
+        owner_id:
+          type: string
+          description: Optional human principal accountable for this machine principal.
+        role_ids:
+          type: array
+          items:
+            type: string
+          uniqueItems: true
+          description: Role IDs currently assigned to this principal in the project.
+        metadata:
+          type: object
+          additionalProperties: true
+          description: Arbitrary key-value metadata. Subject to size and nesting depth limits.
+        tags:
+          $ref: '#/components/schemas/TagMap'
+        created_at:
+          type: string
+          format: date-time
+          description: Timestamp when this principal was created.
+        updated_at:
+          type: string
+          format: date-time
+          description: Timestamp when this principal was last updated.
+    PrincipalListResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      properties:
+        items:
+          type: array
+          description: The list of results for this page.
+          items:
+            $ref: '#/components/schemas/Principal'
+    CreatePrincipalRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - name
+      properties:
+        name:
+          type: string
+          description: Human-readable name for this principal. Immutable after creation.
+        description:
+          type: string
+          description: Optional human-readable description.
+        owner_id:
+          type: string
+          description: Human principal accountable for this service principal.
+        metadata:
+          type: object
+          additionalProperties: true
+          description: Arbitrary metadata to attach to the principal.
+        role_ids:
+          type: array
+          items:
+            type: string
+          minItems: 1
+          uniqueItems: true
+          description: One or more role IDs to assign at creation time. All assignments are
+            created atomically with the principal. Requires `mobius.project.admin`. Each role
+            must belong to this project or be system-defined.
+        tags:
+          $ref: '#/components/schemas/TagMap'
+    UpdatePrincipalRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        description:
+          type: string
+          description: Replacement description.
+        state:
+          $ref: '#/components/schemas/PrincipalState'
+          description: 'Replacement lifecycle state: `active` or `disabled`.'
+        owner_id:
+          type: string
+          description: Human principal accountable for this principal.
+        metadata:
+          type: object
+          additionalProperties: true
+          description: Replacement metadata.
+        role_ids:
+          type: array
+          items:
+            type: string
+          uniqueItems: true
+          description: Replacement role IDs for this principal in the project. Send an empty
+            array to remove all project role assignments. Requires `mobius.project.admin`.
+        tags:
+          $ref: '#/components/schemas/TagMap'
     Table:
       type: object
       additionalProperties: false
@@ -15011,6 +15884,12 @@ x-tagGroups:
 - name: Webhooks
   tags:
   - webhooks
+- name: Permissions
+  tags:
+  - permissions
+- name: Roles
+  tags:
+  - roles
 - name: Organization Endpoints
   tags:
   - organizations
@@ -15038,6 +15917,9 @@ x-tagGroups:
 - name: Blueprints
   tags:
   - blueprints
+- name: Principals
+  tags:
+  - principals
 - name: Tables
   tags:
   - tables

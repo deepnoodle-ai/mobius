@@ -72,6 +72,8 @@ class WatchSessionTranscriptOptions:
     # Pause before reconnecting after a dropped connection (not a clean
     # rotate), in seconds.
     reconnect_delay: float = 1.0
+    # Reopen after an idle close so turns started later are observed.
+    follow: bool = False
 
 
 @dataclass(frozen=True)

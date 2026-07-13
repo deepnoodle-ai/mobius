@@ -22,6 +22,7 @@ func registerApiKeysCommands(app *cli.App) {
 	apiKeysGrp.Command("create").
 		Description("Create API key").
 		Flags(
+			cli.Bool("allow-unassigned-principal", "").Help("Allow minting a key for a principal with no project role assignments. The resulting key cannot access project resources until a role is…"),
 			cli.String("expires-at", "").Help("Optional hard expiry. Omit for a non-expiring key. Accepts JSON, @file, or @-."),
 			cli.String("name", "").Help("[required] Human-readable label, unique within the project."),
 			cli.String("principal-id", "").Help("[required] Principal this key authenticates as."),
@@ -41,6 +42,10 @@ func registerApiKeysCommands(app *cli.App) {
 			var body api.CreateAPIKeyJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
+			}
+			if ctx.IsSet("allow-unassigned-principal") {
+				v := ctx.Bool("allow-unassigned-principal")
+				body.AllowUnassignedPrincipal = &v
 			}
 			if ctx.IsSet("expires-at") {
 				if err := decodeFlagJSON(ctx, "expires-at", ctx.String("expires-at"), &body.ExpiresAt); err != nil {

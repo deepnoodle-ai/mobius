@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/deepnoodle-ai/mobius/mobius/api"
 	"github.com/deepnoodle-ai/wonton/assert"
@@ -297,6 +298,35 @@ func TestWatchSessionTranscript_ReconnectsOnRotateStopsOnIdle(t *testing.T) {
 	assert.True(t, ok)
 	assert.Equal(t, turn.Status, "completed")
 	assert.Equal(t, watch.Cursor(), "43.9")
+}
+
+func TestWatchSessionTranscript_FollowReconnectsOnIdle(t *testing.T) {
+	var calls int32
+	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		n := atomic.AddInt32(&calls, 1)
+		w.Header().Set("Content-Type", "text/event-stream")
+		if n == 1 {
+			_, _ = io.WriteString(w, "event: stream.end\ndata: {\"event_type\":\"stream.end\",\"session_id\":\"s1\",\"reason\":\"idle\"}\n\n")
+			return
+		}
+		_, _ = io.WriteString(w, "id: 44.1\nevent: turn.upsert\ndata: {\"event_type\":\"turn.upsert\",\"id\":\"t2\",\"session_id\":\"s1\",\"agent_id\":\"a1\",\"attempt\":1,\"status\":\"running\",\"created_at\":\"2026-07-11T17:03:20Z\",\"updated_at\":\"2026-07-11T17:03:20Z\"}\n\n")
+	})
+	c, srv := newTestClient(t, h)
+	defer srv.Close()
+	ctx, cancel := context.WithCancel(context.Background())
+	watch := c.WatchSessionTranscript(ctx, "sess_1", &WatchSessionTranscriptOptions{
+		Follow:         true,
+		ReconnectDelay: time.Millisecond,
+	})
+
+	assert.True(t, watch.Next())
+	turn, ok := watch.Turn("t2")
+	assert.True(t, ok)
+	assert.Equal(t, "running", string(turn.Status))
+	assert.Equal(t, int32(2), atomic.LoadInt32(&calls))
+	cancel()
+	assert.Equal(t, false, watch.Next())
+	assert.NoError(t, watch.Err())
 }
 
 func TestWatchSessionTranscript_SurfacesPermanentError(t *testing.T) {

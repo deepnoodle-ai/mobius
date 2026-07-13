@@ -644,6 +644,37 @@ test("client: watchSessionTranscript reconnects on rotate and stops on idle", as
   assert.equal(last!.turn("t1")!.status, "completed");
 });
 
+test("client: watchSessionTranscript follow reconnects after idle", async () => {
+  let calls = 0;
+  const original = globalThis.fetch;
+  globalThis.fetch = (async () => {
+    calls += 1;
+    if (calls === 1) {
+      return new Response(
+        `event: stream.end\ndata: {"event_type":"stream.end","session_id":"s1","reason":"idle"}\n\n`,
+        { status: 200, headers: { "Content-Type": "text/event-stream" } },
+      );
+    }
+    return new Response(
+      `id: 44.1\nevent: turn.upsert\ndata: {"event_type":"turn.upsert","id":"t2","session_id":"s1","agent_id":"a1","attempt":1,"status":"running","created_at":"${AT}","updated_at":"${AT}"}\n\n`,
+      { status: 200, headers: { "Content-Type": "text/event-stream" } },
+    );
+  }) as typeof fetch;
+
+  try {
+    for await (const transcript of newClient().watchSessionTranscript("sess_1", {
+      follow: true,
+      reconnectDelayMs: 0,
+    })) {
+      assert.equal(transcript.turn("t2")!.status, "running");
+      break;
+    }
+  } finally {
+    globalThis.fetch = original;
+  }
+  assert.equal(calls, 2);
+});
+
 test("client: watchSessionTranscript surfaces a permanent error, no reconnect", async () => {
   let calls = 0;
   const original = globalThis.fetch;

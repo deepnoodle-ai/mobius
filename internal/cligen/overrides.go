@@ -49,6 +49,11 @@ var overrides = map[string]Override{
 	"replaceAgentSkillAssignments":   {Command: "replace-skill-assignments"},
 	"replaceAgentToolkitAssignments": {Command: "replace-toolkit-assignments"},
 
+	// --- principals -------------------------------------------------------
+	// Hand-written so `principals create NAME --role Operator --with-key`
+	// can perform the common role-bearing onboarding sequence in one command.
+	"createPrincipal": {Skip: true},
+
 	// --- skills -----------------------------------------------------------
 	// `import` isn't in the verb list, so the auto-derive keeps the
 	// redundant `-skill` suffix; strip it.
@@ -156,6 +161,9 @@ var groupDescriptions = map[string]string{
 	"loops":         "Loop definitions, versions, and runs",
 	"organizations": "Organization settings and control plane",
 	"projects":      "Projects within the organization",
+	"permissions":   "Assignable project permission catalog",
+	"principals":    "Machine identities and their roles",
+	"roles":         "Project roles and assignments",
 	"runs":          "Loop runs",
 	"sessions":      "Conversation sessions, transcripts, and invocation",
 	"skills":        "Skill templates that shape agent behavior and tool access",

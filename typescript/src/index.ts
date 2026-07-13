@@ -21,6 +21,7 @@ export type {
   GetSessionTranscriptOptions,
   InvokeAgentOptions,
   ListSessionMessagesOptions,
+  ListAgentsOptions,
   ListSessionNudgesOptions,
   ListSessionTurnsOptions,
   ListSessionsOptions,

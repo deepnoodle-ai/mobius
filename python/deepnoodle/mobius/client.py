@@ -33,7 +33,6 @@ from ._api.models import (
     NudgeSessionRequest,
     RuntimeContext,
     RuntimeContextItem,
-    Role2,
     Session,
     SessionListResponse,
     SessionMessageListResponse,
@@ -125,6 +124,8 @@ class StartRunOptions:
     config: dict[str, Any] | None = None
     meta: dict[str, Any] | None = None
     source: LoopRunSource | None = None
+    idempotency_key: str | None = None
+    # Deprecated: use idempotency_key.
     external_id: str | None = None
 
 
@@ -202,6 +203,7 @@ class StartTurnOptions:
 @dataclass
 class ListSessionsOptions:
     agent_id: str | None = None
+    agent_name: str | None = None
     session_key: str | None = None
     status: str | None = None
     scope: str | None = None
@@ -385,8 +387,13 @@ class Client:
     def start_run(self, loop_id: str, opts: StartRunOptions | None = None) -> LoopRun:
         opts = opts or StartRunOptions()
         values = _drop_none(opts.__dict__)
-        if "external_id" in values:
-            values["idempotency_key"] = values.pop("external_id")
+        external_id = values.pop("external_id", None)
+        if external_id is not None:
+            if values.get("idempotency_key") not in (None, external_id):
+                raise ValueError(
+                    "idempotency_key and deprecated external_id must match when both are set"
+                )
+            values.setdefault("idempotency_key", external_id)
         body = StartLoopRunRequest(**values)
         resp = self._request("POST", f"/v1/projects/{{project}}/loops/{quote(loop_id, safe='')}/runs", json=body)
         return LoopRun.model_validate(resp.json())
@@ -433,7 +440,7 @@ class Client:
         if not opts.content:
             raise ValueError("mobius: start turn: content is required")
         body = StartTurnRequest(
-            role=Role2.user,
+            role="user",
             content=opts.content,
             context=(
                 RuntimeContext(root=opts.context) if opts.context is not None else None
@@ -640,7 +647,8 @@ class Client:
         if opts and opts.cursor and not transcript.cursor:
             transcript.cursor = opts.cursor
         delay = opts.reconnect_delay if opts is not None else 1.0
-        return TranscriptWatcher(self, session_id, transcript, delay)
+        follow = opts.follow if opts is not None else False
+        return TranscriptWatcher(self, session_id, transcript, delay, follow)
 
     # _watch_transcript is the reconnecting engine behind TurnTranscript and
     # TranscriptWatcher: it folds every state frame into the view and yields
@@ -652,9 +660,10 @@ class Client:
         transcript: SessionTranscript,
         stop_turn_id: str | None,
         delay: float,
+        follow: bool = False,
     ) -> Iterator[SessionTranscript]:
         for update in self._watch_transcript_updates(
-            session_id, transcript, stop_turn_id, delay
+            session_id, transcript, stop_turn_id, delay, follow
         ):
             yield update.transcript
 
@@ -664,6 +673,7 @@ class Client:
         transcript: SessionTranscript,
         stop_turn_id: str | None,
         delay: float,
+        follow: bool = False,
     ) -> Iterator[TranscriptUpdate]:
         path = f"/v1/projects/{{project}}/sessions/{quote(session_id, safe='')}/transcript/stream"
         reconnect_count = 0
@@ -694,7 +704,11 @@ class Client:
                                     "mobius transcript stream idle",
                                     extra={"session_id": session_id},
                                 )
-                                return
+                                if not follow:
+                                    return
+                                rotate = False
+                                reconnect_count += 1
+                                break
                             rotate = True  # reconnect immediately
                             reconnect_count += 1
                             self._logger.debug(
@@ -1033,12 +1047,14 @@ class TranscriptWatcher:
         session_id: str,
         transcript: SessionTranscript,
         reconnect_delay: float,
+        follow: bool,
     ) -> None:
         self._client = client
         self.session_id = session_id
         # The session view the stream folds into.
         self.transcript: SessionTranscript = transcript
         self._reconnect_delay = reconnect_delay
+        self._follow = follow
         self._diagnostics = TranscriptDiagnostics(
             status="",
             cursor=transcript.cursor,
@@ -1055,7 +1071,11 @@ class TranscriptWatcher:
     def updates(self) -> Iterator[TranscriptUpdate]:
         try:
             for update in self._client._watch_transcript_updates(
-                self.session_id, self.transcript, None, self._reconnect_delay
+                self.session_id,
+                self.transcript,
+                None,
+                self._reconnect_delay,
+                self._follow,
             ):
                 self._diagnostics = TranscriptDiagnostics(
                     status="",
