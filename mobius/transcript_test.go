@@ -357,6 +357,10 @@ func TestInvokeAgent_StreamsTurnToTerminal(t *testing.T) {
 			w.Header().Set("Content-Type", "text/event-stream")
 			_, _ = io.WriteString(w, "event: message.upsert\ndata: {\"event_type\":\"message.upsert\",\"id\":\"m_a\",\"session_id\":\"s1\",\"agent_id\":\"a1\",\"role\":\"assistant\",\"status\":\"final\",\"turn_id\":\"t1\",\"turn_index\":1,\"sequence\":43,\"entry_type\":\"message\",\"content\":[{\"type\":\"text\",\"text\":\"done\"}],\"created_at\":\"2026-07-11T17:03:21Z\"}\n\n")
 			_, _ = io.WriteString(w, "id: 43.9\nevent: turn.upsert\ndata: {\"event_type\":\"turn.upsert\",\"id\":\"t1\",\"session_id\":\"s1\",\"agent_id\":\"a1\",\"attempt\":1,\"status\":\"completed\",\"created_at\":\"2026-07-11T17:03:20Z\",\"updated_at\":\"2026-07-11T17:03:40Z\"}\n\n")
+		case r.Method == http.MethodGet && r.URL.Path == "/v1/projects/test-project/sessions/s1/transcript":
+			assert.Equal(t, r.URL.Query().Get("cursor"), "43.9")
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = io.WriteString(w, `{"messages":[],"turns":[],"has_more":false,"resume_cursor":"43.9"}`)
 		default:
 			http.NotFound(w, r)
 		}
@@ -395,6 +399,81 @@ func TestInvokeAgent_StreamsTurnToTerminal(t *testing.T) {
 	}
 	assert.Equal(t, ids, []string{"m_user", "m_a"})
 	assert.Equal(t, turn.Transcript().Cursor(), "43.9")
+}
+
+func TestInvokeAgent_ReconcilesTerminalSnapshotBeforeFinalUpdate(t *testing.T) {
+	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodPost && r.URL.Path == "/v1/projects/test-project/agents/invoke":
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusAccepted)
+			_, _ = io.WriteString(w, invokeAckWithCursor("s1", "t1", 42))
+		case r.URL.Path == "/v1/projects/test-project/sessions/s1/transcript/stream":
+			w.Header().Set("Content-Type", "text/event-stream")
+			_, _ = io.WriteString(w, "event: message.upsert\ndata: {\"event_type\":\"message.upsert\",\"id\":\"m_preview\",\"session_id\":\"s1\",\"agent_id\":\"a1\",\"role\":\"assistant\",\"status\":\"streaming\",\"turn_id\":\"t1\",\"turn_index\":1,\"sequence\":null,\"entry_type\":\"message\",\"content\":[{\"type\":\"tool_use\",\"id\":\"call_1\",\"name\":\"lookup\",\"input\":{}}],\"created_at\":\"2026-07-11T17:03:21Z\"}\n\n")
+			_, _ = io.WriteString(w, "id: 43.9\nevent: turn.upsert\ndata: {\"event_type\":\"turn.upsert\",\"id\":\"t1\",\"session_id\":\"s1\",\"agent_id\":\"a1\",\"attempt\":1,\"status\":\"completed\",\"created_at\":\"2026-07-11T17:03:20Z\",\"updated_at\":\"2026-07-11T17:03:40Z\"}\n\n")
+		case r.Method == http.MethodGet && r.URL.Path == "/v1/projects/test-project/sessions/s1/transcript":
+			assert.Equal(t, r.URL.Query().Get("cursor"), "43.9")
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = io.WriteString(w, `{"messages":[{"id":"m_final","session_id":"s1","agent_id":"a1","role":"assistant","status":"final","turn_id":"t1","turn_index":1,"sequence":43,"entry_type":"message","content":[{"type":"tool_use","id":"call_1","name":"lookup","input":{}},{"type":"tool_result","tool_use_id":"call_1","content":"ok"},{"type":"text","text":"done"}],"created_at":"2026-07-11T17:03:21Z"}],"turns":[],"has_more":false,"resume_cursor":"43.9"}`)
+		default:
+			http.NotFound(w, r)
+		}
+	})
+	c, srv := newTestClient(t, h)
+	defer srv.Close()
+
+	turn, err := c.InvokeAgent(context.Background(), InvokeAgentOptions{
+		AgentName: "support",
+		Content:   []map[string]interface{}{{"type": "text", "text": "hi"}},
+	})
+	assert.NoError(t, err)
+
+	steps := 0
+	for turn.Next() {
+		steps++
+		if turn.Status() == "completed" {
+			assert.Equal(t, turn.Update().Cursor, "43.9")
+			assert.Equal(t, turn.Update().Connection, TranscriptConnectionEnded)
+			var ids []string
+			for _, message := range turn.RenderableMessages() {
+				ids = append(ids, message.Id)
+			}
+			assert.Equal(t, ids, []string{"m_user", "m_final"})
+		}
+	}
+	assert.NoError(t, turn.Err())
+	assert.Equal(t, steps, 2)
+}
+
+func TestInvokeAgent_ReturnsTerminalReconciliationError(t *testing.T) {
+	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodPost && r.URL.Path == "/v1/projects/test-project/agents/invoke":
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusAccepted)
+			_, _ = io.WriteString(w, invokeAckWithCursor("s1", "t1", 42))
+		case r.URL.Path == "/v1/projects/test-project/sessions/s1/transcript/stream":
+			w.Header().Set("Content-Type", "text/event-stream")
+			_, _ = io.WriteString(w, "id: 43.9\nevent: turn.upsert\ndata: {\"event_type\":\"turn.upsert\",\"id\":\"t1\",\"session_id\":\"s1\",\"agent_id\":\"a1\",\"attempt\":1,\"status\":\"completed\",\"created_at\":\"2026-07-11T17:03:20Z\",\"updated_at\":\"2026-07-11T17:03:40Z\"}\n\n")
+		case r.Method == http.MethodGet && r.URL.Path == "/v1/projects/test-project/sessions/s1/transcript":
+			http.Error(w, `{"error":{"code":"snapshot_unavailable"}}`, http.StatusInternalServerError)
+		default:
+			http.NotFound(w, r)
+		}
+	})
+	c, srv := newTestClient(t, h)
+	defer srv.Close()
+
+	turn, err := c.InvokeAgent(context.Background(), InvokeAgentOptions{
+		AgentName: "support",
+		Content:   []map[string]interface{}{{"type": "text", "text": "hi"}},
+	})
+	assert.NoError(t, err)
+	assert.False(t, turn.Next())
+	assert.Equal(t, turn.Status(), "completed")
+	assert.ErrorContains(t, turn.Err(), "reconcile terminal transcript")
+	assert.ErrorContains(t, turn.Err(), "500")
 }
 
 func TestInvokeAgent_LazyStreamNeverOpensWithoutNext(t *testing.T) {

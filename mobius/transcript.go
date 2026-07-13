@@ -437,11 +437,12 @@ func (t *SessionTranscript) turnCreatedAt(row *api.SessionTranscriptMessage) tim
 //
 // Next folds frames in the calling goroutine and returns after each state
 // change, reconnecting through stream rotations and dropped connections. It
-// returns false once this turn reaches a terminal turn.upsert (already
-// applied — Status reflects it), on stream idle, on ctx cancellation, or on a
-// permanent stream error (recorded in Err). The full session stream is
-// consumed internally so the resume cursor stays valid when other turns
-// interleave; Messages is scoped to this turn, and Transcript exposes the
+// returns false once this turn reaches a terminal turn.upsert, on stream idle,
+// on ctx cancellation, or on a permanent stream error (recorded in Err). Before
+// exposing the terminal update it reconciles the incremental durable snapshot,
+// so Messages contains the rows committed with completion. The full session
+// stream is consumed internally so the resume cursor stays valid when other
+// turns interleave; Messages is scoped to this turn, and Transcript exposes the
 // whole session view.
 type TurnTranscript struct {
 	stream        transcriptStream
@@ -523,22 +524,41 @@ func (t *TurnTranscript) Next() bool {
 	if t.hydrate {
 		t.hydrate = false
 		t.stream.done = true
-		// The snapshot may span pages; fold them all so Messages is complete.
-		opts := &GetSessionTranscriptOptions{}
-		for {
-			snap, err := t.stream.client.GetSessionTranscript(t.stream.ctx, t.sessionID, opts)
-			if err != nil {
-				t.stream.err = err
+		if err := t.reconcileSnapshot(""); err != nil {
+			t.stream.err = err
+			return false
+		}
+		return true
+	}
+	if !t.stream.next() {
+		return false
+	}
+	if t.stream.lastFrameType == "turn.upsert" {
+		turn, err := t.stream.lastEvent.Frame.AsTurnUpsertFrame()
+		if err == nil && turn.Id == t.turnID && IsTerminalTurnStatus(turn.Status) {
+			if err := t.reconcileSnapshot(t.stream.view.Cursor()); err != nil {
+				t.stream.err = fmt.Errorf("mobius: reconcile terminal transcript: %w", err)
+				t.stream.stop()
 				return false
 			}
-			t.stream.view.ApplySnapshot(snap)
-			if !snap.HasMore || snap.NextPageToken == nil || *snap.NextPageToken == "" {
-				return true
-			}
-			opts.PageToken = *snap.NextPageToken
 		}
 	}
-	return t.stream.next()
+	return true
+}
+
+func (t *TurnTranscript) reconcileSnapshot(cursor string) error {
+	opts := &GetSessionTranscriptOptions{Cursor: cursor}
+	for {
+		snap, err := t.stream.client.GetSessionTranscript(t.stream.ctx, t.sessionID, opts)
+		if err != nil {
+			return err
+		}
+		t.stream.view.ApplySnapshot(snap)
+		if !snap.HasMore || snap.NextPageToken == nil || *snap.NextPageToken == "" {
+			return nil
+		}
+		opts = &GetSessionTranscriptOptions{PageToken: *snap.NextPageToken}
+	}
 }
 
 // Err returns the permanent error that ended iteration, if any. A clean

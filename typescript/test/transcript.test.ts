@@ -816,6 +816,18 @@ test("client: invokeAgent streams the turn to its terminal upsert", async () => 
         headers: { "Content-Type": "application/json" },
       });
     }
+    if (url.pathname.endsWith("/transcript")) {
+      assert.equal(url.searchParams.get("cursor"), "43.9");
+      return new Response(
+        JSON.stringify({
+          messages: [],
+          turns: [],
+          has_more: false,
+          resume_cursor: "43.9",
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      );
+    }
     streamCalls += 1;
     assert.equal(url.searchParams.get("cursor"), "41.6"); // opened from the seeded cursor
     return new Response(
@@ -861,6 +873,122 @@ test("client: invokeAgent streams the turn to its terminal upsert", async () => 
   }
 });
 
+test("client: TurnTranscript reconciles the terminal snapshot before its final update", async () => {
+  const original = globalThis.fetch;
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    const url = new URL(typeof input === "string" ? input : input.toString());
+    if (url.pathname.endsWith("/agents/invoke")) {
+      return new Response(JSON.stringify(invokeAck), {
+        status: 202,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    if (url.pathname.endsWith("/transcript/stream")) {
+      return new Response(
+        `event: message.upsert\ndata: {"event_type":"message.upsert","id":"m_preview","session_id":"s1","agent_id":"a1","role":"assistant","status":"streaming","sequence":null,"turn_index":1,"turn_id":"t1","entry_type":"message","content":[{"type":"tool_use","id":"call_1","name":"lookup","input":{}}],"created_at":"${AT}"}\n\n` +
+          `id: 43.9\nevent: turn.upsert\ndata: {"event_type":"turn.upsert","id":"t1","session_id":"s1","agent_id":"a1","attempt":1,"status":"completed","created_at":"${AT}","updated_at":"${AT}"}\n\n`,
+        { status: 200, headers: { "Content-Type": "text/event-stream" } },
+      );
+    }
+    if (url.pathname.endsWith("/transcript")) {
+      assert.equal(url.searchParams.get("cursor"), "43.9");
+      const snap: SessionTranscriptSnapshot = {
+        messages: [
+          {
+            id: "m_final",
+            session_id: "s1",
+            agent_id: "a1",
+            role: "assistant",
+            content: [
+              { type: "tool_use", id: "call_1", name: "lookup", input: {} },
+              { type: "tool_result", tool_use_id: "call_1", content: "ok" },
+              { type: "text", text: "done" },
+            ],
+            entry_type: "message",
+            status: "final",
+            turn_index: 1,
+            sequence: 43,
+            turn_id: "t1",
+            created_at: AT,
+          },
+        ],
+        turns: [],
+        has_more: false,
+        resume_cursor: "43.9",
+      };
+      return new Response(JSON.stringify(snap), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    throw new Error(`unexpected request: ${url.pathname}`);
+  }) as typeof fetch;
+
+  try {
+    const turn = await newClient().invokeAgent({
+      agentName: "support",
+      content: [{ type: "text", text: "hi" }],
+    });
+    const updates = [];
+    for await (const update of turn.updates()) updates.push(update);
+
+    assert.equal(updates.length, 2);
+    const finalUpdate = updates[updates.length - 1];
+    assert.equal(finalUpdate.connection, "ended");
+    assert.equal(finalUpdate.cursor, "43.9");
+    assert.deepEqual(
+      finalUpdate.transcript
+        .renderableMessagesForTurn("t1")
+        .map((message) => message.id),
+      ["m_user", "m_final"],
+    );
+  } finally {
+    globalThis.fetch = original;
+  }
+});
+
+test("client: TurnTranscript surfaces terminal snapshot reconciliation errors", async () => {
+  const original = globalThis.fetch;
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    const url = new URL(typeof input === "string" ? input : input.toString());
+    if (url.pathname.endsWith("/agents/invoke")) {
+      return new Response(JSON.stringify(invokeAck), {
+        status: 202,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    if (url.pathname.endsWith("/transcript/stream")) {
+      return new Response(
+        `id: 43.9\nevent: turn.upsert\ndata: {"event_type":"turn.upsert","id":"t1","session_id":"s1","agent_id":"a1","attempt":1,"status":"completed","created_at":"${AT}","updated_at":"${AT}"}\n\n`,
+        { status: 200, headers: { "Content-Type": "text/event-stream" } },
+      );
+    }
+    if (url.pathname.endsWith("/transcript")) {
+      return new Response(
+        JSON.stringify({ error: { code: "snapshot_unavailable" } }),
+        { status: 500, headers: { "Content-Type": "application/json" } },
+      );
+    }
+    throw new Error(`unexpected request: ${url.pathname}`);
+  }) as typeof fetch;
+
+  try {
+    const turn = await newClient().invokeAgent({
+      agentName: "support",
+      content: [{ type: "text", text: "hi" }],
+    });
+    await assert.rejects(
+      (async () => {
+        for await (const update of turn.updates()) void update;
+      })(),
+      /snapshot_unavailable/,
+    );
+    assert.equal(turn.status, "completed");
+  } finally {
+    globalThis.fetch = original;
+  }
+});
+
 test("client: TurnTranscript exposes live failed-turn errors", async () => {
   const original = globalThis.fetch;
   globalThis.fetch = (async (input: RequestInfo | URL) => {
@@ -870,6 +998,17 @@ test("client: TurnTranscript exposes live failed-turn errors", async () => {
         status: 202,
         headers: { "Content-Type": "application/json" },
       });
+    }
+    if (url.pathname.endsWith("/transcript")) {
+      return new Response(
+        JSON.stringify({
+          messages: [],
+          turns: [],
+          has_more: false,
+          resume_cursor: "43.9",
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      );
     }
     return new Response(
       `id: 43.9\nevent: turn.upsert\ndata: {"event_type":"turn.upsert","id":"t1","session_id":"s1","agent_id":"a1","attempt":1,"status":"failed","error_type":"invalid_conversation_state","error_message":"history ended with assistant content","created_at":"${AT}","updated_at":"${AT}"}\n\n`,

@@ -1127,7 +1127,11 @@ export class TurnTranscript implements AsyncIterable<TurnTranscript> {
     return { ...this.#diagnostics, status: this.status, cursor: this.transcript.cursor, ready: this.transcript.ready };
   }
 
-  /** Yield observed protocol frames for this turn while folding the full session. */
+  /**
+   * Yield observed protocol frames while folding the full session. The
+   * terminal update is exposed only after its incremental durable snapshot is
+   * reconciled; snapshot failures reject iteration.
+   */
   async *updates(): AsyncGenerator<TranscriptUpdate> {
     if (this.#hydrate) {
       await this.#hydrateSnapshot();
@@ -1140,21 +1144,25 @@ export class TurnTranscript implements AsyncIterable<TurnTranscript> {
       { transcript: this.transcript, signal: this.#signal },
     )) {
       const frameType = (update.frame as { event_type?: string }).event_type;
+      const turn = update.transcript.turn(this.id);
+      const terminal = turn != null && isTerminalTurnStatus(turn.status);
+      if (terminal) {
+        await this.#reconcileSnapshot(this.transcript.cursor ?? undefined);
+      }
+      const exposedUpdate: TranscriptUpdate = terminal
+        ? { ...update, cursor: this.transcript.cursor, connection: "ended" }
+        : update;
       this.#diagnostics = {
         status: this.status,
-        cursor: update.cursor,
+        cursor: exposedUpdate.cursor,
         ready: this.transcript.ready,
-        reconnectCount: update.reconnectCount,
+        reconnectCount: exposedUpdate.reconnectCount,
         lastFrameType: frameType,
         lastFrameAt: new Date().toISOString(),
-        connection: update.connection,
+        connection: exposedUpdate.connection,
       };
-      yield update;
-      const turn = update.transcript.turn(this.id);
-      if (turn && isTerminalTurnStatus(turn.status)) {
-        this.#diagnostics = { ...this.#diagnostics, connection: "ended" };
-        return;
-      }
+      yield exposedUpdate;
+      if (terminal) return;
     }
   }
 
@@ -1175,15 +1183,7 @@ export class TurnTranscript implements AsyncIterable<TurnTranscript> {
 
   async #hydrateSnapshot(): Promise<void> {
     this.#hydrate = false;
-    let pageToken: string | undefined;
-    do {
-      const snap = await this.#client.getSessionTranscript(this.sessionId, {
-        pageToken,
-        signal: this.#signal,
-      });
-      this.transcript.applySnapshot(snap);
-      pageToken = snap.has_more ? snap.next_page_token : undefined;
-    } while (pageToken);
+    await this.#reconcileSnapshot();
     this.#diagnostics = {
       status: this.status,
       cursor: this.transcript.cursor,
@@ -1191,6 +1191,19 @@ export class TurnTranscript implements AsyncIterable<TurnTranscript> {
       reconnectCount: 0,
       connection: "ended",
     };
+  }
+
+  async #reconcileSnapshot(cursor?: string): Promise<void> {
+    let pageToken: string | undefined;
+    do {
+      const snap = await this.#client.getSessionTranscript(this.sessionId, {
+        cursor: pageToken ? undefined : cursor,
+        pageToken,
+        signal: this.#signal,
+      });
+      this.transcript.applySnapshot(snap);
+      pageToken = snap.has_more ? snap.next_page_token : undefined;
+    } while (pageToken);
   }
 }
 

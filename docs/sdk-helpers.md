@@ -177,6 +177,12 @@ before any streaming); the full session view is on `Transcript()` /
 hydrates once from the snapshot endpoint instead of streaming, so `Messages`
 is complete either way.
 
+For a live turn, the terminal iteration step is also a durability boundary:
+the SDK drains the incremental snapshot from the terminal cursor before
+exposing that step. If reconciliation fails, iteration returns the transport
+error instead of presenting an incomplete transcript as finished; the observed
+terminal turn status remains available for diagnostics and retry.
+
 ### Lossless rows and renderable rows
 
 `Messages` / `messages()` is the lossless protocol view. Use

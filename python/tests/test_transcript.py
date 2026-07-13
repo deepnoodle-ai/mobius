@@ -441,6 +441,17 @@ def test_invoke_agent_streams_turn_to_terminal() -> None:
         nonlocal stream_calls
         if request.url.path.endswith("/agents/invoke"):
             return httpx.Response(202, json=_ack_body())
+        if request.url.path.endswith("/sessions/s1/transcript"):
+            assert request.url.params.get("cursor") == "43.9"
+            return httpx.Response(
+                200,
+                json={
+                    "messages": [],
+                    "turns": [],
+                    "has_more": False,
+                    "resume_cursor": "43.9",
+                },
+            )
         assert request.url.path.endswith("/sessions/s1/transcript/stream")
         stream_calls += 1
         assert request.url.params.get("cursor") == "41.6"  # opened from the seeded cursor
@@ -470,6 +481,104 @@ def test_invoke_agent_streams_turn_to_terminal() -> None:
     assert turn.status == "completed"
     assert [m["id"] for m in turn.messages()] == ["m_user", "m_a"]
     assert turn.transcript.cursor == "43.9"
+
+
+def test_invoke_agent_reconciles_terminal_snapshot_before_final_update() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path.endswith("/agents/invoke"):
+            return httpx.Response(202, json=_ack_body())
+        if request.url.path.endswith("/sessions/s1/transcript/stream"):
+            body = (
+                'event: message.upsert\ndata: {"event_type":"message.upsert","id":"m_preview","session_id":"s1","agent_id":"a1","role":"assistant","status":"streaming","turn_id":"t1","turn_index":1,"sequence":null,"entry_type":"message","content":[{"type":"tool_use","id":"call_1","name":"lookup","input":{}}],"created_at":"%s"}\n\n'
+                % AT
+                + 'id: 43.9\nevent: turn.upsert\ndata: {"event_type":"turn.upsert","id":"t1","session_id":"s1","agent_id":"a1","attempt":1,"status":"completed","created_at":"%s","updated_at":"%s"}\n\n'
+                % (AT, AT)
+            )
+            return httpx.Response(
+                200, text=body, headers={"Content-Type": "text/event-stream"}
+            )
+        if request.url.path.endswith("/sessions/s1/transcript"):
+            assert request.url.params.get("cursor") == "43.9"
+            return httpx.Response(
+                200,
+                json={
+                    "messages": [
+                        {
+                            "id": "m_final",
+                            "session_id": "s1",
+                            "agent_id": "a1",
+                            "role": "assistant",
+                            "status": "final",
+                            "turn_id": "t1",
+                            "turn_index": 1,
+                            "sequence": 43,
+                            "entry_type": "message",
+                            "content": [
+                                {
+                                    "type": "tool_use",
+                                    "id": "call_1",
+                                    "name": "lookup",
+                                    "input": {},
+                                },
+                                {
+                                    "type": "tool_result",
+                                    "tool_use_id": "call_1",
+                                    "content": "ok",
+                                },
+                                {"type": "text", "text": "done"},
+                            ],
+                            "created_at": AT,
+                        }
+                    ],
+                    "turns": [],
+                    "has_more": False,
+                    "resume_cursor": "43.9",
+                },
+            )
+        raise AssertionError(f"unexpected request: {request.url}")
+
+    client = _client_with(handler)
+    turn = client.invoke_agent(
+        InvokeAgentOptions(agent_name="support", content=[{"type": "text", "text": "hi"}])
+    )
+    updates = list(turn.updates())
+
+    assert len(updates) == 2
+    assert updates[-1].connection == "ended"
+    assert updates[-1].cursor == "43.9"
+    assert [m["id"] for m in updates[-1].transcript.renderable_messages_for_turn("t1")] == [
+        "m_user",
+        "m_final",
+    ]
+
+
+def test_invoke_agent_surfaces_terminal_reconciliation_error() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path.endswith("/agents/invoke"):
+            return httpx.Response(202, json=_ack_body())
+        if request.url.path.endswith("/sessions/s1/transcript/stream"):
+            body = (
+                'id: 43.9\nevent: turn.upsert\ndata: {"event_type":"turn.upsert","id":"t1","session_id":"s1","agent_id":"a1","attempt":1,"status":"completed","created_at":"%s","updated_at":"%s"}\n\n'
+                % (AT, AT)
+            )
+            return httpx.Response(
+                200, text=body, headers={"Content-Type": "text/event-stream"}
+            )
+        if request.url.path.endswith("/sessions/s1/transcript"):
+            return httpx.Response(
+                500, json={"error": {"code": "snapshot_unavailable"}}
+            )
+        raise AssertionError(f"unexpected request: {request.url}")
+
+    client = _client_with(handler)
+    turn = client.invoke_agent(
+        InvokeAgentOptions(agent_name="support", content=[{"type": "text", "text": "hi"}])
+    )
+    with pytest.raises(MobiusAPIError) as exc_info:
+        list(turn.updates())
+
+    assert exc_info.value.status == 500
+    assert turn.status == "completed"
 
 
 def test_turn_transcript_exposes_live_failed_turn_errors() -> None:
