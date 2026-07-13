@@ -1,6 +1,6 @@
 {
   "name": "@deepnoodle/mobius",
-  "version": "0.0.45",
+  "version": "0.0.46",
   "type": "module",
   "description": "TypeScript SDK for Mobius agent loops and workers",
   "license": "Apache-2.0",
