@@ -313,7 +313,7 @@ test("client: invokeAgent posts the compound invoke request shape", async () => 
       baseURL: "https://api.example.invalid",
       project: "test-project",
     });
-    const ack = await client.invokeAgent({
+    const turn = await client.invokeAgent({
       agentId: "agent_1",
       content: [{ type: "text", text: "hi" }],
       idempotencyKey: "evt_1",
@@ -325,8 +325,9 @@ test("client: invokeAgent posts the compound invoke request shape", async () => 
         toolkits: [{ name: "tickets", actions: ["tickets.search"] }],
       },
     });
-    assert.equal(ack.after_sequence, 7);
-    assert.equal(ack.session.id, "sess_1");
+    assert.equal(turn.afterSequence, 7);
+    assert.equal(turn.sessionId, "sess_1");
+    assert.equal(turn.id, "turn_1");
   } finally {
     restore();
   }

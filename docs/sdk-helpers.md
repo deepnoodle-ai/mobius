@@ -6,8 +6,8 @@ common integration tasks:
 - verifying and parsing Mobius outgoing webhook deliveries
 - delivering Mobius-shaped synthetic webhooks for local/test bridges
 - managing loops and loop runs from code
-- streaming an agent session's live transcript (message rows and turns) into a
-  reducer
+- invoking agents and following a session's live transcript (message rows and
+  turns) as it streams
 - running workers that execute action jobs and LLM generation jobs over
   WebSockets
 
@@ -123,62 +123,92 @@ stream.
 ## Session Transcripts
 
 An agent session streams as a live transcript: message rows (each keyed by an
-immutable id) plus the turns that produced them. `SessionTranscriptReducer`
-folds the stream frames into that view for you — the whole merge is set-by-id,
-so state frames overwrite and nothing is an increment except streamed text.
-Start a turn and render it as it streams, closing at the turn's terminal state:
+immutable id) plus the turns that produced them. `SessionTranscript` is that
+view, and the SDKs fold the stream into it for you — the whole merge is
+set-by-id, so state frames overwrite and nothing is an increment except
+streamed text.
+
+`InvokeAgent` starts a turn and returns a `TurnTranscript`: the turn's
+identity (`ID`, `SessionID`, `Status`) immediately, and its live transcript
+when iterated. The stream is lazy — a caller that never iterates pays for
+nothing beyond the invoke itself. Iteration yields after every state change
+and ends at the turn's terminal state:
 
 ```go
-ack, events, err := client.InvokeAgentTranscript(ctx, mobius.InvokeAgentOptions{
+turn, err := client.InvokeAgent(ctx, mobius.InvokeAgentOptions{
 	AgentName: "support",
 	Content:   []map[string]any{{"type": "text", "text": "check the deploy"}},
 })
 if err != nil { return err }
-
-r := mobius.NewSessionTranscriptReducer()
-if ack.UserMessage != nil { r.Rows[ack.UserMessage.Id] = ack.UserMessage }
-for ev := range events { // channel closes at the turn's terminal turn.upsert
-	r.Apply(ev.Frame, ev.ID)
-	render(r.MessagesForTurn(ack.Turn.Id))
+for turn.Next() {
+	render(turn.Messages())
 }
+if err := turn.Err(); err != nil { return err }
+// turn.Status() == "completed"
 ```
 
 ```python
-ack, stream = client.invoke_agent_transcript(mobius.InvokeAgentOptions(
+turn = client.invoke_agent(mobius.InvokeAgentOptions(
     agent_name="support",
     content=[{"type": "text", "text": "check the deploy"}],
 ))
-r = mobius.SessionTranscriptReducer()
-if ack.user_message:
-    r.rows[ack.user_message.id] = ack.user_message.model_dump(mode="json")
-for event in stream:  # generator ends at the turn's terminal turn.upsert
-    r.apply(event.frame, event.id)
-    render(r.messages_for_turn(ack.turn.id))
+for t in turn:
+    render(t.messages())
+# turn.status == "completed"
 ```
 
 ```ts
-// TS drives the reducer for you and yields it after every change.
-for await (const transcript of client.invokeAgentTranscript({
+const turn = await client.invokeAgent({
   agentName: "support",
   content: [{ type: "text", text: "check the deploy" }],
-})) {
-  render(transcript.messages());
+});
+for await (const t of turn) {
+  render(t.messages());
 }
+// turn.status === "completed"
 ```
+
+`Messages` is scoped to the invoked turn (the caller's message row is seeded
+before any streaming); the full session view is on `Transcript()` /
+`transcript`. If the invoke dedupes onto an already-finished turn, iteration
+hydrates once from the snapshot endpoint instead of streaming, so `Messages`
+is complete either way.
 
 For an existing session, `WatchSessionTranscript` / `watch_session_transcript`
 / `watchSessionTranscript` follows the live transcript across reconnects
-(reconnecting on a `rotate` close, stopping on `idle`). Go and Python yield the
-raw `TranscriptStreamEvent` frames — apply them to your own reducer, as above —
-while TypeScript yields the reducer directly. Drop to
-`StreamSessionTranscript` / `stream_session_transcript` /
-`streamSessionTranscript` for a single connection, or poll
-`GetSessionTranscript` / `get_session_transcript` / `getSessionTranscript` and
-fold each page in with `ApplySnapshot` / `apply_snapshot` / `applySnapshot` —
-the snapshot is the same shape the stream is a view of, so a poller and a
-subscriber converge on identical state. Read the ordered rows with
-`Messages` / `messages` / `messages()` and the resume position from the
-reducer's `Cursor` / `cursor`.
+(reconnecting on a `rotate` close, stopping on `idle`) — a `TranscriptWatcher`
+handle in Go and Python, an async generator of the view in TypeScript:
+
+```go
+watch := client.WatchSessionTranscript(ctx, sessionID, nil)
+for watch.Next() {
+	render(watch.Messages())
+}
+if err := watch.Err(); err != nil { return err }
+saveCursor(watch.Cursor())
+```
+
+```python
+watch = client.watch_session_transcript(session_id)
+for t in watch:
+    render(t.messages())
+save_cursor(watch.transcript.cursor)
+```
+
+```ts
+for await (const t of client.watchSessionTranscript(sessionId)) {
+  render(t.messages());
+}
+```
+
+Drop to `StreamSessionTranscript` / `stream_session_transcript` /
+`streamSessionTranscript` for raw frames on a single connection (fold them
+with the view's `Apply`), or poll `GetSessionTranscript` /
+`get_session_transcript` / `getSessionTranscript` and fold each page in with
+`ApplySnapshot` / `apply_snapshot` / `applySnapshot` — the snapshot is the
+same shape the stream is a view of, so a poller and a subscriber converge on
+identical state. Read the ordered rows with `Messages` / `messages` /
+`messages()` and the resume position from the view's `Cursor` / `cursor`.
 
 ## Workers
 

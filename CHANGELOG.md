@@ -6,6 +6,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 
 ## [Unreleased]
 
+### Changed
+
+- **Breaking:** session-transcript helper surface redesigned around two nouns
+  (see `docs/development/session-transcript-api-redesign.md`).
+  `SessionTranscriptReducer` is now `SessionTranscript` with the row/turn maps
+  private behind accessors (`messages`, `messagesForTurn`, `message`, `turn`,
+  `turns`, `cursor`, `ready`), a one-argument `apply(event)`, and a typed
+  `seed(ack)` replacing manual map seeding. `InvokeAgent` now always returns a
+  lazy `TurnTranscript` handle (identity immediately, transcript stream on
+  iteration; a deduped already-terminal turn hydrates from the snapshot
+  endpoint) — `InvokeAgentTranscript` is deleted. `WatchSessionTranscript`
+  returns a `TranscriptWatcher` handle in Go (`Next`/`Err`) and Python
+  (iterable) and yields the view in TypeScript; its options take `Transcript`
+  / `transcript` instead of `reducer`. Go's `TranscriptStreamEvent.Err` field
+  is deleted — stream errors now surface through the handles' `Err()`.
+
 ## [0.0.43] - 2026-07-12
 
 ### Added

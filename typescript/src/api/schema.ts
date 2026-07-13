@@ -1201,7 +1201,7 @@ export interface paths {
         };
         /**
          * Get the live transcript snapshot
-         * @description Returns the transcript tail and authoritative turn state consumed by SessionTranscriptReducer. Without a cursor this is a bootstrap tail. With cursor it incrementally drains a fixed upper cut; continue with next_page_token until has_more is false.
+         * @description Returns the transcript tail and authoritative turn state consumed by the SDKs' SessionTranscript view. Without a cursor this is a bootstrap tail. With cursor it incrementally drains a fixed upper cut; continue with next_page_token until has_more is false.
          */
         get: operations["getSessionTranscript"];
         put?: never;

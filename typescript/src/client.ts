@@ -17,8 +17,8 @@ import type {
   LoopStatus,
   SessionStreamFrame,
   SessionTranscriptFrame,
+  SessionTranscriptMessage,
   SessionTranscriptSnapshot,
-  SessionTranscriptTurn,
   SignalLoopRunRequest,
   StartLoopRunRequest,
   StreamEndFrame,
@@ -32,7 +32,7 @@ import {
   wrapFetchWithRetry,
 } from "./retry.js";
 import {
-  SessionTranscriptReducer,
+  SessionTranscript,
   isTerminalTurnStatus,
   type TranscriptStreamEvent,
 } from "./transcript.js";
@@ -277,13 +277,13 @@ export interface StreamSessionTranscriptOptions {
 }
 
 export interface WatchSessionTranscriptOptions {
-  /** Opaque resume cursor for the first connection. Ignored if `reducer` carries one. */
+  /** Opaque resume cursor for the first connection. Ignored if `transcript` carries one. */
   cursor?: string;
   /**
-   * Reducer to fold frames into. Omit to start fresh. Pass a pre-seeded reducer
-   * (e.g. from a bootstrap snapshot or a StartTurn ack) to continue its state.
+   * Existing view to continue folding into (e.g. one bootstrapped from
+   * getSessionTranscript pages). Omit to start fresh.
    */
-  reducer?: SessionTranscriptReducer;
+  transcript?: SessionTranscript;
   /** Delay before reconnecting after a dropped connection (not a clean `rotate`). Defaults to 1000. */
   reconnectDelayMs?: number;
   signal?: AbortSignal;
@@ -455,18 +455,27 @@ export class Client {
    * call. This is the entry point for a product backend (an embedded app,
    * a Slack handler, a Telegram bot) calling per inbound message.
    *
-   * Returns once the turn is accepted; the response's after_sequence is a
-   * durable stream cursor for `GET …/sessions/{id}/stream`. Use
-   * {@link Client.invokeAgentStream} instead to observe the turn's
-   * activity inline on the same connection.
+   * Resolves once the turn is accepted. The returned {@link TurnTranscript}
+   * carries the turn's identity (`id`, `sessionId`, `status`) immediately and
+   * its live transcript on demand: the stream is lazy, so `for await` the
+   * handle to render the turn as it runs, or never iterate for
+   * fire-and-forget. Use {@link Client.invokeAgentStream} instead to observe
+   * the turn's activity inline on the same connection with v1 session-stream
+   * framing.
    */
-  async invokeAgent(opts: InvokeAgentOptions): Promise<TurnAck> {
+  async invokeAgent(
+    opts: InvokeAgentOptions,
+    streamOpts: { signal?: AbortSignal } = {},
+  ): Promise<TurnTranscript> {
     const body = invokeAgentRequest(opts);
     const resp = await this.request("/v1/projects/:project/agents/invoke", {
       method: "POST",
       body,
     });
-    return (await resp.json()) as TurnAck;
+    const ack = (await resp.json()) as TurnAck;
+    const transcript = new SessionTranscript();
+    transcript.seed(ack);
+    return new TurnTranscript(this, ack, transcript, streamOpts.signal);
   }
 
   /**
@@ -504,7 +513,7 @@ export class Client {
    * this is a bootstrap tail (latest final page + all live rows and turns);
    * with a cursor it drains everything after it toward a fixed upper cut —
    * continue with the returned `next_page_token` until `has_more` is false.
-   * Fold each page into a {@link SessionTranscriptReducer} with
+   * Fold each page into a {@link SessionTranscript} with
    * `applySnapshot`; polling is the same protocol the stream accelerates.
    */
   async getSessionTranscript(
@@ -522,7 +531,7 @@ export class Client {
   /**
    * Open one session-transcript SSE connection and yield each decoded frame
    * with its SSE `id:` (the resume cursor). This is the low-level primitive;
-   * feed the frames to a {@link SessionTranscriptReducer}, or use
+   * feed the events to a {@link SessionTranscript}'s `apply`, or use
    * {@link Client.watchSessionTranscript} for the managed connection loop
    * (reconnect on `rotate`, stop on `idle`).
    */
@@ -562,37 +571,37 @@ export class Client {
   }
 
   /**
-   * Drive a {@link SessionTranscriptReducer} across the full session-transcript
+   * Drive a {@link SessionTranscript} across the full session-transcript
    * stream, yielding it after every applied frame. Owns the connection loop:
    * reconnects with the current cursor on `stream.end rotate` (and after a
    * dropped connection), and returns on `stream.end idle`. Reconnect is the
-   * same code path as the first connect — the reducer keeps its rows and only
+   * same code path as the first connect — the view keeps its rows and only
    * resets `ready`. On `idle` the caller can poll {@link
    * Client.getSessionTranscript} and reopen when `resume_cursor` moves.
    */
   async *watchSessionTranscript(
     sessionId: string,
     opts: WatchSessionTranscriptOptions = {},
-  ): AsyncGenerator<SessionTranscriptReducer> {
-    const reducer = opts.reducer ?? new SessionTranscriptReducer();
-    if (opts.cursor && !reducer.cursor) reducer.cursor = opts.cursor;
+  ): AsyncGenerator<SessionTranscript> {
+    const transcript = opts.transcript ?? new SessionTranscript();
+    if (opts.cursor && !transcript.cursor) transcript.cursor = opts.cursor;
     const reconnectDelayMs = opts.reconnectDelayMs ?? 1000;
     for (;;) {
-      reducer.ready = false;
+      transcript._resetReady();
       let rotate = false;
       try {
-        for await (const { frame, id } of this.streamSessionTranscript(sessionId, {
-          cursor: reducer.cursor ?? undefined,
+        for await (const ev of this.streamSessionTranscript(sessionId, {
+          cursor: transcript.cursor ?? undefined,
           signal: opts.signal,
         })) {
-          reducer.apply(frame, id);
-          const eventType = (frame as { event_type?: string }).event_type;
+          transcript.apply(ev);
+          const eventType = (ev.frame as { event_type?: string }).event_type;
           if (eventType === "stream.end") {
-            if ((frame as StreamEndFrame).reason === "idle") return;
+            if ((ev.frame as StreamEndFrame).reason === "idle") return;
             rotate = true; // reconnect immediately with the current cursor
             break;
           }
-          yield reducer;
+          yield transcript;
         }
       } catch (err) {
         if (opts.signal?.aborted) throw err;
@@ -603,38 +612,6 @@ export class Client {
       }
       if (opts.signal?.aborted) return;
       if (!rotate) await delay(reconnectDelayMs, opts.signal);
-    }
-  }
-
-  /**
-   * Behaves like {@link Client.invokeAgent} but streams the started turn's
-   * transcript inline (session-stream v2). Starts the turn, seeds a reducer
-   * with the ack's caller row and turn, then opens the transcript stream from
-   * the ack's cursor and yields the reducer after each change, returning when
-   * this turn reaches a terminal `turn.upsert`. The full session stream is
-   * consumed internally so the resume cursor stays valid even when other turns
-   * interleave; filter the reducer with `messagesForTurn(turnId)` to render
-   * only this turn.
-   */
-  async *invokeAgentTranscript(
-    opts: InvokeAgentOptions,
-    streamOpts: { signal?: AbortSignal } = {},
-  ): AsyncGenerator<SessionTranscriptReducer> {
-    const ack = await this.invokeAgent(opts);
-    const turnId = ack.turn.id;
-    const reducer = new SessionTranscriptReducer();
-    if (ack.user_message) reducer.rows.set(ack.user_message.id, ack.user_message);
-    reducer.turns.set(turnId, ack.turn as unknown as SessionTranscriptTurn);
-    reducer.cursor = ack.resume_cursor ?? null;
-    yield reducer;
-    if (isTerminalTurnStatus(ack.turn.status)) return; // deduped/already-terminal
-    for await (const r of this.watchSessionTranscript(ack.session.id, {
-      reducer,
-      signal: streamOpts.signal,
-    })) {
-      yield r;
-      const turn = r.turns.get(turnId);
-      if (turn && isTerminalTurnStatus(turn.status)) return;
     }
   }
 
@@ -708,6 +685,103 @@ export class Client {
 
   private url(path: string): string {
     return this.baseURL + path.replace(":project", encodeURIComponent(this.project));
+  }
+}
+
+/**
+ * A started agent turn and its live transcript, returned by
+ * {@link Client.invokeAgent}. The identity fields (`id`, `sessionId`, …) are
+ * available immediately; the transcript stream is lazy — iteration opens it,
+ * so a caller that never iterates pays for nothing beyond the invoke itself.
+ *
+ * `for await` the handle to render the turn as it streams; it yields after
+ * every state change and completes once this turn reaches a terminal
+ * `turn.upsert` (already applied — `status` reflects it), reconnecting through
+ * stream rotations and dropped connections along the way. The full session
+ * stream is consumed internally so the resume cursor stays valid when other
+ * turns interleave; {@link messages} is scoped to this turn, and
+ * {@link transcript} exposes the whole session view.
+ *
+ * ```ts
+ * const turn = await client.invokeAgent({ agentName: "support", content });
+ * for await (const t of turn) render(t.messages());
+ * turn.status; // "completed"
+ * ```
+ */
+export class TurnTranscript implements AsyncIterable<TurnTranscript> {
+  /** Turn id. */
+  readonly id: string;
+  /** Id of the session this turn runs in. */
+  readonly sessionId: string;
+  /**
+   * Durable v1 stream cursor from the turn-start response; pass it as
+   * `after_sequence` to `GET …/sessions/{id}/stream` to follow this turn on
+   * the v1 session stream instead.
+   */
+  readonly afterSequence: number;
+  /** True when a repeated idempotency key resumed an existing turn. */
+  readonly deduped: boolean;
+  /** Full session view the stream folds into. */
+  readonly transcript: SessionTranscript;
+
+  readonly #client: Client;
+  readonly #signal?: AbortSignal;
+  // Set when the acked turn was already terminal (a deduped resume of a
+  // completed turn): there is nothing to stream, so iteration fetches one
+  // snapshot instead, making messages() complete either way.
+  #hydrate: boolean;
+
+  /** @internal Constructed by {@link Client.invokeAgent}. */
+  constructor(
+    client: Client,
+    ack: TurnAck,
+    transcript: SessionTranscript,
+    signal?: AbortSignal,
+  ) {
+    this.#client = client;
+    this.#signal = signal;
+    this.id = ack.turn.id;
+    this.sessionId = ack.session.id;
+    this.afterSequence = ack.after_sequence;
+    this.deduped = ack.deduped ?? false;
+    this.transcript = transcript;
+    this.#hydrate = isTerminalTurnStatus(ack.turn.status);
+  }
+
+  /**
+   * The turn's lifecycle status ("queued", "running", "completed", …). It is
+   * live: each applied `turn.upsert` updates it.
+   */
+  get status(): string {
+    return this.transcript.turn(this.id)?.status ?? "";
+  }
+
+  /** This turn's rows, in render order. */
+  messages(): SessionTranscriptMessage[] {
+    return this.transcript.messagesForTurn(this.id);
+  }
+
+  async *[Symbol.asyncIterator](): AsyncIterator<TurnTranscript> {
+    if (this.#hydrate) {
+      this.#hydrate = false;
+      const snap = await this.#client.getSessionTranscript(this.sessionId, {
+        signal: this.#signal,
+      });
+      this.transcript.applySnapshot(snap);
+      yield this;
+      return;
+    }
+    // Already terminal (a completed prior iteration): nothing left to stream.
+    const current = this.transcript.turn(this.id);
+    if (current && isTerminalTurnStatus(current.status)) return;
+    for await (const view of this.#client.watchSessionTranscript(this.sessionId, {
+      transcript: this.transcript,
+      signal: this.#signal,
+    })) {
+      yield this;
+      const turn = view.turn(this.id);
+      if (turn && isTerminalTurnStatus(turn.status)) return;
+    }
   }
 }
 

@@ -68,11 +68,13 @@ type SessionStreamEvent struct {
 // handler, a Telegram bot) calling per inbound message; use the lower-level
 // session and turn operations on RawClient for finer control.
 //
-// It returns once the turn is accepted; the response's AfterSequence is a
-// durable stream cursor for GET …/sessions/{id}/stream. Use
+// It returns once the turn is accepted. The returned TurnTranscript carries
+// the turn's identity (ID, SessionID, Status) immediately and its live
+// transcript on demand: the stream is lazy, so iterate with Next/Err to
+// render the turn as it runs, or never iterate for fire-and-forget. Use
 // InvokeAgentStream instead to observe the turn's activity inline on the
-// same connection.
-func (c *Client) InvokeAgent(ctx context.Context, opts InvokeAgentOptions) (*api.TurnAck, error) {
+// same connection with v1 session-stream framing.
+func (c *Client) InvokeAgent(ctx context.Context, opts InvokeAgentOptions) (*TurnTranscript, error) {
 	req, err := invokeAgentRequest(opts)
 	if err != nil {
 		return nil, err
@@ -84,7 +86,24 @@ func (c *Client) InvokeAgent(ctx context.Context, opts InvokeAgentOptions) (*api
 	if resp.JSON202 == nil {
 		return nil, unexpectedSessionStatus("invoke agent", resp.Status(), resp.Body)
 	}
-	return resp.JSON202, nil
+	ack := resp.JSON202
+	view := NewSessionTranscript()
+	view.Seed(ack)
+	return &TurnTranscript{
+		stream: transcriptStream{
+			client:     c,
+			ctx:        ctx,
+			sessionID:  ack.Session.Id,
+			stopTurnID: ack.Turn.Id,
+			delay:      defaultTranscriptReconnectDelay,
+			view:       view,
+		},
+		turnID:        ack.Turn.Id,
+		sessionID:     ack.Session.Id,
+		afterSequence: ack.AfterSequence,
+		deduped:       ack.Deduped != nil && *ack.Deduped,
+		hydrate:       IsTerminalTurnStatus(string(ack.Turn.Status)),
+	}, nil
 }
 
 // InvokeAgentStream behaves like InvokeAgent but streams the turn's activity
