@@ -523,6 +523,7 @@ func registerSessionsCommands(app *cli.App) {
 			cli.Int("before-sequence", "").Help("Backward continuation cursor for sequence-ordered lists. Only include rows whose monotonic per-resource sequence is strictly less than this…"),
 			cli.String("order", "").Help("Scan direction for the page. `asc` (the default) returns oldest-first; `desc` returns newest-first — the way to fetch the latest rows of…"),
 			cli.Int("limit", "").Help("Maximum number of items to return"),
+			cli.String("include", "").Help("Set to `context` to include caller-supplied runtime context rows whose model-visible names begin with `app-`. Platform-owned runtime…"),
 		).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -549,6 +550,10 @@ func registerSessionsCommands(app *cli.App) {
 			if ctx.IsSet("limit") {
 				v := api.LimitParam(ctx.Int("limit"))
 				params.Limit = &v
+			}
+			if ctx.IsSet("include") {
+				v := api.ListSessionMessagesParamsInclude(ctx.String("include"))
+				params.Include = &v
 			}
 			resp, err := client.ListSessionMessagesWithResponse(ctx.Context(), p0, p1, params)
 			if err != nil {
@@ -703,6 +708,7 @@ func registerSessionsCommands(app *cli.App) {
 		AddArg(&cli.Arg{Name: "session-id", Description: "Identifier of the conversation session.", Required: true}).
 		Flags(
 			cli.String("content", "").Help("[required] Ordered content blocks (text, images) for the input message. Accepts JSON, @file, or @-."),
+			cli.String("context", "").Help("Ordered application-owned runtime context for this turn. Send the full current value for each named item. Mobius records an item only on… Accepts JSON, @file, or @-."),
 			cli.String("idempotency-key", "").Help("Dedup key scoped to the session. A repeat call with the same key resumes the existing turn and writes nothing new. Omitting it or sending a…"),
 			cli.String("metadata", "").Help("Free-form caller metadata attached to the input message. Accepts JSON, @file, or @-."),
 			cli.String("role", "").Help("Role of the input message. A turn carries caller input, so only `user` is accepted; defaults to `user` when omitted."),
@@ -724,6 +730,11 @@ func registerSessionsCommands(app *cli.App) {
 			}
 			if ctx.IsSet("content") {
 				if err := decodeFlagJSON(ctx, "content", ctx.String("content"), &body.Content); err != nil {
+					return err
+				}
+			}
+			if ctx.IsSet("context") {
+				if err := decodeFlagJSON(ctx, "context", ctx.String("context"), &body.Context); err != nil {
 					return err
 				}
 			}

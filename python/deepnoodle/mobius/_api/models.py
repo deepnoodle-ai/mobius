@@ -4162,6 +4162,24 @@ class InvokeSessionSpec(BaseModel):
     )
 
 
+class RuntimeContextItem(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    name: str = Field(
+        ...,
+        description='Stable application-defined context name. Delivered to the model namespaced as `app-<name>`.',
+        max_length=64,
+        pattern='^[a-z][a-z0-9-]*$',
+    )
+    content: str = Field(
+        ...,
+        description='Current value of this context, rendered verbatim to the model. The UTF-8 encoding may not exceed 8,192 bytes.',
+        max_length=8192,
+        min_length=1,
+    )
+
+
 class InvokeInput(BaseModel):
     """
     The caller input message that starts the agent turn.
@@ -4178,6 +4196,11 @@ class InvokeInput(BaseModel):
     idempotency_key: str | None = Field(
         None,
         description='Dedup key scoped to the resolved session. A repeat call with the same key resumes the existing turn and writes nothing new — derive it from the provider event id for Slack/Telegram webhook retries. Omitting it or sending a blank value disables retry deduplication.',
+    )
+    context: list[RuntimeContextItem] | None = Field(
+        None,
+        description='Ordered application-owned runtime context for this turn. Send the full current value for each named item. Mobius records an item only on first use, material change, or after compaction removes its prior value from the active model window. Omitting a name leaves its last value standing; send an explicit value such as `none` to clear application state. Names must be unique within the request. Content is limited to 8,192 UTF-8 bytes per item and 16,384 bytes total.\n\nContext remains at contextual authority and cannot grant permissions. A retry using the same `idempotency_key` returns the original turn and ignores any newly supplied context.',
+        max_length=8,
     )
     metadata: dict[str, Any] | None = Field(
         None, description='Free-form caller metadata attached to the input message.'
@@ -4266,6 +4289,11 @@ class StartTurnRequest(BaseModel):
     idempotency_key: str | None = Field(
         None,
         description='Dedup key scoped to the session. A repeat call with the same key resumes the existing turn and writes nothing new. Omitting it or sending a blank value disables retry deduplication.',
+    )
+    context: list[RuntimeContextItem] | None = Field(
+        None,
+        description='Ordered application-owned runtime context for this turn. Send the full current value for each named item. Mobius records an item only on first use, material change, or after compaction removes its prior value from the active model window. Omitting a name leaves its last value standing; send an explicit value such as `none` to clear application state. Names must be unique within the request. Content is limited to 8,192 UTF-8 bytes per item and 16,384 bytes total.\n\nContext remains at contextual authority and cannot grant permissions. A retry using the same `idempotency_key` returns the original turn and ignores any newly supplied context.',
+        max_length=8,
     )
     metadata: dict[str, Any] | None = Field(
         None, description='Free-form caller metadata attached to the input message.'

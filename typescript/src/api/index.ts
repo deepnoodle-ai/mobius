@@ -226,6 +226,7 @@ export type RunFailedPayload = components["schemas"]["RunFailedPayload"];
 export type RunNameSpec = components["schemas"]["RunNameSpec"];
 export type RunResumedPayload = components["schemas"]["RunResumedPayload"];
 export type RunStartedPayload = components["schemas"]["RunStartedPayload"];
+export type RuntimeContextItem = components["schemas"]["RuntimeContextItem"];
 export type SaveAgentMemoryEntryRequest = components["schemas"]["SaveAgentMemoryEntryRequest"];
 export type ScheduleTriggerConfig = components["schemas"]["ScheduleTriggerConfig"];
 export type SearchRowsRequest = components["schemas"]["SearchRowsRequest"];

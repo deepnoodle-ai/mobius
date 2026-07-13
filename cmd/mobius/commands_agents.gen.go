@@ -332,6 +332,7 @@ func registerAgentsCommands(app *cli.App) {
 		Flags(
 			cli.Int("after-sequence", "").Help("Continuation cursor for sequence-ordered lists. Only include rows whose monotonic per-resource sequence is strictly greater than this…"),
 			cli.Int("limit", "").Help("Maximum number of items to return"),
+			cli.String("include", "").Help("Set to `context` to include caller-supplied runtime context rows whose model-visible names begin with `app-`. Platform-owned runtime…"),
 		).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -350,6 +351,10 @@ func registerAgentsCommands(app *cli.App) {
 			if ctx.IsSet("limit") {
 				v := api.LimitParam(ctx.Int("limit"))
 				params.Limit = &v
+			}
+			if ctx.IsSet("include") {
+				v := api.ListTurnMessagesParamsInclude(ctx.String("include"))
+				params.Include = &v
 			}
 			resp, err := client.ListTurnMessagesWithResponse(ctx.Context(), p0, p1, params)
 			if err != nil {

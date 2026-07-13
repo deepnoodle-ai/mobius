@@ -1985,6 +1985,7 @@ paths:
       - $ref: '#/components/parameters/TurnIdParam'
       - $ref: '#/components/parameters/AfterSequenceParam'
       - $ref: '#/components/parameters/LimitParam'
+      - $ref: '#/components/parameters/ContextIncludeParam'
       responses:
         '200':
           description: OK
@@ -2669,6 +2670,7 @@ paths:
       - $ref: '#/components/parameters/BeforeSequenceParam'
       - $ref: '#/components/parameters/OrderParam'
       - $ref: '#/components/parameters/LimitParam'
+      - $ref: '#/components/parameters/ContextIncludeParam'
       responses:
         '200':
           description: OK
@@ -5476,6 +5478,16 @@ components:
         minLength: 1
         maxLength: 256
         pattern: ^[A-Za-z0-9._:-]+$
+    ContextIncludeParam:
+      name: include
+      in: query
+      required: false
+      description: Set to `context` to include caller-supplied runtime context rows whose
+        model-visible names begin with `app-`. Platform-owned runtime context remains hidden.
+      schema:
+        type: string
+        enum:
+        - context
     NudgeIdParam:
       name: nudge_id
       in: path
@@ -11669,6 +11681,25 @@ components:
           type: object
           additionalProperties: true
           description: Free-form caller metadata stored on a newly created session.
+    RuntimeContextItem:
+      type: object
+      additionalProperties: false
+      required:
+      - name
+      - content
+      properties:
+        name:
+          type: string
+          pattern: ^[a-z][a-z0-9-]*$
+          maxLength: 64
+          description: Stable application-defined context name. Delivered to the model namespaced
+            as `app-<name>`.
+        content:
+          type: string
+          minLength: 1
+          maxLength: 8192
+          description: Current value of this context, rendered verbatim to the model. The
+            UTF-8 encoding may not exceed 8,192 bytes.
     InvokeInput:
       type: object
       additionalProperties: false
@@ -11689,6 +11720,15 @@ components:
             key resumes the existing turn and writes nothing new — derive it from the provider
             event id for Slack/Telegram webhook retries. Omitting it or sending a blank value
             disables retry deduplication.
+        context:
+          type: array
+          maxItems: 8
+          description: |-
+            Ordered application-owned runtime context for this turn. Send the full current value for each named item. Mobius records an item only on first use, material change, or after compaction removes its prior value from the active model window. Omitting a name leaves its last value standing; send an explicit value such as `none` to clear application state. Names must be unique within the request. Content is limited to 8,192 UTF-8 bytes per item and 16,384 bytes total.
+
+            Context remains at contextual authority and cannot grant permissions. A retry using the same `idempotency_key` returns the original turn and ignores any newly supplied context.
+          items:
+            $ref: '#/components/schemas/RuntimeContextItem'
         metadata:
           type: object
           additionalProperties: true
@@ -11782,6 +11822,15 @@ components:
           description: Dedup key scoped to the session. A repeat call with the same key resumes
             the existing turn and writes nothing new. Omitting it or sending a blank value
             disables retry deduplication.
+        context:
+          type: array
+          maxItems: 8
+          description: |-
+            Ordered application-owned runtime context for this turn. Send the full current value for each named item. Mobius records an item only on first use, material change, or after compaction removes its prior value from the active model window. Omitting a name leaves its last value standing; send an explicit value such as `none` to clear application state. Names must be unique within the request. Content is limited to 8,192 UTF-8 bytes per item and 16,384 bytes total.
+
+            Context remains at contextual authority and cannot grant permissions. A retry using the same `idempotency_key` returns the original turn and ignores any newly supplied context.
+          items:
+            $ref: '#/components/schemas/RuntimeContextItem'
         metadata:
           type: object
           additionalProperties: true

@@ -3014,6 +3014,21 @@ func (e WorkerSocketWorkerDrainingFrameType) Valid() bool {
 	}
 }
 
+// Defines values for ContextIncludeParam.
+const (
+	ContextIncludeParamContext ContextIncludeParam = "context"
+)
+
+// Valid indicates whether the value is a known member of the ContextIncludeParam enum.
+func (e ContextIncludeParam) Valid() bool {
+	switch e {
+	case ContextIncludeParamContext:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for OrderParam.
 const (
 	OrderParamAsc  OrderParam = "asc"
@@ -3095,6 +3110,21 @@ func (e ListSessionMessagesParamsOrder) Valid() bool {
 	}
 }
 
+// Defines values for ListSessionMessagesParamsInclude.
+const (
+	ListSessionMessagesParamsIncludeContext ListSessionMessagesParamsInclude = "context"
+)
+
+// Valid indicates whether the value is a known member of the ListSessionMessagesParamsInclude enum.
+func (e ListSessionMessagesParamsInclude) Valid() bool {
+	switch e {
+	case ListSessionMessagesParamsIncludeContext:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ListSessionNudgesParamsOrder.
 const (
 	ListSessionNudgesParamsOrderAsc  ListSessionNudgesParamsOrder = "asc"
@@ -3125,6 +3155,21 @@ func (e ListSessionTurnsParamsOrder) Valid() bool {
 	case ListSessionTurnsParamsOrderAsc:
 		return true
 	case ListSessionTurnsParamsOrderDesc:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ListTurnMessagesParamsInclude.
+const (
+	ListTurnMessagesParamsIncludeContext ListTurnMessagesParamsInclude = "context"
+)
+
+// Valid indicates whether the value is a known member of the ListTurnMessagesParamsInclude enum.
+func (e ListTurnMessagesParamsInclude) Valid() bool {
+	switch e {
+	case ListTurnMessagesParamsIncludeContext:
 		return true
 	default:
 		return false
@@ -5558,6 +5603,11 @@ type InvokeInput struct {
 	// Content Ordered content blocks (text, images) for the input message.
 	Content []map[string]interface{} `json:"content"`
 
+	// Context Ordered application-owned runtime context for this turn. Send the full current value for each named item. Mobius records an item only on first use, material change, or after compaction removes its prior value from the active model window. Omitting a name leaves its last value standing; send an explicit value such as `none` to clear application state. Names must be unique within the request. Content is limited to 8,192 UTF-8 bytes per item and 16,384 bytes total.
+	//
+	// Context remains at contextual authority and cannot grant permissions. A retry using the same `idempotency_key` returns the original turn and ignores any newly supplied context.
+	Context *[]RuntimeContextItem `json:"context,omitempty"`
+
 	// IdempotencyKey Dedup key scoped to the resolved session. A repeat call with the same key resumes the existing turn and writes nothing new — derive it from the provider event id for Slack/Telegram webhook retries. Omitting it or sending a blank value disables retry deduplication.
 	IdempotencyKey *string `json:"idempotency_key,omitempty"`
 
@@ -6933,6 +6983,15 @@ type RunStartedPayload struct {
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
+// RuntimeContextItem defines model for RuntimeContextItem.
+type RuntimeContextItem struct {
+	// Content Current value of this context, rendered verbatim to the model. The UTF-8 encoding may not exceed 8,192 bytes.
+	Content string `json:"content"`
+
+	// Name Stable application-defined context name. Delivered to the model namespaced as `app-<name>`.
+	Name string `json:"name"`
+}
+
 // SaveAgentMemoryEntryRequest Content for a memory entry. The key comes from the path.
 type SaveAgentMemoryEntryRequest struct {
 	// Content The content to remember.
@@ -7667,6 +7726,11 @@ type StartLoopRunRequest struct {
 type StartTurnRequest struct {
 	// Content Ordered content blocks (text, images) for the input message.
 	Content []map[string]interface{} `json:"content"`
+
+	// Context Ordered application-owned runtime context for this turn. Send the full current value for each named item. Mobius records an item only on first use, material change, or after compaction removes its prior value from the active model window. Omitting a name leaves its last value standing; send an explicit value such as `none` to clear application state. Names must be unique within the request. Content is limited to 8,192 UTF-8 bytes per item and 16,384 bytes total.
+	//
+	// Context remains at contextual authority and cannot grant permissions. A retry using the same `idempotency_key` returns the original turn and ignores any newly supplied context.
+	Context *[]RuntimeContextItem `json:"context,omitempty"`
 
 	// IdempotencyKey Dedup key scoped to the session. A repeat call with the same key resumes the existing turn and writes nothing new. Omitting it or sending a blank value disables retry deduplication.
 	IdempotencyKey *string `json:"idempotency_key,omitempty"`
@@ -8897,6 +8961,9 @@ type ArtifactIdParam = string
 // BeforeSequenceParam defines model for BeforeSequenceParam.
 type BeforeSequenceParam = int64
 
+// ContextIncludeParam defines model for ContextIncludeParam.
+type ContextIncludeParam string
+
 // CursorParam defines model for CursorParam.
 type CursorParam = string
 
@@ -9249,10 +9316,16 @@ type ListSessionMessagesParams struct {
 
 	// Limit Maximum number of items to return
 	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Include Set to `context` to include caller-supplied runtime context rows whose model-visible names begin with `app-`. Platform-owned runtime context remains hidden.
+	Include *ListSessionMessagesParamsInclude `form:"include,omitempty" json:"include,omitempty"`
 }
 
 // ListSessionMessagesParamsOrder defines parameters for ListSessionMessages.
 type ListSessionMessagesParamsOrder string
+
+// ListSessionMessagesParamsInclude defines parameters for ListSessionMessages.
+type ListSessionMessagesParamsInclude string
 
 // ListSessionNudgesParams defines parameters for ListSessionNudges.
 type ListSessionNudgesParams struct {
@@ -9351,7 +9424,13 @@ type ListTurnMessagesParams struct {
 
 	// Limit Maximum number of items to return
 	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Include Set to `context` to include caller-supplied runtime context rows whose model-visible names begin with `app-`. Platform-owned runtime context remains hidden.
+	Include *ListTurnMessagesParamsInclude `form:"include,omitempty" json:"include,omitempty"`
 }
+
+// ListTurnMessagesParamsInclude defines parameters for ListTurnMessages.
+type ListTurnMessagesParamsInclude string
 
 // ListWebhooksParams defines parameters for ListWebhooks.
 type ListWebhooksParams struct {
@@ -24729,6 +24808,18 @@ func NewListSessionMessagesRequest(server string, projectHandle ProjectHandlePar
 
 		}
 
+		if params.Include != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "include", *params.Include, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
 		if encoded := queryValues.Encode(); encoded != "" {
 			rawQueryFragments = append(rawQueryFragments, encoded)
 		}
@@ -26973,6 +27064,18 @@ func NewListTurnMessagesRequest(server string, projectHandle ProjectHandleParam,
 		if params.Limit != nil {
 
 			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Include != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "include", *params.Include, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {

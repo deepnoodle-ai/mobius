@@ -17,6 +17,7 @@ import type {
   LoopRunSource,
   LoopRunStatus,
   LoopStatus,
+  RuntimeContextItem,
   Session,
   SessionListResponse,
   SessionMessageListResponse,
@@ -29,6 +30,7 @@ import type {
   SessionTranscriptMessage,
   SessionTranscriptSnapshot,
   SignalLoopRunRequest,
+  StartTurnRequest,
   StartLoopRunRequest,
   StreamEndFrame,
   TagMap,
@@ -275,6 +277,12 @@ export interface InvokeAgentOptions {
   /** Ordered content blocks (text, images, …) for the caller's input message. Required. */
   content: Record<string, unknown>[];
   /**
+   * Ordered application-owned state snapshots for this turn. Send full,
+   * deterministic values; Mobius records only first use, changes, and
+   * post-compaction re-entry.
+   */
+  context?: RuntimeContextItem[];
+  /**
    * Dedup key scoped to the resolved session. A repeat call with the same
    * key resolves the same session and resumes the existing turn rather
    * than starting a second one — derive it from the provider event id for
@@ -303,6 +311,17 @@ export interface InvokeAgentOptions {
    * …) recorded on the started turn.
    */
   channelContext?: ChannelContext;
+}
+
+export interface StartTurnOptions {
+  /** Ordered content blocks (text, images, …) for the caller's input message. */
+  content: Record<string, unknown>[];
+  /** Ordered application-owned state snapshots for this turn. */
+  context?: RuntimeContextItem[];
+  /** Dedup key scoped to the existing session. */
+  idempotencyKey?: string;
+  /** Free-form caller metadata attached to the input message. */
+  metadata?: Record<string, unknown>;
 }
 
 /**
@@ -712,6 +731,32 @@ export class Client {
       { method: "POST" },
     );
     return (await resp.json()) as AgentTurn;
+  }
+
+  /** Start a turn in an existing session and return its lazy transcript handle. */
+  async startTurn(
+    sessionId: string,
+    opts: StartTurnOptions,
+    streamOpts: { signal?: AbortSignal } = {},
+  ): Promise<TurnTranscript> {
+    if (!opts.content || opts.content.length === 0) {
+      throw new Error("mobius: start turn: content is required");
+    }
+    const body: StartTurnRequest = removeUndefined({
+      role: "user",
+      content: opts.content,
+      context: opts.context,
+      idempotency_key: opts.idempotencyKey,
+      metadata: opts.metadata,
+    });
+    const resp = await this.request(
+      `/v1/projects/:project/sessions/${encodeURIComponent(sessionId)}/turns`,
+      { method: "POST", body, signal: streamOpts.signal },
+    );
+    const ack = (await resp.json()) as TurnAck;
+    const transcript = new SessionTranscript();
+    transcript.seed(ack);
+    return new TurnTranscript(this, ack, transcript, streamOpts.signal);
   }
 
   /**
@@ -1260,6 +1305,7 @@ function invokeAgentRequest(opts: InvokeAgentOptions): InvokeAgentRequest {
     }) as AgentRef,
     input: removeUndefined({
       content: opts.content,
+      context: opts.context,
       idempotency_key: opts.idempotencyKey,
       metadata: opts.inputMetadata,
     }) as InvokeInput,

@@ -5604,6 +5604,12 @@ export interface components {
                 [key: string]: unknown;
             };
         };
+        RuntimeContextItem: {
+            /** @description Stable application-defined context name. Delivered to the model namespaced as `app-<name>`. */
+            name: string;
+            /** @description Current value of this context, rendered verbatim to the model. The UTF-8 encoding may not exceed 8,192 bytes. */
+            content: string;
+        };
         /** @description The caller input message that starts the agent turn. */
         InvokeInput: {
             /** @description Ordered content blocks (text, images) for the input message. */
@@ -5612,6 +5618,12 @@ export interface components {
             }[];
             /** @description Dedup key scoped to the resolved session. A repeat call with the same key resumes the existing turn and writes nothing new — derive it from the provider event id for Slack/Telegram webhook retries. Omitting it or sending a blank value disables retry deduplication. */
             idempotency_key?: string;
+            /**
+             * @description Ordered application-owned runtime context for this turn. Send the full current value for each named item. Mobius records an item only on first use, material change, or after compaction removes its prior value from the active model window. Omitting a name leaves its last value standing; send an explicit value such as `none` to clear application state. Names must be unique within the request. Content is limited to 8,192 UTF-8 bytes per item and 16,384 bytes total.
+             *
+             *     Context remains at contextual authority and cannot grant permissions. A retry using the same `idempotency_key` returns the original turn and ignores any newly supplied context.
+             */
+            context?: components["schemas"]["RuntimeContextItem"][];
             /** @description Free-form caller metadata attached to the input message. */
             metadata?: {
                 [key: string]: unknown;
@@ -5667,6 +5679,12 @@ export interface components {
             }[];
             /** @description Dedup key scoped to the session. A repeat call with the same key resumes the existing turn and writes nothing new. Omitting it or sending a blank value disables retry deduplication. */
             idempotency_key?: string;
+            /**
+             * @description Ordered application-owned runtime context for this turn. Send the full current value for each named item. Mobius records an item only on first use, material change, or after compaction removes its prior value from the active model window. Omitting a name leaves its last value standing; send an explicit value such as `none` to clear application state. Names must be unique within the request. Content is limited to 8,192 UTF-8 bytes per item and 16,384 bytes total.
+             *
+             *     Context remains at contextual authority and cannot grant permissions. A retry using the same `idempotency_key` returns the original turn and ignores any newly supplied context.
+             */
+            context?: components["schemas"]["RuntimeContextItem"][];
             /** @description Free-form caller metadata attached to the input message. */
             metadata?: {
                 [key: string]: unknown;
@@ -7779,6 +7797,8 @@ export interface components {
         OrgIDParam: string;
         /** @description The key identifying a memory entry. Restricted to a path-safe character set (letters, numbers, and `. _ : -`) so it stays reliably addressable. */
         MemoryKeyParam: string;
+        /** @description Set to `context` to include caller-supplied runtime context rows whose model-visible names begin with `app-`. Platform-owned runtime context remains hidden. */
+        ContextIncludeParam: "context";
         /** @description Session nudge identifier. */
         NudgeIdParam: string;
         /** @description Table ID. */
@@ -9823,6 +9843,8 @@ export interface operations {
                 after_sequence?: components["parameters"]["AfterSequenceParam"];
                 /** @description Maximum number of items to return */
                 limit?: components["parameters"]["LimitParam"];
+                /** @description Set to `context` to include caller-supplied runtime context rows whose model-visible names begin with `app-`. Platform-owned runtime context remains hidden. */
+                include?: components["parameters"]["ContextIncludeParam"];
             };
             header?: never;
             path: {
@@ -10550,6 +10572,8 @@ export interface operations {
                 order?: components["parameters"]["OrderParam"];
                 /** @description Maximum number of items to return */
                 limit?: components["parameters"]["LimitParam"];
+                /** @description Set to `context` to include caller-supplied runtime context rows whose model-visible names begin with `app-`. Platform-owned runtime context remains hidden. */
+                include?: components["parameters"]["ContextIncludeParam"];
             };
             header?: never;
             path: {

@@ -316,6 +316,7 @@ test("client: invokeAgent posts the compound invoke request shape", async () => 
     const turn = await client.invokeAgent({
       agentId: "agent_1",
       content: [{ type: "text", text: "hi" }],
+      context: [{ name: "naming-board", content: "Chosen: none" }],
       idempotencyKey: "evt_1",
       session: { session_key: "app:acct_1:user_2" },
       config: {
@@ -337,12 +338,51 @@ test("client: invokeAgent posts the compound invoke request shape", async () => 
   );
   assert.match(requestBody, /"agent_ref":\{"id":"agent_1"\}/);
   assert.match(requestBody, /"idempotency_key":"evt_1"/);
+  assert.match(requestBody, /"context":\[\{"name":"naming-board","content":"Chosen: none"\}\]/);
   assert.match(requestBody, /"session_key":"app:acct_1:user_2"/);
   assert.match(requestBody, /"config":\{/);
   assert.match(requestBody, /"instructions":"Be concise\."/);
   assert.match(requestBody, /"model":"claude-sonnet-4-6"/);
   assert.match(requestBody, /"effort":"medium"/);
   assert.match(requestBody, /"toolkits":\[\{"name":"tickets","actions":\["tickets\.search"\]\}\]/);
+});
+
+test("client: startTurn passes runtime context to an existing session", async () => {
+  let requestedURL = "";
+  let requestBody = "";
+  const restore = installFakeFetch({
+    status: 202,
+    body: turnAck("sess_1", "turn_1", 7),
+    capture: (input, init) => {
+      requestedURL = typeof input === "string" ? input : input.toString();
+      requestBody = String(init?.body ?? "");
+    },
+  });
+  try {
+    const client = new Client({
+      apiKey: "mbx_test",
+      baseURL: "https://api.example.invalid",
+      project: "test-project",
+    });
+    const turn = await client.startTurn("sess_1", {
+      content: [{ type: "text", text: "hi" }],
+      context: [{ name: "naming-board", content: "Chosen: none" }],
+      idempotencyKey: "evt_1",
+    });
+    assert.equal(turn.id, "turn_1");
+  } finally {
+    restore();
+  }
+  assert.equal(
+    requestedURL,
+    "https://api.example.invalid/v1/projects/test-project/sessions/sess_1/turns",
+  );
+  assert.deepEqual(JSON.parse(requestBody), {
+    role: "user",
+    content: [{ type: "text", text: "hi" }],
+    context: [{ name: "naming-board", content: "Chosen: none" }],
+    idempotency_key: "evt_1",
+  });
 });
 
 test("client: invokeAgent requires agent ref and content", async () => {
