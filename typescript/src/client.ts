@@ -1058,6 +1058,9 @@ export class TurnTranscript implements AsyncIterable<TurnTranscript> {
 
   readonly #client: Client;
   readonly #signal?: AbortSignal;
+  // Immutable pre-turn boundary used only for terminal durable redrain. The
+  // transcript cursor keeps moving independently for stream reconnects.
+  readonly #reconciliationCursor?: string;
   // Set when the acked turn was already terminal (a deduped resume of a
   // completed turn): there is nothing to stream, so iteration fetches the
   // snapshot (all pages) instead, making messages() complete either way.
@@ -1084,6 +1087,9 @@ export class TurnTranscript implements AsyncIterable<TurnTranscript> {
     this.afterSequence = ack.after_sequence;
     this.deduped = ack.deduped ?? false;
     this.transcript = transcript;
+    this.#reconciliationCursor = this.deduped
+      ? undefined
+      : ack.resume_cursor;
     this.#hydrate = isTerminalTurnStatus(ack.turn.status);
     this.#diagnostics.status = ack.turn.status;
     this.#diagnostics.cursor = transcript.cursor;
@@ -1147,7 +1153,7 @@ export class TurnTranscript implements AsyncIterable<TurnTranscript> {
       const turn = update.transcript.turn(this.id);
       const terminal = turn != null && isTerminalTurnStatus(turn.status);
       if (terminal) {
-        await this.#reconcileSnapshot(this.transcript.cursor ?? undefined);
+        await this.#reconcileSnapshot(this.#reconciliationCursor);
       }
       const exposedUpdate: TranscriptUpdate = terminal
         ? { ...update, cursor: this.transcript.cursor, connection: "ended" }

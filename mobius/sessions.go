@@ -136,6 +136,11 @@ func (c *Client) InvokeAgent(ctx context.Context, opts InvokeAgentOptions) (*Tur
 	ack := resp.JSON202
 	view := NewSessionTranscript()
 	view.Seed(ack)
+	deduped := ack.Deduped != nil && *ack.Deduped
+	reconciliationCursor := ""
+	if !deduped && ack.ResumeCursor != nil {
+		reconciliationCursor = *ack.ResumeCursor
+	}
 	return &TurnTranscript{
 		stream: transcriptStream{
 			client:     c,
@@ -146,11 +151,12 @@ func (c *Client) InvokeAgent(ctx context.Context, opts InvokeAgentOptions) (*Tur
 			view:       view,
 			connection: TranscriptConnectionIdle,
 		},
-		turnID:        ack.Turn.Id,
-		sessionID:     ack.Session.Id,
-		afterSequence: ack.AfterSequence,
-		deduped:       ack.Deduped != nil && *ack.Deduped,
-		hydrate:       IsTerminalTurnStatus(string(ack.Turn.Status)),
+		turnID:               ack.Turn.Id,
+		sessionID:            ack.Session.Id,
+		afterSequence:        ack.AfterSequence,
+		deduped:              deduped,
+		reconciliationCursor: reconciliationCursor,
+		hydrate:              IsTerminalTurnStatus(string(ack.Turn.Status)),
 	}, nil
 }
 

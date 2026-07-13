@@ -450,6 +450,10 @@ type TurnTranscript struct {
 	sessionID     string
 	afterSequence int64
 	deduped       bool
+	// reconciliationCursor is the immutable pre-turn v2 boundary used for
+	// terminal durable redrain. stream.view.Cursor continues moving for live
+	// reconnects. Empty falls back to cursor-less hydration.
+	reconciliationCursor string
 	// hydrate is set when the acked turn was already terminal (a deduped
 	// resume of a completed turn): there is nothing to stream, so the first
 	// Next fetches the snapshot (all pages) instead, making Messages complete
@@ -536,7 +540,7 @@ func (t *TurnTranscript) Next() bool {
 	if t.stream.lastFrameType == "turn.upsert" {
 		turn, err := t.stream.lastEvent.Frame.AsTurnUpsertFrame()
 		if err == nil && turn.Id == t.turnID && IsTerminalTurnStatus(turn.Status) {
-			if err := t.reconcileSnapshot(t.stream.view.Cursor()); err != nil {
+			if err := t.reconcileSnapshot(t.reconciliationCursor); err != nil {
 				t.stream.err = fmt.Errorf("mobius: reconcile terminal transcript: %w", err)
 				t.stream.stop()
 				return false

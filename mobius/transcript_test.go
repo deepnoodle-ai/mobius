@@ -358,7 +358,7 @@ func TestInvokeAgent_StreamsTurnToTerminal(t *testing.T) {
 			_, _ = io.WriteString(w, "event: message.upsert\ndata: {\"event_type\":\"message.upsert\",\"id\":\"m_a\",\"session_id\":\"s1\",\"agent_id\":\"a1\",\"role\":\"assistant\",\"status\":\"final\",\"turn_id\":\"t1\",\"turn_index\":1,\"sequence\":43,\"entry_type\":\"message\",\"content\":[{\"type\":\"text\",\"text\":\"done\"}],\"created_at\":\"2026-07-11T17:03:21Z\"}\n\n")
 			_, _ = io.WriteString(w, "id: 43.9\nevent: turn.upsert\ndata: {\"event_type\":\"turn.upsert\",\"id\":\"t1\",\"session_id\":\"s1\",\"agent_id\":\"a1\",\"attempt\":1,\"status\":\"completed\",\"created_at\":\"2026-07-11T17:03:20Z\",\"updated_at\":\"2026-07-11T17:03:40Z\"}\n\n")
 		case r.Method == http.MethodGet && r.URL.Path == "/v1/projects/test-project/sessions/s1/transcript":
-			assert.Equal(t, r.URL.Query().Get("cursor"), "43.9")
+			assert.Equal(t, r.URL.Query().Get("cursor"), "41.6")
 			w.Header().Set("Content-Type", "application/json")
 			_, _ = io.WriteString(w, `{"messages":[],"turns":[],"has_more":false,"resume_cursor":"43.9"}`)
 		default:
@@ -401,7 +401,7 @@ func TestInvokeAgent_StreamsTurnToTerminal(t *testing.T) {
 	assert.Equal(t, turn.Transcript().Cursor(), "43.9")
 }
 
-func TestInvokeAgent_ReconcilesTerminalSnapshotBeforeFinalUpdate(t *testing.T) {
+func TestInvokeAgent_RedrainsFromInvocationCursorBeforeFinalUpdate(t *testing.T) {
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case r.Method == http.MethodPost && r.URL.Path == "/v1/projects/test-project/agents/invoke":
@@ -410,12 +410,21 @@ func TestInvokeAgent_ReconcilesTerminalSnapshotBeforeFinalUpdate(t *testing.T) {
 			_, _ = io.WriteString(w, invokeAckWithCursor("s1", "t1", 42))
 		case r.URL.Path == "/v1/projects/test-project/sessions/s1/transcript/stream":
 			w.Header().Set("Content-Type", "text/event-stream")
-			_, _ = io.WriteString(w, "event: message.upsert\ndata: {\"event_type\":\"message.upsert\",\"id\":\"m_preview\",\"session_id\":\"s1\",\"agent_id\":\"a1\",\"role\":\"assistant\",\"status\":\"streaming\",\"turn_id\":\"t1\",\"turn_index\":1,\"sequence\":null,\"entry_type\":\"message\",\"content\":[{\"type\":\"tool_use\",\"id\":\"call_1\",\"name\":\"lookup\",\"input\":{}}],\"created_at\":\"2026-07-11T17:03:21Z\"}\n\n")
-			_, _ = io.WriteString(w, "id: 43.9\nevent: turn.upsert\ndata: {\"event_type\":\"turn.upsert\",\"id\":\"t1\",\"session_id\":\"s1\",\"agent_id\":\"a1\",\"attempt\":1,\"status\":\"completed\",\"created_at\":\"2026-07-11T17:03:20Z\",\"updated_at\":\"2026-07-11T17:03:40Z\"}\n\n")
+			_, _ = io.WriteString(w, "event: message.upsert\ndata: {\"event_type\":\"message.upsert\",\"id\":\"m_preview\",\"session_id\":\"s1\",\"agent_id\":\"a1\",\"role\":\"assistant\",\"status\":\"streaming\",\"turn_id\":\"t1\",\"turn_index\":1,\"sequence\":null,\"entry_type\":\"message\",\"content\":[{\"type\":\"tool_use\",\"id\":\"call_1\",\"name\":\"naming_words_coin\",\"input\":{\"count\":2}}],\"created_at\":\"2026-07-11T17:03:21Z\"}\n\n")
+			_, _ = io.WriteString(w, "id: 44.3\nevent: message.upsert\ndata: {\"event_type\":\"message.upsert\",\"id\":\"m_result\",\"session_id\":\"s1\",\"agent_id\":\"a1\",\"role\":\"user\",\"status\":\"final\",\"turn_id\":\"t1\",\"turn_index\":2,\"sequence\":44,\"entry_type\":\"message\",\"content\":[{\"type\":\"tool_result\",\"tool_use_id\":\"call_1\",\"content\":\"ok\"}],\"created_at\":\"2026-07-11T17:03:21Z\"}\n\n")
+			_, _ = io.WriteString(w, "id: 44.9\nevent: turn.upsert\ndata: {\"event_type\":\"turn.upsert\",\"id\":\"t1\",\"session_id\":\"s1\",\"agent_id\":\"a1\",\"attempt\":1,\"status\":\"completed\",\"created_at\":\"2026-07-11T17:03:20Z\",\"updated_at\":\"2026-07-11T17:03:40Z\"}\n\n")
 		case r.Method == http.MethodGet && r.URL.Path == "/v1/projects/test-project/sessions/s1/transcript":
-			assert.Equal(t, r.URL.Query().Get("cursor"), "43.9")
 			w.Header().Set("Content-Type", "application/json")
-			_, _ = io.WriteString(w, `{"messages":[{"id":"m_final","session_id":"s1","agent_id":"a1","role":"assistant","status":"final","turn_id":"t1","turn_index":1,"sequence":43,"entry_type":"message","content":[{"type":"tool_use","id":"call_1","name":"lookup","input":{}},{"type":"tool_result","tool_use_id":"call_1","content":"ok"},{"type":"text","text":"done"}],"created_at":"2026-07-11T17:03:21Z"}],"turns":[],"has_more":false,"resume_cursor":"43.9"}`)
+			switch {
+			case r.URL.Query().Get("cursor") == "44.9":
+				// Real lower-bound filtering cannot redeliver the call at sequence 43.
+				_, _ = io.WriteString(w, `{"messages":[{"id":"m_done","session_id":"s1","agent_id":"a1","role":"assistant","status":"final","turn_id":"t1","turn_index":3,"sequence":45,"entry_type":"message","content":[{"type":"text","text":"done"}],"created_at":"2026-07-11T17:03:21Z"}],"turns":[{"id":"t1","session_id":"s1","agent_id":"a1","attempt":1,"status":"completed","created_at":"2026-07-11T17:03:20Z","updated_at":"2026-07-11T17:03:40Z"}],"has_more":false,"resume_cursor":"45.9"}`)
+			case r.URL.Query().Get("page_token") == "terminal-page-2":
+				_, _ = io.WriteString(w, `{"messages":[{"id":"m_result","session_id":"s1","agent_id":"a1","role":"user","status":"final","turn_id":"t1","turn_index":2,"sequence":44,"entry_type":"message","content":[{"type":"tool_result","tool_use_id":"call_1","content":"ok"}],"created_at":"2026-07-11T17:03:21Z"},{"id":"m_done","session_id":"s1","agent_id":"a1","role":"assistant","status":"final","turn_id":"t1","turn_index":3,"sequence":45,"entry_type":"message","content":[{"type":"text","text":"done"}],"created_at":"2026-07-11T17:03:21Z"}],"turns":[{"id":"t1","session_id":"s1","agent_id":"a1","attempt":1,"status":"completed","created_at":"2026-07-11T17:03:20Z","updated_at":"2026-07-11T17:03:40Z"}],"has_more":false,"resume_cursor":"45.9"}`)
+			default:
+				assert.Equal(t, r.URL.Query().Get("cursor"), "41.6")
+				_, _ = io.WriteString(w, `{"messages":[{"id":"m_user","session_id":"s1","agent_id":"a1","role":"user","status":"final","turn_id":"t1","turn_index":0,"sequence":42,"entry_type":"message","content":[{"type":"text","text":"hi"}],"created_at":"2026-07-11T17:03:21Z"},{"id":"m_call","session_id":"s1","agent_id":"a1","role":"assistant","status":"final","turn_id":"t1","turn_index":1,"sequence":43,"entry_type":"message","content":[{"type":"tool_use","id":"call_1","name":"naming_words_coin","input":{"count":2},"resolved_action":{"name":"naming.words.coin","input":{"count":2}}}],"created_at":"2026-07-11T17:03:21Z"}],"turns":[],"has_more":true,"next_page_token":"terminal-page-2","resume_cursor":"43.3"}`)
+			}
 		default:
 			http.NotFound(w, r)
 		}
@@ -433,17 +442,20 @@ func TestInvokeAgent_ReconcilesTerminalSnapshotBeforeFinalUpdate(t *testing.T) {
 	for turn.Next() {
 		steps++
 		if turn.Status() == "completed" {
-			assert.Equal(t, turn.Update().Cursor, "43.9")
+			assert.Equal(t, turn.Update().Cursor, "45.9")
 			assert.Equal(t, turn.Update().Connection, TranscriptConnectionEnded)
-			var ids []string
-			for _, message := range turn.RenderableMessages() {
-				ids = append(ids, message.Id)
-			}
-			assert.Equal(t, ids, []string{"m_user", "m_final"})
 		}
 	}
 	assert.NoError(t, turn.Err())
-	assert.Equal(t, steps, 2)
+	assert.Equal(t, steps, 3)
+
+	var durable api.SessionTranscriptSnapshot
+	assert.NoError(t, json.Unmarshal([]byte(`{"messages":[{"id":"m_user","session_id":"s1","agent_id":"a1","role":"user","status":"final","turn_id":"t1","turn_index":0,"sequence":42,"entry_type":"message","content":[{"type":"text","text":"hi"}],"created_at":"2026-07-11T17:03:21Z"},{"id":"m_call","session_id":"s1","agent_id":"a1","role":"assistant","status":"final","turn_id":"t1","turn_index":1,"sequence":43,"entry_type":"message","content":[{"type":"tool_use","id":"call_1","name":"naming_words_coin","input":{"count":2},"resolved_action":{"name":"naming.words.coin","input":{"count":2}}}],"created_at":"2026-07-11T17:03:21Z"},{"id":"m_result","session_id":"s1","agent_id":"a1","role":"user","status":"final","turn_id":"t1","turn_index":2,"sequence":44,"entry_type":"message","content":[{"type":"tool_result","tool_use_id":"call_1","content":"ok"}],"created_at":"2026-07-11T17:03:21Z"},{"id":"m_done","session_id":"s1","agent_id":"a1","role":"assistant","status":"final","turn_id":"t1","turn_index":3,"sequence":45,"entry_type":"message","content":[{"type":"text","text":"done"}],"created_at":"2026-07-11T17:03:21Z"}],"turns":[{"id":"t1","session_id":"s1","agent_id":"a1","attempt":1,"status":"completed","created_at":"2026-07-11T17:03:20Z","updated_at":"2026-07-11T17:03:40Z"}],"has_more":false,"resume_cursor":"45.9"}`), &durable))
+	full := NewSessionTranscript()
+	full.ApplySnapshot(&durable)
+	assert.Equal(t, turn.RenderableMessages(), full.RenderableMessagesForTurn("t1"))
+	resolved := blockMap(t, mustMessage(t, turn.Transcript(), "m_call").Content[0])["resolved_action"].(map[string]interface{})
+	assert.Equal(t, resolved["name"], "naming.words.coin")
 }
 
 func TestInvokeAgent_ReturnsTerminalReconciliationError(t *testing.T) {
