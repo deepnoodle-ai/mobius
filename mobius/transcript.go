@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/deepnoodle-ai/mobius/mobius/api"
@@ -36,6 +37,38 @@ type TranscriptStreamEvent struct {
 	EventType string
 	ID        string
 	Frame     api.SessionTranscriptFrame
+}
+
+// TranscriptConnectionState is observed client transport state, not inferred
+// backend state.
+type TranscriptConnectionState string
+
+const (
+	TranscriptConnectionIdle         TranscriptConnectionState = "idle"
+	TranscriptConnectionOpen         TranscriptConnectionState = "open"
+	TranscriptConnectionReconnecting TranscriptConnectionState = "reconnecting"
+	TranscriptConnectionEnded        TranscriptConnectionState = "ended"
+)
+
+// TranscriptUpdate is the last observed frame and the accumulated view after
+// it was applied. Pull it from a turn or watcher after Next returns true.
+type TranscriptUpdate struct {
+	Event          TranscriptStreamEvent
+	Cursor         string
+	Transcript     *SessionTranscript
+	Connection     TranscriptConnectionState
+	ReconnectCount int
+}
+
+// TranscriptDiagnostics contains observed stream facts only.
+type TranscriptDiagnostics struct {
+	Status         string
+	Cursor         string
+	Ready          bool
+	ReconnectCount int
+	LastFrameType  string
+	LastFrameAt    time.Time
+	Connection     TranscriptConnectionState
 }
 
 // SessionTranscript is the live view of a session: message rows keyed by
@@ -151,6 +184,66 @@ func (t *SessionTranscript) MessagesForTurn(turnID string) []*api.SessionTranscr
 	return out
 }
 
+// RenderableMessages returns a policy-light projection for chat and activity
+// UIs. It collapses preview/final versions of the same response segment,
+// suppresses superseded empty assistant previews, and removes duplicate tool
+// blocks by tool-call id. The accumulated lossless rows remain unchanged.
+func (t *SessionTranscript) RenderableMessages() []*api.SessionTranscriptMessage {
+	ordered := t.Messages()
+	chosen := make(map[string]*api.SessionTranscriptMessage, len(ordered))
+	order := make([]string, 0, len(ordered))
+	for _, row := range ordered {
+		copy := cloneTranscriptMessage(row)
+		normalizeMessageContent(copy)
+		key := renderLogicalKey(copy)
+		if _, ok := chosen[key]; !ok {
+			order = append(order, key)
+		}
+		current := chosen[key]
+		if current == nil || (copy.Status == "final" && current.Status != "final") ||
+			(copy.Status == current.Status && messageCompleteness(copy) >= messageCompleteness(current)) {
+			chosen[key] = copy
+		}
+	}
+
+	// For an active turn, only its newest empty streaming assistant segment is
+	// useful. Older empty placeholders are superseded response starts.
+	newestEmpty := map[string]string{}
+	for _, key := range order {
+		row := chosen[key]
+		if !isEmptyAssistantPreview(row) || !t.turnIsActive(derefString(row.TurnId)) {
+			continue
+		}
+		turnID := derefString(row.TurnId)
+		prevKey := newestEmpty[turnID]
+		if prevKey == "" || derefInt(chosen[prevKey].TurnIndex) <= derefInt(row.TurnIndex) {
+			newestEmpty[turnID] = key
+		}
+	}
+
+	rows := make([]*api.SessionTranscriptMessage, 0, len(order))
+	for _, key := range order {
+		row := chosen[key]
+		if isEmptyAssistantPreview(row) && t.turnIsActive(derefString(row.TurnId)) && newestEmpty[derefString(row.TurnId)] != key {
+			continue
+		}
+		rows = append(rows, row)
+	}
+	deduplicateToolBlocks(rows)
+	return rows
+}
+
+// RenderableMessagesForTurn is RenderableMessages scoped to one turn.
+func (t *SessionTranscript) RenderableMessagesForTurn(turnID string) []*api.SessionTranscriptMessage {
+	var out []*api.SessionTranscriptMessage
+	for _, row := range t.RenderableMessages() {
+		if row.TurnId != nil && *row.TurnId == turnID {
+			out = append(out, row)
+		}
+	}
+	return out
+}
+
 // Apply folds one stream frame into the view. Unknown event_types are ignored
 // so the protocol can grow without breaking this client. This is the escape
 // hatch for frames obtained from StreamSessionTranscript or a custom
@@ -207,6 +300,12 @@ func (t *SessionTranscript) Apply(ev TranscriptStreamEvent) {
 					m["progress"] = progress
 				}
 			}
+			if mpf.ResolvedAction != nil {
+				m["resolved_action"] = map[string]interface{}{
+					"name":  mpf.ResolvedAction.Name,
+					"input": mpf.ResolvedAction.Input,
+				}
+			}
 			// progress key absent from the patch preserves the existing value
 		})
 	case "message.delta":
@@ -258,6 +357,7 @@ func (t *SessionTranscript) ApplySnapshot(snap *api.SessionTranscriptSnapshot) {
 	}
 	for i := range snap.Messages {
 		msg := snap.Messages[i]
+		normalizeMessageContent(&msg)
 		t.rows[msg.Id] = &msg
 	}
 	for i := range snap.Turns {
@@ -294,6 +394,7 @@ func (t *SessionTranscript) Seed(ack *api.TurnAck) {
 	}
 	if ack.UserMessage != nil {
 		msg := *ack.UserMessage
+		normalizeMessageContent(&msg)
 		t.rows[msg.Id] = &msg
 	}
 	if turn := turnFromAck(&ack.Turn); turn != nil {
@@ -370,6 +471,42 @@ func (t *TurnTranscript) Status() string {
 	return ""
 }
 
+// ErrorType is the Mobius-owned failure category for this turn, when failed.
+// It is live and changes as turn.upsert frames are applied.
+func (t *TurnTranscript) ErrorType() string {
+	if turn, ok := t.stream.view.Turn(t.turnID); ok && turn.ErrorType != nil {
+		return *turn.ErrorType
+	}
+	return ""
+}
+
+// ErrorMessage is the human-readable terminal failure message, when present.
+func (t *TurnTranscript) ErrorMessage() string {
+	if turn, ok := t.stream.view.Turn(t.turnID); ok && turn.ErrorMessage != nil {
+		return *turn.ErrorMessage
+	}
+	return ""
+}
+
+// TurnError combines the live turn error type and message. It is nil unless
+// the turn is failed; Err separately reports transcript transport failures.
+func (t *TurnTranscript) TurnError() error {
+	if t.Status() != "failed" {
+		return nil
+	}
+	typ, message := t.ErrorType(), t.ErrorMessage()
+	if typ != "" && message != "" {
+		return fmt.Errorf("%s: %s", typ, message)
+	}
+	if message != "" {
+		return errors.New(message)
+	}
+	if typ != "" {
+		return errors.New(typ)
+	}
+	return errors.New("mobius: turn failed")
+}
+
 // Deduped reports whether a repeated idempotency key resumed an existing turn
 // instead of starting a new one.
 func (t *TurnTranscript) Deduped() bool { return t.deduped }
@@ -413,6 +550,22 @@ func (t *TurnTranscript) Messages() []*api.SessionTranscriptMessage {
 	return t.stream.view.MessagesForTurn(t.turnID)
 }
 
+// RenderableMessages returns this turn's UI-oriented transcript projection.
+func (t *TurnTranscript) RenderableMessages() []*api.SessionTranscriptMessage {
+	return t.stream.view.RenderableMessagesForTurn(t.turnID)
+}
+
+// Update returns the most recently applied protocol update.
+func (t *TurnTranscript) Update() TranscriptUpdate { return t.stream.update() }
+
+// Diagnostics returns observed turn/stream facts without guessing backend
+// queue or provider state.
+func (t *TurnTranscript) Diagnostics() TranscriptDiagnostics {
+	diagnostics := t.stream.diagnostics()
+	diagnostics.Status = t.Status()
+	return diagnostics
+}
+
 // Transcript returns the full session view the stream folds into, for callers
 // that need rows beyond this turn or the resume cursor.
 func (t *TurnTranscript) Transcript() *SessionTranscript { return t.stream.view }
@@ -448,6 +601,11 @@ func (w *TranscriptWatcher) Messages() []*api.SessionTranscriptMessage {
 	return w.stream.view.Messages()
 }
 
+// RenderableMessages returns the UI-oriented projection of the session rows.
+func (w *TranscriptWatcher) RenderableMessages() []*api.SessionTranscriptMessage {
+	return w.stream.view.RenderableMessages()
+}
+
 // MessagesForTurn returns the rows belonging to one turn, in render order.
 func (w *TranscriptWatcher) MessagesForTurn(turnID string) []*api.SessionTranscriptMessage {
 	return w.stream.view.MessagesForTurn(turnID)
@@ -473,6 +631,12 @@ func (w *TranscriptWatcher) Cursor() string { return w.stream.view.Cursor() }
 // Ready is true once stream.ready has been seen on the current connection.
 func (w *TranscriptWatcher) Ready() bool { return w.stream.view.Ready() }
 
+// Update returns the most recently applied protocol update.
+func (w *TranscriptWatcher) Update() TranscriptUpdate { return w.stream.update() }
+
+// Diagnostics returns observed session-stream facts.
+func (w *TranscriptWatcher) Diagnostics() TranscriptDiagnostics { return w.stream.diagnostics() }
+
 // transcriptStream is the pull-driven engine behind TurnTranscript and
 // TranscriptWatcher: one SSE connection at a time, the reconnect policy, and
 // the fold into the view. Everything runs in the goroutine calling next —
@@ -490,6 +654,12 @@ type transcriptStream struct {
 	reader *sse.Reader
 	err    error
 	done   bool
+
+	lastEvent     TranscriptStreamEvent
+	lastFrameType string
+	lastFrameAt   time.Time
+	connection    TranscriptConnectionState
+	reconnects    int
 }
 
 // next advances by one applied state frame, connecting/reconnecting as
@@ -514,6 +684,8 @@ func (s *transcriptStream) next() bool {
 				s.client.config.Logger.Error("session transcript stream error", "error", err)
 			}
 			s.disconnect()
+			s.connection = TranscriptConnectionReconnecting
+			s.reconnects++
 			if !sleepCtx(s.ctx, s.delay) {
 				s.stop()
 				return false
@@ -531,13 +703,20 @@ func (s *transcriptStream) next() bool {
 		disc, _ := frame.Discriminator()
 		if disc == "stream.end" {
 			if sef, err := frame.AsStreamEndFrame(); err == nil && string(sef.Reason) == "idle" {
+				s.connection = TranscriptConnectionEnded
 				s.stop()
 				return false
 			}
 			s.disconnect() // rotate: reconnect immediately with the current cursor
+			s.connection = TranscriptConnectionReconnecting
+			s.reconnects++
 			continue
 		}
-		s.view.Apply(TranscriptStreamEvent{EventType: evt.Event, ID: evt.ID, Frame: frame})
+		update := TranscriptStreamEvent{EventType: evt.Event, ID: evt.ID, Frame: frame}
+		s.view.Apply(update)
+		s.lastEvent = update
+		s.lastFrameType = disc
+		s.lastFrameAt = time.Now()
 		if s.stopTurnID != "" && disc == "turn.upsert" {
 			if tuf, err := frame.AsTurnUpsertFrame(); err == nil && tuf.Id == s.stopTurnID && IsTerminalTurnStatus(tuf.Status) {
 				s.stop() // yield the terminal state; the next call reports false
@@ -574,6 +753,7 @@ func (s *transcriptStream) connect() bool {
 			continue
 		}
 		if resp.StatusCode != http.StatusOK {
+			body, _ := io.ReadAll(resp.Body)
 			_ = resp.Body.Close()
 			if s.ctx.Err() != nil {
 				s.done = true
@@ -582,7 +762,7 @@ func (s *transcriptStream) connect() bool {
 			if !isRetryableStreamStatus(resp.StatusCode) {
 				// A permanent status (401/403/404, or a 5xx other than 503) is
 				// not transient — surface it instead of reconnecting forever.
-				s.err = fmt.Errorf("mobius: session transcript stream: unexpected status %d", resp.StatusCode)
+				s.err = unexpectedAPIStatus("stream session transcript", resp.StatusCode, resp.Status, resp.Header, body)
 				s.done = true
 				return false
 			}
@@ -597,6 +777,11 @@ func (s *transcriptStream) connect() bool {
 		s.reader = sse.NewReader(resp.Body)
 		s.reader.Buffer(sseReadBufferSize)
 		s.view.ready = false // ready is per-connection; stream.ready re-arms it
+		s.connection = TranscriptConnectionOpen
+		s.client.config.Logger.Debug("mobius: session transcript stream opened",
+			"session_id", s.sessionID,
+			"reconnect_count", s.reconnects,
+		)
 		return true
 	}
 }
@@ -612,6 +797,30 @@ func (s *transcriptStream) disconnect() {
 func (s *transcriptStream) stop() {
 	s.disconnect()
 	s.done = true
+	if s.connection != TranscriptConnectionEnded {
+		s.connection = TranscriptConnectionEnded
+	}
+}
+
+func (s *transcriptStream) update() TranscriptUpdate {
+	return TranscriptUpdate{
+		Event:          s.lastEvent,
+		Cursor:         s.view.Cursor(),
+		Transcript:     s.view,
+		Connection:     s.connection,
+		ReconnectCount: s.reconnects,
+	}
+}
+
+func (s *transcriptStream) diagnostics() TranscriptDiagnostics {
+	return TranscriptDiagnostics{
+		Cursor:         s.view.Cursor(),
+		Ready:          s.view.Ready(),
+		ReconnectCount: s.reconnects,
+		LastFrameType:  s.lastFrameType,
+		LastFrameAt:    s.lastFrameAt,
+		Connection:     s.connection,
+	}
 }
 
 // GetSessionTranscriptOptions configures GetSessionTranscript.
@@ -670,7 +879,7 @@ func (c *Client) GetSessionTranscript(ctx context.Context, sessionID string, opt
 		return nil, fmt.Errorf("mobius: get session transcript: %w", err)
 	}
 	if resp.JSON200 == nil {
-		return nil, unexpectedSessionStatus("get session transcript", resp.Status(), resp.Body)
+		return nil, unexpectedSessionStatus("get session transcript", resp.StatusCode(), resp.Status(), resp.HTTPResponse, resp.Body)
 	}
 	return resp.JSON200, nil
 }
@@ -692,8 +901,9 @@ func (c *Client) StreamSessionTranscript(ctx context.Context, sessionID string, 
 		return nil, fmt.Errorf("mobius: open session transcript stream: %w", err)
 	}
 	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
 		_ = resp.Body.Close()
-		return nil, fmt.Errorf("mobius: stream session transcript: unexpected status %d", resp.StatusCode)
+		return nil, unexpectedAPIStatus("stream session transcript", resp.StatusCode, resp.Status, resp.Header, body)
 	}
 	ch := make(chan TranscriptStreamEvent)
 	go func() {
@@ -755,11 +965,12 @@ func (c *Client) WatchSessionTranscript(ctx context.Context, sessionID string, o
 		view.cursor = cursor
 	}
 	return &TranscriptWatcher{stream: transcriptStream{
-		client:    c,
-		ctx:       ctx,
-		sessionID: sessionID,
-		delay:     delay,
-		view:      view,
+		client:     c,
+		ctx:        ctx,
+		sessionID:  sessionID,
+		delay:      delay,
+		view:       view,
+		connection: TranscriptConnectionIdle,
 	}}
 }
 
@@ -775,6 +986,7 @@ func decodeMessage(frame api.SessionTranscriptFrame) *api.SessionTranscriptMessa
 	if err := json.Unmarshal(raw, &msg); err != nil {
 		return nil
 	}
+	normalizeMessageContent(&msg)
 	return &msg
 }
 
@@ -880,6 +1092,178 @@ func derefInt(i *int) int {
 		return *i
 	}
 	return 0
+}
+
+// NormalizedToolUse exposes both the provider-safe wire identity and the
+// canonical catalog action, when the backend resolved one.
+type NormalizedToolUse struct {
+	WireName       string
+	WireInput      map[string]interface{}
+	ResolvedAction *api.SessionResolvedAction
+	ToolkitName    string
+	Command        string
+	Raw            api.SessionToolUseBlock
+}
+
+// NormalizeToolUse prefers the persisted canonical resolved_action and falls
+// back to the legacy meta-router {command,args} shape. A concatenated
+// wireName.command value is only a compatibility heuristic.
+func NormalizeToolUse(block api.SessionToolUseBlock) NormalizedToolUse {
+	out := NormalizedToolUse{
+		WireName:       block.Name,
+		WireInput:      block.Input,
+		ResolvedAction: block.ResolvedAction,
+		Raw:            block,
+	}
+	canonical := ""
+	if block.ResolvedAction != nil {
+		canonical = block.ResolvedAction.Name
+	} else if command, ok := block.Input["command"].(string); ok && command != "" {
+		out.Command = command
+		out.ToolkitName = block.Name
+		if args, ok := block.Input["args"].(map[string]interface{}); ok {
+			out.ResolvedAction = &api.SessionResolvedAction{
+				Name:  block.Name + "." + command,
+				Input: args,
+			}
+		}
+	}
+	if canonical != "" && block.ResolvedAction != nil {
+		if dot := strings.Index(canonical, "."); dot > 0 {
+			out.ToolkitName = canonical[:dot]
+			out.Command = canonical[dot+1:]
+		}
+	}
+	return out
+}
+
+// TextOf concatenates text blocks in a transcript message.
+func TextOf(message *api.SessionTranscriptMessage) string {
+	if message == nil {
+		return ""
+	}
+	var b strings.Builder
+	for _, block := range message.Content {
+		if text, err := block.AsSessionTextBlock(); err == nil {
+			b.WriteString(text.Text)
+		}
+	}
+	return b.String()
+}
+
+// ToolResultText returns the text representation of a tool_result payload,
+// handling both its string and block-array wire forms.
+func ToolResultText(block api.SessionToolResultBlock) string {
+	if block.Content == nil {
+		return ""
+	}
+	if text, err := block.Content.AsSessionToolResultBlockContent0(); err == nil {
+		return text
+	}
+	blocks, err := block.Content.AsSessionToolResultBlockContent1()
+	if err != nil {
+		return ""
+	}
+	var b strings.Builder
+	for _, child := range blocks {
+		if text, err := child.AsSessionTextBlock(); err == nil {
+			b.WriteString(text.Text)
+		}
+	}
+	return b.String()
+}
+
+func normalizeMessageContent(message *api.SessionTranscriptMessage) {
+	if message != nil && message.Content == nil {
+		message.Content = []api.SessionContentBlock{}
+	}
+}
+
+func cloneTranscriptMessage(message *api.SessionTranscriptMessage) *api.SessionTranscriptMessage {
+	if message == nil {
+		return &api.SessionTranscriptMessage{Content: []api.SessionContentBlock{}}
+	}
+	raw, err := json.Marshal(message)
+	if err != nil {
+		copy := *message
+		normalizeMessageContent(&copy)
+		return &copy
+	}
+	var copy api.SessionTranscriptMessage
+	if err := json.Unmarshal(raw, &copy); err != nil {
+		copy = *message
+	}
+	normalizeMessageContent(&copy)
+	return &copy
+}
+
+func renderLogicalKey(message *api.SessionTranscriptMessage) string {
+	if message.TurnId != nil && *message.TurnId != "" {
+		if message.TurnIndex != nil {
+			return fmt.Sprintf("logical:%s:%s:%d", *message.TurnId, message.Role, *message.TurnIndex)
+		}
+		if message.Metadata != nil {
+			if index, ok := (*message.Metadata)["response_message_index"]; ok {
+				return fmt.Sprintf("legacy:%s:%s:%v", *message.TurnId, message.Role, index)
+			}
+		}
+	}
+	return "id:" + message.Id
+}
+
+func messageCompleteness(message *api.SessionTranscriptMessage) int {
+	raw, _ := json.Marshal(message.Content)
+	return len(raw)
+}
+
+func isEmptyAssistantPreview(message *api.SessionTranscriptMessage) bool {
+	return message != nil && message.Status == "streaming" && string(message.Role) == "assistant" && len(message.Content) == 0
+}
+
+func (t *SessionTranscript) turnIsActive(turnID string) bool {
+	turn, ok := t.turns[turnID]
+	return ok && !IsTerminalTurnStatus(turn.Status)
+}
+
+func deduplicateToolBlocks(messages []*api.SessionTranscriptMessage) {
+	type candidate struct {
+		message int
+		block   int
+		size    int
+	}
+	best := map[string]candidate{}
+	for mi, message := range messages {
+		for bi, block := range message.Content {
+			key := toolBlockKey(block)
+			if key == "" {
+				continue
+			}
+			raw, _ := block.MarshalJSON()
+			if current, ok := best[key]; !ok || len(raw) >= current.size {
+				best[key] = candidate{message: mi, block: bi, size: len(raw)}
+			}
+		}
+	}
+	for mi, message := range messages {
+		content := make([]api.SessionContentBlock, 0, len(message.Content))
+		for bi, block := range message.Content {
+			key := toolBlockKey(block)
+			if key == "" || (best[key].message == mi && best[key].block == bi) {
+				content = append(content, block)
+			}
+		}
+		message.Content = content
+	}
+}
+
+func toolBlockKey(block api.SessionContentBlock) string {
+	if use, err := block.AsSessionToolUseBlock(); err == nil && use.Id != "" {
+		return "use:" + use.Id
+	}
+	if result, err := block.AsSessionToolResultBlock(); err == nil && result.ToolUseId != "" {
+		return "result:" + result.ToolUseId
+	}
+	return ""
 }
 
 // isRetryableStreamStatus reports whether a non-200 stream open should be

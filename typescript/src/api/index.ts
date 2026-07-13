@@ -249,6 +249,7 @@ export type SessionNudgeListResponse = components["schemas"]["SessionNudgeListRe
 export type SessionNudgeStatus = components["schemas"]["SessionNudgeStatus"];
 export type SessionNudgeTurn = components["schemas"]["SessionNudgeTurn"];
 export type SessionOrigin = components["schemas"]["SessionOrigin"];
+export type SessionResolvedAction = components["schemas"]["SessionResolvedAction"];
 export type SessionResyncFrame = components["schemas"]["SessionResyncFrame"];
 export type SessionScope = components["schemas"]["SessionScope"];
 export type SessionStatus = components["schemas"]["SessionStatus"];

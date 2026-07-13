@@ -1,10 +1,70 @@
 package mobius
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"time"
 )
+
+// APIError is a structured Mobius API error envelope. Use errors.As to read
+// its stable Code and Details instead of matching human-readable text.
+type APIError struct {
+	Status     int
+	Code       string
+	Message    string
+	Details    map[string]interface{}
+	RequestID  string
+	RetryAfter time.Duration
+}
+
+func (e *APIError) Error() string {
+	message := e.Message
+	if message == "" {
+		message = http.StatusText(e.Status)
+	}
+	if e.Code != "" {
+		return fmt.Sprintf("mobius: %s (%s, HTTP %d)", message, e.Code, e.Status)
+	}
+	return fmt.Sprintf("mobius: %s (HTTP %d)", message, e.Status)
+}
+
+func parseAPIError(status int, header http.Header, body []byte) *APIError {
+	var envelope struct {
+		Error struct {
+			Code    string                 `json:"code"`
+			Message string                 `json:"message"`
+			Details map[string]interface{} `json:"details"`
+		} `json:"error"`
+	}
+	if err := json.Unmarshal(body, &envelope); err != nil || envelope.Error.Code == "" {
+		return nil
+	}
+	retryAfter, _ := parseRetryAfter(header.Get("Retry-After"), time.Now)
+	requestID := header.Get("X-Request-ID")
+	if requestID == "" {
+		requestID = header.Get("Request-ID")
+	}
+	return &APIError{
+		Status:     status,
+		Code:       envelope.Error.Code,
+		Message:    envelope.Error.Message,
+		Details:    envelope.Error.Details,
+		RequestID:  requestID,
+		RetryAfter: retryAfter,
+	}
+}
+
+func unexpectedAPIStatus(op string, statusCode int, status string, header http.Header, body []byte) error {
+	if apiErr := parseAPIError(statusCode, header, body); apiErr != nil {
+		return apiErr
+	}
+	if len(body) > 0 {
+		return fmt.Errorf("mobius: %s: unexpected status %s: %s", op, status, string(body))
+	}
+	return fmt.Errorf("mobius: %s: unexpected status %s", op, status)
+}
 
 // ErrPayloadTooLarge is returned when the server rejects a custom event
 // payload for exceeding the size limit (HTTP 413).

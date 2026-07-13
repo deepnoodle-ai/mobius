@@ -1,4 +1,6 @@
 import type {
+  AgentTurn,
+  AgentTurnListResponse,
   AgentRef,
   CancelLoopRunRequest,
   ChannelContext,
@@ -15,6 +17,13 @@ import type {
   LoopRunSource,
   LoopRunStatus,
   LoopStatus,
+  Session,
+  SessionListResponse,
+  SessionMessageListResponse,
+  SessionNudge,
+  SessionNudgeAck,
+  SessionNudgeListResponse,
+  SessionNudgeStatus,
   SessionStreamFrame,
   SessionTranscriptFrame,
   SessionTranscriptMessage,
@@ -50,6 +59,21 @@ export interface ClientOptions {
   timeoutMs?: number;
   /** Number of retries for 429/503 responses. */
   retry?: number;
+  /** Optional structured transport logger. Headers, bodies, and message content are never included. */
+  logger?: (event: ClientLogEvent) => void;
+}
+
+export interface ClientLogEvent {
+  type: "request" | "retry" | "stream";
+  event: string;
+  method?: string;
+  path?: string;
+  status?: number;
+  durationMs?: number;
+  attempt?: number;
+  waitSeconds?: number;
+  frameType?: string;
+  error?: string;
 }
 
 export const DEFAULT_BASE_URL = "https://api.mobiusops.ai";
@@ -63,6 +87,31 @@ export class AuthRevokedError extends Error {
   }
 }
 
+export class MobiusAPIError extends Error {
+  readonly status: number;
+  readonly code: string;
+  readonly details?: Record<string, unknown>;
+  readonly requestId?: string;
+  readonly retryAfter?: number;
+
+  constructor(init: {
+    status: number;
+    code: string;
+    message: string;
+    details?: Record<string, unknown>;
+    requestId?: string;
+    retryAfter?: number;
+  }) {
+    super(init.message);
+    this.name = "MobiusAPIError";
+    this.status = init.status;
+    this.code = init.code;
+    this.details = init.details;
+    this.requestId = init.requestId;
+    this.retryAfter = init.retryAfter;
+  }
+}
+
 /**
  * Thrown when a streaming request (e.g. {@link Client.streamSessionTranscript})
  * returns a non-OK HTTP status. `status` carries the response code so callers
@@ -70,13 +119,21 @@ export class AuthRevokedError extends Error {
  * reconnects only on transient statuses (429/503) and surfaces every other
  * status by throwing this error.
  */
-export class StreamHTTPError extends Error {
-  readonly status: number;
-
-  constructor(status: number, message: string) {
-    super(message);
+export class StreamHTTPError extends MobiusAPIError {
+  constructor(
+    status: number,
+    message: string,
+    init: Partial<Pick<MobiusAPIError, "code" | "details" | "requestId" | "retryAfter">> = {},
+  ) {
+    super({
+      status,
+      message,
+      code: init.code ?? "http_error",
+      details: init.details,
+      requestId: init.requestId,
+      retryAfter: init.retryAfter,
+    });
     this.name = "StreamHTTPError";
-    this.status = status;
   }
 }
 
@@ -289,12 +346,73 @@ export interface WatchSessionTranscriptOptions {
   signal?: AbortSignal;
 }
 
+export type TranscriptConnectionState = "open" | "reconnecting" | "ended";
+
+export interface TranscriptUpdate {
+  frame: SessionTranscriptFrame;
+  cursor: string | null;
+  transcript: SessionTranscript;
+  connection: TranscriptConnectionState;
+  reconnectCount: number;
+}
+
+export interface TurnDiagnostics {
+  status: string;
+  cursor: string | null;
+  ready: boolean;
+  reconnectCount: number;
+  lastFrameType?: string;
+  lastFrameAt?: string;
+  connection: TranscriptConnectionState | "idle";
+}
+
+export interface ListSessionsOptions {
+  agentId?: string;
+  sessionKey?: string;
+  status?: string;
+  scope?: string;
+  provider?: string;
+  integrationId?: string;
+  since?: string;
+  cursor?: string;
+  limit?: number;
+}
+
+export interface ListSessionMessagesOptions {
+  afterSequence?: number;
+  beforeSequence?: number;
+  order?: "asc" | "desc";
+  limit?: number;
+}
+
+export interface ListSessionTurnsOptions {
+  ids?: string[];
+  order?: "asc" | "desc";
+  cursor?: string;
+  limit?: number;
+}
+
+export interface NudgeSessionOptions {
+  content: string;
+  idempotencyKey?: string;
+  metadata?: Record<string, unknown>;
+  wake?: boolean;
+}
+
+export interface ListSessionNudgesOptions {
+  status?: SessionNudgeStatus[];
+  order?: "asc" | "desc";
+  cursor?: string;
+  limit?: number;
+}
+
 export class Client {
   private readonly baseURL: string;
   readonly project: string;
   private readonly headers: Record<string, string>;
   private readonly timeoutMs: number;
   private readonly fetchFn: typeof globalThis.fetch;
+  private readonly logger?: (event: ClientLogEvent) => void;
 
   constructor(opts: ClientOptions) {
     this.baseURL = (opts.baseURL ?? DEFAULT_BASE_URL).replace(/\/$/, "");
@@ -319,9 +437,21 @@ export class Client {
       "Content-Type": "application/json",
     };
     this.timeoutMs = opts.timeoutMs ?? 60_000;
+    this.logger = opts.logger;
     this.fetchFn = wrapFetchWithRetry(
       (input, init) => globalThis.fetch(input, init),
-      { maxRetries: opts.retry ?? DEFAULT_MAX_RETRIES },
+      {
+        maxRetries: opts.retry ?? DEFAULT_MAX_RETRIES,
+        onRetry: (event) =>
+          this.log({
+            type: "retry",
+            event: event.reason,
+            method: event.method,
+            status: event.status,
+            attempt: event.attempt,
+            waitSeconds: event.waitSeconds,
+          }),
+      },
     );
   }
 
@@ -448,6 +578,139 @@ export class Client {
     return (await resp.json()) as LoopRun;
   }
 
+  async listSessions(opts: ListSessionsOptions = {}): Promise<SessionListResponse> {
+    const path = withQuery("/v1/projects/:project/sessions", {
+      agent_id: opts.agentId,
+      session_key: opts.sessionKey,
+      status: opts.status,
+      scope: opts.scope,
+      provider: opts.provider,
+      integration_id: opts.integrationId,
+      since: opts.since,
+      cursor: opts.cursor,
+      limit: opts.limit,
+    });
+    const resp = await this.request(path, { method: "GET" });
+    return (await resp.json()) as SessionListResponse;
+  }
+
+  async getSession(sessionId: string): Promise<Session> {
+    const resp = await this.request(
+      `/v1/projects/:project/sessions/${encodeURIComponent(sessionId)}`,
+      { method: "GET" },
+    );
+    return (await resp.json()) as Session;
+  }
+
+  async cancelSession(sessionId: string, opts: { force?: boolean } = {}): Promise<Session> {
+    const path = withQuery(
+      `/v1/projects/:project/sessions/${encodeURIComponent(sessionId)}/cancel`,
+      { force: opts.force },
+    );
+    const resp = await this.request(path, { method: "POST" });
+    return (await resp.json()) as Session;
+  }
+
+  async compactSession(sessionId: string): Promise<Session> {
+    const resp = await this.request(
+      `/v1/projects/:project/sessions/${encodeURIComponent(sessionId)}/compact`,
+      { method: "POST" },
+    );
+    return (await resp.json()) as Session;
+  }
+
+  async listSessionMessages(
+    sessionId: string,
+    opts: ListSessionMessagesOptions = {},
+  ): Promise<SessionMessageListResponse> {
+    const path = withQuery(
+      `/v1/projects/:project/sessions/${encodeURIComponent(sessionId)}/messages`,
+      {
+        after_sequence: opts.afterSequence,
+        before_sequence: opts.beforeSequence,
+        order: opts.order,
+        limit: opts.limit,
+      },
+    );
+    const resp = await this.request(path, { method: "GET" });
+    return (await resp.json()) as SessionMessageListResponse;
+  }
+
+  async nudgeSession(
+    sessionId: string,
+    opts: NudgeSessionOptions,
+  ): Promise<SessionNudgeAck> {
+    const resp = await this.request(
+      `/v1/projects/:project/sessions/${encodeURIComponent(sessionId)}/nudges`,
+      {
+        method: "POST",
+        body: removeUndefined({
+          content: opts.content,
+          idempotency_key: opts.idempotencyKey,
+          metadata: opts.metadata,
+          wake: opts.wake,
+        }),
+      },
+    );
+    return (await resp.json()) as SessionNudgeAck;
+  }
+
+  async listNudges(
+    sessionId: string,
+    opts: ListSessionNudgesOptions = {},
+  ): Promise<SessionNudgeListResponse> {
+    const path = withQuery(
+      `/v1/projects/:project/sessions/${encodeURIComponent(sessionId)}/nudges`,
+      { status: opts.status, order: opts.order, cursor: opts.cursor, limit: opts.limit },
+    );
+    const resp = await this.request(path, { method: "GET" });
+    return (await resp.json()) as SessionNudgeListResponse;
+  }
+
+  async getNudge(sessionId: string, nudgeId: string): Promise<SessionNudge> {
+    const resp = await this.request(
+      `/v1/projects/:project/sessions/${encodeURIComponent(sessionId)}/nudges/${encodeURIComponent(nudgeId)}`,
+      { method: "GET" },
+    );
+    return (await resp.json()) as SessionNudge;
+  }
+
+  async cancelNudge(sessionId: string, nudgeId: string): Promise<SessionNudge> {
+    const resp = await this.request(
+      `/v1/projects/:project/sessions/${encodeURIComponent(sessionId)}/nudges/${encodeURIComponent(nudgeId)}/cancel`,
+      { method: "POST" },
+    );
+    return (await resp.json()) as SessionNudge;
+  }
+
+  async listTurns(
+    sessionId: string,
+    opts: ListSessionTurnsOptions = {},
+  ): Promise<AgentTurnListResponse> {
+    const path = withQuery(
+      `/v1/projects/:project/sessions/${encodeURIComponent(sessionId)}/turns`,
+      { ids: opts.ids, order: opts.order, cursor: opts.cursor, limit: opts.limit },
+    );
+    const resp = await this.request(path, { method: "GET" });
+    return (await resp.json()) as AgentTurnListResponse;
+  }
+
+  async getTurn(sessionId: string, turnId: string): Promise<AgentTurn> {
+    const resp = await this.request(
+      `/v1/projects/:project/sessions/${encodeURIComponent(sessionId)}/turns/${encodeURIComponent(turnId)}`,
+      { method: "GET" },
+    );
+    return (await resp.json()) as AgentTurn;
+  }
+
+  async cancelTurn(sessionId: string, turnId: string): Promise<AgentTurn> {
+    const resp = await this.request(
+      `/v1/projects/:project/sessions/${encodeURIComponent(sessionId)}/turns/${encodeURIComponent(turnId)}/cancel`,
+      { method: "POST" },
+    );
+    return (await resp.json()) as AgentTurn;
+  }
+
   /**
    * Resolves (or creates) a session, appends opts.content as the caller's
    * input message, and starts an agent turn — collapsing the
@@ -471,6 +734,7 @@ export class Client {
     const resp = await this.request("/v1/projects/:project/agents/invoke", {
       method: "POST",
       body,
+      signal: streamOpts.signal,
     });
     const ack = (await resp.json()) as TurnAck;
     const transcript = new SessionTranscript();
@@ -496,8 +760,8 @@ export class Client {
       signal: streamOpts.signal,
     });
     if (!resp.ok) {
-      const text = await resp.text().catch(() => "");
-      throw new Error(`mobius API POST ${path}: HTTP ${resp.status}: ${text}`);
+      if (resp.status === 401) throw new AuthRevokedError();
+      throw await responseError(resp, "POST", path, true);
     }
     if (!resp.body) {
       throw new Error("mobius API POST agents/invoke: response body is not readable");
@@ -550,11 +814,7 @@ export class Client {
     });
     if (!resp.ok) {
       if (resp.status === 401) throw new AuthRevokedError();
-      const text = await resp.text().catch(() => "");
-      throw new StreamHTTPError(
-        resp.status,
-        `mobius API GET ${path}: HTTP ${resp.status}: ${text}`,
-      );
+      throw await responseError(resp, "GET", path, true);
     }
     if (!resp.body) {
       throw new Error(
@@ -583,12 +843,28 @@ export class Client {
     sessionId: string,
     opts: WatchSessionTranscriptOptions = {},
   ): AsyncGenerator<SessionTranscript> {
+    for await (const update of this.watchSessionTranscriptUpdates(sessionId, opts)) {
+      const eventType = (update.frame as { event_type?: string }).event_type;
+      if (eventType !== "stream.end") yield update.transcript;
+    }
+  }
+
+  /** Yield each observed transcript frame together with the accumulated view. */
+  async *watchSessionTranscriptUpdates(
+    sessionId: string,
+    opts: WatchSessionTranscriptOptions = {},
+  ): AsyncGenerator<TranscriptUpdate> {
     const transcript = opts.transcript ?? new SessionTranscript();
     if (opts.cursor && !transcript.cursor) transcript.cursor = opts.cursor;
     const reconnectDelayMs = opts.reconnectDelayMs ?? 1000;
+    let reconnectCount = 0;
+    let firstConnection = true;
     for (;;) {
       transcript._resetReady();
       let rotate = false;
+      if (!firstConnection) reconnectCount += 1;
+      firstConnection = false;
+      this.log({ type: "stream", event: reconnectCount ? "reconnect" : "open", path: sessionId });
       try {
         for await (const ev of this.streamSessionTranscript(sessionId, {
           cursor: transcript.cursor ?? undefined,
@@ -596,12 +872,30 @@ export class Client {
         })) {
           transcript.apply(ev);
           const eventType = (ev.frame as { event_type?: string }).event_type;
+          let connection: TranscriptConnectionState = "open";
           if (eventType === "stream.end") {
-            if ((ev.frame as StreamEndFrame).reason === "idle") return;
-            rotate = true; // reconnect immediately with the current cursor
-            break;
+            if ((ev.frame as StreamEndFrame).reason === "idle") {
+              connection = "ended";
+            } else {
+              connection = "reconnecting";
+              rotate = true;
+            }
           }
-          yield transcript;
+          this.log({
+            type: "stream",
+            event: eventType === "stream.ready" ? "ready" : eventType === "stream.end" ? (connection === "ended" ? "idle" : "rotate") : "frame",
+            path: sessionId,
+            frameType: eventType,
+          });
+          yield {
+            frame: ev.frame,
+            cursor: transcript.cursor,
+            transcript,
+            connection,
+            reconnectCount,
+          };
+          if (connection === "ended") return;
+          if (connection === "reconnecting") break;
         }
       } catch (err) {
         if (opts.signal?.aborted) throw err;
@@ -609,6 +903,12 @@ export class Client {
         // (401/403/404, or a 5xx other than 503) is surfaced to the caller
         // instead of looping forever.
         if (!isRetryableStreamError(err)) throw err;
+        this.log({
+          type: "stream",
+          event: "transport_error",
+          path: sessionId,
+          error: errorMessage(err),
+        });
       }
       if (opts.signal?.aborted) return;
       if (!rotate) await delay(reconnectDelayMs, opts.signal);
@@ -666,6 +966,7 @@ export class Client {
     path: string,
     opts: { method: string; body?: unknown; signal?: AbortSignal | undefined },
   ): Promise<Response> {
+    const started = Date.now();
     const timeout = AbortSignal.timeout(this.timeoutMs);
     const signal = opts.signal ? anySignal(opts.signal, timeout) : timeout;
     const init: RequestInit = {
@@ -674,13 +975,41 @@ export class Client {
       signal,
     };
     if (opts.body != null) init.body = JSON.stringify(opts.body);
-    const resp = await this.fetchFn(this.url(path), init);
+    let resp: Response;
+    try {
+      resp = await this.fetchFn(this.url(path), init);
+    } catch (err) {
+      this.log({
+        type: "request",
+        event: "transport_error",
+        method: opts.method,
+        path,
+        durationMs: Date.now() - started,
+        error: errorMessage(err),
+      });
+      throw err;
+    }
+    this.log({
+      type: "request",
+      event: "complete",
+      method: opts.method,
+      path,
+      status: resp.status,
+      durationMs: Date.now() - started,
+    });
     if (!resp.ok && resp.status !== 204) {
       if (resp.status === 401) throw new AuthRevokedError();
-      const text = await resp.text().catch(() => "");
-      throw new Error(`mobius API ${opts.method} ${path}: HTTP ${resp.status}: ${text}`);
+      throw await responseError(resp, opts.method, path);
     }
     return resp;
+  }
+
+  private log(event: ClientLogEvent): void {
+    try {
+      this.logger?.(event);
+    } catch {
+      // Diagnostics must never change request behavior.
+    }
   }
 
   private url(path: string): string {
@@ -730,6 +1059,13 @@ export class TurnTranscript implements AsyncIterable<TurnTranscript> {
   // completed turn): there is nothing to stream, so iteration fetches the
   // snapshot (all pages) instead, making messages() complete either way.
   #hydrate: boolean;
+  #diagnostics: TurnDiagnostics = {
+    status: "",
+    cursor: null,
+    ready: false,
+    reconnectCount: 0,
+    connection: "idle",
+  };
 
   /** @internal Constructed by {@link Client.invokeAgent}. */
   constructor(
@@ -746,6 +1082,8 @@ export class TurnTranscript implements AsyncIterable<TurnTranscript> {
     this.deduped = ack.deduped ?? false;
     this.transcript = transcript;
     this.#hydrate = isTerminalTurnStatus(ack.turn.status);
+    this.#diagnostics.status = ack.turn.status;
+    this.#diagnostics.cursor = transcript.cursor;
   }
 
   /**
@@ -756,38 +1094,102 @@ export class TurnTranscript implements AsyncIterable<TurnTranscript> {
     return this.transcript.turn(this.id)?.status ?? "";
   }
 
+  get errorType(): string | undefined {
+    return this.transcript.turn(this.id)?.error_type ?? undefined;
+  }
+
+  get errorMessage(): string | undefined {
+    return this.transcript.turn(this.id)?.error_message ?? undefined;
+  }
+
+  get error(): Error | undefined {
+    if (this.status !== "failed") return undefined;
+    const error = new Error(this.errorMessage ?? "Mobius turn failed");
+    error.name = this.errorType ?? "MobiusTurnError";
+    return error;
+  }
+
   /** This turn's rows, in render order. */
   messages(): SessionTranscriptMessage[] {
     return this.transcript.messagesForTurn(this.id);
   }
 
+  /** This turn's policy-light rendering projection. */
+  renderableMessages(): SessionTranscriptMessage[] {
+    return this.transcript
+      .renderableMessages()
+      .filter((message) => message.turn_id === this.id);
+  }
+
+  /** Last observed transport and turn facts; no backend state is inferred. */
+  diagnostics(): TurnDiagnostics {
+    return { ...this.#diagnostics, status: this.status, cursor: this.transcript.cursor, ready: this.transcript.ready };
+  }
+
+  /** Yield observed protocol frames for this turn while folding the full session. */
+  async *updates(): AsyncGenerator<TranscriptUpdate> {
+    if (this.#hydrate) {
+      await this.#hydrateSnapshot();
+      return;
+    }
+    const current = this.transcript.turn(this.id);
+    if (current && isTerminalTurnStatus(current.status)) return;
+    for await (const update of this.#client.watchSessionTranscriptUpdates(
+      this.sessionId,
+      { transcript: this.transcript, signal: this.#signal },
+    )) {
+      const frameType = (update.frame as { event_type?: string }).event_type;
+      this.#diagnostics = {
+        status: this.status,
+        cursor: update.cursor,
+        ready: this.transcript.ready,
+        reconnectCount: update.reconnectCount,
+        lastFrameType: frameType,
+        lastFrameAt: new Date().toISOString(),
+        connection: update.connection,
+      };
+      yield update;
+      const turn = update.transcript.turn(this.id);
+      if (turn && isTerminalTurnStatus(turn.status)) {
+        this.#diagnostics = { ...this.#diagnostics, connection: "ended" };
+        return;
+      }
+    }
+  }
+
   async *[Symbol.asyncIterator](): AsyncIterator<TurnTranscript> {
     if (this.#hydrate) {
-      this.#hydrate = false;
-      // The snapshot may span pages; fold them all so messages() is complete.
-      let pageToken: string | undefined;
-      do {
-        const snap = await this.#client.getSessionTranscript(this.sessionId, {
-          pageToken,
-          signal: this.#signal,
-        });
-        this.transcript.applySnapshot(snap);
-        pageToken = snap.has_more ? snap.next_page_token : undefined;
-      } while (pageToken);
+      await this.#hydrateSnapshot();
       yield this;
       return;
     }
     // Already terminal (a completed prior iteration): nothing left to stream.
     const current = this.transcript.turn(this.id);
     if (current && isTerminalTurnStatus(current.status)) return;
-    for await (const view of this.#client.watchSessionTranscript(this.sessionId, {
-      transcript: this.transcript,
-      signal: this.#signal,
-    })) {
+    for await (const update of this.updates()) {
       yield this;
-      const turn = view.turn(this.id);
-      if (turn && isTerminalTurnStatus(turn.status)) return;
+      void update;
     }
+  }
+
+  async #hydrateSnapshot(): Promise<void> {
+    this.#hydrate = false;
+    let pageToken: string | undefined;
+    do {
+      const snap = await this.#client.getSessionTranscript(this.sessionId, {
+        pageToken,
+        signal: this.#signal,
+      });
+      this.transcript.applySnapshot(snap);
+      pageToken = snap.has_more ? snap.next_page_token : undefined;
+    } while (pageToken);
+    this.#diagnostics = {
+      status: this.status,
+      cursor: this.transcript.cursor,
+      ready: this.transcript.ready,
+      reconnectCount: 0,
+      connection: "ended",
+    };
   }
 }
 
@@ -850,6 +1252,69 @@ function removeUndefined<T extends object>(obj: T): T {
   return Object.fromEntries(
     Object.entries(obj).filter(([, v]) => v !== undefined),
   ) as T;
+}
+
+async function responseError(
+  response: Response,
+  method: string,
+  path: string,
+  stream = false,
+): Promise<Error> {
+  const text = await response.text().catch(() => "");
+  let envelope: unknown;
+  try {
+    envelope = text ? JSON.parse(text) : undefined;
+  } catch {
+    envelope = undefined;
+  }
+  const error =
+    isRecord(envelope) && isRecord(envelope.error) ? envelope.error : undefined;
+  const code = error && typeof error.code === "string" ? error.code : undefined;
+  const message =
+    error && typeof error.message === "string"
+      ? error.message
+      : `mobius API ${method} ${path}: HTTP ${response.status}: ${text}`;
+  const details = error && isRecord(error.details) ? error.details : undefined;
+  const requestId =
+    response.headers.get("X-Request-Id") ??
+    response.headers.get("X-Request-ID") ??
+    undefined;
+  const retryAfter = parseRetryAfterSeconds(response.headers.get("Retry-After"));
+  if (stream) {
+    return new StreamHTTPError(response.status, message, {
+      code: code ?? "http_error",
+      details,
+      requestId,
+      retryAfter,
+    });
+  }
+  if (code) {
+    return new MobiusAPIError({
+      status: response.status,
+      code,
+      message,
+      details,
+      requestId,
+      retryAfter,
+    });
+  }
+  return new Error(message);
+}
+
+function parseRetryAfterSeconds(value: string | null): number | undefined {
+  if (!value) return undefined;
+  const seconds = Number(value);
+  if (Number.isFinite(seconds)) return Math.max(0, seconds);
+  const at = Date.parse(value);
+  return Number.isNaN(at) ? undefined : Math.max(0, (at - Date.now()) / 1000);
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
 }
 
 // isRetryableStreamError reports whether a failed stream connection should be

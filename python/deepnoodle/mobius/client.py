@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import re
 import time
 from dataclasses import dataclass
@@ -11,6 +12,8 @@ from urllib.parse import quote, urlencode, urlparse, urlunparse
 import httpx
 
 from ._api.models import (
+    AgentTurn,
+    AgentTurnListResponse,
     AgentRef,
     CancelLoopRunRequest,
     ChannelContext,
@@ -27,6 +30,13 @@ from ._api.models import (
     LoopRunSource,
     LoopRunStatus,
     LoopStatus,
+    NudgeSessionRequest,
+    Session,
+    SessionListResponse,
+    SessionMessageListResponse,
+    SessionNudge,
+    SessionNudgeAck,
+    SessionNudgeListResponse,
     SessionTranscriptSnapshot,
     SignalLoopRunRequest,
     StartLoopRunRequest,
@@ -34,7 +44,7 @@ from ._api.models import (
     TurnAck,
     UpdateLoopRequest,
 )
-from .errors import AuthRevokedError, RateLimitError
+from .errors import AuthRevokedError, MobiusAPIError, RateLimitError
 from .retry import DEFAULT_MAX_RETRIES, RetryingTransport
 from .transcript import (
     GetSessionTranscriptOptions,
@@ -57,6 +67,7 @@ class ClientOptions:
     namespace: str | None = None
     timeout: float = 60.0
     retry: int = DEFAULT_MAX_RETRIES
+    logger: logging.Logger | None = None
 
     def __post_init__(self) -> None:
         if self.namespace and self.project == "default":
@@ -170,12 +181,77 @@ class InvokeAgentOptions:
 
 
 @dataclass
+class ListSessionsOptions:
+    agent_id: str | None = None
+    session_key: str | None = None
+    status: str | None = None
+    scope: str | None = None
+    provider: str | None = None
+    integration_id: str | None = None
+    since: str | None = None
+    cursor: str | None = None
+    limit: int | None = None
+
+
+@dataclass
+class ListSessionMessagesOptions:
+    after_sequence: int | None = None
+    before_sequence: int | None = None
+    order: str | None = None
+    limit: int | None = None
+
+
+@dataclass
+class NudgeSessionOptions:
+    content: str
+    idempotency_key: str | None = None
+    metadata: dict[str, Any] | None = None
+    wake: bool = False
+
+
+@dataclass
+class ListSessionNudgesOptions:
+    status: list[str] | None = None
+    order: str | None = None
+    cursor: str | None = None
+    limit: int | None = None
+
+
+@dataclass
+class ListSessionTurnsOptions:
+    ids: list[str] | None = None
+    order: str | None = None
+    cursor: str | None = None
+    limit: int | None = None
+
+
+@dataclass
 class SessionStreamEvent:
     # event_type is the authoritative SSE `event:` name (e.g.
     # "turn.completed"); validate data with the payload model matching it —
     # SessionStreamFrame is a reference-only union, ambiguous from data alone.
     event_type: str
     data: dict[str, Any]
+
+
+@dataclass(frozen=True)
+class TranscriptUpdate:
+    frame: dict[str, Any]
+    cursor: str | None
+    transcript: SessionTranscript
+    connection: str
+    reconnect_count: int
+
+
+@dataclass(frozen=True)
+class TranscriptDiagnostics:
+    status: str
+    cursor: str | None
+    ready: bool
+    reconnect_count: int
+    last_frame_type: str | None
+    last_frame_at: float | None
+    connection: str
 
 
 class LeaseLostError(Exception):
@@ -236,6 +312,7 @@ class Client:
             self.project = explicit or "default"
         self.base_url = opts.base_url.rstrip("/")
         self.api_key = opts.api_key
+        self._logger = opts.logger or logging.getLogger("deepnoodle.mobius")
         base_transport = transport or httpx.HTTPTransport()
         self._client = httpx.Client(
             base_url=self.base_url,
@@ -341,7 +418,7 @@ class Client:
         with self._client.stream(
             "POST", path, json=payload, headers={"Accept": "text/event-stream"}
         ) as resp:
-            resp.raise_for_status()
+            _raise_for_response(resp)
             buf = ""
             for chunk in resp.iter_text():
                 buf += chunk
@@ -364,6 +441,102 @@ class Client:
                     if not data or not event_type:
                         continue
                     yield SessionStreamEvent(event_type=event_type, data=json.loads(data))
+
+    def list_sessions(self, opts: ListSessionsOptions | None = None) -> SessionListResponse:
+        resp = self._request("GET", "/v1/projects/{project}/sessions", params=_params(opts))
+        return SessionListResponse.model_validate(resp.json())
+
+    def get_session(self, session_id: str) -> Session:
+        resp = self._request(
+            "GET", f"/v1/projects/{{project}}/sessions/{quote(session_id, safe='')}"
+        )
+        return Session.model_validate(resp.json())
+
+    def cancel_session(self, session_id: str, *, force: bool = False) -> Session:
+        resp = self._request(
+            "POST",
+            f"/v1/projects/{{project}}/sessions/{quote(session_id, safe='')}/cancel",
+            params={"force": "true"} if force else None,
+        )
+        return Session.model_validate(resp.json())
+
+    def compact_session(self, session_id: str) -> Session:
+        resp = self._request(
+            "POST",
+            f"/v1/projects/{{project}}/sessions/{quote(session_id, safe='')}/compact",
+        )
+        return Session.model_validate(resp.json())
+
+    def list_session_messages(
+        self, session_id: str, opts: ListSessionMessagesOptions | None = None
+    ) -> SessionMessageListResponse:
+        resp = self._request(
+            "GET",
+            f"/v1/projects/{{project}}/sessions/{quote(session_id, safe='')}/messages",
+            params=_params(opts),
+        )
+        return SessionMessageListResponse.model_validate(resp.json())
+
+    def nudge_session(self, session_id: str, opts: NudgeSessionOptions) -> SessionNudgeAck:
+        body = NudgeSessionRequest(**_drop_none(opts.__dict__))
+        resp = self._request(
+            "POST",
+            f"/v1/projects/{{project}}/sessions/{quote(session_id, safe='')}/nudges",
+            json=body,
+        )
+        return SessionNudgeAck.model_validate(resp.json())
+
+    def list_session_nudges(
+        self, session_id: str, opts: ListSessionNudgesOptions | None = None
+    ) -> SessionNudgeListResponse:
+        resp = self._request(
+            "GET",
+            f"/v1/projects/{{project}}/sessions/{quote(session_id, safe='')}/nudges",
+            params=_params(opts),
+        )
+        return SessionNudgeListResponse.model_validate(resp.json())
+
+    def get_session_nudge(self, session_id: str, nudge_id: str) -> SessionNudge:
+        resp = self._request(
+            "GET",
+            f"/v1/projects/{{project}}/sessions/{quote(session_id, safe='')}/nudges/"
+            f"{quote(nudge_id, safe='')}",
+        )
+        return SessionNudge.model_validate(resp.json())
+
+    def cancel_nudge(self, session_id: str, nudge_id: str) -> SessionNudge:
+        resp = self._request(
+            "POST",
+            f"/v1/projects/{{project}}/sessions/{quote(session_id, safe='')}/nudges/"
+            f"{quote(nudge_id, safe='')}/cancel",
+        )
+        return SessionNudge.model_validate(resp.json())
+
+    def list_session_turns(
+        self, session_id: str, opts: ListSessionTurnsOptions | None = None
+    ) -> AgentTurnListResponse:
+        resp = self._request(
+            "GET",
+            f"/v1/projects/{{project}}/sessions/{quote(session_id, safe='')}/turns",
+            params=_params(opts),
+        )
+        return AgentTurnListResponse.model_validate(resp.json())
+
+    def get_session_turn(self, session_id: str, turn_id: str) -> AgentTurn:
+        resp = self._request(
+            "GET",
+            f"/v1/projects/{{project}}/sessions/{quote(session_id, safe='')}/turns/"
+            f"{quote(turn_id, safe='')}",
+        )
+        return AgentTurn.model_validate(resp.json())
+
+    def cancel_turn(self, session_id: str, turn_id: str) -> AgentTurn:
+        resp = self._request(
+            "POST",
+            f"/v1/projects/{{project}}/sessions/{quote(session_id, safe='')}/turns/"
+            f"{quote(turn_id, safe='')}/cancel",
+        )
+        return AgentTurn.model_validate(resp.json())
 
     # Fetch a session transcript snapshot (session-stream v2). Without a cursor
     # this is a bootstrap tail (latest final page + all live rows and turns);
@@ -433,7 +606,20 @@ class Client:
         stop_turn_id: str | None,
         delay: float,
     ) -> Iterator[SessionTranscript]:
+        for update in self._watch_transcript_updates(
+            session_id, transcript, stop_turn_id, delay
+        ):
+            yield update.transcript
+
+    def _watch_transcript_updates(
+        self,
+        session_id: str,
+        transcript: SessionTranscript,
+        stop_turn_id: str | None,
+        delay: float,
+    ) -> Iterator[TranscriptUpdate]:
         path = f"/v1/projects/{{project}}/sessions/{quote(session_id, safe='')}/transcript/stream"
+        reconnect_count = 0
         while True:
             params = {"cursor": transcript.cursor} if transcript.cursor else None
             rotate = False
@@ -445,16 +631,41 @@ class Client:
                     headers={"Accept": "text/event-stream"},
                 ) as resp:
                     _raise_for_stream_status(resp)
+                    self._logger.debug(
+                        "mobius transcript stream opened",
+                        extra={
+                            "session_id": session_id,
+                            "reconnect_count": reconnect_count,
+                        },
+                    )
                     for event in _iter_transcript_frames(resp):
                         frame = event.frame
                         event_type = frame.get("event_type")
                         if event_type == "stream.end":
                             if frame.get("reason") == "idle":
+                                self._logger.debug(
+                                    "mobius transcript stream idle",
+                                    extra={"session_id": session_id},
+                                )
                                 return
                             rotate = True  # reconnect immediately
+                            reconnect_count += 1
+                            self._logger.debug(
+                                "mobius transcript stream rotating",
+                                extra={
+                                    "session_id": session_id,
+                                    "reconnect_count": reconnect_count,
+                                },
+                            )
                             break
                         transcript.apply(event)
-                        yield transcript
+                        yield TranscriptUpdate(
+                            frame=frame,
+                            cursor=transcript.cursor,
+                            transcript=transcript,
+                            connection="open",
+                            reconnect_count=reconnect_count,
+                        )
                         if (
                             event_type == "turn.upsert"
                             and stop_turn_id
@@ -468,8 +679,23 @@ class Client:
                 if not _is_retryable_stream_status(exc.response.status_code):
                     raise
                 rotate = False  # 429/503 — reconnect after the delay
-            except httpx.TransportError:
+                reconnect_count += 1
+            except MobiusAPIError as exc:
+                if not _is_retryable_stream_status(exc.status):
+                    raise
+                rotate = False
+                reconnect_count += 1
+            except httpx.TransportError as exc:
                 rotate = False  # dropped connection / EOF — reconnect after delay
+                reconnect_count += 1
+                self._logger.debug(
+                    "mobius transcript transport error",
+                    extra={
+                        "session_id": session_id,
+                        "reconnect_count": reconnect_count,
+                        "error_type": type(exc).__name__,
+                    },
+                )
             if not rotate:
                 time.sleep(delay)
 
@@ -530,10 +756,21 @@ class Client:
         params: dict[str, Any] | None = None,
     ) -> httpx.Response:
         payload = _model_dump(json) if json is not None else None
-        resp = self._client.request(method, self._path(path, params=params), json=payload)
+        request_path = self._path(path, params=params)
+        started = time.monotonic()
+        resp = self._client.request(method, request_path, json=payload)
+        self._logger.debug(
+            "mobius request complete",
+            extra={
+                "method": method,
+                "path": request_path.split("?", 1)[0],
+                "status": resp.status_code,
+                "duration_ms": round((time.monotonic() - started) * 1000, 3),
+            },
+        )
         if resp.status_code == 401:
             raise AuthRevokedError()
-        resp.raise_for_status()
+        _raise_for_response(resp)
         return resp
 
     def _path(self, path: str, params: dict[str, Any] | None = None) -> str:
@@ -541,7 +778,7 @@ class Client:
         if params:
             clean = {k: v for k, v in params.items() if v not in (None, "")}
             if clean:
-                out = f"{out}?{urlencode(clean)}"
+                out = f"{out}?{urlencode(clean, doseq=True)}"
         return out
 
 
@@ -587,6 +824,15 @@ class TurnTranscript:
         # the snapshot (all pages) instead, making messages() complete either
         # way.
         self._hydrate = is_terminal_turn_status(str(ack.turn.status))
+        self._diagnostics = TranscriptDiagnostics(
+            status=str(ack.turn.status),
+            cursor=transcript.cursor,
+            ready=transcript.ready,
+            reconnect_count=0,
+            last_frame_type=None,
+            last_frame_at=None,
+            connection="idle",
+        )
 
     @property
     def status(self) -> str:
@@ -596,29 +842,111 @@ class TurnTranscript:
         """
         return (self.transcript.turn(self.id) or {}).get("status", "")
 
+    @property
+    def error_type(self) -> str | None:
+        """Live Mobius-owned failure category, when the turn failed."""
+        value = (self.transcript.turn(self.id) or {}).get("error_type")
+        return str(value) if value else None
+
+    @property
+    def error_message(self) -> str | None:
+        """Live human-readable terminal failure message."""
+        value = (self.transcript.turn(self.id) or {}).get("error_message")
+        return str(value) if value else None
+
+    @property
+    def error(self) -> Exception | None:
+        """Combined turn failure, distinct from transcript transport errors."""
+        if self.status != "failed":
+            return None
+        message = self.error_message or self.error_type or "mobius: turn failed"
+        if self.error_type and self.error_message:
+            message = f"{self.error_type}: {self.error_message}"
+        return RuntimeError(message)
+
     def messages(self) -> list[dict[str, Any]]:
         """This turn's rows, in render order."""
         return self.transcript.messages_for_turn(self.id)
 
+    def renderable_messages(self) -> list[dict[str, Any]]:
+        """This turn's UI-oriented transcript projection."""
+        return self.transcript.renderable_messages_for_turn(self.id)
+
+    def diagnostics(self) -> TranscriptDiagnostics:
+        """Observed transport and turn facts; backend state is not inferred."""
+        return TranscriptDiagnostics(
+            status=self.status,
+            cursor=self.transcript.cursor,
+            ready=self.transcript.ready,
+            reconnect_count=self._diagnostics.reconnect_count,
+            last_frame_type=self._diagnostics.last_frame_type,
+            last_frame_at=self._diagnostics.last_frame_at,
+            connection=self._diagnostics.connection,
+        )
+
+    def updates(self) -> Iterator[TranscriptUpdate]:
+        """Yield applied protocol frames and their accumulated view."""
+        if self._hydrate:
+            self._hydrate_snapshot()
+            return
+        turn = self.transcript.turn(self.id)
+        if turn and is_terminal_turn_status(turn.get("status", "")):
+            return
+        try:
+            for update in self._client._watch_transcript_updates(
+                self.session_id, self.transcript, self.id, 1.0
+            ):
+                self._diagnostics = TranscriptDiagnostics(
+                    status=self.status,
+                    cursor=update.cursor,
+                    ready=self.transcript.ready,
+                    reconnect_count=update.reconnect_count,
+                    last_frame_type=str(update.frame.get("event_type") or ""),
+                    last_frame_at=time.time(),
+                    connection=update.connection,
+                )
+                yield update
+        finally:
+            self._diagnostics = TranscriptDiagnostics(
+                status=self.status,
+                cursor=self.transcript.cursor,
+                ready=self.transcript.ready,
+                reconnect_count=self._diagnostics.reconnect_count,
+                last_frame_type=self._diagnostics.last_frame_type,
+                last_frame_at=self._diagnostics.last_frame_at,
+                connection="ended",
+            )
+
     def __iter__(self) -> Iterator[TurnTranscript]:
         if self._hydrate:
-            self._hydrate = False
-            # The snapshot may span pages; fold them all so messages() is complete.
-            opts = GetSessionTranscriptOptions()
-            while True:
-                snap = self._client.get_session_transcript(self.session_id, opts)
-                self.transcript.apply_snapshot(snap)
-                if not snap.has_more or not snap.next_page_token:
-                    break
-                opts.page_token = snap.next_page_token
+            self._hydrate_snapshot()
             yield self
             return
         # Already terminal (a completed prior iteration): nothing left to stream.
         turn = self.transcript.turn(self.id)
         if turn and is_terminal_turn_status(turn.get("status", "")):
             return
-        for _ in self._client._watch_transcript(self.session_id, self.transcript, self.id, 1.0):
+        for _ in self.updates():
             yield self
+
+    def _hydrate_snapshot(self) -> None:
+        self._hydrate = False
+        opts = GetSessionTranscriptOptions()
+        while True:
+            snap = self._client.get_session_transcript(self.session_id, opts)
+            self.transcript.apply_snapshot(snap)
+            if not snap.has_more or not snap.next_page_token:
+                break
+            opts.page_token = snap.next_page_token
+        self._diagnostics = TranscriptDiagnostics(
+            status=self.status,
+            cursor=self.transcript.cursor,
+            ready=self.transcript.ready,
+            reconnect_count=0,
+            last_frame_type=None,
+            last_frame_at=None,
+            connection="ended",
+        )
 
 
 class TranscriptWatcher:
@@ -642,11 +970,48 @@ class TranscriptWatcher:
         # The session view the stream folds into.
         self.transcript: SessionTranscript = transcript
         self._reconnect_delay = reconnect_delay
+        self._diagnostics = TranscriptDiagnostics(
+            status="",
+            cursor=transcript.cursor,
+            ready=transcript.ready,
+            reconnect_count=0,
+            last_frame_type=None,
+            last_frame_at=None,
+            connection="idle",
+        )
+
+    def diagnostics(self) -> TranscriptDiagnostics:
+        return self._diagnostics
+
+    def updates(self) -> Iterator[TranscriptUpdate]:
+        try:
+            for update in self._client._watch_transcript_updates(
+                self.session_id, self.transcript, None, self._reconnect_delay
+            ):
+                self._diagnostics = TranscriptDiagnostics(
+                    status="",
+                    cursor=update.cursor,
+                    ready=self.transcript.ready,
+                    reconnect_count=update.reconnect_count,
+                    last_frame_type=str(update.frame.get("event_type") or ""),
+                    last_frame_at=time.time(),
+                    connection=update.connection,
+                )
+                yield update
+        finally:
+            self._diagnostics = TranscriptDiagnostics(
+                status="",
+                cursor=self.transcript.cursor,
+                ready=self.transcript.ready,
+                reconnect_count=self._diagnostics.reconnect_count,
+                last_frame_type=self._diagnostics.last_frame_type,
+                last_frame_at=self._diagnostics.last_frame_at,
+                connection="ended",
+            )
 
     def __iter__(self) -> Iterator[SessionTranscript]:
-        return self._client._watch_transcript(
-            self.session_id, self.transcript, None, self._reconnect_delay
-        )
+        for update in self.updates():
+            yield update.transcript
 
 
 # SSE events are separated by a blank line, which may be framed with LF or
@@ -660,6 +1025,33 @@ def _raise_for_stream_status(resp: httpx.Response) -> None:
     # callers get the same typed error whether they stream or not.
     if resp.status_code == 401:
         raise AuthRevokedError()
+    _raise_for_response(resp)
+
+
+def _raise_for_response(resp: httpx.Response) -> None:
+    if resp.is_success:
+        return
+    try:
+        payload = resp.json()
+    except (ValueError, json.JSONDecodeError):
+        resp.raise_for_status()
+        return
+    error = payload.get("error") if isinstance(payload, dict) else None
+    if isinstance(error, dict) and isinstance(error.get("code"), str):
+        retry_after: float | None = None
+        try:
+            if resp.headers.get("Retry-After"):
+                retry_after = float(resp.headers["Retry-After"])
+        except ValueError:
+            pass
+        raise MobiusAPIError(
+            status=resp.status_code,
+            code=error["code"],
+            message=str(error.get("message") or resp.reason_phrase),
+            details=error.get("details") if isinstance(error.get("details"), dict) else None,
+            request_id=resp.headers.get("X-Request-ID") or resp.headers.get("Request-ID"),
+            retry_after=retry_after,
+        )
     resp.raise_for_status()
 
 

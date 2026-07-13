@@ -52,6 +52,16 @@ export interface WrapRetryOptions {
   sleep?: (seconds: number) => Promise<void>;
   /** Override for tests — called in place of `Date.now()` (milliseconds). */
   now?: () => number;
+  /** Structured retry observation hook; never receives headers or bodies. */
+  onRetry?: (event: RetryEvent) => void;
+}
+
+export interface RetryEvent {
+  method: string;
+  attempt: number;
+  reason: "transport_error" | "rate_limited" | "service_unavailable";
+  status?: number;
+  waitSeconds: number;
 }
 
 /**
@@ -66,6 +76,7 @@ export function wrapFetchWithRetry(
   const maxRetries = Math.max(0, options.maxRetries ?? DEFAULT_MAX_RETRIES);
   const sleep = options.sleep ?? defaultSleep;
   const now = options.now ?? (() => Date.now());
+  const onRetry = options.onRetry;
 
   return (async (input: RequestInfo | URL, init?: RequestInit) => {
     let attempt = 0;
@@ -86,6 +97,12 @@ export function wrapFetchWithRetry(
           throw err;
         }
         const wait = clamp(BASE_RETRY_BACKOFF_SECONDS * 2 ** attempt);
+        onRetry?.({
+          method,
+          attempt: attempt + 1,
+          reason: "transport_error",
+          waitSeconds: wait,
+        });
         if (wait > 0) {
           await sleep(wait);
         }
@@ -109,6 +126,13 @@ export function wrapFetchWithRetry(
       }
 
       const wait = retryAfterOrBackoff(response, attempt, now);
+      onRetry?.({
+        method,
+        attempt: attempt + 1,
+        reason: status === 429 ? "rate_limited" : "service_unavailable",
+        status,
+        waitSeconds: wait,
+      });
       await drainBody(response);
       if (wait > 0) {
         await sleep(wait);

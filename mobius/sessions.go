@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/deepnoodle-ai/mobius/mobius/api"
 	"github.com/deepnoodle-ai/wonton/sse"
@@ -61,6 +62,52 @@ type SessionStreamEvent struct {
 	Frame     api.SessionStreamFrame
 }
 
+// ListSessionsOptions configures ListSessions.
+type ListSessionsOptions struct {
+	AgentID       string
+	SessionKey    string
+	Status        string
+	Scope         string
+	Provider      string
+	IntegrationID string
+	Since         *time.Time
+	Cursor        string
+	Limit         int
+}
+
+// ListSessionMessagesOptions configures ListSessionMessages.
+type ListSessionMessagesOptions struct {
+	AfterSequence  int64
+	BeforeSequence int64
+	Order          string
+	Limit          int
+}
+
+// NudgeSessionOptions is explicit mid-turn user direction. The same
+// IdempotencyKey and Content dedupe; Wake may interrupt a waiting tool.
+type NudgeSessionOptions struct {
+	Content        string
+	IdempotencyKey string
+	Metadata       map[string]interface{}
+	Wake           bool
+}
+
+// ListSessionNudgesOptions configures ListSessionNudges.
+type ListSessionNudgesOptions struct {
+	Statuses []string
+	Order    string
+	Cursor   string
+	Limit    int
+}
+
+// ListSessionTurnsOptions configures ListSessionTurns.
+type ListSessionTurnsOptions struct {
+	IDs    []string
+	Order  string
+	Cursor string
+	Limit  int
+}
+
 // InvokeAgent resolves (or creates) a session, appends Content as the
 // caller's input message, and starts an agent turn — collapsing the
 // create-or-resolve-session + start-turn sequence into one retryable call.
@@ -84,7 +131,7 @@ func (c *Client) InvokeAgent(ctx context.Context, opts InvokeAgentOptions) (*Tur
 		return nil, fmt.Errorf("mobius: invoke agent: %w", err)
 	}
 	if resp.JSON202 == nil {
-		return nil, unexpectedSessionStatus("invoke agent", resp.Status(), resp.Body)
+		return nil, unexpectedSessionStatus("invoke agent", resp.StatusCode(), resp.Status(), resp.HTTPResponse, resp.Body)
 	}
 	ack := resp.JSON202
 	view := NewSessionTranscript()
@@ -97,6 +144,7 @@ func (c *Client) InvokeAgent(ctx context.Context, opts InvokeAgentOptions) (*Tur
 			stopTurnID: ack.Turn.Id,
 			delay:      defaultTranscriptReconnectDelay,
 			view:       view,
+			connection: TranscriptConnectionIdle,
 		},
 		turnID:        ack.Turn.Id,
 		sessionID:     ack.Session.Id,
@@ -120,13 +168,262 @@ func (c *Client) InvokeAgentStream(ctx context.Context, opts InvokeAgentOptions)
 		return nil, fmt.Errorf("mobius: invoke agent stream: %w", err)
 	}
 	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
 		_ = resp.Body.Close()
-		return nil, fmt.Errorf("mobius: invoke agent stream: unexpected status %d", resp.StatusCode)
+		return nil, unexpectedAPIStatus("invoke agent stream", resp.StatusCode, resp.Status, resp.Header, body)
 	}
 
 	ch := make(chan SessionStreamEvent)
 	go c.readSessionStream(ctx, resp.Body, ch)
 	return ch, nil
+}
+
+// ListSessions returns a cursor-paginated project session page.
+func (c *Client) ListSessions(ctx context.Context, opts *ListSessionsOptions) (*api.SessionListResponse, error) {
+	params := &api.ListSessionsParams{}
+	if opts != nil {
+		params.AgentId = stringPointer(opts.AgentID)
+		params.SessionKey = stringPointer(opts.SessionKey)
+		if opts.Status != "" {
+			v := api.SessionStatus(opts.Status)
+			params.Status = &v
+		}
+		if opts.Scope != "" {
+			v := api.SessionScope(opts.Scope)
+			params.Scope = &v
+		}
+		params.Provider = stringPointer(opts.Provider)
+		params.IntegrationId = stringPointer(opts.IntegrationID)
+		params.Since = opts.Since
+		if opts.Cursor != "" {
+			v := api.CursorParam(opts.Cursor)
+			params.Cursor = &v
+		}
+		if opts.Limit > 0 {
+			v := api.LimitParam(opts.Limit)
+			params.Limit = &v
+		}
+	}
+	resp, err := c.ac.ListSessionsWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), params)
+	if err != nil {
+		return nil, fmt.Errorf("mobius: list sessions: %w", err)
+	}
+	if resp.JSON200 == nil {
+		return nil, unexpectedSessionStatus("list sessions", resp.StatusCode(), resp.Status(), resp.HTTPResponse, resp.Body)
+	}
+	return resp.JSON200, nil
+}
+
+// GetSession returns one durable session.
+func (c *Client) GetSession(ctx context.Context, sessionID string) (*api.Session, error) {
+	resp, err := c.ac.GetSessionWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.SessionIdParam(sessionID))
+	if err != nil {
+		return nil, fmt.Errorf("mobius: get session: %w", err)
+	}
+	if resp.JSON200 == nil {
+		return nil, unexpectedSessionStatus("get session", resp.StatusCode(), resp.Status(), resp.HTTPResponse, resp.Body)
+	}
+	return resp.JSON200, nil
+}
+
+// CancelSession cancels the active direct turn. Force additionally cancels
+// loop-owned turns and should be reserved for recovery.
+func (c *Client) CancelSession(ctx context.Context, sessionID string, force bool) (*api.Session, error) {
+	params := &api.CancelSessionParams{}
+	if force {
+		params.Force = &force
+	}
+	resp, err := c.ac.CancelSessionWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.SessionIdParam(sessionID), params)
+	if err != nil {
+		return nil, fmt.Errorf("mobius: cancel session: %w", err)
+	}
+	if resp.JSON200 == nil {
+		return nil, unexpectedSessionStatus("cancel session", resp.StatusCode(), resp.Status(), resp.HTTPResponse, resp.Body)
+	}
+	return resp.JSON200, nil
+}
+
+// CompactSession requests manual compaction of a session transcript.
+func (c *Client) CompactSession(ctx context.Context, sessionID string) (*api.Session, error) {
+	resp, err := c.ac.CompactSessionWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.SessionIdParam(sessionID))
+	if err != nil {
+		return nil, fmt.Errorf("mobius: compact session: %w", err)
+	}
+	if resp.JSON200 == nil {
+		return nil, unexpectedSessionStatus("compact session", resp.StatusCode(), resp.Status(), resp.HTTPResponse, resp.Body)
+	}
+	return resp.JSON200, nil
+}
+
+// ListSessionMessages returns durable transcript rows.
+func (c *Client) ListSessionMessages(ctx context.Context, sessionID string, opts *ListSessionMessagesOptions) (*api.SessionMessageListResponse, error) {
+	params := &api.ListSessionMessagesParams{}
+	if opts != nil {
+		if opts.AfterSequence > 0 {
+			v := api.AfterSequenceParam(opts.AfterSequence)
+			params.AfterSequence = &v
+		}
+		if opts.BeforeSequence > 0 {
+			v := api.BeforeSequenceParam(opts.BeforeSequence)
+			params.BeforeSequence = &v
+		}
+		if opts.Order != "" {
+			v := api.ListSessionMessagesParamsOrder(opts.Order)
+			params.Order = &v
+		}
+		if opts.Limit > 0 {
+			v := api.LimitParam(opts.Limit)
+			params.Limit = &v
+		}
+	}
+	resp, err := c.ac.ListSessionMessagesWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.SessionIdParam(sessionID), params)
+	if err != nil {
+		return nil, fmt.Errorf("mobius: list session messages: %w", err)
+	}
+	if resp.JSON200 == nil {
+		return nil, unexpectedSessionStatus("list session messages", resp.StatusCode(), resp.Status(), resp.HTTPResponse, resp.Body)
+	}
+	return resp.JSON200, nil
+}
+
+// NudgeSession sends explicit direction to an in-flight turn, or queues a
+// follow-up turn when the terminal race wins.
+func (c *Client) NudgeSession(ctx context.Context, sessionID string, opts NudgeSessionOptions) (*api.SessionNudgeAck, error) {
+	body := api.NudgeSessionRequest{Content: opts.Content}
+	body.IdempotencyKey = stringPointer(opts.IdempotencyKey)
+	if opts.Metadata != nil {
+		body.Metadata = &opts.Metadata
+	}
+	if opts.Wake {
+		body.Wake = &opts.Wake
+	}
+	resp, err := c.ac.NudgeSessionWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.SessionIdParam(sessionID), body)
+	if err != nil {
+		return nil, fmt.Errorf("mobius: nudge session: %w", err)
+	}
+	if resp.JSON202 == nil {
+		return nil, unexpectedSessionStatus("nudge session", resp.StatusCode(), resp.Status(), resp.HTTPResponse, resp.Body)
+	}
+	return resp.JSON202, nil
+}
+
+// ListSessionNudges returns the authoritative durable nudge queue.
+func (c *Client) ListSessionNudges(ctx context.Context, sessionID string, opts *ListSessionNudgesOptions) (*api.SessionNudgeListResponse, error) {
+	params := &api.ListSessionNudgesParams{}
+	if opts != nil {
+		if len(opts.Statuses) > 0 {
+			statuses := make([]api.SessionNudgeStatus, len(opts.Statuses))
+			for i, status := range opts.Statuses {
+				statuses[i] = api.SessionNudgeStatus(status)
+			}
+			params.Status = &statuses
+		}
+		if opts.Order != "" {
+			v := api.ListSessionNudgesParamsOrder(opts.Order)
+			params.Order = &v
+		}
+		if opts.Cursor != "" {
+			v := api.CursorParam(opts.Cursor)
+			params.Cursor = &v
+		}
+		if opts.Limit > 0 {
+			v := api.LimitParam(opts.Limit)
+			params.Limit = &v
+		}
+	}
+	resp, err := c.ac.ListSessionNudgesWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.SessionIdParam(sessionID), params)
+	if err != nil {
+		return nil, fmt.Errorf("mobius: list session nudges: %w", err)
+	}
+	if resp.JSON200 == nil {
+		return nil, unexpectedSessionStatus("list session nudges", resp.StatusCode(), resp.Status(), resp.HTTPResponse, resp.Body)
+	}
+	return resp.JSON200, nil
+}
+
+// GetSessionNudge returns one durable nudge.
+func (c *Client) GetSessionNudge(ctx context.Context, sessionID, nudgeID string) (*api.SessionNudge, error) {
+	resp, err := c.ac.GetSessionNudgeWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.SessionIdParam(sessionID), api.NudgeIdParam(nudgeID))
+	if err != nil {
+		return nil, fmt.Errorf("mobius: get session nudge: %w", err)
+	}
+	if resp.JSON200 == nil {
+		return nil, unexpectedSessionStatus("get session nudge", resp.StatusCode(), resp.Status(), resp.HTTPResponse, resp.Body)
+	}
+	return resp.JSON200, nil
+}
+
+// CancelNudge cancels a pending durable nudge.
+func (c *Client) CancelNudge(ctx context.Context, sessionID, nudgeID string) (*api.SessionNudge, error) {
+	resp, err := c.ac.CancelNudgeWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.SessionIdParam(sessionID), api.NudgeIdParam(nudgeID))
+	if err != nil {
+		return nil, fmt.Errorf("mobius: cancel nudge: %w", err)
+	}
+	if resp.JSON200 == nil {
+		return nil, unexpectedSessionStatus("cancel nudge", resp.StatusCode(), resp.Status(), resp.HTTPResponse, resp.Body)
+	}
+	return resp.JSON200, nil
+}
+
+// ListSessionTurns returns the turns attached to a session.
+func (c *Client) ListSessionTurns(ctx context.Context, sessionID string, opts *ListSessionTurnsOptions) (*api.AgentTurnListResponse, error) {
+	params := &api.ListSessionTurnsParams{}
+	if opts != nil {
+		if len(opts.IDs) > 0 {
+			params.Ids = &opts.IDs
+		}
+		if opts.Order != "" {
+			v := api.ListSessionTurnsParamsOrder(opts.Order)
+			params.Order = &v
+		}
+		if opts.Cursor != "" {
+			v := api.CursorParam(opts.Cursor)
+			params.Cursor = &v
+		}
+		if opts.Limit > 0 {
+			v := api.LimitParam(opts.Limit)
+			params.Limit = &v
+		}
+	}
+	resp, err := c.ac.ListSessionTurnsWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.SessionIdParam(sessionID), params)
+	if err != nil {
+		return nil, fmt.Errorf("mobius: list session turns: %w", err)
+	}
+	if resp.JSON200 == nil {
+		return nil, unexpectedSessionStatus("list session turns", resp.StatusCode(), resp.Status(), resp.HTTPResponse, resp.Body)
+	}
+	return resp.JSON200, nil
+}
+
+// GetSessionTurn returns one session turn.
+func (c *Client) GetSessionTurn(ctx context.Context, sessionID, turnID string) (*api.AgentTurn, error) {
+	resp, err := c.ac.GetSessionTurnWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.SessionIdParam(sessionID), api.TurnIdParam(turnID))
+	if err != nil {
+		return nil, fmt.Errorf("mobius: get session turn: %w", err)
+	}
+	if resp.JSON200 == nil {
+		return nil, unexpectedSessionStatus("get session turn", resp.StatusCode(), resp.Status(), resp.HTTPResponse, resp.Body)
+	}
+	return resp.JSON200, nil
+}
+
+// CancelTurn cancels one queued/running/waiting session turn.
+func (c *Client) CancelTurn(ctx context.Context, sessionID, turnID string) (*api.AgentTurn, error) {
+	resp, err := c.ac.CancelTurnWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.SessionIdParam(sessionID), api.TurnIdParam(turnID))
+	if err != nil {
+		return nil, fmt.Errorf("mobius: cancel turn: %w", err)
+	}
+	if resp.JSON200 == nil {
+		return nil, unexpectedSessionStatus("cancel turn", resp.StatusCode(), resp.Status(), resp.HTTPResponse, resp.Body)
+	}
+	return resp.JSON200, nil
+}
+
+func stringPointer(value string) *string {
+	if value == "" {
+		return nil
+	}
+	return &value
 }
 
 // readSessionStream decodes SSE frames from body using wonton/sse and
@@ -209,9 +506,10 @@ func invokeAgentRequest(opts InvokeAgentOptions) (api.InvokeAgentRequest, error)
 	return req, nil
 }
 
-func unexpectedSessionStatus(op, status string, body []byte) error {
-	if len(body) > 0 {
-		return fmt.Errorf("mobius: %s: unexpected status %s: %s", op, status, string(body))
+func unexpectedSessionStatus(op string, statusCode int, status string, response *http.Response, body []byte) error {
+	header := http.Header{}
+	if response != nil {
+		header = response.Header
 	}
-	return fmt.Errorf("mobius: %s: unexpected status %s", op, status)
+	return unexpectedAPIStatus(op, statusCode, status, header, body)
 }

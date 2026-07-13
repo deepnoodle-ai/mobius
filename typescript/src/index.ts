@@ -6,6 +6,7 @@ export {
   DEFAULT_NAMESPACE,
   DEFAULT_PROJECT,
   LeaseLostError,
+  MobiusAPIError,
   PayloadTooLargeError,
   RateLimitedError,
   RateLimitError,
@@ -16,15 +17,24 @@ export {
 } from "./client.js";
 export type {
   ClientOptions,
+  ClientLogEvent,
   GetSessionTranscriptOptions,
   InvokeAgentOptions,
+  ListSessionMessagesOptions,
+  ListSessionNudgesOptions,
+  ListSessionTurnsOptions,
+  ListSessionsOptions,
   ListLoopsOptions,
   ListRunsOptions,
   LoopOptions,
+  NudgeSessionOptions,
   RunEvent,
   SessionStreamEvent,
   StartRunOptions,
   StreamSessionTranscriptOptions,
+  TranscriptConnectionState,
+  TranscriptUpdate,
+  TurnDiagnostics,
   UpdateLoopOptions,
   WaitRunOptions,
   WatchRunOptions,
@@ -33,8 +43,11 @@ export type {
 export {
   SessionTranscript,
   isTerminalTurnStatus,
+  normalizeToolUse,
+  textOf,
+  toolResultText,
 } from "./transcript.js";
-export type { TranscriptStreamEvent } from "./transcript.js";
+export type { NormalizedToolUse, TranscriptStreamEvent } from "./transcript.js";
 export type {
   MessageBlockFrame,
   MessageBlockPatchFrame,
@@ -43,6 +56,9 @@ export type {
   SessionTranscriptMessage,
   SessionTranscriptSnapshot,
   SessionTranscriptTurn,
+  SessionResolvedAction,
+  SessionToolResultBlock,
+  SessionToolUseBlock,
   StreamEndFrame,
   StreamReadyFrame,
   TurnAck,
@@ -78,6 +94,7 @@ export {
   DEFAULT_MAX_RETRIES,
   MAX_RETRY_BACKOFF_SECONDS,
   wrapFetchWithRetry,
+  type RetryEvent,
   type WrapRetryOptions,
 } from "./retry.js";
 

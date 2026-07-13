@@ -82,6 +82,9 @@ func TestContractFixtures(t *testing.T) {
 
 	for _, f := range m.Fixtures {
 		f := f
+		if f.Kind != "websocket_frame" {
+			continue
+		}
 		t.Run(f.File, func(t *testing.T) {
 			raw, err := os.ReadFile(filepath.Join(contractDir, f.File))
 			if err != nil {

@@ -1,10 +1,94 @@
 import type {
+  SessionResolvedAction,
+  SessionToolResultBlock,
+  SessionToolUseBlock,
   SessionTranscriptFrame,
   SessionTranscriptMessage,
   SessionTranscriptSnapshot,
   SessionTranscriptTurn,
   TurnAck,
 } from "./api/index.js";
+
+export interface NormalizedToolUse {
+  wireName: string;
+  wireInput: Record<string, unknown>;
+  resolvedAction?: SessionResolvedAction;
+  toolkitName?: string;
+  command?: string;
+  raw: SessionToolUseBlock;
+}
+
+/**
+ * Normalize a tool-use block without discarding the model-facing wire shape.
+ * Persisted `resolved_action` is authoritative; the legacy `{command,args}`
+ * shape is recognized only as a compatibility fallback.
+ */
+export function normalizeToolUse(block: SessionToolUseBlock): NormalizedToolUse {
+  const raw = block as SessionToolUseBlock & Record<string, unknown>;
+  const wireName = typeof raw.name === "string" ? raw.name : "";
+  const wireInput = isRecord(raw.input) ? raw.input : {};
+  const persisted = isResolvedAction(raw.resolved_action)
+    ? raw.resolved_action
+    : undefined;
+  const command =
+    typeof wireInput.command === "string" && wireInput.command.trim() !== ""
+      ? wireInput.command
+      : undefined;
+  const args = isRecord(wireInput.args) ? wireInput.args : undefined;
+  const resolvedAction =
+    persisted ??
+    (command && args
+      ? { name: `${wireName}.${command}`, input: args }
+      : undefined);
+  let toolkitName: string | undefined;
+  let normalizedCommand = command;
+  if (command) {
+    toolkitName = wireName || undefined;
+  } else if (resolvedAction) {
+    const dot = resolvedAction.name.indexOf(".");
+    if (dot > 0) {
+      toolkitName = resolvedAction.name.slice(0, dot);
+      normalizedCommand = resolvedAction.name.slice(dot + 1);
+    }
+  }
+  return removeUndefined({
+    wireName,
+    wireInput,
+    resolvedAction,
+    toolkitName,
+    command: normalizedCommand,
+    raw: block,
+  });
+}
+
+/** Concatenate the text blocks in one transcript message. */
+export function textOf(message: SessionTranscriptMessage): string {
+  return normalizeContent(message.content)
+    .map((block) =>
+      isRecord(block) && typeof block.text === "string" ? block.text : "",
+    )
+    .filter(Boolean)
+    .join("");
+}
+
+/** Return readable text from a tool-result block's string-or-block content. */
+export function toolResultText(block: SessionToolResultBlock): string {
+  const content = (block as SessionToolResultBlock & { content?: unknown }).content;
+  if (typeof content === "string") return content;
+  if (!Array.isArray(content)) return "";
+  return content
+    .map((item) => {
+      if (isRecord(item) && typeof item.text === "string") return item.text;
+      if (typeof item === "string") return item;
+      try {
+        return JSON.stringify(item);
+      } catch {
+        return String(item);
+      }
+    })
+    .filter(Boolean)
+    .join("\n");
+}
 
 /**
  * Terminal {@link SessionTranscriptTurn} statuses. A turn in one of these
@@ -124,6 +208,47 @@ export class SessionTranscript {
   }
 
   /**
+   * Policy-light rendering projection: one row per logical response segment,
+   * final over streaming, empty-preview suppression, and tool-call-id dedup.
+   * The lossless {@link messages} view remains unchanged.
+   */
+  renderableMessages(): SessionTranscriptMessage[] {
+    const selected = new Map<string, SessionTranscriptMessage>();
+    for (const row of this.messages()) {
+      const normalized = normalizeMessage(row);
+      const key = logicalMessageKey(normalized);
+      const current = selected.get(key);
+      if (!current || preferMessage(normalized, current)) selected.set(key, normalized);
+    }
+
+    const rows = [...selected.values()];
+    const newestEmpty = new Map<string, SessionTranscriptMessage>();
+    for (const row of rows) {
+      if (
+        row.status !== "streaming" ||
+        row.role !== "assistant" ||
+        row.content.length !== 0 ||
+        !row.turn_id
+      ) {
+        continue;
+      }
+      const current = newestEmpty.get(row.turn_id);
+      if (!current || (row.turn_index ?? 0) >= (current.turn_index ?? 0)) {
+        newestEmpty.set(row.turn_id, row);
+      }
+    }
+    const visible = rows.filter(
+      (row) =>
+        row.status !== "streaming" ||
+        row.role !== "assistant" ||
+        row.content.length !== 0 ||
+        !row.turn_id ||
+        newestEmpty.get(row.turn_id)?.id === row.id,
+    );
+    return dedupeToolBlocks(visible);
+  }
+
+  /**
    * Fold one stream frame into the view. Unknown `event_type`s are ignored so
    * the protocol can grow without breaking this client. This is the escape
    * hatch for frames obtained from {@link Client.streamSessionTranscript} or a
@@ -137,7 +262,10 @@ export class SessionTranscript {
     const f = frame as Record<string, unknown> & { event_type?: string };
     switch (f.event_type) {
       case "message.upsert":
-        this.#rows.set(f.id as string, frame as unknown as SessionTranscriptMessage);
+        this.#rows.set(
+          f.id as string,
+          normalizeMessage(frame as unknown as SessionTranscriptMessage),
+        );
         break;
       case "message.block": {
         const row = this.#rows.get(f.message_id as string);
@@ -159,6 +287,8 @@ export class SessionTranscript {
         if (f.status !== undefined) block.status = f.status;
         if (f.progress === null) delete block.progress; // null clears
         else if (f.progress !== undefined) block.progress = f.progress; // omitted preserves
+        if (f.resolved_action !== undefined)
+          block.resolved_action = f.resolved_action;
         break;
       }
       case "message.delta": {
@@ -199,7 +329,7 @@ export class SessionTranscript {
    * complete live set, so any local streaming row absent from it is pruned.
    */
   applySnapshot(snap: SessionTranscriptSnapshot): void {
-    for (const msg of snap.messages) this.#rows.set(msg.id, msg);
+    for (const msg of snap.messages) this.#rows.set(msg.id, normalizeMessage(msg));
     for (const turn of snap.turns) {
       this.#turns.set(turn.id, turn);
       if (isTerminalTurnStatus(turn.status)) this.#pruneStreamingRows(turn.id);
@@ -222,7 +352,8 @@ export class SessionTranscript {
    * invoke.
    */
   seed(ack: TurnAck): void {
-    if (ack.user_message) this.#rows.set(ack.user_message.id, ack.user_message);
+    if (ack.user_message)
+      this.#rows.set(ack.user_message.id, normalizeMessage(ack.user_message));
     const turn = ack.turn as unknown as SessionTranscriptTurn;
     if (turn?.id) this.#turns.set(turn.id, turn);
     if (ack.resume_cursor) this.#cursor = ack.resume_cursor;
@@ -234,4 +365,100 @@ export class SessionTranscript {
         this.#rows.delete(id);
     }
   }
+}
+
+function normalizeMessage(
+  message: SessionTranscriptMessage,
+): SessionTranscriptMessage {
+  return { ...message, content: normalizeContent(message.content) };
+}
+
+function normalizeContent(content: unknown): SessionTranscriptMessage["content"] {
+  return (Array.isArray(content) ? content : []) as SessionTranscriptMessage["content"];
+}
+
+function logicalMessageKey(message: SessionTranscriptMessage): string {
+  const metadata = isRecord(message.metadata) ? message.metadata : {};
+  const legacy =
+    typeof metadata.response_message_index === "number"
+      ? metadata.response_message_index
+      : undefined;
+  const index = message.turn_index ?? legacy;
+  if (!message.turn_id || index == null) return `id:${message.id}`;
+  return `logical:${message.turn_id}:${message.role}:${index}`;
+}
+
+function preferMessage(
+  candidate: SessionTranscriptMessage,
+  current: SessionTranscriptMessage,
+): boolean {
+  if (candidate.status === "final" && current.status !== "final") return true;
+  if (candidate.status !== "final" && current.status === "final") return false;
+  return messageCompleteness(candidate) >= messageCompleteness(current);
+}
+
+function messageCompleteness(message: SessionTranscriptMessage): number {
+  try {
+    return JSON.stringify(message.content).length + (message.status === "final" ? 1_000_000 : 0);
+  } catch {
+    return message.content.length;
+  }
+}
+
+function dedupeToolBlocks(
+  messages: SessionTranscriptMessage[],
+): SessionTranscriptMessage[] {
+  const best = new Map<string, { row: number; block: number; score: number }>();
+  messages.forEach((message, row) => {
+    message.content.forEach((block, index) => {
+      const key = toolBlockKey(block);
+      if (!key) return;
+      const score = blockCompleteness(block);
+      const current = best.get(key);
+      if (!current || score >= current.score) best.set(key, { row, block: index, score });
+    });
+  });
+  return messages.map((message, row) => ({
+    ...message,
+    content: message.content.filter((block, index) => {
+      const key = toolBlockKey(block);
+      const chosen = key ? best.get(key) : undefined;
+      return !chosen || (chosen.row === row && chosen.block === index);
+    }) as SessionTranscriptMessage["content"],
+  }));
+}
+
+function toolBlockKey(block: unknown): string | undefined {
+  if (!isRecord(block)) return undefined;
+  if (block.type === "tool_use" && typeof block.id === "string")
+    return `use:${block.id}`;
+  if (block.type === "tool_result" && typeof block.tool_use_id === "string")
+    return `result:${block.tool_use_id}`;
+  return undefined;
+}
+
+function blockCompleteness(block: unknown): number {
+  try {
+    return JSON.stringify(block).length;
+  } catch {
+    return 0;
+  }
+}
+
+function isResolvedAction(value: unknown): value is SessionResolvedAction {
+  return (
+    isRecord(value) &&
+    typeof value.name === "string" &&
+    isRecord(value.input)
+  );
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function removeUndefined<T extends object>(value: T): T {
+  return Object.fromEntries(
+    Object.entries(value).filter(([, item]) => item !== undefined),
+  ) as T;
 }

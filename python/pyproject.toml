@@ -2,6 +2,7 @@
 name = "deepnoodle-mobius"
 version = "0.0.44"
 description = "Python SDK for Mobius agent loops and workers"
+readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "httpx>=0.27",
@@ -18,7 +19,7 @@ build-backend = "hatchling.build"
 packages = ["deepnoodle"]
 
 [tool.hatch.build.targets.sdist]
-include = ["deepnoodle"]
+include = ["deepnoodle", "README.md"]
 
 [dependency-groups]
 dev = [

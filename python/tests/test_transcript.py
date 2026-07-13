@@ -11,9 +11,14 @@ from deepnoodle.mobius import (
     ClientOptions,
     GetSessionTranscriptOptions,
     InvokeAgentOptions,
+    MobiusAPIError,
+    NudgeSessionOptions,
     SessionTranscript,
     TranscriptStreamEvent,
     is_terminal_turn_status,
+    normalize_tool_use,
+    text_of,
+    tool_result_text,
 )
 
 AT = "2026-07-11T17:03:21Z"
@@ -112,6 +117,82 @@ def test_transcript_block_patch_merge_and_null_clear() -> None:
     block = t.message("m_a")["content"][0]
     assert block["status"] == "ok"
     assert "progress" not in block
+
+
+def test_transcript_normalizes_null_content_at_every_ingress() -> None:
+    t = SessionTranscript()
+    _apply(t, _upsert(content=None))
+    assert t.message("m_a")["content"] == []
+
+    snapshot_message = _upsert(id="m_snapshot", content=None)
+    snapshot_message.pop("event_type")
+    t.apply_snapshot(
+        {
+            "messages": [snapshot_message],
+            "turns": [],
+            "has_more": True,
+            "resume_cursor": "1.1",
+        }
+    )
+    assert t.message("m_snapshot")["content"] == []
+
+    ack = _ack_body()
+    ack["user_message"]["content"] = None
+    t.seed(ack)
+    assert t.message("m_user")["content"] == []
+
+
+def test_renderable_messages_and_tool_helpers() -> None:
+    t = SessionTranscript()
+    _apply(t, _turn())
+    _apply(t, _upsert(id="empty_1", turn_index=1, content=[]))
+    _apply(t, _upsert(id="empty_2", turn_index=2, content=[]))
+    _apply(
+        t,
+        _upsert(
+            id="preview",
+            turn_index=3,
+            content=[
+                {
+                    "type": "tool_use",
+                    "id": "call_1",
+                    "name": "catalog",
+                    "input": {"command": "check", "args": {"domain": "x.test"}},
+                }
+            ],
+        ),
+    )
+    _apply(
+        t,
+        _upsert(
+            id="final",
+            status="final",
+            turn_index=3,
+            sequence=4,
+            content=[
+                {
+                    "type": "tool_use",
+                    "id": "call_1",
+                    "name": "catalog",
+                    "input": {"command": "check", "args": {"domain": "x.test"}},
+                    "resolved_action": {
+                        "name": "naming.domain.check",
+                        "input": {"domain": "x.test"},
+                    },
+                },
+                {"type": "text", "text": "done"},
+            ],
+        ),
+    )
+    visible = t.renderable_messages()
+    assert [row["id"] for row in visible] == ["final", "empty_2"]
+    normalized = normalize_tool_use(visible[0]["content"][0])
+    assert normalized.wire_name == "catalog"
+    assert normalized.resolved_action["name"] == "naming.domain.check"
+    assert normalized.wire_input["command"] == "check"
+    assert text_of(visible[0]) == "done"
+    assert tool_result_text({"content": "plain"}) == "plain"
+    assert tool_result_text({"content": [{"type": "text", "text": "blocks"}]}) == "blocks"
 
 
 def test_transcript_terminal_turn_prunes_streaming_rows() -> None:
@@ -238,9 +319,74 @@ def test_watch_session_transcript_propagates_permanent_error() -> None:
         return httpx.Response(404, json={"error": {"code": "not_found", "message": "no such session"}})
 
     client = _client_with(handler)
-    with pytest.raises(httpx.HTTPStatusError):
+    with pytest.raises(MobiusAPIError) as caught:
         list(client.watch_session_transcript("sess_1"))
+    assert caught.value.code == "not_found"
+    assert caught.value.status == 404
     assert calls == 1  # surfaced on the first attempt, no reconnect
+
+
+def test_ordinary_request_exposes_structured_mobius_api_error() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            409,
+            json={
+                "error": {
+                    "code": "session_turn_active",
+                    "message": "another direct turn is active",
+                    "details": {"turn_id": "turn_blocking", "status": "running"},
+                }
+            },
+            headers={"X-Request-ID": "req_1", "Retry-After": "2"},
+        )
+
+    client = _client_with(handler)
+    with pytest.raises(MobiusAPIError) as caught:
+        client.invoke_agent(
+            InvokeAgentOptions(
+                agent_name="support", content=[{"type": "text", "text": "next"}]
+            )
+        )
+    assert caught.value.status == 409
+    assert caught.value.code == "session_turn_active"
+    assert caught.value.details == {"turn_id": "turn_blocking", "status": "running"}
+    assert caught.value.request_id == "req_1"
+    assert caught.value.retry_after == 2
+
+
+def test_nudge_session_is_a_thin_typed_wrapper() -> None:
+    seen: dict[str, object] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen["path"] = request.url.path
+        seen["body"] = __import__("json").loads(request.content)
+        return httpx.Response(
+            202,
+            json={
+                "nudge_id": "nudge_1",
+                "delivery": "current_turn",
+                "session": _ack_body()["session"],
+                "turn": _ack_body()["turn"],
+                "after_sequence": 2,
+                "deduped": False,
+                "woke_turn": True,
+            },
+        )
+
+    client = _client_with(handler)
+    ack = client.nudge_session(
+        "s1",
+        NudgeSessionOptions(
+            content="Use the shorter name", idempotency_key="event_2", wake=True
+        ),
+    )
+    assert ack.nudge_id == "nudge_1"
+    assert seen["path"] == "/v1/projects/test-project/sessions/s1/nudges"
+    assert seen["body"] == {
+        "content": "Use the shorter name",
+        "idempotency_key": "event_2",
+        "wake": True,
+    }
 
 
 def test_watch_session_transcript_raises_auth_revoked_on_401() -> None:
@@ -324,6 +470,29 @@ def test_invoke_agent_streams_turn_to_terminal() -> None:
     assert turn.status == "completed"
     assert [m["id"] for m in turn.messages()] == ["m_user", "m_a"]
     assert turn.transcript.cursor == "43.9"
+
+
+def test_turn_transcript_exposes_live_failed_turn_errors() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(202, json=_ack_body())
+
+    client = _client_with(handler)
+    turn = client.invoke_agent(
+        InvokeAgentOptions(agent_name="support", content=[{"type": "text", "text": "hi"}])
+    )
+    _apply(
+        turn.transcript,
+        _turn(
+            status="failed",
+            error_type="invalid_conversation_state",
+            error_message="history ended with assistant content",
+        ),
+    )
+    assert turn.error_type == "invalid_conversation_state"
+    assert turn.error_message == "history ended with assistant content"
+    assert str(turn.error) == (
+        "invalid_conversation_state: history ended with assistant content"
+    )
 
 
 def test_invoke_agent_hydrates_terminal_turn_from_snapshot() -> None:

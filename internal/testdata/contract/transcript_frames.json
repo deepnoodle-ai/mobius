@@ -1,0 +1,299 @@
+{
+  "events": [
+    {
+      "id": "10.1",
+      "frame": {
+        "event_type": "turn.upsert",
+        "id": "t_active",
+        "session_id": "s1",
+        "agent_id": "a1",
+        "attempt": 1,
+        "status": "running",
+        "created_at": "2026-07-13T12:00:00Z",
+        "updated_at": "2026-07-13T12:00:00Z"
+      }
+    },
+    {
+      "frame": {
+        "event_type": "message.upsert",
+        "id": "empty_1",
+        "session_id": "s1",
+        "agent_id": "a1",
+        "role": "assistant",
+        "status": "streaming",
+        "turn_id": "t_active",
+        "turn_index": 1,
+        "sequence": null,
+        "entry_type": "message",
+        "content": null,
+        "created_at": "2026-07-13T12:00:01Z"
+      }
+    },
+    {
+      "frame": {
+        "event_type": "message.upsert",
+        "id": "empty_2",
+        "session_id": "s1",
+        "agent_id": "a1",
+        "role": "assistant",
+        "status": "streaming",
+        "turn_id": "t_active",
+        "turn_index": 2,
+        "sequence": null,
+        "entry_type": "message",
+        "content": [],
+        "created_at": "2026-07-13T12:00:02Z"
+      }
+    },
+    {
+      "frame": {
+        "event_type": "message.upsert",
+        "id": "m_tool_live",
+        "session_id": "s1",
+        "agent_id": "a1",
+        "role": "assistant",
+        "status": "streaming",
+        "turn_id": "t_active",
+        "turn_index": 3,
+        "sequence": null,
+        "entry_type": "message",
+        "content": [
+          {
+            "type": "tool_use",
+            "id": "call_live",
+            "name": "catalog",
+            "input": {
+              "command": "check",
+              "args": {
+                "domain": "x.test"
+              }
+            }
+          }
+        ],
+        "created_at": "2026-07-13T12:00:03Z"
+      }
+    },
+    {
+      "frame": {
+        "event_type": "message.block.patch",
+        "session_id": "s1",
+        "message_id": "m_tool_live",
+        "content_index": 0,
+        "resolved_action": {
+          "name": "naming.domain.check",
+          "input": {
+            "domain": "x.test"
+          }
+        }
+      }
+    },
+    {
+      "frame": {
+        "event_type": "message.upsert",
+        "id": "m_tool_shapes",
+        "session_id": "s1",
+        "agent_id": "a1",
+        "role": "assistant",
+        "status": "final",
+        "turn_id": "t_shapes",
+        "turn_index": 1,
+        "sequence": 3,
+        "entry_type": "message",
+        "content": [
+          {
+            "type": "tool_use",
+            "id": "call_flat",
+            "name": "naming_domain_check",
+            "input": {
+              "domain": "x.test"
+            },
+            "resolved_action": {
+              "name": "naming.domain.check",
+              "input": {
+                "domain": "x.test"
+              }
+            }
+          },
+          {
+            "type": "tool_use",
+            "id": "call_meta",
+            "name": "github",
+            "input": {
+              "command": "issues.get",
+              "args": {
+                "number": 42
+              }
+            },
+            "resolved_action": {
+              "name": "github.issues.get",
+              "input": {
+                "number": 42
+              }
+            }
+          },
+          {
+            "type": "tool_use",
+            "id": "call_help",
+            "name": "github",
+            "input": {
+              "command": "help"
+            }
+          }
+        ],
+        "created_at": "2026-07-13T12:00:03Z"
+      }
+    },
+    {
+      "frame": {
+        "event_type": "message.upsert",
+        "id": "m_preview",
+        "session_id": "s1",
+        "agent_id": "a1",
+        "role": "assistant",
+        "status": "streaming",
+        "turn_id": "t_preview",
+        "turn_index": 1,
+        "sequence": null,
+        "entry_type": "message",
+        "content": [
+          {
+            "type": "text",
+            "text": "partial"
+          }
+        ],
+        "created_at": "2026-07-13T12:00:04Z"
+      }
+    },
+    {
+      "frame": {
+        "event_type": "turn.upsert",
+        "id": "t_preview",
+        "session_id": "s1",
+        "agent_id": "a1",
+        "attempt": 1,
+        "status": "running",
+        "created_at": "2026-07-13T12:00:04Z",
+        "updated_at": "2026-07-13T12:00:04Z"
+      }
+    },
+    {
+      "frame": {
+        "event_type": "message.upsert",
+        "id": "m_final",
+        "session_id": "s1",
+        "agent_id": "a1",
+        "role": "assistant",
+        "status": "final",
+        "turn_id": "t_preview",
+        "turn_index": 1,
+        "sequence": 2,
+        "entry_type": "message",
+        "content": [
+          {
+            "type": "tool_use",
+            "id": "call_1",
+            "name": "naming_domain_check",
+            "input": {
+              "domain": "x.test"
+            }
+          },
+          {
+            "type": "tool_use",
+            "id": "call_1",
+            "name": "naming_domain_check",
+            "input": {
+              "domain": "x.test"
+            },
+            "resolved_action": {
+              "name": "naming.domain.check",
+              "input": {
+                "domain": "x.test"
+              }
+            }
+          },
+          {
+            "type": "tool_result",
+            "tool_use_id": "call_1",
+            "content": "ok"
+          },
+          {
+            "type": "tool_result",
+            "tool_use_id": "call_1",
+            "content": [
+              {
+                "type": "text",
+                "text": "available"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "done"
+          }
+        ],
+        "created_at": "2026-07-13T12:00:05Z"
+      }
+    },
+    {
+      "frame": {
+        "event_type": "message.upsert",
+        "id": "m_null",
+        "session_id": "s1",
+        "agent_id": "a1",
+        "role": "user",
+        "status": "final",
+        "turn_id": "t_failed",
+        "turn_index": 0,
+        "sequence": 1,
+        "entry_type": "message",
+        "content": null,
+        "created_at": "2026-07-13T11:59:59Z"
+      }
+    },
+    {
+      "id": "12.4",
+      "frame": {
+        "event_type": "turn.upsert",
+        "id": "t_failed",
+        "session_id": "s1",
+        "agent_id": "a1",
+        "attempt": 1,
+        "status": "failed",
+        "error_type": "invalid_conversation_state",
+        "error_message": "history ended with assistant content",
+        "created_at": "2026-07-13T11:59:58Z",
+        "updated_at": "2026-07-13T12:00:06Z"
+      }
+    }
+  ],
+  "expected": {
+    "cursor": "12.4",
+    "message_ids": [
+      "m_null",
+      "m_final",
+      "m_tool_shapes",
+      "empty_1",
+      "empty_2",
+      "m_tool_live",
+      "m_preview"
+    ],
+    "renderable_ids": [
+      "m_null",
+      "m_final",
+      "m_tool_shapes",
+      "empty_2",
+      "m_tool_live"
+    ],
+    "null_content_id": "m_null",
+    "resolved_action_message_id": "m_tool_live",
+    "resolved_action_name": "naming.domain.check",
+    "tool_shape_message_id": "m_tool_shapes",
+    "flat_resolved_action_name": "naming.domain.check",
+    "meta_resolved_action_name": "github.issues.get",
+    "help_wire_name": "github",
+    "deduped_tool_block_count": 3,
+    "failed_turn_id": "t_failed",
+    "failed_turn_error_type": "invalid_conversation_state",
+    "failed_turn_error_message": "history ended with assistant content"
+  }
+}
