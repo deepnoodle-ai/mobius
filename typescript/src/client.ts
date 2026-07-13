@@ -405,6 +405,8 @@ export interface ListSessionMessagesOptions {
   beforeSequence?: number;
   order?: "asc" | "desc";
   limit?: number;
+  /** Set to context to return caller-supplied runtime context rows. */
+  include?: "context";
 }
 
 export interface ListSessionTurnsOptions {
@@ -652,6 +654,7 @@ export class Client {
         before_sequence: opts.beforeSequence,
         order: opts.order,
         limit: opts.limit,
+        include: opts.include,
       },
     );
     const resp = await this.request(path, { method: "GET" });

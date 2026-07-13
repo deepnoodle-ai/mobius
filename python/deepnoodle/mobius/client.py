@@ -31,6 +31,9 @@ from ._api.models import (
     LoopRunStatus,
     LoopStatus,
     NudgeSessionRequest,
+    RuntimeContext,
+    RuntimeContextItem,
+    Role2,
     Session,
     SessionListResponse,
     SessionMessageListResponse,
@@ -40,6 +43,7 @@ from ._api.models import (
     SessionTranscriptSnapshot,
     SignalLoopRunRequest,
     StartLoopRunRequest,
+    StartTurnRequest,
     TagMap,
     TurnAck,
     UpdateLoopRequest,
@@ -157,6 +161,8 @@ class InvokeAgentOptions:
     agent_id: str | None = None
     # Project-unique agent name. Mutually exclusive with agent_id.
     agent_name: str | None = None
+    # Ordered application-owned state for this turn.
+    context: list[RuntimeContextItem] | None = None
     # Dedup key scoped to the resolved session. A repeat call with the same
     # key resolves the same session and resumes the existing turn rather
     # than starting a second one — derive it from the provider event id for
@@ -181,6 +187,19 @@ class InvokeAgentOptions:
 
 
 @dataclass
+class StartTurnOptions:
+    # Ordered content blocks (text, images, ...) for the caller's input
+    # message. Required.
+    content: list[dict[str, Any]]
+    # Ordered application-owned state for this turn.
+    context: list[RuntimeContextItem] | None = None
+    # Dedup key scoped to the existing session.
+    idempotency_key: str | None = None
+    # Free-form caller metadata attached to the input message.
+    metadata: dict[str, Any] | None = None
+
+
+@dataclass
 class ListSessionsOptions:
     agent_id: str | None = None
     session_key: str | None = None
@@ -199,6 +218,8 @@ class ListSessionMessagesOptions:
     before_sequence: int | None = None
     order: str | None = None
     limit: int | None = None
+    # Set to "context" to return caller-supplied runtime context rows.
+    include: str | None = None
 
 
 @dataclass
@@ -405,8 +426,32 @@ class Client:
         body = _invoke_agent_request(opts)
         resp = self._request("POST", "/v1/projects/{project}/agents/invoke", json=body)
         ack = TurnAck.model_validate(resp.json())
+        return self._turn_transcript(ack, "invoke agent")
+
+    def start_turn(self, session_id: str, opts: StartTurnOptions) -> TurnTranscript:
+        """Append caller input to an existing session and start a turn."""
+        if not opts.content:
+            raise ValueError("mobius: start turn: content is required")
+        body = StartTurnRequest(
+            role=Role2.user,
+            content=opts.content,
+            context=(
+                RuntimeContext(root=opts.context) if opts.context is not None else None
+            ),
+            idempotency_key=opts.idempotency_key,
+            metadata=opts.metadata,
+        )
+        resp = self._request(
+            "POST",
+            f"/v1/projects/{{project}}/sessions/{quote(session_id, safe='')}/turns",
+            json=body,
+        )
+        ack = TurnAck.model_validate(resp.json())
+        return self._turn_transcript(ack, "start turn")
+
+    def _turn_transcript(self, ack: TurnAck, operation: str) -> TurnTranscript:
         if not ack.resume_cursor.strip():
-            raise ValueError("mobius: invoke agent response missing resume_cursor")
+            raise ValueError(f"mobius: {operation} response missing resume_cursor")
         transcript = SessionTranscript()
         transcript.seed(ack)
         return TurnTranscript(self, ack, transcript)
@@ -1165,6 +1210,9 @@ def _invoke_agent_request(opts: InvokeAgentOptions) -> InvokeAgentRequest:
         agent_ref=AgentRef(id=opts.agent_id, name=opts.agent_name),
         input=InvokeInput(
             content=opts.content,
+            context=(
+                RuntimeContext(root=opts.context) if opts.context is not None else None
+            ),
             idempotency_key=opts.idempotency_key,
             metadata=opts.input_metadata,
         ),

@@ -138,6 +138,7 @@ and ends at the turn's terminal state:
 turn, err := client.InvokeAgent(ctx, mobius.InvokeAgentOptions{
 	AgentName: "support",
 	Content:   []map[string]any{{"type": "text", "text": "check the deploy"}},
+	Context:   []mobius.RuntimeContextItem{{Name: "deploy", Content: "Status: canary"}},
 })
 if err != nil { return err }
 for turn.Next() {
@@ -151,6 +152,7 @@ if err := turn.TurnError(); err != nil { return err }
 turn = client.invoke_agent(mobius.InvokeAgentOptions(
     agent_name="support",
     content=[{"type": "text", "text": "check the deploy"}],
+    context=[mobius.RuntimeContextItem(name="deploy", content="Status: canary")],
 ))
 for t in turn:
     render(t.renderable_messages())
@@ -163,12 +165,61 @@ if turn.error:
 const turn = await client.invokeAgent({
   agentName: "support",
   content: [{ type: "text", text: "check the deploy" }],
+  context: [{ name: "deploy", content: "Status: canary" }],
 });
 for await (const t of turn) {
   render(t.renderableMessages());
 }
 if (turn.error) throw turn.error;
 // turn.status === "completed"
+```
+
+Use `StartTurn` / `start_turn` / `startTurn` with the same `content`, `context`,
+and idempotency options when the session already exists:
+
+```go
+turn, err := client.StartTurn(ctx, sessionID, mobius.StartTurnOptions{
+	Content: []map[string]any{{"type": "text", "text": "check again"}},
+	Context: []mobius.RuntimeContextItem{{Name: "deploy", Content: "Status: stable"}},
+})
+```
+
+```python
+turn = client.start_turn(session_id, mobius.StartTurnOptions(
+    content=[{"type": "text", "text": "check again"}],
+    context=[mobius.RuntimeContextItem(name="deploy", content="Status: stable")],
+))
+```
+
+```ts
+const turn = await client.startTurn(sessionId, {
+  content: [{ type: "text", text: "check again" }],
+  context: [{ name: "deploy", content: "Status: stable" }],
+});
+```
+
+Runtime-context names must be unique within a request. Supply names without the
+`app-` namespace; a name already beginning with `app-` is deliberately delivered
+as `app-app-*`. OpenAPI validates each content value by Unicode code points; the
+server additionally enforces 8,192 UTF-8 bytes per item and 16,384 bytes total.
+Those name-uniqueness and byte-total rules are server-side.
+
+Runtime context stays hidden from ordinary transcript reads. Request caller-owned
+`app-*` reminder rows explicitly when debugging delivery:
+
+```go
+page, err := client.ListSessionMessages(ctx, sessionID,
+	&mobius.ListSessionMessagesOptions{Include: "context"})
+```
+
+```python
+page = client.list_session_messages(
+    session_id, mobius.ListSessionMessagesOptions(include="context")
+)
+```
+
+```ts
+const page = await client.listSessionMessages(sessionId, { include: "context" });
 ```
 
 `Messages` is scoped to the invoked turn (the caller's message row is seeded

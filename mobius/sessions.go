@@ -26,6 +26,8 @@ type InvokeAgentOptions struct {
 	// Content is the ordered content blocks (text, images, …) for the
 	// caller's input message. Required.
 	Content []map[string]interface{}
+	// Context is the ordered application-owned state for this turn.
+	Context []RuntimeContextItem
 	// IdempotencyKey dedupes the call: a repeat call with the same key
 	// resolves the same session and resumes the existing turn rather than
 	// starting a second one. Derive it from the provider event id for
@@ -50,6 +52,19 @@ type InvokeAgentOptions struct {
 	// ChannelContext records optional messaging provider/channel routing
 	// context (Slack, Telegram, …) on the started turn.
 	ChannelContext *api.ChannelContext
+}
+
+// StartTurnOptions configures StartTurn for an existing session.
+type StartTurnOptions struct {
+	// Content is the ordered content blocks (text, images, …) for the
+	// caller's input message. Required.
+	Content []map[string]interface{}
+	// Context is the ordered application-owned state for this turn.
+	Context []RuntimeContextItem
+	// IdempotencyKey dedupes the call within the session.
+	IdempotencyKey string
+	// Metadata is free-form caller metadata attached to the input message.
+	Metadata map[string]interface{}
 }
 
 // SessionStreamEvent is a single decoded frame from a session SSE stream.
@@ -82,6 +97,8 @@ type ListSessionMessagesOptions struct {
 	BeforeSequence int64
 	Order          string
 	Limit          int
+	// Include accepts "context" to return caller-supplied runtime context rows.
+	Include string
 }
 
 // NudgeSessionOptions is explicit mid-turn user direction. The same
@@ -134,9 +151,38 @@ func (c *Client) InvokeAgent(ctx context.Context, opts InvokeAgentOptions) (*Tur
 	if resp.JSON202 == nil {
 		return nil, unexpectedSessionStatus("invoke agent", resp.StatusCode(), resp.Status(), resp.HTTPResponse, resp.Body)
 	}
-	ack := resp.JSON202
+	return c.turnTranscript(ctx, "invoke agent", resp.JSON202)
+}
+
+// StartTurn appends Content to an existing session and starts an agent turn.
+// Like InvokeAgent, it returns once the turn is accepted and exposes the live
+// transcript lazily through the returned handle.
+func (c *Client) StartTurn(ctx context.Context, sessionID string, opts StartTurnOptions) (*TurnTranscript, error) {
+	if len(opts.Content) == 0 {
+		return nil, errors.New("mobius: start turn: content is required")
+	}
+	body := api.StartTurnRequest{Content: opts.Content}
+	if opts.Context != nil {
+		runtimeContext := api.RuntimeContext(opts.Context)
+		body.Context = &runtimeContext
+	}
+	body.IdempotencyKey = stringPointer(opts.IdempotencyKey)
+	if opts.Metadata != nil {
+		body.Metadata = &opts.Metadata
+	}
+	resp, err := c.ac.StartTurnWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.SessionIdParam(sessionID), body)
+	if err != nil {
+		return nil, fmt.Errorf("mobius: start turn: %w", err)
+	}
+	if resp.JSON202 == nil {
+		return nil, unexpectedSessionStatus("start turn", resp.StatusCode(), resp.Status(), resp.HTTPResponse, resp.Body)
+	}
+	return c.turnTranscript(ctx, "start turn", resp.JSON202)
+}
+
+func (c *Client) turnTranscript(ctx context.Context, op string, ack *api.TurnAck) (*TurnTranscript, error) {
 	if strings.TrimSpace(ack.ResumeCursor) == "" {
-		return nil, errors.New("mobius: invoke agent response missing resume_cursor")
+		return nil, fmt.Errorf("mobius: %s response missing resume_cursor", op)
 	}
 	view := NewSessionTranscript()
 	view.Seed(ack)
@@ -280,6 +326,10 @@ func (c *Client) ListSessionMessages(ctx context.Context, sessionID string, opts
 		if opts.Limit > 0 {
 			v := api.LimitParam(opts.Limit)
 			params.Limit = &v
+		}
+		if opts.Include != "" {
+			v := api.ContextIncludeParam(opts.Include)
+			params.Include = &v
 		}
 	}
 	resp, err := c.ac.ListSessionMessagesWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.SessionIdParam(sessionID), params)
@@ -492,6 +542,10 @@ func invokeAgentRequest(opts InvokeAgentOptions) (api.InvokeAgentRequest, error)
 	}
 
 	input := api.InvokeInput{Content: opts.Content}
+	if opts.Context != nil {
+		runtimeContext := api.RuntimeContext(opts.Context)
+		input.Context = &runtimeContext
+	}
 	if opts.IdempotencyKey != "" {
 		input.IdempotencyKey = &opts.IdempotencyKey
 	}

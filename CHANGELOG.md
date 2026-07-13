@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 
 ## [Unreleased]
 
+### Added
+
+- Runtime and action-response context across generated clients and high-level
+  session helpers, including typed existing-session turns and opt-in context
+  transcript reads. See `docs/sdk-helpers.md`.
+
 ### Fixed
 
 - `resume_cursor` is now a required stable invocation boundary for fresh and

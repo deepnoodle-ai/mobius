@@ -385,6 +385,32 @@ test("client: startTurn passes runtime context to an existing session", async ()
   });
 });
 
+test("client: listSessionMessages can include runtime context", async () => {
+  let requestedURL = "";
+  const restore = installFakeFetch({
+    status: 200,
+    body: { items: [] },
+    capture: (input) => {
+      requestedURL = typeof input === "string" ? input : input.toString();
+    },
+  });
+  try {
+    const client = new Client({
+      apiKey: "mbx_test",
+      baseURL: "https://api.example.invalid",
+      project: "test-project",
+    });
+    const messages = await client.listSessionMessages("sess_1", { include: "context" });
+    assert.deepEqual(messages.items, []);
+  } finally {
+    restore();
+  }
+  assert.equal(
+    requestedURL,
+    "https://api.example.invalid/v1/projects/test-project/sessions/sess_1/messages?include=context",
+  );
+});
+
 test("client: invokeAgent requires agent ref and content", async () => {
   const client = new Client({ apiKey: "mbx_test", project: "test-project" });
   await assert.rejects(() =>

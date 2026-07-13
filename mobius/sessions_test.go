@@ -33,6 +33,7 @@ func TestInvokeAgent_HighLevelClient(t *testing.T) {
 	turn, err := c.InvokeAgent(context.Background(), InvokeAgentOptions{
 		AgentID:        "agent_1",
 		Content:        []map[string]interface{}{{"type": "text", "text": "hi"}},
+		Context:        []RuntimeContextItem{{Name: "naming-board", Content: "Chosen: none"}},
 		IdempotencyKey: "evt_1",
 		Session: &api.InvokeSessionSpec{
 			SessionKey: ptr("app:acct_1:user_2"),
@@ -54,7 +55,11 @@ func TestInvokeAgent_HighLevelClient(t *testing.T) {
 	assert.Equal(t, turn.Status(), "running")
 	assert.False(t, turn.Deduped())
 	assert.Equal(t, body["agent_ref"].(map[string]any)["id"], "agent_1")
-	assert.Equal(t, body["input"].(map[string]any)["idempotency_key"], "evt_1")
+	input := body["input"].(map[string]any)
+	assert.Equal(t, input["idempotency_key"], "evt_1")
+	contextItem := input["context"].([]any)[0].(map[string]any)
+	assert.Equal(t, contextItem["name"], "naming-board")
+	assert.Equal(t, contextItem["content"], "Chosen: none")
 	assert.Equal(t, body["session"].(map[string]any)["session_key"], "app:acct_1:user_2")
 	config := body["config"].(map[string]any)
 	assert.Equal(t, config["instructions"], "Be concise.")
@@ -67,6 +72,52 @@ func TestInvokeAgent_HighLevelClient(t *testing.T) {
 	assert.Equal(t, turn.ErrorType(), "invalid_conversation_state")
 	assert.Equal(t, turn.ErrorMessage(), "history ended with assistant content")
 	assert.Error(t, turn.TurnError())
+}
+
+func TestStartTurn_HighLevelClient(t *testing.T) {
+	var body map[string]interface{}
+	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, r.Method, http.MethodPost)
+		assert.Equal(t, r.URL.Path, "/v1/projects/test-project/sessions/sess_1/turns")
+		raw, _ := io.ReadAll(r.Body)
+		assert.NoError(t, json.Unmarshal(raw, &body))
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusAccepted)
+		_, _ = io.WriteString(w, turnAckJSON("sess_1", "turn_1", 7))
+	})
+	c, srv := newTestClient(t, h)
+	defer srv.Close()
+
+	turn, err := c.StartTurn(context.Background(), "sess_1", StartTurnOptions{
+		Content:        []map[string]interface{}{{"type": "text", "text": "hi"}},
+		Context:        []RuntimeContextItem{{Name: "naming-board", Content: "Chosen: none"}},
+		IdempotencyKey: "evt_1",
+		Metadata:       map[string]interface{}{"source": "app"},
+	})
+
+	assert.NoError(t, err)
+	assert.Equal(t, turn.ID(), "turn_1")
+	assert.Equal(t, body["idempotency_key"], "evt_1")
+	assert.Equal(t, body["metadata"].(map[string]any)["source"], "app")
+	contextItem := body["context"].([]any)[0].(map[string]any)
+	assert.Equal(t, contextItem["name"], "naming-board")
+	assert.Equal(t, contextItem["content"], "Chosen: none")
+}
+
+func TestListSessionMessages_IncludesContext(t *testing.T) {
+	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, r.Method, http.MethodGet)
+		assert.Equal(t, r.URL.Path, "/v1/projects/test-project/sessions/sess_1/messages")
+		assert.Equal(t, r.URL.Query().Get("include"), "context")
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = io.WriteString(w, `{"items":[]}`)
+	})
+	c, srv := newTestClient(t, h)
+	defer srv.Close()
+
+	messages, err := c.ListSessionMessages(context.Background(), "sess_1", &ListSessionMessagesOptions{Include: "context"})
+	assert.NoError(t, err)
+	assert.Equal(t, len(messages.Items), 0)
 }
 
 func TestInvokeAgent_RequiresAgentRefAndContent(t *testing.T) {
