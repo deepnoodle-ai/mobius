@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 
 ## [Unreleased]
 
+## [0.0.47] - 2026-07-13
+
 ### Fixed
 
 - Terminal turn reconciliation now redrains from the immutable pre-turn cursor,
