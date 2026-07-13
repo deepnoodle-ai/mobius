@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 
 ## [Unreleased]
 
+## [0.0.48] - 2026-07-13
+
 ### Added
 
 - Runtime and action-response context across generated clients and high-level
