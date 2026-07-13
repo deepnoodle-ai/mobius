@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/deepnoodle-ai/mobius/mobius/api"
@@ -134,13 +135,12 @@ func (c *Client) InvokeAgent(ctx context.Context, opts InvokeAgentOptions) (*Tur
 		return nil, unexpectedSessionStatus("invoke agent", resp.StatusCode(), resp.Status(), resp.HTTPResponse, resp.Body)
 	}
 	ack := resp.JSON202
+	if strings.TrimSpace(ack.ResumeCursor) == "" {
+		return nil, errors.New("mobius: invoke agent response missing resume_cursor")
+	}
 	view := NewSessionTranscript()
 	view.Seed(ack)
 	deduped := ack.Deduped != nil && *ack.Deduped
-	reconciliationCursor := ""
-	if !deduped && ack.ResumeCursor != nil {
-		reconciliationCursor = *ack.ResumeCursor
-	}
 	return &TurnTranscript{
 		stream: transcriptStream{
 			client:     c,
@@ -151,12 +151,12 @@ func (c *Client) InvokeAgent(ctx context.Context, opts InvokeAgentOptions) (*Tur
 			view:       view,
 			connection: TranscriptConnectionIdle,
 		},
-		turnID:               ack.Turn.Id,
-		sessionID:            ack.Session.Id,
-		afterSequence:        ack.AfterSequence,
-		deduped:              deduped,
-		reconciliationCursor: reconciliationCursor,
-		hydrate:              IsTerminalTurnStatus(string(ack.Turn.Status)),
+		turnID:           ack.Turn.Id,
+		sessionID:        ack.Session.Id,
+		afterSequence:    ack.AfterSequence,
+		deduped:          deduped,
+		invocationCursor: ack.ResumeCursor,
+		hydrate:          IsTerminalTurnStatus(string(ack.Turn.Status)),
 	}, nil
 }
 

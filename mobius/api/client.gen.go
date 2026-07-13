@@ -8051,8 +8051,8 @@ type TurnAck struct {
 	// Deduped True when a repeated idempotency key resumed an existing turn.
 	Deduped *bool `json:"deduped,omitempty"`
 
-	// ResumeCursor Opaque v2 cursor captured immediately before the user_message and turn admission.
-	ResumeCursor *string `json:"resume_cursor,omitempty"`
+	// ResumeCursor Opaque stable v2 lower boundary for streaming and terminal settlement. It precedes every durable message owned by the returned turn and is safe for both fresh and deduplicated invocations. A deduplicated retry may replay already-observed frames.
+	ResumeCursor string `json:"resume_cursor"`
 
 	// Session Durable conversation transcript owned by an agent.
 	Session Session `json:"session"`

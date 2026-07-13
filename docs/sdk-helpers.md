@@ -178,12 +178,13 @@ hydrates once from the snapshot endpoint instead of streaming, so `Messages`
 is complete either way.
 
 For a live turn, the terminal iteration step is also a durability boundary:
-the SDK drains the incremental snapshot from the immutable cursor captured
-before the invocation's user message and turn admission, then exposes that
-step. The moving live cursor remains dedicated to reconnects. If reconciliation
-fails, iteration returns the transport error instead of presenting an
-incomplete transcript as finished; the observed terminal turn status remains
-available for diagnostics and retry.
+the SDK drains the incremental snapshot from the acknowledgement's stable
+`resume_cursor`, then exposes that step. Fresh and deduplicated invocations both
+receive a safe lower boundary. Deduplicated retries may replay already-seen
+frames, which the transcript merges by identity; the moving transcript cursor
+remains dedicated to reconnects. If settlement fails, iteration returns the
+transport error instead of presenting an incomplete transcript as finished;
+the observed terminal turn status remains available for diagnostics and retry.
 
 ### Lossless rows and renderable rows
 

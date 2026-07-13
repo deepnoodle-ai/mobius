@@ -425,6 +425,7 @@ def _run_body(run_id: str, status: str) -> dict[str, object]:
 def _turn_ack_body(session_id: str, turn_id: str, after_sequence: int) -> dict[str, object]:
     return {
         "after_sequence": after_sequence,
+        "resume_cursor": "41.6",
         "session": {
             "id": session_id,
             "agent_id": "agent_1",

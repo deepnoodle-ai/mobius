@@ -5678,8 +5678,8 @@ export interface components {
             turn: components["schemas"]["AgentTurn"];
             /** @description Durable caller row created for this turn. */
             user_message?: components["schemas"]["SessionTranscriptMessage"];
-            /** @description Opaque v2 cursor captured immediately before the user_message and turn admission. */
-            resume_cursor?: string;
+            /** @description Opaque stable v2 lower boundary for streaming and terminal settlement. It precedes every durable message owned by the returned turn and is safe for both fresh and deduplicated invocations. A deduplicated retry may replay already-observed frames. */
+            resume_cursor: string;
             /**
              * Format: int64
              * @description The transcript message `sequence` cursor to stream from. Pass it as `after_sequence` to `GET .../stream` to follow this turn.

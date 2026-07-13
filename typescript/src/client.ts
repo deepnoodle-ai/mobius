@@ -740,6 +740,9 @@ export class Client {
       signal: streamOpts.signal,
     });
     const ack = (await resp.json()) as TurnAck;
+    if (!ack.resume_cursor?.trim()) {
+      throw new Error("mobius: invoke agent response missing resume_cursor");
+    }
     const transcript = new SessionTranscript();
     transcript.seed(ack);
     return new TurnTranscript(this, ack, transcript, streamOpts.signal);
@@ -1058,9 +1061,9 @@ export class TurnTranscript implements AsyncIterable<TurnTranscript> {
 
   readonly #client: Client;
   readonly #signal?: AbortSignal;
-  // Immutable pre-turn boundary used only for terminal durable redrain. The
-  // transcript cursor keeps moving independently for stream reconnects.
-  readonly #reconciliationCursor?: string;
+  // Immutable invocation boundary used for initial replay and terminal
+  // settlement. The transcript cursor keeps moving for stream reconnects.
+  readonly #invocationCursor: string;
   // Set when the acked turn was already terminal (a deduped resume of a
   // completed turn): there is nothing to stream, so iteration fetches the
   // snapshot (all pages) instead, making messages() complete either way.
@@ -1087,9 +1090,7 @@ export class TurnTranscript implements AsyncIterable<TurnTranscript> {
     this.afterSequence = ack.after_sequence;
     this.deduped = ack.deduped ?? false;
     this.transcript = transcript;
-    this.#reconciliationCursor = this.deduped
-      ? undefined
-      : ack.resume_cursor;
+    this.#invocationCursor = ack.resume_cursor;
     this.#hydrate = isTerminalTurnStatus(ack.turn.status);
     this.#diagnostics.status = ack.turn.status;
     this.#diagnostics.cursor = transcript.cursor;
@@ -1153,7 +1154,7 @@ export class TurnTranscript implements AsyncIterable<TurnTranscript> {
       const turn = update.transcript.turn(this.id);
       const terminal = turn != null && isTerminalTurnStatus(turn.status);
       if (terminal) {
-        await this.#reconcileSnapshot(this.#reconciliationCursor);
+        await this.#reconcileSnapshot(this.#invocationCursor);
       }
       const exposedUpdate: TranscriptUpdate = terminal
         ? { ...update, cursor: this.transcript.cursor, connection: "ended" }
@@ -1189,7 +1190,7 @@ export class TurnTranscript implements AsyncIterable<TurnTranscript> {
 
   async #hydrateSnapshot(): Promise<void> {
     this.#hydrate = false;
-    await this.#reconcileSnapshot();
+    await this.#reconcileSnapshot(this.#invocationCursor);
     this.#diagnostics = {
       status: this.status,
       cursor: this.transcript.cursor,
@@ -1199,7 +1200,7 @@ export class TurnTranscript implements AsyncIterable<TurnTranscript> {
     };
   }
 
-  async #reconcileSnapshot(cursor?: string): Promise<void> {
+  async #reconcileSnapshot(cursor: string): Promise<void> {
     let pageToken: string | undefined;
     do {
       const snap = await this.#client.getSessionTranscript(this.sessionId, {

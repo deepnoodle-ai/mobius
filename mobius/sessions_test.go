@@ -168,6 +168,7 @@ func TestInvokeAgentStream_HighLevelClient(t *testing.T) {
 func turnAckJSON(sessionID, turnID string, afterSequence int) string {
 	return fmt.Sprintf(`{
 		"after_sequence": %d,
+		"resume_cursor": "41.6",
 		"session": {
 			"id": %q,
 			"agent_id": "agent_1",

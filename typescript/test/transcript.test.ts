@@ -1021,6 +1021,71 @@ test("client: TurnTranscript redrains from the invocation cursor before its fina
   }
 });
 
+test("client: deduped in-flight turn replays from its stable cursor", async () => {
+  const original = globalThis.fetch;
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    const url = new URL(typeof input === "string" ? input : input.toString());
+    if (url.pathname.endsWith("/agents/invoke")) {
+      return new Response(
+        JSON.stringify({
+          ...invokeAck,
+          deduped: true,
+          user_message: undefined,
+          resume_cursor: "41.6",
+        }),
+        { status: 202, headers: { "Content-Type": "application/json" } },
+      );
+    }
+    if (url.pathname.endsWith("/transcript/stream")) {
+      assert.equal(url.searchParams.get("cursor"), "41.6");
+      return new Response(
+        `id: 45.9\nevent: turn.upsert\ndata: {"event_type":"turn.upsert","id":"t1","session_id":"s1","agent_id":"a1","attempt":1,"status":"completed","created_at":"${AT}","updated_at":"${AT}"}\n\n`,
+        { status: 200, headers: { "Content-Type": "text/event-stream" } },
+      );
+    }
+    if (url.pathname.endsWith("/transcript")) {
+      assert.equal(url.searchParams.get("cursor"), "41.6");
+      const snap: SessionTranscriptSnapshot = {
+        messages: [
+          {
+            id: "m_call", session_id: "s1", agent_id: "a1", role: "assistant",
+            content: [{
+              type: "tool_use", id: "call_1", name: "naming_words_coin", input: { count: 2 },
+              resolved_action: { name: "naming.words.coin", input: { count: 2 } },
+            }],
+            entry_type: "message", status: "final", turn_index: 1,
+            sequence: 43, turn_id: "t1", created_at: AT,
+          },
+        ],
+        turns: [{ ...invokeAck.turn, status: "completed" }],
+        has_more: false,
+        resume_cursor: "45.9",
+      };
+      return new Response(JSON.stringify(snap), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    throw new Error(`unexpected request: ${url.pathname}`);
+  }) as typeof fetch;
+  try {
+    const turn = await newClient().invokeAgent({
+      agentName: "support",
+      content: [{ type: "text", text: "hi" }],
+      idempotencyKey: "evt_1",
+    });
+    for await (const _ of turn) {
+      // Fold through terminal reconciliation.
+    }
+    const toolUse = turn.renderableMessages()
+      .flatMap((message) => message.content)
+      .find((block) => block.type === "tool_use") as SessionToolUseBlock;
+    assert.equal(normalizeToolUse(toolUse).resolvedAction?.name, "naming.words.coin");
+  } finally {
+    globalThis.fetch = original;
+  }
+});
+
 test("client: TurnTranscript surfaces terminal snapshot reconciliation errors", async () => {
   const original = globalThis.fetch;
   globalThis.fetch = (async (input: RequestInfo | URL) => {
@@ -1105,6 +1170,26 @@ test("client: TurnTranscript exposes live failed-turn errors", async () => {
   }
 });
 
+test("client: invokeAgent rejects a blank resume cursor", async () => {
+  const original = globalThis.fetch;
+  globalThis.fetch = (async () =>
+    new Response(JSON.stringify({ ...invokeAck, resume_cursor: " " }), {
+      status: 202,
+      headers: { "Content-Type": "application/json" },
+    })) as typeof fetch;
+  try {
+    await assert.rejects(
+      newClient().invokeAgent({
+        agentName: "support",
+        content: [{ type: "text", text: "hi" }],
+      }),
+      /resume_cursor/,
+    );
+  } finally {
+    globalThis.fetch = original;
+  }
+});
+
 test("client: invokeAgent hydrates an already-terminal turn from the snapshot", async () => {
   let streamCalls = 0;
   const original = globalThis.fetch;
@@ -1114,6 +1199,7 @@ test("client: invokeAgent hydrates an already-terminal turn from the snapshot", 
       const ack = {
         ...invokeAck,
         deduped: true,
+        resume_cursor: "31.6",
         user_message: undefined,
         turn: { ...invokeAck.turn, status: "completed" },
       };
@@ -1125,8 +1211,10 @@ test("client: invokeAgent hydrates an already-terminal turn from the snapshot", 
     if (url.pathname.endsWith("/transcript")) {
       // Two pages: hydration must follow next_page_token until has_more is
       // false so messages() includes the older page.
+      const pageToken = url.searchParams.get("page_token");
+      if (!pageToken) assert.equal(url.searchParams.get("cursor"), "31.6");
       const snap: SessionTranscriptSnapshot =
-        url.searchParams.get("page_token") === "pt_2"
+        pageToken === "pt_2"
           ? {
               messages: [
                 {

@@ -11793,6 +11793,7 @@ components:
       required:
       - session
       - turn
+      - resume_cursor
       - after_sequence
       properties:
         session:
@@ -11804,8 +11805,11 @@ components:
           description: Durable caller row created for this turn.
         resume_cursor:
           type: string
-          description: Opaque v2 cursor captured immediately before the user_message and turn
-            admission.
+          minLength: 1
+          description: Opaque stable v2 lower boundary for streaming and terminal settlement.
+            It precedes every durable message owned by the returned turn and is safe for both
+            fresh and deduplicated invocations. A deduplicated retry may replay already-observed
+            frames.
         after_sequence:
           type: integer
           format: int64

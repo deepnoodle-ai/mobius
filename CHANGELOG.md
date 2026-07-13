@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 
 ## [Unreleased]
 
+### Fixed
+
+- `resume_cursor` is now a required stable invocation boundary for fresh and
+  deduplicated turns, so terminal settlement no longer falls back to a bounded
+  session tail when an idempotent invocation is resumed.
+
 ## [0.0.47] - 2026-07-13
 
 ### Fixed

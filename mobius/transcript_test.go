@@ -458,6 +458,48 @@ func TestInvokeAgent_RedrainsFromInvocationCursorBeforeFinalUpdate(t *testing.T)
 	assert.Equal(t, resolved["name"], "naming.words.coin")
 }
 
+func TestInvokeAgent_DedupedInFlightReplaysFromStableCursor(t *testing.T) {
+	var ack map[string]interface{}
+	assert.NoError(t, json.Unmarshal([]byte(invokeAckWithCursor("s1", "t1", 44)), &ack))
+	ack["deduped"] = true
+	ack["resume_cursor"] = "41.6"
+	delete(ack, "user_message")
+	ackBody, err := json.Marshal(ack)
+	assert.NoError(t, err)
+
+	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodPost && r.URL.Path == "/v1/projects/test-project/agents/invoke":
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusAccepted)
+			_, _ = w.Write(ackBody)
+		case r.URL.Path == "/v1/projects/test-project/sessions/s1/transcript/stream":
+			assert.Equal(t, r.URL.Query().Get("cursor"), "41.6")
+			w.Header().Set("Content-Type", "text/event-stream")
+			_, _ = io.WriteString(w, "id: 45.9\nevent: turn.upsert\ndata: {\"event_type\":\"turn.upsert\",\"id\":\"t1\",\"session_id\":\"s1\",\"agent_id\":\"a1\",\"attempt\":1,\"status\":\"completed\",\"created_at\":\"2026-07-11T17:03:20Z\",\"updated_at\":\"2026-07-11T17:03:40Z\"}\n\n")
+		case r.Method == http.MethodGet && r.URL.Path == "/v1/projects/test-project/sessions/s1/transcript":
+			assert.Equal(t, r.URL.Query().Get("cursor"), "41.6")
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = io.WriteString(w, `{"messages":[{"id":"m_call","session_id":"s1","agent_id":"a1","role":"assistant","status":"final","turn_id":"t1","turn_index":1,"sequence":43,"entry_type":"message","content":[{"type":"tool_use","id":"call_1","name":"naming_words_coin","input":{"count":2},"resolved_action":{"name":"naming.words.coin","input":{"count":2}}}],"created_at":"2026-07-11T17:03:21Z"}],"turns":[{"id":"t1","session_id":"s1","agent_id":"a1","attempt":1,"status":"completed","created_at":"2026-07-11T17:03:20Z","updated_at":"2026-07-11T17:03:40Z"}],"has_more":false,"resume_cursor":"45.9"}`)
+		default:
+			http.NotFound(w, r)
+		}
+	})
+	c, srv := newTestClient(t, h)
+	defer srv.Close()
+
+	turn, err := c.InvokeAgent(context.Background(), InvokeAgentOptions{
+		AgentName: "support", Content: []map[string]interface{}{{"type": "text", "text": "hi"}}, IdempotencyKey: "evt_1",
+	})
+	assert.NoError(t, err)
+	assert.True(t, turn.Deduped())
+	for turn.Next() {
+	}
+	assert.NoError(t, turn.Err())
+	resolved := blockMap(t, mustMessage(t, turn.Transcript(), "m_call").Content[0])["resolved_action"].(map[string]interface{})
+	assert.Equal(t, resolved["name"], "naming.words.coin")
+}
+
 func TestInvokeAgent_ReturnsTerminalReconciliationError(t *testing.T) {
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
@@ -513,6 +555,27 @@ func TestInvokeAgent_LazyStreamNeverOpensWithoutNext(t *testing.T) {
 	assert.Equal(t, atomic.LoadInt32(&streamCalls), int32(0)) // fire-and-forget: no stream request
 }
 
+func TestInvokeAgent_RejectsBlankResumeCursor(t *testing.T) {
+	var ack map[string]interface{}
+	assert.NoError(t, json.Unmarshal([]byte(invokeAckWithCursor("s1", "t1", 42)), &ack))
+	ack["resume_cursor"] = " "
+	body, err := json.Marshal(ack)
+	assert.NoError(t, err)
+	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusAccepted)
+		_, _ = w.Write(body)
+	})
+	c, srv := newTestClient(t, h)
+	defer srv.Close()
+
+	_, err = c.InvokeAgent(context.Background(), InvokeAgentOptions{
+		AgentName: "support",
+		Content:   []map[string]interface{}{{"type": "text", "text": "hi"}},
+	})
+	assert.ErrorContains(t, err, "resume_cursor")
+}
+
 func TestInvokeAgent_TerminalAckHydratesFromSnapshot(t *testing.T) {
 	var streamCalls int32
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -529,6 +592,7 @@ func TestInvokeAgent_TerminalAckHydratesFromSnapshot(t *testing.T) {
 				_, _ = io.WriteString(w, `{"messages":[{"id":"m_a","session_id":"s1","agent_id":"a1","role":"assistant","status":"final","turn_id":"t1","turn_index":1,"sequence":43,"entry_type":"message","content":[{"type":"text","text":"done"}],"created_at":"2026-07-11T17:03:21Z"}],"turns":[{"id":"t1","session_id":"s1","agent_id":"a1","attempt":1,"status":"completed","created_at":"2026-07-11T17:03:20Z","updated_at":"2026-07-11T17:03:40Z"}],"has_more":false,"resume_cursor":"43.9"}`)
 				return
 			}
+			assert.Equal(t, r.URL.Query().Get("cursor"), "31.6")
 			_, _ = io.WriteString(w, `{"messages":[{"id":"m_user","session_id":"s1","agent_id":"a1","role":"user","status":"final","turn_id":"t1","turn_index":0,"sequence":42,"entry_type":"message","content":[],"created_at":"2026-07-11T17:03:21Z"}],"turns":[],"has_more":true,"next_page_token":"pt_2","resume_cursor":"42.1"}`)
 		default:
 			atomic.AddInt32(&streamCalls, 1)
@@ -600,7 +664,7 @@ func invokeAckTerminal(sessionID, turnID string) string {
 	return fmt.Sprintf(`{
 		"after_sequence": 43,
 		"deduped": true,
-		"resume_cursor": "41.6",
+		"resume_cursor": "31.6",
 		"session": {
 			"id": %q, "agent_id": "a1", "origin": "api", "scope": "agent",
 			"scope_name": "app", "scope_ref_id": "a1", "session_key": "app",

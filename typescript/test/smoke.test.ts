@@ -403,6 +403,7 @@ function loopRun(id: string, status: string) {
 function turnAck(sessionId: string, turnId: string, afterSequence: number) {
   return {
     after_sequence: afterSequence,
+    resume_cursor: "41.6",
     session: {
       id: sessionId,
       agent_id: "agent_1",

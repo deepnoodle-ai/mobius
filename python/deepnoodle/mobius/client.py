@@ -405,6 +405,8 @@ class Client:
         body = _invoke_agent_request(opts)
         resp = self._request("POST", "/v1/projects/{project}/agents/invoke", json=body)
         ack = TurnAck.model_validate(resp.json())
+        if not ack.resume_cursor.strip():
+            raise ValueError("mobius: invoke agent response missing resume_cursor")
         transcript = SessionTranscript()
         transcript.seed(ack)
         return TurnTranscript(self, ack, transcript)
@@ -820,9 +822,9 @@ class TurnTranscript:
         self.deduped: bool = bool(ack.deduped)
         # Full session view the stream folds into.
         self.transcript: SessionTranscript = transcript
-        # Immutable pre-turn boundary for terminal durable redrain. The
-        # transcript cursor continues moving independently for reconnects.
-        self._reconciliation_cursor = None if self.deduped else ack.resume_cursor
+        # Immutable invocation boundary for initial replay and terminal
+        # settlement. The transcript cursor keeps moving for reconnects.
+        self._invocation_cursor = ack.resume_cursor
         # Set when the acked turn was already terminal (a deduped resume of a
         # completed turn): there is nothing to stream, so iteration fetches
         # the snapshot (all pages) instead, making messages() complete either
@@ -905,7 +907,7 @@ class TurnTranscript:
                     str(turn.get("status") or "")
                 )
                 if terminal:
-                    self._reconcile_snapshot(self._reconciliation_cursor)
+                    self._reconcile_snapshot(self._invocation_cursor)
                     update = TranscriptUpdate(
                         frame=update.frame,
                         cursor=self.transcript.cursor,
@@ -950,7 +952,7 @@ class TurnTranscript:
 
     def _hydrate_snapshot(self) -> None:
         self._hydrate = False
-        self._reconcile_snapshot()
+        self._reconcile_snapshot(self._invocation_cursor)
         self._diagnostics = TranscriptDiagnostics(
             status=self.status,
             cursor=self.transcript.cursor,
@@ -961,7 +963,7 @@ class TurnTranscript:
             connection="ended",
         )
 
-    def _reconcile_snapshot(self, cursor: str | None = None) -> None:
+    def _reconcile_snapshot(self, cursor: str) -> None:
         opts = GetSessionTranscriptOptions(cursor=cursor)
         while True:
             snap = self._client.get_session_transcript(self.session_id, opts)

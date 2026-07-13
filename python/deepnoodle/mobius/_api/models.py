@@ -8074,9 +8074,10 @@ class TurnAck(BaseModel):
     user_message: SessionTranscriptMessage | None = Field(
         None, description='Durable caller row created for this turn.'
     )
-    resume_cursor: str | None = Field(
-        None,
-        description='Opaque v2 cursor captured immediately before the user_message and turn admission.',
+    resume_cursor: str = Field(
+        ...,
+        description='Opaque stable v2 lower boundary for streaming and terminal settlement. It precedes every durable message owned by the returned turn and is safe for both fresh and deduplicated invocations. A deduplicated retry may replay already-observed frames.',
+        min_length=1,
     )
     after_sequence: int = Field(
         ...,
