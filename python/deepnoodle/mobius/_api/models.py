@@ -3463,6 +3463,10 @@ class SaveAgentMemoryEntryRequest(BaseModel):
     )
 
 
+class ContextIncludeParam(StrEnum):
+    context = 'context'
+
+
 class SessionMessageRole(StrEnum):
     """
     Message role: `system`, `user`, `assistant`, `tool`, or `compaction`.
@@ -3577,6 +3581,35 @@ class SessionImageBlock(BaseModel):
     source: dict[str, Any] | None = Field(
         None, description='Provider-specific image source descriptor.'
     )
+
+
+class Type24(StrEnum):
+    reminder = 'reminder'
+
+
+class Tier(StrEnum):
+    """
+    Reminder authority tier.
+    """
+
+    contextual = 'contextual'
+    operator = 'operator'
+
+
+class SessionReminderBlock(BaseModel):
+    """
+    Host-managed runtime context returned only when the request explicitly includes caller-supplied context.
+    """
+
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    type: Type24
+    name: str = Field(
+        ..., description='Model-visible reminder name, including the `app-` namespace.'
+    )
+    tier: Tier = Field(..., description='Reminder authority tier.')
+    content: str = Field(..., description='Reminder content rendered to the model.')
 
 
 class SessionMessageEntryType(StrEnum):
@@ -4162,6 +4195,38 @@ class InvokeSessionSpec(BaseModel):
     )
 
 
+class RuntimeContextItem(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    name: str = Field(
+        ...,
+        description='Stable application-defined context name. Delivered to the model namespaced as `app-<name>`. Supply the application name without that namespace; for example, `app-board` is delivered as `app-app-board`.',
+        max_length=64,
+        pattern='^[a-z][a-z0-9-]*$',
+    )
+    content: str = Field(
+        ...,
+        description='Current value of this context, rendered verbatim to the model. OpenAPI `maxLength` counts Unicode code points; Mobius separately enforces an 8,192-byte UTF-8 limit server-side.',
+        max_length=8192,
+        min_length=1,
+    )
+
+
+class RuntimeContext(RootModel[list[RuntimeContextItem]]):
+    """
+    Ordered application-owned runtime context for this turn. Send the full current value for each named item. Mobius records an item only on first use, material change, or after compaction removes its prior value from the active model window. Omitting a name leaves its last value standing; send an explicit value such as `none` to clear application state. Names must be unique within the request. Content is limited to 8,192 UTF-8 bytes per item and 16,384 bytes total.
+
+    Context remains at contextual authority and cannot grant permissions. A retry using the same `idempotency_key` returns the original turn and ignores any newly supplied context.
+    """
+
+    root: list[RuntimeContextItem] = Field(
+        ...,
+        description='Ordered application-owned runtime context for this turn. Send the full current value for each named item. Mobius records an item only on first use, material change, or after compaction removes its prior value from the active model window. Omitting a name leaves its last value standing; send an explicit value such as `none` to clear application state. Names must be unique within the request. Content is limited to 8,192 UTF-8 bytes per item and 16,384 bytes total.\n\nContext remains at contextual authority and cannot grant permissions. A retry using the same `idempotency_key` returns the original turn and ignores any newly supplied context.',
+        max_length=8,
+    )
+
+
 class InvokeInput(BaseModel):
     """
     The caller input message that starts the agent turn.
@@ -4179,6 +4244,7 @@ class InvokeInput(BaseModel):
         None,
         description='Dedup key scoped to the resolved session. A repeat call with the same key resumes the existing turn and writes nothing new — derive it from the provider event id for Slack/Telegram webhook retries. Omitting it or sending a blank value disables retry deduplication.',
     )
+    context: RuntimeContext | None = None
     metadata: dict[str, Any] | None = Field(
         None, description='Free-form caller metadata attached to the input message.'
     )
@@ -4267,6 +4333,7 @@ class StartTurnRequest(BaseModel):
         None,
         description='Dedup key scoped to the session. A repeat call with the same key resumes the existing turn and writes nothing new. Omitting it or sending a blank value disables retry deduplication.',
     )
+    context: RuntimeContext | None = None
     metadata: dict[str, Any] | None = Field(
         None, description='Free-form caller metadata attached to the input message.'
     )
@@ -5093,7 +5160,7 @@ class SignalLoopRunRequest(BaseModel):
     )
 
 
-class Type24(StrEnum):
+class Type25(StrEnum):
     """
     Source category for the run start: `api`, `trigger`, `manual`, or `signal`.
     """
@@ -5112,7 +5179,7 @@ class LoopRunSource(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    type: Type24 | None = Field(
+    type: Type25 | None = Field(
         None,
         description='Source category for the run start: `api`, `trigger`, `manual`, or `signal`.',
     )
@@ -5316,7 +5383,7 @@ class BlueprintRef(BaseModel):
     key: str
 
 
-class Type25(StrEnum):
+class Type26(StrEnum):
     """
     Endpoint kind. Defaults to `http`. Immutable after create.
     """
@@ -6932,7 +6999,7 @@ class BlueprintActionInput(BaseModel):
         ..., description='Blueprint-defined handle other resources use to reference it.'
     )
     name: str
-    type: Type25 | None = Field(
+    type: Type26 | None = Field(
         None, description='Endpoint kind. Defaults to `http`. Immutable after create.'
     )
     endpoint: str | None = Field(None, description='Endpoint URL for http actions.')
@@ -8074,9 +8141,10 @@ class TurnAck(BaseModel):
     user_message: SessionTranscriptMessage | None = Field(
         None, description='Durable caller row created for this turn.'
     )
-    resume_cursor: str | None = Field(
-        None,
-        description='Opaque v2 cursor captured immediately before the user_message and turn admission.',
+    resume_cursor: str = Field(
+        ...,
+        description='Opaque stable v2 lower boundary for streaming and terminal settlement. It precedes every durable message owned by the returned turn and is safe for both fresh and deduplicated invocations. A deduplicated retry may replay already-observed frames.',
+        min_length=1,
     )
     after_sequence: int = Field(
         ...,
@@ -8095,6 +8163,7 @@ class SessionContentBlock(
         | SessionToolUseBlock
         | SessionToolResultBlock
         | SessionImageBlock
+        | SessionReminderBlock
     ]
 ):
     root: (
@@ -8103,9 +8172,10 @@ class SessionContentBlock(
         | SessionToolUseBlock
         | SessionToolResultBlock
         | SessionImageBlock
+        | SessionReminderBlock
     ) = Field(
         ...,
-        description='One content block in a session transcript message — the canonical, frozen JSON shape Mobius persists and replays, discriminated by `type`. The variants are `text`, `thinking`, `tool_use`, `tool_result`, and `image`. Each variant permits provider-specific extra fields (citations, signatures, cache hints, and the like), and unknown fields are preserved rather than rejected, so the transcript round-trips losslessly across providers.',
+        description='One content block in a session transcript message — the canonical, frozen JSON shape Mobius persists and replays, discriminated by `type`. The variants are `text`, `thinking`, `tool_use`, `tool_result`, and `image`, plus host-managed `reminder` blocks when caller runtime context is explicitly included. Each variant permits provider-specific extra fields (citations, signatures, cache hints, and the like), and unknown fields are preserved rather than rejected, so the transcript round-trips losslessly across providers.',
     )
 
 

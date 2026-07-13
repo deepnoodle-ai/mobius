@@ -647,6 +647,21 @@ func (e ConsumerKind) Valid() bool {
 	}
 }
 
+// Defines values for ContextIncludeParam.
+const (
+	ContextIncludeParamContext ContextIncludeParam = "context"
+)
+
+// Valid indicates whether the value is a known member of the ContextIncludeParam enum.
+func (e ContextIncludeParam) Valid() bool {
+	switch e {
+	case ContextIncludeParamContext:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for CreateEnvironmentRequestTemplateId.
 const (
 	CreateEnvironmentRequestTemplateIdCodingDefault CreateEnvironmentRequestTemplateId = "coding-default"
@@ -2210,6 +2225,39 @@ func (e SessionOrigin) Valid() bool {
 	case SessionOriginLoop:
 		return true
 	case SessionOriginManual:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SessionReminderBlockTier.
+const (
+	SessionReminderBlockTierContextual SessionReminderBlockTier = "contextual"
+	SessionReminderBlockTierOperator   SessionReminderBlockTier = "operator"
+)
+
+// Valid indicates whether the value is a known member of the SessionReminderBlockTier enum.
+func (e SessionReminderBlockTier) Valid() bool {
+	switch e {
+	case SessionReminderBlockTierContextual:
+		return true
+	case SessionReminderBlockTierOperator:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SessionReminderBlockType.
+const (
+	SessionReminderBlockTypeReminder SessionReminderBlockType = "reminder"
+)
+
+// Valid indicates whether the value is a known member of the SessionReminderBlockType enum.
+func (e SessionReminderBlockType) Valid() bool {
+	switch e {
+	case SessionReminderBlockTypeReminder:
 		return true
 	default:
 		return false
@@ -4465,6 +4513,9 @@ type Consumer struct {
 // ConsumerKind defines model for Consumer.Kind.
 type ConsumerKind string
 
+// ContextIncludeParam defines model for ContextIncludeParam.
+type ContextIncludeParam string
+
 // CreateAPIKeyRequest Request shape for creating a project API key bound to a machine principal. The key authenticates as that principal; permissions are managed by assigning roles to the principal, not by granting permissions to the key.
 type CreateAPIKeyRequest struct {
 	// ExpiresAt Optional hard expiry. Omit for a non-expiring key.
@@ -5558,6 +5609,11 @@ type InvokeInput struct {
 	// Content Ordered content blocks (text, images) for the input message.
 	Content []map[string]interface{} `json:"content"`
 
+	// Context Ordered application-owned runtime context for this turn. Send the full current value for each named item. Mobius records an item only on first use, material change, or after compaction removes its prior value from the active model window. Omitting a name leaves its last value standing; send an explicit value such as `none` to clear application state. Names must be unique within the request. Content is limited to 8,192 UTF-8 bytes per item and 16,384 bytes total.
+	//
+	// Context remains at contextual authority and cannot grant permissions. A retry using the same `idempotency_key` returns the original turn and ignores any newly supplied context.
+	Context *RuntimeContext `json:"context,omitempty"`
+
 	// IdempotencyKey Dedup key scoped to the resolved session. A repeat call with the same key resumes the existing turn and writes nothing new — derive it from the provider event id for Slack/Telegram webhook retries. Omitting it or sending a blank value disables retry deduplication.
 	IdempotencyKey *string `json:"idempotency_key,omitempty"`
 
@@ -6497,7 +6553,7 @@ type MemoryKind string
 
 // MessageBlockFrame defines model for MessageBlockFrame.
 type MessageBlockFrame struct {
-	// Block One content block in a session transcript message — the canonical, frozen JSON shape Mobius persists and replays, discriminated by `type`. The variants are `text`, `thinking`, `tool_use`, `tool_result`, and `image`. Each variant permits provider-specific extra fields (citations, signatures, cache hints, and the like), and unknown fields are preserved rather than rejected, so the transcript round-trips losslessly across providers.
+	// Block One content block in a session transcript message — the canonical, frozen JSON shape Mobius persists and replays, discriminated by `type`. The variants are `text`, `thinking`, `tool_use`, `tool_result`, and `image`, plus host-managed `reminder` blocks when caller runtime context is explicitly included. Each variant permits provider-specific extra fields (citations, signatures, cache hints, and the like), and unknown fields are preserved rather than rejected, so the transcript round-trips losslessly across providers.
 	Block        SessionContentBlock        `json:"block"`
 	ContentIndex int                        `json:"content_index"`
 	EventType    MessageBlockFrameEventType `json:"event_type"`
@@ -6933,6 +6989,20 @@ type RunStartedPayload struct {
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
+// RuntimeContext Ordered application-owned runtime context for this turn. Send the full current value for each named item. Mobius records an item only on first use, material change, or after compaction removes its prior value from the active model window. Omitting a name leaves its last value standing; send an explicit value such as `none` to clear application state. Names must be unique within the request. Content is limited to 8,192 UTF-8 bytes per item and 16,384 bytes total.
+//
+// Context remains at contextual authority and cannot grant permissions. A retry using the same `idempotency_key` returns the original turn and ignores any newly supplied context.
+type RuntimeContext = []RuntimeContextItem
+
+// RuntimeContextItem defines model for RuntimeContextItem.
+type RuntimeContextItem struct {
+	// Content Current value of this context, rendered verbatim to the model. OpenAPI `maxLength` counts Unicode code points; Mobius separately enforces an 8,192-byte UTF-8 limit server-side.
+	Content string `json:"content"`
+
+	// Name Stable application-defined context name. Delivered to the model namespaced as `app-<name>`. Supply the application name without that namespace; for example, `app-board` is delivered as `app-app-board`.
+	Name string `json:"name"`
+}
+
 // SaveAgentMemoryEntryRequest Content for a memory entry. The key comes from the path.
 type SaveAgentMemoryEntryRequest struct {
 	// Content The content to remember.
@@ -7104,7 +7174,7 @@ type SessionCompactionPolicyStrategy string
 // SessionCompactionThreshold T-shirt size selecting when `auto` compaction triggers, smallest (`xs`, compact very early) to largest (`xl`, compact very late). The server maps each size to a token estimate; `sm` is the default.
 type SessionCompactionThreshold string
 
-// SessionContentBlock One content block in a session transcript message — the canonical, frozen JSON shape Mobius persists and replays, discriminated by `type`. The variants are `text`, `thinking`, `tool_use`, `tool_result`, and `image`. Each variant permits provider-specific extra fields (citations, signatures, cache hints, and the like), and unknown fields are preserved rather than rejected, so the transcript round-trips losslessly across providers.
+// SessionContentBlock One content block in a session transcript message — the canonical, frozen JSON shape Mobius persists and replays, discriminated by `type`. The variants are `text`, `thinking`, `tool_use`, `tool_result`, and `image`, plus host-managed `reminder` blocks when caller runtime context is explicitly included. Each variant permits provider-specific extra fields (citations, signatures, cache hints, and the like), and unknown fields are preserved rather than rejected, so the transcript round-trips losslessly across providers.
 type SessionContentBlock struct {
 	union json.RawMessage
 }
@@ -7316,6 +7386,26 @@ type SessionNudgeTurn struct {
 
 // SessionOrigin Surface that created the session: `manual`, `api`, `loop`, or `interaction`.
 type SessionOrigin string
+
+// SessionReminderBlock Host-managed runtime context returned only when the request explicitly includes caller-supplied context.
+type SessionReminderBlock struct {
+	// Content Reminder content rendered to the model.
+	Content string `json:"content"`
+
+	// Name Model-visible reminder name, including the `app-` namespace.
+	Name string `json:"name"`
+
+	// Tier Reminder authority tier.
+	Tier                 SessionReminderBlockTier `json:"tier"`
+	Type                 SessionReminderBlockType `json:"type"`
+	AdditionalProperties map[string]interface{}   `json:"-"`
+}
+
+// SessionReminderBlockTier Reminder authority tier.
+type SessionReminderBlockTier string
+
+// SessionReminderBlockType defines model for SessionReminderBlock.Type.
+type SessionReminderBlockType string
 
 // SessionResolvedAction Canonical project action resolved by a catalog tool dispatch.
 type SessionResolvedAction struct {
@@ -7667,6 +7757,11 @@ type StartLoopRunRequest struct {
 type StartTurnRequest struct {
 	// Content Ordered content blocks (text, images) for the input message.
 	Content []map[string]interface{} `json:"content"`
+
+	// Context Ordered application-owned runtime context for this turn. Send the full current value for each named item. Mobius records an item only on first use, material change, or after compaction removes its prior value from the active model window. Omitting a name leaves its last value standing; send an explicit value such as `none` to clear application state. Names must be unique within the request. Content is limited to 8,192 UTF-8 bytes per item and 16,384 bytes total.
+	//
+	// Context remains at contextual authority and cannot grant permissions. A retry using the same `idempotency_key` returns the original turn and ignores any newly supplied context.
+	Context *RuntimeContext `json:"context,omitempty"`
 
 	// IdempotencyKey Dedup key scoped to the session. A repeat call with the same key resumes the existing turn and writes nothing new. Omitting it or sending a blank value disables retry deduplication.
 	IdempotencyKey *string `json:"idempotency_key,omitempty"`
@@ -8051,8 +8146,8 @@ type TurnAck struct {
 	// Deduped True when a repeated idempotency key resumed an existing turn.
 	Deduped *bool `json:"deduped,omitempty"`
 
-	// ResumeCursor Opaque v2 cursor captured immediately before the user_message and turn admission.
-	ResumeCursor *string `json:"resume_cursor,omitempty"`
+	// ResumeCursor Opaque stable v2 lower boundary for streaming and terminal settlement. It precedes every durable message owned by the returned turn and is safe for both fresh and deduplicated invocations. A deduplicated retry may replay already-observed frames.
+	ResumeCursor string `json:"resume_cursor"`
 
 	// Session Durable conversation transcript owned by an agent.
 	Session Session `json:"session"`
@@ -9249,6 +9344,9 @@ type ListSessionMessagesParams struct {
 
 	// Limit Maximum number of items to return
 	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Include Set to `context` to include caller-supplied runtime context rows whose model-visible names begin with `app-`. Platform-owned runtime context remains hidden.
+	Include *ContextIncludeParam `form:"include,omitempty" json:"include,omitempty"`
 }
 
 // ListSessionMessagesParamsOrder defines parameters for ListSessionMessages.
@@ -9351,6 +9449,9 @@ type ListTurnMessagesParams struct {
 
 	// Limit Maximum number of items to return
 	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Include Set to `context` to include caller-supplied runtime context rows whose model-visible names begin with `app-`. Platform-owned runtime context remains hidden.
+	Include *ContextIncludeParam `form:"include,omitempty" json:"include,omitempty"`
 }
 
 // ListWebhooksParams defines parameters for ListWebhooks.
@@ -12157,6 +12258,111 @@ func (a SessionMessagePreviewFrame) MarshalJSON() ([]byte, error) {
 	object["turn_id"], err = json.Marshal(a.TurnId)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling 'turn_id': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for SessionReminderBlock. Returns the specified
+// element and whether it was found
+func (a SessionReminderBlock) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for SessionReminderBlock
+func (a *SessionReminderBlock) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for SessionReminderBlock to handle AdditionalProperties
+func (a *SessionReminderBlock) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["content"]; found {
+		err = json.Unmarshal(raw, &a.Content)
+		if err != nil {
+			return fmt.Errorf("error reading 'content': %w", err)
+		}
+		delete(object, "content")
+	}
+
+	if raw, found := object["name"]; found {
+		err = json.Unmarshal(raw, &a.Name)
+		if err != nil {
+			return fmt.Errorf("error reading 'name': %w", err)
+		}
+		delete(object, "name")
+	}
+
+	if raw, found := object["tier"]; found {
+		err = json.Unmarshal(raw, &a.Tier)
+		if err != nil {
+			return fmt.Errorf("error reading 'tier': %w", err)
+		}
+		delete(object, "tier")
+	}
+
+	if raw, found := object["type"]; found {
+		err = json.Unmarshal(raw, &a.Type)
+		if err != nil {
+			return fmt.Errorf("error reading 'type': %w", err)
+		}
+		delete(object, "type")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for SessionReminderBlock to handle AdditionalProperties
+func (a SessionReminderBlock) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["content"], err = json.Marshal(a.Content)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'content': %w", err)
+	}
+
+	object["name"], err = json.Marshal(a.Name)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'name': %w", err)
+	}
+
+	object["tier"], err = json.Marshal(a.Tier)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'tier': %w", err)
+	}
+
+	object["type"], err = json.Marshal(a.Type)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'type': %w", err)
 	}
 
 	for fieldName, field := range a.AdditionalProperties {
@@ -15726,6 +15932,32 @@ func (t *SessionContentBlock) FromSessionImageBlock(v SessionImageBlock) error {
 
 // MergeSessionImageBlock performs a merge with any union data inside the SessionContentBlock, using the provided SessionImageBlock
 func (t *SessionContentBlock) MergeSessionImageBlock(v SessionImageBlock) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSessionReminderBlock returns the union data inside the SessionContentBlock as a SessionReminderBlock
+func (t SessionContentBlock) AsSessionReminderBlock() (SessionReminderBlock, error) {
+	var body SessionReminderBlock
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSessionReminderBlock overwrites any union data inside the SessionContentBlock as the provided SessionReminderBlock
+func (t *SessionContentBlock) FromSessionReminderBlock(v SessionReminderBlock) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSessionReminderBlock performs a merge with any union data inside the SessionContentBlock, using the provided SessionReminderBlock
+func (t *SessionContentBlock) MergeSessionReminderBlock(v SessionReminderBlock) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -24729,6 +24961,18 @@ func NewListSessionMessagesRequest(server string, projectHandle ProjectHandlePar
 
 		}
 
+		if params.Include != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "include", *params.Include, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
 		if encoded := queryValues.Encode(); encoded != "" {
 			rawQueryFragments = append(rawQueryFragments, encoded)
 		}
@@ -26973,6 +27217,18 @@ func NewListTurnMessagesRequest(server string, projectHandle ProjectHandleParam,
 		if params.Limit != nil {
 
 			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Include != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "include", *params.Include, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {

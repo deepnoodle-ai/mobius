@@ -1985,6 +1985,7 @@ paths:
       - $ref: '#/components/parameters/TurnIdParam'
       - $ref: '#/components/parameters/AfterSequenceParam'
       - $ref: '#/components/parameters/LimitParam'
+      - $ref: '#/components/parameters/ContextIncludeParam'
       responses:
         '200':
           description: OK
@@ -2669,6 +2670,7 @@ paths:
       - $ref: '#/components/parameters/BeforeSequenceParam'
       - $ref: '#/components/parameters/OrderParam'
       - $ref: '#/components/parameters/LimitParam'
+      - $ref: '#/components/parameters/ContextIncludeParam'
       responses:
         '200':
           description: OK
@@ -5476,6 +5478,14 @@ components:
         minLength: 1
         maxLength: 256
         pattern: ^[A-Za-z0-9._:-]+$
+    ContextIncludeParam:
+      name: include
+      in: query
+      required: false
+      description: Set to `context` to include caller-supplied runtime context rows whose
+        model-visible names begin with `app-`. Platform-owned runtime context remains hidden.
+      schema:
+        $ref: '#/components/schemas/ContextIncludeParam'
     NudgeIdParam:
       name: nudge_id
       in: path
@@ -10310,6 +10320,10 @@ components:
         pinned:
           type: boolean
           description: Pin to exempt this memory from compaction.
+    ContextIncludeParam:
+      type: string
+      enum:
+      - context
     SessionMessageRole:
       type: string
       enum:
@@ -10408,9 +10422,11 @@ components:
       - $ref: '#/components/schemas/SessionToolUseBlock'
       - $ref: '#/components/schemas/SessionToolResultBlock'
       - $ref: '#/components/schemas/SessionImageBlock'
+      - $ref: '#/components/schemas/SessionReminderBlock'
       description: One content block in a session transcript message — the canonical, frozen
         JSON shape Mobius persists and replays, discriminated by `type`. The variants are
-        `text`, `thinking`, `tool_use`, `tool_result`, and `image`. Each variant permits provider-specific
+        `text`, `thinking`, `tool_use`, `tool_result`, and `image`, plus host-managed `reminder`
+        blocks when caller runtime context is explicitly included. Each variant permits provider-specific
         extra fields (citations, signatures, cache hints, and the like), and unknown fields
         are preserved rather than rejected, so the transcript round-trips losslessly across
         providers.
@@ -10455,6 +10471,33 @@ components:
           type: object
           additionalProperties: true
           description: Provider-specific image source descriptor.
+    SessionReminderBlock:
+      type: object
+      additionalProperties: true
+      required:
+      - type
+      - name
+      - tier
+      - content
+      description: Host-managed runtime context returned only when the request explicitly
+        includes caller-supplied context.
+      properties:
+        type:
+          type: string
+          enum:
+          - reminder
+        name:
+          type: string
+          description: Model-visible reminder name, including the `app-` namespace.
+        tier:
+          type: string
+          enum:
+          - contextual
+          - operator
+          description: Reminder authority tier.
+        content:
+          type: string
+          description: Reminder content rendered to the model.
     SessionMessageEntryType:
       type: string
       enum:
@@ -11669,6 +11712,36 @@ components:
           type: object
           additionalProperties: true
           description: Free-form caller metadata stored on a newly created session.
+    RuntimeContextItem:
+      type: object
+      additionalProperties: false
+      required:
+      - name
+      - content
+      properties:
+        name:
+          type: string
+          pattern: ^[a-z][a-z0-9-]*$
+          maxLength: 64
+          description: Stable application-defined context name. Delivered to the model namespaced
+            as `app-<name>`. Supply the application name without that namespace; for example,
+            `app-board` is delivered as `app-app-board`.
+        content:
+          type: string
+          minLength: 1
+          maxLength: 8192
+          description: Current value of this context, rendered verbatim to the model. OpenAPI
+            `maxLength` counts Unicode code points; Mobius separately enforces an 8,192-byte
+            UTF-8 limit server-side.
+    RuntimeContext:
+      type: array
+      maxItems: 8
+      description: |-
+        Ordered application-owned runtime context for this turn. Send the full current value for each named item. Mobius records an item only on first use, material change, or after compaction removes its prior value from the active model window. Omitting a name leaves its last value standing; send an explicit value such as `none` to clear application state. Names must be unique within the request. Content is limited to 8,192 UTF-8 bytes per item and 16,384 bytes total.
+
+        Context remains at contextual authority and cannot grant permissions. A retry using the same `idempotency_key` returns the original turn and ignores any newly supplied context.
+      items:
+        $ref: '#/components/schemas/RuntimeContextItem'
     InvokeInput:
       type: object
       additionalProperties: false
@@ -11689,6 +11762,8 @@ components:
             key resumes the existing turn and writes nothing new — derive it from the provider
             event id for Slack/Telegram webhook retries. Omitting it or sending a blank value
             disables retry deduplication.
+        context:
+          $ref: '#/components/schemas/RuntimeContext'
         metadata:
           type: object
           additionalProperties: true
@@ -11782,6 +11857,8 @@ components:
           description: Dedup key scoped to the session. A repeat call with the same key resumes
             the existing turn and writes nothing new. Omitting it or sending a blank value
             disables retry deduplication.
+        context:
+          $ref: '#/components/schemas/RuntimeContext'
         metadata:
           type: object
           additionalProperties: true
@@ -11793,6 +11870,7 @@ components:
       required:
       - session
       - turn
+      - resume_cursor
       - after_sequence
       properties:
         session:
@@ -11804,8 +11882,11 @@ components:
           description: Durable caller row created for this turn.
         resume_cursor:
           type: string
-          description: Opaque v2 cursor captured immediately before the user_message and turn
-            admission.
+          minLength: 1
+          description: Opaque stable v2 lower boundary for streaming and terminal settlement.
+            It precedes every durable message owned by the returned turn and is safe for both
+            fresh and deduplicated invocations. A deduplicated retry may replay already-observed
+            frames.
         after_sequence:
           type: integer
           format: int64

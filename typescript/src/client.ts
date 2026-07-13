@@ -17,6 +17,7 @@ import type {
   LoopRunSource,
   LoopRunStatus,
   LoopStatus,
+  RuntimeContextItem,
   Session,
   SessionListResponse,
   SessionMessageListResponse,
@@ -29,6 +30,7 @@ import type {
   SessionTranscriptMessage,
   SessionTranscriptSnapshot,
   SignalLoopRunRequest,
+  StartTurnRequest,
   StartLoopRunRequest,
   StreamEndFrame,
   TagMap,
@@ -275,6 +277,12 @@ export interface InvokeAgentOptions {
   /** Ordered content blocks (text, images, …) for the caller's input message. Required. */
   content: Record<string, unknown>[];
   /**
+   * Ordered application-owned state snapshots for this turn. Send full,
+   * deterministic values; Mobius records only first use, changes, and
+   * post-compaction re-entry.
+   */
+  context?: RuntimeContextItem[];
+  /**
    * Dedup key scoped to the resolved session. A repeat call with the same
    * key resolves the same session and resumes the existing turn rather
    * than starting a second one — derive it from the provider event id for
@@ -303,6 +311,17 @@ export interface InvokeAgentOptions {
    * …) recorded on the started turn.
    */
   channelContext?: ChannelContext;
+}
+
+export interface StartTurnOptions {
+  /** Ordered content blocks (text, images, …) for the caller's input message. */
+  content: Record<string, unknown>[];
+  /** Ordered application-owned state snapshots for this turn. */
+  context?: RuntimeContextItem[];
+  /** Dedup key scoped to the existing session. */
+  idempotencyKey?: string;
+  /** Free-form caller metadata attached to the input message. */
+  metadata?: Record<string, unknown>;
 }
 
 /**
@@ -386,6 +405,8 @@ export interface ListSessionMessagesOptions {
   beforeSequence?: number;
   order?: "asc" | "desc";
   limit?: number;
+  /** Set to context to return caller-supplied runtime context rows. */
+  include?: "context";
 }
 
 export interface ListSessionTurnsOptions {
@@ -633,6 +654,7 @@ export class Client {
         before_sequence: opts.beforeSequence,
         order: opts.order,
         limit: opts.limit,
+        include: opts.include,
       },
     );
     const resp = await this.request(path, { method: "GET" });
@@ -714,6 +736,32 @@ export class Client {
     return (await resp.json()) as AgentTurn;
   }
 
+  /** Start a turn in an existing session and return its lazy transcript handle. */
+  async startTurn(
+    sessionId: string,
+    opts: StartTurnOptions,
+    streamOpts: { signal?: AbortSignal } = {},
+  ): Promise<TurnTranscript> {
+    if (!opts.content || opts.content.length === 0) {
+      throw new Error("mobius: start turn: content is required");
+    }
+    const body: StartTurnRequest = removeUndefined({
+      role: "user",
+      content: opts.content,
+      context: opts.context,
+      idempotency_key: opts.idempotencyKey,
+      metadata: opts.metadata,
+    });
+    const resp = await this.request(
+      `/v1/projects/:project/sessions/${encodeURIComponent(sessionId)}/turns`,
+      { method: "POST", body, signal: streamOpts.signal },
+    );
+    const ack = (await resp.json()) as TurnAck;
+    const transcript = new SessionTranscript();
+    transcript.seed(ack);
+    return new TurnTranscript(this, ack, transcript, streamOpts.signal);
+  }
+
   /**
    * Resolves (or creates) a session, appends opts.content as the caller's
    * input message, and starts an agent turn — collapsing the
@@ -740,6 +788,9 @@ export class Client {
       signal: streamOpts.signal,
     });
     const ack = (await resp.json()) as TurnAck;
+    if (!ack.resume_cursor?.trim()) {
+      throw new Error("mobius: invoke agent response missing resume_cursor");
+    }
     const transcript = new SessionTranscript();
     transcript.seed(ack);
     return new TurnTranscript(this, ack, transcript, streamOpts.signal);
@@ -1058,9 +1109,9 @@ export class TurnTranscript implements AsyncIterable<TurnTranscript> {
 
   readonly #client: Client;
   readonly #signal?: AbortSignal;
-  // Immutable pre-turn boundary used only for terminal durable redrain. The
-  // transcript cursor keeps moving independently for stream reconnects.
-  readonly #reconciliationCursor?: string;
+  // Immutable invocation boundary used for initial replay and terminal
+  // settlement. The transcript cursor keeps moving for stream reconnects.
+  readonly #invocationCursor: string;
   // Set when the acked turn was already terminal (a deduped resume of a
   // completed turn): there is nothing to stream, so iteration fetches the
   // snapshot (all pages) instead, making messages() complete either way.
@@ -1087,9 +1138,7 @@ export class TurnTranscript implements AsyncIterable<TurnTranscript> {
     this.afterSequence = ack.after_sequence;
     this.deduped = ack.deduped ?? false;
     this.transcript = transcript;
-    this.#reconciliationCursor = this.deduped
-      ? undefined
-      : ack.resume_cursor;
+    this.#invocationCursor = ack.resume_cursor;
     this.#hydrate = isTerminalTurnStatus(ack.turn.status);
     this.#diagnostics.status = ack.turn.status;
     this.#diagnostics.cursor = transcript.cursor;
@@ -1153,7 +1202,7 @@ export class TurnTranscript implements AsyncIterable<TurnTranscript> {
       const turn = update.transcript.turn(this.id);
       const terminal = turn != null && isTerminalTurnStatus(turn.status);
       if (terminal) {
-        await this.#reconcileSnapshot(this.#reconciliationCursor);
+        await this.#reconcileSnapshot(this.#invocationCursor);
       }
       const exposedUpdate: TranscriptUpdate = terminal
         ? { ...update, cursor: this.transcript.cursor, connection: "ended" }
@@ -1189,7 +1238,7 @@ export class TurnTranscript implements AsyncIterable<TurnTranscript> {
 
   async #hydrateSnapshot(): Promise<void> {
     this.#hydrate = false;
-    await this.#reconcileSnapshot();
+    await this.#reconcileSnapshot(this.#invocationCursor);
     this.#diagnostics = {
       status: this.status,
       cursor: this.transcript.cursor,
@@ -1199,7 +1248,7 @@ export class TurnTranscript implements AsyncIterable<TurnTranscript> {
     };
   }
 
-  async #reconcileSnapshot(cursor?: string): Promise<void> {
+  async #reconcileSnapshot(cursor: string): Promise<void> {
     let pageToken: string | undefined;
     do {
       const snap = await this.#client.getSessionTranscript(this.sessionId, {
@@ -1259,6 +1308,7 @@ function invokeAgentRequest(opts: InvokeAgentOptions): InvokeAgentRequest {
     }) as AgentRef,
     input: removeUndefined({
       content: opts.content,
+      context: opts.context,
       idempotency_key: opts.idempotencyKey,
       metadata: opts.inputMetadata,
     }) as InvokeInput,

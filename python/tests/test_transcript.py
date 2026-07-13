@@ -630,6 +630,75 @@ def test_invoke_agent_redrains_from_invocation_cursor_before_final_update() -> N
     }
 
 
+def test_deduped_in_flight_turn_replays_from_stable_cursor() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path.endswith("/agents/invoke"):
+            ack = _ack_body()
+            ack["deduped"] = True
+            ack.pop("user_message")
+            ack["resume_cursor"] = "41.6"
+            return httpx.Response(202, json=ack)
+        if request.url.path.endswith("/sessions/s1/transcript/stream"):
+            assert request.url.params.get("cursor") == "41.6"
+            body = (
+                'id: 45.9\nevent: turn.upsert\ndata: {"event_type":"turn.upsert","id":"t1","session_id":"s1","agent_id":"a1","attempt":1,"status":"completed","created_at":"%s","updated_at":"%s"}\n\n'
+                % (AT, AT)
+            )
+            return httpx.Response(
+                200, text=body, headers={"Content-Type": "text/event-stream"}
+            )
+        if request.url.path.endswith("/sessions/s1/transcript"):
+            assert request.url.params.get("cursor") == "41.6"
+            return httpx.Response(
+                200,
+                json={
+                    "messages": [
+                        {
+                            "id": "m_call", "session_id": "s1", "agent_id": "a1",
+                            "role": "assistant", "status": "final", "turn_id": "t1",
+                            "turn_index": 1, "sequence": 43, "entry_type": "message",
+                            "content": [{
+                                "type": "tool_use", "id": "call_1",
+                                "name": "naming_words_coin", "input": {"count": 2},
+                                "resolved_action": {
+                                    "name": "naming.words.coin", "input": {"count": 2}
+                                },
+                            }],
+                            "created_at": AT,
+                        }
+                    ],
+                    "turns": [{
+                        "id": "t1", "session_id": "s1", "agent_id": "a1",
+                        "attempt": 1, "status": "completed",
+                        "created_at": AT, "updated_at": AT,
+                    }],
+                    "has_more": False,
+                    "resume_cursor": "45.9",
+                },
+            )
+        raise AssertionError(f"unexpected request: {request.url}")
+
+    client = _client_with(handler)
+    turn = client.invoke_agent(
+        InvokeAgentOptions(
+            agent_name="support",
+            content=[{"type": "text", "text": "hi"}],
+            idempotency_key="evt_1",
+        )
+    )
+    list(turn)
+    tool_use = next(
+        block
+        for message in turn.renderable_messages()
+        for block in message["content"]
+        if block.get("type") == "tool_use"
+    )
+    assert normalize_tool_use(tool_use).resolved_action == {
+        "name": "naming.words.coin",
+        "input": {"count": 2},
+    }
+
+
 def test_invoke_agent_surfaces_terminal_reconciliation_error() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         if request.url.path.endswith("/agents/invoke"):
@@ -682,6 +751,21 @@ def test_turn_transcript_exposes_live_failed_turn_errors() -> None:
     )
 
 
+def test_invoke_agent_rejects_blank_resume_cursor() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        ack = _ack_body()
+        ack["resume_cursor"] = " "
+        return httpx.Response(202, json=ack)
+
+    client = _client_with(handler)
+    with pytest.raises(ValueError, match="resume_cursor"):
+        client.invoke_agent(
+            InvokeAgentOptions(
+                agent_name="support", content=[{"type": "text", "text": "hi"}]
+            )
+        )
+
+
 def test_invoke_agent_hydrates_terminal_turn_from_snapshot() -> None:
     stream_calls = 0
 
@@ -690,13 +774,15 @@ def test_invoke_agent_hydrates_terminal_turn_from_snapshot() -> None:
         if request.url.path.endswith("/agents/invoke"):
             ack = _ack_body()
             ack["deduped"] = True
+            ack["resume_cursor"] = "31.6"
             ack.pop("user_message")
             ack["turn"]["status"] = "completed"
             return httpx.Response(202, json=ack)
         if request.url.path.endswith("/sessions/s1/transcript"):
             # Two pages: hydration must follow next_page_token until has_more
             # is false so messages() includes the older page.
-            if request.url.params.get("page_token") == "pt_2":
+            page_token = request.url.params.get("page_token")
+            if page_token == "pt_2":
                 return httpx.Response(
                     200,
                     json={
@@ -708,6 +794,7 @@ def test_invoke_agent_hydrates_terminal_turn_from_snapshot() -> None:
                         "resume_cursor": "43.9",
                     },
                 )
+            assert request.url.params.get("cursor") == "31.6"
             return httpx.Response(
                 200,
                 json={

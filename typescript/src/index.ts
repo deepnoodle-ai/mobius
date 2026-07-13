@@ -30,6 +30,7 @@ export type {
   NudgeSessionOptions,
   RunEvent,
   SessionStreamEvent,
+  StartTurnOptions,
   StartRunOptions,
   StreamSessionTranscriptOptions,
   TranscriptConnectionState,
@@ -42,6 +43,10 @@ export type {
   WatchSessionTranscriptOptions,
 } from "./client.js";
 export {
+  MOBIUS_ACTION_CONTENT_TYPE,
+  type ActionResponseEnvelope,
+} from "./action-response.js";
+export {
   SessionTranscript,
   isTerminalTurnStatus,
   normalizeToolUse,
@@ -53,6 +58,7 @@ export type {
   MessageBlockFrame,
   MessageBlockPatchFrame,
   MessageDeltaFrame,
+  RuntimeContextItem,
   SessionTranscriptFrame,
   SessionTranscriptMessage,
   SessionTranscriptSnapshot,

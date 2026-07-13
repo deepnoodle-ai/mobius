@@ -4822,6 +4822,8 @@ export interface components {
             /** @description Pin to exempt this memory from compaction. */
             pinned?: boolean;
         };
+        /** @enum {string} */
+        ContextIncludeParam: "context";
         /**
          * @description Message role: `system`, `user`, `assistant`, `tool`, or `compaction`.
          * @enum {string}
@@ -4878,8 +4880,8 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
-        /** @description One content block in a session transcript message — the canonical, frozen JSON shape Mobius persists and replays, discriminated by `type`. The variants are `text`, `thinking`, `tool_use`, `tool_result`, and `image`. Each variant permits provider-specific extra fields (citations, signatures, cache hints, and the like), and unknown fields are preserved rather than rejected, so the transcript round-trips losslessly across providers. */
-        SessionContentBlock: components["schemas"]["SessionTextBlock"] | components["schemas"]["SessionThinkingBlock"] | components["schemas"]["SessionToolUseBlock"] | components["schemas"]["SessionToolResultBlock"] | components["schemas"]["SessionImageBlock"];
+        /** @description One content block in a session transcript message — the canonical, frozen JSON shape Mobius persists and replays, discriminated by `type`. The variants are `text`, `thinking`, `tool_use`, `tool_result`, and `image`, plus host-managed `reminder` blocks when caller runtime context is explicitly included. Each variant permits provider-specific extra fields (citations, signatures, cache hints, and the like), and unknown fields are preserved rather than rejected, so the transcript round-trips losslessly across providers. */
+        SessionContentBlock: components["schemas"]["SessionTextBlock"] | components["schemas"]["SessionThinkingBlock"] | components["schemas"]["SessionToolUseBlock"] | components["schemas"]["SessionToolResultBlock"] | components["schemas"]["SessionImageBlock"] | components["schemas"]["SessionReminderBlock"];
         /** @description The result of a tool call. */
         SessionToolResultBlock: {
             /** @enum {string} */
@@ -4901,6 +4903,22 @@ export interface components {
             source?: {
                 [key: string]: unknown;
             };
+        } & {
+            [key: string]: unknown;
+        };
+        /** @description Host-managed runtime context returned only when the request explicitly includes caller-supplied context. */
+        SessionReminderBlock: {
+            /** @enum {string} */
+            type: "reminder";
+            /** @description Model-visible reminder name, including the `app-` namespace. */
+            name: string;
+            /**
+             * @description Reminder authority tier.
+             * @enum {string}
+             */
+            tier: "contextual" | "operator";
+            /** @description Reminder content rendered to the model. */
+            content: string;
         } & {
             [key: string]: unknown;
         };
@@ -5604,6 +5622,18 @@ export interface components {
                 [key: string]: unknown;
             };
         };
+        RuntimeContextItem: {
+            /** @description Stable application-defined context name. Delivered to the model namespaced as `app-<name>`. Supply the application name without that namespace; for example, `app-board` is delivered as `app-app-board`. */
+            name: string;
+            /** @description Current value of this context, rendered verbatim to the model. OpenAPI `maxLength` counts Unicode code points; Mobius separately enforces an 8,192-byte UTF-8 limit server-side. */
+            content: string;
+        };
+        /**
+         * @description Ordered application-owned runtime context for this turn. Send the full current value for each named item. Mobius records an item only on first use, material change, or after compaction removes its prior value from the active model window. Omitting a name leaves its last value standing; send an explicit value such as `none` to clear application state. Names must be unique within the request. Content is limited to 8,192 UTF-8 bytes per item and 16,384 bytes total.
+         *
+         *     Context remains at contextual authority and cannot grant permissions. A retry using the same `idempotency_key` returns the original turn and ignores any newly supplied context.
+         */
+        RuntimeContext: components["schemas"]["RuntimeContextItem"][];
         /** @description The caller input message that starts the agent turn. */
         InvokeInput: {
             /** @description Ordered content blocks (text, images) for the input message. */
@@ -5612,6 +5642,7 @@ export interface components {
             }[];
             /** @description Dedup key scoped to the resolved session. A repeat call with the same key resumes the existing turn and writes nothing new — derive it from the provider event id for Slack/Telegram webhook retries. Omitting it or sending a blank value disables retry deduplication. */
             idempotency_key?: string;
+            context?: components["schemas"]["RuntimeContext"];
             /** @description Free-form caller metadata attached to the input message. */
             metadata?: {
                 [key: string]: unknown;
@@ -5667,6 +5698,7 @@ export interface components {
             }[];
             /** @description Dedup key scoped to the session. A repeat call with the same key resumes the existing turn and writes nothing new. Omitting it or sending a blank value disables retry deduplication. */
             idempotency_key?: string;
+            context?: components["schemas"]["RuntimeContext"];
             /** @description Free-form caller metadata attached to the input message. */
             metadata?: {
                 [key: string]: unknown;
@@ -5678,8 +5710,8 @@ export interface components {
             turn: components["schemas"]["AgentTurn"];
             /** @description Durable caller row created for this turn. */
             user_message?: components["schemas"]["SessionTranscriptMessage"];
-            /** @description Opaque v2 cursor captured immediately before the user_message and turn admission. */
-            resume_cursor?: string;
+            /** @description Opaque stable v2 lower boundary for streaming and terminal settlement. It precedes every durable message owned by the returned turn and is safe for both fresh and deduplicated invocations. A deduplicated retry may replay already-observed frames. */
+            resume_cursor: string;
             /**
              * Format: int64
              * @description The transcript message `sequence` cursor to stream from. Pass it as `after_sequence` to `GET .../stream` to follow this turn.
@@ -7779,6 +7811,8 @@ export interface components {
         OrgIDParam: string;
         /** @description The key identifying a memory entry. Restricted to a path-safe character set (letters, numbers, and `. _ : -`) so it stays reliably addressable. */
         MemoryKeyParam: string;
+        /** @description Set to `context` to include caller-supplied runtime context rows whose model-visible names begin with `app-`. Platform-owned runtime context remains hidden. */
+        ContextIncludeParam: components["schemas"]["ContextIncludeParam"];
         /** @description Session nudge identifier. */
         NudgeIdParam: string;
         /** @description Table ID. */
@@ -9823,6 +9857,8 @@ export interface operations {
                 after_sequence?: components["parameters"]["AfterSequenceParam"];
                 /** @description Maximum number of items to return */
                 limit?: components["parameters"]["LimitParam"];
+                /** @description Set to `context` to include caller-supplied runtime context rows whose model-visible names begin with `app-`. Platform-owned runtime context remains hidden. */
+                include?: components["parameters"]["ContextIncludeParam"];
             };
             header?: never;
             path: {
@@ -10550,6 +10586,8 @@ export interface operations {
                 order?: components["parameters"]["OrderParam"];
                 /** @description Maximum number of items to return */
                 limit?: components["parameters"]["LimitParam"];
+                /** @description Set to `context` to include caller-supplied runtime context rows whose model-visible names begin with `app-`. Platform-owned runtime context remains hidden. */
+                include?: components["parameters"]["ContextIncludeParam"];
             };
             header?: never;
             path: {

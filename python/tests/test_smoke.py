@@ -19,8 +19,11 @@ from deepnoodle.mobius import (
     Client,
     ClientOptions,
     InvokeAgentOptions,
+    ListSessionMessagesOptions,
     ListRunsOptions,
+    RuntimeContextItem,
     StartRunOptions,
+    StartTurnOptions,
     SyntheticWebhookDelivery,
     WaitRunOptions,
     build_synthetic_webhook_payload,
@@ -217,6 +220,7 @@ def test_invoke_agent_posts_the_compound_invoke_request_shape() -> None:
         InvokeAgentOptions(
             agent_id="agent_1",
             content=[{"type": "text", "text": "hi"}],
+            context=[RuntimeContextItem(name="naming-board", content="Chosen: none")],
             idempotency_key="evt_1",
             session=InvokeSessionSpec(session_key="app:acct_1:user_2"),
             config=InlineAgentConfig(
@@ -235,11 +239,58 @@ def test_invoke_agent_posts_the_compound_invoke_request_shape() -> None:
     assert seen["path"] == "/v1/projects/test-project/agents/invoke"
     assert '"agent_ref":{"id":"agent_1"}' in str(seen["body"])
     assert '"idempotency_key":"evt_1"' in str(seen["body"])
+    assert '"context":[{"name":"naming-board","content":"Chosen: none"}]' in str(
+        seen["body"]
+    )
     assert '"session_key":"app:acct_1:user_2"' in str(seen["body"])
     assert '"instructions":"Be concise."' in str(seen["body"])
     assert '"model":"claude-sonnet-4-6"' in str(seen["body"])
     assert '"effort":"medium"' in str(seen["body"])
     assert '"toolkits":[{"name":"tickets","actions":["tickets.search"]}]' in str(seen["body"])
+
+
+def test_start_turn_passes_runtime_context_to_existing_session() -> None:
+    seen: dict[str, object] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen["path"] = request.url.path
+        seen["body"] = json.loads(request.read())
+        return httpx.Response(202, json=_turn_ack_body("sess_1", "turn_1", 7))
+
+    client = _client_with(handler)
+    turn = client.start_turn(
+        "sess_1",
+        StartTurnOptions(
+            content=[{"type": "text", "text": "hi"}],
+            context=[RuntimeContextItem(name="naming-board", content="Chosen: none")],
+            idempotency_key="evt_1",
+            metadata={"source": "app"},
+        ),
+    )
+
+    assert turn.id == "turn_1"
+    assert seen["path"] == "/v1/projects/test-project/sessions/sess_1/turns"
+    assert seen["body"] == {
+        "role": "user",
+        "content": [{"type": "text", "text": "hi"}],
+        "context": [{"name": "naming-board", "content": "Chosen: none"}],
+        "idempotency_key": "evt_1",
+        "metadata": {"source": "app"},
+    }
+
+
+def test_list_session_messages_can_include_runtime_context() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.path.endswith("/sessions/sess_1/messages")
+        assert request.url.params["include"] == "context"
+        return httpx.Response(200, json={"items": []})
+
+    client = _client_with(handler)
+    messages = client.list_session_messages(
+        "sess_1", ListSessionMessagesOptions(include="context")
+    )
+
+    assert messages.items == []
 
 
 def test_invoke_agent_requires_agent_ref_and_content() -> None:
@@ -425,6 +476,7 @@ def _run_body(run_id: str, status: str) -> dict[str, object]:
 def _turn_ack_body(session_id: str, turn_id: str, after_sequence: int) -> dict[str, object]:
     return {
         "after_sequence": after_sequence,
+        "resume_cursor": "41.6",
         "session": {
             "id": session_id,
             "agent_id": "agent_1",
