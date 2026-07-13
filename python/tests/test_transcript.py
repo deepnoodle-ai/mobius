@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+
 import httpx
 import pytest
 
@@ -442,7 +444,7 @@ def test_invoke_agent_streams_turn_to_terminal() -> None:
         if request.url.path.endswith("/agents/invoke"):
             return httpx.Response(202, json=_ack_body())
         if request.url.path.endswith("/sessions/s1/transcript"):
-            assert request.url.params.get("cursor") == "43.9"
+            assert request.url.params.get("cursor") == "41.6"
             return httpx.Response(
                 200,
                 json={
@@ -483,58 +485,124 @@ def test_invoke_agent_streams_turn_to_terminal() -> None:
     assert turn.transcript.cursor == "43.9"
 
 
-def test_invoke_agent_reconciles_terminal_snapshot_before_final_update() -> None:
+def test_invoke_agent_redrains_from_invocation_cursor_before_final_update() -> None:
+    durable_messages = [
+        _ack_body()["user_message"],
+        {
+            "id": "m_call",
+            "session_id": "s1",
+            "agent_id": "a1",
+            "role": "assistant",
+            "status": "final",
+            "turn_id": "t1",
+            "turn_index": 1,
+            "sequence": 43,
+            "entry_type": "message",
+            "content": [
+                {
+                    "type": "tool_use",
+                    "id": "call_1",
+                    "name": "naming_words_coin",
+                    "input": {"count": 2},
+                    "resolved_action": {
+                        "name": "naming.words.coin",
+                        "input": {"count": 2},
+                    },
+                }
+            ],
+            "created_at": AT,
+        },
+        {
+            "id": "m_result",
+            "session_id": "s1",
+            "agent_id": "a1",
+            "role": "user",
+            "status": "final",
+            "turn_id": "t1",
+            "turn_index": 2,
+            "sequence": 44,
+            "entry_type": "message",
+            "content": [
+                {"type": "tool_result", "tool_use_id": "call_1", "content": "ok"}
+            ],
+            "created_at": AT,
+        },
+        {
+            "id": "m_done",
+            "session_id": "s1",
+            "agent_id": "a1",
+            "role": "assistant",
+            "status": "final",
+            "turn_id": "t1",
+            "turn_index": 3,
+            "sequence": 45,
+            "entry_type": "message",
+            "content": [{"type": "text", "text": "done"}],
+            "created_at": AT,
+        },
+    ]
+    terminal_turn = {
+        "id": "t1",
+        "session_id": "s1",
+        "agent_id": "a1",
+        "attempt": 1,
+        "status": "completed",
+        "created_at": AT,
+        "updated_at": AT,
+    }
+
     def handler(request: httpx.Request) -> httpx.Response:
         if request.url.path.endswith("/agents/invoke"):
             return httpx.Response(202, json=_ack_body())
         if request.url.path.endswith("/sessions/s1/transcript/stream"):
             body = (
-                'event: message.upsert\ndata: {"event_type":"message.upsert","id":"m_preview","session_id":"s1","agent_id":"a1","role":"assistant","status":"streaming","turn_id":"t1","turn_index":1,"sequence":null,"entry_type":"message","content":[{"type":"tool_use","id":"call_1","name":"lookup","input":{}}],"created_at":"%s"}\n\n'
+                'event: message.upsert\ndata: {"event_type":"message.upsert","id":"m_preview","session_id":"s1","agent_id":"a1","role":"assistant","status":"streaming","turn_id":"t1","turn_index":1,"sequence":null,"entry_type":"message","content":[{"type":"tool_use","id":"call_1","name":"naming_words_coin","input":{"count":2}}],"created_at":"%s"}\n\n'
                 % AT
-                + 'id: 43.9\nevent: turn.upsert\ndata: {"event_type":"turn.upsert","id":"t1","session_id":"s1","agent_id":"a1","attempt":1,"status":"completed","created_at":"%s","updated_at":"%s"}\n\n'
-                % (AT, AT)
+                + "id: 44.3\nevent: message.upsert\ndata: "
+                + json.dumps({"event_type": "message.upsert", **durable_messages[2]})
+                + "\n\n"
+                + "id: 44.9\nevent: turn.upsert\ndata: "
+                + json.dumps({"event_type": "turn.upsert", **terminal_turn})
+                + "\n\n"
             )
             return httpx.Response(
                 200, text=body, headers={"Content-Type": "text/event-stream"}
             )
         if request.url.path.endswith("/sessions/s1/transcript"):
-            assert request.url.params.get("cursor") == "43.9"
-            return httpx.Response(
-                200,
-                json={
-                    "messages": [
-                        {
-                            "id": "m_final",
-                            "session_id": "s1",
-                            "agent_id": "a1",
-                            "role": "assistant",
-                            "status": "final",
-                            "turn_id": "t1",
-                            "turn_index": 1,
-                            "sequence": 43,
-                            "entry_type": "message",
-                            "content": [
-                                {
-                                    "type": "tool_use",
-                                    "id": "call_1",
-                                    "name": "lookup",
-                                    "input": {},
-                                },
-                                {
-                                    "type": "tool_result",
-                                    "tool_use_id": "call_1",
-                                    "content": "ok",
-                                },
-                                {"type": "text", "text": "done"},
-                            ],
-                            "created_at": AT,
-                        }
-                    ],
-                    "turns": [],
+            cursor = request.url.params.get("cursor")
+            page_token = request.url.params.get("page_token")
+            if cursor == "44.9":
+                # A real lower-bound read cannot redeliver sequence 43.
+                body = {
+                    "messages": durable_messages[3:],
+                    "turns": [terminal_turn],
                     "has_more": False,
-                    "resume_cursor": "43.9",
-                },
-            )
+                    "resume_cursor": "45.9",
+                }
+            elif cursor is None and page_token is None:
+                body = {
+                    "messages": durable_messages,
+                    "turns": [terminal_turn],
+                    "has_more": False,
+                    "resume_cursor": "45.9",
+                }
+            elif page_token == "terminal-page-2":
+                body = {
+                    "messages": durable_messages[2:],
+                    "turns": [terminal_turn],
+                    "has_more": False,
+                    "resume_cursor": "45.9",
+                }
+            else:
+                assert cursor == "41.6"
+                body = {
+                    "messages": durable_messages[:2],
+                    "turns": [],
+                    "has_more": True,
+                    "next_page_token": "terminal-page-2",
+                    "resume_cursor": "43.3",
+                }
+            return httpx.Response(200, json=body)
         raise AssertionError(f"unexpected request: {request.url}")
 
     client = _client_with(handler)
@@ -543,13 +611,23 @@ def test_invoke_agent_reconciles_terminal_snapshot_before_final_update() -> None
     )
     updates = list(turn.updates())
 
-    assert len(updates) == 2
+    assert len(updates) == 3
     assert updates[-1].connection == "ended"
-    assert updates[-1].cursor == "43.9"
-    assert [m["id"] for m in updates[-1].transcript.renderable_messages_for_turn("t1")] == [
-        "m_user",
-        "m_final",
-    ]
+    assert updates[-1].cursor == "45.9"
+    full_snapshot = SessionTranscript()
+    full_snapshot.apply_snapshot(client.get_session_transcript("s1"))
+    final_messages = updates[-1].transcript.renderable_messages_for_turn("t1")
+    assert final_messages == full_snapshot.renderable_messages_for_turn("t1")
+    tool_use = next(
+        block
+        for message in final_messages
+        for block in message["content"]
+        if block.get("type") == "tool_use"
+    )
+    assert normalize_tool_use(tool_use).resolved_action == {
+        "name": "naming.words.coin",
+        "input": {"count": 2},
+    }
 
 
 def test_invoke_agent_surfaces_terminal_reconciliation_error() -> None:

@@ -15,6 +15,7 @@ import {
   toolResultText,
 } from "../src/transcript.js";
 import type {
+  SessionToolUseBlock,
   SessionTranscriptFrame,
   SessionTranscriptSnapshot,
 } from "../src/api/index.js";
@@ -817,7 +818,7 @@ test("client: invokeAgent streams the turn to its terminal upsert", async () => 
       });
     }
     if (url.pathname.endsWith("/transcript")) {
-      assert.equal(url.searchParams.get("cursor"), "43.9");
+      assert.equal(url.searchParams.get("cursor"), "41.6");
       return new Response(
         JSON.stringify({
           messages: [],
@@ -873,7 +874,69 @@ test("client: invokeAgent streams the turn to its terminal upsert", async () => 
   }
 });
 
-test("client: TurnTranscript reconciles the terminal snapshot before its final update", async () => {
+test("client: TurnTranscript redrains from the invocation cursor before its final update", async () => {
+  const durableMessages: SessionTranscriptSnapshot["messages"] = [
+    invokeAck.user_message as SessionTranscriptSnapshot["messages"][number],
+    {
+      id: "m_call",
+      session_id: "s1",
+      agent_id: "a1",
+      role: "assistant",
+      content: [
+        {
+          type: "tool_use",
+          id: "call_1",
+          name: "naming_words_coin",
+          input: { count: 2 },
+          resolved_action: {
+            name: "naming.words.coin",
+            input: { count: 2 },
+          },
+        },
+      ],
+      entry_type: "message",
+      status: "final",
+      turn_index: 1,
+      sequence: 43,
+      turn_id: "t1",
+      created_at: AT,
+    },
+    {
+      id: "m_result",
+      session_id: "s1",
+      agent_id: "a1",
+      role: "user",
+      content: [{ type: "tool_result", tool_use_id: "call_1", content: "ok" }],
+      entry_type: "message",
+      status: "final",
+      turn_index: 2,
+      sequence: 44,
+      turn_id: "t1",
+      created_at: AT,
+    },
+    {
+      id: "m_done",
+      session_id: "s1",
+      agent_id: "a1",
+      role: "assistant",
+      content: [{ type: "text", text: "done" }],
+      entry_type: "message",
+      status: "final",
+      turn_index: 3,
+      sequence: 45,
+      turn_id: "t1",
+      created_at: AT,
+    },
+  ];
+  const terminalTurn: SessionTranscriptSnapshot["turns"][number] = {
+    id: "t1",
+    session_id: "s1",
+    agent_id: "a1",
+    attempt: 1,
+    status: "completed",
+    created_at: AT,
+    updated_at: AT,
+  };
   const original = globalThis.fetch;
   globalThis.fetch = (async (input: RequestInfo | URL) => {
     const url = new URL(typeof input === "string" ? input : input.toString());
@@ -885,37 +948,41 @@ test("client: TurnTranscript reconciles the terminal snapshot before its final u
     }
     if (url.pathname.endsWith("/transcript/stream")) {
       return new Response(
-        `event: message.upsert\ndata: {"event_type":"message.upsert","id":"m_preview","session_id":"s1","agent_id":"a1","role":"assistant","status":"streaming","sequence":null,"turn_index":1,"turn_id":"t1","entry_type":"message","content":[{"type":"tool_use","id":"call_1","name":"lookup","input":{}}],"created_at":"${AT}"}\n\n` +
-          `id: 43.9\nevent: turn.upsert\ndata: {"event_type":"turn.upsert","id":"t1","session_id":"s1","agent_id":"a1","attempt":1,"status":"completed","created_at":"${AT}","updated_at":"${AT}"}\n\n`,
+        `event: message.upsert\ndata: {"event_type":"message.upsert","id":"m_preview","session_id":"s1","agent_id":"a1","role":"assistant","status":"streaming","sequence":null,"turn_index":1,"turn_id":"t1","entry_type":"message","content":[{"type":"tool_use","id":"call_1","name":"naming_words_coin","input":{"count":2}}],"created_at":"${AT}"}\n\n` +
+          `id: 44.3\nevent: message.upsert\ndata: ${JSON.stringify({ event_type: "message.upsert", ...durableMessages[2] })}\n\n` +
+          `id: 44.9\nevent: turn.upsert\ndata: ${JSON.stringify({ event_type: "turn.upsert", ...terminalTurn })}\n\n`,
         { status: 200, headers: { "Content-Type": "text/event-stream" } },
       );
     }
     if (url.pathname.endsWith("/transcript")) {
-      assert.equal(url.searchParams.get("cursor"), "43.9");
-      const snap: SessionTranscriptSnapshot = {
-        messages: [
-          {
-            id: "m_final",
-            session_id: "s1",
-            agent_id: "a1",
-            role: "assistant",
-            content: [
-              { type: "tool_use", id: "call_1", name: "lookup", input: {} },
-              { type: "tool_result", tool_use_id: "call_1", content: "ok" },
-              { type: "text", text: "done" },
-            ],
-            entry_type: "message",
-            status: "final",
-            turn_index: 1,
-            sequence: 43,
-            turn_id: "t1",
-            created_at: AT,
-          },
-        ],
-        turns: [],
-        has_more: false,
-        resume_cursor: "43.9",
-      };
+      const cursor = url.searchParams.get("cursor");
+      const pageToken = url.searchParams.get("page_token");
+      let snap: SessionTranscriptSnapshot;
+      if (cursor === "44.9") {
+        // Real lower-bound filtering cannot redeliver the call at sequence 43.
+        snap = {
+          messages: durableMessages.slice(3),
+          turns: [terminalTurn],
+          has_more: false,
+          resume_cursor: "45.9",
+        };
+      } else if (pageToken === "terminal-page-2") {
+        snap = {
+          messages: durableMessages.slice(2),
+          turns: [terminalTurn],
+          has_more: false,
+          resume_cursor: "45.9",
+        };
+      } else {
+        assert.equal(cursor, "41.6");
+        snap = {
+          messages: durableMessages.slice(0, 2),
+          turns: [],
+          has_more: true,
+          next_page_token: "terminal-page-2",
+          resume_cursor: "43.3",
+        };
+      }
       return new Response(JSON.stringify(snap), {
         status: 200,
         headers: { "Content-Type": "application/json" },
@@ -932,16 +999,23 @@ test("client: TurnTranscript reconciles the terminal snapshot before its final u
     const updates = [];
     for await (const update of turn.updates()) updates.push(update);
 
-    assert.equal(updates.length, 2);
+    assert.equal(updates.length, 3);
     const finalUpdate = updates[updates.length - 1];
     assert.equal(finalUpdate.connection, "ended");
-    assert.equal(finalUpdate.cursor, "43.9");
-    assert.deepEqual(
-      finalUpdate.transcript
-        .renderableMessagesForTurn("t1")
-        .map((message) => message.id),
-      ["m_user", "m_final"],
-    );
+    assert.equal(finalUpdate.cursor, "45.9");
+    const fullSnapshot = new SessionTranscript();
+    fullSnapshot.applySnapshot({
+      messages: durableMessages,
+      turns: [terminalTurn],
+      has_more: false,
+      resume_cursor: "45.9",
+    });
+    const finalMessages = finalUpdate.transcript.renderableMessagesForTurn("t1");
+    assert.deepEqual(finalMessages, fullSnapshot.renderableMessagesForTurn("t1"));
+    const toolUse = finalMessages
+      .flatMap((message) => message.content)
+      .find((block) => block.type === "tool_use") as SessionToolUseBlock;
+    assert.equal(normalizeToolUse(toolUse).resolvedAction?.name, "naming.words.coin");
   } finally {
     globalThis.fetch = original;
   }

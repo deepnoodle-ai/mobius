@@ -820,6 +820,9 @@ class TurnTranscript:
         self.deduped: bool = bool(ack.deduped)
         # Full session view the stream folds into.
         self.transcript: SessionTranscript = transcript
+        # Immutable pre-turn boundary for terminal durable redrain. The
+        # transcript cursor continues moving independently for reconnects.
+        self._reconciliation_cursor = None if self.deduped else ack.resume_cursor
         # Set when the acked turn was already terminal (a deduped resume of a
         # completed turn): there is nothing to stream, so iteration fetches
         # the snapshot (all pages) instead, making messages() complete either
@@ -902,7 +905,7 @@ class TurnTranscript:
                     str(turn.get("status") or "")
                 )
                 if terminal:
-                    self._reconcile_snapshot(update.cursor)
+                    self._reconcile_snapshot(self._reconciliation_cursor)
                     update = TranscriptUpdate(
                         frame=update.frame,
                         cursor=self.transcript.cursor,

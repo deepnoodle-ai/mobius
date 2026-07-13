@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 
 ## [Unreleased]
 
+### Fixed
+
+- Terminal turn reconciliation now redrains from the immutable pre-turn cursor,
+  recovering durable tool calls after the moving live cursor has passed them.
+  See `docs/development/terminal-transcript-reconciliation-cursor.md`.
+
 ## [0.0.46] - 2026-07-13
 
 ### Fixed
