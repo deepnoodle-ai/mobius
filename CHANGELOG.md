@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 
 ## [Unreleased]
 
+## [0.0.45] - 2026-07-13
+
+### Added
+
+- Cross-language session SDK usability: structured errors and wait-or-nudge recovery,
+  typed session/nudge/message/turn helpers, lossless and renderable transcript views,
+  canonical tool normalization, stream diagnostics/logging, and shared contract fixtures.
+  See `docs/sdk-helpers.md`.
+
 ## [0.0.44] - 2026-07-12
 
 ### Changed
