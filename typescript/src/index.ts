@@ -10,6 +10,7 @@ export {
   RateLimitedError,
   RateLimitError,
   StreamHTTPError,
+  TurnTranscript,
   WorkerInstanceConflictError,
   isTerminalRunStatus,
 } from "./client.js";
@@ -30,7 +31,7 @@ export type {
   WatchSessionTranscriptOptions,
 } from "./client.js";
 export {
-  SessionTranscriptReducer,
+  SessionTranscript,
   isTerminalTurnStatus,
 } from "./transcript.js";
 export type { TranscriptStreamEvent } from "./transcript.js";

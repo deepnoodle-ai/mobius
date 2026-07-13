@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 
 ## [Unreleased]
 
+### Changed
+
+- **Breaking:** session-transcript helpers redesigned: `SessionTranscriptReducer`
+  is now `SessionTranscript`, `InvokeAgent` always returns a lazy `TurnTranscript`
+  (`InvokeAgentTranscript` deleted), and watching yields a `TranscriptWatcher`.
+  See `docs/development/session-transcript-api-redesign.md`.
+
 ## [0.0.43] - 2026-07-12
 
 ### Added

@@ -1,10 +1,11 @@
-"""Session-transcript v2 reducer and stream helpers.
+"""Session-transcript v2 view and stream option types.
 
-The reducer is the session-scope analogue of Dive's ``ResponseAccumulator``:
-it folds session-transcript stream frames (or snapshot pages) into the
-authoritative view. Frames are plain decoded JSON objects (``dict``) — the same
-open representation the SDK already uses for ``SessionStreamEvent.data`` — so
-unknown fields and enum values round-trip untouched.
+``SessionTranscript`` is the live view of a session — the session-scope
+analogue of Dive's ``ResponseAccumulator``. It is built by folding
+session-transcript stream frames (or snapshot pages) into place. Frames are
+plain decoded JSON objects (``dict``) — the same open representation the SDK
+already uses for ``SessionStreamEvent.data`` — so unknown fields and enum
+values round-trip untouched.
 """
 
 from __future__ import annotations
@@ -61,49 +62,115 @@ class StreamSessionTranscriptOptions:
 
 @dataclass
 class WatchSessionTranscriptOptions:
-    # Opaque resume cursor for the first connection.
+    # Opaque resume cursor for the first connection. Ignored if `transcript`
+    # already carries one.
     cursor: str | None = None
+    # Existing view to continue folding into (e.g. one bootstrapped from
+    # get_session_transcript pages). None starts fresh.
+    transcript: "SessionTranscript | None" = None
     # Pause before reconnecting after a dropped connection (not a clean
     # rotate), in seconds.
     reconnect_delay: float = 1.0
 
 
-class SessionTranscriptReducer:
-    """Folds session-transcript v2 frames (or snapshot pages) into the view.
+class SessionTranscript:
+    """The live view of a session: message rows, turns, cursor, readiness.
 
-    The whole merge is ``rows[id] = row``: state frames carry absolute state,
-    so last write wins and nothing is an increment except ``message.delta``
-    text. Ignoring deltas entirely still converges. The reducer owns protocol
-    logic only; the connection loop (reconnect on ``stream.end`` rotate, stop
-    on idle) lives in :meth:`Client.watch_session_transcript`.
+    The whole merge is set-by-id: state frames carry absolute state, so last
+    write wins and nothing is an increment except ``message.delta`` text.
+    Ignoring deltas entirely still converges.
+
+    The streaming client methods drive one for you: ``Client.invoke_agent``
+    returns a ``TurnTranscript`` and ``Client.watch_session_transcript``
+    returns a ``TranscriptWatcher``, both folding frames into an embedded view
+    as you iterate. Construct one directly only for the escape hatches:
+    polling ``get_session_transcript`` into :meth:`apply_snapshot`, or feeding
+    ``stream_session_transcript`` events into :meth:`apply`.
 
     Not safe for concurrent use; drive it from a single thread.
     """
 
     def __init__(self) -> None:
-        # Message rows keyed by their immutable id.
-        self.rows: dict[str, dict[str, Any]] = {}
-        # Turns keyed by id.
-        self.turns: dict[str, dict[str, Any]] = {}
-        # Opaque resume cursor; never parse it.
-        self.cursor: str | None = None
-        # True once stream.ready has been seen — safe to render.
-        self.ready: bool = False
+        self._rows: dict[str, dict[str, Any]] = {}
+        self._turns: dict[str, dict[str, Any]] = {}
+        self._cursor: str | None = None
+        self._ready: bool = False
 
-    def apply(self, frame: dict[str, Any], sse_id: str | None = None) -> None:
-        """Fold one stream frame into the view.
+    @property
+    def cursor(self) -> str | None:
+        """Opaque resume cursor in effect through everything folded in so far.
 
-        ``sse_id`` is the frame's SSE ``id:`` line when present; it advances the
-        cursor. Unknown ``event_type`` values are ignored so the protocol can
-        grow without breaking this client.
+        Never parse it. Assign it only to resume a fresh view from a persisted
+        position — applied frames and snapshots overwrite it.
         """
-        if sse_id:
-            self.cursor = sse_id
+        return self._cursor
+
+    @cursor.setter
+    def cursor(self, value: str | None) -> None:
+        self._cursor = value
+
+    @property
+    def ready(self) -> bool:
+        """True once stream.ready has been seen on the current connection."""
+        return self._ready
+
+    def _reset_ready(self) -> None:
+        # Ready is per-connection; the watch loop re-arms it on reconnect.
+        self._ready = False
+
+    def message(self, message_id: str) -> dict[str, Any] | None:
+        """The message row with the given id, if present."""
+        return self._rows.get(message_id)
+
+    def turn(self, turn_id: str) -> dict[str, Any] | None:
+        """The turn with the given id, if present."""
+        return self._turns.get(turn_id)
+
+    def turns(self) -> list[dict[str, Any]]:
+        """Turns ordered by ``(created_at, id)``."""
+        return sorted(
+            self._turns.values(),
+            key=lambda t: (t.get("created_at") or "", t.get("id") or ""),
+        )
+
+    def messages(self) -> list[dict[str, Any]]:
+        """Rows in render order.
+
+        Final rows are ordered by ``sequence``, then streaming rows by
+        ``(turn.created_at, turn.id, turn_index)`` — ``turn_index`` alone is
+        unique only within one turn, and turns can run concurrently.
+        """
+        rows = list(self._rows.values())
+        final = sorted(
+            (r for r in rows if r.get("status") == "final"),
+            key=lambda r: r.get("sequence") or 0,
+        )
+        live = sorted(
+            (r for r in rows if r.get("status") == "streaming"),
+            key=self._live_sort_key,
+        )
+        return final + live
+
+    def messages_for_turn(self, turn_id: str) -> list[dict[str, Any]]:
+        """Rows belonging to one turn, in render order."""
+        return [r for r in self.messages() if r.get("turn_id") == turn_id]
+
+    def apply(self, event: TranscriptStreamEvent) -> None:
+        """Fold one stream event into the view.
+
+        Unknown ``event_type`` values are ignored so the protocol can grow
+        without breaking this client. This is the escape hatch for events
+        obtained from ``stream_session_transcript`` or a custom transport; the
+        streaming client methods call it for you.
+        """
+        if event.id:
+            self._cursor = event.id
+        frame = event.frame
         event_type = frame.get("event_type")
         if event_type == "message.upsert":
-            self.rows[frame["id"]] = frame
+            self._rows[frame["id"]] = frame
         elif event_type == "message.block":
-            row = self.rows.get(frame["message_id"])
+            row = self._rows.get(frame["message_id"])
             if row is not None:
                 content = row.setdefault("content", [])
                 index = frame["content_index"]
@@ -132,13 +199,13 @@ class SessionTranscriptReducer:
                 if frame.get("thinking"):
                     block["thinking"] = (block.get("thinking") or "") + frame["thinking"]
         elif event_type == "turn.upsert":
-            self.turns[frame["id"]] = frame
+            self._turns[frame["id"]] = frame
             if is_terminal_turn_status(frame.get("status", "")):
                 self._prune_streaming_rows(frame["id"])
         elif event_type == "stream.ready":
             # Authoritative — adopt unconditionally.
-            self.cursor = frame["resume_cursor"]
-            self.ready = True
+            self._cursor = frame["resume_cursor"]
+            self._ready = True
         elif event_type == "stream.end":
             pass  # control frame; the connection loop acts on it
         # unknown event types are ignored (forward-compatible)
@@ -154,52 +221,48 @@ class SessionTranscriptReducer:
         """
         snap = snapshot if isinstance(snapshot, dict) else snapshot.model_dump(mode="json")
         for message in snap["messages"]:
-            self.rows[message["id"]] = message
+            self._rows[message["id"]] = message
         for turn in snap["turns"]:
-            self.turns[turn["id"]] = turn
+            self._turns[turn["id"]] = turn
             if is_terminal_turn_status(turn.get("status", "")):
                 self._prune_streaming_rows(turn["id"])
         if not snap.get("has_more"):
             live = {m["id"] for m in snap["messages"] if m.get("status") == "streaming"}
             stale = [
                 row_id
-                for row_id, row in self.rows.items()
+                for row_id, row in self._rows.items()
                 if row.get("status") == "streaming" and row_id not in live
             ]
             for row_id in stale:
-                del self.rows[row_id]
-        self.cursor = snap["resume_cursor"]
+                del self._rows[row_id]
+        self._cursor = snap["resume_cursor"]
 
-    def messages(self) -> list[dict[str, Any]]:
-        """Rows in render order.
+    def seed(self, ack: Any) -> None:
+        """Fold a turn-start response into the view.
 
-        Final rows are ordered by ``sequence``, then streaming rows by
-        ``(turn.created_at, turn.id, turn_index)`` — ``turn_index`` alone is
-        unique only within one turn, and turns can run concurrently.
+        Accepts the ``TurnAck`` model or an equivalent dict, folding in the
+        caller's message row, the acked turn, and the resume cursor.
+        ``Client.invoke_agent`` calls it for you; it is public for callers
+        wiring their own transport around a raw invoke.
         """
-        rows = list(self.rows.values())
-        final = sorted(
-            (r for r in rows if r.get("status") == "final"),
-            key=lambda r: r.get("sequence") or 0,
-        )
-        live = sorted(
-            (r for r in rows if r.get("status") == "streaming"),
-            key=self._live_sort_key,
-        )
-        return final + live
-
-    def messages_for_turn(self, turn_id: str) -> list[dict[str, Any]]:
-        """Rows belonging to one turn, in render order."""
-        return [r for r in self.messages() if r.get("turn_id") == turn_id]
+        data = ack if isinstance(ack, dict) else ack.model_dump(mode="json")
+        user_message = data.get("user_message")
+        if user_message:
+            self._rows[user_message["id"]] = user_message
+        turn = data.get("turn")
+        if turn and turn.get("id"):
+            self._turns[turn["id"]] = turn
+        if data.get("resume_cursor"):
+            self._cursor = data["resume_cursor"]
 
     def _live_sort_key(self, row: dict[str, Any]) -> tuple[str, str, int]:
         turn_id = row.get("turn_id")
-        turn = self.turns.get(turn_id) if turn_id else None
+        turn = self._turns.get(turn_id) if turn_id else None
         created_at = (turn or {}).get("created_at") or ""
         return (created_at, turn_id or "", row.get("turn_index") or 0)
 
     def _block_at(self, message_id: str, index: int) -> dict[str, Any] | None:
-        row = self.rows.get(message_id)
+        row = self._rows.get(message_id)
         if row is None:
             return None
         content = row.get("content")
@@ -211,8 +274,8 @@ class SessionTranscriptReducer:
     def _prune_streaming_rows(self, turn_id: str) -> None:
         stale = [
             row_id
-            for row_id, row in self.rows.items()
+            for row_id, row in self._rows.items()
             if row.get("status") == "streaming" and row.get("turn_id") == turn_id
         ]
         for row_id in stale:
-            del self.rows[row_id]
+            del self._rows[row_id]

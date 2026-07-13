@@ -38,7 +38,7 @@ from .errors import AuthRevokedError, RateLimitError
 from .retry import DEFAULT_MAX_RETRIES, RetryingTransport
 from .transcript import (
     GetSessionTranscriptOptions,
-    SessionTranscriptReducer,
+    SessionTranscript,
     StreamSessionTranscriptOptions,
     TranscriptStreamEvent,
     WatchSessionTranscriptOptions,
@@ -318,12 +318,19 @@ class Client:
 
     # Resolves (or creates) a session, appends opts.content as the caller's
     # input message, and starts an agent turn in one retryable call. Returns
-    # once the turn is accepted; use invoke_agent_stream to observe the
-    # turn's activity inline on the same connection instead.
-    def invoke_agent(self, opts: InvokeAgentOptions) -> TurnAck:
+    # once the turn is accepted. The returned TurnTranscript carries the
+    # turn's identity (id, session_id, status) immediately and its live
+    # transcript on demand: the stream is lazy, so iterate the handle to
+    # render the turn as it runs, or never iterate for fire-and-forget. Use
+    # invoke_agent_stream instead to observe the turn's activity inline on
+    # the same connection with v1 session-stream framing.
+    def invoke_agent(self, opts: InvokeAgentOptions) -> TurnTranscript:
         body = _invoke_agent_request(opts)
         resp = self._request("POST", "/v1/projects/{project}/agents/invoke", json=body)
-        return TurnAck.model_validate(resp.json())
+        ack = TurnAck.model_validate(resp.json())
+        transcript = SessionTranscript()
+        transcript.seed(ack)
+        return TurnTranscript(self, ack, transcript)
 
     # Behaves like invoke_agent but streams the turn's activity inline on
     # the same connection instead of waiting for a TurnAck.
@@ -362,7 +369,7 @@ class Client:
     # this is a bootstrap tail (latest final page + all live rows and turns);
     # with a cursor it drains everything after it toward a fixed upper cut —
     # continue with the returned next_page_token until has_more is false. Fold
-    # each page into a SessionTranscriptReducer with apply_snapshot.
+    # each page into a SessionTranscript with apply_snapshot.
     def get_session_transcript(
         self,
         session_id: str,
@@ -381,8 +388,8 @@ class Client:
         return SessionTranscriptSnapshot.model_validate(resp.json())
 
     # Open one session-transcript SSE connection and yield each decoded frame
-    # with its resume cursor (TranscriptStreamEvent.id). Apply the frames to a
-    # SessionTranscriptReducer, or use watch_session_transcript for the managed
+    # with its resume cursor (TranscriptStreamEvent.id). Apply the events to a
+    # SessionTranscript, or use watch_session_transcript for the managed
     # connection loop (reconnect on rotate, stop on idle).
     def stream_session_transcript(
         self,
@@ -397,47 +404,40 @@ class Client:
             _raise_for_stream_status(resp)
             yield from _iter_transcript_frames(resp)
 
-    # Follow a session-transcript stream across the full connection lifecycle,
-    # yielding every decoded frame. Reconnects with the current cursor on a
-    # stream.end rotate (and after a dropped connection), and returns on a
-    # stream.end idle. Apply the frames to a SessionTranscriptReducer; reconnect
-    # is the same code path as the first connect. On idle the caller can poll
-    # get_session_transcript and reopen when resume_cursor moves.
+    # Follow a session's live transcript across the full connection lifecycle.
+    # The returned watcher owns the connection loop and the view; iterate it to
+    # fold frames in, and read messages() between steps. The stream is lazy —
+    # iteration opens it. Reconnects with the current cursor on a stream.end
+    # rotate (and after a dropped connection), and stops on a stream.end idle.
+    # On idle the caller can poll get_session_transcript and reopen when
+    # resume_cursor moves.
     def watch_session_transcript(
         self,
         session_id: str,
         opts: WatchSessionTranscriptOptions | None = None,
-    ) -> Iterator[TranscriptStreamEvent]:
-        cursor = opts.cursor if opts else None
+    ) -> TranscriptWatcher:
+        transcript = (opts.transcript if opts else None) or SessionTranscript()
+        if opts and opts.cursor and not transcript.cursor:
+            transcript.cursor = opts.cursor
         delay = opts.reconnect_delay if opts is not None else 1.0
-        yield from self._transcript_loop(session_id, cursor, None, delay)
+        return TranscriptWatcher(self, session_id, transcript, delay)
 
-    # Behaves like invoke_agent but returns the started turn's transcript stream
-    # (session-stream v2) alongside the ack. Returns (ack, iterator): the
-    # iterator opens the transcript stream from the ack's resume cursor,
-    # forwards every frame across reconnects, and stops when this turn reaches a
-    # terminal turn.upsert (or on idle). Seed a SessionTranscriptReducer with
-    # the ack's user_message and turn, then apply the iterator's frames; filter
-    # with messages_for_turn(ack.turn.id) to render only this turn.
-    def invoke_agent_transcript(
-        self,
-        opts: InvokeAgentOptions,
-    ) -> tuple[TurnAck, Iterator[TranscriptStreamEvent]]:
-        ack = self.invoke_agent(opts)
-        stream = self._transcript_loop(ack.session.id, ack.resume_cursor, ack.turn.id, 1.0)
-        return ack, stream
-
-    def _transcript_loop(
+    # _watch_transcript is the reconnecting engine behind TurnTranscript and
+    # TranscriptWatcher: it folds every state frame into the view and yields
+    # after each change. stop_turn_id, when set, ends iteration after that
+    # turn's terminal turn.upsert (already applied).
+    def _watch_transcript(
         self,
         session_id: str,
-        cursor: str | None,
+        transcript: SessionTranscript,
         stop_turn_id: str | None,
         delay: float,
-    ) -> Iterator[TranscriptStreamEvent]:
+    ) -> Iterator[SessionTranscript]:
         path = f"/v1/projects/{{project}}/sessions/{quote(session_id, safe='')}/transcript/stream"
         while True:
-            params = {"cursor": cursor} if cursor else None
+            params = {"cursor": transcript.cursor} if transcript.cursor else None
             rotate = False
+            transcript._reset_ready()
             try:
                 with self._client.stream(
                     "GET",
@@ -446,18 +446,15 @@ class Client:
                 ) as resp:
                     _raise_for_stream_status(resp)
                     for event in _iter_transcript_frames(resp):
-                        if event.id:
-                            cursor = event.id
                         frame = event.frame
-                        if frame.get("event_type") == "stream.ready":
-                            cursor = frame.get("resume_cursor", cursor)
-                        yield event
                         event_type = frame.get("event_type")
                         if event_type == "stream.end":
                             if frame.get("reason") == "idle":
                                 return
                             rotate = True  # reconnect immediately
                             break
+                        transcript.apply(event)
+                        yield transcript
                         if (
                             event_type == "turn.upsert"
                             and stop_turn_id
@@ -546,6 +543,110 @@ class Client:
             if clean:
                 out = f"{out}?{urlencode(clean)}"
         return out
+
+
+class TurnTranscript:
+    """A started agent turn and its live transcript, from ``invoke_agent``.
+
+    The identity attributes (``id``, ``session_id``, …) are available
+    immediately; the transcript stream is lazy — iteration opens it, so a
+    caller that never iterates pays for nothing beyond the invoke itself.
+
+    Iterate the handle to render the turn as it streams::
+
+        turn = client.invoke_agent(opts)
+        for t in turn:
+            render(t.messages())
+        turn.status  # "completed"
+
+    Iteration yields after every state change and stops once this turn
+    reaches a terminal ``turn.upsert`` (already applied — ``status`` reflects
+    it), reconnecting through stream rotations and dropped connections along
+    the way; permanent stream errors raise. The full session stream is
+    consumed internally so the resume cursor stays valid when other turns
+    interleave; :meth:`messages` is scoped to this turn, and ``transcript``
+    exposes the whole session view.
+    """
+
+    def __init__(self, client: Client, ack: TurnAck, transcript: SessionTranscript) -> None:
+        self._client = client
+        # Turn id.
+        self.id: str = ack.turn.id
+        # Id of the session this turn runs in.
+        self.session_id: str = ack.session.id
+        # Durable v1 stream cursor from the turn-start response; pass it as
+        # after_sequence to GET …/sessions/{id}/stream to follow this turn on
+        # the v1 session stream instead.
+        self.after_sequence: int = ack.after_sequence
+        # True when a repeated idempotency key resumed an existing turn.
+        self.deduped: bool = bool(ack.deduped)
+        # Full session view the stream folds into.
+        self.transcript: SessionTranscript = transcript
+        # Set when the acked turn was already terminal (a deduped resume of a
+        # completed turn): there is nothing to stream, so iteration fetches
+        # the snapshot (all pages) instead, making messages() complete either
+        # way.
+        self._hydrate = is_terminal_turn_status(str(ack.turn.status))
+
+    @property
+    def status(self) -> str:
+        """The turn's lifecycle status ("queued", "running", "completed", …).
+
+        Live: each applied turn.upsert updates it.
+        """
+        return (self.transcript.turn(self.id) or {}).get("status", "")
+
+    def messages(self) -> list[dict[str, Any]]:
+        """This turn's rows, in render order."""
+        return self.transcript.messages_for_turn(self.id)
+
+    def __iter__(self) -> Iterator[TurnTranscript]:
+        if self._hydrate:
+            self._hydrate = False
+            # The snapshot may span pages; fold them all so messages() is complete.
+            opts = GetSessionTranscriptOptions()
+            while True:
+                snap = self._client.get_session_transcript(self.session_id, opts)
+                self.transcript.apply_snapshot(snap)
+                if not snap.has_more or not snap.next_page_token:
+                    break
+                opts.page_token = snap.next_page_token
+            yield self
+            return
+        # Already terminal (a completed prior iteration): nothing left to stream.
+        turn = self.transcript.turn(self.id)
+        if turn and is_terminal_turn_status(turn.get("status", "")):
+            return
+        for _ in self._client._watch_transcript(self.session_id, self.transcript, self.id, 1.0):
+            yield self
+
+
+class TranscriptWatcher:
+    """A session's live transcript feed, from ``watch_session_transcript``.
+
+    Iterate the handle to fold frames into ``transcript`` (yielded after
+    every state change); the stream is lazy — iteration opens it. Iteration
+    stops on a stream.end idle; permanent stream errors raise. Read the
+    resume position from ``transcript.cursor`` to resume a later watch.
+    """
+
+    def __init__(
+        self,
+        client: Client,
+        session_id: str,
+        transcript: SessionTranscript,
+        reconnect_delay: float,
+    ) -> None:
+        self._client = client
+        self.session_id = session_id
+        # The session view the stream folds into.
+        self.transcript: SessionTranscript = transcript
+        self._reconnect_delay = reconnect_delay
+
+    def __iter__(self) -> Iterator[SessionTranscript]:
+        return self._client._watch_transcript(
+            self.session_id, self.transcript, None, self._reconnect_delay
+        )
 
 
 # SSE events are separated by a blank line, which may be framed with LF or

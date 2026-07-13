@@ -213,7 +213,7 @@ def test_invoke_agent_posts_the_compound_invoke_request_shape() -> None:
         return httpx.Response(202, json=_turn_ack_body("sess_1", "turn_1", 7))
 
     client = _client_with(handler)
-    ack = client.invoke_agent(
+    turn = client.invoke_agent(
         InvokeAgentOptions(
             agent_id="agent_1",
             content=[{"type": "text", "text": "hi"}],
@@ -228,9 +228,10 @@ def test_invoke_agent_posts_the_compound_invoke_request_shape() -> None:
         )
     )
 
-    assert ack.after_sequence == 7
-    assert ack.session.id == "sess_1"
-    assert ack.turn.id == "turn_1"
+    assert turn.after_sequence == 7
+    assert turn.session_id == "sess_1"
+    assert turn.id == "turn_1"
+    assert turn.deduped is False
     assert seen["path"] == "/v1/projects/test-project/agents/invoke"
     assert '"agent_ref":{"id":"agent_1"}' in str(seen["body"])
     assert '"idempotency_key":"evt_1"' in str(seen["body"])

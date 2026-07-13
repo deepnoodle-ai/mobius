@@ -57,3 +57,9 @@ merges make them the commit subject).
 
 For GitHub work in this repository, use the `gh` CLI rather than GitHub app or
 connector tools.
+
+## Changelog convention
+
+Keep CHANGELOG.md entries short — 4 lines max per bullet: what changed, plus a
+pointer (doc or PR) for detail. API tours and rationale belong in `docs/`, not
+the changelog.

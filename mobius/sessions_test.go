@@ -29,7 +29,7 @@ func TestInvokeAgent_HighLevelClient(t *testing.T) {
 	c, srv := newTestClient(t, h)
 	defer srv.Close()
 
-	ack, err := c.InvokeAgent(context.Background(), InvokeAgentOptions{
+	turn, err := c.InvokeAgent(context.Background(), InvokeAgentOptions{
 		AgentID:        "agent_1",
 		Content:        []map[string]interface{}{{"type": "text", "text": "hi"}},
 		IdempotencyKey: "evt_1",
@@ -47,9 +47,11 @@ func TestInvokeAgent_HighLevelClient(t *testing.T) {
 	})
 
 	assert.NoError(t, err)
-	assert.Equal(t, ack.AfterSequence, int64(7))
-	assert.Equal(t, ack.Session.Id, "sess_1")
-	assert.Equal(t, ack.Turn.Id, "turn_1")
+	assert.Equal(t, turn.AfterSequence(), int64(7))
+	assert.Equal(t, turn.SessionID(), "sess_1")
+	assert.Equal(t, turn.ID(), "turn_1")
+	assert.Equal(t, turn.Status(), "running")
+	assert.False(t, turn.Deduped())
 	assert.Equal(t, body["agent_ref"].(map[string]any)["id"], "agent_1")
 	assert.Equal(t, body["input"].(map[string]any)["idempotency_key"], "evt_1")
 	assert.Equal(t, body["session"].(map[string]any)["session_key"], "app:acct_1:user_2")

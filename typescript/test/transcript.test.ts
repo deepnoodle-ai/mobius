@@ -3,7 +3,7 @@ import { test } from "node:test";
 
 import { AuthRevokedError, Client, StreamHTTPError } from "../src/client.js";
 import {
-  SessionTranscriptReducer,
+  SessionTranscript,
   isTerminalTurnStatus,
 } from "../src/transcript.js";
 import type {
@@ -17,6 +17,15 @@ function frame(f: Record<string, unknown>): SessionTranscriptFrame {
   return f as unknown as SessionTranscriptFrame;
 }
 
+// apply folds one frame given as a plain object, with an optional SSE id.
+function apply(
+  t: SessionTranscript,
+  f: Record<string, unknown>,
+  id?: string,
+): void {
+  t.apply({ frame: frame(f), id });
+}
+
 function newClient(): Client {
   return new Client({
     apiKey: "mbx_test",
@@ -25,166 +34,195 @@ function newClient(): Client {
   });
 }
 
-test("reducer: upsert/block/delta/block-complete converge on a row", () => {
-  const r = new SessionTranscriptReducer();
-  r.apply(
-    frame({
-      event_type: "message.upsert",
-      id: "m_a",
-      session_id: "s1",
-      role: "assistant",
-      status: "streaming",
-      turn_id: "t1",
-      turn_index: 1,
-      sequence: null,
-      content: [],
-      created_at: AT,
-    }),
-  );
-  r.apply(
-    frame({
-      event_type: "message.block",
-      session_id: "s1",
-      message_id: "m_a",
-      content_index: 0,
-      block: { type: "text", text: "" },
-    }),
-  );
-  r.apply(
-    frame({
-      event_type: "message.delta",
-      session_id: "s1",
-      message_id: "m_a",
-      content_index: 0,
-      text: "hel",
-    }),
-  );
-  r.apply(
-    frame({
-      event_type: "message.delta",
-      session_id: "s1",
-      message_id: "m_a",
-      content_index: 0,
-      text: "lo",
-    }),
-  );
-  assert.equal((r.rows.get("m_a")!.content[0] as { text: string }).text, "hello");
+test("transcript: upsert/block/delta/block-complete converge on a row", () => {
+  const t = new SessionTranscript();
+  apply(t, {
+    event_type: "message.upsert",
+    id: "m_a",
+    session_id: "s1",
+    role: "assistant",
+    status: "streaming",
+    turn_id: "t1",
+    turn_index: 1,
+    sequence: null,
+    content: [],
+    created_at: AT,
+  });
+  apply(t, {
+    event_type: "message.block",
+    session_id: "s1",
+    message_id: "m_a",
+    content_index: 0,
+    block: { type: "text", text: "" },
+  });
+  apply(t, {
+    event_type: "message.delta",
+    session_id: "s1",
+    message_id: "m_a",
+    content_index: 0,
+    text: "hel",
+  });
+  apply(t, {
+    event_type: "message.delta",
+    session_id: "s1",
+    message_id: "m_a",
+    content_index: 0,
+    text: "lo",
+  });
+  assert.equal((t.message("m_a")!.content[0] as { text: string }).text, "hello");
   // Completing block replaces whatever deltas built.
-  r.apply(
-    frame({
-      event_type: "message.block",
-      session_id: "s1",
-      message_id: "m_a",
-      content_index: 0,
-      block: { type: "text", text: "hello world" },
-    }),
-  );
+  apply(t, {
+    event_type: "message.block",
+    session_id: "s1",
+    message_id: "m_a",
+    content_index: 0,
+    block: { type: "text", text: "hello world" },
+  });
   assert.equal(
-    (r.rows.get("m_a")!.content[0] as { text: string }).text,
+    (t.message("m_a")!.content[0] as { text: string }).text,
     "hello world",
   );
 });
 
-test("reducer: block.patch merges tool status/progress; null clears", () => {
-  const r = new SessionTranscriptReducer();
-  r.apply(
-    frame({
-      event_type: "message.upsert",
-      id: "m_a",
-      session_id: "s1",
-      role: "assistant",
-      status: "streaming",
-      turn_id: "t1",
-      turn_index: 1,
-      sequence: null,
-      content: [
-        { type: "tool_use", id: "toolu_1", name: "fetch", input: {}, status: "pending" },
-      ],
-      created_at: AT,
-    }),
+test("transcript: block at gap index pads content (no sparse holes)", () => {
+  const t = new SessionTranscript();
+  apply(t, {
+    event_type: "message.upsert",
+    id: "m_a",
+    session_id: "s1",
+    role: "assistant",
+    status: "streaming",
+    turn_id: "t1",
+    turn_index: 1,
+    sequence: null,
+    content: [],
+    created_at: AT,
+  });
+  // Opening index 2 on empty content pads indexes 0 and 1 with empty blocks.
+  apply(t, {
+    event_type: "message.block",
+    session_id: "s1",
+    message_id: "m_a",
+    content_index: 2,
+    block: { type: "text", text: "third" },
+  });
+  const content = t.message("m_a")!.content;
+  assert.equal(content.length, 3);
+  assert.notEqual(content[0], undefined); // padded, not a sparse hole
+  assert.notEqual(content[1], undefined);
+  assert.equal((content[2] as { text: string }).text, "third");
+  // Deltas target the padded blocks, not a hole.
+  apply(t, {
+    event_type: "message.delta",
+    session_id: "s1",
+    message_id: "m_a",
+    content_index: 0,
+    text: "pad",
+  });
+  assert.equal((t.message("m_a")!.content[0] as { text: string }).text, "pad");
+  // A late message.block fills a padded index in place.
+  apply(t, {
+    event_type: "message.block",
+    session_id: "s1",
+    message_id: "m_a",
+    content_index: 1,
+    block: { type: "text", text: "second" },
+  });
+  assert.equal(
+    (t.message("m_a")!.content[1] as { text: string }).text,
+    "second",
   );
-  r.apply(
-    frame({
-      event_type: "message.block.patch",
-      session_id: "s1",
-      message_id: "m_a",
-      content_index: 0,
-      status: "running",
-      progress: { display: "scanned 1400 lines" },
-    }),
-  );
-  let block = r.rows.get("m_a")!.content[0] as {
+});
+
+test("transcript: block.patch merges tool status/progress; null clears", () => {
+  const t = new SessionTranscript();
+  apply(t, {
+    event_type: "message.upsert",
+    id: "m_a",
+    session_id: "s1",
+    role: "assistant",
+    status: "streaming",
+    turn_id: "t1",
+    turn_index: 1,
+    sequence: null,
+    content: [
+      { type: "tool_use", id: "toolu_1", name: "fetch", input: {}, status: "pending" },
+    ],
+    created_at: AT,
+  });
+  apply(t, {
+    event_type: "message.block.patch",
+    session_id: "s1",
+    message_id: "m_a",
+    content_index: 0,
+    status: "running",
+    progress: { display: "scanned 1400 lines" },
+  });
+  let block = t.message("m_a")!.content[0] as {
     status: string;
     progress?: unknown;
   };
   assert.equal(block.status, "running");
   assert.deepEqual(block.progress, { display: "scanned 1400 lines" });
   // progress: null clears; omitted status preserves.
-  r.apply(
-    frame({
-      event_type: "message.block.patch",
-      session_id: "s1",
-      message_id: "m_a",
-      content_index: 0,
-      status: "ok",
-      progress: null,
-    }),
-  );
-  block = r.rows.get("m_a")!.content[0] as { status: string; progress?: unknown };
+  apply(t, {
+    event_type: "message.block.patch",
+    session_id: "s1",
+    message_id: "m_a",
+    content_index: 0,
+    status: "ok",
+    progress: null,
+  });
+  block = t.message("m_a")!.content[0] as { status: string; progress?: unknown };
   assert.equal(block.status, "ok");
   assert.equal(block.progress, undefined);
 });
 
-test("reducer: terminal turn prunes its leftover streaming rows", () => {
-  const r = new SessionTranscriptReducer();
-  r.apply(
-    frame({
-      event_type: "message.upsert",
-      id: "m_live",
-      session_id: "s1",
-      role: "assistant",
-      status: "streaming",
-      turn_id: "t1",
-      turn_index: 1,
-      sequence: null,
-      content: [],
-      created_at: AT,
-    }),
-  );
-  r.apply(
-    frame({
-      event_type: "message.upsert",
-      id: "m_final",
-      session_id: "s1",
-      role: "user",
-      status: "final",
-      turn_id: "t1",
-      turn_index: 0,
-      sequence: 42,
-      content: [],
-      created_at: AT,
-    }),
-  );
-  r.apply(
-    frame({
-      event_type: "turn.upsert",
-      id: "t1",
-      session_id: "s1",
-      agent_id: "a1",
-      attempt: 1,
-      status: "cancelled",
-      created_at: AT,
-      updated_at: AT,
-    }),
-  );
-  assert.equal(r.rows.has("m_live"), false); // pruned
-  assert.equal(r.rows.has("m_final"), true); // durable row survives
+test("transcript: terminal turn prunes its leftover streaming rows", () => {
+  const t = new SessionTranscript();
+  apply(t, {
+    event_type: "message.upsert",
+    id: "m_live",
+    session_id: "s1",
+    role: "assistant",
+    status: "streaming",
+    turn_id: "t1",
+    turn_index: 1,
+    sequence: null,
+    content: [],
+    created_at: AT,
+  });
+  apply(t, {
+    event_type: "message.upsert",
+    id: "m_final",
+    session_id: "s1",
+    role: "user",
+    status: "final",
+    turn_id: "t1",
+    turn_index: 0,
+    sequence: 42,
+    content: [],
+    created_at: AT,
+  });
+  apply(t, {
+    event_type: "turn.upsert",
+    id: "t1",
+    session_id: "s1",
+    agent_id: "a1",
+    attempt: 1,
+    status: "cancelled",
+    created_at: AT,
+    updated_at: AT,
+  });
+  assert.equal(t.message("m_live"), undefined); // pruned
+  assert.notEqual(t.message("m_final"), undefined); // durable row survives
 });
 
-test("reducer: cursor tracks SSE id; stream.ready adopts unconditionally", () => {
-  const r = new SessionTranscriptReducer();
-  r.apply(
-    frame({
+test("transcript: cursor tracks SSE id; stream.ready adopts unconditionally", () => {
+  const t = new SessionTranscript();
+  apply(
+    t,
+    {
       event_type: "turn.upsert",
       id: "t1",
       session_id: "s1",
@@ -193,72 +231,65 @@ test("reducer: cursor tracks SSE id; stream.ready adopts unconditionally", () =>
       status: "running",
       created_at: AT,
       updated_at: AT,
-    }),
+    },
     "42.7",
   );
-  assert.equal(r.cursor, "42.7");
-  assert.equal(r.ready, false);
-  r.apply(
-    frame({ event_type: "stream.ready", session_id: "s1", resume_cursor: "99.9" }),
-  );
-  assert.equal(r.cursor, "99.9");
-  assert.equal(r.ready, true);
+  assert.equal(t.cursor, "42.7");
+  assert.equal(t.ready, false);
+  apply(t, { event_type: "stream.ready", session_id: "s1", resume_cursor: "99.9" });
+  assert.equal(t.cursor, "99.9");
+  assert.equal(t.ready, true);
 });
 
-test("reducer: ordering — final by sequence, streaming after, unknown frames ignored", () => {
-  const r = new SessionTranscriptReducer();
-  r.apply(frame({ event_type: "future.frame", whatever: true })); // ignored
-  r.apply(
-    frame({
-      event_type: "message.upsert",
-      id: "m2",
-      session_id: "s1",
-      role: "assistant",
-      status: "final",
-      turn_id: "t1",
-      turn_index: 1,
-      sequence: 43,
-      content: [],
-      created_at: AT,
-    }),
-  );
-  r.apply(
-    frame({
-      event_type: "message.upsert",
-      id: "m1",
-      session_id: "s1",
-      role: "user",
-      status: "final",
-      turn_id: "t1",
-      turn_index: 0,
-      sequence: 42,
-      content: [],
-      created_at: AT,
-    }),
-  );
-  r.apply(
-    frame({
-      event_type: "message.upsert",
-      id: "m3",
-      session_id: "s1",
-      role: "assistant",
-      status: "streaming",
-      turn_id: "t1",
-      turn_index: 2,
-      sequence: null,
-      content: [],
-      created_at: AT,
-    }),
-  );
+test("transcript: ordering — final by sequence, streaming after, unknown frames ignored", () => {
+  const t = new SessionTranscript();
+  apply(t, { event_type: "future.frame", whatever: true }); // ignored
+  apply(t, {
+    event_type: "message.upsert",
+    id: "m2",
+    session_id: "s1",
+    role: "assistant",
+    status: "final",
+    turn_id: "t1",
+    turn_index: 1,
+    sequence: 43,
+    content: [],
+    created_at: AT,
+  });
+  apply(t, {
+    event_type: "message.upsert",
+    id: "m1",
+    session_id: "s1",
+    role: "user",
+    status: "final",
+    turn_id: "t1",
+    turn_index: 0,
+    sequence: 42,
+    content: [],
+    created_at: AT,
+  });
+  apply(t, {
+    event_type: "message.upsert",
+    id: "m3",
+    session_id: "s1",
+    role: "assistant",
+    status: "streaming",
+    turn_id: "t1",
+    turn_index: 2,
+    sequence: null,
+    content: [],
+    created_at: AT,
+  });
   assert.deepEqual(
-    r.messages().map((m) => m.id),
+    t.messages().map((m) => m.id),
     ["m1", "m2", "m3"],
   );
 });
 
-test("reducer: applySnapshot prunes streaming rows absent from a final page", () => {
-  const r = new SessionTranscriptReducer();
-  r.rows.set("m_stale", {
+test("transcript: applySnapshot prunes streaming rows absent from a final page", () => {
+  const t = new SessionTranscript();
+  apply(t, {
+    event_type: "message.upsert",
     id: "m_stale",
     session_id: "s1",
     agent_id: "a1",
@@ -291,10 +322,10 @@ test("reducer: applySnapshot prunes streaming rows absent from a final page", ()
     has_more: false,
     resume_cursor: "42.6",
   };
-  r.applySnapshot(snap);
-  assert.equal(r.rows.has("m_stale"), false); // dropped: absent from final page
-  assert.equal(r.rows.has("m1"), true);
-  assert.equal(r.cursor, "42.6");
+  t.applySnapshot(snap);
+  assert.equal(t.message("m_stale"), undefined); // dropped: absent from final page
+  assert.notEqual(t.message("m1"), undefined);
+  assert.equal(t.cursor, "42.6");
 });
 
 test("client: getSessionTranscript builds the snapshot URL with query", async () => {
@@ -381,10 +412,10 @@ test("client: watchSessionTranscript reconnects on rotate and stops on idle", as
     );
   }) as typeof fetch;
 
-  let last: SessionTranscriptReducer | undefined;
+  let last: SessionTranscript | undefined;
   try {
-    for await (const r of newClient().watchSessionTranscript("sess_1")) {
-      last = r;
+    for await (const t of newClient().watchSessionTranscript("sess_1")) {
+      last = t;
     }
   } finally {
     globalThis.fetch = original;
@@ -392,7 +423,7 @@ test("client: watchSessionTranscript reconnects on rotate and stops on idle", as
   assert.equal(call, 2); // reconnected once on rotate, stopped on idle
   assert.equal(cursors[0], null); // first connect: no cursor
   assert.equal(cursors[1], "42.7"); // reconnect carries the advanced cursor
-  assert.equal(last!.turns.get("t1")!.status, "completed");
+  assert.equal(last!.turn("t1")!.status, "completed");
 });
 
 test("client: watchSessionTranscript surfaces a permanent error, no reconnect", async () => {
@@ -409,8 +440,8 @@ test("client: watchSessionTranscript surfaces a permanent error, no reconnect", 
   try {
     await assert.rejects(
       (async () => {
-        for await (const r of newClient().watchSessionTranscript("sess_1")) {
-          void r;
+        for await (const t of newClient().watchSessionTranscript("sess_1")) {
+          void t;
         }
       })(),
       (err: unknown) => err instanceof StreamHTTPError && err.status === 404,
@@ -432,8 +463,8 @@ test("client: watchSessionTranscript raises AuthRevokedError on 401", async () =
   try {
     await assert.rejects(
       (async () => {
-        for await (const r of newClient().watchSessionTranscript("sess_1")) {
-          void r;
+        for await (const t of newClient().watchSessionTranscript("sess_1")) {
+          void t;
         }
       })(),
       (err: unknown) => err instanceof AuthRevokedError,
@@ -444,43 +475,47 @@ test("client: watchSessionTranscript raises AuthRevokedError on 401", async () =
   assert.equal(calls, 1);
 });
 
-test("client: invokeAgentTranscript streams a turn to its terminal upsert", async () => {
+const invokeAck = {
+  after_sequence: 42,
+  resume_cursor: "41.6",
+  user_message: {
+    id: "m_user",
+    session_id: "s1",
+    agent_id: "a1",
+    role: "user",
+    content: [{ type: "text", text: "hi" }],
+    entry_type: "message",
+    status: "final",
+    turn_index: 0,
+    sequence: 42,
+    turn_id: "t1",
+    created_at: AT,
+  },
+  session: { id: "s1", agent_id: "a1" },
+  turn: {
+    id: "t1",
+    agent_id: "a1",
+    session_id: "s1",
+    attempt: 1,
+    status: "queued",
+    created_at: AT,
+    updated_at: AT,
+  },
+};
+
+test("client: invokeAgent streams the turn to its terminal upsert", async () => {
+  let streamCalls = 0;
   const original = globalThis.fetch;
   globalThis.fetch = (async (input: RequestInfo | URL) => {
     const url = new URL(typeof input === "string" ? input : input.toString());
     if (url.pathname.endsWith("/agents/invoke")) {
-      const ack = {
-        after_sequence: 42,
-        resume_cursor: "41.6",
-        user_message: {
-          id: "m_user",
-          session_id: "s1",
-          agent_id: "a1",
-          role: "user",
-          content: [{ type: "text", text: "hi" }],
-          entry_type: "message",
-          status: "final",
-          turn_index: 0,
-          sequence: 42,
-          turn_id: "t1",
-          created_at: AT,
-        },
-        session: { id: "s1", agent_id: "a1" },
-        turn: {
-          id: "t1",
-          agent_id: "a1",
-          session_id: "s1",
-          attempt: 1,
-          status: "queued",
-          created_at: AT,
-          updated_at: AT,
-        },
-      };
-      return new Response(JSON.stringify(ack), {
+      return new Response(JSON.stringify(invokeAck), {
         status: 202,
         headers: { "Content-Type": "application/json" },
       });
     }
+    streamCalls += 1;
+    assert.equal(url.searchParams.get("cursor"), "41.6"); // opened from the seeded cursor
     return new Response(
       `event: message.upsert\ndata: {"event_type":"message.upsert","id":"m_a","session_id":"s1","role":"assistant","status":"final","sequence":43,"turn_index":1,"turn_id":"t1","content":[{"type":"text","text":"done"}],"created_at":"${AT}"}\n\n` +
         `id: 43.9\nevent: turn.upsert\ndata: {"event_type":"turn.upsert","id":"t1","session_id":"s1","agent_id":"a1","attempt":1,"status":"completed","created_at":"${AT}","updated_at":"${AT}"}\n\n`,
@@ -488,23 +523,134 @@ test("client: invokeAgentTranscript streams a turn to its terminal upsert", asyn
     );
   }) as typeof fetch;
 
-  let last: SessionTranscriptReducer | undefined;
   try {
-    for await (const r of newClient().invokeAgentTranscript({
+    const turn = await newClient().invokeAgent({
       agentName: "support",
       content: [{ type: "text", text: "hi" }],
-    })) {
-      last = r;
+    });
+    assert.equal(turn.id, "t1");
+    assert.equal(turn.sessionId, "s1");
+    assert.equal(turn.status, "queued"); // seeded from the invoke response
+    assert.equal(turn.deduped, false);
+    assert.equal(streamCalls, 0); // lazy: no stream until iteration
+    // The caller's message row is seeded before any streaming.
+    assert.deepEqual(
+      turn.messages().map((m) => m.id),
+      ["m_user"],
+    );
+
+    let steps = 0;
+    for await (const t of turn) {
+      steps += 1;
+      void t;
     }
+    assert.equal(steps, 2); // message.upsert + terminal turn.upsert
+    assert.equal(turn.status, "completed");
+    assert.deepEqual(
+      turn.messages().map((m) => m.id),
+      ["m_user", "m_a"],
+    );
+    assert.equal(turn.transcript.cursor, "43.9");
   } finally {
     globalThis.fetch = original;
   }
-  // Seeded caller row + assistant reply are both present; turn is terminal.
-  assert.equal(last!.turns.get("t1")!.status, "completed");
-  assert.deepEqual(
-    last!.messagesForTurn("t1").map((m) => m.id),
-    ["m_user", "m_a"],
-  );
+});
+
+test("client: invokeAgent hydrates an already-terminal turn from the snapshot", async () => {
+  let streamCalls = 0;
+  const original = globalThis.fetch;
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    const url = new URL(typeof input === "string" ? input : input.toString());
+    if (url.pathname.endsWith("/agents/invoke")) {
+      const ack = {
+        ...invokeAck,
+        deduped: true,
+        user_message: undefined,
+        turn: { ...invokeAck.turn, status: "completed" },
+      };
+      return new Response(JSON.stringify(ack), {
+        status: 202,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    if (url.pathname.endsWith("/transcript")) {
+      // Two pages: hydration must follow next_page_token until has_more is
+      // false so messages() includes the older page.
+      const snap: SessionTranscriptSnapshot =
+        url.searchParams.get("page_token") === "pt_2"
+          ? {
+              messages: [
+                {
+                  id: "m_a",
+                  session_id: "s1",
+                  agent_id: "a1",
+                  role: "assistant",
+                  content: [{ type: "text", text: "done" }],
+                  entry_type: "message",
+                  status: "final",
+                  turn_index: 1,
+                  sequence: 43,
+                  turn_id: "t1",
+                  created_at: AT,
+                },
+              ],
+              turns: [],
+              has_more: false,
+              resume_cursor: "43.9",
+            }
+          : {
+              messages: [
+                {
+                  id: "m_user",
+                  session_id: "s1",
+                  agent_id: "a1",
+                  role: "user",
+                  content: [],
+                  entry_type: "message",
+                  status: "final",
+                  turn_index: 0,
+                  sequence: 42,
+                  turn_id: "t1",
+                  created_at: AT,
+                },
+              ],
+              turns: [],
+              has_more: true,
+              next_page_token: "pt_2",
+              resume_cursor: "42.1",
+            };
+      return new Response(JSON.stringify(snap), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    streamCalls += 1;
+    throw new Error(`unexpected request: ${url.pathname}`);
+  }) as typeof fetch;
+
+  try {
+    const turn = await newClient().invokeAgent({
+      agentName: "support",
+      content: [{ type: "text", text: "hi" }],
+      idempotencyKey: "evt_1",
+    });
+    assert.equal(turn.deduped, true);
+    assert.equal(turn.status, "completed");
+
+    let steps = 0;
+    for await (const t of turn) {
+      steps += 1;
+      void t;
+    }
+    assert.equal(steps, 1); // one snapshot hydration
+    assert.equal(streamCalls, 0); // no SSE connection for a finished turn
+    assert.deepEqual(
+      turn.messages().map((m) => m.id),
+      ["m_user", "m_a"],
+    );
+  } finally {
+    globalThis.fetch = original;
+  }
 });
 
 test("isTerminalTurnStatus covers the three terminal states", () => {
