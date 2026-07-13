@@ -33,16 +33,30 @@ func TestStartRun_HighLevelClient(t *testing.T) {
 	defer srv.Close()
 
 	run, err := c.StartRun(context.Background(), "loop_1", &StartRunOptions{
-		ExternalID: "external-1",
-		Event:      map[string]interface{}{"topic": "sdk"},
-		Config:     map[string]interface{}{"priority": "normal"},
+		IdempotencyKey: "run-request-1",
+		Event:          map[string]interface{}{"topic": "sdk"},
+		Config:         map[string]interface{}{"priority": "normal"},
 	})
 
 	assert.NoError(t, err)
 	assert.Equal(t, run.Id, "run_1")
-	assert.Equal(t, body["idempotency_key"], "external-1")
+	assert.Equal(t, body["idempotency_key"], "run-request-1")
 	assert.Equal(t, body["event"].(map[string]any)["topic"], "sdk")
 	assert.Equal(t, body["config"].(map[string]any)["priority"], "normal")
+}
+
+func TestStartRun_DeprecatedExternalIDCompatibility(t *testing.T) {
+	req := startRunRequest(&StartRunOptions{ExternalID: "legacy-1"})
+	assert.NotNil(t, req.IdempotencyKey)
+	assert.Equal(t, "legacy-1", *req.IdempotencyKey)
+}
+
+func TestStartRun_RejectsConflictingIdempotencyAliases(t *testing.T) {
+	_, err := (&Client{}).StartRun(context.Background(), "loop_1", &StartRunOptions{
+		IdempotencyKey: "canonical",
+		ExternalID:     "legacy",
+	})
+	assert.ErrorContains(t, err, "must match")
 }
 
 func TestRunControl_HighLevelClient(t *testing.T) {

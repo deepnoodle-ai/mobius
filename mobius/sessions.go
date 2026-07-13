@@ -81,6 +81,7 @@ type SessionStreamEvent struct {
 // ListSessionsOptions configures ListSessions.
 type ListSessionsOptions struct {
 	AgentID       string
+	AgentName     string
 	SessionKey    string
 	Status        string
 	Scope         string
@@ -235,6 +236,7 @@ func (c *Client) ListSessions(ctx context.Context, opts *ListSessionsOptions) (*
 	params := &api.ListSessionsParams{}
 	if opts != nil {
 		params.AgentId = stringPointer(opts.AgentID)
+		params.AgentName = stringPointer(opts.AgentName)
 		params.SessionKey = stringPointer(opts.SessionKey)
 		if opts.Status != "" {
 			v := api.SessionStatus(opts.Status)

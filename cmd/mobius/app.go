@@ -60,6 +60,7 @@ func newApp() *cli.App {
 	registerGitCredentialHelperCommand(app)
 	registerAuthCommands(app)
 	registerGeneratedCommands(app)
+	registerPrincipalCreateCommand(app)
 
 	return app
 }

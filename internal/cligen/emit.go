@@ -646,6 +646,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/deepnoodle-ai/wonton/cli"
 	"gopkg.in/yaml.v3"
@@ -1071,6 +1072,20 @@ func decodeFlagJSON(ctx *cli.Context, flag, raw string, v any) error {
 		return nil
 	}
 	if err := json.Unmarshal([]byte(raw), v); err != nil {
+		switch target := v.(type) {
+		case **time.Time:
+			parsed, parseErr := time.Parse(time.RFC3339, raw)
+			if parseErr == nil {
+				*target = &parsed
+				return nil
+			}
+		case *time.Time:
+			parsed, parseErr := time.Parse(time.RFC3339, raw)
+			if parseErr == nil {
+				*target = parsed
+				return nil
+			}
+		}
 		return cli.Errorf("--%s: invalid JSON: %v", flag, jsonErrLocation(err, []byte(raw)))
 	}
 	return nil

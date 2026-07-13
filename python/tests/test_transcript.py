@@ -17,6 +17,7 @@ from deepnoodle.mobius import (
     NudgeSessionOptions,
     SessionTranscript,
     TranscriptStreamEvent,
+    WatchSessionTranscriptOptions,
     is_terminal_turn_status,
     normalize_tool_use,
     text_of,
@@ -434,6 +435,35 @@ def test_watch_session_transcript_reconnects_on_rotate_stops_on_idle() -> None:
     assert calls[1] == "42.7"  # reconnect carries the advanced cursor
     assert watch.transcript.turn("t1")["status"] == "completed"
     assert watch.transcript.cursor == "43.9"
+
+
+def test_watch_session_transcript_follow_reconnects_on_idle() -> None:
+    calls = 0
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            body = 'event: stream.end\ndata: {"event_type":"stream.end","session_id":"s1","reason":"idle"}\n\n'
+        else:
+            body = (
+                'id: 44.1\nevent: turn.upsert\ndata: {"event_type":"turn.upsert","id":"t2","session_id":"s1","agent_id":"a1","attempt":1,"status":"running","created_at":"%s","updated_at":"%s"}\n\n'
+                % (AT, AT)
+            )
+        return httpx.Response(200, text=body, headers={"Content-Type": "text/event-stream"})
+
+    client = _client_with(handler)
+    iterator = iter(
+        client.watch_session_transcript(
+            "sess_1",
+            WatchSessionTranscriptOptions(follow=True, reconnect_delay=0),
+        )
+    )
+    transcript = next(iterator)
+    iterator.close()
+
+    assert transcript.turn("t2")["status"] == "running"
+    assert calls == 2
 
 
 def test_invoke_agent_streams_turn_to_terminal() -> None:

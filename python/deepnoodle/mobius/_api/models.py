@@ -27,7 +27,7 @@ class Error(BaseModel):
     )
     code: str = Field(
         ...,
-        description='Stable, machine-readable error code in lower_snake_case. The cross-cutting codes clients can rely on across endpoints are: `bad_request` (malformed input / failed validation), `unauthorized`, `forbidden`, `not_found`, `conflict` / `already_exists`, `rate_limit_exceeded`, and `service_unavailable`. Direct session invocation conflicts use `session_turn_active` with the blocking `turn_id` and `status` in `details`. Endpoint-specific codes (e.g. `loop_paused`, `invalid_signature`) extend this set; an unrecognized code should be handled by its HTTP status family.',
+        description='Stable, machine-readable error code in lower_snake_case. The cross-cutting codes clients can rely on across endpoints are: `bad_request` (malformed input / failed validation), `unauthorized`, `permission_denied`, `forbidden`, `not_found`, `conflict` / `already_exists`, `rate_limit_exceeded`, and `service_unavailable`. Direct session invocation conflicts use `session_turn_active` with the blocking `turn_id` and `status` in `details`. Session-key lookups without an agent scope use `session_key_scope_required`. Authenticated callers missing a permission receive `permission_denied` with the required permission in `details`. Endpoint-specific codes (e.g. `loop_paused`, `invalid_signature`) extend this set; an unrecognized code should be handled by its HTTP status family.',
     )
     message: str = Field(..., description='Human-readable error message')
     details: dict[str, Any] | None = Field(
@@ -464,15 +464,16 @@ class Session(BaseModel):
     )
     scope_ref_id: str = Field(
         ...,
-        description='Identifier of the resource the session is scoped to (e.g. the agent for agent-scoped sessions).',
+        description='Advanced provenance identifying the resource that owns the session namespace. Mobius derives this from `agent_id` for normal agent sessions.',
     )
     scope_name: str = Field(
         ...,
-        description='Caller-assigned name identifying this conversation within its scope (`scope` + `scope_ref_id`); reused as the session routing key.',
+        deprecated=True,
+        description='Deprecated legacy alias of `session_key`. Kept for compatibility while clients migrate to the canonical conversation-key field.',
     )
     session_key: str = Field(
         ...,
-        description='Stable session routing key used to look up a scoped conversation (mirrors `scope_name`).',
+        description='Stable caller-assigned conversation key, unique within one agent.',
     )
     visibility: SessionVisibility = Field(
         ..., description='Where the session appears in project UI surfaces.'
@@ -1151,6 +1152,10 @@ class CreateAPIKeyRequest(BaseModel):
     scope_role_id: str | None = Field(
         None,
         description="Optional role whose permissions cap this key below its principal's full grants.",
+    )
+    allow_unassigned_principal: bool = Field(
+        False,
+        description='Allow minting a key for a principal with no project role assignments. The resulting key cannot access project resources until a role is assigned. Omit this for normal onboarding so a missing assignment fails with `principal_has_no_roles`.',
     )
     expires_at: AwareDatetime | None = Field(
         None, description='Optional hard expiry. Omit for a non-expiring key.'
@@ -2579,7 +2584,249 @@ class PingWebhookResult(BaseModel):
     )
 
 
+class Scope(StrEnum):
+    project = 'project'
+    org = 'org'
+    platform = 'platform'
+    action = 'action'
+
+
+class Category(StrEnum):
+    project = 'project'
+    access = 'access'
+    loops = 'loops'
+    runs = 'runs'
+    work = 'work'
+    integrations = 'integrations'
+    audit = 'audit'
+    billing = 'billing'
+    platform = 'platform'
+    actions = 'actions'
+
+
+class Risk1(StrEnum):
+    low = 'low'
+    medium = 'medium'
+    high = 'high'
+    critical = 'critical'
+
+
+class UserKind(StrEnum):
+    human = 'human'
+    agent = 'agent'
+    service = 'service'
+    system = 'system'
+
+
+class PermissionDefinition(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str = Field(..., description='Stable permission ID stored on roles.')
+    label: str = Field(..., description='Human-readable label for product UI.')
+    description: str = Field(
+        ..., description='Short explanation of what the permission grants.'
+    )
+    scope: Scope
+    category: Category
+    risk: Risk1
+    assignable: bool = Field(
+        ...,
+        description='Whether this permission should be selectable in the current project role builder.',
+    )
+    user_kinds: list[UserKind] = Field(
+        ...,
+        description='User kinds this permission is intended for.',
+        max_length=4,
+        min_length=1,
+    )
+
+
+class PermissionPreset(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str
+    label: str
+    description: str
+    scope: Scope
+    permissions: list[str] = Field(..., max_length=64)
+
+
 class Source2(StrEnum):
+    platform = 'platform'
+    integration = 'integration'
+    custom = 'custom'
+
+
+class ActionPermissionGroup(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str = Field(
+        ...,
+        description='Wildcard permission ID, for example `actions.execute.slack.*`.',
+    )
+    label: str
+    source: Source2
+    children: list[str] = Field(
+        ...,
+        description='Concrete action execution permission IDs included in this group.',
+        max_length=200,
+    )
+
+
+class PermissionCatalogResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    items: list[PermissionDefinition] = Field(..., max_length=64)
+    presets: list[PermissionPreset] = Field(..., max_length=32)
+    action_groups: list[ActionPermissionGroup] = Field(..., max_length=64)
+
+
+class Role1(BaseModel):
+    """
+    Named bundle of permissions assignable to human or machine principals. Roles let admins grant loop, project, and integration capabilities consistently without editing every user individually.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str = Field(..., description='Unique identifier for this role.')
+    project_id: str | None = Field(
+        None, description='Scoping project. Empty for system-defined roles.'
+    )
+    name: str = Field(
+        ..., description='Human-readable role name, unique within org+project scope.'
+    )
+    description: str | None = Field(
+        None,
+        description='Optional human-readable description of what this role grants.',
+    )
+    permissions: list[str] = Field(
+        ...,
+        description='Permission strings granted by this role. Source allowed values from `GET /v1/projects/{project_handle}/permissions`; legacy IDs or values not present in that catalog are rejected.',
+    )
+    system_defined: bool = Field(
+        ...,
+        description='True for built-in platform roles that cannot be modified or deleted.',
+    )
+    tags: TagMap | None = None
+    created_at: AwareDatetime = Field(
+        ..., description='Timestamp when this role was created.'
+    )
+    updated_at: AwareDatetime = Field(
+        ..., description='Timestamp when this role was last updated.'
+    )
+
+
+class RoleAssignment(BaseModel):
+    """
+    Binding between a principal and a role in one project. Use assignments to explain why a principal (human or machine) has access and to audit who granted it.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str = Field(..., description='Unique identifier for this role assignment.')
+    principal_id: str = Field(..., description='Principal ID receiving the role.')
+    role_id: str = Field(..., description='ID of the assigned role.')
+    role_name: str = Field(..., description='Name of the assigned role.')
+    granted_by: str | None = Field(
+        None, description='Principal ID of the caller who created this assignment.'
+    )
+    created_at: AwareDatetime = Field(
+        ..., description='Timestamp when this assignment was created.'
+    )
+
+
+class RoleListResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    items: list[Role1] = Field(..., description='The list of results for this page.')
+    next_cursor: str | None = Field(
+        None,
+        description='Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.',
+    )
+    has_more: bool = Field(..., description='Whether additional pages are available.')
+
+
+class RoleAssignmentListResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    items: list[RoleAssignment] = Field(
+        ..., description='The list of results for this page.'
+    )
+
+
+class CreateRoleRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    name: str = Field(..., description='Unique name within the project.')
+    description: str | None = Field(
+        None,
+        description='Optional human-readable description of what this role grants.',
+    )
+    permissions: list[str] = Field(
+        ...,
+        description='Permission strings to include. Source allowed values from `GET /v1/projects/{project_handle}/permissions`; legacy IDs or values not present in that catalog are rejected.',
+    )
+    tags: TagMap | None = None
+
+
+class UpdateRoleRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    description: str | None = Field(None, description='Replacement description.')
+    permissions: list[str] | None = Field(
+        None,
+        description='Replaces the existing permissions array entirely. Source allowed values from `GET /v1/projects/{project_handle}/permissions`; legacy IDs or values not present in that catalog are rejected.',
+    )
+    tags: TagMap | None = None
+
+
+class CreateRoleAssignmentRequest1(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    principal_id: str = Field(
+        ..., description='Principal ID to assign the role to (human or machine).'
+    )
+    role_id: str = Field(..., description='Mutually exclusive with `role_name`.')
+    role_name: str | None = Field(
+        None,
+        description='Resolved to a role ID server-side. Mutually exclusive with `role_id`.',
+    )
+
+
+class CreateRoleAssignmentRequest2(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    principal_id: str = Field(
+        ..., description='Principal ID to assign the role to (human or machine).'
+    )
+    role_id: str | None = Field(
+        None, description='Mutually exclusive with `role_name`.'
+    )
+    role_name: str = Field(
+        ...,
+        description='Resolved to a role ID server-side. Mutually exclusive with `role_id`.',
+    )
+
+
+class CreateRoleAssignmentRequest(
+    RootModel[CreateRoleAssignmentRequest1 | CreateRoleAssignmentRequest2]
+):
+    root: CreateRoleAssignmentRequest1 | CreateRoleAssignmentRequest2
+
+
+class Source3(StrEnum):
     """
     Where the org's definitions resolve from by default.
     """
@@ -2605,7 +2852,7 @@ class DefinitionResolverConfig(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    source: Source2 = Field(
+    source: Source3 = Field(
         ..., description="Where the org's definitions resolve from by default."
     )
     endpoint_url: str | None = Field(
@@ -3651,7 +3898,7 @@ class ToolkitAction(BaseModel):
     )
 
 
-class Source4(StrEnum):
+class Source5(StrEnum):
     """
     Provenance of this toolkit. `system` toolkits are built-in; `project` toolkits are user-authored.
     """
@@ -3673,7 +3920,7 @@ class Toolkit(BaseModel):
     description: str | None = Field(
         None, description="Markdown description of the toolkit's purpose."
     )
-    source: Source4 = Field(
+    source: Source5 = Field(
         ...,
         description='Provenance of this toolkit. `system` toolkits are built-in; `project` toolkits are user-authored.',
     )
@@ -3692,7 +3939,7 @@ class Toolkit(BaseModel):
     updated_at: AwareDatetime = Field(..., description='Last update timestamp.')
 
 
-class Source5(StrEnum):
+class Source6(StrEnum):
     """
     Provenance of this skill. `system` is built-in; `project` is project-local.
     """
@@ -3714,7 +3961,7 @@ class Skill(BaseModel):
     description: str | None = Field(
         None, description="Markdown description of the skill's purpose."
     )
-    source: Source5 = Field(
+    source: Source6 = Field(
         ...,
         description='Provenance of this skill. `system` is built-in; `project` is project-local.',
     )
@@ -4021,7 +4268,7 @@ class TurnStartedPayload(BaseModel):
     )
 
 
-class Role1(StrEnum):
+class Role2(StrEnum):
     """
     Always `assistant`.
     """
@@ -4304,7 +4551,7 @@ class CreateSessionRequest(BaseModel):
     )
 
 
-class Role2(StrEnum):
+class Role3(StrEnum):
     """
     Role of the input message. A turn carries caller input, so only `user` is accepted; defaults to `user` when omitted.
     """
@@ -4320,7 +4567,7 @@ class StartTurnRequest(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    role: Role2 = Field(
+    role: Role3 = Field(
         'user',
         description='Role of the input message. A turn carries caller input, so only `user` is accepted; defaults to `user` when omitted.',
     )
@@ -4491,7 +4738,7 @@ class RunNameSpec(BaseModel):
     )
 
 
-class Source6(StrEnum):
+class Source7(StrEnum):
     """
     How the repository target is resolved. `static` clones `full_name`; `match` clones the repository the trigger event concerns.
     """
@@ -4516,7 +4763,7 @@ class LoopSpecRepository(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    source: Source6 = Field(
+    source: Source7 = Field(
         'static',
         description='How the repository target is resolved. `static` clones `full_name`; `match` clones the repository the trigger event concerns.',
     )
@@ -4777,7 +5024,7 @@ class LoopEnvironmentPolicy(BaseModel):
     )
 
 
-class Scope(StrEnum):
+class Scope2(StrEnum):
     """
     Named-session boundary. `auto` and omitted use `loop`. `agent` intentionally shares the named session across loops using the same agent.
     """
@@ -4795,7 +5042,7 @@ class LoopAgentSessionPolicy(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    scope: Scope | None = Field(
+    scope: Scope2 | None = Field(
         None,
         description='Named-session boundary. `auto` and omitted use `loop`. `agent` intentionally shares the named session across loops using the same agent.',
     )
@@ -5645,6 +5892,125 @@ class TableSchema(BaseModel):
     )
 
 
+class PrincipalKind(StrEnum):
+    """
+    Machine principal kind. `service` is the standalone user-facing API client identity. `agent` and `system` are internal backing identities for agent execution and platform-internal work. (Human principals are managed as organization members, not on this surface.)
+    """
+
+    service = 'service'
+    agent = 'agent'
+    system = 'system'
+
+
+class PrincipalState(StrEnum):
+    """
+    Canonical business-lifecycle state. `active` allows authentication and job claims; `disabled` is a reversible kill switch that blocks them but preserves the record and its assignments; `deleted` is the retained archived state used for audit, attribution, and history.
+    """
+
+    active = 'active'
+    disabled = 'disabled'
+    deleted = 'deleted'
+
+
+class Principal(BaseModel):
+    """
+    Non-human identity used by loop, agents, and API keys. A principal makes ownership, permissions, and credential rotation explicit without tying machine access to a human user. The `id` is the principal id used as the `owned_by` value when filtering or claiming resources.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str = Field(..., description='Unique identifier for this principal.')
+    kind: PrincipalKind = Field(..., description='Machine kind of this principal.')
+    state: PrincipalState = Field(
+        ...,
+        description='Current lifecycle state: `active`, `disabled`, or retained `deleted`.',
+    )
+    name: str = Field(
+        ...,
+        description='Human-readable name for this principal. Immutable after creation.',
+    )
+    description: str | None = Field(
+        None, description='Optional human-readable description.'
+    )
+    handle: str | None = Field(
+        None,
+        description='Typed, human-readable stable reference for this machine principal (`svc:acme-ci`, `agent:harry`, `system`). Replaces the synthetic email for non-humans (PRD 2026-06-04 FR-3).',
+    )
+    owner_id: str | None = Field(
+        None,
+        description='Optional human principal accountable for this machine principal.',
+    )
+    role_ids: list[str] | None = Field(
+        None,
+        description='Role IDs currently assigned to this principal in the project.',
+    )
+    metadata: dict[str, Any] | None = Field(
+        None,
+        description='Arbitrary key-value metadata. Subject to size and nesting depth limits.',
+    )
+    tags: TagMap | None = None
+    created_at: AwareDatetime = Field(
+        ..., description='Timestamp when this principal was created.'
+    )
+    updated_at: AwareDatetime = Field(
+        ..., description='Timestamp when this principal was last updated.'
+    )
+
+
+class PrincipalListResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    items: list[Principal] = Field(
+        ..., description='The list of results for this page.'
+    )
+
+
+class CreatePrincipalRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    name: str = Field(
+        ...,
+        description='Human-readable name for this principal. Immutable after creation.',
+    )
+    description: str | None = Field(
+        None, description='Optional human-readable description.'
+    )
+    owner_id: str | None = Field(
+        None, description='Human principal accountable for this service principal.'
+    )
+    metadata: dict[str, Any] | None = Field(
+        None, description='Arbitrary metadata to attach to the principal.'
+    )
+    role_ids: list[str] | None = Field(
+        None,
+        description='One or more role IDs to assign at creation time. All assignments are created atomically with the principal. Requires `mobius.project.admin`. Each role must belong to this project or be system-defined.',
+        min_length=1,
+    )
+    tags: TagMap | None = None
+
+
+class UpdatePrincipalRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    description: str | None = Field(None, description='Replacement description.')
+    state: PrincipalState | None = Field(
+        None, description='Replacement lifecycle state: `active` or `disabled`.'
+    )
+    owner_id: str | None = Field(
+        None, description='Human principal accountable for this principal.'
+    )
+    metadata: dict[str, Any] | None = Field(None, description='Replacement metadata.')
+    role_ids: list[str] | None = Field(
+        None,
+        description='Replacement role IDs for this principal in the project. Send an empty array to remove all project role assignments. Requires `mobius.project.admin`.',
+    )
+    tags: TagMap | None = None
+
+
 class Table(BaseModel):
     """
     Project table metadata and schema.
@@ -6324,7 +6690,7 @@ class PutDefinitionResolverRequest(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    source: Source2 = Field(
+    source: Source3 = Field(
         ..., description="Where the org's definitions resolve from by default."
     )
     endpoint_url: str | None = Field(
@@ -8060,7 +8426,7 @@ class AgentMessagePayload(BaseModel):
     sequence: int = Field(
         ..., description="The mirrored message's per-session transcript sequence."
     )
-    role: Role1 = Field(..., description='Always `assistant`.')
+    role: Role2 = Field(..., description='Always `assistant`.')
     content: list[SessionContentBlock] = Field(
         ...,
         description="The assistant message's full canonical content blocks (text, thinking, tool_use).",

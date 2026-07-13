@@ -168,7 +168,7 @@ def test_start_run_posts_to_loop_bound_route() -> None:
     run = client.start_run(
         "loop_1",
         StartRunOptions(
-            external_id="external-1",
+            idempotency_key="run-request-1",
             event={"topic": "sdk"},
             config={"priority": "normal"},
             source=LoopRunSource(type="api", id="test"),
@@ -177,9 +177,27 @@ def test_start_run_posts_to_loop_bound_route() -> None:
 
     assert run.id == "run_1"
     assert seen["path"] == "/v1/projects/test-project/loops/loop_1/runs"
-    assert '"idempotency_key":"external-1"' in str(seen["body"])
+    assert '"idempotency_key":"run-request-1"' in str(seen["body"])
     assert '"event":{"topic":"sdk"}' in str(seen["body"])
     assert '"config":{"priority":"normal"}' in str(seen["body"])
+
+
+def test_start_run_keeps_external_id_as_deprecated_alias() -> None:
+    seen: dict[str, str] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen["body"] = request.read().decode()
+        return httpx.Response(202, json=_run_body("run_1", "running"))
+
+    client = _client_with(handler)
+    client.start_run("loop_1", StartRunOptions(external_id="legacy-1"))
+    assert '"idempotency_key":"legacy-1"' in seen["body"]
+
+    with pytest.raises(ValueError, match="must match"):
+        client.start_run(
+            "loop_1",
+            StartRunOptions(idempotency_key="canonical", external_id="legacy"),
+        )
 
 
 def test_run_control_helpers_use_project_scoped_paths_and_enum_query_values() -> None:
