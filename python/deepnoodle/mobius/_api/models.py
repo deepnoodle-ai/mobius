@@ -4177,7 +4177,7 @@ class InvokeInput(BaseModel):
     )
     idempotency_key: str | None = Field(
         None,
-        description='Dedup key scoped to the resolved session. A repeat call with the same key resumes the existing turn and writes nothing new — derive it from the provider event id for Slack/Telegram webhook retries.',
+        description='Dedup key scoped to the resolved session. A repeat call with the same key resumes the existing turn and writes nothing new — derive it from the provider event id for Slack/Telegram webhook retries. Omitting it or sending a blank value disables retry deduplication.',
     )
     metadata: dict[str, Any] | None = Field(
         None, description='Free-form caller metadata attached to the input message.'
@@ -4265,7 +4265,7 @@ class StartTurnRequest(BaseModel):
     )
     idempotency_key: str | None = Field(
         None,
-        description='Dedup key scoped to the session. A repeat call with the same key resumes the existing turn and writes nothing new.',
+        description='Dedup key scoped to the session. A repeat call with the same key resumes the existing turn and writes nothing new. Omitting it or sending a blank value disables retry deduplication.',
     )
     metadata: dict[str, Any] | None = Field(
         None, description='Free-form caller metadata attached to the input message.'

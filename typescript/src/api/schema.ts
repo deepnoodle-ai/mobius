@@ -1061,7 +1061,7 @@ export interface paths {
         put?: never;
         /**
          * Start an agent turn
-         * @description Appends one caller input message to the session and starts an agent turn to respond. By default returns `202 Accepted` immediately with a durable `after_sequence` cursor (a message `sequence`) to stream from. The turn keeps running even if the caller disconnects. When the request sets `Accept: text/event-stream`, the response is `200 OK` and the turn's activity is streamed inline on the same connection, equivalent to opening `GET .../stream` at the returned cursor. A repeated call with the same `idempotency_key` resumes the existing turn rather than starting a second invocation. A distinct send while a direct turn is queued, running, or waiting returns `409 session_turn_active` before appending the new input; use the nudge endpoint explicitly to steer an active turn. one. Requires the `mobius.agent.invoke` permission (or the agent's own backing principal).
+         * @description Appends one caller input message to the session and starts an agent turn to respond. By default returns `202 Accepted` immediately with a durable `after_sequence` cursor (a message `sequence`) to stream from. The turn keeps running even if the caller disconnects. When the request sets `Accept: text/event-stream`, the response is `200 OK` and the turn's activity is streamed inline on the same connection, equivalent to opening `GET .../stream` at the returned cursor. A repeated call with the same `idempotency_key` resumes the existing turn rather than starting a second invocation. A distinct send while a direct turn is queued, running, or waiting returns `409 session_turn_active` before appending the new input; use the nudge endpoint explicitly to steer an active turn. Requires the `mobius.agent.invoke` permission (or the agent's own backing principal).
          */
         post: operations["startTurn"];
         delete?: never;
@@ -5610,7 +5610,7 @@ export interface components {
             content: {
                 [key: string]: unknown;
             }[];
-            /** @description Dedup key scoped to the resolved session. A repeat call with the same key resumes the existing turn and writes nothing new — derive it from the provider event id for Slack/Telegram webhook retries. */
+            /** @description Dedup key scoped to the resolved session. A repeat call with the same key resumes the existing turn and writes nothing new — derive it from the provider event id for Slack/Telegram webhook retries. Omitting it or sending a blank value disables retry deduplication. */
             idempotency_key?: string;
             /** @description Free-form caller metadata attached to the input message. */
             metadata?: {
@@ -5665,7 +5665,7 @@ export interface components {
             content: {
                 [key: string]: unknown;
             }[];
-            /** @description Dedup key scoped to the session. A repeat call with the same key resumes the existing turn and writes nothing new. */
+            /** @description Dedup key scoped to the session. A repeat call with the same key resumes the existing turn and writes nothing new. Omitting it or sending a blank value disables retry deduplication. */
             idempotency_key?: string;
             /** @description Free-form caller metadata attached to the input message. */
             metadata?: {

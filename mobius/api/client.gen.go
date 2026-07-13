@@ -5558,7 +5558,7 @@ type InvokeInput struct {
 	// Content Ordered content blocks (text, images) for the input message.
 	Content []map[string]interface{} `json:"content"`
 
-	// IdempotencyKey Dedup key scoped to the resolved session. A repeat call with the same key resumes the existing turn and writes nothing new — derive it from the provider event id for Slack/Telegram webhook retries.
+	// IdempotencyKey Dedup key scoped to the resolved session. A repeat call with the same key resumes the existing turn and writes nothing new — derive it from the provider event id for Slack/Telegram webhook retries. Omitting it or sending a blank value disables retry deduplication.
 	IdempotencyKey *string `json:"idempotency_key,omitempty"`
 
 	// Metadata Free-form caller metadata attached to the input message.
@@ -7668,7 +7668,7 @@ type StartTurnRequest struct {
 	// Content Ordered content blocks (text, images) for the input message.
 	Content []map[string]interface{} `json:"content"`
 
-	// IdempotencyKey Dedup key scoped to the session. A repeat call with the same key resumes the existing turn and writes nothing new.
+	// IdempotencyKey Dedup key scoped to the session. A repeat call with the same key resumes the existing turn and writes nothing new. Omitting it or sending a blank value disables retry deduplication.
 	IdempotencyKey *string `json:"idempotency_key,omitempty"`
 
 	// Metadata Free-form caller metadata attached to the input message.

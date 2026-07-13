@@ -703,7 +703,7 @@ func registerSessionsCommands(app *cli.App) {
 		AddArg(&cli.Arg{Name: "session-id", Description: "Identifier of the conversation session.", Required: true}).
 		Flags(
 			cli.String("content", "").Help("[required] Ordered content blocks (text, images) for the input message. Accepts JSON, @file, or @-."),
-			cli.String("idempotency-key", "").Help("Dedup key scoped to the session. A repeat call with the same key resumes the existing turn and writes nothing new."),
+			cli.String("idempotency-key", "").Help("Dedup key scoped to the session. A repeat call with the same key resumes the existing turn and writes nothing new. Omitting it or sending a…"),
 			cli.String("metadata", "").Help("Free-form caller metadata attached to the input message. Accepts JSON, @file, or @-."),
 			cli.String("role", "").Help("Role of the input message. A turn carries caller input, so only `user` is accepted; defaults to `user` when omitted."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),

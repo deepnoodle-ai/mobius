@@ -2774,8 +2774,7 @@ paths:
         `idempotency_key` resumes the existing turn rather than starting a second invocation.
         A distinct send while a direct turn is queued, running, or waiting returns `409 session_turn_active`
         before appending the new input; use the nudge endpoint explicitly to steer an active
-        turn. one. Requires the `mobius.agent.invoke` permission (or the agent''s own backing
-        principal).'
+        turn. Requires the `mobius.agent.invoke` permission (or the agent''s own backing principal).'
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/SessionIdParam'
@@ -11688,7 +11687,8 @@ components:
           type: string
           description: Dedup key scoped to the resolved session. A repeat call with the same
             key resumes the existing turn and writes nothing new — derive it from the provider
-            event id for Slack/Telegram webhook retries.
+            event id for Slack/Telegram webhook retries. Omitting it or sending a blank value
+            disables retry deduplication.
         metadata:
           type: object
           additionalProperties: true
@@ -11780,7 +11780,8 @@ components:
         idempotency_key:
           type: string
           description: Dedup key scoped to the session. A repeat call with the same key resumes
-            the existing turn and writes nothing new.
+            the existing turn and writes nothing new. Omitting it or sending a blank value
+            disables retry deduplication.
         metadata:
           type: object
           additionalProperties: true
