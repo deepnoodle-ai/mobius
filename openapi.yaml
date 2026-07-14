@@ -5865,15 +5865,6 @@ components:
       description: Framework provider identifier from the integration provider catalog.
       schema:
         type: string
-    IdempotencyKey:
-      name: Idempotency-Key
-      in: header
-      required: false
-      description: Stable caller-generated key. Reusing it returns the original operation.
-      schema:
-        type: string
-        minLength: 1
-        maxLength: 255
     OrgIDParam:
       name: org_id
       in: path

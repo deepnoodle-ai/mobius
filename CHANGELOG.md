@@ -16,6 +16,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
   TypeScript contracts and transcript accumulators.
 - TypeScript `SessionChat` wraps invoke, transcript following, pushed human-input
   interactions, and responses without polling or manual cursor handling.
+- Curated Go, Python, and TypeScript clients now expose blueprint lifecycle,
+  project permissions/RBAC, and filtered interaction-list operations, with
+  route coverage for the complete session nudge lifecycle.
 
 ### Changed
 
@@ -24,6 +27,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
   absolute `threshold_tokens` override.
 - Reusing an invocation idempotency key returns the existing turn and never
   restarts a terminal turn, including one that was cancelled.
+- TypeScript API index generation now exports composed OpenAPI schemas as well
+  as object and enum schemas.
 
 ## [0.0.49] - 2026-07-13
 

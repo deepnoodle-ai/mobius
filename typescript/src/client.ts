@@ -5,11 +5,20 @@ import type {
   AgentTurnListResponse,
   AgentTurnOperationPolicy,
   AgentRef,
+  ApplyBlueprintRequest,
+  BlueprintApplyResult,
+  BlueprintBindingListResponse,
+  BlueprintDeleteResult,
   CancelLoopRunRequest,
   ChannelContext,
+  CreatePrincipalRequest,
+  CreateRoleAssignmentRequest,
+  CreateRoleRequest,
   CreateLoopRequest,
   InlineAgentConfig,
   Interaction,
+  InteractionKind,
+  InteractionListResponse,
   InvokeAgentRequest,
   InvokeInput,
   InvokeSessionSpec,
@@ -21,6 +30,10 @@ import type {
   LoopRunSource,
   LoopRunStatus,
   LoopStatus,
+  PermissionCatalogResponse,
+  Principal,
+  PrincipalKind,
+  PrincipalListResponse,
   RuntimeContextItem,
   Session,
   SessionListResponse,
@@ -34,6 +47,10 @@ import type {
   SessionTranscriptMessage,
   SessionTranscriptSnapshot,
   RespondToInteractionRequest,
+  Role,
+  RoleAssignment,
+  RoleAssignmentListResponse,
+  RoleListResponse,
   SignalLoopRunRequest,
   StartTurnRequest,
   StartLoopRunRequest,
@@ -41,6 +58,8 @@ import type {
   TagMap,
   TurnAck,
   UpdateLoopRequest,
+  UpdatePrincipalRequest,
+  UpdateRoleRequest,
 } from "./api/index.js";
 import {
   DEFAULT_MAX_RETRIES,
@@ -464,6 +483,47 @@ export interface ListSessionNudgesOptions {
   limit?: number;
 }
 
+export interface ListBlueprintBindingsOptions {
+  namespace?: string;
+  blueprintKey?: string;
+}
+
+export interface DeleteBlueprintOptions {
+  namespace?: string;
+  deleteRetained?: boolean;
+}
+
+export interface SetBlueprintProtectionOptions {
+  namespace?: string;
+}
+
+export interface ListInteractionsOptions {
+  status?: "pending" | "completed" | "expired" | "cancelled";
+  kind?: InteractionKind;
+  runId?: string;
+  sessionId?: string;
+  targetUserId?: string;
+  inbox?: boolean;
+  cursor?: string;
+  limit?: number;
+}
+
+export interface ListPrincipalsOptions {
+  kind?: PrincipalKind;
+  includeDisabled?: boolean;
+  limit?: number;
+}
+
+export interface ListRoleAssignmentsOptions {
+  principalId?: string;
+  roleId?: string;
+}
+
+export interface ListRolesOptions {
+  cursor?: string;
+  limit?: number;
+}
+
 export class Client {
   private readonly baseURL: string;
   readonly project: string;
@@ -577,6 +637,193 @@ export class Client {
   async deleteLoop(id: string): Promise<void> {
     await this.request(
       `/v1/projects/:project/loops/${encodeURIComponent(id)}`,
+      { method: "DELETE" },
+    );
+  }
+
+  async applyBlueprint(
+    input: ApplyBlueprintRequest,
+  ): Promise<BlueprintApplyResult> {
+    const resp = await this.request("/v1/projects/:project/blueprints/apply", {
+      method: "POST",
+      body: input,
+    });
+    return (await resp.json()) as BlueprintApplyResult;
+  }
+
+  async listBlueprintBindings(
+    opts: ListBlueprintBindingsOptions = {},
+  ): Promise<BlueprintBindingListResponse> {
+    const path = withQuery("/v1/projects/:project/blueprints/bindings", {
+      namespace: opts.namespace,
+      blueprint_key: opts.blueprintKey,
+    });
+    const resp = await this.request(path, { method: "GET" });
+    return (await resp.json()) as BlueprintBindingListResponse;
+  }
+
+  async setBlueprintProtection(
+    blueprintKey: string,
+    protectedResources: boolean,
+    opts: SetBlueprintProtectionOptions = {},
+  ): Promise<BlueprintBindingListResponse> {
+    const path = withQuery(
+      `/v1/projects/:project/blueprints/${encodeURIComponent(blueprintKey)}/protection`,
+      { namespace: opts.namespace },
+    );
+    const resp = await this.request(path, {
+      method: "PUT",
+      body: { protected: protectedResources },
+    });
+    return (await resp.json()) as BlueprintBindingListResponse;
+  }
+
+  async deleteBlueprint(
+    blueprintKey: string,
+    opts: DeleteBlueprintOptions = {},
+  ): Promise<BlueprintDeleteResult> {
+    const path = withQuery(
+      `/v1/projects/:project/blueprints/${encodeURIComponent(blueprintKey)}`,
+      {
+        namespace: opts.namespace,
+        delete_retained: opts.deleteRetained,
+      },
+    );
+    const resp = await this.request(path, { method: "DELETE" });
+    return (await resp.json()) as BlueprintDeleteResult;
+  }
+
+  async listInteractions(
+    opts: ListInteractionsOptions = {},
+  ): Promise<InteractionListResponse> {
+    const path = withQuery("/v1/projects/:project/interactions", {
+      status: opts.status,
+      kind: opts.kind,
+      run_id: opts.runId,
+      session_id: opts.sessionId,
+      target_user_id: opts.targetUserId,
+      inbox: opts.inbox,
+      cursor: opts.cursor,
+      limit: opts.limit,
+    });
+    const resp = await this.request(path, { method: "GET" });
+    return (await resp.json()) as InteractionListResponse;
+  }
+
+  async listProjectPermissions(): Promise<PermissionCatalogResponse> {
+    const resp = await this.request("/v1/projects/:project/permissions", {
+      method: "GET",
+    });
+    return (await resp.json()) as PermissionCatalogResponse;
+  }
+
+  async listPrincipals(
+    opts: ListPrincipalsOptions = {},
+  ): Promise<PrincipalListResponse> {
+    const path = withQuery("/v1/projects/:project/principals", {
+      kind: opts.kind,
+      include_disabled: opts.includeDisabled,
+      limit: opts.limit,
+    });
+    const resp = await this.request(path, { method: "GET" });
+    return (await resp.json()) as PrincipalListResponse;
+  }
+
+  async createPrincipal(input: CreatePrincipalRequest): Promise<Principal> {
+    const resp = await this.request("/v1/projects/:project/principals", {
+      method: "POST",
+      body: input,
+    });
+    return (await resp.json()) as Principal;
+  }
+
+  async getPrincipal(id: string): Promise<Principal> {
+    const resp = await this.request(
+      `/v1/projects/:project/principals/${encodeURIComponent(id)}`,
+      { method: "GET" },
+    );
+    return (await resp.json()) as Principal;
+  }
+
+  async updatePrincipal(
+    id: string,
+    input: UpdatePrincipalRequest,
+  ): Promise<Principal> {
+    const resp = await this.request(
+      `/v1/projects/:project/principals/${encodeURIComponent(id)}`,
+      { method: "PATCH", body: input },
+    );
+    return (await resp.json()) as Principal;
+  }
+
+  async deletePrincipal(id: string): Promise<void> {
+    await this.request(
+      `/v1/projects/:project/principals/${encodeURIComponent(id)}`,
+      { method: "DELETE" },
+    );
+  }
+
+  async listRoles(opts: ListRolesOptions = {}): Promise<RoleListResponse> {
+    const path = withQuery("/v1/projects/:project/roles", opts);
+    const resp = await this.request(path, { method: "GET" });
+    return (await resp.json()) as RoleListResponse;
+  }
+
+  async createRole(input: CreateRoleRequest): Promise<Role> {
+    const resp = await this.request("/v1/projects/:project/roles", {
+      method: "POST",
+      body: input,
+    });
+    return (await resp.json()) as Role;
+  }
+
+  async getRole(id: string): Promise<Role> {
+    const resp = await this.request(
+      `/v1/projects/:project/roles/${encodeURIComponent(id)}`,
+      { method: "GET" },
+    );
+    return (await resp.json()) as Role;
+  }
+
+  async updateRole(id: string, input: UpdateRoleRequest): Promise<Role> {
+    const resp = await this.request(
+      `/v1/projects/:project/roles/${encodeURIComponent(id)}`,
+      { method: "PATCH", body: input },
+    );
+    return (await resp.json()) as Role;
+  }
+
+  async deleteRole(id: string): Promise<void> {
+    await this.request(
+      `/v1/projects/:project/roles/${encodeURIComponent(id)}`,
+      { method: "DELETE" },
+    );
+  }
+
+  async listRoleAssignments(
+    opts: ListRoleAssignmentsOptions = {},
+  ): Promise<RoleAssignmentListResponse> {
+    const path = withQuery("/v1/projects/:project/role-assignments", {
+      principal_id: opts.principalId,
+      role_id: opts.roleId,
+    });
+    const resp = await this.request(path, { method: "GET" });
+    return (await resp.json()) as RoleAssignmentListResponse;
+  }
+
+  async createRoleAssignment(
+    input: CreateRoleAssignmentRequest,
+  ): Promise<RoleAssignment> {
+    const resp = await this.request(
+      "/v1/projects/:project/role-assignments",
+      { method: "POST", body: input },
+    );
+    return (await resp.json()) as RoleAssignment;
+  }
+
+  async deleteRoleAssignment(id: string): Promise<void> {
+    await this.request(
+      `/v1/projects/:project/role-assignments/${encodeURIComponent(id)}`,
       { method: "DELETE" },
     );
   }

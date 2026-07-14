@@ -33,6 +33,9 @@ type transcriptFrameContract struct {
 		DedupedToolBlockCount   int      `json:"deduped_tool_block_count"`
 		ToolResultTextMessageID string   `json:"tool_result_text_message_id"`
 		ToolResultText          string   `json:"tool_result_text"`
+		WaitingTurnID           string   `json:"waiting_turn_id"`
+		WaitInteractionID       string   `json:"wait_interaction_id"`
+		WaitToolCallID          string   `json:"wait_tool_call_id"`
 		FailedTurnID            string   `json:"failed_turn_id"`
 		FailedTurnErrorType     string   `json:"failed_turn_error_type"`
 		FailedTurnErrorMessage  string   `json:"failed_turn_error_message"`
@@ -86,6 +89,12 @@ func TestTranscriptFrameContract(t *testing.T) {
 	result, err := resultMessage.Content[0].AsSessionToolResultBlock()
 	assert.NoError(t, err)
 	assert.Equal(t, ToolResultText(result), fixture.Expected.ToolResultText)
+
+	waiting, ok := view.Turn(fixture.Expected.WaitingTurnID)
+	assert.True(t, ok)
+	assert.NotNil(t, waiting.Wait)
+	assert.Equal(t, waiting.Wait.InteractionId, fixture.Expected.WaitInteractionID)
+	assert.Equal(t, waiting.Wait.ToolCallId, fixture.Expected.WaitToolCallID)
 
 	failed, ok := view.Turn(fixture.Expected.FailedTurnID)
 	assert.True(t, ok)

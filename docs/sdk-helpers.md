@@ -6,6 +6,8 @@ common integration tasks:
 - verifying and parsing Mobius outgoing webhook deliveries
 - delivering Mobius-shaped synthetic webhooks for local/test bridges
 - managing loops and loop runs from code
+- managing project blueprints, principals, roles, and role assignments
+- listing interactions with run, session, target, inbox, and status filters
 - invoking agents and following a session's live transcript (message rows,
   turns, and human-input interactions) as it streams
 - running workers that execute action jobs and LLM generation jobs over
@@ -119,6 +121,19 @@ const run = await client.startRun(loop.id, {
 Use `WaitRun` / `wait_run` / `waitRun` when callers need the fresh terminal run
 record, or `WatchRun` / `watch_run` / `watchRun` when they need the live event
 stream.
+
+## Project Administration
+
+The curated clients expose the same project-administration operations in each
+language: apply/list/protect/delete blueprints, read the permission catalog,
+manage machine principals and roles, and manage role assignments. Request and
+response bodies use the generated OpenAPI models; handwritten option objects
+cover query filters and pagination.
+
+`ListInteractions` / `list_interactions` / `listInteractions` accepts every
+contract filter, including `session_id` (`SessionID` in Go and `sessionId` in
+TypeScript), so a chat surface can fetch pending human-input interactions for
+one session without using a raw transport.
 
 ## Session Transcripts
 

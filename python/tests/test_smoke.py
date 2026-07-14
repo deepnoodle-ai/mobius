@@ -20,7 +20,13 @@ from deepnoodle.mobius import (
     Client,
     ClientOptions,
     InvokeAgentOptions,
+    ListBlueprintBindingsOptions,
+    ListInteractionsOptions,
+    ListPrincipalsOptions,
+    ListRoleAssignmentsOptions,
+    ListRolesOptions,
     ListSessionMessagesOptions,
+    ListSessionNudgesOptions,
     ListRunsOptions,
     RuntimeContextItem,
     StartRunOptions,
@@ -125,6 +131,51 @@ def test_loop_helpers_use_project_scoped_routes() -> None:
     assert len(listed.items) == 1
     assert requests[0][0:2] == ("POST", "/v1/projects/test-project/loops")
     assert any(req[0] == "DELETE" and req[1].endswith("/loops/loop_1") for req in requests)
+
+
+def test_project_resource_list_helpers() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        path = request.url.path
+        if path.endswith("/blueprints/bindings"):
+            assert request.url.params["namespace"] == "starter"
+            assert request.url.params["blueprint_key"] == "support"
+            return httpx.Response(200, json={"items": []})
+        if path.endswith("/interactions"):
+            assert request.url.params["session_id"] == "sess_1"
+            assert request.url.params["status"] == "pending"
+            assert request.url.params["inbox"] == "true"
+            return httpx.Response(200, json={"items": [], "has_more": False})
+        if path.endswith("/permissions"):
+            return httpx.Response(
+                200, json={"items": [], "presets": [], "action_groups": []}
+            )
+        if path.endswith("/principals"):
+            assert request.url.params["kind"] == "service"
+            assert request.url.params["include_disabled"] == "true"
+            return httpx.Response(200, json={"items": []})
+        if path.endswith("/roles"):
+            assert request.url.params["cursor"] == "role_cursor"
+            return httpx.Response(200, json={"items": [], "has_more": False})
+        if path.endswith("/role-assignments"):
+            assert request.url.params["principal_id"] == "principal_1"
+            return httpx.Response(200, json={"items": []})
+        return httpx.Response(404)
+
+    client = _client_with(handler)
+    assert client.list_blueprint_bindings(
+        ListBlueprintBindingsOptions(namespace="starter", blueprint_key="support")
+    ).items == []
+    assert client.list_interactions(
+        ListInteractionsOptions(status="pending", session_id="sess_1", inbox=True)
+    ).items == []
+    assert client.list_project_permissions().items == []
+    assert client.list_principals(
+        ListPrincipalsOptions(kind="service", include_disabled=True)
+    ).items == []
+    assert client.list_roles(ListRolesOptions(cursor="role_cursor")).items == []
+    assert client.list_role_assignments(
+        ListRoleAssignmentsOptions(principal_id="principal_1")
+    ).items == []
 
 
 def test_create_loop_sends_inline_spec() -> None:
@@ -306,14 +357,82 @@ def test_list_session_messages_can_include_runtime_context() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         assert request.url.path.endswith("/sessions/sess_1/messages")
         assert request.url.params["include"] == "context"
-        return httpx.Response(200, json={"items": []})
+        return httpx.Response(
+            200,
+            json={
+                "items": [
+                    {
+                        "id": "msg_1",
+                        "session_id": "sess_1",
+                        "agent_id": "agent_1",
+                        "role": "system",
+                        "content": [
+                            {
+                                "type": "reminder",
+                                "name": "app-board",
+                                "tier": "contextual",
+                                "content": "Chosen: none",
+                            }
+                        ],
+                        "entry_type": "message",
+                        "sequence": 1,
+                        "created_at": "2026-07-14T12:00:00Z",
+                    }
+                ]
+            },
+        )
 
     client = _client_with(handler)
     messages = client.list_session_messages(
         "sess_1", ListSessionMessagesOptions(include="context")
     )
 
-    assert messages.items == []
+    reminder = messages.items[0].content[0].root
+    assert reminder.name == "app-board"
+    assert reminder.content == "Chosen: none"
+
+
+def test_session_nudge_lifecycle_routes() -> None:
+    seen: list[str] = []
+    queued = {
+        "id": "nudge_1",
+        "status": "pending",
+        "delivery": "current_turn",
+        "content": "Use the shorter name",
+        "turn": {"id": "turn_1", "status": "waiting"},
+        "sender_principal_id": "principal_1",
+        "created_at": "2026-07-14T12:00:00Z",
+    }
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append(f"{request.method} {request.url.path}")
+        if request.url.path.endswith("/nudges"):
+            assert request.url.params["status"] == "pending"
+            assert request.url.params["order"] == "desc"
+            return httpx.Response(200, json={"items": [queued], "has_more": False})
+        if request.url.path.endswith("/cancel"):
+            return httpx.Response(
+                200,
+                json={
+                    **queued,
+                    "status": "cancelled",
+                    "cancelled_at": "2026-07-14T12:01:00Z",
+                },
+            )
+        return httpx.Response(200, json=queued)
+
+    client = _client_with(handler)
+    page = client.list_session_nudges(
+        "s1", ListSessionNudgesOptions(status=["pending"], order="desc")
+    )
+    assert page.items[0].id == "nudge_1"
+    assert client.get_session_nudge("s1", "nudge_1").status == "pending"
+    assert client.cancel_nudge("s1", "nudge_1").status == "cancelled"
+    assert seen == [
+        "GET /v1/projects/test-project/sessions/s1/nudges",
+        "GET /v1/projects/test-project/sessions/s1/nudges/nudge_1",
+        "POST /v1/projects/test-project/sessions/s1/nudges/nudge_1/cancel",
+    ]
 
 
 def test_invoke_agent_requires_agent_ref_and_content() -> None:

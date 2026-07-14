@@ -22,9 +22,8 @@ const src = readFileSync(schemaPath, "utf-8");
 
 // The generated schema.ts has a `schemas: { ... }` block inside the
 // `components` interface. Each top-level key in that block is a schema name.
-// We extract them with a simple regex that matches lines like:
-//   "        SchemaName: {"
-// inside the schemas block.
+// We extract every direct key regardless of whether its value is an object,
+// enum, union, intersection, array, or alias.
 
 const schemaBlockRe = /^\s+schemas:\s*\{/m;
 const match = schemaBlockRe.exec(src);
@@ -48,25 +47,20 @@ for (const line of lines) {
     continue;
   }
 
-  // Count braces to track depth within the schemas block.
-  for (const ch of line) {
-    if (ch === "{") depth++;
-    else if (ch === "}") depth--;
-  }
-
-  // At depth 1 we're directly inside schemas: { ... }. Lines that define a
-  // new schema key look like:  "        SchemaName: {" or with a JSDoc
-  // comment above. We only care about the key declaration lines.
-  // A key at depth 1 means we just went from depth 1 -> 2 on this line.
-  const keyMatch = line.match(/^\s{8}(\w+):\s*\{/);
-  if (keyMatch && depth === 2) {
+  // At depth 1 we're directly inside schemas: { ... }. Match the key before
+  // counting braces on this line so composed schemas such as `A & B` are not
+  // mistaken for nested declarations when their right-hand side opens a
+  // referenced object type.
+  const keyMatch = line.match(/^\s{8}(\w+):/);
+  if (keyMatch && depth === 1) {
     names.push(keyMatch[1]);
   }
 
-  // Also catch single-line enum-like schemas:  "SchemaName: value;"
-  const inlineMatch = line.match(/^\s{8}(\w+):\s*[^{]/);
-  if (inlineMatch && depth === 1) {
-    names.push(inlineMatch[1]);
+  // Count braces after inspecting the declaration to track nested object
+  // shapes until the next direct schema key.
+  for (const ch of line) {
+    if (ch === "{") depth++;
+    else if (ch === "}") depth--;
   }
 
   if (depth === 0) break;

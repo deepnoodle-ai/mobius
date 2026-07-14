@@ -16,10 +16,19 @@ from ._api.models import (
     AgentTurnListResponse,
     AgentTurnOperationPolicy,
     AgentRef,
+    ApplyBlueprintRequest,
+    BlueprintApplyResult,
+    BlueprintBindingListResponse,
+    BlueprintDeleteResult,
     CancelLoopRunRequest,
     ChannelContext,
+    CreatePrincipalRequest,
+    CreateRoleAssignmentRequest,
+    CreateRoleRequest,
     CreateLoopRequest,
     InlineAgentConfig,
+    InteractionKind,
+    InteractionListResponse,
     InvokeAgentRequest,
     InvokeInput,
     InvokeSessionSpec,
@@ -32,8 +41,16 @@ from ._api.models import (
     LoopRunStatus,
     LoopStatus,
     NudgeSessionRequest,
+    PermissionCatalogResponse,
+    Principal,
+    PrincipalKind,
+    PrincipalListResponse,
     RuntimeContext,
     RuntimeContextItem,
+    Role1 as ProjectRole,
+    RoleAssignment,
+    RoleAssignmentListResponse,
+    RoleListResponse,
     Session,
     SessionListResponse,
     SessionMessageListResponse,
@@ -41,12 +58,15 @@ from ._api.models import (
     SessionNudgeAck,
     SessionNudgeListResponse,
     SessionTranscriptSnapshot,
+    SetBlueprintProtectionRequest,
     SignalLoopRunRequest,
     StartLoopRunRequest,
     StartTurnRequest,
     TagMap,
     TurnAck,
     UpdateLoopRequest,
+    UpdatePrincipalRequest,
+    UpdateRoleRequest,
 )
 from .errors import AuthRevokedError, MobiusAPIError, RateLimitError
 from .retry import DEFAULT_MAX_RETRIES, RetryingTransport
@@ -249,6 +269,54 @@ class ListSessionNudgesOptions:
 
 
 @dataclass
+class ListBlueprintBindingsOptions:
+    namespace: str | None = None
+    blueprint_key: str | None = None
+
+
+@dataclass
+class DeleteBlueprintOptions:
+    namespace: str | None = None
+    delete_retained: bool = False
+
+
+@dataclass
+class SetBlueprintProtectionOptions:
+    namespace: str | None = None
+
+
+@dataclass
+class ListInteractionsOptions:
+    status: str | None = None
+    kind: InteractionKind | None = None
+    run_id: str | None = None
+    session_id: str | None = None
+    target_user_id: str | None = None
+    inbox: bool | None = None
+    cursor: str | None = None
+    limit: int | None = None
+
+
+@dataclass
+class ListPrincipalsOptions:
+    kind: PrincipalKind | None = None
+    include_disabled: bool | None = None
+    limit: int | None = None
+
+
+@dataclass
+class ListRoleAssignmentsOptions:
+    principal_id: str | None = None
+    role_id: str | None = None
+
+
+@dataclass
+class ListRolesOptions:
+    cursor: str | None = None
+    limit: int | None = None
+
+
+@dataclass
 class ListSessionTurnsOptions:
     ids: list[str] | None = None
     order: str | None = None
@@ -391,6 +459,146 @@ class Client:
 
     def delete_loop(self, loop_id: str) -> None:
         self._request("DELETE", f"/v1/projects/{{project}}/loops/{quote(loop_id, safe='')}")
+
+    def apply_blueprint(self, request: ApplyBlueprintRequest) -> BlueprintApplyResult:
+        resp = self._request(
+            "POST", "/v1/projects/{project}/blueprints/apply", json=request
+        )
+        return BlueprintApplyResult.model_validate(resp.json())
+
+    def list_blueprint_bindings(
+        self, opts: ListBlueprintBindingsOptions | None = None
+    ) -> BlueprintBindingListResponse:
+        resp = self._request(
+            "GET",
+            "/v1/projects/{project}/blueprints/bindings",
+            params=_params(opts),
+        )
+        return BlueprintBindingListResponse.model_validate(resp.json())
+
+    def set_blueprint_protection(
+        self,
+        blueprint_key: str,
+        protected: bool,
+        opts: SetBlueprintProtectionOptions | None = None,
+    ) -> BlueprintBindingListResponse:
+        resp = self._request(
+            "PUT",
+            f"/v1/projects/{{project}}/blueprints/{quote(blueprint_key, safe='')}/protection",
+            params=_params(opts),
+            json=SetBlueprintProtectionRequest(protected=protected),
+        )
+        return BlueprintBindingListResponse.model_validate(resp.json())
+
+    def delete_blueprint(
+        self, blueprint_key: str, opts: DeleteBlueprintOptions | None = None
+    ) -> BlueprintDeleteResult:
+        resp = self._request(
+            "DELETE",
+            f"/v1/projects/{{project}}/blueprints/{quote(blueprint_key, safe='')}",
+            params=_params(opts),
+        )
+        return BlueprintDeleteResult.model_validate(resp.json())
+
+    def list_interactions(
+        self, opts: ListInteractionsOptions | None = None
+    ) -> InteractionListResponse:
+        resp = self._request(
+            "GET", "/v1/projects/{project}/interactions", params=_params(opts)
+        )
+        return InteractionListResponse.model_validate(resp.json())
+
+    def list_project_permissions(self) -> PermissionCatalogResponse:
+        resp = self._request("GET", "/v1/projects/{project}/permissions")
+        return PermissionCatalogResponse.model_validate(resp.json())
+
+    def list_principals(
+        self, opts: ListPrincipalsOptions | None = None
+    ) -> PrincipalListResponse:
+        resp = self._request(
+            "GET", "/v1/projects/{project}/principals", params=_params(opts)
+        )
+        return PrincipalListResponse.model_validate(resp.json())
+
+    def create_principal(self, request: CreatePrincipalRequest) -> Principal:
+        resp = self._request(
+            "POST", "/v1/projects/{project}/principals", json=request
+        )
+        return Principal.model_validate(resp.json())
+
+    def get_principal(self, principal_id: str) -> Principal:
+        resp = self._request(
+            "GET",
+            f"/v1/projects/{{project}}/principals/{quote(principal_id, safe='')}",
+        )
+        return Principal.model_validate(resp.json())
+
+    def update_principal(
+        self, principal_id: str, request: UpdatePrincipalRequest
+    ) -> Principal:
+        resp = self._request(
+            "PATCH",
+            f"/v1/projects/{{project}}/principals/{quote(principal_id, safe='')}",
+            json=request,
+        )
+        return Principal.model_validate(resp.json())
+
+    def delete_principal(self, principal_id: str) -> None:
+        self._request(
+            "DELETE",
+            f"/v1/projects/{{project}}/principals/{quote(principal_id, safe='')}",
+        )
+
+    def list_roles(self, opts: ListRolesOptions | None = None) -> RoleListResponse:
+        resp = self._request(
+            "GET", "/v1/projects/{project}/roles", params=_params(opts)
+        )
+        return RoleListResponse.model_validate(resp.json())
+
+    def create_role(self, request: CreateRoleRequest) -> ProjectRole:
+        resp = self._request("POST", "/v1/projects/{project}/roles", json=request)
+        return ProjectRole.model_validate(resp.json())
+
+    def get_role(self, role_id: str) -> ProjectRole:
+        resp = self._request(
+            "GET", f"/v1/projects/{{project}}/roles/{quote(role_id, safe='')}"
+        )
+        return ProjectRole.model_validate(resp.json())
+
+    def update_role(self, role_id: str, request: UpdateRoleRequest) -> ProjectRole:
+        resp = self._request(
+            "PATCH",
+            f"/v1/projects/{{project}}/roles/{quote(role_id, safe='')}",
+            json=request,
+        )
+        return ProjectRole.model_validate(resp.json())
+
+    def delete_role(self, role_id: str) -> None:
+        self._request(
+            "DELETE", f"/v1/projects/{{project}}/roles/{quote(role_id, safe='')}"
+        )
+
+    def list_role_assignments(
+        self, opts: ListRoleAssignmentsOptions | None = None
+    ) -> RoleAssignmentListResponse:
+        resp = self._request(
+            "GET", "/v1/projects/{project}/role-assignments", params=_params(opts)
+        )
+        return RoleAssignmentListResponse.model_validate(resp.json())
+
+    def create_role_assignment(
+        self, request: CreateRoleAssignmentRequest
+    ) -> RoleAssignment:
+        resp = self._request(
+            "POST", "/v1/projects/{project}/role-assignments", json=request
+        )
+        return RoleAssignment.model_validate(resp.json())
+
+    def delete_role_assignment(self, assignment_id: str) -> None:
+        self._request(
+            "DELETE",
+            f"/v1/projects/{{project}}/role-assignments/{quote(assignment_id, safe='')}",
+        )
 
     def start_run(self, loop_id: str, opts: StartRunOptions | None = None) -> LoopRun:
         opts = opts or StartRunOptions()
@@ -1281,6 +1489,10 @@ def _params(opts: Any | None) -> dict[str, Any] | None:
 
 
 def _query_value(value: Any) -> Any:
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    if isinstance(value, (list, tuple)):
+        return [_query_value(item) for item in value]
     return value.value if hasattr(value, "value") else value
 
 

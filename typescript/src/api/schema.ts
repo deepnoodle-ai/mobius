@@ -8237,8 +8237,6 @@ export interface components {
         IntegrationEventIDParam: string;
         /** @description Framework provider identifier from the integration provider catalog. */
         IntegrationProviderParam: string;
-        /** @description Stable caller-generated key. Reusing it returns the original operation. */
-        IdempotencyKey: string;
         /** @description Organization ID. */
         OrgIDParam: string;
         /** @description The key identifying a memory entry. Restricted to a path-safe character set (letters, numbers, and `. _ : -`) so it stays reliably addressable. */

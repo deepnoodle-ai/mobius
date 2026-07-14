@@ -95,6 +95,9 @@ test("contract: transcript frame sequence folds identically", () => {
       deduped_tool_block_count: number;
       tool_result_text_message_id: string;
       tool_result_text: string;
+      waiting_turn_id: string;
+      wait_interaction_id: string;
+      wait_tool_call_id: string;
       failed_turn_id: string;
       failed_turn_error_type: string;
       failed_turn_error_message: string;
@@ -156,6 +159,15 @@ test("contract: transcript frame sequence folds identically", () => {
   assert.equal(
     toolResultText(resultMessage.content[0] as never),
     fixture.expected.tool_result_text,
+  );
+  const waiting = transcript.turn(fixture.expected.waiting_turn_id)!;
+  assert.equal(
+    waiting.wait?.interaction_id,
+    fixture.expected.wait_interaction_id,
+  );
+  assert.equal(
+    waiting.wait?.tool_call_id,
+    fixture.expected.wait_tool_call_id,
   );
   const failed = transcript.turn(fixture.expected.failed_turn_id)!;
   assert.equal(failed.error_type, fixture.expected.failed_turn_error_type);
