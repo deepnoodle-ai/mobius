@@ -15,6 +15,7 @@ import {
   toolResultText,
 } from "../src/transcript.js";
 import type {
+  Interaction,
   SessionToolUseBlock,
   SessionTranscriptFrame,
   SessionTranscriptSnapshot,
@@ -22,6 +23,18 @@ import type {
 import type { TranscriptDiagnostics } from "../src/index.js";
 
 const AT = "2026-07-11T17:03:21Z";
+
+function interaction(status: Interaction["status"]): Interaction {
+  return {
+    id: "iact_1",
+    kind: "request_information",
+    status,
+    title: "Which region?",
+    target_user_ids: ["user_1"],
+    created_at: AT,
+    updated_at: AT,
+  };
+}
 
 function frame(f: Record<string, unknown>): SessionTranscriptFrame {
   return f as unknown as SessionTranscriptFrame;
@@ -79,7 +92,10 @@ test("transcript: upsert/block/delta/block-complete converge on a row", () => {
     content_index: 0,
     text: "lo",
   });
-  assert.equal((t.message("m_a")!.content[0] as { text: string }).text, "hello");
+  assert.equal(
+    (t.message("m_a")!.content[0] as { text: string }).text,
+    "hello",
+  );
   // Completing block replaces whatever deltas built.
   apply(t, {
     event_type: "message.block",
@@ -156,7 +172,13 @@ test("transcript: block.patch merges tool status/progress; null clears", () => {
     turn_index: 1,
     sequence: null,
     content: [
-      { type: "tool_use", id: "toolu_1", name: "fetch", input: {}, status: "pending" },
+      {
+        type: "tool_use",
+        id: "toolu_1",
+        name: "fetch",
+        input: {},
+        status: "pending",
+      },
     ],
     created_at: AT,
   });
@@ -183,7 +205,10 @@ test("transcript: block.patch merges tool status/progress; null clears", () => {
     status: "ok",
     progress: null,
   });
-  block = t.message("m_a")!.content[0] as { status: string; progress?: unknown };
+  block = t.message("m_a")!.content[0] as {
+    status: string;
+    progress?: unknown;
+  };
   assert.equal(block.status, "ok");
   assert.equal(block.progress, undefined);
 });
@@ -267,7 +292,10 @@ test("transcript: renderable projection and content/tool helpers", () => {
     created_at: AT,
     updated_at: AT,
   });
-  for (const [id, turnIndex] of [["empty_1", 1], ["empty_2", 2]] as const) {
+  for (const [id, turnIndex] of [
+    ["empty_1", 1],
+    ["empty_2", 2],
+  ] as const) {
     apply(t, {
       event_type: "message.upsert",
       id,
@@ -332,7 +360,10 @@ test("transcript: renderable projection and content/tool helpers", () => {
   });
 
   const visible = t.renderableMessages();
-  assert.deepEqual(visible.map((message) => message.id), ["final", "empty_2"]);
+  assert.deepEqual(
+    visible.map((message) => message.id),
+    ["final", "empty_2"],
+  );
   const normalized = normalizeToolUse(visible[0]!.content[0] as never);
   assert.equal(normalized.wireName, "catalog");
   assert.equal(normalized.resolvedAction?.name, "naming.domain.check");
@@ -387,7 +418,10 @@ test("transcript: resolved_action patches enrich live tool blocks", () => {
     session_id: "s1",
     message_id: "m_tool",
     content_index: 0,
-    resolved_action: { name: "naming.domain.check", input: { domain: "x.test" } },
+    resolved_action: {
+      name: "naming.domain.check",
+      input: { domain: "x.test" },
+    },
   });
   assert.deepEqual(
     (t.message("m_tool")!.content[0] as { resolved_action: unknown })
@@ -454,7 +488,11 @@ test("transcript: cursor tracks SSE id; stream.ready adopts unconditionally", ()
   );
   assert.equal(t.cursor, "42.7");
   assert.equal(t.ready, false);
-  apply(t, { event_type: "stream.ready", session_id: "s1", resume_cursor: "99.9" });
+  apply(t, {
+    event_type: "stream.ready",
+    session_id: "s1",
+    resume_cursor: "99.9",
+  });
   assert.equal(t.cursor, "99.9");
   assert.equal(t.ready, true);
 });
@@ -537,6 +575,7 @@ test("transcript: applySnapshot prunes streaming rows absent from a final page",
       },
     ],
     turns: [],
+    interactions: [],
     has_more: false,
     resume_cursor: "42.6",
   };
@@ -546,12 +585,53 @@ test("transcript: applySnapshot prunes streaming rows absent from a final page",
   assert.equal(t.cursor, "42.6");
 });
 
+test("transcript: interaction upserts and final snapshots reconcile pending state", () => {
+  const transcript = new SessionTranscript();
+  apply(transcript, {
+    event_type: "interaction.upsert",
+    ...interaction("pending"),
+  });
+  assert.deepEqual(
+    transcript.pendingInteractions().map(({ id }) => id),
+    ["iact_1"],
+  );
+
+  apply(transcript, {
+    event_type: "interaction.upsert",
+    ...interaction("completed"),
+  });
+  assert.deepEqual(transcript.pendingInteractions(), []);
+  assert.equal(transcript.interaction("iact_1")?.status, "completed");
+
+  transcript.applySnapshot({
+    messages: [],
+    turns: [],
+    interactions: [{ ...interaction("pending"), id: "iact_2" }],
+    has_more: false,
+    resume_cursor: "2.1",
+  });
+  assert.deepEqual(
+    transcript.interactions().map(({ id }) => id),
+    ["iact_1", "iact_2"],
+  );
+
+  transcript.applySnapshot({
+    messages: [],
+    turns: [],
+    interactions: [],
+    has_more: false,
+    resume_cursor: "3.1",
+  });
+  assert.equal(transcript.interaction("iact_2"), undefined);
+  assert.equal(transcript.interaction("iact_1")?.status, "completed");
+});
+
 test("client: getSessionTranscript builds the snapshot URL with query", async () => {
   let requestedURL = "";
   const original = globalThis.fetch;
   globalThis.fetch = (async (input: RequestInfo | URL) => {
     requestedURL = typeof input === "string" ? input : input.toString();
-    const body: SessionTranscriptSnapshot = {
+    const body = {
       messages: [],
       turns: [],
       has_more: false,
@@ -568,6 +648,7 @@ test("client: getSessionTranscript builds the snapshot URL with query", async ()
       limit: 50,
     });
     assert.equal(snap.resume_cursor, "1.1");
+    assert.deepEqual(snap.interactions, []);
   } finally {
     globalThis.fetch = original;
   }
@@ -603,7 +684,10 @@ test("client: streamSessionTranscript decodes frames with their SSE id", async (
   assert.equal(acceptHeader, "text/event-stream");
   assert.equal(events.length, 2);
   assert.equal(events[0].id, "42.7");
-  assert.equal((events[0].frame as { event_type: string }).event_type, "turn.upsert");
+  assert.equal(
+    (events[0].frame as { event_type: string }).event_type,
+    "turn.upsert",
+  );
   // The ready frame has no id: line; last-event-id persists as the cursor.
   assert.equal(events[1].id, "42.7");
 });
@@ -662,10 +746,13 @@ test("client: watchSessionTranscript follow reconnects after idle", async () => 
   }) as typeof fetch;
 
   try {
-    for await (const transcript of newClient().watchSessionTranscript("sess_1", {
-      follow: true,
-      reconnectDelayMs: 0,
-    })) {
+    for await (const transcript of newClient().watchSessionTranscript(
+      "sess_1",
+      {
+        follow: true,
+        reconnectDelayMs: 0,
+      },
+    )) {
       assert.equal(transcript.turn("t2")!.status, "running");
       break;
     }
@@ -994,6 +1081,7 @@ test("client: TurnTranscript redrains from the invocation cursor before its fina
         snap = {
           messages: durableMessages.slice(3),
           turns: [terminalTurn],
+          interactions: [],
           has_more: false,
           resume_cursor: "45.9",
         };
@@ -1001,6 +1089,7 @@ test("client: TurnTranscript redrains from the invocation cursor before its fina
         snap = {
           messages: durableMessages.slice(2),
           turns: [terminalTurn],
+          interactions: [],
           has_more: false,
           resume_cursor: "45.9",
         };
@@ -1009,6 +1098,7 @@ test("client: TurnTranscript redrains from the invocation cursor before its fina
         snap = {
           messages: durableMessages.slice(0, 2),
           turns: [],
+          interactions: [],
           has_more: true,
           next_page_token: "terminal-page-2",
           resume_cursor: "43.3",
@@ -1038,15 +1128,23 @@ test("client: TurnTranscript redrains from the invocation cursor before its fina
     fullSnapshot.applySnapshot({
       messages: durableMessages,
       turns: [terminalTurn],
+      interactions: [],
       has_more: false,
       resume_cursor: "45.9",
     });
-    const finalMessages = finalUpdate.transcript.renderableMessagesForTurn("t1");
-    assert.deepEqual(finalMessages, fullSnapshot.renderableMessagesForTurn("t1"));
+    const finalMessages =
+      finalUpdate.transcript.renderableMessagesForTurn("t1");
+    assert.deepEqual(
+      finalMessages,
+      fullSnapshot.renderableMessagesForTurn("t1"),
+    );
     const toolUse = finalMessages
       .flatMap((message) => message.content)
       .find((block) => block.type === "tool_use") as SessionToolUseBlock;
-    assert.equal(normalizeToolUse(toolUse).resolvedAction?.name, "naming.words.coin");
+    assert.equal(
+      normalizeToolUse(toolUse).resolvedAction?.name,
+      "naming.words.coin",
+    );
   } finally {
     globalThis.fetch = original;
   }
@@ -1079,16 +1177,32 @@ test("client: deduped in-flight turn replays from its stable cursor", async () =
       const snap: SessionTranscriptSnapshot = {
         messages: [
           {
-            id: "m_call", session_id: "s1", agent_id: "a1", role: "assistant",
-            content: [{
-              type: "tool_use", id: "call_1", name: "naming_words_coin", input: { count: 2 },
-              resolved_action: { name: "naming.words.coin", input: { count: 2 } },
-            }],
-            entry_type: "message", status: "final", turn_index: 1,
-            sequence: 43, turn_id: "t1", created_at: AT,
+            id: "m_call",
+            session_id: "s1",
+            agent_id: "a1",
+            role: "assistant",
+            content: [
+              {
+                type: "tool_use",
+                id: "call_1",
+                name: "naming_words_coin",
+                input: { count: 2 },
+                resolved_action: {
+                  name: "naming.words.coin",
+                  input: { count: 2 },
+                },
+              },
+            ],
+            entry_type: "message",
+            status: "final",
+            turn_index: 1,
+            sequence: 43,
+            turn_id: "t1",
+            created_at: AT,
           },
         ],
         turns: [{ ...invokeAck.turn, status: "completed" }],
+        interactions: [],
         has_more: false,
         resume_cursor: "45.9",
       };
@@ -1108,10 +1222,14 @@ test("client: deduped in-flight turn replays from its stable cursor", async () =
     for await (const _ of turn) {
       // Fold through terminal reconciliation.
     }
-    const toolUse = turn.renderableMessages()
+    const toolUse = turn
+      .renderableMessages()
       .flatMap((message) => message.content)
       .find((block) => block.type === "tool_use") as SessionToolUseBlock;
-    assert.equal(normalizeToolUse(toolUse).resolvedAction?.name, "naming.words.coin");
+    assert.equal(
+      normalizeToolUse(toolUse).resolvedAction?.name,
+      "naming.words.coin",
+    );
   } finally {
     globalThis.fetch = original;
   }
@@ -1263,6 +1381,7 @@ test("client: invokeAgent hydrates an already-terminal turn from the snapshot", 
                 },
               ],
               turns: [],
+              interactions: [],
               has_more: false,
               resume_cursor: "43.9",
             }
@@ -1283,6 +1402,7 @@ test("client: invokeAgent hydrates an already-terminal turn from the snapshot", 
                 },
               ],
               turns: [],
+              interactions: [],
               has_more: true,
               next_page_token: "pt_2",
               resume_cursor: "42.1",

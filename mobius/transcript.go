@@ -72,8 +72,8 @@ type TranscriptDiagnostics struct {
 }
 
 // SessionTranscript is the live view of a session: message rows keyed by
-// their immutable id, the turns that produced them, the opaque resume cursor,
-// and a Ready flag. It is built by folding session-transcript v2 stream
+// their immutable id, the turns and interactions associated with them, the
+// opaque resume cursor, and a Ready flag. It is built by folding session-transcript v2 stream
 // frames (or snapshot pages) into place — the session-scope analogue of
 // Dive's llm.ResponseAccumulator.
 //
@@ -91,17 +91,19 @@ type TranscriptDiagnostics struct {
 // A SessionTranscript is not safe for concurrent use; drive it from a single
 // goroutine.
 type SessionTranscript struct {
-	rows   map[string]*api.SessionTranscriptMessage
-	turns  map[string]*api.SessionTranscriptTurn
-	cursor string
-	ready  bool
+	rows         map[string]*api.SessionTranscriptMessage
+	turns        map[string]*api.SessionTranscriptTurn
+	interactions map[string]*api.Interaction
+	cursor       string
+	ready        bool
 }
 
 // NewSessionTranscript returns an empty transcript view.
 func NewSessionTranscript() *SessionTranscript {
 	return &SessionTranscript{
-		rows:  map[string]*api.SessionTranscriptMessage{},
-		turns: map[string]*api.SessionTranscriptTurn{},
+		rows:         map[string]*api.SessionTranscriptMessage{},
+		turns:        map[string]*api.SessionTranscriptTurn{},
+		interactions: map[string]*api.Interaction{},
 	}
 }
 
@@ -124,6 +126,41 @@ func (t *SessionTranscript) Turn(id string) (*api.SessionTranscriptTurn, bool) {
 func (t *SessionTranscript) Message(id string) (*api.SessionTranscriptMessage, bool) {
 	msg, ok := t.rows[id]
 	return msg, ok
+}
+
+// Interaction returns the interaction with the given id, if present.
+func (t *SessionTranscript) Interaction(id string) (*api.Interaction, bool) {
+	interaction, ok := t.interactions[id]
+	return interaction, ok
+}
+
+// Interactions returns interactions ordered by (created_at, id). Terminal
+// interactions observed live remain available; final snapshots only reconcile
+// the pending set.
+func (t *SessionTranscript) Interactions() []*api.Interaction {
+	out := make([]*api.Interaction, 0, len(t.interactions))
+	for _, interaction := range t.interactions {
+		out = append(out, interaction)
+	}
+	sort.Slice(out, func(i, j int) bool {
+		if !out[i].CreatedAt.Equal(out[j].CreatedAt) {
+			return out[i].CreatedAt.Before(out[j].CreatedAt)
+		}
+		return out[i].Id < out[j].Id
+	})
+	return out
+}
+
+// PendingInteractions returns the currently pending interactions in stable
+// order.
+func (t *SessionTranscript) PendingInteractions() []*api.Interaction {
+	out := make([]*api.Interaction, 0, len(t.interactions))
+	for _, interaction := range t.Interactions() {
+		if interaction.Status == api.InteractionStatusPending {
+			out = append(out, interaction)
+		}
+	}
+	return out
 }
 
 // Turns returns the turns ordered by (created_at, id).
@@ -334,6 +371,12 @@ func (t *SessionTranscript) Apply(ev TranscriptStreamEvent) {
 		if IsTerminalTurnStatus(turn.Status) {
 			t.pruneStreamingRows(turn.Id)
 		}
+	case "interaction.upsert":
+		interaction := decodeInteraction(frame)
+		if interaction == nil {
+			return
+		}
+		t.interactions[interaction.Id] = interaction
 	case "stream.ready":
 		if srf, err := frame.AsStreamReadyFrame(); err == nil {
 			t.cursor = srf.ResumeCursor // authoritative — adopt unconditionally
@@ -347,10 +390,11 @@ func (t *SessionTranscript) Apply(ev TranscriptStreamEvent) {
 }
 
 // ApplySnapshot folds a transcript snapshot page (from GetSessionTranscript)
-// into the view. Each message folds in as a message.upsert, each turn as a
-// turn.upsert. On the final page (HasMore false) the snapshot's streaming rows
-// are the complete live set, so any local streaming row absent from it is
-// pruned.
+// into the view. Each message, turn, and pending interaction folds in as an
+// upsert. On the final page (HasMore false) the snapshot's streaming rows and
+// pending interactions are complete sets, so absent local pending state is
+// pruned. The snapshot cannot synthesize a terminal status for a missed live
+// upsert; terminal interactions already observed live remain in history.
 func (t *SessionTranscript) ApplySnapshot(snap *api.SessionTranscriptSnapshot) {
 	if snap == nil {
 		return
@@ -367,6 +411,10 @@ func (t *SessionTranscript) ApplySnapshot(snap *api.SessionTranscriptSnapshot) {
 			t.pruneStreamingRows(turn.Id)
 		}
 	}
+	for i := range snap.Interactions {
+		interaction := snap.Interactions[i]
+		t.interactions[interaction.Id] = &interaction
+	}
 	if !snap.HasMore {
 		live := map[string]struct{}{}
 		for i := range snap.Messages {
@@ -378,6 +426,17 @@ func (t *SessionTranscript) ApplySnapshot(snap *api.SessionTranscriptSnapshot) {
 			if row.Status == "streaming" {
 				if _, ok := live[id]; !ok {
 					delete(t.rows, id)
+				}
+			}
+		}
+		pending := make(map[string]struct{}, len(snap.Interactions))
+		for i := range snap.Interactions {
+			pending[snap.Interactions[i].Id] = struct{}{}
+		}
+		for id, interaction := range t.interactions {
+			if interaction.Status == api.InteractionStatusPending {
+				if _, ok := pending[id]; !ok {
+					delete(t.interactions, id)
 				}
 			}
 		}
@@ -917,6 +976,9 @@ func (c *Client) GetSessionTranscript(ctx context.Context, sessionID string, opt
 	if resp.JSON200 == nil {
 		return nil, unexpectedSessionStatus("get session transcript", resp.StatusCode(), resp.Status(), resp.HTTPResponse, resp.Body)
 	}
+	if resp.JSON200.Interactions == nil {
+		resp.JSON200.Interactions = []api.Interaction{}
+	}
 	return resp.JSON200, nil
 }
 
@@ -1040,6 +1102,21 @@ func decodeTurn(frame api.SessionTranscriptFrame) *api.SessionTranscriptTurn {
 		return nil
 	}
 	return &turn
+}
+
+// decodeInteraction converts an interaction.upsert frame into the shared
+// Interaction model. The frame adds only event_type and a frame-local status
+// enum, so a JSON round-trip is the tolerant conversion.
+func decodeInteraction(frame api.SessionTranscriptFrame) *api.Interaction {
+	raw, err := frame.MarshalJSON()
+	if err != nil {
+		return nil
+	}
+	var interaction api.Interaction
+	if err := json.Unmarshal(raw, &interaction); err != nil {
+		return nil
+	}
+	return &interaction
 }
 
 // turnFromAck converts the ack's AgentTurn into the transcript's turn shape.

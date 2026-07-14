@@ -6,8 +6,8 @@ common integration tasks:
 - verifying and parsing Mobius outgoing webhook deliveries
 - delivering Mobius-shaped synthetic webhooks for local/test bridges
 - managing loops and loop runs from code
-- invoking agents and following a session's live transcript (message rows and
-  turns) as it streams
+- invoking agents and following a session's live transcript (message rows,
+  turns, and human-input interactions) as it streams
 - running workers that execute action jobs and LLM generation jobs over
   WebSockets
 
@@ -123,10 +123,24 @@ stream.
 ## Session Transcripts
 
 An agent session streams as a live transcript: message rows (each keyed by an
-immutable id) plus the turns that produced them. `SessionTranscript` is that
-view, and the SDKs fold the stream into it for you — the whole merge is
-set-by-id, so state frames overwrite and nothing is an increment except
-streamed text.
+immutable id), the turns that produced them, and human-input interactions.
+`SessionTranscript` is that view, and the SDKs fold the stream into it for you
+— the whole merge is set-by-id, so state frames overwrite and nothing is an
+increment except streamed text.
+
+Use `Interactions` / `interactions` to inspect all interactions observed on the
+live stream, or `PendingInteractions` / `pending_interactions` /
+`pendingInteractions` for the unresolved subset. Snapshot `interactions` are
+pending-only: a final snapshot removes stale local pending rows that it omits,
+while terminal rows already observed on the stream remain available. A client
+that misses the terminal `interaction.upsert` cannot infer whether an omitted
+pending interaction completed, was cancelled, or expired.
+
+TypeScript also exposes `SessionChat` for embedded chat surfaces. Its
+`onInteraction` callback reports every new or changed interaction, including
+terminal upserts. `onInteractionResolved` is narrower: it reports only an
+observed pending-to-terminal transition, so a terminal interaction first seen
+after reconnect is delivered through `onInteraction` only.
 
 `InvokeAgent` starts a turn and returns a `TurnTranscript`: the turn's
 identity (`ID`, `SessionID`, `Status`) immediately, and its live transcript

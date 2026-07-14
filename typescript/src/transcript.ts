@@ -1,4 +1,5 @@
 import type {
+  Interaction,
   SessionResolvedAction,
   SessionToolResultBlock,
   SessionToolUseBlock,
@@ -23,7 +24,9 @@ export interface NormalizedToolUse {
  * Persisted `resolved_action` is authoritative; the legacy `{command,args}`
  * shape is recognized only as a compatibility fallback.
  */
-export function normalizeToolUse(block: SessionToolUseBlock): NormalizedToolUse {
+export function normalizeToolUse(
+  block: SessionToolUseBlock,
+): NormalizedToolUse {
   const raw = block as SessionToolUseBlock & Record<string, unknown>;
   const wireName = typeof raw.name === "string" ? raw.name : "";
   const wireInput = isRecord(raw.input) ? raw.input : {};
@@ -73,7 +76,8 @@ export function textOf(message: SessionTranscriptMessage): string {
 
 /** Return readable text from a tool-result block's string-or-block content. */
 export function toolResultText(block: SessionToolResultBlock): string {
-  const content = (block as SessionToolResultBlock & { content?: unknown }).content;
+  const content = (block as SessionToolResultBlock & { content?: unknown })
+    .content;
   if (typeof content === "string") return content;
   if (!Array.isArray(content)) return "";
   return content
@@ -129,6 +133,7 @@ export interface TranscriptStreamEvent {
 export class SessionTranscript {
   readonly #rows = new Map<string, SessionTranscriptMessage>();
   readonly #turns = new Map<string, SessionTranscriptTurn>();
+  readonly #interactions = new Map<string, Interaction>();
   #cursor: string | null = null;
   #ready = false;
 
@@ -163,6 +168,24 @@ export class SessionTranscript {
   /** The turn with the given id, if present. */
   turn(id: string): SessionTranscriptTurn | undefined {
     return this.#turns.get(id);
+  }
+
+  /** Interaction with the given id, if observed on this session stream. */
+  interaction(id: string): Interaction | undefined {
+    return this.#interactions.get(id);
+  }
+
+  /** Interactions ordered by `(created_at, id)`. Terminal records remain available for reconciliation. */
+  interactions(): Interaction[] {
+    return [...this.#interactions.values()].sort(
+      (a, b) =>
+        a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id),
+    );
+  }
+
+  /** Pending human-input requests currently blocking this session. */
+  pendingInteractions(): Interaction[] {
+    return this.interactions().filter(({ status }) => status === "pending");
   }
 
   /** Turns ordered by `(created_at, id)`. */
@@ -213,7 +236,8 @@ export class SessionTranscript {
       const normalized = normalizeMessage(row);
       const key = logicalMessageKey(normalized);
       const current = selected.get(key);
-      if (!current || preferMessage(normalized, current)) selected.set(key, normalized);
+      if (!current || preferMessage(normalized, current))
+        selected.set(key, normalized);
     }
 
     const rows = [...selected.values()];
@@ -287,7 +311,8 @@ export class SessionTranscript {
         ] as Record<string, unknown> | undefined;
         if (!block) break;
         if (f.status !== undefined) block.status = f.status;
-        if (f.progress === null) delete block.progress; // null clears
+        if (f.progress === null)
+          delete block.progress; // null clears
         else if (f.progress !== undefined) block.progress = f.progress; // omitted preserves
         if (f.resolved_action !== undefined)
           block.resolved_action = f.resolved_action;
@@ -308,7 +333,13 @@ export class SessionTranscript {
       case "turn.upsert": {
         const turn = frame as unknown as SessionTranscriptTurn;
         this.#turns.set(turn.id, turn);
-        if (isTerminalTurnStatus(turn.status)) this.#pruneStreamingRows(turn.id);
+        if (isTerminalTurnStatus(turn.status))
+          this.#pruneStreamingRows(turn.id);
+        break;
+      }
+      case "interaction.upsert": {
+        const interaction = frame as unknown as Interaction;
+        this.#interactions.set(interaction.id, interaction);
         break;
       }
       case "stream.ready":
@@ -331,10 +362,15 @@ export class SessionTranscript {
    * complete live set, so any local streaming row absent from it is pruned.
    */
   applySnapshot(snap: SessionTranscriptSnapshot): void {
-    for (const msg of snap.messages) this.#rows.set(msg.id, normalizeMessage(msg));
+    for (const msg of snap.messages)
+      this.#rows.set(msg.id, normalizeMessage(msg));
     for (const turn of snap.turns) {
       this.#turns.set(turn.id, turn);
       if (isTerminalTurnStatus(turn.status)) this.#pruneStreamingRows(turn.id);
+    }
+    const interactions = snap.interactions ?? [];
+    for (const interaction of interactions) {
+      this.#interactions.set(interaction.id, interaction);
     }
     if (!snap.has_more) {
       const live = new Set(
@@ -342,6 +378,12 @@ export class SessionTranscript {
       );
       for (const [id, row] of this.#rows) {
         if (row.status === "streaming" && !live.has(id)) this.#rows.delete(id);
+      }
+      const pending = new Set(interactions.map(({ id }) => id));
+      for (const [id, interaction] of this.#interactions) {
+        if (interaction.status === "pending" && !pending.has(id)) {
+          this.#interactions.delete(id);
+        }
       }
     }
     this.#cursor = snap.resume_cursor;
@@ -380,8 +422,12 @@ function normalizeMessage(
   return { ...message, content: normalizeContent(message.content) };
 }
 
-function normalizeContent(content: unknown): SessionTranscriptMessage["content"] {
-  return (Array.isArray(content) ? content : []) as SessionTranscriptMessage["content"];
+function normalizeContent(
+  content: unknown,
+): SessionTranscriptMessage["content"] {
+  return (
+    Array.isArray(content) ? content : []
+  ) as SessionTranscriptMessage["content"];
 }
 
 function logicalMessageKey(message: SessionTranscriptMessage): string {
@@ -406,7 +452,10 @@ function preferMessage(
 
 function messageCompleteness(message: SessionTranscriptMessage): number {
   try {
-    return JSON.stringify(message.content).length + (message.status === "final" ? 1_000_000 : 0);
+    return (
+      JSON.stringify(message.content).length +
+      (message.status === "final" ? 1_000_000 : 0)
+    );
   } catch {
     return message.content.length;
   }
@@ -422,7 +471,8 @@ function dedupeToolBlocks(
       if (!key) return;
       const score = blockCompleteness(block);
       const current = best.get(key);
-      if (!current || score >= current.score) best.set(key, { row, block: index, score });
+      if (!current || score >= current.score)
+        best.set(key, { row, block: index, score });
     });
   });
   return messages.map((message, row) => ({
@@ -454,9 +504,7 @@ function blockCompleteness(block: unknown): number {
 
 function isResolvedAction(value: unknown): value is SessionResolvedAction {
   return (
-    isRecord(value) &&
-    typeof value.name === "string" &&
-    isRecord(value.input)
+    isRecord(value) && typeof value.name === "string" && isRecord(value.input)
   );
 }
 

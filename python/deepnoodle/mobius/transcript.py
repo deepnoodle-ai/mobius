@@ -150,7 +150,7 @@ def tool_result_text(block: dict[str, Any]) -> str:
 
 
 class SessionTranscript:
-    """The live view of a session: message rows, turns, cursor, readiness.
+    """The live view of a session: messages, turns, interactions, and cursor.
 
     The whole merge is set-by-id: state frames carry absolute state, so last
     write wins and nothing is an increment except ``message.delta`` text.
@@ -169,6 +169,7 @@ class SessionTranscript:
     def __init__(self) -> None:
         self._rows: dict[str, dict[str, Any]] = {}
         self._turns: dict[str, dict[str, Any]] = {}
+        self._interactions: dict[str, dict[str, Any]] = {}
         self._cursor: str | None = None
         self._ready: bool = False
 
@@ -201,6 +202,29 @@ class SessionTranscript:
     def turn(self, turn_id: str) -> dict[str, Any] | None:
         """The turn with the given id, if present."""
         return self._turns.get(turn_id)
+
+    def interaction(self, interaction_id: str) -> dict[str, Any] | None:
+        """The interaction with the given id, if present."""
+        return self._interactions.get(interaction_id)
+
+    def interactions(self) -> list[dict[str, Any]]:
+        """Interactions ordered by ``(created_at, id)``.
+
+        Terminal interactions observed live remain available; final snapshots
+        only reconcile the pending set.
+        """
+        return sorted(
+            self._interactions.values(),
+            key=lambda item: (item.get("created_at") or "", item.get("id") or ""),
+        )
+
+    def pending_interactions(self) -> list[dict[str, Any]]:
+        """Currently pending interactions in stable order."""
+        return [
+            interaction
+            for interaction in self.interactions()
+            if interaction.get("status") == "pending"
+        ]
 
     def turns(self) -> list[dict[str, Any]]:
         """Turns ordered by ``(created_at, id)``."""
@@ -336,6 +360,8 @@ class SessionTranscript:
             self._turns[frame["id"]] = frame
             if is_terminal_turn_status(frame.get("status", "")):
                 self._prune_streaming_rows(frame["id"])
+        elif event_type == "interaction.upsert":
+            self._interactions[frame["id"]] = frame
         elif event_type == "stream.ready":
             # Authoritative — adopt unconditionally.
             self._cursor = frame["resume_cursor"]
@@ -348,10 +374,11 @@ class SessionTranscript:
         """Fold a transcript snapshot page (from ``get_session_transcript``).
 
         Accepts the ``SessionTranscriptSnapshot`` model or an equivalent dict.
-        Each message folds in as a ``message.upsert``, each turn as a
-        ``turn.upsert``. On the final page (``has_more`` false) the snapshot's
-        streaming rows are the complete live set, so any local streaming row
-        absent from it is pruned.
+        Messages, turns, and pending interactions fold in as upserts. On the
+        final page (``has_more`` false), streaming rows and pending interactions
+        are complete sets, so absent local pending state is pruned. A snapshot
+        cannot synthesize a terminal status for a missed live upsert; terminal
+        interactions already observed live remain in history.
         """
         snap = snapshot if isinstance(snapshot, dict) else snapshot.model_dump(mode="json")
         for message in snap["messages"]:
@@ -360,6 +387,9 @@ class SessionTranscript:
             self._turns[turn["id"]] = turn
             if is_terminal_turn_status(turn.get("status", "")):
                 self._prune_streaming_rows(turn["id"])
+        snapshot_interactions = snap.get("interactions") or []
+        for interaction in snapshot_interactions:
+            self._interactions[interaction["id"]] = interaction
         if not snap.get("has_more"):
             live = {m["id"] for m in snap["messages"] if m.get("status") == "streaming"}
             stale = [
@@ -369,6 +399,15 @@ class SessionTranscript:
             ]
             for row_id in stale:
                 del self._rows[row_id]
+            pending_ids = {item["id"] for item in snapshot_interactions}
+            stale_pending = [
+                interaction_id
+                for interaction_id, interaction in self._interactions.items()
+                if interaction.get("status") == "pending"
+                and interaction_id not in pending_ids
+            ]
+            for interaction_id in stale_pending:
+                del self._interactions[interaction_id]
         self._cursor = snap["resume_cursor"]
 
     def seed(self, ack: Any) -> None:

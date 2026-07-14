@@ -612,7 +612,12 @@ class Client:
                 params["limit"] = opts.limit
         path = f"/v1/projects/{{project}}/sessions/{quote(session_id, safe='')}/transcript"
         resp = self._request("GET", path, params=params)
-        return SessionTranscriptSnapshot.model_validate(resp.json())
+        data = resp.json()
+        # The interactions projection was added to transcript snapshots in an
+        # additive rollout. Accept snapshots from pre-rollout servers while the
+        # generated model keeps the current contract strict.
+        data.setdefault("interactions", [])
+        return SessionTranscriptSnapshot.model_validate(data)
 
     # Open one session-transcript SSE connection and yield each decoded frame
     # with its resume cursor (TranscriptStreamEvent.id). Apply the events to a

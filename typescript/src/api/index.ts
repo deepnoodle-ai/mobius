@@ -281,6 +281,7 @@ export type SessionTranscriptFrame = components["schemas"]["SessionTranscriptFra
 export type SessionTranscriptMessage = components["schemas"]["SessionTranscriptMessage"];
 export type SessionTranscriptSnapshot = components["schemas"]["SessionTranscriptSnapshot"];
 export type SessionTranscriptTurn = components["schemas"]["SessionTranscriptTurn"];
+export type SessionTranscriptWait = components["schemas"]["SessionTranscriptWait"];
 export type SessionUserMessagePayload = components["schemas"]["SessionUserMessagePayload"];
 export type SessionVisibility = components["schemas"]["SessionVisibility"];
 export type SetBlueprintProtectionRequest = components["schemas"]["SetBlueprintProtectionRequest"];

@@ -4510,6 +4510,8 @@ export interface components {
         AgentToolConsumer: {
             invocation_id: string;
             tool_call_id: string;
+            /** @description Session whose turn raised this interaction, when session-scoped. */
+            session_id?: string;
         };
         HttpSubscriberConsumer: {
             /**
@@ -5500,6 +5502,7 @@ export interface components {
             usage?: {
                 [key: string]: unknown;
             };
+            wait?: components["schemas"]["SessionTranscriptWait"];
             /** Format: date-time */
             created_at: string;
             /** Format: date-time */
@@ -5510,11 +5513,13 @@ export interface components {
         SessionTranscriptSnapshot: {
             messages: components["schemas"]["SessionTranscriptMessage"][];
             turns: components["schemas"]["SessionTranscriptTurn"][];
+            /** @description Pending interactions raised by agent tool calls in this session. */
+            interactions: components["schemas"]["Interaction"][];
             has_more: boolean;
             resume_cursor: string;
             next_page_token?: string;
         };
-        SessionTranscriptFrame: components["schemas"]["MessageUpsertFrame"] | components["schemas"]["MessageBlockFrame"] | components["schemas"]["MessageBlockPatchFrame"] | components["schemas"]["MessageDeltaFrame"] | components["schemas"]["TurnUpsertFrame"] | components["schemas"]["StreamReadyFrame"] | components["schemas"]["StreamEndFrame"];
+        SessionTranscriptFrame: components["schemas"]["MessageUpsertFrame"] | components["schemas"]["MessageBlockFrame"] | components["schemas"]["MessageBlockPatchFrame"] | components["schemas"]["MessageDeltaFrame"] | components["schemas"]["TurnUpsertFrame"] | components["schemas"]["InteractionUpsertFrame"] | components["schemas"]["StreamReadyFrame"] | components["schemas"]["StreamEndFrame"];
         MessageUpsertFrame: components["schemas"]["SessionTranscriptMessage"] & {
             /** @enum {string} */
             event_type: "message.upsert";
@@ -5573,6 +5578,16 @@ export interface components {
              * @enum {string}
              */
             event_type: "turn.upsert";
+        };
+        InteractionUpsertFrame: components["schemas"]["Interaction"] & {
+            /** @enum {string} */
+            event_type: "interaction.upsert";
+        } & {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            event_type: "interaction.upsert";
         };
         StreamReadyFrame: {
             /**
@@ -5752,11 +5767,17 @@ export interface components {
         TurnWaitingPayload: {
             turn_id?: string;
             reason?: string;
-            wait?: {
-                [key: string]: unknown;
-            };
+            wait?: components["schemas"]["SessionTranscriptWait"];
         } & {
             [key: string]: unknown;
+        };
+        SessionTranscriptWait: {
+            /** @enum {string} */
+            kind: "interaction";
+            interaction_id: string;
+            tool_call_id: string;
+            /** Format: date-time */
+            expires_at?: string;
         };
         /** @description Payload of a `turn.completed` event — the terminal idle marker carrying token usage. The assistant output is not duplicated here; it is delivered as `agent.message` content events when the transcript commits. */
         TurnCompletedPayload: {

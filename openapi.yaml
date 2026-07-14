@@ -9917,6 +9917,9 @@ components:
           type: string
         tool_call_id:
           type: string
+        session_id:
+          type: string
+          description: Session whose turn raised this interaction, when session-scoped.
     HttpSubscriberConsumer:
       type: object
       additionalProperties: false
@@ -11696,6 +11699,8 @@ components:
           type: object
           additionalProperties: true
           description: Token usage recorded when the turn terminalized, when available.
+        wait:
+          $ref: '#/components/schemas/SessionTranscriptWait'
         created_at:
           type: string
           format: date-time
@@ -11711,6 +11716,7 @@ components:
       required:
       - messages
       - turns
+      - interactions
       - has_more
       - resume_cursor
       properties:
@@ -11722,6 +11728,11 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/SessionTranscriptTurn'
+        interactions:
+          type: array
+          description: Pending interactions raised by agent tool calls in this session.
+          items:
+            $ref: '#/components/schemas/Interaction'
         has_more:
           type: boolean
         resume_cursor:
@@ -11735,6 +11746,7 @@ components:
       - $ref: '#/components/schemas/MessageBlockPatchFrame'
       - $ref: '#/components/schemas/MessageDeltaFrame'
       - $ref: '#/components/schemas/TurnUpsertFrame'
+      - $ref: '#/components/schemas/InteractionUpsertFrame'
       - $ref: '#/components/schemas/StreamReadyFrame'
       - $ref: '#/components/schemas/StreamEndFrame'
       discriminator:
@@ -11745,6 +11757,7 @@ components:
           message.block.patch: '#/components/schemas/MessageBlockPatchFrame'
           message.delta: '#/components/schemas/MessageDeltaFrame'
           turn.upsert: '#/components/schemas/TurnUpsertFrame'
+          interaction.upsert: '#/components/schemas/InteractionUpsertFrame'
           stream.ready: '#/components/schemas/StreamReadyFrame'
           stream.end: '#/components/schemas/StreamEndFrame'
     MessageUpsertFrame:
@@ -11845,6 +11858,17 @@ components:
             type: string
             enum:
             - turn.upsert
+    InteractionUpsertFrame:
+      allOf:
+      - $ref: '#/components/schemas/Interaction'
+      - type: object
+        required:
+        - event_type
+        properties:
+          event_type:
+            type: string
+            enum:
+            - interaction.upsert
     StreamReadyFrame:
       type: object
       additionalProperties: false
@@ -12156,8 +12180,26 @@ components:
         reason:
           type: string
         wait:
-          type: object
-          additionalProperties: true
+          $ref: '#/components/schemas/SessionTranscriptWait'
+    SessionTranscriptWait:
+      type: object
+      additionalProperties: false
+      required:
+      - kind
+      - interaction_id
+      - tool_call_id
+      properties:
+        kind:
+          type: string
+          enum:
+          - interaction
+        interaction_id:
+          type: string
+        tool_call_id:
+          type: string
+        expires_at:
+          type: string
+          format: date-time
     TurnCompletedPayload:
       type: object
       additionalProperties: true
