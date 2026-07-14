@@ -15,6 +15,7 @@ import {
   toolResultText,
 } from "../src/transcript.js";
 import type {
+  Interaction,
   SessionToolUseBlock,
   SessionTranscriptFrame,
   SessionTranscriptSnapshot,
@@ -22,6 +23,18 @@ import type {
 import type { TranscriptDiagnostics } from "../src/index.js";
 
 const AT = "2026-07-11T17:03:21Z";
+
+function interaction(status: Interaction["status"]): Interaction {
+  return {
+    id: "iact_1",
+    kind: "request_information",
+    status,
+    title: "Which region?",
+    target_user_ids: ["user_1"],
+    created_at: AT,
+    updated_at: AT,
+  };
+}
 
 function frame(f: Record<string, unknown>): SessionTranscriptFrame {
   return f as unknown as SessionTranscriptFrame;
@@ -572,15 +585,55 @@ test("transcript: applySnapshot prunes streaming rows absent from a final page",
   assert.equal(t.cursor, "42.6");
 });
 
+test("transcript: interaction upserts and final snapshots reconcile pending state", () => {
+  const transcript = new SessionTranscript();
+  apply(transcript, {
+    event_type: "interaction.upsert",
+    ...interaction("pending"),
+  });
+  assert.deepEqual(
+    transcript.pendingInteractions().map(({ id }) => id),
+    ["iact_1"],
+  );
+
+  apply(transcript, {
+    event_type: "interaction.upsert",
+    ...interaction("completed"),
+  });
+  assert.deepEqual(transcript.pendingInteractions(), []);
+  assert.equal(transcript.interaction("iact_1")?.status, "completed");
+
+  transcript.applySnapshot({
+    messages: [],
+    turns: [],
+    interactions: [{ ...interaction("pending"), id: "iact_2" }],
+    has_more: false,
+    resume_cursor: "2.1",
+  });
+  assert.deepEqual(
+    transcript.interactions().map(({ id }) => id),
+    ["iact_1", "iact_2"],
+  );
+
+  transcript.applySnapshot({
+    messages: [],
+    turns: [],
+    interactions: [],
+    has_more: false,
+    resume_cursor: "3.1",
+  });
+  assert.equal(transcript.interaction("iact_2"), undefined);
+  assert.equal(transcript.interaction("iact_1")?.status, "completed");
+});
+
 test("client: getSessionTranscript builds the snapshot URL with query", async () => {
   let requestedURL = "";
   const original = globalThis.fetch;
   globalThis.fetch = (async (input: RequestInfo | URL) => {
     requestedURL = typeof input === "string" ? input : input.toString();
-    const body: SessionTranscriptSnapshot = {
+    const body = {
       messages: [],
       turns: [],
-      interactions: [],
       has_more: false,
       resume_cursor: "1.1",
     };
@@ -595,6 +648,7 @@ test("client: getSessionTranscript builds the snapshot URL with query", async ()
       limit: 50,
     });
     assert.equal(snap.resume_cursor, "1.1");
+    assert.deepEqual(snap.interactions, []);
   } finally {
     globalThis.fetch = original;
   }

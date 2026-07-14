@@ -15,19 +15,27 @@ import type { SessionTranscript } from "./transcript.js";
 export type SessionChatPhase = "queued" | "running" | "waiting";
 
 export interface SessionChatCallbacks {
+  /** Fires whenever a message first appears or its folded content changes. */
   onMessage?: (
     message: SessionTranscriptMessage,
     transcript: SessionTranscript,
   ) => void;
+  /** Fires when the current active chat phase changes. */
   onPhase?: (
     phase: SessionChatPhase | null,
     turn: SessionTranscriptTurn | null,
     transcript: SessionTranscript,
   ) => void;
+  /** Fires for every new or changed interaction, including terminal upserts. */
   onInteraction?: (
     interaction: Interaction,
     transcript: SessionTranscript,
   ) => void;
+  /**
+   * Fires only when a previously observed pending interaction transitions to
+   * a terminal status. A terminal interaction first seen after reconnect is
+   * reported through onInteraction only.
+   */
   onInteractionResolved?: (
     interaction: Interaction,
     transcript: SessionTranscript,
@@ -49,6 +57,7 @@ export class SessionChat {
   readonly #callbacks: SessionChatCallbacks;
   readonly #messageSignatures = new Map<string, string>();
   readonly #interactionSignatures = new Map<string, string>();
+  readonly #interactionStatuses = new Map<string, Interaction["status"]>();
   #phase: SessionChatPhase | null = null;
 
   constructor(client: Client, callbacks: SessionChatCallbacks = {}) {
@@ -101,10 +110,11 @@ export class SessionChat {
       const signature = stableSignature(interaction);
       if (this.#interactionSignatures.get(interaction.id) === signature)
         continue;
-      const previous = this.#interactionSignatures.get(interaction.id);
+      const previousStatus = this.#interactionStatuses.get(interaction.id);
       this.#interactionSignatures.set(interaction.id, signature);
+      this.#interactionStatuses.set(interaction.id, interaction.status);
       this.#callbacks.onInteraction?.(interaction, transcript);
-      if (previous !== undefined && interaction.status !== "pending") {
+      if (previousStatus === "pending" && interaction.status !== "pending") {
         this.#callbacks.onInteractionResolved?.(interaction, transcript);
       }
     }

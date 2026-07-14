@@ -203,6 +203,36 @@ func TestSessionTranscript_ApplySnapshotPrunesStreaming(t *testing.T) {
 	assert.Equal(t, view.Cursor(), "42.6")
 }
 
+func TestSessionTranscript_FoldsAndReconcilesInteractions(t *testing.T) {
+	view := NewSessionTranscript()
+	applyJSON(t, view, "", `{"event_type":"interaction.upsert","id":"iact_1","kind":"request_information","status":"pending","title":"Which region?","target_user_ids":["user_1"],"created_at":"2026-07-11T17:03:21Z","updated_at":"2026-07-11T17:03:21Z"}`)
+
+	interaction, ok := view.Interaction("iact_1")
+	assert.True(t, ok)
+	assert.Equal(t, interaction.Status, api.InteractionStatusPending)
+	assert.Equal(t, len(view.PendingInteractions()), 1)
+
+	applyJSON(t, view, "", `{"event_type":"interaction.upsert","id":"iact_1","kind":"request_information","status":"completed","title":"Which region?","target_user_ids":["user_1"],"created_at":"2026-07-11T17:03:21Z","updated_at":"2026-07-11T17:04:21Z"}`)
+	assert.Equal(t, len(view.PendingInteractions()), 0)
+	interaction, ok = view.Interaction("iact_1")
+	assert.True(t, ok)
+	assert.Equal(t, interaction.Status, api.InteractionStatusCompleted)
+
+	var pendingSnapshot api.SessionTranscriptSnapshot
+	assert.NoError(t, json.Unmarshal([]byte(`{"messages":[],"turns":[],"interactions":[{"id":"iact_2","kind":"request_information","status":"pending","title":"Which team?","target_user_ids":["user_1"],"created_at":"2026-07-11T17:05:21Z","updated_at":"2026-07-11T17:05:21Z"}],"has_more":false,"resume_cursor":"2.1"}`), &pendingSnapshot))
+	view.ApplySnapshot(&pendingSnapshot)
+	assert.Equal(t, len(view.Interactions()), 2)
+	assert.Equal(t, len(view.PendingInteractions()), 1)
+
+	var settledSnapshot api.SessionTranscriptSnapshot
+	assert.NoError(t, json.Unmarshal([]byte(`{"messages":[],"turns":[],"interactions":[],"has_more":false,"resume_cursor":"3.1"}`), &settledSnapshot))
+	view.ApplySnapshot(&settledSnapshot)
+	_, hasPending := view.Interaction("iact_2")
+	assert.False(t, hasPending)
+	_, hasTerminal := view.Interaction("iact_1")
+	assert.True(t, hasTerminal)
+}
+
 func TestSessionTranscript_SeedFoldsAckState(t *testing.T) {
 	var ack api.TurnAck
 	assert.NoError(t, json.Unmarshal([]byte(invokeAckWithCursor("s1", "t1", 42)), &ack))
@@ -234,6 +264,8 @@ func TestGetSessionTranscript_BuildsQuery(t *testing.T) {
 	snap, err := c.GetSessionTranscript(context.Background(), "sess_1", &GetSessionTranscriptOptions{Cursor: "10.2", Limit: 50})
 	assert.NoError(t, err)
 	assert.Equal(t, snap.ResumeCursor, "1.1")
+	assert.NotNil(t, snap.Interactions)
+	assert.Equal(t, len(snap.Interactions), 0)
 	assert.Equal(t, gotPath, "/v1/projects/test-project/sessions/sess_1/transcript")
 	assert.Equal(t, gotCursor, "10.2")
 	assert.Equal(t, gotLimit, "50")

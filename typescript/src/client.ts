@@ -964,7 +964,11 @@ export class Client {
       method: "GET",
       signal: opts.signal,
     });
-    return (await resp.json()) as SessionTranscriptSnapshot;
+    const snapshot = (await resp.json()) as SessionTranscriptSnapshot;
+    // Preserve rolling-deploy compatibility when an older server omits the
+    // newly-added pending-interactions projection.
+    snapshot.interactions ??= [];
+    return snapshot;
   }
 
   /**

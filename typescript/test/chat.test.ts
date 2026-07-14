@@ -78,22 +78,36 @@ test("SessionChat exposes pushed interactions, phase changes, and resolution", a
   assert.equal(updates[2].pendingInteractions.length, 0);
 });
 
-test("SessionTranscript final snapshots prune stale pending interactions", () => {
+test("SessionChat does not resolve a terminal interaction first seen after reconnect", async () => {
   const transcript = new SessionTranscript();
-  transcript.apply({
-    frame: {
-      event_type: "interaction.upsert",
-      ...interaction("pending"),
-    } as SessionTranscriptFrame,
+  const terminalFrame = {
+    event_type: "interaction.upsert",
+    ...interaction("completed"),
+  } as SessionTranscriptFrame;
+  const client = {
+    async *watchSessionTranscriptUpdates(): AsyncGenerator<TranscriptUpdate> {
+      transcript.apply({ frame: terminalFrame });
+      yield {
+        frame: terminalFrame,
+        cursor: transcript.cursor,
+        transcript,
+        connection: "open",
+        reconnectCount: 0,
+      };
+    },
+  } as unknown as Client;
+
+  const observed: string[] = [];
+  const resolved: string[] = [];
+  const chat = new SessionChat(client, {
+    onInteraction: ({ id }) => observed.push(id),
+    onInteractionResolved: ({ id }) => resolved.push(id),
   });
 
-  transcript.applySnapshot({
-    messages: [],
-    turns: [],
-    interactions: [],
-    has_more: false,
-    resume_cursor: "1.1",
-  });
+  for await (const _ of chat.watch("sess_1")) {
+    // Drain the synthetic update.
+  }
 
-  assert.deepEqual(transcript.pendingInteractions(), []);
+  assert.deepEqual(observed, ["iact_1"]);
+  assert.deepEqual(resolved, []);
 });

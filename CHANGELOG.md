@@ -8,6 +8,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 
 ### Added
 
+- Session transcript snapshots and streams now expose human-input wait context
+  and interaction lifecycle upserts across the generated Go, Python, and
+  TypeScript contracts and transcript accumulators.
 - TypeScript `SessionChat` wraps invoke, transcript following, pushed human-input
   interactions, and responses without polling or manual cursor handling.
 

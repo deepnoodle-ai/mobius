@@ -243,6 +243,53 @@ def test_transcript_apply_snapshot_prunes_streaming() -> None:
     assert t.cursor == "42.6"
 
 
+def test_transcript_folds_and_reconciles_interactions() -> None:
+    t = SessionTranscript()
+    pending = {
+        "event_type": "interaction.upsert",
+        "id": "iact_1",
+        "kind": "request_information",
+        "status": "pending",
+        "title": "Which region?",
+        "target_user_ids": ["user_1"],
+        "created_at": AT,
+        "updated_at": AT,
+    }
+    _apply(t, pending)
+    assert t.interaction("iact_1")["status"] == "pending"
+    assert [item["id"] for item in t.pending_interactions()] == ["iact_1"]
+
+    _apply(t, {**pending, "status": "completed"})
+    assert t.pending_interactions() == []
+    assert t.interaction("iact_1")["status"] == "completed"
+
+    pending_two = {**pending, "id": "iact_2", "created_at": "2026-07-11T17:04:21Z"}
+    pending_two.pop("event_type")
+    t.apply_snapshot(
+        {
+            "messages": [],
+            "turns": [],
+            "interactions": [pending_two],
+            "has_more": False,
+            "resume_cursor": "2.1",
+        }
+    )
+    assert [item["id"] for item in t.interactions()] == ["iact_1", "iact_2"]
+    assert [item["id"] for item in t.pending_interactions()] == ["iact_2"]
+
+    t.apply_snapshot(
+        {
+            "messages": [],
+            "turns": [],
+            "interactions": [],
+            "has_more": False,
+            "resume_cursor": "3.1",
+        }
+    )
+    assert t.interaction("iact_2") is None
+    assert t.interaction("iact_1")["status"] == "completed"
+
+
 def test_transcript_seed_folds_ack_state() -> None:
     t = SessionTranscript()
     t.seed(_ack_body())
@@ -263,6 +310,7 @@ def test_get_session_transcript_builds_query() -> None:
     client = _client_with(handler)
     snap = client.get_session_transcript("sess_1", GetSessionTranscriptOptions(cursor="10.2", limit=50))
     assert snap.resume_cursor == "1.1"
+    assert snap.interactions == []
     assert seen["path"] == "/v1/projects/test-project/sessions/sess_1/transcript"
     assert seen["cursor"] == "10.2"
     assert seen["limit"] == "50"
