@@ -248,7 +248,7 @@ class AgentToolPresentation(StrEnum):
 
 class SessionCompactionThreshold(StrEnum):
     """
-    T-shirt size selecting when `auto` compaction triggers, smallest (`xs`, compact very early) to largest (`xl`, compact very late). The server maps each size to a token estimate; `sm` is the default.
+    T-shirt size selecting when `auto` compaction triggers as a percentage of the session model's input context window: `xs` 10%, `sm` 20%, `md` 40%, `lg` 60%, and `xl` 80%. Unknown/custom models use a conservative 200k-token context window. `sm` is the default.
     """
 
     xs = 'xs'
@@ -260,7 +260,7 @@ class SessionCompactionThreshold(StrEnum):
 
 class Strategy(StrEnum):
     """
-    `auto` (default) compacts automatically when the transcript crosses the `threshold` size. `manual` only compacts on an explicit compact request. `disabled` (alias `none`) never compacts.
+    `auto` (default) compacts automatically when the transcript crosses the model-relative `threshold` or exact `threshold_tokens` trigger. `manual` only compacts on an explicit compact request. `disabled` (alias `none`) never compacts.
     """
 
     auto = 'auto'
@@ -279,11 +279,17 @@ class SessionCompactionPolicy(BaseModel):
     )
     strategy: Strategy | None = Field(
         None,
-        description='`auto` (default) compacts automatically when the transcript crosses the `threshold` size. `manual` only compacts on an explicit compact request. `disabled` (alias `none`) never compacts.',
+        description='`auto` (default) compacts automatically when the transcript crosses the model-relative `threshold` or exact `threshold_tokens` trigger. `manual` only compacts on an explicit compact request. `disabled` (alias `none`) never compacts.',
     )
     threshold: SessionCompactionThreshold | None = Field(
         None,
-        description='Size at which `auto` compacts. A t-shirt size (`xs`–`xl`) rather than a raw token count, because the transcript size it gates on is an estimate. The size → token mapping is server-owned; `sm` is the default and the per-size token estimate is documented separately.',
+        description="Model-relative size at which `auto` compacts. Each preset is a percentage of the session model's input context window; `sm` is the default. Mutually exclusive with `threshold_tokens`.",
+    )
+    threshold_tokens: int | None = Field(
+        None,
+        description='Exact estimated-token count at which `auto` compacts. Use this for advanced workloads that need a specific threshold rather than a model-relative preset. Mutually exclusive with `threshold`.',
+        ge=1,
+        le=10000000,
     )
     summary_model: str | None = Field(
         None, description='Model used to produce compaction summaries.'
@@ -1685,6 +1691,11 @@ class ModelOption(BaseModel):
     label: str = Field(..., description='Human-readable model label for UI.')
     description: str | None = Field(
         None, description='Short guidance about when to use this model.'
+    )
+    context_window_tokens: int = Field(
+        ...,
+        description='Maximum input context used to resolve model-relative compaction presets.',
+        ge=1,
     )
     recommended: bool | None = Field(
         None, description='Whether this is the suggested default for its provider.'
@@ -4000,6 +4011,14 @@ class AgentTurnStatus(StrEnum):
     cancelled = 'cancelled'
 
 
+class AgentTurnErrorScope(StrEnum):
+    """
+    Present when the overall agent-turn budget was exhausted.
+    """
+
+    agent_turn = 'agent_turn'
+
+
 class AgentTurn(BaseModel):
     """
     One attempt of an agent running the agent loop — the unit that produces a transcript. A turn is triggered by a direct send to the session, a loop step (run_id + step_key), or an inbound channel message (channel_exchange_id). Its messages are read via the turn's transcript endpoint.
@@ -4041,6 +4060,10 @@ class AgentTurn(BaseModel):
     )
     error_message: str | None = Field(
         None, description='Human-readable failure detail when the turn failed.'
+    )
+    error_scope: AgentTurnErrorScope | None = None
+    effective_timeout_seconds: int | None = Field(
+        None, description='Authoritative active-execution budget selected for the turn.'
     )
     created_at: AwareDatetime = Field(..., description='Time the turn was created.')
     updated_at: AwareDatetime = Field(
@@ -4338,6 +4361,19 @@ class AppendSessionMessage(BaseModel):
     )
 
 
+class AgentTurnOperationPolicy(BaseModel):
+    """
+    Operational policy for this newly admitted turn only. Unlike `config`, this policy is not saved on the session. Its timeout takes precedence over the session's inline-definition timeout and remains constrained by any deployment timeout ceiling. `config.timeout_seconds` may be zero to use the platform default; this operation timeout must be at least one.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    timeout_seconds: int | None = Field(
+        None, description='Overall active-execution budget for this logical turn.', ge=1
+    )
+
+
 class InlineToolkit(BaseModel):
     """
     A toolkit selection carried in an inline agent config.
@@ -4472,7 +4508,7 @@ class InvokeInput(BaseModel):
     )
     idempotency_key: str | None = Field(
         None,
-        description='Dedup key scoped to the resolved session. A repeat call with the same key resumes the existing turn and writes nothing new — derive it from the provider event id for Slack/Telegram webhook retries. Omitting it or sending a blank value disables retry deduplication.',
+        description='Dedup key scoped to the resolved session. A repeat call with the same key returns the existing invocation and writes nothing new; it never restarts a terminal turn. Derive it from the provider event id for Slack/Telegram webhook retries. Omitting it or sending a blank value disables retry deduplication.',
     )
     context: RuntimeContext | None = None
     metadata: dict[str, Any] | None = Field(
@@ -4544,7 +4580,7 @@ class Role3(StrEnum):
 
 class StartTurnRequest(BaseModel):
     """
-    Caller input that starts an agent turn in a session.
+    Caller input that starts an agent turn in a session. The session definition's `config.timeout_seconds` may be zero to use the platform default; `operation.timeout_seconds` must be at least one and takes precedence for this admitted turn.
     """
 
     model_config = ConfigDict(
@@ -4561,8 +4597,9 @@ class StartTurnRequest(BaseModel):
     )
     idempotency_key: str | None = Field(
         None,
-        description='Dedup key scoped to the session. A repeat call with the same key resumes the existing turn and writes nothing new. Omitting it or sending a blank value disables retry deduplication.',
+        description='Dedup key scoped to the session. A repeat call with the same key returns the existing invocation and writes nothing new; it never restarts a terminal turn. Omitting it or sending a blank value disables retry deduplication.',
     )
+    operation: AgentTurnOperationPolicy | None = None
     context: RuntimeContext | None = None
     metadata: dict[str, Any] | None = Field(
         None, description='Free-form caller metadata attached to the input message.'
@@ -7858,7 +7895,7 @@ class InteractionUpsertFrame(Interaction):
 
 class InvokeAgentRequest(BaseModel):
     """
-    A single compound invocation: which agent to run, how to resolve the session, the caller's input message, and optional channel routing context.
+    A single compound invocation: which agent to run, how to resolve the session, the caller's input message, and optional channel routing context. `config.timeout_seconds` may be zero to use the platform default; `operation.timeout_seconds` must be at least one and takes precedence for this admitted turn.
     """
 
     model_config = ConfigDict(
@@ -7867,6 +7904,7 @@ class InvokeAgentRequest(BaseModel):
     agent_ref: AgentRef
     session: InvokeSessionSpec | None = None
     config: InlineAgentConfig | None = None
+    operation: AgentTurnOperationPolicy | None = None
     input: InvokeInput
     channel_context: ChannelContext | None = None
 
@@ -8549,7 +8587,7 @@ class TurnAck(BaseModel):
     )
     deduped: bool | None = Field(
         None,
-        description='True when a repeated idempotency key resumed an existing turn.',
+        description='True when a repeated idempotency key returned an existing turn without restarting it.',
     )
 
 

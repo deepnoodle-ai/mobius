@@ -29,9 +29,9 @@ type InvokeAgentOptions struct {
 	// Context is the ordered application-owned state for this turn.
 	Context []RuntimeContextItem
 	// IdempotencyKey dedupes the call: a repeat call with the same key
-	// resolves the same session and resumes the existing turn rather than
-	// starting a second one. Derive it from the provider event id for
-	// Slack/Telegram webhook retries.
+	// resolves the same session and returns the existing invocation without
+	// restarting it or starting a second one. Derive it from the provider event
+	// id for Slack/Telegram webhook retries.
 	IdempotencyKey string
 	// InputMetadata is free-form caller metadata attached to the input
 	// message.

@@ -293,9 +293,9 @@ export interface InvokeAgentOptions {
   context?: RuntimeContextItem[];
   /**
    * Dedup key scoped to the resolved session. A repeat call with the same
-   * key resolves the same session and resumes the existing turn rather
-   * than starting a second one — derive it from the provider event id for
-   * Slack/Telegram webhook retries.
+   * key resolves the same session and returns the existing invocation
+   * without restarting it or starting a second one — derive it from the
+   * provider event id for Slack/Telegram webhook retries.
    */
   idempotencyKey?: string;
   /** Free-form caller metadata attached to the input message. */
@@ -1246,7 +1246,7 @@ export class TurnTranscript implements AsyncIterable<TurnTranscript> {
    * the v1 session stream instead.
    */
   readonly afterSequence: number;
-  /** True when a repeated idempotency key resumed an existing turn. */
+  /** True when a repeated idempotency key returned an existing turn without restarting it. */
   readonly deduped: boolean;
   /** Full session view the stream folds into. */
   readonly transcript: SessionTranscript;
@@ -1256,8 +1256,8 @@ export class TurnTranscript implements AsyncIterable<TurnTranscript> {
   // Immutable invocation boundary used for initial replay and terminal
   // settlement. The transcript cursor keeps moving for stream reconnects.
   readonly #invocationCursor: string;
-  // Set when the acked turn was already terminal (a deduped resume of a
-  // completed turn): there is nothing to stream, so iteration fetches the
+  // Set when deduplication returned an already-terminal turn: there is
+  // nothing to stream, so iteration fetches the
   // snapshot (all pages) instead, making messages() complete either way.
   #hydrate: boolean;
   #diagnostics: TranscriptDiagnostics = {

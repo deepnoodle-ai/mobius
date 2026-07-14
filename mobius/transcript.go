@@ -512,8 +512,8 @@ type TurnTranscript struct {
 	// invocationCursor is the immutable v2 lower boundary used for initial replay
 	// and terminal settlement. stream.view.Cursor continues moving for reconnects.
 	invocationCursor string
-	// hydrate is set when the acked turn was already terminal (a deduped
-	// resume of a completed turn): there is nothing to stream, so the first
+	// hydrate is set when deduplication returned an already-terminal turn:
+	// there is nothing to stream, so the first
 	// Next fetches the snapshot (all pages) instead, making Messages complete
 	// either way.
 	hydrate bool
@@ -570,8 +570,8 @@ func (t *TurnTranscript) TurnError() error {
 	return errors.New("mobius: turn failed")
 }
 
-// Deduped reports whether a repeated idempotency key resumed an existing turn
-// instead of starting a new one.
+// Deduped reports whether a repeated idempotency key returned an existing turn
+// without restarting it or starting a new one.
 func (t *TurnTranscript) Deduped() bool { return t.deduped }
 
 // AfterSequence is the durable v1 stream cursor from the turn-start response;

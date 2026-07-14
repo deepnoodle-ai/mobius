@@ -314,6 +314,21 @@ func (e AgentToolPresentation) Valid() bool {
 	}
 }
 
+// Defines values for AgentTurnErrorScope.
+const (
+	AgentTurnErrorScopeAgentTurn AgentTurnErrorScope = "agent_turn"
+)
+
+// Valid indicates whether the value is a known member of the AgentTurnErrorScope enum.
+func (e AgentTurnErrorScope) Valid() bool {
+	switch e {
+	case AgentTurnErrorScopeAgentTurn:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for AgentTurnStatus.
 const (
 	AgentTurnStatusCancelled AgentTurnStatus = "cancelled"
@@ -4176,8 +4191,14 @@ type AgentTurn struct {
 	// CreatedAt Time the turn was created.
 	CreatedAt time.Time `json:"created_at"`
 
+	// EffectiveTimeoutSeconds Authoritative active-execution budget selected for the turn.
+	EffectiveTimeoutSeconds *int64 `json:"effective_timeout_seconds,omitempty"`
+
 	// ErrorMessage Human-readable failure detail when the turn failed.
 	ErrorMessage *string `json:"error_message,omitempty"`
+
+	// ErrorScope Present when the overall agent-turn budget was exhausted.
+	ErrorScope *AgentTurnErrorScope `json:"error_scope,omitempty"`
 
 	// ErrorType Machine-readable failure category when the turn failed.
 	ErrorType *string `json:"error_type,omitempty"`
@@ -4204,6 +4225,9 @@ type AgentTurn struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
+// AgentTurnErrorScope Present when the overall agent-turn budget was exhausted.
+type AgentTurnErrorScope string
+
 // AgentTurnListResponse defines model for AgentTurnListResponse.
 type AgentTurnListResponse struct {
 	// HasMore True when more turns exist past this page.
@@ -4214,6 +4238,12 @@ type AgentTurnListResponse struct {
 
 	// NextCursor Opaque cursor to pass as `cursor` on the next request. Null when `has_more` is false.
 	NextCursor *string `json:"next_cursor,omitempty"`
+}
+
+// AgentTurnOperationPolicy Operational policy for this newly admitted turn only. Unlike `config`, this policy is not saved on the session. Its timeout takes precedence over the session's inline-definition timeout and remains constrained by any deployment timeout ceiling. `config.timeout_seconds` may be zero to use the platform default; this operation timeout must be at least one.
+type AgentTurnOperationPolicy struct {
+	// TimeoutSeconds Overall active-execution budget for this logical turn.
+	TimeoutSeconds *int64 `json:"timeout_seconds,omitempty"`
 }
 
 // AgentTurnStatus Agent turn lifecycle status: `queued`, `running`, `waiting`, `completed`, `failed`, or `cancelled`.
@@ -6021,7 +6051,7 @@ type InvokeActionRequest struct {
 	TimeoutSeconds *int `json:"timeout_seconds,omitempty"`
 }
 
-// InvokeAgentRequest A single compound invocation: which agent to run, how to resolve the session, the caller's input message, and optional channel routing context.
+// InvokeAgentRequest A single compound invocation: which agent to run, how to resolve the session, the caller's input message, and optional channel routing context. `config.timeout_seconds` may be zero to use the platform default; `operation.timeout_seconds` must be at least one and takes precedence for this admitted turn.
 type InvokeAgentRequest struct {
 	// AgentRef Reference to an agent in this project. Supply exactly one of `id` (the agent identifier) or `name` (the project-unique agent name). A blueprint-binding reference form is reserved for a later release and is not resolvable yet.
 	AgentRef AgentRef `json:"agent_ref"`
@@ -6039,6 +6069,9 @@ type InvokeAgentRequest struct {
 	// Input The caller input message that starts the agent turn.
 	Input InvokeInput `json:"input"`
 
+	// Operation Operational policy for this newly admitted turn only. Unlike `config`, this policy is not saved on the session. Its timeout takes precedence over the session's inline-definition timeout and remains constrained by any deployment timeout ceiling. `config.timeout_seconds` may be zero to use the platform default; this operation timeout must be at least one.
+	Operation *AgentTurnOperationPolicy `json:"operation,omitempty"`
+
 	// Session How to resolve or create the session this invocation runs in. Mirrors the create-session policy: `mode` + `session_key` resolve a durable conversation for the agent, and the remaining fields seed a session that does not already exist (they are ignored when an existing session is resolved). Omit the whole object to use a single default session per agent in `continue_or_create` mode.
 	Session *InvokeSessionSpec `json:"session,omitempty"`
 }
@@ -6053,7 +6086,7 @@ type InvokeInput struct {
 	// Context remains at contextual authority and cannot grant permissions. A retry using the same `idempotency_key` returns the original turn and ignores any newly supplied context.
 	Context *RuntimeContext `json:"context,omitempty"`
 
-	// IdempotencyKey Dedup key scoped to the resolved session. A repeat call with the same key resumes the existing turn and writes nothing new — derive it from the provider event id for Slack/Telegram webhook retries. Omitting it or sending a blank value disables retry deduplication.
+	// IdempotencyKey Dedup key scoped to the resolved session. A repeat call with the same key returns the existing invocation and writes nothing new; it never restarts a terminal turn. Derive it from the provider event id for Slack/Telegram webhook retries. Omitting it or sending a blank value disables retry deduplication.
 	IdempotencyKey *string `json:"idempotency_key,omitempty"`
 
 	// Metadata Free-form caller metadata attached to the input message.
@@ -7078,6 +7111,9 @@ type ModelCatalogResponseReason string
 
 // ModelOption One selectable LLM model in the project model catalog.
 type ModelOption struct {
+	// ContextWindowTokens Maximum input context used to resolve model-relative compaction presets.
+	ContextWindowTokens int64 `json:"context_window_tokens"`
+
 	// Description Short guidance about when to use this model.
 	Description *string `json:"description,omitempty"`
 
@@ -7770,20 +7806,23 @@ type SessionCompactionBoundary struct {
 
 // SessionCompactionPolicy Controls how a session's transcript is automatically summarized as it grows. On create the supplied fields are merged over the owning agent's default policy and the server defaults; on update they patch the session's current policy. Omitted fields keep their resolved values.
 type SessionCompactionPolicy struct {
-	// Strategy `auto` (default) compacts automatically when the transcript crosses the `threshold` size. `manual` only compacts on an explicit compact request. `disabled` (alias `none`) never compacts.
+	// Strategy `auto` (default) compacts automatically when the transcript crosses the model-relative `threshold` or exact `threshold_tokens` trigger. `manual` only compacts on an explicit compact request. `disabled` (alias `none`) never compacts.
 	Strategy *SessionCompactionPolicyStrategy `json:"strategy,omitempty"`
 
 	// SummaryModel Model used to produce compaction summaries.
 	SummaryModel *string `json:"summary_model,omitempty"`
 
-	// Threshold T-shirt size selecting when `auto` compaction triggers, smallest (`xs`, compact very early) to largest (`xl`, compact very late). The server maps each size to a token estimate; `sm` is the default.
+	// Threshold T-shirt size selecting when `auto` compaction triggers as a percentage of the session model's input context window: `xs` 10%, `sm` 20%, `md` 40%, `lg` 60%, and `xl` 80%. Unknown/custom models use a conservative 200k-token context window. `sm` is the default.
 	Threshold *SessionCompactionThreshold `json:"threshold,omitempty"`
+
+	// ThresholdTokens Exact estimated-token count at which `auto` compacts. Use this for advanced workloads that need a specific threshold rather than a model-relative preset. Mutually exclusive with `threshold`.
+	ThresholdTokens *int64 `json:"threshold_tokens,omitempty"`
 }
 
-// SessionCompactionPolicyStrategy `auto` (default) compacts automatically when the transcript crosses the `threshold` size. `manual` only compacts on an explicit compact request. `disabled` (alias `none`) never compacts.
+// SessionCompactionPolicyStrategy `auto` (default) compacts automatically when the transcript crosses the model-relative `threshold` or exact `threshold_tokens` trigger. `manual` only compacts on an explicit compact request. `disabled` (alias `none`) never compacts.
 type SessionCompactionPolicyStrategy string
 
-// SessionCompactionThreshold T-shirt size selecting when `auto` compaction triggers, smallest (`xs`, compact very early) to largest (`xl`, compact very late). The server maps each size to a token estimate; `sm` is the default.
+// SessionCompactionThreshold T-shirt size selecting when `auto` compaction triggers as a percentage of the session model's input context window: `xs` 10%, `sm` 20%, `md` 40%, `lg` 60%, and `xl` 80%. Unknown/custom models use a conservative 200k-token context window. `sm` is the default.
 type SessionCompactionThreshold string
 
 // SessionContentBlock One content block in a session transcript message — the canonical, frozen JSON shape Mobius persists and replays, discriminated by `type`. The variants are `text`, `thinking`, `tool_use`, `tool_result`, and `image`, plus host-managed `reminder` blocks when caller runtime context is explicitly included. Each variant permits provider-specific extra fields (citations, signatures, cache hints, and the like), and unknown fields are preserved rather than rejected, so the transcript round-trips losslessly across providers.
@@ -8380,7 +8419,7 @@ type StartLoopRunRequest struct {
 	Source *LoopRunSource `json:"source,omitempty"`
 }
 
-// StartTurnRequest Caller input that starts an agent turn in a session.
+// StartTurnRequest Caller input that starts an agent turn in a session. The session definition's `config.timeout_seconds` may be zero to use the platform default; `operation.timeout_seconds` must be at least one and takes precedence for this admitted turn.
 type StartTurnRequest struct {
 	// Content Ordered content blocks (text, images) for the input message.
 	Content []map[string]interface{} `json:"content"`
@@ -8390,11 +8429,14 @@ type StartTurnRequest struct {
 	// Context remains at contextual authority and cannot grant permissions. A retry using the same `idempotency_key` returns the original turn and ignores any newly supplied context.
 	Context *RuntimeContext `json:"context,omitempty"`
 
-	// IdempotencyKey Dedup key scoped to the session. A repeat call with the same key resumes the existing turn and writes nothing new. Omitting it or sending a blank value disables retry deduplication.
+	// IdempotencyKey Dedup key scoped to the session. A repeat call with the same key returns the existing invocation and writes nothing new; it never restarts a terminal turn. Omitting it or sending a blank value disables retry deduplication.
 	IdempotencyKey *string `json:"idempotency_key,omitempty"`
 
 	// Metadata Free-form caller metadata attached to the input message.
 	Metadata *map[string]interface{} `json:"metadata,omitempty"`
+
+	// Operation Operational policy for this newly admitted turn only. Unlike `config`, this policy is not saved on the session. Its timeout takes precedence over the session's inline-definition timeout and remains constrained by any deployment timeout ceiling. `config.timeout_seconds` may be zero to use the platform default; this operation timeout must be at least one.
+	Operation *AgentTurnOperationPolicy `json:"operation,omitempty"`
 
 	// Role Role of the input message. A turn carries caller input, so only `user` is accepted; defaults to `user` when omitted.
 	Role *StartTurnRequestRole `json:"role,omitempty"`
@@ -8770,7 +8812,7 @@ type TurnAck struct {
 	// AfterSequence The transcript message `sequence` cursor to stream from. Pass it as `after_sequence` to `GET .../stream` to follow this turn.
 	AfterSequence int64 `json:"after_sequence"`
 
-	// Deduped True when a repeated idempotency key resumed an existing turn.
+	// Deduped True when a repeated idempotency key returned an existing turn without restarting it.
 	Deduped *bool `json:"deduped,omitempty"`
 
 	// ResumeCursor Opaque stable v2 lower boundary for streaming and terminal settlement. It precedes every durable message owned by the returned turn and is safe for both fresh and deduplicated invocations. A deduplicated retry may replay already-observed frames.
@@ -34158,6 +34200,7 @@ type CancelTurnResponse struct {
 	JSON401      *Unauthorized
 	JSON403      *Forbidden
 	JSON404      *NotFound
+	JSON409      *ErrorResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -43311,6 +43354,13 @@ func ParseCancelTurnResponse(rsp *http.Response) (*CancelTurnResponse, error) {
 			return nil, err
 		}
 		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	}
 

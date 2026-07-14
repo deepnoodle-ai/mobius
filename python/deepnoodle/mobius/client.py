@@ -165,9 +165,9 @@ class InvokeAgentOptions:
     # Ordered application-owned state for this turn.
     context: list[RuntimeContextItem] | None = None
     # Dedup key scoped to the resolved session. A repeat call with the same
-    # key resolves the same session and resumes the existing turn rather
-    # than starting a second one — derive it from the provider event id for
-    # Slack/Telegram webhook retries.
+    # key resolves the same session and returns the existing invocation
+    # without restarting it or starting a second one — derive it from the
+    # provider event id for Slack/Telegram webhook retries.
     idempotency_key: str | None = None
     # Free-form caller metadata attached to the input message.
     input_metadata: dict[str, Any] | None = None
@@ -882,15 +882,16 @@ class TurnTranscript:
         # after_sequence to GET …/sessions/{id}/stream to follow this turn on
         # the v1 session stream instead.
         self.after_sequence: int = ack.after_sequence
-        # True when a repeated idempotency key resumed an existing turn.
+        # True when a repeated idempotency key returned an existing turn
+        # without restarting it.
         self.deduped: bool = bool(ack.deduped)
         # Full session view the stream folds into.
         self.transcript: SessionTranscript = transcript
         # Immutable invocation boundary for initial replay and terminal
         # settlement. The transcript cursor keeps moving for reconnects.
         self._invocation_cursor = ack.resume_cursor
-        # Set when the acked turn was already terminal (a deduped resume of a
-        # completed turn): there is nothing to stream, so iteration fetches
+        # Set when deduplication returned an already-terminal turn. There is
+        # nothing to stream, so iteration fetches
         # the snapshot (all pages) instead, making messages() complete either
         # way.
         self._hydrate = is_terminal_turn_status(str(ack.turn.status))
