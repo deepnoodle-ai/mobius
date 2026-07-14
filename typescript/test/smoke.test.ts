@@ -70,6 +70,89 @@ test("client: defaults to the production API host", async () => {
   );
 });
 
+test("client: project resource list helpers", async () => {
+  const original = globalThis.fetch;
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    const url = new URL(typeof input === "string" ? input : input.toString());
+    if (url.pathname.endsWith("/blueprints/bindings")) {
+      assert.equal(url.searchParams.get("namespace"), "starter");
+      assert.equal(url.searchParams.get("blueprint_key"), "support");
+      return Response.json({ items: [] });
+    }
+    if (url.pathname.endsWith("/interactions")) {
+      assert.equal(url.searchParams.get("session_id"), "sess_1");
+      assert.equal(url.searchParams.get("status"), "pending");
+      assert.equal(url.searchParams.get("inbox"), "true");
+      return Response.json({ items: [], has_more: false });
+    }
+    if (url.pathname.endsWith("/permissions")) {
+      return Response.json({ items: [], presets: [], action_groups: [] });
+    }
+    if (url.pathname.endsWith("/principals")) {
+      assert.equal(url.searchParams.get("kind"), "service");
+      assert.equal(url.searchParams.get("include_disabled"), "true");
+      return Response.json({ items: [] });
+    }
+    if (url.pathname.endsWith("/roles")) {
+      assert.equal(url.searchParams.get("cursor"), "role_cursor");
+      return Response.json({ items: [], has_more: false });
+    }
+    if (url.pathname.endsWith("/role-assignments")) {
+      assert.equal(url.searchParams.get("principal_id"), "principal_1");
+      return Response.json({ items: [] });
+    }
+    return new Response(null, { status: 404 });
+  }) as typeof fetch;
+  try {
+    const client = new Client({
+      apiKey: "mbx_test",
+      baseURL: "https://api.example.invalid",
+      project: "test-project",
+    });
+    assert.deepEqual(
+      (
+        await client.listBlueprintBindings({
+          namespace: "starter",
+          blueprintKey: "support",
+        })
+      ).items,
+      [],
+    );
+    assert.deepEqual(
+      (
+        await client.listInteractions({
+          status: "pending",
+          sessionId: "sess_1",
+          inbox: true,
+        })
+      ).items,
+      [],
+    );
+    assert.deepEqual((await client.listProjectPermissions()).items, []);
+    assert.deepEqual(
+      (
+        await client.listPrincipals({
+          kind: "service",
+          includeDisabled: true,
+        })
+      ).items,
+      [],
+    );
+    assert.deepEqual(
+      (await client.listRoles({ cursor: "role_cursor" })).items,
+      [],
+    );
+    assert.deepEqual(
+      (
+        await client.listRoleAssignments({ principalId: "principal_1" })
+      ).items,
+      [],
+    );
+  } finally {
+    globalThis.fetch = original;
+  }
+});
+
 test("client: extracts project handle from project-pinned API key", () => {
   const client = new Client({ apiKey: "mbx_secret.prod" });
   assert.equal(client.project, "prod");
@@ -397,6 +480,7 @@ test("client: invokeAgent posts the compound invoke request shape", async () => 
         effort: "medium",
         toolkits: [{ name: "tickets", actions: ["tickets.search"] }],
       },
+      operation: { timeout_seconds: 90 },
     });
     assert.equal(turn.afterSequence, 7);
     assert.equal(turn.sessionId, "sess_1");
@@ -417,6 +501,7 @@ test("client: invokeAgent posts the compound invoke request shape", async () => 
   assert.match(requestBody, /"model":"claude-sonnet-4-6"/);
   assert.match(requestBody, /"effort":"medium"/);
   assert.match(requestBody, /"toolkits":\[\{"name":"tickets","actions":\["tickets\.search"\]\}\]/);
+  assert.match(requestBody, /"operation":\{"timeout_seconds":90\}/);
 });
 
 test("client: startTurn passes runtime context to an existing session", async () => {
@@ -440,6 +525,7 @@ test("client: startTurn passes runtime context to an existing session", async ()
       content: [{ type: "text", text: "hi" }],
       context: [{ name: "naming-board", content: "Chosen: none" }],
       idempotencyKey: "evt_1",
+      operation: { timeout_seconds: 45 },
     });
     assert.equal(turn.id, "turn_1");
   } finally {
@@ -454,6 +540,7 @@ test("client: startTurn passes runtime context to an existing session", async ()
     content: [{ type: "text", text: "hi" }],
     context: [{ name: "naming-board", content: "Chosen: none" }],
     idempotency_key: "evt_1",
+    operation: { timeout_seconds: 45 },
   });
 });
 
@@ -461,7 +548,27 @@ test("client: listSessionMessages can include runtime context", async () => {
   let requestedURL = "";
   const restore = installFakeFetch({
     status: 200,
-    body: { items: [] },
+    body: {
+      items: [
+        {
+          id: "msg_1",
+          session_id: "sess_1",
+          agent_id: "agent_1",
+          role: "system",
+          content: [
+            {
+              type: "reminder",
+              name: "app-board",
+              tier: "contextual",
+              content: "Chosen: none",
+            },
+          ],
+          entry_type: "message",
+          sequence: 1,
+          created_at: "2026-07-14T12:00:00Z",
+        },
+      ],
+    },
     capture: (input) => {
       requestedURL = typeof input === "string" ? input : input.toString();
     },
@@ -473,7 +580,8 @@ test("client: listSessionMessages can include runtime context", async () => {
       project: "test-project",
     });
     const messages = await client.listSessionMessages("sess_1", { include: "context" });
-    assert.deepEqual(messages.items, []);
+    assert.equal(messages.items[0]?.content[0]?.type, "reminder");
+    assert.equal(messages.items[0]?.content[0]?.content, "Chosen: none");
   } finally {
     restore();
   }
@@ -481,6 +589,61 @@ test("client: listSessionMessages can include runtime context", async () => {
     requestedURL,
     "https://api.example.invalid/v1/projects/test-project/sessions/sess_1/messages?include=context",
   );
+});
+
+test("client: session nudge lifecycle routes", async () => {
+  const requests: string[] = [];
+  const queued = {
+    id: "nudge_1",
+    status: "pending",
+    delivery: "current_turn",
+    content: "Use the shorter name",
+    turn: { id: "turn_1", status: "waiting" },
+    sender_principal_id: "principal_1",
+    created_at: "2026-07-14T12:00:00Z",
+  };
+  const original = globalThis.fetch;
+  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = new URL(typeof input === "string" ? input : input.toString());
+    requests.push(`${init?.method ?? "GET"} ${url.pathname}`);
+    if (url.pathname.endsWith("/nudges")) {
+      assert.equal(url.searchParams.get("status"), "pending");
+      assert.equal(url.searchParams.get("order"), "desc");
+      return Response.json({ items: [queued], has_more: false });
+    }
+    if (url.pathname.endsWith("/cancel")) {
+      return Response.json({
+        ...queued,
+        status: "cancelled",
+        cancelled_at: "2026-07-14T12:01:00Z",
+      });
+    }
+    return Response.json(queued);
+  }) as typeof fetch;
+  try {
+    const client = new Client({
+      apiKey: "mbx_test",
+      baseURL: "https://api.example.invalid",
+      project: "test-project",
+    });
+    const page = await client.listNudges("s1", {
+      status: ["pending"],
+      order: "desc",
+    });
+    assert.equal(page.items[0]?.id, "nudge_1");
+    assert.equal((await client.getNudge("s1", "nudge_1")).status, "pending");
+    assert.equal(
+      (await client.cancelNudge("s1", "nudge_1")).status,
+      "cancelled",
+    );
+  } finally {
+    globalThis.fetch = original;
+  }
+  assert.deepEqual(requests, [
+    "GET /v1/projects/test-project/sessions/s1/nudges",
+    "GET /v1/projects/test-project/sessions/s1/nudges/nudge_1",
+    "POST /v1/projects/test-project/sessions/s1/nudges/nudge_1/cancel",
+  ]);
 });
 
 test("client: invokeAgent requires agent ref and content", async () => {

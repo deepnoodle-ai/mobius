@@ -6,6 +6,8 @@ common integration tasks:
 - verifying and parsing Mobius outgoing webhook deliveries
 - delivering Mobius-shaped synthetic webhooks for local/test bridges
 - managing loops and loop runs from code
+- managing project blueprints, principals, roles, and role assignments
+- listing interactions with run, session, target, inbox, and status filters
 - invoking agents and following a session's live transcript (message rows,
   turns, and human-input interactions) as it streams
 - running workers that execute action jobs and LLM generation jobs over
@@ -120,6 +122,19 @@ Use `WaitRun` / `wait_run` / `waitRun` when callers need the fresh terminal run
 record, or `WatchRun` / `watch_run` / `watchRun` when they need the live event
 stream.
 
+## Project Administration
+
+The curated clients expose the same project-administration operations in each
+language: apply/list/protect/delete blueprints, read the permission catalog,
+manage machine principals and roles, and manage role assignments. Request and
+response bodies use the generated OpenAPI models; handwritten option objects
+cover query filters and pagination.
+
+`ListInteractions` / `list_interactions` / `listInteractions` accepts every
+contract filter, including `session_id` (`SessionID` in Go and `sessionId` in
+TypeScript), so a chat surface can fetch pending human-input interactions for
+one session without using a raw transport.
+
 ## Session Transcripts
 
 An agent session streams as a live transcript: message rows (each keyed by an
@@ -211,6 +226,13 @@ const turn = await client.startTurn(sessionId, {
   context: [{ name: "deploy", content: "Status: stable" }],
 });
 ```
+
+Both invoke and existing-session turn helpers accept a one-shot execution
+timeout. Set `Operation: &api.AgentTurnOperationPolicy{TimeoutSeconds: &seconds}`
+in Go, `operation=mobius.AgentTurnOperationPolicy(timeout_seconds=90)` in
+Python, or `operation: { timeout_seconds: 90 }` in TypeScript. This policy
+applies only to the newly admitted turn, overrides the saved config timeout,
+and is not persisted on the session.
 
 Runtime-context names must be unique within a request. Supply names without the
 `app-` namespace; a name already beginning with `app-` is deliberately delivered
@@ -381,6 +403,11 @@ messages, nudge list/get/cancel, and turn list/get/cancel. Names follow each
 language's conventions (`ListSessions`, `list_sessions`, `listSessions`, and
 so on). The generated client remains the escape hatch for less common session
 operations.
+
+Turn cancellation is idempotent, cooperative, and non-resumable. It retains
+committed transcript rows but cannot roll back model, tool, or external effects;
+reusing the invocation idempotency key returns the same cancelled turn. A live
+loop-owned turn instead returns `409 turn_owned_by_run`; cancel the owning run.
 
 ## Server-to-browser boundary
 

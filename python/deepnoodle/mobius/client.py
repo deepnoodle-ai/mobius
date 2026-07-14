@@ -14,11 +14,21 @@ import httpx
 from ._api.models import (
     AgentTurn,
     AgentTurnListResponse,
+    AgentTurnOperationPolicy,
     AgentRef,
+    ApplyBlueprintRequest,
+    BlueprintApplyResult,
+    BlueprintBindingListResponse,
+    BlueprintDeleteResult,
     CancelLoopRunRequest,
     ChannelContext,
+    CreatePrincipalRequest,
+    CreateRoleAssignmentRequest,
+    CreateRoleRequest,
     CreateLoopRequest,
     InlineAgentConfig,
+    InteractionKind,
+    InteractionListResponse,
     InvokeAgentRequest,
     InvokeInput,
     InvokeSessionSpec,
@@ -31,8 +41,16 @@ from ._api.models import (
     LoopRunStatus,
     LoopStatus,
     NudgeSessionRequest,
+    PermissionCatalogResponse,
+    Principal,
+    PrincipalKind,
+    PrincipalListResponse,
     RuntimeContext,
     RuntimeContextItem,
+    Role1 as ProjectRole,
+    RoleAssignment,
+    RoleAssignmentListResponse,
+    RoleListResponse,
     Session,
     SessionListResponse,
     SessionMessageListResponse,
@@ -40,12 +58,15 @@ from ._api.models import (
     SessionNudgeAck,
     SessionNudgeListResponse,
     SessionTranscriptSnapshot,
+    SetBlueprintProtectionRequest,
     SignalLoopRunRequest,
     StartLoopRunRequest,
     StartTurnRequest,
     TagMap,
     TurnAck,
     UpdateLoopRequest,
+    UpdatePrincipalRequest,
+    UpdateRoleRequest,
 )
 from .errors import AuthRevokedError, MobiusAPIError, RateLimitError
 from .retry import DEFAULT_MAX_RETRIES, RetryingTransport
@@ -165,9 +186,9 @@ class InvokeAgentOptions:
     # Ordered application-owned state for this turn.
     context: list[RuntimeContextItem] | None = None
     # Dedup key scoped to the resolved session. A repeat call with the same
-    # key resolves the same session and resumes the existing turn rather
-    # than starting a second one — derive it from the provider event id for
-    # Slack/Telegram webhook retries.
+    # key resolves the same session and returns the existing invocation
+    # without restarting it or starting a second one — derive it from the
+    # provider event id for Slack/Telegram webhook retries.
     idempotency_key: str | None = None
     # Free-form caller metadata attached to the input message.
     input_metadata: dict[str, Any] | None = None
@@ -182,6 +203,9 @@ class InvokeAgentOptions:
     # Mobius remembers the config on the session and reuses it on later turns
     # until a new one is sent. Omit to run the agent on its stored definition.
     config: InlineAgentConfig | None = None
+    # Policy for only this newly admitted turn. Its timeout takes precedence
+    # over the saved config timeout and is not saved on the session.
+    operation: AgentTurnOperationPolicy | None = None
     # Optional messaging provider/channel routing context (Slack, Telegram,
     # ...) recorded on the started turn.
     channel_context: ChannelContext | None = None
@@ -194,8 +218,12 @@ class StartTurnOptions:
     content: list[dict[str, Any]]
     # Ordered application-owned state for this turn.
     context: list[RuntimeContextItem] | None = None
-    # Dedup key scoped to the existing session.
+    # Dedup key scoped to the existing session. A repeat returns the existing
+    # invocation, writes no new input, and never restarts a terminal turn.
     idempotency_key: str | None = None
+    # Policy for only this newly admitted turn. Its timeout takes precedence
+    # over the saved config timeout and is not saved on the session.
+    operation: AgentTurnOperationPolicy | None = None
     # Free-form caller metadata attached to the input message.
     metadata: dict[str, Any] | None = None
 
@@ -236,6 +264,54 @@ class NudgeSessionOptions:
 class ListSessionNudgesOptions:
     status: list[str] | None = None
     order: str | None = None
+    cursor: str | None = None
+    limit: int | None = None
+
+
+@dataclass
+class ListBlueprintBindingsOptions:
+    namespace: str | None = None
+    blueprint_key: str | None = None
+
+
+@dataclass
+class DeleteBlueprintOptions:
+    namespace: str | None = None
+    delete_retained: bool = False
+
+
+@dataclass
+class SetBlueprintProtectionOptions:
+    namespace: str | None = None
+
+
+@dataclass
+class ListInteractionsOptions:
+    status: str | None = None
+    kind: InteractionKind | None = None
+    run_id: str | None = None
+    session_id: str | None = None
+    target_user_id: str | None = None
+    inbox: bool | None = None
+    cursor: str | None = None
+    limit: int | None = None
+
+
+@dataclass
+class ListPrincipalsOptions:
+    kind: PrincipalKind | None = None
+    include_disabled: bool | None = None
+    limit: int | None = None
+
+
+@dataclass
+class ListRoleAssignmentsOptions:
+    principal_id: str | None = None
+    role_id: str | None = None
+
+
+@dataclass
+class ListRolesOptions:
     cursor: str | None = None
     limit: int | None = None
 
@@ -384,6 +460,146 @@ class Client:
     def delete_loop(self, loop_id: str) -> None:
         self._request("DELETE", f"/v1/projects/{{project}}/loops/{quote(loop_id, safe='')}")
 
+    def apply_blueprint(self, request: ApplyBlueprintRequest) -> BlueprintApplyResult:
+        resp = self._request(
+            "POST", "/v1/projects/{project}/blueprints/apply", json=request
+        )
+        return BlueprintApplyResult.model_validate(resp.json())
+
+    def list_blueprint_bindings(
+        self, opts: ListBlueprintBindingsOptions | None = None
+    ) -> BlueprintBindingListResponse:
+        resp = self._request(
+            "GET",
+            "/v1/projects/{project}/blueprints/bindings",
+            params=_params(opts),
+        )
+        return BlueprintBindingListResponse.model_validate(resp.json())
+
+    def set_blueprint_protection(
+        self,
+        blueprint_key: str,
+        protected: bool,
+        opts: SetBlueprintProtectionOptions | None = None,
+    ) -> BlueprintBindingListResponse:
+        resp = self._request(
+            "PUT",
+            f"/v1/projects/{{project}}/blueprints/{quote(blueprint_key, safe='')}/protection",
+            params=_params(opts),
+            json=SetBlueprintProtectionRequest(protected=protected),
+        )
+        return BlueprintBindingListResponse.model_validate(resp.json())
+
+    def delete_blueprint(
+        self, blueprint_key: str, opts: DeleteBlueprintOptions | None = None
+    ) -> BlueprintDeleteResult:
+        resp = self._request(
+            "DELETE",
+            f"/v1/projects/{{project}}/blueprints/{quote(blueprint_key, safe='')}",
+            params=_params(opts),
+        )
+        return BlueprintDeleteResult.model_validate(resp.json())
+
+    def list_interactions(
+        self, opts: ListInteractionsOptions | None = None
+    ) -> InteractionListResponse:
+        resp = self._request(
+            "GET", "/v1/projects/{project}/interactions", params=_params(opts)
+        )
+        return InteractionListResponse.model_validate(resp.json())
+
+    def list_project_permissions(self) -> PermissionCatalogResponse:
+        resp = self._request("GET", "/v1/projects/{project}/permissions")
+        return PermissionCatalogResponse.model_validate(resp.json())
+
+    def list_principals(
+        self, opts: ListPrincipalsOptions | None = None
+    ) -> PrincipalListResponse:
+        resp = self._request(
+            "GET", "/v1/projects/{project}/principals", params=_params(opts)
+        )
+        return PrincipalListResponse.model_validate(resp.json())
+
+    def create_principal(self, request: CreatePrincipalRequest) -> Principal:
+        resp = self._request(
+            "POST", "/v1/projects/{project}/principals", json=request
+        )
+        return Principal.model_validate(resp.json())
+
+    def get_principal(self, principal_id: str) -> Principal:
+        resp = self._request(
+            "GET",
+            f"/v1/projects/{{project}}/principals/{quote(principal_id, safe='')}",
+        )
+        return Principal.model_validate(resp.json())
+
+    def update_principal(
+        self, principal_id: str, request: UpdatePrincipalRequest
+    ) -> Principal:
+        resp = self._request(
+            "PATCH",
+            f"/v1/projects/{{project}}/principals/{quote(principal_id, safe='')}",
+            json=request,
+        )
+        return Principal.model_validate(resp.json())
+
+    def delete_principal(self, principal_id: str) -> None:
+        self._request(
+            "DELETE",
+            f"/v1/projects/{{project}}/principals/{quote(principal_id, safe='')}",
+        )
+
+    def list_roles(self, opts: ListRolesOptions | None = None) -> RoleListResponse:
+        resp = self._request(
+            "GET", "/v1/projects/{project}/roles", params=_params(opts)
+        )
+        return RoleListResponse.model_validate(resp.json())
+
+    def create_role(self, request: CreateRoleRequest) -> ProjectRole:
+        resp = self._request("POST", "/v1/projects/{project}/roles", json=request)
+        return ProjectRole.model_validate(resp.json())
+
+    def get_role(self, role_id: str) -> ProjectRole:
+        resp = self._request(
+            "GET", f"/v1/projects/{{project}}/roles/{quote(role_id, safe='')}"
+        )
+        return ProjectRole.model_validate(resp.json())
+
+    def update_role(self, role_id: str, request: UpdateRoleRequest) -> ProjectRole:
+        resp = self._request(
+            "PATCH",
+            f"/v1/projects/{{project}}/roles/{quote(role_id, safe='')}",
+            json=request,
+        )
+        return ProjectRole.model_validate(resp.json())
+
+    def delete_role(self, role_id: str) -> None:
+        self._request(
+            "DELETE", f"/v1/projects/{{project}}/roles/{quote(role_id, safe='')}"
+        )
+
+    def list_role_assignments(
+        self, opts: ListRoleAssignmentsOptions | None = None
+    ) -> RoleAssignmentListResponse:
+        resp = self._request(
+            "GET", "/v1/projects/{project}/role-assignments", params=_params(opts)
+        )
+        return RoleAssignmentListResponse.model_validate(resp.json())
+
+    def create_role_assignment(
+        self, request: CreateRoleAssignmentRequest
+    ) -> RoleAssignment:
+        resp = self._request(
+            "POST", "/v1/projects/{project}/role-assignments", json=request
+        )
+        return RoleAssignment.model_validate(resp.json())
+
+    def delete_role_assignment(self, assignment_id: str) -> None:
+        self._request(
+            "DELETE",
+            f"/v1/projects/{{project}}/role-assignments/{quote(assignment_id, safe='')}",
+        )
+
     def start_run(self, loop_id: str, opts: StartRunOptions | None = None) -> LoopRun:
         opts = opts or StartRunOptions()
         values = _drop_none(opts.__dict__)
@@ -446,6 +662,7 @@ class Client:
                 RuntimeContext(root=opts.context) if opts.context is not None else None
             ),
             idempotency_key=opts.idempotency_key,
+            operation=opts.operation,
             metadata=opts.metadata,
         )
         resp = self._request(
@@ -882,15 +1099,16 @@ class TurnTranscript:
         # after_sequence to GET …/sessions/{id}/stream to follow this turn on
         # the v1 session stream instead.
         self.after_sequence: int = ack.after_sequence
-        # True when a repeated idempotency key resumed an existing turn.
+        # True when a repeated idempotency key returned an existing turn
+        # without restarting it.
         self.deduped: bool = bool(ack.deduped)
         # Full session view the stream folds into.
         self.transcript: SessionTranscript = transcript
         # Immutable invocation boundary for initial replay and terminal
         # settlement. The transcript cursor keeps moving for reconnects.
         self._invocation_cursor = ack.resume_cursor
-        # Set when the acked turn was already terminal (a deduped resume of a
-        # completed turn): there is nothing to stream, so iteration fetches
+        # Set when deduplication returned an already-terminal turn. There is
+        # nothing to stream, so iteration fetches
         # the snapshot (all pages) instead, making messages() complete either
         # way.
         self._hydrate = is_terminal_turn_status(str(ack.turn.status))
@@ -1243,6 +1461,7 @@ def _invoke_agent_request(opts: InvokeAgentOptions) -> InvokeAgentRequest:
         ),
         session=opts.session,
         config=opts.config,
+        operation=opts.operation,
         channel_context=opts.channel_context,
     )
 
@@ -1270,6 +1489,10 @@ def _params(opts: Any | None) -> dict[str, Any] | None:
 
 
 def _query_value(value: Any) -> Any:
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    if isinstance(value, (list, tuple)):
+        return [_query_value(item) for item in value]
     return value.value if hasattr(value, "value") else value
 
 

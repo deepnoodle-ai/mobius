@@ -3,12 +3,22 @@ import type {
   AgentListResponse,
   AgentTurn,
   AgentTurnListResponse,
+  AgentTurnOperationPolicy,
   AgentRef,
+  ApplyBlueprintRequest,
+  BlueprintApplyResult,
+  BlueprintBindingListResponse,
+  BlueprintDeleteResult,
   CancelLoopRunRequest,
   ChannelContext,
+  CreatePrincipalRequest,
+  CreateRoleAssignmentRequest,
+  CreateRoleRequest,
   CreateLoopRequest,
   InlineAgentConfig,
   Interaction,
+  InteractionKind,
+  InteractionListResponse,
   InvokeAgentRequest,
   InvokeInput,
   InvokeSessionSpec,
@@ -20,6 +30,10 @@ import type {
   LoopRunSource,
   LoopRunStatus,
   LoopStatus,
+  PermissionCatalogResponse,
+  Principal,
+  PrincipalKind,
+  PrincipalListResponse,
   RuntimeContextItem,
   Session,
   SessionListResponse,
@@ -33,6 +47,10 @@ import type {
   SessionTranscriptMessage,
   SessionTranscriptSnapshot,
   RespondToInteractionRequest,
+  Role,
+  RoleAssignment,
+  RoleAssignmentListResponse,
+  RoleListResponse,
   SignalLoopRunRequest,
   StartTurnRequest,
   StartLoopRunRequest,
@@ -40,6 +58,8 @@ import type {
   TagMap,
   TurnAck,
   UpdateLoopRequest,
+  UpdatePrincipalRequest,
+  UpdateRoleRequest,
 } from "./api/index.js";
 import {
   DEFAULT_MAX_RETRIES,
@@ -293,9 +313,9 @@ export interface InvokeAgentOptions {
   context?: RuntimeContextItem[];
   /**
    * Dedup key scoped to the resolved session. A repeat call with the same
-   * key resolves the same session and resumes the existing turn rather
-   * than starting a second one — derive it from the provider event id for
-   * Slack/Telegram webhook retries.
+   * key resolves the same session and returns the existing invocation
+   * without restarting it or starting a second one — derive it from the
+   * provider event id for Slack/Telegram webhook retries.
    */
   idempotencyKey?: string;
   /** Free-form caller metadata attached to the input message. */
@@ -316,6 +336,11 @@ export interface InvokeAgentOptions {
    */
   config?: InlineAgentConfig;
   /**
+   * Policy for only this newly admitted turn. Its timeout takes precedence
+   * over the saved config timeout and is not saved on the session.
+   */
+  operation?: AgentTurnOperationPolicy;
+  /**
    * Optional messaging provider/channel routing context (Slack, Telegram,
    * …) recorded on the started turn.
    */
@@ -327,8 +352,16 @@ export interface StartTurnOptions {
   content: Record<string, unknown>[];
   /** Ordered application-owned state snapshots for this turn. */
   context?: RuntimeContextItem[];
-  /** Dedup key scoped to the existing session. */
+  /**
+   * Dedup key scoped to the existing session. A repeat returns the existing
+   * invocation, writes no new input, and never restarts a terminal turn.
+   */
   idempotencyKey?: string;
+  /**
+   * Policy for only this newly admitted turn. Its timeout takes precedence
+   * over the saved config timeout and is not saved on the session.
+   */
+  operation?: AgentTurnOperationPolicy;
   /** Free-form caller metadata attached to the input message. */
   metadata?: Record<string, unknown>;
 }
@@ -450,6 +483,47 @@ export interface ListSessionNudgesOptions {
   limit?: number;
 }
 
+export interface ListBlueprintBindingsOptions {
+  namespace?: string;
+  blueprintKey?: string;
+}
+
+export interface DeleteBlueprintOptions {
+  namespace?: string;
+  deleteRetained?: boolean;
+}
+
+export interface SetBlueprintProtectionOptions {
+  namespace?: string;
+}
+
+export interface ListInteractionsOptions {
+  status?: "pending" | "completed" | "expired" | "cancelled";
+  kind?: InteractionKind;
+  runId?: string;
+  sessionId?: string;
+  targetUserId?: string;
+  inbox?: boolean;
+  cursor?: string;
+  limit?: number;
+}
+
+export interface ListPrincipalsOptions {
+  kind?: PrincipalKind;
+  includeDisabled?: boolean;
+  limit?: number;
+}
+
+export interface ListRoleAssignmentsOptions {
+  principalId?: string;
+  roleId?: string;
+}
+
+export interface ListRolesOptions {
+  cursor?: string;
+  limit?: number;
+}
+
 export class Client {
   private readonly baseURL: string;
   readonly project: string;
@@ -563,6 +637,193 @@ export class Client {
   async deleteLoop(id: string): Promise<void> {
     await this.request(
       `/v1/projects/:project/loops/${encodeURIComponent(id)}`,
+      { method: "DELETE" },
+    );
+  }
+
+  async applyBlueprint(
+    input: ApplyBlueprintRequest,
+  ): Promise<BlueprintApplyResult> {
+    const resp = await this.request("/v1/projects/:project/blueprints/apply", {
+      method: "POST",
+      body: input,
+    });
+    return (await resp.json()) as BlueprintApplyResult;
+  }
+
+  async listBlueprintBindings(
+    opts: ListBlueprintBindingsOptions = {},
+  ): Promise<BlueprintBindingListResponse> {
+    const path = withQuery("/v1/projects/:project/blueprints/bindings", {
+      namespace: opts.namespace,
+      blueprint_key: opts.blueprintKey,
+    });
+    const resp = await this.request(path, { method: "GET" });
+    return (await resp.json()) as BlueprintBindingListResponse;
+  }
+
+  async setBlueprintProtection(
+    blueprintKey: string,
+    protectedResources: boolean,
+    opts: SetBlueprintProtectionOptions = {},
+  ): Promise<BlueprintBindingListResponse> {
+    const path = withQuery(
+      `/v1/projects/:project/blueprints/${encodeURIComponent(blueprintKey)}/protection`,
+      { namespace: opts.namespace },
+    );
+    const resp = await this.request(path, {
+      method: "PUT",
+      body: { protected: protectedResources },
+    });
+    return (await resp.json()) as BlueprintBindingListResponse;
+  }
+
+  async deleteBlueprint(
+    blueprintKey: string,
+    opts: DeleteBlueprintOptions = {},
+  ): Promise<BlueprintDeleteResult> {
+    const path = withQuery(
+      `/v1/projects/:project/blueprints/${encodeURIComponent(blueprintKey)}`,
+      {
+        namespace: opts.namespace,
+        delete_retained: opts.deleteRetained,
+      },
+    );
+    const resp = await this.request(path, { method: "DELETE" });
+    return (await resp.json()) as BlueprintDeleteResult;
+  }
+
+  async listInteractions(
+    opts: ListInteractionsOptions = {},
+  ): Promise<InteractionListResponse> {
+    const path = withQuery("/v1/projects/:project/interactions", {
+      status: opts.status,
+      kind: opts.kind,
+      run_id: opts.runId,
+      session_id: opts.sessionId,
+      target_user_id: opts.targetUserId,
+      inbox: opts.inbox,
+      cursor: opts.cursor,
+      limit: opts.limit,
+    });
+    const resp = await this.request(path, { method: "GET" });
+    return (await resp.json()) as InteractionListResponse;
+  }
+
+  async listProjectPermissions(): Promise<PermissionCatalogResponse> {
+    const resp = await this.request("/v1/projects/:project/permissions", {
+      method: "GET",
+    });
+    return (await resp.json()) as PermissionCatalogResponse;
+  }
+
+  async listPrincipals(
+    opts: ListPrincipalsOptions = {},
+  ): Promise<PrincipalListResponse> {
+    const path = withQuery("/v1/projects/:project/principals", {
+      kind: opts.kind,
+      include_disabled: opts.includeDisabled,
+      limit: opts.limit,
+    });
+    const resp = await this.request(path, { method: "GET" });
+    return (await resp.json()) as PrincipalListResponse;
+  }
+
+  async createPrincipal(input: CreatePrincipalRequest): Promise<Principal> {
+    const resp = await this.request("/v1/projects/:project/principals", {
+      method: "POST",
+      body: input,
+    });
+    return (await resp.json()) as Principal;
+  }
+
+  async getPrincipal(id: string): Promise<Principal> {
+    const resp = await this.request(
+      `/v1/projects/:project/principals/${encodeURIComponent(id)}`,
+      { method: "GET" },
+    );
+    return (await resp.json()) as Principal;
+  }
+
+  async updatePrincipal(
+    id: string,
+    input: UpdatePrincipalRequest,
+  ): Promise<Principal> {
+    const resp = await this.request(
+      `/v1/projects/:project/principals/${encodeURIComponent(id)}`,
+      { method: "PATCH", body: input },
+    );
+    return (await resp.json()) as Principal;
+  }
+
+  async deletePrincipal(id: string): Promise<void> {
+    await this.request(
+      `/v1/projects/:project/principals/${encodeURIComponent(id)}`,
+      { method: "DELETE" },
+    );
+  }
+
+  async listRoles(opts: ListRolesOptions = {}): Promise<RoleListResponse> {
+    const path = withQuery("/v1/projects/:project/roles", opts);
+    const resp = await this.request(path, { method: "GET" });
+    return (await resp.json()) as RoleListResponse;
+  }
+
+  async createRole(input: CreateRoleRequest): Promise<Role> {
+    const resp = await this.request("/v1/projects/:project/roles", {
+      method: "POST",
+      body: input,
+    });
+    return (await resp.json()) as Role;
+  }
+
+  async getRole(id: string): Promise<Role> {
+    const resp = await this.request(
+      `/v1/projects/:project/roles/${encodeURIComponent(id)}`,
+      { method: "GET" },
+    );
+    return (await resp.json()) as Role;
+  }
+
+  async updateRole(id: string, input: UpdateRoleRequest): Promise<Role> {
+    const resp = await this.request(
+      `/v1/projects/:project/roles/${encodeURIComponent(id)}`,
+      { method: "PATCH", body: input },
+    );
+    return (await resp.json()) as Role;
+  }
+
+  async deleteRole(id: string): Promise<void> {
+    await this.request(
+      `/v1/projects/:project/roles/${encodeURIComponent(id)}`,
+      { method: "DELETE" },
+    );
+  }
+
+  async listRoleAssignments(
+    opts: ListRoleAssignmentsOptions = {},
+  ): Promise<RoleAssignmentListResponse> {
+    const path = withQuery("/v1/projects/:project/role-assignments", {
+      principal_id: opts.principalId,
+      role_id: opts.roleId,
+    });
+    const resp = await this.request(path, { method: "GET" });
+    return (await resp.json()) as RoleAssignmentListResponse;
+  }
+
+  async createRoleAssignment(
+    input: CreateRoleAssignmentRequest,
+  ): Promise<RoleAssignment> {
+    const resp = await this.request(
+      "/v1/projects/:project/role-assignments",
+      { method: "POST", body: input },
+    );
+    return (await resp.json()) as RoleAssignment;
+  }
+
+  async deleteRoleAssignment(id: string): Promise<void> {
+    await this.request(
+      `/v1/projects/:project/role-assignments/${encodeURIComponent(id)}`,
       { method: "DELETE" },
     );
   }
@@ -863,6 +1124,7 @@ export class Client {
       content: opts.content,
       context: opts.context,
       idempotency_key: opts.idempotencyKey,
+      operation: opts.operation,
       metadata: opts.metadata,
     });
     const resp = await this.request(
@@ -1246,7 +1508,7 @@ export class TurnTranscript implements AsyncIterable<TurnTranscript> {
    * the v1 session stream instead.
    */
   readonly afterSequence: number;
-  /** True when a repeated idempotency key resumed an existing turn. */
+  /** True when a repeated idempotency key returned an existing turn without restarting it. */
   readonly deduped: boolean;
   /** Full session view the stream folds into. */
   readonly transcript: SessionTranscript;
@@ -1256,8 +1518,8 @@ export class TurnTranscript implements AsyncIterable<TurnTranscript> {
   // Immutable invocation boundary used for initial replay and terminal
   // settlement. The transcript cursor keeps moving for stream reconnects.
   readonly #invocationCursor: string;
-  // Set when the acked turn was already terminal (a deduped resume of a
-  // completed turn): there is nothing to stream, so iteration fetches the
+  // Set when deduplication returned an already-terminal turn: there is
+  // nothing to stream, so iteration fetches the
   // snapshot (all pages) instead, making messages() complete either way.
   #hydrate: boolean;
   #diagnostics: TranscriptDiagnostics = {
@@ -1465,6 +1727,7 @@ function invokeAgentRequest(opts: InvokeAgentOptions): InvokeAgentRequest {
     }) as InvokeInput,
     session: opts.session,
     config: opts.config,
+    operation: opts.operation,
     channel_context: opts.channelContext,
   }) as InvokeAgentRequest;
 }

@@ -398,6 +398,7 @@ func registerSessionsCommands(app *cli.App) {
 			cli.String("channel-context", "").Help("Optional messaging provider/channel routing context (Slack, Telegram, …). Persisted on the started turn's input-message metadata under a… Accepts JSON, @file, or @-."),
 			cli.String("config", "").Help("An agent definition sent with the invocation instead of one stored in Mobius ahead of time. Send it on the call that creates the session… Accepts JSON, @file, or @-."),
 			cli.String("input", "").Help("[required] The caller input message that starts the agent turn. Accepts JSON, @file, or @-."),
+			cli.String("operation", "").Help("Operational policy for this newly admitted turn only. Unlike `config`, this policy is not saved on the session. Its timeout takes… Accepts JSON, @file, or @-."),
 			cli.String("session", "").Help("How to resolve or create the session this invocation runs in. Mirrors the create-session policy: `mode` + `session_key` resolve a durable… Accepts JSON, @file, or @-."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
@@ -431,6 +432,11 @@ func registerSessionsCommands(app *cli.App) {
 			}
 			if ctx.IsSet("input") {
 				if err := decodeFlagJSON(ctx, "input", ctx.String("input"), &body.Input); err != nil {
+					return err
+				}
+			}
+			if ctx.IsSet("operation") {
+				if err := decodeFlagJSON(ctx, "operation", ctx.String("operation"), &body.Operation); err != nil {
 					return err
 				}
 			}
@@ -714,8 +720,9 @@ func registerSessionsCommands(app *cli.App) {
 		Flags(
 			cli.String("content", "").Help("[required] Ordered content blocks (text, images) for the input message. Accepts JSON, @file, or @-."),
 			cli.String("context", "").Help("Ordered application-owned runtime context for this turn. Send the full current value for each named item. Mobius records an item only on… Accepts JSON, @file, or @-."),
-			cli.String("idempotency-key", "").Help("Dedup key scoped to the session. A repeat call with the same key resumes the existing turn and writes nothing new. Omitting it or sending a…"),
+			cli.String("idempotency-key", "").Help("Dedup key scoped to the session. A repeat call with the same key returns the existing invocation and writes nothing new; it never restarts…"),
 			cli.String("metadata", "").Help("Free-form caller metadata attached to the input message. Accepts JSON, @file, or @-."),
+			cli.String("operation", "").Help("Operational policy for this newly admitted turn only. Unlike `config`, this policy is not saved on the session. Its timeout takes… Accepts JSON, @file, or @-."),
 			cli.String("role", "").Help("Role of the input message. A turn carries caller input, so only `user` is accepted; defaults to `user` when omitted."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
@@ -749,6 +756,11 @@ func registerSessionsCommands(app *cli.App) {
 			}
 			if ctx.IsSet("metadata") {
 				if err := decodeFlagJSON(ctx, "metadata", ctx.String("metadata"), &body.Metadata); err != nil {
+					return err
+				}
+			}
+			if ctx.IsSet("operation") {
+				if err := decodeFlagJSON(ctx, "operation", ctx.String("operation"), &body.Operation); err != nil {
 					return err
 				}
 			}

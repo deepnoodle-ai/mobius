@@ -2651,7 +2651,9 @@ paths:
 
         The optional `config` block lets you send an agent definition with the request — instructions, model, effort, per-turn timeout, toolkits, and skills — instead of using the one stored in Mobius. A field you set replaces the agent's value; a field you leave out keeps it. Mobius remembers the config on the session and reuses it on later turns until you send a new one. If your organization limits values like the model or timeout, those limits still apply. Omit `config` to run the agent on its stored definition.
 
-        By default it returns `202 Accepted` immediately with a durable `after_sequence` stream cursor; the turn keeps running even if the caller disconnects. When the request sets `Accept: text/event-stream`, the response is `200 OK` and the turn's activity is streamed inline on the same connection, identical to the `POST /v1/projects/{project_handle}/sessions/{session_id}/turns` stream. A repeated call with the same `input.idempotency_key` resolves the same session and resumes the existing turn rather than starting a second one, so a webhook handler can acknowledge fast and retry safely. Requires the `mobius.agent.invoke` permission (or the agent's own backing principal).
+        `config.timeout_seconds` is the session definition fallback; zero uses the platform default. For a one-shot override, send `operation.timeout_seconds` with a value of at least one. The operation value applies only to the newly admitted turn and takes precedence over the saved config value.
+
+        By default it returns `202 Accepted` immediately with a durable `after_sequence` stream cursor; the turn keeps running even if the caller disconnects. When the request sets `Accept: text/event-stream`, the response is `200 OK` and the turn's activity is streamed inline on the same connection, identical to the `POST /v1/projects/{project_handle}/sessions/{session_id}/turns` stream. A repeated call with the same `input.idempotency_key` resolves the same session and returns the existing invocation without restarting it or writing new input, so a webhook handler can acknowledge fast and retry safely. Requires the `mobius.agent.invoke` permission (or the agent's own backing principal).
 
         Only one direct invocation may be nonterminal in a session. A distinct input while a turn is queued, running, or waiting returns `409` with `error.code = session_turn_active` and `error.details = {turn_id, status}` before the new input is appended. Use the session nudge endpoint explicitly to steer a running or waiting turn; Mobius never converts a second send into a nudge implicitly.
       parameters:
@@ -3026,16 +3028,10 @@ paths:
       tags:
       - sessions
       summary: Start an agent turn
-      description: 'Appends one caller input message to the session and starts an agent turn
-        to respond. By default returns `202 Accepted` immediately with a durable `after_sequence`
-        cursor (a message `sequence`) to stream from. The turn keeps running even if the caller
-        disconnects. When the request sets `Accept: text/event-stream`, the response is `200
-        OK` and the turn''s activity is streamed inline on the same connection, equivalent
-        to opening `GET .../stream` at the returned cursor. A repeated call with the same
-        `idempotency_key` resumes the existing turn rather than starting a second invocation.
-        A distinct send while a direct turn is queued, running, or waiting returns `409 session_turn_active`
-        before appending the new input; use the nudge endpoint explicitly to steer an active
-        turn. Requires the `mobius.agent.invoke` permission (or the agent''s own backing principal).'
+      description: |-
+        Appends one caller input message to the session and starts an agent turn to respond. By default returns `202 Accepted` immediately with a durable `after_sequence` cursor (a message `sequence`) to stream from. The turn keeps running even if the caller disconnects. When the request sets `Accept: text/event-stream`, the response is `200 OK` and the turn's activity is streamed inline on the same connection, equivalent to opening `GET .../stream` at the returned cursor. A repeated call with the same `idempotency_key` returns the existing invocation without restarting it or writing new input. A distinct send while a direct turn is queued, running, or waiting returns `409 session_turn_active` before appending the new input; use the nudge endpoint explicitly to steer an active turn. Requires the `mobius.agent.invoke` permission (or the agent's own backing principal).
+
+        The session definition's `config.timeout_seconds` may be zero to use the platform default. Set `operation.timeout_seconds` to at least one for a one-shot override on this turn; it takes precedence and is not saved on the session.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/SessionIdParam'
@@ -3265,9 +3261,10 @@ paths:
       tags:
       - sessions
       summary: Cancel a session turn
-      description: Cancels one agent turn in the session if it is still active. The turn is
-        marked cancelled and a terminal `turn.cancelled` event is emitted. Returns the updated
-        turn. Requires the `mobius.agent.invoke` permission (or the agent's own backing principal).
+      description: |-
+        Idempotently cancels one dispatcher-owned agent turn in the session. The first request that wins marks the turn terminal, retires its pending waits, interactions, nudges, and jobs, and emits `turn.cancelled` once. Later requests return the current terminal row without another lifecycle transition. Cancellation is cooperative: already-performed model, tool, and external effects are not rolled back. Committed transcript rows are retained, while live-only uncommitted preview content is discarded.
+
+        A cancelled turn cannot be resumed. Reusing its invocation idempotency key returns the same cancelled turn; retrying the task requires a new invocation and may repeat external effects. Stream cursors resume observation only. A live loop-owned turn returns `409 turn_owned_by_run`; cancel its run instead. Requires the `mobius.agent.invoke` permission (or the agent's own backing principal).
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/SessionIdParam'
@@ -3285,6 +3282,13 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          description: The live turn is owned by a loop run. The `turn_owned_by_run` error
+            details contain its `turn_id` and `run_id`.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /v1/projects/{project_handle}/sessions/{session_id}/transcript:
     get:
       operationId: getSessionTranscript
@@ -3403,7 +3407,7 @@ paths:
       - sessions
       summary: Cancel the session's active turn
       description: |-
-        Cancels whichever turn is currently active in the session. Queued and running turns for the session are marked cancelled and a terminal `turn.cancelled` event is emitted. Returns the updated session. Requires the `mobius.agent.invoke` permission (or the agent's own backing principal).
+        Idempotently cancels active dispatcher-owned turns in the session and retires their pending waits, interactions, nudges, and jobs. Each turn's terminal `turn.cancelled` transition is emitted once. Cancellation is cooperative and does not roll back effects that already happened. Committed transcript rows remain; live-only preview content is discarded. Cancelled turns cannot be resumed, and stream cursors resume observation only. Returns the updated session. Requires the `mobius.agent.invoke` permission (or the agent's own backing principal).
 
         By default loop-owned turns are left to the loop engine and skipped. Set `force=true` to also cancel loop-owned turns — the recovery path for a session wedged on a turn whose run is dead or stuck. Forcing may leave that run inconsistent, so use it only to unlock an otherwise stuck session, not as a routine stop.
       parameters:
@@ -5861,15 +5865,6 @@ components:
       description: Framework provider identifier from the integration provider catalog.
       schema:
         type: string
-    IdempotencyKey:
-      name: Idempotency-Key
-      in: header
-      required: false
-      description: Stable caller-generated key. Reusing it returns the original operation.
-      schema:
-        type: string
-        minLength: 1
-        maxLength: 255
     OrgIDParam:
       name: org_id
       in: path
@@ -6290,9 +6285,10 @@ components:
       - md
       - lg
       - xl
-      description: T-shirt size selecting when `auto` compaction triggers, smallest (`xs`,
-        compact very early) to largest (`xl`, compact very late). The server maps each size
-        to a token estimate; `sm` is the default.
+      description: 'T-shirt size selecting when `auto` compaction triggers as a percentage
+        of the session model''s input context window: `xs` 10%, `sm` 20%, `md` 40%, `lg` 60%,
+        and `xl` 80%. Unknown/custom models use a conservative 200k-token context window.
+        `sm` is the default.'
     SessionCompactionPolicy:
       type: object
       additionalProperties: false
@@ -6309,14 +6305,21 @@ components:
           - disabled
           - none
           description: '`auto` (default) compacts automatically when the transcript crosses
-            the `threshold` size. `manual` only compacts on an explicit compact request. `disabled`
-            (alias `none`) never compacts.'
+            the model-relative `threshold` or exact `threshold_tokens` trigger. `manual` only
+            compacts on an explicit compact request. `disabled` (alias `none`) never compacts.'
         threshold:
           $ref: '#/components/schemas/SessionCompactionThreshold'
-          description: Size at which `auto` compacts. A t-shirt size (`xs`–`xl`) rather than
-            a raw token count, because the transcript size it gates on is an estimate. The
-            size → token mapping is server-owned; `sm` is the default and the per-size token
-            estimate is documented separately.
+          description: Model-relative size at which `auto` compacts. Each preset is a percentage
+            of the session model's input context window; `sm` is the default. Mutually exclusive
+            with `threshold_tokens`.
+        threshold_tokens:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 10000000
+          description: Exact estimated-token count at which `auto` compacts. Use this for
+            advanced workloads that need a specific threshold rather than a model-relative
+            preset. Mutually exclusive with `threshold`.
         summary_model:
           type: string
           description: Model used to produce compaction summaries.
@@ -8104,6 +8107,7 @@ components:
       - id
       - provider
       - label
+      - context_window_tokens
       properties:
         id:
           type: string
@@ -8118,6 +8122,11 @@ components:
         description:
           type: string
           description: Short guidance about when to use this model.
+        context_window_tokens:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Maximum input context used to resolve model-relative compaction presets.
         recommended:
           type: boolean
           description: Whether this is the suggested default for its provider.
@@ -11485,6 +11494,11 @@ components:
       - cancelled
       description: 'Agent turn lifecycle status: `queued`, `running`, `waiting`, `completed`,
         `failed`, or `cancelled`.'
+    AgentTurnErrorScope:
+      type: string
+      enum:
+      - agent_turn
+      description: Present when the overall agent-turn budget was exhausted.
     AgentTurn:
       type: object
       additionalProperties: false
@@ -11537,6 +11551,12 @@ components:
         error_message:
           type: string
           description: Human-readable failure detail when the turn failed.
+        error_scope:
+          $ref: '#/components/schemas/AgentTurnErrorScope'
+        effective_timeout_seconds:
+          type: integer
+          format: int64
+          description: Authoritative active-execution budget selected for the turn.
         created_at:
           type: string
           format: date-time
@@ -12341,7 +12361,9 @@ components:
       type: object
       additionalProperties: false
       description: 'A single compound invocation: which agent to run, how to resolve the session,
-        the caller''s input message, and optional channel routing context.'
+        the caller''s input message, and optional channel routing context. `config.timeout_seconds`
+        may be zero to use the platform default; `operation.timeout_seconds` must be at least
+        one and takes precedence for this admitted turn.'
       required:
       - agent_ref
       - input
@@ -12352,6 +12374,8 @@ components:
           $ref: '#/components/schemas/InvokeSessionSpec'
         config:
           $ref: '#/components/schemas/InlineAgentConfig'
+        operation:
+          $ref: '#/components/schemas/AgentTurnOperationPolicy'
         input:
           $ref: '#/components/schemas/InvokeInput'
         channel_context:
@@ -12398,6 +12422,20 @@ components:
             Replaces wholesale.
           items:
             $ref: '#/components/schemas/InlineSkill'
+    AgentTurnOperationPolicy:
+      type: object
+      additionalProperties: false
+      description: Operational policy for this newly admitted turn only. Unlike `config`,
+        this policy is not saved on the session. Its timeout takes precedence over the session's
+        inline-definition timeout and remains constrained by any deployment timeout ceiling.
+        `config.timeout_seconds` may be zero to use the platform default; this operation timeout
+        must be at least one.
+      properties:
+        timeout_seconds:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Overall active-execution budget for this logical turn.
     InlineToolkit:
       type: object
       additionalProperties: false
@@ -12529,9 +12567,9 @@ components:
         idempotency_key:
           type: string
           description: Dedup key scoped to the resolved session. A repeat call with the same
-            key resumes the existing turn and writes nothing new — derive it from the provider
-            event id for Slack/Telegram webhook retries. Omitting it or sending a blank value
-            disables retry deduplication.
+            key returns the existing invocation and writes nothing new; it never restarts
+            a terminal turn. Derive it from the provider event id for Slack/Telegram webhook
+            retries. Omitting it or sending a blank value disables retry deduplication.
         context:
           $ref: '#/components/schemas/RuntimeContext'
         metadata:
@@ -12604,7 +12642,9 @@ components:
     StartTurnRequest:
       type: object
       additionalProperties: false
-      description: Caller input that starts an agent turn in a session.
+      description: Caller input that starts an agent turn in a session. The session definition's
+        `config.timeout_seconds` may be zero to use the platform default; `operation.timeout_seconds`
+        must be at least one and takes precedence for this admitted turn.
       required:
       - content
       properties:
@@ -12624,9 +12664,11 @@ components:
             additionalProperties: true
         idempotency_key:
           type: string
-          description: Dedup key scoped to the session. A repeat call with the same key resumes
-            the existing turn and writes nothing new. Omitting it or sending a blank value
-            disables retry deduplication.
+          description: Dedup key scoped to the session. A repeat call with the same key returns
+            the existing invocation and writes nothing new; it never restarts a terminal turn.
+            Omitting it or sending a blank value disables retry deduplication.
+        operation:
+          $ref: '#/components/schemas/AgentTurnOperationPolicy'
         context:
           $ref: '#/components/schemas/RuntimeContext'
         metadata:
@@ -12664,7 +12706,8 @@ components:
             `after_sequence` to `GET .../stream` to follow this turn.
         deduped:
           type: boolean
-          description: True when a repeated idempotency key resumed an existing turn.
+          description: True when a repeated idempotency key returned an existing turn without
+            restarting it.
     NudgeSessionRequest:
       type: object
       additionalProperties: false

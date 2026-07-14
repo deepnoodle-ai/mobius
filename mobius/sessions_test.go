@@ -64,6 +64,7 @@ func TestInvokeAgent_HighLevelClient(t *testing.T) {
 				{Name: "tickets", Actions: &[]string{"tickets.search"}},
 			},
 		},
+		Operation: &api.AgentTurnOperationPolicy{TimeoutSeconds: ptr(int64(90))},
 	})
 
 	assert.NoError(t, err)
@@ -84,6 +85,7 @@ func TestInvokeAgent_HighLevelClient(t *testing.T) {
 	assert.Equal(t, config["model"], "claude-sonnet-4-6")
 	assert.Equal(t, config["effort"], "medium")
 	assert.Equal(t, config["toolkits"].([]any)[0].(map[string]any)["name"], "tickets")
+	assert.Equal(t, body["operation"].(map[string]any)["timeout_seconds"], float64(90))
 
 	turn.Transcript().Apply(TranscriptStreamEvent{Frame: mustFrame(t,
 		`{"event_type":"turn.upsert","id":"turn_1","session_id":"sess_1","agent_id":"agent_1","attempt":1,"status":"failed","error_type":"invalid_conversation_state","error_message":"history ended with assistant content","created_at":"2026-05-27T00:00:00Z","updated_at":"2026-05-27T00:00:01Z"}`)})
@@ -110,12 +112,14 @@ func TestStartTurn_HighLevelClient(t *testing.T) {
 		Content:        []map[string]interface{}{{"type": "text", "text": "hi"}},
 		Context:        []RuntimeContextItem{{Name: "naming-board", Content: "Chosen: none"}},
 		IdempotencyKey: "evt_1",
+		Operation:      &api.AgentTurnOperationPolicy{TimeoutSeconds: ptr(int64(45))},
 		Metadata:       map[string]interface{}{"source": "app"},
 	})
 
 	assert.NoError(t, err)
 	assert.Equal(t, turn.ID(), "turn_1")
 	assert.Equal(t, body["idempotency_key"], "evt_1")
+	assert.Equal(t, body["operation"].(map[string]any)["timeout_seconds"], float64(45))
 	assert.Equal(t, body["metadata"].(map[string]any)["source"], "app")
 	contextItem := body["context"].([]any)[0].(map[string]any)
 	assert.Equal(t, contextItem["name"], "naming-board")
@@ -128,14 +132,18 @@ func TestListSessionMessages_IncludesContext(t *testing.T) {
 		assert.Equal(t, r.URL.Path, "/v1/projects/test-project/sessions/sess_1/messages")
 		assert.Equal(t, r.URL.Query().Get("include"), "context")
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = io.WriteString(w, `{"items":[]}`)
+		_, _ = io.WriteString(w, `{"items":[{"id":"msg_1","session_id":"sess_1","agent_id":"agent_1","role":"system","content":[{"type":"reminder","name":"app-board","tier":"contextual","content":"Chosen: none"}],"entry_type":"message","sequence":1,"created_at":"2026-07-14T12:00:00Z"}]}`)
 	})
 	c, srv := newTestClient(t, h)
 	defer srv.Close()
 
 	messages, err := c.ListSessionMessages(context.Background(), "sess_1", &ListSessionMessagesOptions{Include: "context"})
 	assert.NoError(t, err)
-	assert.Equal(t, len(messages.Items), 0)
+	assert.Equal(t, len(messages.Items), 1)
+	reminder, err := messages.Items[0].Content[0].AsSessionReminderBlock()
+	assert.NoError(t, err)
+	assert.Equal(t, reminder.Name, "app-board")
+	assert.Equal(t, reminder.Content, "Chosen: none")
 }
 
 func TestInvokeAgent_RequiresAgentRefAndContent(t *testing.T) {
@@ -201,6 +209,44 @@ func TestNudgeSession_HighLevelClient(t *testing.T) {
 	assert.Equal(t, body["content"], "Use the shorter name")
 	assert.Equal(t, body["idempotency_key"], "event_2")
 	assert.Equal(t, body["wake"], true)
+}
+
+func TestSessionNudgeLifecycle_HighLevelClient(t *testing.T) {
+	const queued = `{"id":"nudge_1","status":"pending","delivery":"current_turn","content":"Use the shorter name","turn":{"id":"turn_1","status":"waiting"},"sender_principal_id":"principal_1","created_at":"2026-07-14T12:00:00Z"}`
+	const cancelled = `{"id":"nudge_1","status":"cancelled","delivery":"current_turn","content":"Use the shorter name","turn":{"id":"turn_1","status":"waiting"},"sender_principal_id":"principal_1","created_at":"2026-07-14T12:00:00Z","cancelled_at":"2026-07-14T12:01:00Z"}`
+	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch {
+		case r.Method == http.MethodGet && r.URL.Path == "/v1/projects/test-project/sessions/s1/nudges":
+			assert.Equal(t, r.URL.Query().Get("status"), "pending")
+			assert.Equal(t, r.URL.Query().Get("order"), "desc")
+			_, _ = io.WriteString(w, `{"items":[`+queued+`],"has_more":false}`)
+		case r.Method == http.MethodGet && r.URL.Path == "/v1/projects/test-project/sessions/s1/nudges/nudge_1":
+			_, _ = io.WriteString(w, queued)
+		case r.Method == http.MethodPost && r.URL.Path == "/v1/projects/test-project/sessions/s1/nudges/nudge_1/cancel":
+			_, _ = io.WriteString(w, cancelled)
+		default:
+			http.NotFound(w, r)
+		}
+	})
+	c, srv := newTestClient(t, h)
+	defer srv.Close()
+
+	status := api.SessionNudgeStatus("pending")
+	page, err := c.ListSessionNudges(context.Background(), "s1", &ListSessionNudgesOptions{
+		Statuses: []string{"pending"},
+		Order:    "desc",
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, page.Items[0].Id, "nudge_1")
+
+	nudge, err := c.GetSessionNudge(context.Background(), "s1", "nudge_1")
+	assert.NoError(t, err)
+	assert.Equal(t, nudge.Status, status)
+
+	nudge, err = c.CancelNudge(context.Background(), "s1", "nudge_1")
+	assert.NoError(t, err)
+	assert.Equal(t, nudge.Status, api.SessionNudgeStatus("cancelled"))
 }
 
 func TestInvokeAgentStream_HighLevelClient(t *testing.T) {

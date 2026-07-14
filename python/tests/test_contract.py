@@ -120,6 +120,10 @@ def test_transcript_frame_contract() -> None:
     result_message = transcript.message(expected["tool_result_text_message_id"])
     assert tool_result_text(result_message["content"][0]) == expected["tool_result_text"]
 
+    waiting = transcript.turn(expected["waiting_turn_id"])
+    assert waiting["wait"]["interaction_id"] == expected["wait_interaction_id"]
+    assert waiting["wait"]["tool_call_id"] == expected["wait_tool_call_id"]
+
     failed = transcript.turn(expected["failed_turn_id"])
     assert failed["error_type"] == expected["failed_turn_error_type"]
     assert failed["error_message"] == expected["failed_turn_error_message"]
