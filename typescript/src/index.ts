@@ -55,10 +55,18 @@ export {
   toolResultText,
 } from "./transcript.js";
 export type { NormalizedToolUse, TranscriptStreamEvent } from "./transcript.js";
+export { SessionChat } from "./chat.js";
+export type {
+  SessionChatCallbacks,
+  SessionChatPhase,
+  SessionChatUpdate,
+} from "./chat.js";
 export type {
   MessageBlockFrame,
   MessageBlockPatchFrame,
   MessageDeltaFrame,
+  Interaction,
+  RespondToInteractionRequest,
   RuntimeContextItem,
   SessionTranscriptFrame,
   SessionTranscriptMessage,
@@ -105,7 +113,6 @@ export {
   type RetryEvent,
   type WrapRetryOptions,
 } from "./retry.js";
-
 
 export { Worker, WorkerPool, resolveInstanceID } from "./worker.js";
 export type {

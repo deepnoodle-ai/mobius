@@ -3096,6 +3096,10 @@ class AgentToolConsumer(BaseModel):
     )
     invocation_id: str
     tool_call_id: str
+    session_id: str | None = Field(
+        None,
+        description='Session whose turn raised this interaction, when session-scoped.',
+    )
 
 
 class HttpSubscriberConsumer(BaseModel):
@@ -4100,32 +4104,6 @@ class UpdateSessionRequest(BaseModel):
     )
 
 
-class SessionTranscriptTurn(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    id: str
-    agent_id: str
-    session_id: str
-    run_id: str | None = None
-    step_key: str | None = None
-    channel_exchange_id: str | None = None
-    attempt: int
-    status: str = Field(
-        ..., description='Known AgentTurn status; unknown values must be preserved.'
-    )
-    seq: int | None = None
-    error_type: str | None = None
-    error_message: str | None = None
-    usage: dict[str, Any] | None = Field(
-        None,
-        description='Token usage recorded when the turn terminalized, when available.',
-    )
-    created_at: AwareDatetime
-    updated_at: AwareDatetime
-    completed_at: AwareDatetime | None = None
-
-
 class EventType1(StrEnum):
     message_upsert = 'message.upsert'
 
@@ -4173,11 +4151,11 @@ class EventType5(StrEnum):
     turn_upsert = 'turn.upsert'
 
 
-class TurnUpsertFrame(SessionTranscriptTurn):
-    event_type: Literal['turn.upsert']
-
-
 class EventType6(StrEnum):
+    interaction_upsert = 'interaction.upsert'
+
+
+class EventType7(StrEnum):
     stream_ready = 'stream.ready'
 
 
@@ -4190,7 +4168,7 @@ class StreamReadyFrame(BaseModel):
     resume_cursor: str
 
 
-class EventType7(StrEnum):
+class EventType8(StrEnum):
     session_message_preview = 'session.message.preview'
 
 
@@ -4217,7 +4195,7 @@ class SessionLiveSnapshot(BaseModel):
     )
 
 
-class EventType8(StrEnum):
+class EventType9(StrEnum):
     session_resync = 'session.resync'
 
 
@@ -4229,14 +4207,14 @@ class SessionResyncFrame(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    event_type: EventType8
+    event_type: EventType9
     session_id: str
     reason: str = Field(
         ..., description='Machine-readable resync reason, e.g. `subscriber_overflow`.'
     )
 
 
-class EventType9(StrEnum):
+class EventType10(StrEnum):
     stream_end = 'stream.end'
 
 
@@ -4296,13 +4274,18 @@ class ToolCallPayload(BaseModel):
     )
 
 
-class TurnWaitingPayload(BaseModel):
+class Kind6(StrEnum):
+    interaction = 'interaction'
+
+
+class SessionTranscriptWait(BaseModel):
     model_config = ConfigDict(
-        extra='allow',
+        extra='forbid',
     )
-    turn_id: str | None = None
-    reason: str | None = None
-    wait: dict[str, Any] | None = None
+    kind: Kind6
+    interaction_id: str
+    tool_call_id: str
+    expires_at: AwareDatetime | None = None
 
 
 class TurnCompletedPayload(BaseModel):
@@ -4813,7 +4796,7 @@ class LoopSpecInput(BaseModel):
     )
 
 
-class Kind6(StrEnum):
+class Kind7(StrEnum):
     """
     Trigger mechanism: `http`, `schedule`, `event`, or `manual`.
     """
@@ -4891,7 +4874,7 @@ class EventTriggerConfig(BaseModel):
     )
 
 
-class Kind7(StrEnum):
+class Kind8(StrEnum):
     """
     Step discriminator value; always `agent`.
     """
@@ -4899,7 +4882,7 @@ class Kind7(StrEnum):
     agent = 'agent'
 
 
-class Kind8(StrEnum):
+class Kind9(StrEnum):
     """
     Step discriminator value; always `action`.
     """
@@ -4907,7 +4890,7 @@ class Kind8(StrEnum):
     action = 'action'
 
 
-class Kind9(StrEnum):
+class Kind10(StrEnum):
     """
     Step discriminator value; always `sleep`.
     """
@@ -4915,7 +4898,7 @@ class Kind9(StrEnum):
     sleep = 'sleep'
 
 
-class Kind10(StrEnum):
+class Kind11(StrEnum):
     """
     Step discriminator value; always `wait_for_event`.
     """
@@ -4923,7 +4906,7 @@ class Kind10(StrEnum):
     wait_for_event = 'wait_for_event'
 
 
-class Kind11(StrEnum):
+class Kind12(StrEnum):
     """
     Step discriminator value; always `loop`.
     """
@@ -4931,7 +4914,7 @@ class Kind11(StrEnum):
     loop = 'loop'
 
 
-class Kind12(StrEnum):
+class Kind13(StrEnum):
     """
     Step discriminator value; always `check`.
     """
@@ -5198,7 +5181,7 @@ class OnFail(StrEnum):
     gate = 'gate'
 
 
-class Kind13(StrEnum):
+class Kind14(StrEnum):
     """
     `expr` evaluates a deterministic predicate with the same language as step conditions and event waits. `agent` runs a bounded judge turn returning a strict `{pass, reason}` verdict; its spend counts against the run budget and it consumes one run agent turn.
     """
@@ -5218,7 +5201,7 @@ class LoopCheckAssertion(BaseModel):
     name: str = Field(
         ..., description='Unique assertion name shown on the timeline proof row.'
     )
-    kind: Kind13 = Field(
+    kind: Kind14 = Field(
         ...,
         description='`expr` evaluates a deterministic predicate with the same language as step conditions and event waits. `agent` runs a bounded judge turn returning a strict `{pass, reason}` verdict; its spend counts against the run budget and it consumes one run agent turn.',
     )
@@ -6853,6 +6836,46 @@ class AgentToolManifest(BaseModel):
     )
 
 
+class SessionTranscriptTurn(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str
+    agent_id: str
+    session_id: str
+    run_id: str | None = None
+    step_key: str | None = None
+    channel_exchange_id: str | None = None
+    attempt: int
+    status: str = Field(
+        ..., description='Known AgentTurn status; unknown values must be preserved.'
+    )
+    seq: int | None = None
+    error_type: str | None = None
+    error_message: str | None = None
+    usage: dict[str, Any] | None = Field(
+        None,
+        description='Token usage recorded when the turn terminalized, when available.',
+    )
+    wait: SessionTranscriptWait | None = None
+    created_at: AwareDatetime
+    updated_at: AwareDatetime
+    completed_at: AwareDatetime | None = None
+
+
+class TurnUpsertFrame(SessionTranscriptTurn):
+    event_type: Literal['turn.upsert']
+
+
+class TurnWaitingPayload(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    turn_id: str | None = None
+    reason: str | None = None
+    wait: SessionTranscriptWait | None = None
+
+
 class NudgeEventPayload(BaseModel):
     """
     Live reconciliation hint emitted for `nudge.queued`, `nudge.delivered`, and `nudge.cancelled`. Re-read the queue resource after receiving it; this pulse is not durable replay state.
@@ -6948,7 +6971,7 @@ class LoopSpecTrigger(BaseModel):
         None, description='Stable user-authored trigger key within the spec.'
     )
     name: str | None = Field(None, description='Human-readable trigger name.')
-    kind: Kind6 = Field(
+    kind: Kind7 = Field(
         ..., description='Trigger mechanism: `http`, `schedule`, `event`, or `manual`.'
     )
     enabled: bool | None = Field(
@@ -7829,6 +7852,10 @@ class CreateRunBackedInteractionRequest(BaseModel):
     )
 
 
+class InteractionUpsertFrame(Interaction):
+    event_type: Literal['interaction.upsert']
+
+
 class InvokeAgentRequest(BaseModel):
     """
     A single compound invocation: which agent to run, how to resolve the session, the caller's input message, and optional channel routing context.
@@ -8329,6 +8356,10 @@ class SessionTranscriptSnapshot(BaseModel):
     )
     messages: list[SessionTranscriptMessage]
     turns: list[SessionTranscriptTurn]
+    interactions: list[Interaction] = Field(
+        ...,
+        description='Pending interactions raised by agent tool calls in this session.',
+    )
     has_more: bool
     resume_cursor: str
     next_page_token: str | None = None
@@ -8353,7 +8384,7 @@ class SessionMessagePreviewFrame(BaseModel):
     model_config = ConfigDict(
         extra='allow',
     )
-    event_type: EventType7
+    event_type: EventType8
     id: str = Field(
         ...,
         description='Provisional live id. Do not persist or use as the durable message id.',
@@ -8597,6 +8628,7 @@ class SessionTranscriptFrame(
         | MessageBlockPatchFrame
         | MessageDeltaFrame
         | TurnUpsertFrame
+        | InteractionUpsertFrame
         | StreamReadyFrame
         | StreamEndFrame
     ]
@@ -8607,6 +8639,7 @@ class SessionTranscriptFrame(
         | MessageBlockPatchFrame
         | MessageDeltaFrame
         | TurnUpsertFrame
+        | InteractionUpsertFrame
         | StreamReadyFrame
         | StreamEndFrame
     ) = Field(..., discriminator='event_type')

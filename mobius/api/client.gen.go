@@ -1190,6 +1190,45 @@ func (e InteractionResponseState) Valid() bool {
 	}
 }
 
+// Defines values for InteractionUpsertFrameEventType.
+const (
+	InteractionUpsertFrameEventTypeInteractionUpsert InteractionUpsertFrameEventType = "interaction.upsert"
+)
+
+// Valid indicates whether the value is a known member of the InteractionUpsertFrameEventType enum.
+func (e InteractionUpsertFrameEventType) Valid() bool {
+	switch e {
+	case InteractionUpsertFrameEventTypeInteractionUpsert:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for InteractionUpsertFrameStatus.
+const (
+	InteractionUpsertFrameStatusCancelled InteractionUpsertFrameStatus = "cancelled"
+	InteractionUpsertFrameStatusCompleted InteractionUpsertFrameStatus = "completed"
+	InteractionUpsertFrameStatusExpired   InteractionUpsertFrameStatus = "expired"
+	InteractionUpsertFrameStatusPending   InteractionUpsertFrameStatus = "pending"
+)
+
+// Valid indicates whether the value is a known member of the InteractionUpsertFrameStatus enum.
+func (e InteractionUpsertFrameStatus) Valid() bool {
+	switch e {
+	case InteractionUpsertFrameStatusCancelled:
+		return true
+	case InteractionUpsertFrameStatusCompleted:
+		return true
+	case InteractionUpsertFrameStatusExpired:
+		return true
+	case InteractionUpsertFrameStatusPending:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for InvokeSessionSpecMode.
 const (
 	InvokeSessionSpecModeContinue         InvokeSessionSpecMode = "continue"
@@ -2573,6 +2612,21 @@ const (
 func (e SessionToolUseBlockType) Valid() bool {
 	switch e {
 	case SessionToolUseBlockTypeToolUse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SessionTranscriptWaitKind.
+const (
+	SessionTranscriptWaitKindInteraction SessionTranscriptWaitKind = "interaction"
+)
+
+// Valid indicates whether the value is a known member of the SessionTranscriptWaitKind enum.
+func (e SessionTranscriptWaitKind) Valid() bool {
+	switch e {
+	case SessionTranscriptWaitKindInteraction:
 		return true
 	default:
 		return false
@@ -4072,7 +4126,10 @@ type AgentStatus string
 // AgentToolConsumer defines model for AgentToolConsumer.
 type AgentToolConsumer struct {
 	InvocationId string `json:"invocation_id"`
-	ToolCallId   string `json:"tool_call_id"`
+
+	// SessionId Session whose turn raised this interaction, when session-scoped.
+	SessionId  *string `json:"session_id,omitempty"`
+	ToolCallId string  `json:"tool_call_id"`
 }
 
 // AgentToolManifest The flat, resolved tool set visible to one agent. Replaces the prior Capability/Action split: every entry in `tools` is an action catalog entry the agent can invoke as its own named tool.
@@ -5822,6 +5879,115 @@ type InteractionSpec struct {
 	// Placeholder Hint text shown for `input` mode.
 	Placeholder *string `json:"placeholder,omitempty"`
 }
+
+// InteractionUpsertFrame defines model for InteractionUpsertFrame.
+type InteractionUpsertFrame struct {
+	// CancelReason Reason recorded when the interaction was cancelled.
+	CancelReason *string `json:"cancel_reason,omitempty"`
+
+	// CompletedAt Timestamp when the interaction received a terminal response.
+	CompletedAt *time.Time `json:"completed_at,omitempty"`
+
+	// Consumer Polymorphic identifier of what is waiting on this interaction's resolution. Replaces the special-cased `run_id`/`signal_name` pair; the latter remain populated when `consumer.kind=run`.
+	Consumer *Consumer `json:"consumer,omitempty"`
+
+	// Context Additional key-value context surfaced in the UI alongside the title and description when supplied.
+	Context *map[string]interface{} `json:"context,omitempty"`
+
+	// CreatedAt Timestamp when this interaction was created.
+	CreatedAt time.Time `json:"created_at"`
+
+	// CreatedBy Canonical principal ID of the human or agent that created the interaction; null for legacy/system-created rows.
+	CreatedBy *string `json:"created_by,omitempty"`
+
+	// Delivery Optional per-interaction delivery override. When absent, the dispatcher delivers to the app inbox only.
+	Delivery *Delivery `json:"delivery,omitempty"`
+
+	// Description Optional longer responder-facing detail or instructions.
+	Description *string                         `json:"description,omitempty"`
+	EventType   InteractionUpsertFrameEventType `json:"event_type"`
+
+	// ExpiresAt Timestamp when this interaction expires if not responded to.
+	ExpiresAt *time.Time `json:"expires_at,omitempty"`
+
+	// Id Unique identifier for this interaction.
+	Id string `json:"id"`
+
+	// Kind Protocol kind of the interaction. Launch keeps this intentionally
+	// small:
+	// * `request_information` — a data-collection protocol with structured
+	// or free-form input
+	// * `request_approval` — a decision protocol (yes/no, optionally
+	// yes/no/defer)
+	// * `request_review` — a judgment protocol that evaluates supplied
+	// material
+	Kind InteractionKind `json:"kind"`
+
+	// Outcome Free-form JSON payload. Used both for responder-supplied values and for policy-derived values (e.g. `Interaction.outcome`, `ResolutionPolicy.proposal`); each consumer documents which.
+	Outcome *InteractionValue `json:"outcome,omitempty"`
+
+	// Properties Free-form structured metadata attached to the interaction; null when no metadata is attached.
+	Properties *map[string]interface{} `json:"properties,omitempty"`
+
+	// References Supporting links and related entities.
+	References *[]InteractionReference `json:"references,omitempty"`
+
+	// RequireAll When true, all target users must respond before completion.
+	RequireAll *bool `json:"require_all,omitempty"`
+
+	// ResolutionPolicy Declarative resolution rule attached at creation time. Legacy `require_all` inputs are synthesized into an equivalent policy at create time when present. Newer rows typically include this field; nullability covers historical rows and callers that omit it.
+	ResolutionPolicy *ResolutionPolicy `json:"resolution_policy,omitempty"`
+
+	// ResolvedBy Short audit string identifying which policy rule fired. Null until the interaction reaches a resolved state.
+	ResolvedBy *string `json:"resolved_by,omitempty"`
+
+	// ResolvingResponseId ID of the response that triggered resolution. Null while the interaction is pending, cancelled, or expired. Look up the response in `responses` for the full payload.
+	ResolvingResponseId *string `json:"resolving_response_id,omitempty"`
+
+	// Responder User or agent that completed the interaction; null until completion.
+	Responder *InteractionResponder `json:"responder,omitempty"`
+
+	// Responses All response artifacts recorded against this interaction in arrival order.
+	Responses *[]InteractionResponse `json:"responses,omitempty"`
+
+	// RunId Originating loop run when the interaction is run-backed.
+	RunId *string `json:"run_id,omitempty"`
+
+	// SignalName Signal name used to resume the originating run when run-backed.
+	SignalName *string `json:"signal_name,omitempty"`
+
+	// Spec Declarative dialog contract for rendering and validating an interaction. Used at both authoring time (inside a loop definition) and runtime (persisted on an interaction). Protocol kind is decoupled from input shape: each kind declares which spec modes are *allowed*, not which is *implied*. An approval may now legitimately use `select` mode (approve/deny/defer), for example.
+	//
+	// Allowed combinations:
+	// * `request_approval` → `confirm`, `select`
+	// * `request_review` → `select`, `input`
+	// * `request_information` → `select`, `multi_select`, `input`
+	Spec *InteractionSpec `json:"spec,omitempty"`
+
+	// Status Current status of the interaction: pending, completed, expired, or cancelled.
+	Status InteractionUpsertFrameStatus `json:"status"`
+
+	// Subject Primary work item or artifact the interaction is about; null when no subject was supplied.
+	Subject *InteractionReference `json:"subject,omitempty"`
+
+	// Tags Key/value tags for organizing and filtering resources. Up to 8 per resource; keys 1–128 characters, values up to 256. Keys prefixed `mobius:` are system-managed and cannot be set by callers.
+	Tags *TagMap `json:"tags,omitempty"`
+
+	// TargetUserIds Resolved user IDs targeted by the interaction.
+	TargetUserIds []string `json:"target_user_ids"`
+
+	// Title Short non-empty title shown to the responder.
+	Title string `json:"title"`
+
+	// UpdatedAt Timestamp when this interaction was last updated.
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+// InteractionUpsertFrameEventType defines model for InteractionUpsertFrame.EventType.
+type InteractionUpsertFrameEventType string
+
+// InteractionUpsertFrameStatus Current status of the interaction: pending, completed, expired, or cancelled.
+type InteractionUpsertFrameStatus string
 
 // InteractionValue Free-form JSON payload. Used both for responder-supplied values and for policy-derived values (e.g. `Interaction.outcome`, `ResolutionPolicy.proposal`); each consumer documents which.
 type InteractionValue struct {
@@ -7998,7 +8164,10 @@ type SessionTranscriptMessage struct {
 
 // SessionTranscriptSnapshot defines model for SessionTranscriptSnapshot.
 type SessionTranscriptSnapshot struct {
-	HasMore       bool                       `json:"has_more"`
+	HasMore bool `json:"has_more"`
+
+	// Interactions Pending interactions raised by agent tool calls in this session.
+	Interactions  []Interaction              `json:"interactions"`
 	Messages      []SessionTranscriptMessage `json:"messages"`
 	NextPageToken *string                    `json:"next_page_token,omitempty"`
 	ResumeCursor  string                     `json:"resume_cursor"`
@@ -8026,7 +8195,19 @@ type SessionTranscriptTurn struct {
 
 	// Usage Token usage recorded when the turn terminalized, when available.
 	Usage *map[string]interface{} `json:"usage,omitempty"`
+	Wait  *SessionTranscriptWait  `json:"wait,omitempty"`
 }
+
+// SessionTranscriptWait defines model for SessionTranscriptWait.
+type SessionTranscriptWait struct {
+	ExpiresAt     *time.Time                `json:"expires_at,omitempty"`
+	InteractionId string                    `json:"interaction_id"`
+	Kind          SessionTranscriptWaitKind `json:"kind"`
+	ToolCallId    string                    `json:"tool_call_id"`
+}
+
+// SessionTranscriptWaitKind defines model for SessionTranscriptWait.Kind.
+type SessionTranscriptWaitKind string
 
 // SessionUserMessagePayload Payload of a `user.message` content event: the durable encoding of one non-assistant transcript message — caller input, or a user-role message carrying tool results. It mirrors the transcript row exactly, carrying the message identity (`message_id` + `sequence`) and full content. Replaying these events reconstructs the same view as reading the messages API.
 type SessionUserMessagePayload struct {
@@ -8647,6 +8828,7 @@ type TurnUpsertFrame struct {
 
 	// Usage Token usage recorded when the turn terminalized, when available.
 	Usage *map[string]interface{} `json:"usage,omitempty"`
+	Wait  *SessionTranscriptWait  `json:"wait,omitempty"`
 }
 
 // TurnUpsertFrameEventType defines model for TurnUpsertFrame.EventType.
@@ -8654,10 +8836,10 @@ type TurnUpsertFrameEventType string
 
 // TurnWaitingPayload defines model for TurnWaitingPayload.
 type TurnWaitingPayload struct {
-	Reason               *string                 `json:"reason,omitempty"`
-	TurnId               *string                 `json:"turn_id,omitempty"`
-	Wait                 *map[string]interface{} `json:"wait,omitempty"`
-	AdditionalProperties map[string]interface{}  `json:"-"`
+	Reason               *string                `json:"reason,omitempty"`
+	TurnId               *string                `json:"turn_id,omitempty"`
+	Wait                 *SessionTranscriptWait `json:"wait,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
 // UpdateActionRequest Updates action metadata, endpoint, schemas, or safe-use hints.
@@ -17232,6 +17414,34 @@ func (t *SessionTranscriptFrame) MergeTurnUpsertFrame(v TurnUpsertFrame) error {
 	return err
 }
 
+// AsInteractionUpsertFrame returns the union data inside the SessionTranscriptFrame as a InteractionUpsertFrame
+func (t SessionTranscriptFrame) AsInteractionUpsertFrame() (InteractionUpsertFrame, error) {
+	var body InteractionUpsertFrame
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromInteractionUpsertFrame overwrites any union data inside the SessionTranscriptFrame as the provided InteractionUpsertFrame
+func (t *SessionTranscriptFrame) FromInteractionUpsertFrame(v InteractionUpsertFrame) error {
+	v.EventType = "interaction.upsert"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeInteractionUpsertFrame performs a merge with any union data inside the SessionTranscriptFrame, using the provided InteractionUpsertFrame
+func (t *SessionTranscriptFrame) MergeInteractionUpsertFrame(v InteractionUpsertFrame) error {
+	v.EventType = "interaction.upsert"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
 // AsStreamReadyFrame returns the union data inside the SessionTranscriptFrame as a StreamReadyFrame
 func (t SessionTranscriptFrame) AsStreamReadyFrame() (StreamReadyFrame, error) {
 	var body StreamReadyFrame
@@ -17302,6 +17512,8 @@ func (t SessionTranscriptFrame) ValueByDiscriminator() (interface{}, error) {
 		return nil, err
 	}
 	switch discriminator {
+	case "interaction.upsert":
+		return t.AsInteractionUpsertFrame()
 	case "message.block":
 		return t.AsMessageBlockFrame()
 	case "message.block.patch":

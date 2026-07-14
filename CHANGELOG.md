@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 
 ## [Unreleased]
 
+### Added
+
+- TypeScript `SessionChat` wraps invoke, transcript following, pushed human-input
+  interactions, and responses without polling or manual cursor handling.
+
 ## [0.0.49] - 2026-07-13
 
 ### Added

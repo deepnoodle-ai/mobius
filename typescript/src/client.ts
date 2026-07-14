@@ -8,6 +8,7 @@ import type {
   ChannelContext,
   CreateLoopRequest,
   InlineAgentConfig,
+  Interaction,
   InvokeAgentRequest,
   InvokeInput,
   InvokeSessionSpec,
@@ -31,6 +32,7 @@ import type {
   SessionTranscriptFrame,
   SessionTranscriptMessage,
   SessionTranscriptSnapshot,
+  RespondToInteractionRequest,
   SignalLoopRunRequest,
   StartTurnRequest,
   StartLoopRunRequest,
@@ -127,7 +129,9 @@ export class StreamHTTPError extends MobiusAPIError {
   constructor(
     status: number,
     message: string,
-    init: Partial<Pick<MobiusAPIError, "code" | "details" | "requestId" | "retryAfter">> = {},
+    init: Partial<
+      Pick<MobiusAPIError, "code" | "details" | "requestId" | "retryAfter">
+    > = {},
   ) {
     super({
       status,
@@ -506,9 +510,12 @@ export class Client {
   }
 
   async listLoops(opts: ListLoopsOptions = {}): Promise<LoopListResponse> {
-    const resp = await this.request(withQuery("/v1/projects/:project/loops", opts), {
-      method: "GET",
-    });
+    const resp = await this.request(
+      withQuery("/v1/projects/:project/loops", opts),
+      {
+        method: "GET",
+      },
+    );
     return (await resp.json()) as LoopListResponse;
   }
 
@@ -560,10 +567,7 @@ export class Client {
     );
   }
 
-  async startRun(
-    loopId: string,
-    opts: StartRunOptions = {},
-  ): Promise<LoopRun> {
+  async startRun(loopId: string, opts: StartRunOptions = {}): Promise<LoopRun> {
     if (
       opts.idempotencyKey &&
       opts.external_id &&
@@ -628,7 +632,9 @@ export class Client {
     return (await resp.json()) as LoopRun;
   }
 
-  async listSessions(opts: ListSessionsOptions = {}): Promise<SessionListResponse> {
+  async listSessions(
+    opts: ListSessionsOptions = {},
+  ): Promise<SessionListResponse> {
     const path = withQuery("/v1/projects/:project/sessions", {
       agent_id: opts.agentId,
       agent_name: opts.agentName,
@@ -708,7 +714,10 @@ export class Client {
     return (await resp.json()) as Session;
   }
 
-  async cancelSession(sessionId: string, opts: { force?: boolean } = {}): Promise<Session> {
+  async cancelSession(
+    sessionId: string,
+    opts: { force?: boolean } = {},
+  ): Promise<Session> {
     const path = withQuery(
       `/v1/projects/:project/sessions/${encodeURIComponent(sessionId)}/cancel`,
       { force: opts.force },
@@ -768,7 +777,12 @@ export class Client {
   ): Promise<SessionNudgeListResponse> {
     const path = withQuery(
       `/v1/projects/:project/sessions/${encodeURIComponent(sessionId)}/nudges`,
-      { status: opts.status, order: opts.order, cursor: opts.cursor, limit: opts.limit },
+      {
+        status: opts.status,
+        order: opts.order,
+        cursor: opts.cursor,
+        limit: opts.limit,
+      },
     );
     const resp = await this.request(path, { method: "GET" });
     return (await resp.json()) as SessionNudgeListResponse;
@@ -790,13 +804,30 @@ export class Client {
     return (await resp.json()) as SessionNudge;
   }
 
+  /** Submit a response to an interaction observed on a session transcript. */
+  async respondToInteraction(
+    interactionId: string,
+    input: RespondToInteractionRequest,
+  ): Promise<Interaction> {
+    const resp = await this.request(
+      `/v1/projects/:project/interactions/${encodeURIComponent(interactionId)}/respond`,
+      { method: "POST", body: input },
+    );
+    return (await resp.json()) as Interaction;
+  }
+
   async listTurns(
     sessionId: string,
     opts: ListSessionTurnsOptions = {},
   ): Promise<AgentTurnListResponse> {
     const path = withQuery(
       `/v1/projects/:project/sessions/${encodeURIComponent(sessionId)}/turns`,
-      { ids: opts.ids, order: opts.order, cursor: opts.cursor, limit: opts.limit },
+      {
+        ids: opts.ids,
+        order: opts.order,
+        cursor: opts.cursor,
+        limit: opts.limit,
+      },
     );
     const resp = await this.request(path, { method: "GET" });
     return (await resp.json()) as AgentTurnListResponse;
@@ -900,11 +931,16 @@ export class Client {
       throw await responseError(resp, "POST", path, true);
     }
     if (!resp.body) {
-      throw new Error("mobius API POST agents/invoke: response body is not readable");
+      throw new Error(
+        "mobius API POST agents/invoke: response body is not readable",
+      );
     }
     for await (const evt of parseSSE(resp.body)) {
       if (!evt.event || !evt.data) continue;
-      yield { eventType: evt.event, data: JSON.parse(evt.data) as SessionStreamFrame };
+      yield {
+        eventType: evt.event,
+        data: JSON.parse(evt.data) as SessionStreamFrame,
+      };
     }
   }
 
@@ -924,7 +960,10 @@ export class Client {
       `/v1/projects/:project/sessions/${encodeURIComponent(sessionId)}/transcript`,
       { cursor: opts.cursor, page_token: opts.pageToken, limit: opts.limit },
     );
-    const resp = await this.request(path, { method: "GET", signal: opts.signal });
+    const resp = await this.request(path, {
+      method: "GET",
+      signal: opts.signal,
+    });
     return (await resp.json()) as SessionTranscriptSnapshot;
   }
 
@@ -979,7 +1018,10 @@ export class Client {
     sessionId: string,
     opts: WatchSessionTranscriptOptions = {},
   ): AsyncGenerator<SessionTranscript> {
-    for await (const update of this.watchSessionTranscriptUpdates(sessionId, opts)) {
+    for await (const update of this.watchSessionTranscriptUpdates(
+      sessionId,
+      opts,
+    )) {
       const eventType = (update.frame as { event_type?: string }).event_type;
       if (eventType !== "stream.end") yield update.transcript;
     }
@@ -1000,7 +1042,11 @@ export class Client {
       let rotate = false;
       if (!firstConnection) reconnectCount += 1;
       firstConnection = false;
-      this.log({ type: "stream", event: reconnectCount ? "reconnect" : "open", path: sessionId });
+      this.log({
+        type: "stream",
+        event: reconnectCount ? "reconnect" : "open",
+        path: sessionId,
+      });
       try {
         for await (const ev of this.streamSessionTranscript(sessionId, {
           cursor: transcript.cursor ?? undefined,
@@ -1020,7 +1066,14 @@ export class Client {
           }
           this.log({
             type: "stream",
-            event: eventType === "stream.ready" ? "ready" : eventType === "stream.end" ? (connection === "ended" ? "idle" : "rotate") : "frame",
+            event:
+              eventType === "stream.ready"
+                ? "ready"
+                : eventType === "stream.end"
+                  ? connection === "ended"
+                    ? "idle"
+                    : "rotate"
+                  : "frame",
             path: sessionId,
             frameType: eventType,
           });
@@ -1070,7 +1123,9 @@ export class Client {
       throw new Error(`mobius API GET ${path}: HTTP ${resp.status}: ${text}`);
     }
     if (!resp.body) {
-      throw new Error("mobius API GET run events: response body is not readable");
+      throw new Error(
+        "mobius API GET run events: response body is not readable",
+      );
     }
     for await (const evt of parseSSE(resp.body)) {
       if (!evt.data) continue;
@@ -1150,7 +1205,9 @@ export class Client {
   }
 
   private url(path: string): string {
-    return this.baseURL + path.replace(":project", encodeURIComponent(this.project));
+    return (
+      this.baseURL + path.replace(":project", encodeURIComponent(this.project))
+    );
   }
 }
 
@@ -1262,7 +1319,12 @@ export class TurnTranscript implements AsyncIterable<TurnTranscript> {
 
   /** Last observed transport and turn facts; no backend state is inferred. */
   diagnostics(): TranscriptDiagnostics {
-    return { ...this.#diagnostics, status: this.status, cursor: this.transcript.cursor, ready: this.transcript.ready };
+    return {
+      ...this.#diagnostics,
+      status: this.status,
+      cursor: this.transcript.cursor,
+      ready: this.transcript.ready,
+    };
   }
 
   /**
@@ -1346,7 +1408,9 @@ export class TurnTranscript implements AsyncIterable<TurnTranscript> {
 }
 
 export function isTerminalRunStatus(status: LoopRunStatus | string): boolean {
-  return status === "completed" || status === "failed" || status === "cancelled";
+  return (
+    status === "completed" || status === "failed" || status === "cancelled"
+  );
 }
 
 function anySignal(...signals: AbortSignal[]): AbortSignal {
@@ -1432,7 +1496,9 @@ async function responseError(
     response.headers.get("X-Request-Id") ??
     response.headers.get("X-Request-ID") ??
     undefined;
-  const retryAfter = parseRetryAfterSeconds(response.headers.get("Retry-After"));
+  const retryAfter = parseRetryAfterSeconds(
+    response.headers.get("Retry-After"),
+  );
   if (stream) {
     return new StreamHTTPError(response.status, message, {
       code: code ?? "http_error",
@@ -1506,7 +1572,9 @@ interface SSEEvent {
   data: string;
 }
 
-async function* parseSSE(body: ReadableStream<Uint8Array>): AsyncGenerator<SSEEvent> {
+async function* parseSSE(
+  body: ReadableStream<Uint8Array>,
+): AsyncGenerator<SSEEvent> {
   const reader = body.getReader();
   const decoder = new TextDecoder();
   let buffer = "";
