@@ -3,6 +3,7 @@ import type {
   AgentListResponse,
   AgentTurn,
   AgentTurnListResponse,
+  AgentTurnOperationPolicy,
   AgentRef,
   CancelLoopRunRequest,
   ChannelContext,
@@ -316,6 +317,11 @@ export interface InvokeAgentOptions {
    */
   config?: InlineAgentConfig;
   /**
+   * Policy for only this newly admitted turn. Its timeout takes precedence
+   * over the saved config timeout and is not saved on the session.
+   */
+  operation?: AgentTurnOperationPolicy;
+  /**
    * Optional messaging provider/channel routing context (Slack, Telegram,
    * …) recorded on the started turn.
    */
@@ -327,8 +333,16 @@ export interface StartTurnOptions {
   content: Record<string, unknown>[];
   /** Ordered application-owned state snapshots for this turn. */
   context?: RuntimeContextItem[];
-  /** Dedup key scoped to the existing session. */
+  /**
+   * Dedup key scoped to the existing session. A repeat returns the existing
+   * invocation, writes no new input, and never restarts a terminal turn.
+   */
   idempotencyKey?: string;
+  /**
+   * Policy for only this newly admitted turn. Its timeout takes precedence
+   * over the saved config timeout and is not saved on the session.
+   */
+  operation?: AgentTurnOperationPolicy;
   /** Free-form caller metadata attached to the input message. */
   metadata?: Record<string, unknown>;
 }
@@ -863,6 +877,7 @@ export class Client {
       content: opts.content,
       context: opts.context,
       idempotency_key: opts.idempotencyKey,
+      operation: opts.operation,
       metadata: opts.metadata,
     });
     const resp = await this.request(
@@ -1465,6 +1480,7 @@ function invokeAgentRequest(opts: InvokeAgentOptions): InvokeAgentRequest {
     }) as InvokeInput,
     session: opts.session,
     config: opts.config,
+    operation: opts.operation,
     channel_context: opts.channelContext,
   }) as InvokeAgentRequest;
 }

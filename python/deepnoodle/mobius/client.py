@@ -14,6 +14,7 @@ import httpx
 from ._api.models import (
     AgentTurn,
     AgentTurnListResponse,
+    AgentTurnOperationPolicy,
     AgentRef,
     CancelLoopRunRequest,
     ChannelContext,
@@ -182,6 +183,9 @@ class InvokeAgentOptions:
     # Mobius remembers the config on the session and reuses it on later turns
     # until a new one is sent. Omit to run the agent on its stored definition.
     config: InlineAgentConfig | None = None
+    # Policy for only this newly admitted turn. Its timeout takes precedence
+    # over the saved config timeout and is not saved on the session.
+    operation: AgentTurnOperationPolicy | None = None
     # Optional messaging provider/channel routing context (Slack, Telegram,
     # ...) recorded on the started turn.
     channel_context: ChannelContext | None = None
@@ -194,8 +198,12 @@ class StartTurnOptions:
     content: list[dict[str, Any]]
     # Ordered application-owned state for this turn.
     context: list[RuntimeContextItem] | None = None
-    # Dedup key scoped to the existing session.
+    # Dedup key scoped to the existing session. A repeat returns the existing
+    # invocation, writes no new input, and never restarts a terminal turn.
     idempotency_key: str | None = None
+    # Policy for only this newly admitted turn. Its timeout takes precedence
+    # over the saved config timeout and is not saved on the session.
+    operation: AgentTurnOperationPolicy | None = None
     # Free-form caller metadata attached to the input message.
     metadata: dict[str, Any] | None = None
 
@@ -446,6 +454,7 @@ class Client:
                 RuntimeContext(root=opts.context) if opts.context is not None else None
             ),
             idempotency_key=opts.idempotency_key,
+            operation=opts.operation,
             metadata=opts.metadata,
         )
         resp = self._request(
@@ -1244,6 +1253,7 @@ def _invoke_agent_request(opts: InvokeAgentOptions) -> InvokeAgentRequest:
         ),
         session=opts.session,
         config=opts.config,
+        operation=opts.operation,
         channel_context=opts.channel_context,
     )
 

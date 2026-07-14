@@ -49,6 +49,10 @@ type InvokeAgentOptions struct {
 	// it on later turns until a new one is sent. Omit to run the agent on its
 	// stored definition.
 	Config *api.InlineAgentConfig
+	// Operation configures policy for only this newly admitted turn. Its
+	// timeout takes precedence over the saved config timeout and is not saved
+	// on the session.
+	Operation *api.AgentTurnOperationPolicy
 	// ChannelContext records optional messaging provider/channel routing
 	// context (Slack, Telegram, …) on the started turn.
 	ChannelContext *api.ChannelContext
@@ -61,8 +65,14 @@ type StartTurnOptions struct {
 	Content []map[string]interface{}
 	// Context is the ordered application-owned state for this turn.
 	Context []RuntimeContextItem
-	// IdempotencyKey dedupes the call within the session.
+	// IdempotencyKey dedupes the call within the session. A repeat returns the
+	// existing invocation, writes no new input, and never restarts a terminal
+	// turn.
 	IdempotencyKey string
+	// Operation configures policy for only this newly admitted turn. Its
+	// timeout takes precedence over the saved config timeout and is not saved
+	// on the session.
+	Operation *api.AgentTurnOperationPolicy
 	// Metadata is free-form caller metadata attached to the input message.
 	Metadata map[string]interface{}
 }
@@ -168,6 +178,7 @@ func (c *Client) StartTurn(ctx context.Context, sessionID string, opts StartTurn
 		body.Context = &runtimeContext
 	}
 	body.IdempotencyKey = stringPointer(opts.IdempotencyKey)
+	body.Operation = opts.Operation
 	if opts.Metadata != nil {
 		body.Metadata = &opts.Metadata
 	}
@@ -561,6 +572,9 @@ func invokeAgentRequest(opts InvokeAgentOptions) (api.InvokeAgentRequest, error)
 	}
 	if opts.Config != nil {
 		req.Config = opts.Config
+	}
+	if opts.Operation != nil {
+		req.Operation = opts.Operation
 	}
 	if opts.ChannelContext != nil {
 		req.ChannelContext = opts.ChannelContext

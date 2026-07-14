@@ -2,7 +2,12 @@
 
 from .action import action
 from .action_response import ActionResponseEnvelope, MOBIUS_ACTION_CONTENT_TYPE
-from ._api.models import InlineAgentConfig, InlineToolkit, RuntimeContextItem
+from ._api.models import (
+    AgentTurnOperationPolicy,
+    InlineAgentConfig,
+    InlineToolkit,
+    RuntimeContextItem,
+)
 from .client import (
     DEFAULT_BASE_URL,
     Client,
@@ -83,6 +88,7 @@ from .worker import (
 __all__ = [
     "ActionContext",
     "ActionResponseEnvelope",
+    "AgentTurnOperationPolicy",
     "AuthRevokedError",
     "Client",
     "ClientOptions",

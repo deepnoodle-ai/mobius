@@ -397,6 +397,7 @@ test("client: invokeAgent posts the compound invoke request shape", async () => 
         effort: "medium",
         toolkits: [{ name: "tickets", actions: ["tickets.search"] }],
       },
+      operation: { timeout_seconds: 90 },
     });
     assert.equal(turn.afterSequence, 7);
     assert.equal(turn.sessionId, "sess_1");
@@ -417,6 +418,7 @@ test("client: invokeAgent posts the compound invoke request shape", async () => 
   assert.match(requestBody, /"model":"claude-sonnet-4-6"/);
   assert.match(requestBody, /"effort":"medium"/);
   assert.match(requestBody, /"toolkits":\[\{"name":"tickets","actions":\["tickets\.search"\]\}\]/);
+  assert.match(requestBody, /"operation":\{"timeout_seconds":90\}/);
 });
 
 test("client: startTurn passes runtime context to an existing session", async () => {
@@ -440,6 +442,7 @@ test("client: startTurn passes runtime context to an existing session", async ()
       content: [{ type: "text", text: "hi" }],
       context: [{ name: "naming-board", content: "Chosen: none" }],
       idempotencyKey: "evt_1",
+      operation: { timeout_seconds: 45 },
     });
     assert.equal(turn.id, "turn_1");
   } finally {
@@ -454,6 +457,7 @@ test("client: startTurn passes runtime context to an existing session", async ()
     content: [{ type: "text", text: "hi" }],
     context: [{ name: "naming-board", content: "Chosen: none" }],
     idempotency_key: "evt_1",
+    operation: { timeout_seconds: 45 },
   });
 });
 

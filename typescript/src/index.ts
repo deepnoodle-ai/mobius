@@ -62,6 +62,7 @@ export type {
   SessionChatUpdate,
 } from "./chat.js";
 export type {
+  AgentTurnOperationPolicy,
   MessageBlockFrame,
   MessageBlockPatchFrame,
   MessageDeltaFrame,

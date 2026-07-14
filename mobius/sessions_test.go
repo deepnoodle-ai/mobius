@@ -64,6 +64,7 @@ func TestInvokeAgent_HighLevelClient(t *testing.T) {
 				{Name: "tickets", Actions: &[]string{"tickets.search"}},
 			},
 		},
+		Operation: &api.AgentTurnOperationPolicy{TimeoutSeconds: ptr(int64(90))},
 	})
 
 	assert.NoError(t, err)
@@ -84,6 +85,7 @@ func TestInvokeAgent_HighLevelClient(t *testing.T) {
 	assert.Equal(t, config["model"], "claude-sonnet-4-6")
 	assert.Equal(t, config["effort"], "medium")
 	assert.Equal(t, config["toolkits"].([]any)[0].(map[string]any)["name"], "tickets")
+	assert.Equal(t, body["operation"].(map[string]any)["timeout_seconds"], float64(90))
 
 	turn.Transcript().Apply(TranscriptStreamEvent{Frame: mustFrame(t,
 		`{"event_type":"turn.upsert","id":"turn_1","session_id":"sess_1","agent_id":"agent_1","attempt":1,"status":"failed","error_type":"invalid_conversation_state","error_message":"history ended with assistant content","created_at":"2026-05-27T00:00:00Z","updated_at":"2026-05-27T00:00:01Z"}`)})
@@ -110,12 +112,14 @@ func TestStartTurn_HighLevelClient(t *testing.T) {
 		Content:        []map[string]interface{}{{"type": "text", "text": "hi"}},
 		Context:        []RuntimeContextItem{{Name: "naming-board", Content: "Chosen: none"}},
 		IdempotencyKey: "evt_1",
+		Operation:      &api.AgentTurnOperationPolicy{TimeoutSeconds: ptr(int64(45))},
 		Metadata:       map[string]interface{}{"source": "app"},
 	})
 
 	assert.NoError(t, err)
 	assert.Equal(t, turn.ID(), "turn_1")
 	assert.Equal(t, body["idempotency_key"], "evt_1")
+	assert.Equal(t, body["operation"].(map[string]any)["timeout_seconds"], float64(45))
 	assert.Equal(t, body["metadata"].(map[string]any)["source"], "app")
 	contextItem := body["context"].([]any)[0].(map[string]any)
 	assert.Equal(t, contextItem["name"], "naming-board")

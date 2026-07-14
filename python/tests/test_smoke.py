@@ -16,6 +16,7 @@ from deepnoodle.mobius import (
     MOBIUS_SIGNATURE_VERSION_HEADER,
     MOBIUS_TIMESTAMP_HEADER,
     WEBHOOK_EVENT_TYPE_HEADER,
+    AgentTurnOperationPolicy,
     Client,
     ClientOptions,
     InvokeAgentOptions,
@@ -247,6 +248,7 @@ def test_invoke_agent_posts_the_compound_invoke_request_shape() -> None:
                 effort="medium",
                 toolkits=[InlineToolkit(name="tickets", actions=["tickets.search"])],
             ),
+            operation=AgentTurnOperationPolicy(timeout_seconds=90),
         )
     )
 
@@ -265,6 +267,7 @@ def test_invoke_agent_posts_the_compound_invoke_request_shape() -> None:
     assert '"model":"claude-sonnet-4-6"' in str(seen["body"])
     assert '"effort":"medium"' in str(seen["body"])
     assert '"toolkits":[{"name":"tickets","actions":["tickets.search"]}]' in str(seen["body"])
+    assert '"operation":{"timeout_seconds":90}' in str(seen["body"])
 
 
 def test_start_turn_passes_runtime_context_to_existing_session() -> None:
@@ -282,6 +285,7 @@ def test_start_turn_passes_runtime_context_to_existing_session() -> None:
             content=[{"type": "text", "text": "hi"}],
             context=[RuntimeContextItem(name="naming-board", content="Chosen: none")],
             idempotency_key="evt_1",
+            operation=AgentTurnOperationPolicy(timeout_seconds=45),
             metadata={"source": "app"},
         ),
     )
@@ -293,6 +297,7 @@ def test_start_turn_passes_runtime_context_to_existing_session() -> None:
         "content": [{"type": "text", "text": "hi"}],
         "context": [{"name": "naming-board", "content": "Chosen: none"}],
         "idempotency_key": "evt_1",
+        "operation": {"timeout_seconds": 45},
         "metadata": {"source": "app"},
     }
 

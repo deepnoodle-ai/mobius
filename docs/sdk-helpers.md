@@ -212,6 +212,13 @@ const turn = await client.startTurn(sessionId, {
 });
 ```
 
+Both invoke and existing-session turn helpers accept a one-shot execution
+timeout. Set `Operation: &api.AgentTurnOperationPolicy{TimeoutSeconds: &seconds}`
+in Go, `operation=mobius.AgentTurnOperationPolicy(timeout_seconds=90)` in
+Python, or `operation: { timeout_seconds: 90 }` in TypeScript. This policy
+applies only to the newly admitted turn, overrides the saved config timeout,
+and is not persisted on the session.
+
 Runtime-context names must be unique within a request. Supply names without the
 `app-` namespace; a name already beginning with `app-` is deliberately delivered
 as `app-app-*`. OpenAPI validates each content value by Unicode code points; the
@@ -381,6 +388,11 @@ messages, nudge list/get/cancel, and turn list/get/cancel. Names follow each
 language's conventions (`ListSessions`, `list_sessions`, `listSessions`, and
 so on). The generated client remains the escape hatch for less common session
 operations.
+
+Turn cancellation is idempotent, cooperative, and non-resumable. It retains
+committed transcript rows but cannot roll back model, tool, or external effects;
+reusing the invocation idempotency key returns the same cancelled turn. A live
+loop-owned turn instead returns `409 turn_owned_by_run`; cancel the owning run.
 
 ## Server-to-browser boundary
 

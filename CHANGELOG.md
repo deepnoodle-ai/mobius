@@ -8,11 +8,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 
 ### Added
 
+- Agent invoke and existing-session turn helpers now accept a one-shot
+  `operation.timeout_seconds`; turn cancellation is cooperative and permanent,
+  with live loop-owned turns returning `409 turn_owned_by_run`.
 - Session transcript snapshots and streams now expose human-input wait context
   and interaction lifecycle upserts across the generated Go, Python, and
   TypeScript contracts and transcript accumulators.
 - TypeScript `SessionChat` wraps invoke, transcript following, pushed human-input
   interactions, and responses without polling or manual cursor handling.
+
+### Changed
+
+- **Breaking:** model catalog `ModelOption.context_window_tokens` is now required;
+  compaction supports model-relative `threshold` percentages plus an optional
+  absolute `threshold_tokens` override.
+- Reusing an invocation idempotency key returns the existing turn and never
+  restarts a terminal turn, including one that was cancelled.
 
 ## [0.0.49] - 2026-07-13
 
