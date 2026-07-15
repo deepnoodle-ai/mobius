@@ -189,7 +189,9 @@ class InvokeAgentOptions:
     # Dedup key scoped to the resolved session. A repeat call with the same
     # key resolves the same session and returns the existing invocation
     # without restarting it or starting a second one — derive it from the
-    # provider event id for Slack/Telegram webhook retries.
+    # provider event id for Slack/Telegram webhook retries. The SDK retries
+    # admission automatically unless session.mode is "new", which cannot be
+    # safely replayed with a session-scoped key.
     idempotency_key: str | None = None
     # Free-form caller metadata attached to the input message.
     input_metadata: dict[str, Any] | None = None
@@ -612,15 +614,25 @@ class Client:
     def start_run(self, loop_id: str, opts: StartRunOptions | None = None) -> LoopRun:
         opts = opts or StartRunOptions()
         values = _drop_none(opts.__dict__)
-        external_id = values.pop("external_id", None)
+        idempotency_key = _normalize_idempotency_key(
+            values.pop("idempotency_key", None)
+        )
+        external_id = _normalize_idempotency_key(values.pop("external_id", None))
         if external_id is not None:
-            if values.get("idempotency_key") not in (None, external_id):
+            if idempotency_key not in (None, external_id):
                 raise ValueError(
                     "idempotency_key and deprecated external_id must match when both are set"
                 )
-            values.setdefault("idempotency_key", external_id)
+            idempotency_key = idempotency_key or external_id
+        if idempotency_key is not None:
+            values["idempotency_key"] = idempotency_key
         body = StartLoopRunRequest(**values)
-        resp = self._request("POST", f"/v1/projects/{{project}}/loops/{quote(loop_id, safe='')}/runs", json=body)
+        resp = self._request(
+            "POST",
+            f"/v1/projects/{{project}}/loops/{quote(loop_id, safe='')}/runs",
+            json=body,
+            idempotency_key=body.idempotency_key,
+        )
         return LoopRun.model_validate(resp.json())
 
     def list_runs(self, opts: ListRunsOptions | None = None) -> LoopRunListResponse:
@@ -656,7 +668,12 @@ class Client:
     # the same connection with v1 session-stream framing.
     def invoke_agent(self, opts: InvokeAgentOptions) -> TurnTranscript:
         body = _invoke_agent_request(opts)
-        resp = self._request("POST", "/v1/projects/{project}/agents/invoke", json=body)
+        resp = self._request(
+            "POST",
+            "/v1/projects/{project}/agents/invoke",
+            json=body,
+            idempotency_key=_invoke_agent_replay_key(body),
+        )
         ack = TurnAck.model_validate(resp.json())
         return self._turn_transcript(ack, "invoke agent")
 
@@ -664,13 +681,14 @@ class Client:
         """Append caller input to an existing session and start a turn."""
         if not opts.content:
             raise ValueError("mobius: start turn: content is required")
+        idempotency_key = _normalize_idempotency_key(opts.idempotency_key)
         body = StartTurnRequest(
             role="user",
             content=opts.content,
             context=(
                 RuntimeContext(root=opts.context) if opts.context is not None else None
             ),
-            idempotency_key=opts.idempotency_key,
+            idempotency_key=idempotency_key,
             operation=opts.operation,
             output=opts.output,
             metadata=opts.metadata,
@@ -679,6 +697,7 @@ class Client:
             "POST",
             f"/v1/projects/{{project}}/sessions/{quote(session_id, safe='')}/turns",
             json=body,
+            idempotency_key=body.idempotency_key,
         )
         ack = TurnAck.model_validate(resp.json())
         return self._turn_transcript(ack, "start turn")
@@ -697,7 +716,13 @@ class Client:
         payload = _model_dump(body)
         path = self._path("/v1/projects/{project}/agents/invoke")
         with self._client.stream(
-            "POST", path, json=payload, headers={"Accept": "text/event-stream"}
+            "POST",
+            path,
+            json=payload,
+            headers=_idempotency_headers(
+                _invoke_agent_replay_key(body),
+                accept="text/event-stream",
+            ),
         ) as resp:
             _raise_for_response(resp)
             buf = ""
@@ -759,11 +784,18 @@ class Client:
         return SessionMessageListResponse.model_validate(resp.json())
 
     def nudge_session(self, session_id: str, opts: NudgeSessionOptions) -> SessionNudgeAck:
-        body = NudgeSessionRequest(**_drop_none(opts.__dict__))
+        values = _drop_none(opts.__dict__)
+        idempotency_key = _normalize_idempotency_key(
+            values.pop("idempotency_key", None)
+        )
+        if idempotency_key is not None:
+            values["idempotency_key"] = idempotency_key
+        body = NudgeSessionRequest(**values)
         resp = self._request(
             "POST",
             f"/v1/projects/{{project}}/sessions/{quote(session_id, safe='')}/nudges",
             json=body,
+            idempotency_key=body.idempotency_key,
         )
         return SessionNudgeAck.model_validate(resp.json())
 
@@ -1047,11 +1079,17 @@ class Client:
         *,
         json: Any | None = None,
         params: dict[str, Any] | None = None,
+        idempotency_key: str | None = None,
     ) -> httpx.Response:
         payload = _model_dump(json) if json is not None else None
         request_path = self._path(path, params=params)
         started = time.monotonic()
-        resp = self._client.request(method, request_path, json=payload)
+        resp = self._client.request(
+            method,
+            request_path,
+            json=payload,
+            headers=_idempotency_headers(idempotency_key),
+        )
         self._logger.debug(
             "mobius request complete",
             extra={
@@ -1489,7 +1527,7 @@ def _invoke_agent_request(opts: InvokeAgentOptions) -> InvokeAgentRequest:
             context=(
                 RuntimeContext(root=opts.context) if opts.context is not None else None
             ),
-            idempotency_key=opts.idempotency_key,
+            idempotency_key=_normalize_idempotency_key(opts.idempotency_key),
             metadata=opts.input_metadata,
         ),
         session=opts.session,
@@ -1498,6 +1536,33 @@ def _invoke_agent_request(opts: InvokeAgentOptions) -> InvokeAgentRequest:
         output=opts.output,
         channel_context=opts.channel_context,
     )
+
+
+def _normalize_idempotency_key(value: str | None) -> str | None:
+    normalized = value.strip() if value is not None else ""
+    return normalized or None
+
+
+def _idempotency_headers(
+    value: str | None,
+    *,
+    accept: str | None = None,
+) -> dict[str, str]:
+    headers: dict[str, str] = {}
+    key = _normalize_idempotency_key(value)
+    if key is not None:
+        headers["Idempotency-Key"] = key
+    if accept is not None:
+        headers["Accept"] = accept
+    return headers
+
+
+def _invoke_agent_replay_key(body: InvokeAgentRequest) -> str | None:
+    if body.session is not None and body.session.mode is not None:
+        mode = body.session.mode.value
+        if mode == "new":
+            return None
+    return _normalize_idempotency_key(body.input.idempotency_key)
 
 
 def _merge_loop_fields(opts: Any) -> dict[str, Any]:

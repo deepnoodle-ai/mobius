@@ -1,7 +1,10 @@
 package mobius
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"fmt"
 	"io"
 	"log/slog"
 	"math"
@@ -114,6 +117,26 @@ func (t *RetryingTransport) RoundTrip(req *http.Request) (*http.Response, error)
 		}
 
 		if !isRetryableStatus(resp.StatusCode) {
+			if err := prepareReplayableJSONResponse(req, resp); err != nil {
+				_ = resp.Body.Close()
+				if !canRetry || attempt >= t.MaxRetries || ctx.Err() != nil {
+					return nil, err
+				}
+				wait := expBackoff(attempt)
+				if t.Logger != nil {
+					t.Logger.Warn("mobius: retrying after response body error",
+						slog.String("method", req.Method),
+						slog.String("url", req.URL.String()),
+						slog.String("error", err.Error()),
+						slog.Int("attempt", attempt+1),
+						slog.Duration("wait", wait),
+					)
+				}
+				if serr := t.sleepFn()(ctx, wait); serr != nil {
+					return nil, err
+				}
+				continue
+			}
 			return resp, nil
 		}
 
@@ -143,6 +166,39 @@ func (t *RetryingTransport) RoundTrip(req *http.Request) (*http.Response, error)
 			return nil, err
 		}
 	}
+}
+
+// prepareReplayableJSONResponse completes the acknowledgement boundary for
+// replay-safe writes. Reading and validating the small JSON response here
+// keeps response-body failures inside the transport's single retry budget.
+// Event streams are intentionally excluded: once their response begins, the
+// original invocation must never be sent again.
+func prepareReplayableJSONResponse(req *http.Request, resp *http.Response) error {
+	if resp == nil || resp.Body == nil || resp.StatusCode < 200 || resp.StatusCode >= 300 || resp.StatusCode == http.StatusNoContent {
+		return nil
+	}
+	method := strings.ToUpper(req.Method)
+	if (method != http.MethodPost && method != http.MethodPatch) || req.Header.Get("Idempotency-Key") == "" {
+		return nil
+	}
+	if strings.Contains(strings.ToLower(req.Header.Get("Accept")), "text/event-stream") {
+		return nil
+	}
+	if !strings.Contains(strings.ToLower(resp.Header.Get("Content-Type")), "json") {
+		return nil
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("mobius: read replay-safe response body: %w", err)
+	}
+	_ = resp.Body.Close()
+	if !json.Valid(body) {
+		return fmt.Errorf("mobius: replay-safe response body is not valid JSON")
+	}
+	resp.Body = io.NopCloser(bytes.NewReader(body))
+	resp.ContentLength = int64(len(body))
+	return nil
 }
 
 func isRetryableStatus(code int) bool {

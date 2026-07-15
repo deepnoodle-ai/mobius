@@ -317,7 +317,9 @@ export interface InvokeAgentOptions {
    * Dedup key scoped to the resolved session. A repeat call with the same
    * key resolves the same session and returns the existing invocation
    * without restarting it or starting a second one — derive it from the
-   * provider event id for Slack/Telegram webhook retries.
+   * provider event id for Slack/Telegram webhook retries. The SDK retries
+   * admission automatically unless `session.mode` is `new`, which cannot be
+   * safely replayed with a session-scoped key.
    */
   idempotencyKey?: string;
   /** Free-form caller metadata attached to the input message. */
@@ -844,25 +846,28 @@ export class Client {
   }
 
   async startRun(loopId: string, opts: StartRunOptions = {}): Promise<LoopRun> {
+    const idempotencyKey = normalizeIdempotencyKey(opts.idempotencyKey);
+    const legacyKey = normalizeIdempotencyKey(opts.external_id);
     if (
-      opts.idempotencyKey &&
-      opts.external_id &&
-      opts.idempotencyKey !== opts.external_id
+      idempotencyKey &&
+      legacyKey &&
+      idempotencyKey !== legacyKey
     ) {
       throw new ConfigError(
         "idempotencyKey and deprecated external_id must match when both are set",
       );
     }
+    const requestKey = idempotencyKey ?? legacyKey;
     const body: StartLoopRunRequest = removeUndefined({
       event: opts.event,
       config: opts.config,
       meta: opts.meta,
       source: opts.source,
-      idempotency_key: opts.idempotencyKey ?? opts.external_id,
+      idempotency_key: requestKey,
     });
     const resp = await this.request(
       `/v1/projects/:project/loops/${encodeURIComponent(loopId)}/runs`,
-      { method: "POST", body },
+      { method: "POST", body, idempotencyKey: body.idempotency_key },
     );
     return (await resp.json()) as LoopRun;
   }
@@ -1032,16 +1037,18 @@ export class Client {
     sessionId: string,
     opts: NudgeSessionOptions,
   ): Promise<SessionNudgeAck> {
+    const body = removeUndefined({
+      content: opts.content,
+      idempotency_key: normalizeIdempotencyKey(opts.idempotencyKey),
+      metadata: opts.metadata,
+      wake: opts.wake,
+    });
     const resp = await this.request(
       `/v1/projects/:project/sessions/${encodeURIComponent(sessionId)}/nudges`,
       {
         method: "POST",
-        body: removeUndefined({
-          content: opts.content,
-          idempotency_key: opts.idempotencyKey,
-          metadata: opts.metadata,
-          wake: opts.wake,
-        }),
+        body,
+        idempotencyKey: body.idempotency_key,
       },
     );
     return (await resp.json()) as SessionNudgeAck;
@@ -1138,14 +1145,19 @@ export class Client {
       role: "user",
       content: opts.content,
       context: opts.context,
-      idempotency_key: opts.idempotencyKey,
+      idempotency_key: normalizeIdempotencyKey(opts.idempotencyKey),
       operation: opts.operation,
       output: opts.output,
       metadata: opts.metadata,
     });
     const resp = await this.request(
       `/v1/projects/:project/sessions/${encodeURIComponent(sessionId)}/turns`,
-      { method: "POST", body, signal: streamOpts.signal },
+      {
+        method: "POST",
+        body,
+        idempotencyKey: body.idempotency_key,
+        signal: streamOpts.signal,
+      },
     );
     const ack = (await resp.json()) as TurnAck;
     const transcript = new SessionTranscript();
@@ -1176,6 +1188,7 @@ export class Client {
     const resp = await this.request("/v1/projects/:project/agents/invoke", {
       method: "POST",
       body,
+      idempotencyKey: invokeAgentReplayKey(body),
       signal: streamOpts.signal,
     });
     const ack = (await resp.json()) as TurnAck;
@@ -1200,7 +1213,10 @@ export class Client {
     const body = invokeAgentRequest(opts);
     const resp = await this.fetchFn(this.url(path), {
       method: "POST",
-      headers: { ...this.headers, Accept: "text/event-stream" },
+      headers: this.requestHeaders(
+        invokeAgentReplayKey(body),
+        "text/event-stream",
+      ),
       body: JSON.stringify(body),
       signal: streamOpts.signal,
     });
@@ -1438,14 +1454,19 @@ export class Client {
 
   private async request(
     path: string,
-    opts: { method: string; body?: unknown; signal?: AbortSignal | undefined },
+    opts: {
+      method: string;
+      body?: unknown;
+      idempotencyKey?: string | undefined;
+      signal?: AbortSignal | undefined;
+    },
   ): Promise<Response> {
     const started = Date.now();
     const timeout = AbortSignal.timeout(this.timeoutMs);
     const signal = opts.signal ? anySignal(opts.signal, timeout) : timeout;
     const init: RequestInit = {
       method: opts.method,
-      headers: this.headers,
+      headers: this.requestHeaders(opts.idempotencyKey),
       signal,
     };
     if (opts.body != null) init.body = JSON.stringify(opts.body);
@@ -1476,6 +1497,17 @@ export class Client {
       throw await responseError(resp, opts.method, path);
     }
     return resp;
+  }
+
+  private requestHeaders(
+    idempotencyKey?: string,
+    accept?: string,
+  ): Headers {
+    const headers = new Headers(this.headers);
+    const normalizedKey = normalizeIdempotencyKey(idempotencyKey);
+    if (normalizedKey) headers.set("Idempotency-Key", normalizedKey);
+    if (accept) headers.set("Accept", accept);
+    return headers;
   }
 
   private log(event: ClientLogEvent): void {
@@ -1758,7 +1790,7 @@ function invokeAgentRequest(opts: InvokeAgentOptions): InvokeAgentRequest {
     input: removeUndefined({
       content: opts.content,
       context: opts.context,
-      idempotency_key: opts.idempotencyKey,
+      idempotency_key: normalizeIdempotencyKey(opts.idempotencyKey),
       metadata: opts.inputMetadata,
     }) as InvokeInput,
     session: opts.session,
@@ -1767,6 +1799,16 @@ function invokeAgentRequest(opts: InvokeAgentOptions): InvokeAgentRequest {
     output: opts.output,
     channel_context: opts.channelContext,
   }) as InvokeAgentRequest;
+}
+
+function invokeAgentReplayKey(body: InvokeAgentRequest): string | undefined {
+  if (body.session?.mode === "new") return undefined;
+  return normalizeIdempotencyKey(body.input.idempotency_key);
+}
+
+function normalizeIdempotencyKey(value?: string): string | undefined {
+  const normalized = value?.trim();
+  return normalized ? normalized : undefined;
 }
 
 function removeUndefined<T extends object>(obj: T): T {

@@ -181,12 +181,14 @@ test("client: workerSocketURL uses websocket scheme", () => {
 test("client: startRun posts the new request shape", async () => {
   let requestedURL = "";
   let requestBody = "";
+  let idempotencyHeader: string | null = null;
   const restore = installFakeFetch({
     status: 202,
     body: loopRun("run_1", "running"),
     capture: (input, init) => {
       requestedURL = typeof input === "string" ? input : input.toString();
       requestBody = String(init?.body ?? "");
+      idempotencyHeader = new Headers(init?.headers).get("Idempotency-Key");
     },
   });
   try {
@@ -208,6 +210,7 @@ test("client: startRun posts the new request shape", async () => {
     "https://api.example.invalid/v1/projects/test-project/loops/loop_1/runs",
   );
   assert.match(requestBody, /"idempotency_key":"run-request-1"/);
+  assert.equal(idempotencyHeader, "run-request-1");
   assert.match(requestBody, /"event":\{"topic":"sdk"\}/);
 });
 
@@ -455,12 +458,14 @@ test("client: terminal run status helper includes cancelled", () => {
 test("client: invokeAgent posts the compound invoke request shape", async () => {
   let requestedURL = "";
   let requestBody = "";
+  let idempotencyHeader: string | null = null;
   const restore = installFakeFetch({
     status: 202,
     body: turnAck("sess_1", "turn_1", 7),
     capture: (input, init) => {
       requestedURL = typeof input === "string" ? input : input.toString();
       requestBody = String(init?.body ?? "");
+      idempotencyHeader = new Headers(init?.headers).get("Idempotency-Key");
     },
   });
   try {
@@ -515,6 +520,7 @@ test("client: invokeAgent posts the compound invoke request shape", async () => 
   );
   assert.match(requestBody, /"agent_ref":\{"id":"agent_1"\}/);
   assert.match(requestBody, /"idempotency_key":"evt_1"/);
+  assert.equal(idempotencyHeader, "evt_1");
   assert.match(requestBody, /"context":\[\{"name":"naming-board","content":"Chosen: none"\}\]/);
   assert.match(requestBody, /"session_key":"app:acct_1:user_2"/);
   assert.match(requestBody, /"config":\{/);
@@ -529,12 +535,14 @@ test("client: invokeAgent posts the compound invoke request shape", async () => 
 test("client: startTurn passes runtime context to an existing session", async () => {
   let requestedURL = "";
   let requestBody = "";
+  let idempotencyHeader: string | null = null;
   const restore = installFakeFetch({
     status: 202,
     body: turnAck("sess_1", "turn_1", 7),
     capture: (input, init) => {
       requestedURL = typeof input === "string" ? input : input.toString();
       requestBody = String(init?.body ?? "");
+      idempotencyHeader = new Headers(init?.headers).get("Idempotency-Key");
     },
   });
   try {
@@ -566,6 +574,59 @@ test("client: startTurn passes runtime context to an existing session", async ()
     operation: { timeout_seconds: 45 },
     output: { schema: { type: "object" } },
   });
+  assert.equal(idempotencyHeader, "evt_1");
+});
+
+test("client: invokeAgent does not mark mode new as replay-safe", async () => {
+  let idempotencyHeader: string | null = null;
+  let requestBody = "";
+  const restore = installFakeFetch({
+    status: 202,
+    body: turnAck("sess_1", "turn_1", 7),
+    capture: (_input, init) => {
+      requestBody = String(init?.body ?? "");
+      idempotencyHeader = new Headers(init?.headers).get("Idempotency-Key");
+    },
+  });
+  try {
+    const client = new Client({ apiKey: "mbx_test", project: "test-project" });
+    await client.invokeAgent({
+      agentName: "support",
+      content: [{ type: "text", text: "hi" }],
+      idempotencyKey: "evt_1",
+      session: { mode: "new" },
+    });
+  } finally {
+    restore();
+  }
+
+  assert.equal(JSON.parse(requestBody).input.idempotency_key, "evt_1");
+  assert.equal(idempotencyHeader, null);
+});
+
+test("client: nudgeSession mirrors its normalized idempotency key", async () => {
+  let requestBody = "";
+  let idempotencyHeader: string | null = null;
+  const restore = installFakeFetch({
+    status: 202,
+    body: { nudge_id: "nudge_1" },
+    capture: (_input, init) => {
+      requestBody = String(init?.body ?? "");
+      idempotencyHeader = new Headers(init?.headers).get("Idempotency-Key");
+    },
+  });
+  try {
+    const client = new Client({ apiKey: "mbx_test", project: "test-project" });
+    await client.nudgeSession("sess_1", {
+      content: "Use the shorter name",
+      idempotencyKey: "  event_2  ",
+    });
+  } finally {
+    restore();
+  }
+
+  assert.equal(JSON.parse(requestBody).idempotency_key, "event_2");
+  assert.equal(idempotencyHeader, "event_2");
 });
 
 test("client: listSessionMessages can include runtime context", async () => {
@@ -680,8 +741,11 @@ test("client: invokeAgent requires agent ref and content", async () => {
 
 test("client: invokeAgentStream streams session frames inline", async () => {
   let acceptHeader: string | null = null;
+  let idempotencyHeader: string | null = null;
   globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
-    acceptHeader = new Headers(init?.headers).get("Accept");
+    const headers = new Headers(init?.headers);
+    acceptHeader = headers.get("Accept");
+    idempotencyHeader = headers.get("Idempotency-Key");
     return new Response(
       'event: turn.completed\ndata: {"usage":{"input_tokens":42}}\n\n',
       { status: 200, headers: { "Content-Type": "text/event-stream" } },
@@ -698,11 +762,13 @@ test("client: invokeAgentStream streams session frames inline", async () => {
   for await (const ev of client.invokeAgentStream({
     agentName: "support",
     content: [{ type: "text", text: "hi" }],
+    idempotencyKey: "evt_stream_1",
   })) {
     events.push(ev);
   }
 
   assert.equal(acceptHeader, "text/event-stream");
+  assert.equal(idempotencyHeader, "evt_stream_1");
   assert.equal(events.length, 1);
   assert.equal(events[0].eventType, "turn.completed");
   assert.equal(

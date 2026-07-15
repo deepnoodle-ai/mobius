@@ -28,6 +28,15 @@ class _Recorder:
         self.sleeps.append(seconds)
 
 
+class _FailingStream(httpx.SyncByteStream):
+    def __init__(self, request: httpx.Request) -> None:
+        self._request = request
+
+    def __iter__(self):
+        raise httpx.ReadError("stream disconnected", request=self._request)
+        yield b""  # pragma: no cover
+
+
 def _wrap(handler, max_retries: int = 3, sleep=None, now=None) -> httpx.Client:
     base = httpx.MockTransport(handler)
     transport = RetryingTransport(
@@ -149,6 +158,94 @@ def test_post_with_idempotency_key_is_retried() -> None:
     assert resp.status_code == 200
     assert calls["n"] == 2
     assert rec.sleeps == [2]
+
+
+def test_replay_safe_post_reuses_exact_body_and_key_after_network_and_503_failures() -> None:
+    calls = 0
+    bodies: list[bytes] = []
+    keys: list[str | None] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal calls
+        calls += 1
+        bodies.append(request.read())
+        keys.append(request.headers.get("Idempotency-Key"))
+        if calls == 1:
+            raise httpx.ConnectError("connection reset by peer", request=request)
+        if calls == 2:
+            return httpx.Response(503, headers={"Retry-After": "0"})
+        return httpx.Response(202, json={"accepted": True})
+
+    rec = _Recorder()
+    with _wrap(handler, max_retries=3, sleep=rec.sleep) as client:
+        resp = client.post(
+            "/x",
+            content=b'{"message":"same"}',
+            headers={"Idempotency-Key": "k1", "Content-Type": "application/json"},
+        )
+
+    assert resp.status_code == 202
+    assert calls == 3
+    assert bodies == [b'{"message":"same"}'] * 3
+    assert keys == ["k1"] * 3
+    assert rec.sleeps == [1.0]
+
+
+def test_unreadable_and_invalid_replay_safe_json_acknowledgements_are_retried() -> None:
+    calls = 0
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            return httpx.Response(
+                202,
+                headers={"Content-Type": "application/json"},
+                stream=_FailingStream(request),
+            )
+        if calls == 2:
+            return httpx.Response(
+                202,
+                content=b"{",
+                headers={"Content-Type": "application/json"},
+            )
+        return httpx.Response(202, json={"accepted": True})
+
+    rec = _Recorder()
+    with _wrap(handler, max_retries=2, sleep=rec.sleep) as client:
+        resp = client.post("/x", json={}, headers={"Idempotency-Key": "k1"})
+
+    assert resp.json() == {"accepted": True}
+    assert calls == 3
+    assert rec.sleeps == [1.0, 2.0]
+
+
+def test_sse_failure_after_response_start_never_reinvokes() -> None:
+    calls = 0
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal calls
+        calls += 1
+        return httpx.Response(
+            200,
+            headers={"Content-Type": "text/event-stream"},
+            stream=_FailingStream(request),
+        )
+
+    with _wrap(handler, max_retries=3) as client:
+        with client.stream(
+            "POST",
+            "/x",
+            content=b"{}",
+            headers={
+                "Accept": "text/event-stream",
+                "Idempotency-Key": "k1",
+            },
+        ) as response:
+            with pytest.raises(httpx.ReadError, match="stream disconnected"):
+                response.read()
+
+    assert calls == 1
 
 
 def test_max_retries_zero_surfaces_immediately() -> None:

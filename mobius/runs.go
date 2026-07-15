@@ -47,11 +47,19 @@ type WaitRunOptions struct {
 
 // StartRun starts a published loop run by loop ID.
 func (c *Client) StartRun(ctx context.Context, loopID string, opts *StartRunOptions) (*api.LoopRun, error) {
-	if opts != nil && opts.IdempotencyKey != "" && opts.ExternalID != "" && opts.IdempotencyKey != opts.ExternalID {
-		return nil, fmt.Errorf("mobius: start run: IdempotencyKey and deprecated ExternalID must match when both are set")
+	if opts != nil {
+		key := normalizeIdempotencyKey(opts.IdempotencyKey)
+		legacyKey := normalizeIdempotencyKey(opts.ExternalID)
+		if key != "" && legacyKey != "" && key != legacyKey {
+			return nil, fmt.Errorf("mobius: start run: IdempotencyKey and deprecated ExternalID must match when both are set")
+		}
 	}
 	req := startRunRequest(opts)
-	resp, err := c.ac.StartRunWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.IDParam(loopID), req)
+	key := ""
+	if req.IdempotencyKey != nil {
+		key = *req.IdempotencyKey
+	}
+	resp, err := c.ac.StartRunWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.IDParam(loopID), req, idempotencyRequestEditors(key)...)
 	if err != nil {
 		return nil, fmt.Errorf("mobius: start run: %w", err)
 	}
@@ -193,9 +201,9 @@ func startRunRequest(opts *StartRunOptions) api.StartLoopRunRequest {
 	if opts.Source != nil {
 		req.Source = opts.Source
 	}
-	key := opts.IdempotencyKey
+	key := normalizeIdempotencyKey(opts.IdempotencyKey)
 	if key == "" {
-		key = opts.ExternalID
+		key = normalizeIdempotencyKey(opts.ExternalID)
 	}
 	if key != "" {
 		req.IdempotencyKey = &key

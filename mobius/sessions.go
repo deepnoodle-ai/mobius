@@ -31,7 +31,9 @@ type InvokeAgentOptions struct {
 	// IdempotencyKey dedupes the call: a repeat call with the same key
 	// resolves the same session and returns the existing invocation without
 	// restarting it or starting a second one. Derive it from the provider event
-	// id for Slack/Telegram webhook retries.
+	// id for Slack/Telegram webhook retries. The SDK automatically retries the
+	// admission request unless Session.Mode is "new", which cannot be safely
+	// replayed with a session-scoped key.
 	IdempotencyKey string
 	// InputMetadata is free-form caller metadata attached to the input
 	// message.
@@ -164,7 +166,7 @@ func (c *Client) InvokeAgent(ctx context.Context, opts InvokeAgentOptions) (*Tur
 	if err != nil {
 		return nil, err
 	}
-	resp, err := c.ac.InvokeAgentWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), req)
+	resp, err := c.ac.InvokeAgentWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), req, idempotencyRequestEditors(invokeAgentReplayKey(req))...)
 	if err != nil {
 		return nil, fmt.Errorf("mobius: invoke agent: %w", err)
 	}
@@ -186,13 +188,14 @@ func (c *Client) StartTurn(ctx context.Context, sessionID string, opts StartTurn
 		runtimeContext := api.RuntimeContext(opts.Context)
 		body.Context = &runtimeContext
 	}
-	body.IdempotencyKey = stringPointer(opts.IdempotencyKey)
+	key := normalizeIdempotencyKey(opts.IdempotencyKey)
+	body.IdempotencyKey = stringPointer(key)
 	body.Operation = opts.Operation
 	body.Output = opts.Output
 	if opts.Metadata != nil {
 		body.Metadata = &opts.Metadata
 	}
-	resp, err := c.ac.StartTurnWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.SessionIdParam(sessionID), body)
+	resp, err := c.ac.StartTurnWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.SessionIdParam(sessionID), body, idempotencyRequestEditors(key)...)
 	if err != nil {
 		return nil, fmt.Errorf("mobius: start turn: %w", err)
 	}
@@ -237,7 +240,9 @@ func (c *Client) InvokeAgentStream(ctx context.Context, opts InvokeAgentOptions)
 	if err != nil {
 		return nil, err
 	}
-	resp, err := c.ac.InvokeAgent(ctx, api.ProjectHandleParam(c.projectHandle), req, acceptEventStream)
+	requestEditors := idempotencyRequestEditors(invokeAgentReplayKey(req))
+	requestEditors = append(requestEditors, acceptEventStream)
+	resp, err := c.ac.InvokeAgent(ctx, api.ProjectHandleParam(c.projectHandle), req, requestEditors...)
 	if err != nil {
 		return nil, fmt.Errorf("mobius: invoke agent stream: %w", err)
 	}
@@ -369,14 +374,15 @@ func (c *Client) ListSessionMessages(ctx context.Context, sessionID string, opts
 // follow-up turn when the terminal race wins.
 func (c *Client) NudgeSession(ctx context.Context, sessionID string, opts NudgeSessionOptions) (*api.SessionNudgeAck, error) {
 	body := api.NudgeSessionRequest{Content: opts.Content}
-	body.IdempotencyKey = stringPointer(opts.IdempotencyKey)
+	key := normalizeIdempotencyKey(opts.IdempotencyKey)
+	body.IdempotencyKey = stringPointer(key)
 	if opts.Metadata != nil {
 		body.Metadata = &opts.Metadata
 	}
 	if opts.Wake {
 		body.Wake = &opts.Wake
 	}
-	resp, err := c.ac.NudgeSessionWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.SessionIdParam(sessionID), body)
+	resp, err := c.ac.NudgeSessionWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.SessionIdParam(sessionID), body, idempotencyRequestEditors(key)...)
 	if err != nil {
 		return nil, fmt.Errorf("mobius: nudge session: %w", err)
 	}
@@ -569,8 +575,9 @@ func invokeAgentRequest(opts InvokeAgentOptions) (api.InvokeAgentRequest, error)
 		runtimeContext := api.RuntimeContext(opts.Context)
 		input.Context = &runtimeContext
 	}
-	if opts.IdempotencyKey != "" {
-		input.IdempotencyKey = &opts.IdempotencyKey
+	key := normalizeIdempotencyKey(opts.IdempotencyKey)
+	if key != "" {
+		input.IdempotencyKey = &key
 	}
 	if opts.InputMetadata != nil {
 		input.Metadata = &opts.InputMetadata

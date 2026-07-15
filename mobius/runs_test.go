@@ -21,6 +21,7 @@ func TestStartRun_HighLevelClient(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		switch {
 		case r.Method == http.MethodPost && r.URL.Path == "/v1/projects/test-project/loops/loop_1/runs":
+			assert.Equal(t, r.Header.Get("Idempotency-Key"), "run-request-1")
 			b, _ := io.ReadAll(r.Body)
 			assert.NoError(t, json.Unmarshal(b, &body))
 			w.WriteHeader(http.StatusAccepted)

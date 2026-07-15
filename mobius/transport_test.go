@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strconv"
+	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -63,6 +64,19 @@ func newRequest(t *testing.T, method, url, body string) *http.Request {
 type recordingSleep struct {
 	calls []time.Duration
 }
+
+type roundTripFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
+	return f(req)
+}
+
+type errorReadCloser struct {
+	err error
+}
+
+func (r *errorReadCloser) Read([]byte) (int, error) { return 0, r.err }
+func (r *errorReadCloser) Close() error             { return nil }
 
 func (r *recordingSleep) sleep(_ context.Context, d time.Duration) error {
 	r.calls = append(r.calls, d)
@@ -192,6 +206,101 @@ func TestRetryingTransport_PostWithIdempotencyKey_IsRetried(t *testing.T) {
 	_ = resp.Body.Close()
 	assert.Equal(t, count.Load(), int32(2))
 	assert.Equal(t, len(rec.calls), 1)
+}
+
+func TestRetryingTransport_ReplaySafePostReusesBodyAndKeyAcrossNetworkAnd503Failures(t *testing.T) {
+	var calls int
+	var bodies []string
+	var keys []string
+	base := roundTripFunc(func(req *http.Request) (*http.Response, error) {
+		calls++
+		body, err := io.ReadAll(req.Body)
+		assert.NoError(t, err)
+		bodies = append(bodies, string(body))
+		keys = append(keys, req.Header.Get("Idempotency-Key"))
+		switch calls {
+		case 1:
+			return nil, errors.New("connection reset by peer")
+		case 2:
+			return &http.Response{
+				StatusCode: http.StatusServiceUnavailable,
+				Header:     http.Header{"Retry-After": []string{"0"}},
+				Body:       http.NoBody,
+			}, nil
+		default:
+			return &http.Response{
+				StatusCode: http.StatusAccepted,
+				Header:     http.Header{"Content-Type": []string{"application/json"}},
+				Body:       io.NopCloser(strings.NewReader(`{"accepted":true}`)),
+			}, nil
+		}
+	})
+	rec := &recordingSleep{}
+	tp := &RetryingTransport{Base: base, MaxRetries: 3, sleep: rec.sleep}
+	req := newRequest(t, http.MethodPost, "http://example.test/invoke", `{"message":"same"}`)
+	req.Header.Set("Idempotency-Key", "k1")
+
+	resp, err := tp.RoundTrip(req)
+	assert.NoError(t, err)
+	defer resp.Body.Close()
+	assert.Equal(t, calls, 3)
+	assert.Equal(t, bodies, []string{`{"message":"same"}`, `{"message":"same"}`, `{"message":"same"}`})
+	assert.Equal(t, keys, []string{"k1", "k1", "k1"})
+}
+
+func TestRetryingTransport_RetriesUnreadableAndInvalidReplaySafeJSONAcknowledgements(t *testing.T) {
+	var calls int
+	base := roundTripFunc(func(_ *http.Request) (*http.Response, error) {
+		calls++
+		body := io.ReadCloser(io.NopCloser(strings.NewReader(`{"accepted":true}`)))
+		if calls == 1 {
+			body = &errorReadCloser{err: errors.New("unexpected EOF")}
+		} else if calls == 2 {
+			body = io.NopCloser(strings.NewReader(`{`))
+		}
+		return &http.Response{
+			StatusCode: http.StatusAccepted,
+			Header:     http.Header{"Content-Type": []string{"application/json"}},
+			Body:       body,
+		}, nil
+	})
+	rec := &recordingSleep{}
+	tp := &RetryingTransport{Base: base, MaxRetries: 2, sleep: rec.sleep}
+	req := newRequest(t, http.MethodPost, "http://example.test/invoke", `{}`)
+	req.Header.Set("Idempotency-Key", "k1")
+
+	resp, err := tp.RoundTrip(req)
+	assert.NoError(t, err)
+	defer resp.Body.Close()
+	body, err := io.ReadAll(resp.Body)
+	assert.NoError(t, err)
+	assert.Equal(t, string(body), `{"accepted":true}`)
+	assert.Equal(t, calls, 3)
+	assert.Equal(t, len(rec.calls), 2)
+}
+
+func TestRetryingTransport_DoesNotReadOrReinvokeSSEAfterResponseStart(t *testing.T) {
+	var calls int
+	streamErr := errors.New("stream disconnected")
+	base := roundTripFunc(func(_ *http.Request) (*http.Response, error) {
+		calls++
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Header:     http.Header{"Content-Type": []string{"text/event-stream"}},
+			Body:       &errorReadCloser{err: streamErr},
+		}, nil
+	})
+	tp := &RetryingTransport{Base: base, MaxRetries: 3, sleep: (&recordingSleep{}).sleep}
+	req := newRequest(t, http.MethodPost, "http://example.test/invoke", `{}`)
+	req.Header.Set("Accept", "text/event-stream")
+	req.Header.Set("Idempotency-Key", "k1")
+
+	resp, err := tp.RoundTrip(req)
+	assert.NoError(t, err)
+	_, err = io.ReadAll(resp.Body)
+	assert.ErrorIs(t, err, streamErr)
+	_ = resp.Body.Close()
+	assert.Equal(t, calls, 1)
 }
 
 func TestRetryingTransport_MaxRetriesZero_SurfacesImmediately(t *testing.T) {
