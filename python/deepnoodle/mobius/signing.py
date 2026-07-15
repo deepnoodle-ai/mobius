@@ -24,6 +24,18 @@ class InvalidSignatureError(ValueError):
     """Raised when a Mobius signed delivery is missing or invalid."""
 
 
+class StaleDeliveryError(InvalidSignatureError):
+    """Raised when a validly shaped signed delivery is outside the freshness window."""
+
+
+class UnsupportedActionInvocationSchemaError(ValueError):
+    """Raised when an action invocation uses an unknown envelope schema."""
+
+
+class MalformedActionInvocationError(ValueError):
+    """Raised when a v1 action invocation is structurally invalid."""
+
+
 @dataclass(frozen=True)
 class DeliveryMeta:
     signature_version: str
@@ -37,6 +49,57 @@ class DeliveryMeta:
 @dataclass(frozen=True)
 class VerifiedDelivery(DeliveryMeta):
     body: bytes
+
+
+@dataclass(frozen=True)
+class ActionInvocationScopeV1:
+    org_id: str
+    project_id: str
+
+
+@dataclass(frozen=True)
+class ActionInvocationActionV1:
+    id: str
+    name: str
+
+
+@dataclass(frozen=True)
+class ActionInvocationActorV1:
+    principal_id: str
+    principal_type: str
+    agent_id: str | None = None
+
+
+@dataclass(frozen=True)
+class ActionInvocationOriginV1:
+    kind: str
+    run_id: str | None = None
+    channel_exchange_id: str | None = None
+    loop_id: str | None = None
+    step_key: str | None = None
+    agent_turn_id: str | None = None
+    session_id: str | None = None
+    tool_call_id: str | None = None
+
+
+@dataclass(frozen=True)
+class ActionInvocationContextV1:
+    schema_version: int
+    scope: ActionInvocationScopeV1
+    action: ActionInvocationActionV1
+    actor: ActionInvocationActorV1
+    origin: ActionInvocationOriginV1
+
+
+@dataclass(frozen=True)
+class ActionInvocationV1:
+    mobius: ActionInvocationContextV1
+    parameters: dict[str, Any]
+
+
+@dataclass(frozen=True)
+class VerifiedActionInvocationV1(VerifiedDelivery):
+    invocation: ActionInvocationV1
 
 
 def read_delivery_meta(headers: Mapping[str, str]) -> DeliveryMeta:
@@ -110,6 +173,37 @@ def verify_signed_delivery(
     )
 
 
+def verify_action_invocation_v1(
+    body: bytes | str,
+    headers: Mapping[str, str],
+    *,
+    key: bytes | None = None,
+    resolve_key: Callable[[DeliveryMeta], bytes] | None = None,
+    max_age: int = _DEFAULT_MAX_AGE_SECONDS,
+    now: Callable[[], int] | None = None,
+) -> VerifiedActionInvocationV1:
+    """Verify exact raw bytes, then parse and validate the signed v1 envelope."""
+    verified = verify_signed_delivery(
+        body,
+        headers,
+        key=key,
+        resolve_key=resolve_key,
+        max_age=max_age,
+        now=now,
+    )
+    invocation = parse_action_invocation_v1(verified)
+    return VerifiedActionInvocationV1(
+        signature_version=verified.signature_version,
+        signature=verified.signature,
+        timestamp=verified.timestamp,
+        delivery_id=verified.delivery_id,
+        secret_ref=verified.secret_ref,
+        secret_version=verified.secret_version,
+        body=verified.body,
+        invocation=invocation,
+    )
+
+
 def parse_webhook_delivery(v: VerifiedDelivery) -> dict[str, Any]:
     payload = _parse_json_object(v, "webhook delivery")
     event_type = payload.get("type")
@@ -120,6 +214,90 @@ def parse_webhook_delivery(v: VerifiedDelivery) -> dict[str, Any]:
 
 def parse_action_invocation(v: VerifiedDelivery) -> dict[str, Any]:
     return _parse_json_object(v, "action invocation")
+
+
+def parse_action_invocation_v1(v: VerifiedDelivery) -> ActionInvocationV1:
+    try:
+        payload = _parse_json_object(v, "action invocation")
+    except (UnicodeDecodeError, json.JSONDecodeError, TypeError, ValueError) as exc:
+        if isinstance(exc, MalformedActionInvocationError):
+            raise
+        raise MalformedActionInvocationError("mobius: malformed action invocation: invalid JSON object") from exc
+
+    mobius = _required_object(payload, "mobius")
+    schema_version = mobius.get("schema_version")
+    if schema_version is None:
+        raise MalformedActionInvocationError("mobius: malformed action invocation: mobius.schema_version is required")
+    if schema_version != 1:
+        raise UnsupportedActionInvocationSchemaError(
+            f"mobius: unsupported action invocation schema: {schema_version}"
+        )
+
+    scope = _required_object(mobius, "scope")
+    action = _required_object(mobius, "action")
+    actor = _required_object(mobius, "actor")
+    origin = _required_object(mobius, "origin")
+    parameters = _required_object(payload, "parameters")
+
+    principal_type = _required_string(actor, "principal_type", "mobius.actor")
+    if principal_type not in {"human", "agent", "service", "system"}:
+        raise MalformedActionInvocationError(
+            "mobius: malformed action invocation: mobius.actor.principal_type is invalid"
+        )
+    agent_id = actor.get("agent_id")
+    if agent_id is not None and (not isinstance(agent_id, str) or not agent_id.strip()):
+        raise MalformedActionInvocationError(
+            "mobius: malformed action invocation: mobius.actor.agent_id must be a non-empty string"
+        )
+    if principal_type == "agent" and not agent_id:
+        raise MalformedActionInvocationError(
+            "mobius: malformed action invocation: mobius.actor.agent_id is required for agent actors"
+        )
+    if principal_type != "agent" and agent_id is not None:
+        raise MalformedActionInvocationError(
+            "mobius: malformed action invocation: mobius.actor.agent_id is only valid for agent actors"
+        )
+
+    origin_kind = _required_string(origin, "kind", "mobius.origin")
+    if origin_kind not in {
+        "agent_tool_call",
+        "loop_action_step",
+        "direct_action_invoke",
+        "server_internal",
+    }:
+        raise MalformedActionInvocationError(
+            "mobius: malformed action invocation: mobius.origin.kind is invalid"
+        )
+
+    return ActionInvocationV1(
+        mobius=ActionInvocationContextV1(
+            schema_version=1,
+            scope=ActionInvocationScopeV1(
+                org_id=_required_string(scope, "org_id", "mobius.scope"),
+                project_id=_required_string(scope, "project_id", "mobius.scope"),
+            ),
+            action=ActionInvocationActionV1(
+                id=_required_string(action, "id", "mobius.action"),
+                name=_required_string(action, "name", "mobius.action"),
+            ),
+            actor=ActionInvocationActorV1(
+                principal_id=_required_string(actor, "principal_id", "mobius.actor"),
+                principal_type=principal_type,
+                agent_id=agent_id,
+            ),
+            origin=ActionInvocationOriginV1(
+                kind=origin_kind,
+                run_id=_optional_string(origin, "run_id", "mobius.origin"),
+                channel_exchange_id=_optional_string(origin, "channel_exchange_id", "mobius.origin"),
+                loop_id=_optional_string(origin, "loop_id", "mobius.origin"),
+                step_key=_optional_string(origin, "step_key", "mobius.origin"),
+                agent_turn_id=_optional_string(origin, "agent_turn_id", "mobius.origin"),
+                session_id=_optional_string(origin, "session_id", "mobius.origin"),
+                tool_call_id=_optional_string(origin, "tool_call_id", "mobius.origin"),
+            ),
+        ),
+        parameters=dict(parameters),
+    )
 
 
 def parse_interaction_callback(v: VerifiedDelivery) -> dict[str, Any]:
@@ -159,7 +337,36 @@ def _verify_freshness(
 ) -> None:
     current = now() if now is not None else int(time.time())
     if abs(current - timestamp) > max_age:
-        raise InvalidSignatureError("timestamp outside max age")
+        raise StaleDeliveryError("timestamp outside max age")
+
+
+def _required_object(value: Mapping[str, Any], key: str) -> dict[str, Any]:
+    candidate = value.get(key)
+    if not isinstance(candidate, dict):
+        raise MalformedActionInvocationError(
+            f"mobius: malformed action invocation: {key} must be an object"
+        )
+    return candidate
+
+
+def _required_string(value: Mapping[str, Any], key: str, path: str) -> str:
+    candidate = value.get(key)
+    if not isinstance(candidate, str) or not candidate.strip():
+        raise MalformedActionInvocationError(
+            f"mobius: malformed action invocation: {path}.{key} is required"
+        )
+    return candidate
+
+
+def _optional_string(value: Mapping[str, Any], key: str, path: str) -> str | None:
+    candidate = value.get(key)
+    if candidate is None:
+        return None
+    if not isinstance(candidate, str) or not candidate.strip():
+        raise MalformedActionInvocationError(
+            f"mobius: malformed action invocation: {path}.{key} must be a non-empty string"
+        )
+    return candidate
 
 
 def _required_header(headers: Mapping[str, str], key: str) -> str:

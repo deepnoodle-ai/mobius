@@ -1294,6 +1294,15 @@ class ActionEndpointKind(StrEnum):
     worker = 'worker'
 
 
+class ActionInvocationFormat(StrEnum):
+    """
+    Outbound request-body contract for an HTTP action. `legacy` sends the unversioned `{run_id, step_key, parameters}` body. `signed_context_v1` sends a versioned envelope whose project, action, actor, and origin claims are derived by Mobius and covered by the existing HMAC signature. Worker-backed actions must use `legacy`.
+    """
+
+    legacy = 'legacy'
+    signed_context_v1 = 'signed_context_v1'
+
+
 class CreateActionRequest(BaseModel):
     """
     Registers a project-owned custom action callable from loops and agents.
@@ -1315,6 +1324,10 @@ class CreateActionRequest(BaseModel):
     endpoint_kind: ActionEndpointKind = Field(
         'http',
         description='Backing kind for the action. `http` actions POST to `endpoint_url` with a Mobius signature. `worker` actions are dispatched through jobs to connected workers that advertise this registered name.',
+    )
+    invocation_format: ActionInvocationFormat = Field(
+        'legacy',
+        description='Request-body contract for HTTP invocations. Omit to preserve the legacy body. `signed_context_v1` is valid only with `endpoint_kind: http`.',
     )
     endpoint_url: AnyUrl | None = Field(
         None,
@@ -1349,6 +1362,10 @@ class UpdateActionRequest(BaseModel):
     )
     endpoint_url: AnyUrl | None = Field(
         None, description='Replacement endpoint URL. Valid for HTTP actions only.'
+    )
+    invocation_format: ActionInvocationFormat | None = Field(
+        None,
+        description='Replacement HTTP request-body contract. `signed_context_v1` is valid only for HTTP-backed actions.',
     )
     input_schema: dict[str, Any] | None = Field(
         None,
@@ -1385,6 +1402,9 @@ class Action(BaseModel):
     endpoint_kind: ActionEndpointKind = Field(
         ...,
         description='Backing kind of this project-owned action. `http` actions POST to an endpoint URL. `worker` actions are dispatched through jobs to connected workers that advertise this registered name.',
+    )
+    invocation_format: ActionInvocationFormat = Field(
+        ..., description='Resolved outbound request-body contract for this action.'
     )
     endpoint_url: AnyUrl | None = Field(
         None,
@@ -1566,6 +1586,17 @@ class ActionInvocationResult(BaseModel):
     )
 
 
+class ActorPrincipalType(StrEnum):
+    """
+    Kind of principal attributed as the executing actor.
+    """
+
+    human = 'human'
+    agent = 'agent'
+    service = 'service'
+    system = 'system'
+
+
 class ActionInvocationEntry(BaseModel):
     """
     Per-invocation telemetry record for one action execution.
@@ -1588,7 +1619,57 @@ class ActionInvocationEntry(BaseModel):
     step_name: str | None = Field(
         None, description='Loop step name that triggered this invocation.'
     )
+    action_id: str | None = Field(
+        None, description='Immutable action definition ID used for this invocation.'
+    )
     action_name: str = Field(..., description='Name of the action that was invoked.')
+    invocation_format: ActionInvocationFormat | None = None
+    schema_version: int | None = Field(
+        None,
+        description='Signed request-envelope schema version, when applicable.',
+        ge=1,
+    )
+    actor_principal_id: str | None = Field(
+        None, description='Immutable principal attributed as the executing actor.'
+    )
+    actor_principal_type: ActorPrincipalType | None = Field(
+        None, description='Kind of principal attributed as the executing actor.'
+    )
+    agent_id: str | None = Field(
+        None, description='Agent resource ID when the actor was an agent.'
+    )
+    loop_id: str | None = Field(
+        None,
+        description='Loop definition correlated with this invocation, when applicable.',
+    )
+    channel_exchange_id: str | None = Field(
+        None,
+        description='Channel exchange correlated with this invocation, when applicable.',
+    )
+    agent_turn_id: str | None = Field(
+        None, description='Agent turn correlated with this invocation, when applicable.'
+    )
+    session_id: str | None = Field(
+        None,
+        description='Agent session correlated with this invocation, when applicable.',
+    )
+    tool_call_id: str | None = Field(
+        None,
+        description='Provider tool-call ID correlated with this invocation, when applicable.',
+    )
+    delivery_id: str | None = Field(
+        None,
+        description='Stable signed delivery and idempotency identity, when HTTP-backed.',
+    )
+    secret_version: int | None = Field(
+        None, description='Signing-secret version used for the HTTP delivery.', ge=1
+    )
+    http_status: int | None = Field(
+        None,
+        description='Receiver HTTP status for a completed delivery attempt.',
+        ge=100,
+        le=599,
+    )
     source: str = Field(..., description='Invocation source ("loop", "direct", etc.).')
     parameters: dict[str, Any] | None = Field(
         None, description='Input parameters passed to the action.'
@@ -6637,6 +6718,10 @@ class ActionCatalogEntry(BaseModel):
     endpoint_url: AnyUrl | None = Field(
         None,
         description='Endpoint URL (populated for endpoint_kind: http actions only).',
+    )
+    invocation_format: ActionInvocationFormat | None = Field(
+        None,
+        description='Resolved request-body contract for a project-owned custom action.',
     )
     execution: ActionExecutionMetadata | None = Field(
         None,

@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 
 ## [Unreleased]
 
+### Added
+
+- Typed Go, Python, and TypeScript verify-then-parse helpers for signed action
+  invocation v1 envelopes, with explicit signature, freshness, schema, and
+  structure errors. See `docs/sdk-helpers.md`.
+
 ## [0.0.51] - 2026-07-14
 
 ### Added

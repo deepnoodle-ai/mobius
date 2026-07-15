@@ -3224,12 +3224,18 @@ export interface components {
          */
         ActionEndpointKind: "http" | "worker";
         /**
+         * @description Outbound request-body contract for an HTTP action. `legacy` sends the unversioned `{run_id, step_key, parameters}` body. `signed_context_v1` sends a versioned envelope whose project, action, actor, and origin claims are derived by Mobius and covered by the existing HMAC signature. Worker-backed actions must use `legacy`.
+         * @enum {string}
+         */
+        ActionInvocationFormat: "legacy" | "signed_context_v1";
+        /**
          * @description Registers a project-owned custom action callable from loops and agents.
          * @example {
          *       "name": "review-pr",
          *       "title": "Review PR",
          *       "description": "Review a pull request and return findings.",
          *       "endpoint_kind": "http",
+         *       "invocation_format": "signed_context_v1",
          *       "endpoint_url": "https://hooks.example.com/mobius/review-pr",
          *       "input_schema": {
          *         "type": "object",
@@ -3276,6 +3282,11 @@ export interface components {
              */
             endpoint_kind: string & components["schemas"]["ActionEndpointKind"];
             /**
+             * @description Request-body contract for HTTP invocations. Omit to preserve the legacy body. `signed_context_v1` is valid only with `endpoint_kind: http`.
+             * @default legacy
+             */
+            invocation_format: components["schemas"]["ActionInvocationFormat"];
+            /**
              * Format: uri
              * @description Required when endpoint_kind is `http`; omitted for worker actions.
              */
@@ -3304,6 +3315,8 @@ export interface components {
              * @description Replacement endpoint URL. Valid for HTTP actions only.
              */
             endpoint_url?: string;
+            /** @description Replacement HTTP request-body contract. `signed_context_v1` is valid only for HTTP-backed actions. */
+            invocation_format?: components["schemas"]["ActionInvocationFormat"];
             /** @description Replacement JSON Schema for inputs. Replaces the existing schema. */
             input_schema?: {
                 [key: string]: unknown;
@@ -3325,6 +3338,7 @@ export interface components {
          *       "title": "Review PR",
          *       "description": "Review a pull request and return findings.",
          *       "endpoint_kind": "http",
+         *       "invocation_format": "signed_context_v1",
          *       "endpoint_url": "https://hooks.example.com/mobius/review-pr",
          *       "input_schema": {
          *         "type": "object",
@@ -3371,6 +3385,8 @@ export interface components {
             description?: string;
             /** @description Backing kind of this project-owned action. `http` actions POST to an endpoint URL. `worker` actions are dispatched through jobs to connected workers that advertise this registered name. */
             endpoint_kind: string & components["schemas"]["ActionEndpointKind"];
+            /** @description Resolved outbound request-body contract for this action. */
+            invocation_format: components["schemas"]["ActionInvocationFormat"];
             /**
              * Format: uri
              * @description HTTP/HTTPS URL Mobius POSTs to when invoking this action. Populated for endpoint_kind: http only.
@@ -3457,6 +3473,8 @@ export interface components {
              * @description Endpoint URL (populated for endpoint_kind: http actions only).
              */
             endpoint_url?: string;
+            /** @description Resolved request-body contract for a project-owned custom action. */
+            invocation_format?: components["schemas"]["ActionInvocationFormat"];
             /** @description Execution locations and worker requirements available to loop authors. */
             execution?: components["schemas"]["ActionExecutionMetadata"];
         };
@@ -3520,8 +3538,41 @@ export interface components {
             environment_id?: string;
             /** @description Loop step name that triggered this invocation. */
             step_name?: string;
+            /** @description Immutable action definition ID used for this invocation. */
+            action_id?: string;
             /** @description Name of the action that was invoked. */
             action_name: string;
+            invocation_format?: components["schemas"]["ActionInvocationFormat"];
+            /** @description Signed request-envelope schema version, when applicable. */
+            schema_version?: number;
+            /** @description Immutable principal attributed as the executing actor. */
+            actor_principal_id?: string;
+            /**
+             * @description Kind of principal attributed as the executing actor.
+             * @enum {string}
+             */
+            actor_principal_type?: "human" | "agent" | "service" | "system";
+            /** @description Agent resource ID when the actor was an agent. */
+            agent_id?: string;
+            /** @description Loop definition correlated with this invocation, when applicable. */
+            loop_id?: string;
+            /** @description Channel exchange correlated with this invocation, when applicable. */
+            channel_exchange_id?: string;
+            /** @description Agent turn correlated with this invocation, when applicable. */
+            agent_turn_id?: string;
+            /** @description Agent session correlated with this invocation, when applicable. */
+            session_id?: string;
+            /** @description Provider tool-call ID correlated with this invocation, when applicable. */
+            tool_call_id?: string;
+            /** @description Stable signed delivery and idempotency identity, when HTTP-backed. */
+            delivery_id?: string;
+            /**
+             * Format: int64
+             * @description Signing-secret version used for the HTTP delivery.
+             */
+            secret_version?: number;
+            /** @description Receiver HTTP status for a completed delivery attempt. */
+            http_status?: number;
             /** @description Invocation source ("loop", "direct", etc.). */
             source: string;
             /** @description Input parameters passed to the action. */
@@ -8598,6 +8649,7 @@ export interface operations {
                  *       "title": "Review PR",
                  *       "description": "Review a pull request and return findings.",
                  *       "endpoint_kind": "http",
+                 *       "invocation_format": "signed_context_v1",
                  *       "endpoint_url": "https://hooks.example.com/mobius/review-pr",
                  *       "input_schema": {
                  *         "type": "object",
@@ -8633,6 +8685,7 @@ export interface operations {
                      *       "title": "Review PR",
                      *       "description": "Review a pull request and return findings.",
                      *       "endpoint_kind": "http",
+                     *       "invocation_format": "signed_context_v1",
                      *       "endpoint_url": "https://hooks.example.com/mobius/review-pr",
                      *       "input_schema": {
                      *         "type": "object",

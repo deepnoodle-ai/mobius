@@ -22,6 +22,7 @@ export type ActionEndpointKind = components["schemas"]["ActionEndpointKind"];
 export type ActionExecutionMetadata = components["schemas"]["ActionExecutionMetadata"];
 export type ActionFailedPayload = components["schemas"]["ActionFailedPayload"];
 export type ActionInvocationEntry = components["schemas"]["ActionInvocationEntry"];
+export type ActionInvocationFormat = components["schemas"]["ActionInvocationFormat"];
 export type ActionInvocationListResponse = components["schemas"]["ActionInvocationListResponse"];
 export type ActionInvocationResult = components["schemas"]["ActionInvocationResult"];
 export type ActionPermissionGroup = components["schemas"]["ActionPermissionGroup"];

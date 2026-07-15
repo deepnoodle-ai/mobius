@@ -146,6 +146,48 @@ func (e ActionExecutionMetadataSupportedLocations) Valid() bool {
 	}
 }
 
+// Defines values for ActionInvocationEntryActorPrincipalType.
+const (
+	ActionInvocationEntryActorPrincipalTypeAgent   ActionInvocationEntryActorPrincipalType = "agent"
+	ActionInvocationEntryActorPrincipalTypeHuman   ActionInvocationEntryActorPrincipalType = "human"
+	ActionInvocationEntryActorPrincipalTypeService ActionInvocationEntryActorPrincipalType = "service"
+	ActionInvocationEntryActorPrincipalTypeSystem  ActionInvocationEntryActorPrincipalType = "system"
+)
+
+// Valid indicates whether the value is a known member of the ActionInvocationEntryActorPrincipalType enum.
+func (e ActionInvocationEntryActorPrincipalType) Valid() bool {
+	switch e {
+	case ActionInvocationEntryActorPrincipalTypeAgent:
+		return true
+	case ActionInvocationEntryActorPrincipalTypeHuman:
+		return true
+	case ActionInvocationEntryActorPrincipalTypeService:
+		return true
+	case ActionInvocationEntryActorPrincipalTypeSystem:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ActionInvocationFormat.
+const (
+	ActionInvocationFormatLegacy          ActionInvocationFormat = "legacy"
+	ActionInvocationFormatSignedContextV1 ActionInvocationFormat = "signed_context_v1"
+)
+
+// Valid indicates whether the value is a known member of the ActionInvocationFormat enum.
+func (e ActionInvocationFormat) Valid() bool {
+	switch e {
+	case ActionInvocationFormatLegacy:
+		return true
+	case ActionInvocationFormatSignedContextV1:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ActionInvocationResultStatus.
 const (
 	ActionInvocationResultStatusActive    ActionInvocationResultStatus = "active"
@@ -3595,6 +3637,9 @@ type Action struct {
 	// InputSchema JSON Schema describing expected input parameters.
 	InputSchema *map[string]interface{} `json:"input_schema,omitempty"`
 
+	// InvocationFormat Outbound request-body contract for an HTTP action. `legacy` sends the unversioned `{run_id, step_key, parameters}` body. `signed_context_v1` sends a versioned envelope whose project, action, actor, and origin claims are derived by Mobius and covered by the existing HMAC signature. Worker-backed actions must use `legacy`.
+	InvocationFormat ActionInvocationFormat `json:"invocation_format"`
+
 	// Name Stable identifier used in loop definitions.
 	Name string `json:"name"`
 
@@ -3669,6 +3714,9 @@ type ActionCatalogEntry struct {
 
 	// Integration Integration slug this action belongs to (e.g. "slack"), if platform-provided.
 	Integration *string `json:"integration,omitempty"`
+
+	// InvocationFormat Resolved request-body contract for a project-owned custom action.
+	InvocationFormat *ActionInvocationFormat `json:"invocation_format,omitempty"`
 
 	// Name Canonical dotted action name (e.g. `slack.post_message`). Translated to the provider-safe form (`slack_post_message`) only at the LLM boundary.
 	Name string `json:"name"`
@@ -3750,8 +3798,29 @@ type ActionFailedPayload struct {
 
 // ActionInvocationEntry Per-invocation telemetry record for one action execution.
 type ActionInvocationEntry struct {
+	// ActionId Immutable action definition ID used for this invocation.
+	ActionId *string `json:"action_id,omitempty"`
+
 	// ActionName Name of the action that was invoked.
 	ActionName string `json:"action_name"`
+
+	// ActorPrincipalId Immutable principal attributed as the executing actor.
+	ActorPrincipalId *string `json:"actor_principal_id,omitempty"`
+
+	// ActorPrincipalType Kind of principal attributed as the executing actor.
+	ActorPrincipalType *ActionInvocationEntryActorPrincipalType `json:"actor_principal_type,omitempty"`
+
+	// AgentId Agent resource ID when the actor was an agent.
+	AgentId *string `json:"agent_id,omitempty"`
+
+	// AgentTurnId Agent turn correlated with this invocation, when applicable.
+	AgentTurnId *string `json:"agent_turn_id,omitempty"`
+
+	// ChannelExchangeId Channel exchange correlated with this invocation, when applicable.
+	ChannelExchangeId *string `json:"channel_exchange_id,omitempty"`
+
+	// DeliveryId Stable signed delivery and idempotency identity, when HTTP-backed.
+	DeliveryId *string `json:"delivery_id,omitempty"`
 
 	// EnvironmentId Environment that executed this invocation, if environment-backed.
 	EnvironmentId *string `json:"environment_id,omitempty"`
@@ -3765,11 +3834,20 @@ type ActionInvocationEntry struct {
 	// FinishedAt Timestamp when this invocation completed.
 	FinishedAt time.Time `json:"finished_at"`
 
+	// HttpStatus Receiver HTTP status for a completed delivery attempt.
+	HttpStatus *int `json:"http_status,omitempty"`
+
 	// Id Unique identifier for this invocation record.
 	Id string `json:"id"`
 
+	// InvocationFormat Outbound request-body contract for an HTTP action. `legacy` sends the unversioned `{run_id, step_key, parameters}` body. `signed_context_v1` sends a versioned envelope whose project, action, actor, and origin claims are derived by Mobius and covered by the existing HMAC signature. Worker-backed actions must use `legacy`.
+	InvocationFormat *ActionInvocationFormat `json:"invocation_format,omitempty"`
+
 	// JobId Job that triggered this invocation, if job-backed.
 	JobId *string `json:"job_id,omitempty"`
+
+	// LoopId Loop definition correlated with this invocation, when applicable.
+	LoopId *string `json:"loop_id,omitempty"`
 
 	// OutputSummary Truncated or summarized action output for audit purposes.
 	OutputSummary *map[string]interface{} `json:"output_summary,omitempty"`
@@ -3783,6 +3861,15 @@ type ActionInvocationEntry struct {
 	// RunId Loop run that triggered this invocation, if run-backed.
 	RunId *string `json:"run_id,omitempty"`
 
+	// SchemaVersion Signed request-envelope schema version, when applicable.
+	SchemaVersion *int `json:"schema_version,omitempty"`
+
+	// SecretVersion Signing-secret version used for the HTTP delivery.
+	SecretVersion *int64 `json:"secret_version,omitempty"`
+
+	// SessionId Agent session correlated with this invocation, when applicable.
+	SessionId *string `json:"session_id,omitempty"`
+
 	// Source Invocation source ("loop", "direct", etc.).
 	Source string `json:"source"`
 
@@ -3794,7 +3881,16 @@ type ActionInvocationEntry struct {
 
 	// StepName Loop step name that triggered this invocation.
 	StepName *string `json:"step_name,omitempty"`
+
+	// ToolCallId Provider tool-call ID correlated with this invocation, when applicable.
+	ToolCallId *string `json:"tool_call_id,omitempty"`
 }
+
+// ActionInvocationEntryActorPrincipalType Kind of principal attributed as the executing actor.
+type ActionInvocationEntryActorPrincipalType string
+
+// ActionInvocationFormat Outbound request-body contract for an HTTP action. `legacy` sends the unversioned `{run_id, step_key, parameters}` body. `signed_context_v1` sends a versioned envelope whose project, action, actor, and origin claims are derived by Mobius and covered by the existing HMAC signature. Worker-backed actions must use `legacy`.
+type ActionInvocationFormat string
 
 // ActionInvocationListResponse Paginated list of action invocation telemetry records.
 type ActionInvocationListResponse struct {
@@ -4900,6 +4996,9 @@ type CreateActionRequest struct {
 
 	// InputSchema JSON Schema describing the expected input parameters.
 	InputSchema *map[string]interface{} `json:"input_schema,omitempty"`
+
+	// InvocationFormat Request-body contract for HTTP invocations. Omit to preserve the legacy body. `signed_context_v1` is valid only with `endpoint_kind: http`.
+	InvocationFormat *ActionInvocationFormat `json:"invocation_format,omitempty"`
 
 	// Name Identifier used in loop step definitions. Lowercase alphanumeric + hyphens, e.g. "send-email". Must be unique within the project. Cannot start with "mobius." (reserved prefix).
 	Name string `json:"name"`
@@ -8998,6 +9097,9 @@ type UpdateActionRequest struct {
 
 	// InputSchema Replacement JSON Schema for inputs. Replaces the existing schema.
 	InputSchema *map[string]interface{} `json:"input_schema,omitempty"`
+
+	// InvocationFormat Replacement HTTP request-body contract. `signed_context_v1` is valid only for HTTP-backed actions.
+	InvocationFormat *ActionInvocationFormat `json:"invocation_format,omitempty"`
 
 	// OutputSchema Replacement JSON Schema for outputs. Replaces the existing schema.
 	OutputSchema *map[string]interface{} `json:"output_schema,omitempty"`

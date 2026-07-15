@@ -337,6 +337,7 @@ paths:
               title: Review PR
               description: Review a pull request and return findings.
               endpoint_kind: http
+              invocation_format: signed_context_v1
               endpoint_url: https://hooks.example.com/mobius/review-pr
               input_schema:
                 type: object
@@ -361,6 +362,7 @@ paths:
                 title: Review PR
                 description: Review a pull request and return findings.
                 endpoint_kind: http
+                invocation_format: signed_context_v1
                 endpoint_url: https://hooks.example.com/mobius/review-pr
                 input_schema:
                   type: object
@@ -7519,6 +7521,15 @@ components:
       description: Backing kind for a project-owned custom action. `http` actions POST to
         a registered endpoint. `worker` actions dispatch jobs to connected workers that advertise
         the registered action name.
+    ActionInvocationFormat:
+      type: string
+      enum:
+      - legacy
+      - signed_context_v1
+      description: Outbound request-body contract for an HTTP action. `legacy` sends the unversioned
+        `{run_id, step_key, parameters}` body. `signed_context_v1` sends a versioned envelope
+        whose project, action, actor, and origin claims are derived by Mobius and covered
+        by the existing HMAC signature. Worker-backed actions must use `legacy`.
     CreateActionRequest:
       type: object
       additionalProperties: false
@@ -7545,6 +7556,12 @@ components:
           description: Backing kind for the action. `http` actions POST to `endpoint_url`
             with a Mobius signature. `worker` actions are dispatched through jobs to connected
             workers that advertise this registered name.
+        invocation_format:
+          allOf:
+          - $ref: '#/components/schemas/ActionInvocationFormat'
+          default: legacy
+          description: 'Request-body contract for HTTP invocations. Omit to preserve the legacy
+            body. `signed_context_v1` is valid only with `endpoint_kind: http`.'
         endpoint_url:
           type: string
           format: uri
@@ -7568,6 +7585,7 @@ components:
         title: Review PR
         description: Review a pull request and return findings.
         endpoint_kind: http
+        invocation_format: signed_context_v1
         endpoint_url: https://hooks.example.com/mobius/review-pr
         input_schema:
           type: object
@@ -7604,6 +7622,11 @@ components:
           type: string
           format: uri
           description: Replacement endpoint URL. Valid for HTTP actions only.
+        invocation_format:
+          allOf:
+          - $ref: '#/components/schemas/ActionInvocationFormat'
+          description: Replacement HTTP request-body contract. `signed_context_v1` is valid
+            only for HTTP-backed actions.
         input_schema:
           type: object
           additionalProperties: true
@@ -7629,6 +7652,7 @@ components:
       - id
       - name
       - endpoint_kind
+      - invocation_format
       - created_at
       - updated_at
       properties:
@@ -7651,6 +7675,9 @@ components:
           description: Backing kind of this project-owned action. `http` actions POST to an
             endpoint URL. `worker` actions are dispatched through jobs to connected workers
             that advertise this registered name.
+        invocation_format:
+          $ref: '#/components/schemas/ActionInvocationFormat'
+          description: Resolved outbound request-body contract for this action.
         endpoint_url:
           type: string
           format: uri
@@ -7689,6 +7716,7 @@ components:
         title: Review PR
         description: Review a pull request and return findings.
         endpoint_kind: http
+        invocation_format: signed_context_v1
         endpoint_url: https://hooks.example.com/mobius/review-pr
         input_schema:
           type: object
@@ -7810,6 +7838,10 @@ components:
           type: string
           format: uri
           description: 'Endpoint URL (populated for endpoint_kind: http actions only).'
+        invocation_format:
+          allOf:
+          - $ref: '#/components/schemas/ActionInvocationFormat'
+          description: Resolved request-body contract for a project-owned custom action.
         execution:
           $ref: '#/components/schemas/ActionExecutionMetadata'
           description: Execution locations and worker requirements available to loop authors.
@@ -7935,9 +7967,60 @@ components:
         step_name:
           type: string
           description: Loop step name that triggered this invocation.
+        action_id:
+          type: string
+          description: Immutable action definition ID used for this invocation.
         action_name:
           type: string
           description: Name of the action that was invoked.
+        invocation_format:
+          $ref: '#/components/schemas/ActionInvocationFormat'
+        schema_version:
+          type: integer
+          minimum: 1
+          description: Signed request-envelope schema version, when applicable.
+        actor_principal_id:
+          type: string
+          description: Immutable principal attributed as the executing actor.
+        actor_principal_type:
+          type: string
+          enum:
+          - human
+          - agent
+          - service
+          - system
+          description: Kind of principal attributed as the executing actor.
+        agent_id:
+          type: string
+          description: Agent resource ID when the actor was an agent.
+        loop_id:
+          type: string
+          description: Loop definition correlated with this invocation, when applicable.
+        channel_exchange_id:
+          type: string
+          description: Channel exchange correlated with this invocation, when applicable.
+        agent_turn_id:
+          type: string
+          description: Agent turn correlated with this invocation, when applicable.
+        session_id:
+          type: string
+          description: Agent session correlated with this invocation, when applicable.
+        tool_call_id:
+          type: string
+          description: Provider tool-call ID correlated with this invocation, when applicable.
+        delivery_id:
+          type: string
+          description: Stable signed delivery and idempotency identity, when HTTP-backed.
+        secret_version:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Signing-secret version used for the HTTP delivery.
+        http_status:
+          type: integer
+          minimum: 100
+          maximum: 599
+          description: Receiver HTTP status for a completed delivery attempt.
         source:
           type: string
           description: Invocation source ("loop", "direct", etc.).
