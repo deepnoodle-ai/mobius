@@ -53,6 +53,11 @@ type InvokeAgentOptions struct {
 	// timeout takes precedence over the saved config timeout and is not saved
 	// on the session.
 	Operation *api.AgentTurnOperationPolicy
+	// Output attaches a structured-output contract to this turn. When set,
+	// Mobius exposes a reserved submit tool for the schema, validates the
+	// submission server-side, and fails the turn if it never produces a
+	// schema-valid object. Read the validated value from TurnTranscript.Output.
+	Output *api.TurnOutputSpec
 	// ChannelContext records optional messaging provider/channel routing
 	// context (Slack, Telegram, …) on the started turn.
 	ChannelContext *api.ChannelContext
@@ -73,6 +78,10 @@ type StartTurnOptions struct {
 	// timeout takes precedence over the saved config timeout and is not saved
 	// on the session.
 	Operation *api.AgentTurnOperationPolicy
+	// Output attaches a structured-output contract to this turn. See
+	// InvokeAgentOptions.Output; read the validated value from
+	// TurnTranscript.Output.
+	Output *api.TurnOutputSpec
 	// Metadata is free-form caller metadata attached to the input message.
 	Metadata map[string]interface{}
 }
@@ -179,6 +188,7 @@ func (c *Client) StartTurn(ctx context.Context, sessionID string, opts StartTurn
 	}
 	body.IdempotencyKey = stringPointer(opts.IdempotencyKey)
 	body.Operation = opts.Operation
+	body.Output = opts.Output
 	if opts.Metadata != nil {
 		body.Metadata = &opts.Metadata
 	}
@@ -575,6 +585,9 @@ func invokeAgentRequest(opts InvokeAgentOptions) (api.InvokeAgentRequest, error)
 	}
 	if opts.Operation != nil {
 		req.Operation = opts.Operation
+	}
+	if opts.Output != nil {
+		req.Output = opts.Output
 	}
 	if opts.ChannelContext != nil {
 		req.ChannelContext = opts.ChannelContext

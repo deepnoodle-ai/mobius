@@ -24,6 +24,7 @@ from ._api.models import (
     RoleAssignmentListResponse,
     RoleListResponse,
     RuntimeContextItem,
+    TurnOutputSpec,
     UpdatePrincipalRequest,
     UpdateRoleRequest,
 )
@@ -174,6 +175,7 @@ __all__ = [
     "TranscriptStreamEvent",
     "TranscriptUpdate",
     "TranscriptWatcher",
+    "TurnOutputSpec",
     "TurnTranscript",
     "UpdateLoopOptions",
     "UpdatePrincipalRequest",

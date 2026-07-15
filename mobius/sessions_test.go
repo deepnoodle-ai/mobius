@@ -65,6 +65,9 @@ func TestInvokeAgent_HighLevelClient(t *testing.T) {
 			},
 		},
 		Operation: &api.AgentTurnOperationPolicy{TimeoutSeconds: ptr(int64(90))},
+		Output: &api.TurnOutputSpec{Schema: map[string]interface{}{
+			"type": "object", "required": []string{"answer"},
+		}},
 	})
 
 	assert.NoError(t, err)
@@ -86,12 +89,38 @@ func TestInvokeAgent_HighLevelClient(t *testing.T) {
 	assert.Equal(t, config["effort"], "medium")
 	assert.Equal(t, config["toolkits"].([]any)[0].(map[string]any)["name"], "tickets")
 	assert.Equal(t, body["operation"].(map[string]any)["timeout_seconds"], float64(90))
+	assert.Equal(t, body["output"].(map[string]any)["schema"].(map[string]any)["type"], "object")
 
 	turn.Transcript().Apply(TranscriptStreamEvent{Frame: mustFrame(t,
 		`{"event_type":"turn.upsert","id":"turn_1","session_id":"sess_1","agent_id":"agent_1","attempt":1,"status":"failed","error_type":"invalid_conversation_state","error_message":"history ended with assistant content","created_at":"2026-05-27T00:00:00Z","updated_at":"2026-05-27T00:00:01Z"}`)})
 	assert.Equal(t, turn.ErrorType(), "invalid_conversation_state")
 	assert.Equal(t, turn.ErrorMessage(), "history ended with assistant content")
 	assert.Error(t, turn.TurnError())
+}
+
+func TestTurnTranscript_StructuredOutput(t *testing.T) {
+	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusAccepted)
+		_, _ = io.WriteString(w, turnAckJSON("sess_1", "turn_1", 7))
+	})
+	c, srv := newTestClient(t, h)
+	defer srv.Close()
+
+	turn, err := c.InvokeAgent(context.Background(), InvokeAgentOptions{
+		AgentID: "agent_1",
+		Content: []map[string]interface{}{{"type": "text", "text": "hi"}},
+		Output:  &api.TurnOutputSpec{Schema: map[string]interface{}{"type": "object"}},
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, turn.Output(), map[string]interface{}(nil))
+	assert.Equal(t, turn.OutputSource(), "")
+
+	turn.Transcript().Apply(TranscriptStreamEvent{Frame: mustFrame(t,
+		`{"event_type":"turn.upsert","id":"turn_1","session_id":"sess_1","agent_id":"agent_1","attempt":1,"status":"completed","output":{"answer":"42"},"output_source":"tool","created_at":"2026-05-27T00:00:00Z","updated_at":"2026-05-27T00:00:01Z"}`)})
+	assert.Equal(t, turn.Status(), "completed")
+	assert.Equal(t, turn.Output()["answer"], "42")
+	assert.Equal(t, turn.OutputSource(), "tool")
 }
 
 func TestStartTurn_HighLevelClient(t *testing.T) {
@@ -113,6 +142,7 @@ func TestStartTurn_HighLevelClient(t *testing.T) {
 		Context:        []RuntimeContextItem{{Name: "naming-board", Content: "Chosen: none"}},
 		IdempotencyKey: "evt_1",
 		Operation:      &api.AgentTurnOperationPolicy{TimeoutSeconds: ptr(int64(45))},
+		Output:         &api.TurnOutputSpec{Schema: map[string]interface{}{"type": "object"}},
 		Metadata:       map[string]interface{}{"source": "app"},
 	})
 
@@ -120,6 +150,7 @@ func TestStartTurn_HighLevelClient(t *testing.T) {
 	assert.Equal(t, turn.ID(), "turn_1")
 	assert.Equal(t, body["idempotency_key"], "evt_1")
 	assert.Equal(t, body["operation"].(map[string]any)["timeout_seconds"], float64(45))
+	assert.Equal(t, body["output"].(map[string]any)["schema"].(map[string]any)["type"], "object")
 	assert.Equal(t, body["metadata"].(map[string]any)["source"], "app")
 	contextItem := body["context"].([]any)[0].(map[string]any)
 	assert.Equal(t, contextItem["name"], "naming-board")

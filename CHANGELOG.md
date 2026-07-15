@@ -6,6 +6,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 
 ## [Unreleased]
 
+### Added
+
+- Turns can declare a structured-output contract via `output.schema`
+  (`TurnOutputSpec`); completed turns and terminal `turn.upsert` frames expose
+  the validated `output` and its `output_source` (`tool` or `text`).
+- Go, Python, and TypeScript invoke/start-turn helpers now take an `output`
+  option, and `TurnTranscript` exposes `output`/`output_source` (Go `Output()`/
+  `OutputSource()`) read live from the terminal turn.
+- Sessions accept a `retention` policy (`standard` or `bounded` with
+  `ttl_seconds`) applied at creation; session reads expose the resolved
+  `retention` and computed `expires_at`.
+- OpenAPI spec now documents the `Idempotency-Key` request header parameter.
+
+### Fixed
+
+- Python request bodies now serialize alias-mapped fields under their wire
+  names (e.g. `output.schema`, condition `if`) instead of the python-safe
+  field name.
+
 ## [0.0.50] - 2026-07-14
 
 ### Added

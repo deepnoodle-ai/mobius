@@ -432,6 +432,37 @@ class SessionVisibility(StrEnum):
     private = 'private'
 
 
+class Mode(StrEnum):
+    """
+    `standard` (default) retains the session indefinitely. `bounded` expires the session after it has been idle for `ttl_seconds`.
+    """
+
+    standard = 'standard'
+    bounded = 'bounded'
+
+
+class SessionRetentionPolicy(BaseModel):
+    """
+    Controls how long a session is retained. Applied only when the session is first created (like `compaction_policy`); ignored when an existing session is resolved. `standard` is the default and keeps the session forever. `bounded` expires the session — pruning its transcript from every read path — once it has been idle past `ttl_seconds`. Kept for audit after expiry: a tombstone session row with its token totals, and the turn rows with their status, error, usage, and timings.
+
+    `ttl_seconds` is required when `mode` is `bounded` and ignored for `standard`; the server validates this (a `oneOf` encoding was dropped because it only produced untyped union codegen without adding runtime enforcement in the generated Go/TypeScript clients).
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    mode: Mode = Field(
+        ...,
+        description='`standard` (default) retains the session indefinitely. `bounded` expires the session after it has been idle for `ttl_seconds`.',
+    )
+    ttl_seconds: int | None = Field(
+        None,
+        description="Idle lifetime in seconds; required when `mode` is `bounded` and ignored otherwise. Measured from the last message activity (`last_message_at`), not session creation — continuing the session before it expires simply extends its life. Minimum 1 hour, maximum 30 days. The 1-hour floor keeps a caller's idempotency window comfortably inside the retention window: after expiry a retried idempotency key mints a fresh session rather than deduplicating against a pruned one.",
+        ge=3600,
+        le=2592000,
+    )
+
+
 class SessionCompactionBoundary(BaseModel):
     """
     Pointer to the latest compaction marker in a session's transcript. The marker is itself a transcript message (role `compaction`); everything at or below `covers_through_sequence` is summarized history.
@@ -493,6 +524,14 @@ class Session(BaseModel):
     compaction_policy: SessionCompactionPolicy | None = Field(
         None,
         description='Resolved message-compaction policy in effect for this session.',
+    )
+    retention: SessionRetentionPolicy | None = Field(
+        None,
+        description='Resolved retention policy in effect for this session. `standard` for ordinary permanent sessions.',
+    )
+    expires_at: AwareDatetime | None = Field(
+        None,
+        description='When a `bounded` session will expire if it stays idle, computed from its last message activity (`last_message_at`) and the retention TTL. Null for `standard` sessions and for bounded sessions with no activity yet. After this time the transcript is pruned and the session reads as deleted.',
     )
     thinking_effort: ThinkingEffort | None = Field(
         None,
@@ -1702,7 +1741,7 @@ class ModelOption(BaseModel):
     )
 
 
-class Mode(StrEnum):
+class Mode1(StrEnum):
     """
     Model route mode. Worker catalog routes always use `worker`.
     """
@@ -1718,7 +1757,7 @@ class WorkerModelRoute(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    mode: Mode = Field(
+    mode: Mode1 = Field(
         ..., description='Model route mode. Worker catalog routes always use `worker`.'
     )
     provider: str = Field(
@@ -2912,7 +2951,7 @@ class OnUnavailable1(StrEnum):
     fail = 'fail'
 
 
-class Mode1(StrEnum):
+class Mode2(StrEnum):
     """
     Auth mode. Only `bearer` is supported today.
     """
@@ -2928,7 +2967,7 @@ class DefinitionResolverAuth(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    mode: Mode1 | None = Field(
+    mode: Mode2 | None = Field(
         None, description='Auth mode. Only `bearer` is supported today.'
     )
     token: str | None = Field(
@@ -4019,6 +4058,15 @@ class AgentTurnErrorScope(StrEnum):
     agent_turn = 'agent_turn'
 
 
+class AgentTurnOutputSource(StrEnum):
+    """
+    Provenance of a completed turn's structured `output`: `tool` when the agent submitted it through the reserved `mobius_submit_output` tool, or `text` when Mobius accepted a schema-valid final message as a fallback.
+    """
+
+    tool = 'tool'
+    text = 'text'
+
+
 class AgentTurn(BaseModel):
     """
     One attempt of an agent running the agent loop — the unit that produces a transcript. A turn is triggered by a direct send to the session, a loop step (run_id + step_key), or an inbound channel message (channel_exchange_id). Its messages are read via the turn's transcript endpoint.
@@ -4062,6 +4110,14 @@ class AgentTurn(BaseModel):
         None, description='Human-readable failure detail when the turn failed.'
     )
     error_scope: AgentTurnErrorScope | None = None
+    output: dict[str, Any] | None = Field(
+        None,
+        description='The validated structured output. Present only on a `completed` turn that declared an output schema. Read this instead of parsing the transcript.',
+    )
+    output_source: AgentTurnOutputSource | None = Field(
+        None,
+        description='Where `output` came from: a `mobius_submit_output` submission (`tool`) or the schema-valid final-text fallback (`text`).',
+    )
     effective_timeout_seconds: int | None = Field(
         None, description='Authoritative active-execution budget selected for the turn.'
     )
@@ -4419,7 +4475,7 @@ class AgentRef(BaseModel):
     name: str | None = Field(None, description='Project-unique agent name.')
 
 
-class Mode2(StrEnum):
+class Mode3(StrEnum):
     """
     `continue_or_create` (default) resolves an existing session for the `session_key` or creates one; `new` always creates a fresh session; `continue` resolves an existing session and fails if none exists.
     """
@@ -4437,7 +4493,7 @@ class InvokeSessionSpec(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    mode: Mode2 | None = Field(
+    mode: Mode3 | None = Field(
         None,
         description='`continue_or_create` (default) resolves an existing session for the `session_key` or creates one; `new` always creates a fresh session; `continue` resolves an existing session and fails if none exists.',
     )
@@ -4451,6 +4507,10 @@ class InvokeSessionSpec(BaseModel):
     compaction_policy: SessionCompactionPolicy | None = Field(
         None,
         description="Per-session compaction overrides applied when the session is first created. Merged over the agent's default policy and server defaults. Ignored when an existing session is resolved.",
+    )
+    retention: SessionRetentionPolicy | None = Field(
+        None,
+        description='Retention policy applied when the session is first created. Ignored when an existing session is resolved.',
     )
     thinking_effort: ThinkingEffort | None = Field(
         None,
@@ -4490,6 +4550,21 @@ class RuntimeContext(RootModel[list[RuntimeContextItem]]):
         ...,
         description='Ordered application-owned runtime context for this turn. Send the full current value for each named item. Mobius records an item only on first use, material change, or after compaction removes its prior value from the active model window. Omitting a name leaves its last value standing; send an explicit value such as `none` to clear application state. Names must be unique within the request. Content is limited to 8,192 UTF-8 bytes per item and 16,384 bytes total.\n\nContext remains at contextual authority and cannot grant permissions. A retry using the same `idempotency_key` returns the original turn and ignores any newly supplied context.',
         max_length=8,
+    )
+
+
+class TurnOutputSpec(BaseModel):
+    """
+    Attaches a structured-output contract to a turn. When present, Mobius exposes a reserved submit tool whose input schema is the schema below, validates the submission server-side, and a turn that never produces a schema-valid object fails with `error_type: output_schema_unsatisfied` instead of completing. Read the validated value from the completed turn's `output`. This is a per-turn contract, not agent identity, so it works with stored agents and may differ between turns of one session.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    schema_: dict[str, Any] = Field(
+        ...,
+        alias='schema',
+        description="JSON Schema the turn's final output must satisfy. The root must be `type: object` and self-contained (no `$ref`); the serialized schema must not exceed 32 KiB. Mobius enforces the OpenAPI 3.0 subset: `required`, `enum`, `additionalProperties`, `minItems`/`maxItems`, `minLength`/`maxLength`, `pattern`, numeric bounds, nested objects/arrays, `oneOf`/`anyOf`/`allOf`, and `nullable`. Not supported: `$ref`/`$defs`, `if`/`then`/`else`, `const` (use a one-value `enum`), `patternProperties`, and `prefixItems`.",
     )
 
 
@@ -4547,7 +4622,7 @@ class CreateSessionRequest(BaseModel):
         extra='forbid',
     )
     agent_id: str = Field(..., description='Agent that owns the session.')
-    mode: Mode2 | None = Field(
+    mode: Mode3 | None = Field(
         None,
         description='`continue_or_create` (default) resolves an existing session for the `session_key` or creates one; `new` always creates a fresh session; `continue` resolves an existing session and fails if none exists.',
     )
@@ -4560,6 +4635,10 @@ class CreateSessionRequest(BaseModel):
     compaction_policy: SessionCompactionPolicy | None = Field(
         None,
         description="Per-session compaction overrides applied when the session is first created. Merged over the agent's default policy and server defaults. Ignored when an existing session is resolved.",
+    )
+    retention: SessionRetentionPolicy | None = Field(
+        None,
+        description='Retention policy applied when the session is first created. Ignored when an existing session is resolved.',
     )
     thinking_effort: ThinkingEffort | None = Field(
         None,
@@ -4601,6 +4680,10 @@ class StartTurnRequest(BaseModel):
     )
     operation: AgentTurnOperationPolicy | None = None
     context: RuntimeContext | None = None
+    output: TurnOutputSpec | None = Field(
+        None,
+        description="Optional structured-output contract for this turn. Read the validated value from the completed turn's `output`.",
+    )
     metadata: dict[str, Any] | None = Field(
         None, description='Free-form caller metadata attached to the input message.'
     )
@@ -5086,7 +5169,7 @@ class LoopAgentSessionPolicy(BaseModel):
     )
 
 
-class Mode4(StrEnum):
+class Mode5(StrEnum):
     """
     Model route mode: `managed` or `worker`.
     """
@@ -5103,7 +5186,7 @@ class LoopModelRoute(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    mode: Mode4 = Field(..., description='Model route mode: `managed` or `worker`.')
+    mode: Mode5 = Field(..., description='Model route mode: `managed` or `worker`.')
     environment_id: str | None = Field(
         None, description='Managed environment to route worker-backed model calls to.'
     )
@@ -6279,7 +6362,7 @@ class TableRowQueryListResponse(BaseModel):
     )
 
 
-class Mode5(StrEnum):
+class Mode6(StrEnum):
     """
     Search mode. `keyword` uses token-prefix matching, `semantic` uses similarity over indexed row text, and `hybrid` combines both.
     """
@@ -6298,7 +6381,7 @@ class SearchRowsRequest(BaseModel):
         description='Search query. Hyphens and other punctuation split terms for keyword matching.',
         min_length=1,
     )
-    mode: Mode5 = Field(
+    mode: Mode6 = Field(
         'keyword',
         description='Search mode. `keyword` uses token-prefix matching, `semantic` uses similarity over indexed row text, and `hybrid` combines both.',
     )
@@ -6893,6 +6976,13 @@ class SessionTranscriptTurn(BaseModel):
     usage: dict[str, Any] | None = Field(
         None,
         description='Token usage recorded when the turn terminalized, when available.',
+    )
+    output: dict[str, Any] | None = Field(
+        None,
+        description='The validated structured output, delivered on the terminal `turn.upsert` frame. Present only on a `completed` turn that declared an output schema.',
+    )
+    output_source: AgentTurnOutputSource | None = Field(
+        None, description='Where `output` came from (`tool` or `text`).'
     )
     wait: SessionTranscriptWait | None = None
     created_at: AwareDatetime
@@ -7906,6 +7996,10 @@ class InvokeAgentRequest(BaseModel):
     config: InlineAgentConfig | None = None
     operation: AgentTurnOperationPolicy | None = None
     input: InvokeInput
+    output: TurnOutputSpec | None = Field(
+        None,
+        description="Optional structured-output contract for this turn. Read the validated value from the completed turn's `output`.",
+    )
     channel_context: ChannelContext | None = None
 
 

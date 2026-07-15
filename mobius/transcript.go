@@ -551,6 +551,28 @@ func (t *TurnTranscript) ErrorMessage() string {
 	return ""
 }
 
+// Output is the turn's validated structured output, present only on a
+// completed turn that declared an output contract (see InvokeAgentOptions.Output).
+// It is nil until the terminal turn.upsert frame is applied. Read this instead
+// of parsing the transcript messages.
+func (t *TurnTranscript) Output() map[string]interface{} {
+	if turn, ok := t.stream.view.Turn(t.turnID); ok && turn.Output != nil {
+		return *turn.Output
+	}
+	return nil
+}
+
+// OutputSource reports where Output came from: "tool" when the agent submitted
+// it through the reserved mobius_submit_output tool, or "text" when Mobius
+// accepted a schema-valid final message as a fallback. It is empty when the
+// turn produced no structured output.
+func (t *TurnTranscript) OutputSource() string {
+	if turn, ok := t.stream.view.Turn(t.turnID); ok && turn.OutputSource != nil {
+		return string(*turn.OutputSource)
+	}
+	return ""
+}
+
 // TurnError combines the live turn error type and message. It is nil unless
 // the turn is failed; Err separately reports transcript transport failures.
 func (t *TurnTranscript) TurnError() error {

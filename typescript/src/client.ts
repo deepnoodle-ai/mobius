@@ -4,6 +4,7 @@ import type {
   AgentTurn,
   AgentTurnListResponse,
   AgentTurnOperationPolicy,
+  AgentTurnOutputSource,
   AgentRef,
   ApplyBlueprintRequest,
   BlueprintApplyResult,
@@ -57,6 +58,7 @@ import type {
   StreamEndFrame,
   TagMap,
   TurnAck,
+  TurnOutputSpec,
   UpdateLoopRequest,
   UpdatePrincipalRequest,
   UpdateRoleRequest,
@@ -341,6 +343,13 @@ export interface InvokeAgentOptions {
    */
   operation?: AgentTurnOperationPolicy;
   /**
+   * Structured-output contract for this turn. When set, Mobius exposes a
+   * reserved submit tool for the schema, validates the submission
+   * server-side, and fails the turn if it never produces a schema-valid
+   * object. Read the validated value from {@link TurnTranscript.output}.
+   */
+  output?: TurnOutputSpec;
+  /**
    * Optional messaging provider/channel routing context (Slack, Telegram,
    * …) recorded on the started turn.
    */
@@ -362,6 +371,12 @@ export interface StartTurnOptions {
    * over the saved config timeout and is not saved on the session.
    */
   operation?: AgentTurnOperationPolicy;
+  /**
+   * Structured-output contract for this turn. See
+   * {@link InvokeAgentOptions.output}; read the validated value from
+   * {@link TurnTranscript.output}.
+   */
+  output?: TurnOutputSpec;
   /** Free-form caller metadata attached to the input message. */
   metadata?: Record<string, unknown>;
 }
@@ -1125,6 +1140,7 @@ export class Client {
       context: opts.context,
       idempotency_key: opts.idempotencyKey,
       operation: opts.operation,
+      output: opts.output,
       metadata: opts.metadata,
     });
     const resp = await this.request(
@@ -1566,6 +1582,26 @@ export class TurnTranscript implements AsyncIterable<TurnTranscript> {
     return this.transcript.turn(this.id)?.error_message ?? undefined;
   }
 
+  /**
+   * The turn's validated structured output, present only on a completed turn
+   * that declared an output contract (see {@link InvokeAgentOptions.output}).
+   * `undefined` until the terminal `turn.upsert` frame is applied. Read this
+   * instead of parsing the transcript messages.
+   */
+  get output(): Record<string, unknown> | undefined {
+    return this.transcript.turn(this.id)?.output ?? undefined;
+  }
+
+  /**
+   * Where {@link output} came from: `"tool"` when the agent submitted it
+   * through the reserved `mobius_submit_output` tool, or `"text"` when Mobius
+   * accepted a schema-valid final message as a fallback. `undefined` when the
+   * turn produced no structured output.
+   */
+  get outputSource(): AgentTurnOutputSource | undefined {
+    return this.transcript.turn(this.id)?.output_source ?? undefined;
+  }
+
   get error(): Error | undefined {
     if (this.status !== "failed") return undefined;
     const error = new Error(this.errorMessage ?? "Mobius turn failed");
@@ -1728,6 +1764,7 @@ function invokeAgentRequest(opts: InvokeAgentOptions): InvokeAgentRequest {
     session: opts.session,
     config: opts.config,
     operation: opts.operation,
+    output: opts.output,
     channel_context: opts.channelContext,
   }) as InvokeAgentRequest;
 }

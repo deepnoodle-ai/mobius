@@ -5865,6 +5865,15 @@ components:
       description: Framework provider identifier from the integration provider catalog.
       schema:
         type: string
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: false
+      description: Stable caller-generated key. Reusing it returns the original operation.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 255
     OrgIDParam:
       name: org_id
       in: path
@@ -6490,6 +6499,37 @@ components:
       - project
       - private
       description: 'Visibility of the session in project surfaces: `project` or `private`.'
+    SessionRetentionPolicy:
+      type: object
+      additionalProperties: false
+      required:
+      - mode
+      description: |-
+        Controls how long a session is retained. Applied only when the session is first created (like `compaction_policy`); ignored when an existing session is resolved. `standard` is the default and keeps the session forever. `bounded` expires the session — pruning its transcript from every read path — once it has been idle past `ttl_seconds`. Kept for audit after expiry: a tombstone session row with its token totals, and the turn rows with their status, error, usage, and timings.
+
+        `ttl_seconds` is required when `mode` is `bounded` and ignored for `standard`; the server validates this (a `oneOf` encoding was dropped because it only produced untyped union codegen without adding runtime enforcement in the generated Go/TypeScript clients).
+      properties:
+        mode:
+          type: string
+          enum:
+          - standard
+          - bounded
+          description: '`standard` (default) retains the session indefinitely. `bounded` expires
+            the session after it has been idle for `ttl_seconds`.'
+        ttl_seconds:
+          type: integer
+          format: int64
+          minimum: 3600
+          maximum: 2592000
+          description: 'Idle lifetime in seconds; required when `mode` is `bounded` and ignored
+            otherwise. Measured from the last message activity (`last_message_at`), not session
+            creation — continuing the session before it expires simply extends its life. Minimum
+            1 hour, maximum 30 days. The 1-hour floor keeps a caller''s idempotency window
+            comfortably inside the retention window: after expiry a retried idempotency key
+            mints a fresh session rather than deduplicating against a pruned one.'
+      example:
+        mode: bounded
+        ttl_seconds: 86400
     SessionCompactionBoundary:
       type: object
       additionalProperties: false
@@ -6576,6 +6616,18 @@ components:
         compaction_policy:
           $ref: '#/components/schemas/SessionCompactionPolicy'
           description: Resolved message-compaction policy in effect for this session.
+        retention:
+          $ref: '#/components/schemas/SessionRetentionPolicy'
+          description: Resolved retention policy in effect for this session. `standard` for
+            ordinary permanent sessions.
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: When a `bounded` session will expire if it stays idle, computed from
+            its last message activity (`last_message_at`) and the retention TTL. Null for
+            `standard` sessions and for bounded sessions with no activity yet. After this
+            time the transcript is pruned and the session reads as deleted.
         thinking_effort:
           $ref: '#/components/schemas/ThinkingEffort'
           description: This session's reasoning-effort override, or absent when the session
@@ -11499,6 +11551,14 @@ components:
       enum:
       - agent_turn
       description: Present when the overall agent-turn budget was exhausted.
+    AgentTurnOutputSource:
+      type: string
+      enum:
+      - tool
+      - text
+      description: 'Provenance of a completed turn''s structured `output`: `tool` when the
+        agent submitted it through the reserved `mobius_submit_output` tool, or `text` when
+        Mobius accepted a schema-valid final message as a fallback.'
     AgentTurn:
       type: object
       additionalProperties: false
@@ -11553,6 +11613,15 @@ components:
           description: Human-readable failure detail when the turn failed.
         error_scope:
           $ref: '#/components/schemas/AgentTurnErrorScope'
+        output:
+          type: object
+          additionalProperties: true
+          description: The validated structured output. Present only on a `completed` turn
+            that declared an output schema. Read this instead of parsing the transcript.
+        output_source:
+          $ref: '#/components/schemas/AgentTurnOutputSource'
+          description: 'Where `output` came from: a `mobius_submit_output` submission (`tool`)
+            or the schema-valid final-text fallback (`text`).'
         effective_timeout_seconds:
           type: integer
           format: int64
@@ -11719,6 +11788,14 @@ components:
           type: object
           additionalProperties: true
           description: Token usage recorded when the turn terminalized, when available.
+        output:
+          type: object
+          additionalProperties: true
+          description: The validated structured output, delivered on the terminal `turn.upsert`
+            frame. Present only on a `completed` turn that declared an output schema.
+        output_source:
+          $ref: '#/components/schemas/AgentTurnOutputSource'
+          description: Where `output` came from (`tool` or `text`).
         wait:
           $ref: '#/components/schemas/SessionTranscriptWait'
         created_at:
@@ -12378,6 +12455,10 @@ components:
           $ref: '#/components/schemas/AgentTurnOperationPolicy'
         input:
           $ref: '#/components/schemas/InvokeInput'
+        output:
+          $ref: '#/components/schemas/TurnOutputSpec'
+          description: Optional structured-output contract for this turn. Read the validated
+            value from the completed turn's `output`.
         channel_context:
           $ref: '#/components/schemas/ChannelContext'
     InlineAgentConfig:
@@ -12512,6 +12593,10 @@ components:
           description: Per-session compaction overrides applied when the session is first
             created. Merged over the agent's default policy and server defaults. Ignored when
             an existing session is resolved.
+        retention:
+          $ref: '#/components/schemas/SessionRetentionPolicy'
+          description: Retention policy applied when the session is first created. Ignored
+            when an existing session is resolved.
         thinking_effort:
           $ref: '#/components/schemas/ThinkingEffort'
           description: Reasoning-effort override applied when the session is first created.
@@ -12550,6 +12635,28 @@ components:
         Context remains at contextual authority and cannot grant permissions. A retry using the same `idempotency_key` returns the original turn and ignores any newly supplied context.
       items:
         $ref: '#/components/schemas/RuntimeContextItem'
+    TurnOutputSpec:
+      type: object
+      additionalProperties: false
+      required:
+      - schema
+      description: 'Attaches a structured-output contract to a turn. When present, Mobius
+        exposes a reserved submit tool whose input schema is the schema below, validates the
+        submission server-side, and a turn that never produces a schema-valid object fails
+        with `error_type: output_schema_unsatisfied` instead of completing. Read the validated
+        value from the completed turn''s `output`. This is a per-turn contract, not agent
+        identity, so it works with stored agents and may differ between turns of one session.'
+      properties:
+        schema:
+          type: object
+          additionalProperties: true
+          description: 'JSON Schema the turn''s final output must satisfy. The root must be
+            `type: object` and self-contained (no `$ref`); the serialized schema must not
+            exceed 32 KiB. Mobius enforces the OpenAPI 3.0 subset: `required`, `enum`, `additionalProperties`,
+            `minItems`/`maxItems`, `minLength`/`maxLength`, `pattern`, numeric bounds, nested
+            objects/arrays, `oneOf`/`anyOf`/`allOf`, and `nullable`. Not supported: `$ref`/`$defs`,
+            `if`/`then`/`else`, `const` (use a one-value `enum`), `patternProperties`, and
+            `prefixItems`.'
     InvokeInput:
       type: object
       additionalProperties: false
@@ -12631,6 +12738,10 @@ components:
           description: Per-session compaction overrides applied when the session is first
             created. Merged over the agent's default policy and server defaults. Ignored when
             an existing session is resolved.
+        retention:
+          $ref: '#/components/schemas/SessionRetentionPolicy'
+          description: Retention policy applied when the session is first created. Ignored
+            when an existing session is resolved.
         thinking_effort:
           $ref: '#/components/schemas/ThinkingEffort'
           description: Reasoning-effort override applied when the session is first created.
@@ -12671,6 +12782,10 @@ components:
           $ref: '#/components/schemas/AgentTurnOperationPolicy'
         context:
           $ref: '#/components/schemas/RuntimeContext'
+        output:
+          $ref: '#/components/schemas/TurnOutputSpec'
+          description: Optional structured-output contract for this turn. Read the validated
+            value from the completed turn's `output`.
         metadata:
           type: object
           additionalProperties: true

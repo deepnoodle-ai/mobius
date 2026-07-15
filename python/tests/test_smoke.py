@@ -32,6 +32,7 @@ from deepnoodle.mobius import (
     StartRunOptions,
     StartTurnOptions,
     SyntheticWebhookDelivery,
+    TurnOutputSpec,
     WaitRunOptions,
     build_synthetic_webhook_payload,
     deliver_synthetic_webhook,
@@ -300,6 +301,7 @@ def test_invoke_agent_posts_the_compound_invoke_request_shape() -> None:
                 toolkits=[InlineToolkit(name="tickets", actions=["tickets.search"])],
             ),
             operation=AgentTurnOperationPolicy(timeout_seconds=90),
+            output=TurnOutputSpec(schema={"type": "object"}),
         )
     )
 
@@ -319,6 +321,9 @@ def test_invoke_agent_posts_the_compound_invoke_request_shape() -> None:
     assert '"effort":"medium"' in str(seen["body"])
     assert '"toolkits":[{"name":"tickets","actions":["tickets.search"]}]' in str(seen["body"])
     assert '"operation":{"timeout_seconds":90}' in str(seen["body"])
+    # The schema field is aliased off the python-reserved name; it must
+    # serialize under its wire name "schema", not "schema_".
+    assert '"output":{"schema":{"type":"object"}}' in str(seen["body"])
 
 
 def test_start_turn_passes_runtime_context_to_existing_session() -> None:
@@ -337,6 +342,7 @@ def test_start_turn_passes_runtime_context_to_existing_session() -> None:
             context=[RuntimeContextItem(name="naming-board", content="Chosen: none")],
             idempotency_key="evt_1",
             operation=AgentTurnOperationPolicy(timeout_seconds=45),
+            output=TurnOutputSpec(schema={"type": "object"}),
             metadata={"source": "app"},
         ),
     )
@@ -349,6 +355,7 @@ def test_start_turn_passes_runtime_context_to_existing_session() -> None:
         "context": [{"name": "naming-board", "content": "Chosen: none"}],
         "idempotency_key": "evt_1",
         "operation": {"timeout_seconds": 45},
+        "output": {"schema": {"type": "object"}},
         "metadata": {"source": "app"},
     }
 
