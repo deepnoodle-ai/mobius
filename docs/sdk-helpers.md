@@ -78,6 +78,14 @@ unsupported schemas, and malformed envelopes as distinct errors. Generic
 `ParseActionInvocation` / `parse_action_invocation` /
 `parseActionInvocation` remains available for legacy bodies.
 
+The formal wire contract is `ActionInvocationV1` in `openapi.yaml`. In Go,
+stale deliveries match both `ErrInvalidSignedDelivery` and
+`ErrStaleSignedDelivery`; schema and structure errors match
+`ErrUnsupportedActionInvocationSchema` and `ErrMalformedActionInvocation`.
+Python and TypeScript expose the corresponding `InvalidSignatureError`,
+`StaleDeliveryError`, `UnsupportedActionInvocationSchemaError`, and
+`MalformedActionInvocationError` classes.
+
 After verification, compare the signed org, project, action ID, and action name
 with the endpoint's configured expectations. Deduplicate by delivery ID within
 the action/secret scope before performing side effects. Never choose a user or

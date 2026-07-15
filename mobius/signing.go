@@ -1,6 +1,7 @@
 package mobius
 
 import (
+	"bytes"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
@@ -155,6 +156,7 @@ func VerifySignedDelivery(r *http.Request, opts VerifySignedDeliveryOptions) (*V
 // VerifySignedDeliveryBytes authenticates the exact raw bytes received from
 // Mobius. Callers must not parse and reserialize JSON before invoking it.
 func VerifySignedDeliveryBytes(body []byte, headers http.Header, opts VerifySignedDeliveryOptions) (*VerifiedDelivery, error) {
+	bodySnapshot := bytes.Clone(body)
 	meta, err := ReadDeliveryMeta(headers)
 	if err != nil {
 		return nil, err
@@ -172,10 +174,10 @@ func VerifySignedDeliveryBytes(body []byte, headers http.Header, opts VerifySign
 	if len(key) == 0 {
 		return nil, fmt.Errorf("%w: signing key is required", ErrInvalidSignedDelivery)
 	}
-	if err := verifyDeliverySignature(key, body, meta); err != nil {
+	if err := verifyDeliverySignature(key, bodySnapshot, meta); err != nil {
 		return nil, err
 	}
-	return &VerifiedDelivery{DeliveryMeta: meta, Body: body}, nil
+	return &VerifiedDelivery{DeliveryMeta: meta, Body: bodySnapshot}, nil
 }
 
 // VerifyActionInvocationV1 verifies the signed raw body before parsing its

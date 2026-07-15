@@ -93,7 +93,9 @@ func TestVerifySignedDeliveryRejectsStaleTimestamp(t *testing.T) {
 
 func TestVerifyActionInvocationV1GoldenFixture(t *testing.T) {
 	body, err := os.ReadFile("../internal/testdata/action-invocation-v1.json")
-	assert.NoError(t, err)
+	if err != nil {
+		t.Fatalf("read fixture: %v", err)
+	}
 	key := []byte("01234567890123456789012345678901")
 	assert.Equal(t, "sha256=9db53d763fc7bf16d9df33322860b5f1f6fbf77c4c21cdce26c13570d97a61e7", SignDelivery(key, body, "delivery_fixture_1", 1710000000))
 	req := signedDeliveryRequest(body, key, "delivery_fixture_1", 1710000000)
@@ -102,13 +104,45 @@ func TestVerifyActionInvocationV1GoldenFixture(t *testing.T) {
 		Key: key,
 		Now: func() time.Time { return time.Unix(1710000005, 0) },
 	})
-	assert.NoError(t, err)
+	if err != nil {
+		t.Fatalf("verify action invocation: %v", err)
+	}
 	assert.Equal(t, "org_fixture", got.Invocation.Mobius.Scope.OrgID)
 	assert.Equal(t, "prj_fixture", got.Invocation.Mobius.Scope.ProjectID)
 	assert.Equal(t, "act_fixture", got.Invocation.Mobius.Action.ID)
 	assert.Equal(t, "agt_fixture", got.Invocation.Mobius.Actor.AgentID)
 	assert.Equal(t, "agent_tool_call", got.Invocation.Mobius.Origin.Kind)
 	assert.Equal(t, "doc_fixture", got.Invocation.Parameters["document_id"])
+}
+
+func TestVerifySignedDeliveryBytesSnapshotsBody(t *testing.T) {
+	key := []byte("01234567890123456789012345678901")
+	body := []byte(`{"ok":true}`)
+	want := bytes.Clone(body)
+	req := signedDeliveryRequest(body, key, "delivery_snapshot", 1710000000)
+
+	got, err := VerifySignedDeliveryBytes(body, req.Header, VerifySignedDeliveryOptions{
+		Key: key,
+		Now: func() time.Time { return time.Unix(1710000005, 0) },
+	})
+	if err != nil {
+		t.Fatalf("verify signed delivery: %v", err)
+	}
+	body[0] = 'x'
+	assert.Equal(t, want, got.Body)
+}
+
+func TestParseActionInvocationV1AcceptsNullOptionalStrings(t *testing.T) {
+	body, err := os.ReadFile("../internal/testdata/action-invocation-v1-null-optionals.json")
+	if err != nil {
+		t.Fatalf("read fixture: %v", err)
+	}
+	got, err := ParseActionInvocationV1(&VerifiedDelivery{Body: body})
+	if err != nil {
+		t.Fatalf("parse action invocation: %v", err)
+	}
+	assert.Equal(t, "", got.Mobius.Actor.AgentID)
+	assert.Equal(t, "", got.Mobius.Origin.RunID)
 }
 
 func TestParseActionInvocationV1RejectsMalformedAndUnsupportedEnvelopes(t *testing.T) {
@@ -119,7 +153,12 @@ func TestParseActionInvocationV1RejectsMalformedAndUnsupportedEnvelopes(t *testi
 	}{
 		{name: "missing actor", body: `{"mobius":{"schema_version":1,"scope":{"org_id":"org_1","project_id":"prj_1"},"action":{"id":"act_1","name":"test.action"},"origin":{"kind":"direct_action_invoke"}},"parameters":{}}`, err: ErrMalformedActionInvocation},
 		{name: "agent missing agent id", body: `{"mobius":{"schema_version":1,"scope":{"org_id":"org_1","project_id":"prj_1"},"action":{"id":"act_1","name":"test.action"},"actor":{"principal_id":"prn_1","principal_type":"agent"},"origin":{"kind":"agent_tool_call"}},"parameters":{}}`, err: ErrMalformedActionInvocation},
+		{name: "human with agent id", body: `{"mobius":{"schema_version":1,"scope":{"org_id":"org_1","project_id":"prj_1"},"action":{"id":"act_1","name":"test.action"},"actor":{"principal_id":"prn_1","principal_type":"human","agent_id":"agt_1"},"origin":{"kind":"direct_action_invoke"}},"parameters":{}}`, err: ErrMalformedActionInvocation},
 		{name: "unknown schema", body: `{"mobius":{"schema_version":2},"parameters":{}}`, err: ErrUnsupportedActionInvocationSchema},
+		{name: "string schema", body: `{"mobius":{"schema_version":"1"},"parameters":{}}`, err: ErrMalformedActionInvocation},
+		{name: "boolean schema", body: `{"mobius":{"schema_version":true},"parameters":{}}`, err: ErrMalformedActionInvocation},
+		{name: "parameters missing", body: `{"mobius":{"schema_version":1,"scope":{"org_id":"org_1","project_id":"prj_1"},"action":{"id":"act_1","name":"test.action"},"actor":{"principal_id":"prn_1","principal_type":"human"},"origin":{"kind":"direct_action_invoke"}}}`, err: ErrMalformedActionInvocation},
+		{name: "parameters null", body: `{"mobius":{"schema_version":1,"scope":{"org_id":"org_1","project_id":"prj_1"},"action":{"id":"act_1","name":"test.action"},"actor":{"principal_id":"prn_1","principal_type":"human"},"origin":{"kind":"direct_action_invoke"}},"parameters":null}`, err: ErrMalformedActionInvocation},
 		{name: "parameters is not object", body: `{"mobius":{"schema_version":1,"scope":{"org_id":"org_1","project_id":"prj_1"},"action":{"id":"act_1","name":"test.action"},"actor":{"principal_id":"prn_1","principal_type":"human"},"origin":{"kind":"direct_action_invoke"}},"parameters":[]}`, err: ErrMalformedActionInvocation},
 	}
 	for _, tt := range tests {

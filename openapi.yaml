@@ -7530,6 +7530,121 @@ components:
         `{run_id, step_key, parameters}` body. `signed_context_v1` sends a versioned envelope
         whose project, action, actor, and origin claims are derived by Mobius and covered
         by the existing HMAC signature. Worker-backed actions must use `legacy`.
+    ActionInvocationV1:
+      type: object
+      additionalProperties: true
+      description: Signed HTTP action request body for `signed_context_v1`. Receivers must
+        verify the HMAC over the exact raw body before parsing this envelope. Unknown fields
+        are permitted for forward compatibility.
+      required:
+      - mobius
+      - parameters
+      properties:
+        mobius:
+          $ref: '#/components/schemas/ActionInvocationContextV1'
+        parameters:
+          type: object
+          additionalProperties: true
+          description: Caller-supplied action parameters. These are not an authorization identity.
+    ActionInvocationContextV1:
+      type: object
+      additionalProperties: true
+      required:
+      - schema_version
+      - scope
+      - action
+      - actor
+      - origin
+      properties:
+        schema_version:
+          type: integer
+          enum:
+          - 1
+        scope:
+          $ref: '#/components/schemas/ActionInvocationScopeV1'
+        action:
+          $ref: '#/components/schemas/ActionInvocationActionV1'
+        actor:
+          $ref: '#/components/schemas/ActionInvocationActorV1'
+        origin:
+          $ref: '#/components/schemas/ActionInvocationOriginV1'
+    ActionInvocationScopeV1:
+      type: object
+      additionalProperties: true
+      required:
+      - org_id
+      - project_id
+      properties:
+        org_id:
+          type: string
+        project_id:
+          type: string
+    ActionInvocationActionV1:
+      type: object
+      additionalProperties: true
+      required:
+      - id
+      - name
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+    ActionInvocationActorV1:
+      type: object
+      additionalProperties: true
+      required:
+      - principal_id
+      - principal_type
+      properties:
+        principal_id:
+          type: string
+        principal_type:
+          type: string
+          enum:
+          - human
+          - agent
+          - service
+          - system
+        agent_id:
+          type: string
+          nullable: true
+          description: Required for agent principals and forbidden for all other principal
+            types.
+    ActionInvocationOriginV1:
+      type: object
+      additionalProperties: true
+      required:
+      - kind
+      properties:
+        kind:
+          type: string
+          enum:
+          - agent_tool_call
+          - loop_action_step
+          - direct_action_invoke
+          - server_internal
+        run_id:
+          type: string
+          nullable: true
+        channel_exchange_id:
+          type: string
+          nullable: true
+        loop_id:
+          type: string
+          nullable: true
+        step_key:
+          type: string
+          nullable: true
+        agent_turn_id:
+          type: string
+          nullable: true
+        session_id:
+          type: string
+          nullable: true
+        tool_call_id:
+          type: string
+          nullable: true
     CreateActionRequest:
       type: object
       additionalProperties: false
@@ -16145,6 +16260,14 @@ components:
           type: string
           format: date-time
           description: Time this quota snapshot was generated.
+  requestBodies:
+    SignedActionInvocationV1:
+      required: true
+      description: Outbound signed-context HTTP action request.
+      content:
+        application/vnd.mobius.action-invocation+json; version=1:
+          schema:
+            $ref: '#/components/schemas/ActionInvocationV1'
 x-tagGroups:
 - name: API Keys
   tags:

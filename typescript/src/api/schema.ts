@@ -3162,7 +3162,7 @@ export interface components {
              * @description Allow minting a key for a principal with no project role assignments. The resulting key cannot access project resources until a role is assigned. Omit this for normal onboarding so a missing assignment fails with `principal_has_no_roles`.
              * @default false
              */
-            allow_unassigned_principal: boolean;
+            allow_unassigned_principal?: boolean;
             /**
              * Format: date-time
              * @description Optional hard expiry. Omit for a non-expiring key.
@@ -3189,7 +3189,7 @@ export interface components {
              * @default Admin
              * @enum {string}
              */
-            role: "Owner" | "Admin" | "Editor" | "Operator" | "Viewer";
+            role?: "Owner" | "Admin" | "Editor" | "Operator" | "Viewer";
             /**
              * Format: date-time
              * @description Optional hard expiry. Omit for a non-expiring key.
@@ -3228,6 +3228,60 @@ export interface components {
          * @enum {string}
          */
         ActionInvocationFormat: "legacy" | "signed_context_v1";
+        /** @description Signed HTTP action request body for `signed_context_v1`. Receivers must verify the HMAC over the exact raw body before parsing this envelope. Unknown fields are permitted for forward compatibility. */
+        ActionInvocationV1: {
+            mobius: components["schemas"]["ActionInvocationContextV1"];
+            /** @description Caller-supplied action parameters. These are not an authorization identity. */
+            parameters: {
+                [key: string]: unknown;
+            };
+        } & {
+            [key: string]: unknown;
+        };
+        ActionInvocationContextV1: {
+            /** @enum {integer} */
+            schema_version: 1;
+            scope: components["schemas"]["ActionInvocationScopeV1"];
+            action: components["schemas"]["ActionInvocationActionV1"];
+            actor: components["schemas"]["ActionInvocationActorV1"];
+            origin: components["schemas"]["ActionInvocationOriginV1"];
+        } & {
+            [key: string]: unknown;
+        };
+        ActionInvocationScopeV1: {
+            org_id: string;
+            project_id: string;
+        } & {
+            [key: string]: unknown;
+        };
+        ActionInvocationActionV1: {
+            id: string;
+            name: string;
+        } & {
+            [key: string]: unknown;
+        };
+        ActionInvocationActorV1: {
+            principal_id: string;
+            /** @enum {string} */
+            principal_type: "human" | "agent" | "service" | "system";
+            /** @description Required for agent principals and forbidden for all other principal types. */
+            agent_id?: string | null;
+        } & {
+            [key: string]: unknown;
+        };
+        ActionInvocationOriginV1: {
+            /** @enum {string} */
+            kind: "agent_tool_call" | "loop_action_step" | "direct_action_invoke" | "server_internal";
+            run_id?: string | null;
+            channel_exchange_id?: string | null;
+            loop_id?: string | null;
+            step_key?: string | null;
+            agent_turn_id?: string | null;
+            session_id?: string | null;
+            tool_call_id?: string | null;
+        } & {
+            [key: string]: unknown;
+        };
         /**
          * @description Registers a project-owned custom action callable from loops and agents.
          * @example {
@@ -3280,12 +3334,12 @@ export interface components {
              * @description Backing kind for the action. `http` actions POST to `endpoint_url` with a Mobius signature. `worker` actions are dispatched through jobs to connected workers that advertise this registered name.
              * @default http
              */
-            endpoint_kind: string & components["schemas"]["ActionEndpointKind"];
+            endpoint_kind?: string & components["schemas"]["ActionEndpointKind"];
             /**
              * @description Request-body contract for HTTP invocations. Omit to preserve the legacy body. `signed_context_v1` is valid only with `endpoint_kind: http`.
              * @default legacy
              */
-            invocation_format: components["schemas"]["ActionInvocationFormat"];
+            invocation_format?: components["schemas"]["ActionInvocationFormat"];
             /**
              * Format: uri
              * @description Required when endpoint_kind is `http`; omitted for worker actions.
@@ -3990,7 +4044,7 @@ export interface components {
              * @default completed
              * @enum {string}
              */
-            status: "completed" | "failed" | "cancelled";
+            status?: "completed" | "failed" | "cancelled";
             /** @description Terminal result payload. For `llm_generation` jobs, this object must follow `WorkerSocketLLMGenerationResult`; plain text fallback results are not accepted. */
             result?: {
                 [key: string]: unknown;
@@ -4917,27 +4971,27 @@ export interface components {
              * @description Whether the binding is active and the agent responds on this provider.
              * @default false
              */
-            enabled: boolean;
+            enabled?: boolean;
             /**
              * @description When enabling this binding, disable any other active agent binding for the same provider account.
              * @default false
              */
-            replace_existing: boolean;
+            replace_existing?: boolean;
             /**
              * @description Respond to direct messages.
              * @default true
              */
-            dms: boolean;
+            dms?: boolean;
             /**
              * @description Respond when the agent is @-mentioned.
              * @default true
              */
-            mentions: boolean;
+            mentions?: boolean;
             /**
              * @description Respond to every message in bound channels, not just mentions.
              * @default false
              */
-            all_messages: boolean;
+            all_messages?: boolean;
             /** @description Channel IDs the binding is scoped to (empty means all channels). */
             channels?: string[];
             /** @description Who may direct-message this agent: `open`, `allowlist`, or `disabled`. */
@@ -6153,7 +6207,7 @@ export interface components {
              * @default user
              * @enum {string}
              */
-            role: "user";
+            role?: "user";
             /** @description Ordered content blocks (text, images) for the input message. */
             content: {
                 [key: string]: unknown;
@@ -6198,7 +6252,7 @@ export interface components {
              * @description When true and the target turn is waiting on an interruptible agent tool, resolve that tool call with `{ "interrupted": true, "reason": "user_direction" }` and resume the same turn. Running and newly queued turns ignore this field.
              * @default false
              */
-            wake: boolean;
+            wake?: boolean;
         };
         /**
          * @description Durable nudge queue lifecycle status.
@@ -6312,7 +6366,7 @@ export interface components {
              * @default 1
              * @enum {string}
              */
-            schema_version: "1";
+            schema_version?: "1";
             /** @description Declared event fields for this loop. */
             event?: {
                 [key: string]: components["schemas"]["LoopSpecInput"];
@@ -6445,7 +6499,7 @@ export interface components {
              * @default 1
              * @enum {string}
              */
-            schema_version: "1";
+            schema_version?: "1";
             /** @description Declared event fields for this loop. */
             event?: {
                 [key: string]: components["schemas"]["LoopSpecInput"];
@@ -6563,13 +6617,13 @@ export interface components {
              * @default static
              * @enum {string}
              */
-            source: "static" | "match";
+            source?: "static" | "match";
             /**
              * @description Repository provider. GitHub is the only supported provider today.
              * @default github
              * @enum {string}
              */
-            provider: "github";
+            provider?: "github";
             /** @description Provider-specific repository id. */
             id?: number | string;
             /** @description Provider repository full name, e.g. `owner/repo`. Required when `source` is `static`. */
@@ -6582,7 +6636,7 @@ export interface components {
              * @description Authorize the loop's managed environment to push to this repository. Defaults to `false`: the repository is cloned read-only and a `git push` from inside the environment fails with a permission error. Set `true` to let the environment obtain a write-scoped credential for this repository. Opt in per repository so environments are never write-capable by default.
              * @default false
              */
-            push: boolean;
+            push?: boolean;
         };
         /** @description One named input accepted by a loop spec. */
         LoopSpecInput: {
@@ -6938,7 +6992,7 @@ export interface components {
              * @default fail
              * @enum {string}
              */
-            on_fail: "fail" | "continue" | "gate";
+            on_fail?: "fail" | "continue" | "gate";
             /** @description Approval gate configuration used when `on_fail` is `gate`. */
             gate?: components["schemas"]["LoopCheckGate"];
         };
@@ -7352,7 +7406,7 @@ export interface components {
              * @description Tool selectors that narrow the agent's effective tool set while this skill is active.
              * @default []
              */
-            allowed_tools: string[];
+            allowed_tools?: string[];
             /** @description Labels to apply to the skill. */
             tags?: components["schemas"]["TagMap"];
         };
@@ -7465,7 +7519,7 @@ export interface components {
              * @default exact
              * @enum {string}
              */
-            selector_type: "exact" | "group" | "platform" | "custom" | "wildcard";
+            selector_type?: "exact" | "group" | "platform" | "custom" | "wildcard";
             /** @description Canonical selector value, such as `github.*` or `*`. */
             selector?: string;
             /**
@@ -7526,7 +7580,7 @@ export interface components {
              * @default 1
              * @enum {string}
              */
-            schema_version: "1";
+            schema_version?: "1";
             steps?: {
                 [key: string]: unknown;
             }[];
@@ -7642,13 +7696,13 @@ export interface components {
              * @description Whether inserts must include a non-null value for this column.
              * @default false
              */
-            required: boolean;
+            required?: boolean;
             /**
              * @deprecated
              * @description Compatibility hint retained for older schemas. It does not create a physical database index.
              * @default false
              */
-            indexed: boolean;
+            indexed?: boolean;
             /** @description Default value applied when column is absent on insert */
             default?: unknown;
             /** @description Human-readable explanation of the column's purpose. */
@@ -7657,7 +7711,7 @@ export interface components {
              * @description Whether authors should avoid using this column in new rows.
              * @default false
              */
-            deprecated: boolean;
+            deprecated?: boolean;
         };
         /** @description Compatibility metadata for older table schemas. Declared indexes do not create physical database indexes. */
         IndexDef: {
@@ -7683,7 +7737,7 @@ export interface components {
              * @description Allows rows to include undeclared keys while declared columns continue to be validated.
              * @default false
              */
-            open: boolean;
+            open?: boolean;
         };
         /**
          * @description Machine principal kind. `service` is the standalone user-facing API client identity. `agent` and `system` are internal backing identities for agent execution and platform-internal work. (Human principals are managed as organization members, not on this surface.)
@@ -8015,13 +8069,13 @@ export interface components {
                  * @default asc
                  * @enum {string}
                  */
-                order: "asc" | "desc";
+                order?: "asc" | "desc";
             }[];
             /**
              * @description Maximum number of rows to return (1–100, default 20).
              * @default 20
              */
-            limit: number;
+            limit?: number;
             /** @description Opaque cursor from a prior response. */
             cursor?: string;
         };
@@ -8044,7 +8098,7 @@ export interface components {
              * @default keyword
              * @enum {string}
              */
-            mode: "keyword" | "semantic" | "hybrid";
+            mode?: "keyword" | "semantic" | "hybrid";
             /** @description Optional column equality or operator filter applied before search. */
             filter?: {
                 [key: string]: unknown;
@@ -8053,7 +8107,7 @@ export interface components {
              * @description Maximum number of rows to return (1–100, default 20).
              * @default 20
              */
-            limit: number;
+            limit?: number;
             /** @description Opaque cursor from a prior search response. */
             cursor?: string;
         };
@@ -8365,7 +8419,14 @@ export interface components {
         /** @description ID of the artifact */
         ArtifactIdParam: string;
     };
-    requestBodies: never;
+    requestBodies: {
+        /** @description Outbound signed-context HTTP action request. */
+        SignedActionInvocationV1: {
+            content: {
+                "application/vnd.mobius.action-invocation+json; version=1": components["schemas"]["ActionInvocationV1"];
+            };
+        };
+    };
     headers: never;
     pathItems: never;
 }

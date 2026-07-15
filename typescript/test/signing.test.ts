@@ -16,6 +16,7 @@ import {
   parseActionInvocationV1,
   signDelivery,
   verifyActionInvocationV1,
+  verifySignedDeliveryBytes,
   type VerifiedDelivery,
 } from "../src/signing.js";
 
@@ -36,10 +37,22 @@ function headers(value = signature): Headers {
   });
 }
 
-async function fixture(): Promise<Uint8Array> {
-  return readFile(
-    resolve(process.cwd(), "../internal/testdata/action-invocation-v1.json"),
-  );
+async function fixture(
+  name = "action-invocation-v1.json",
+): Promise<Uint8Array> {
+  return readFile(resolve(process.cwd(), `../internal/testdata/${name}`));
+}
+
+function delivery(body: Uint8Array): VerifiedDelivery {
+  return {
+    signatureVersion: "v1",
+    signature,
+    timestamp,
+    deliveryId,
+    secretRef: "mobius/action/act_fixture",
+    secretVersion: 3,
+    body,
+  };
 }
 
 test("signed action invocation: verifies and parses the shared golden fixture", async () => {
@@ -72,36 +85,76 @@ test("signed action invocation: reports stale delivery explicitly", async () => 
   );
 });
 
-test("signed action invocation: rejects unsupported schemas", () => {
-  const delivery: VerifiedDelivery = {
-    signatureVersion: "v1",
-    signature,
-    timestamp,
+test("signed delivery: snapshots the authenticated body", async () => {
+  const body = Buffer.from('{"ok":true}');
+  const bodySignature = signDelivery(key, body, {
     deliveryId,
-    secretRef: "mobius/action/act_fixture",
-    secretVersion: 3,
-    body: Buffer.from('{"mobius":{"schema_version":2},"parameters":{}}'),
-  };
+    timestamp,
+  }).signature;
+  const verified = await verifySignedDeliveryBytes(
+    body,
+    headers(bodySignature),
+    { key, now: () => timestamp + 5 },
+  );
+  const want = Buffer.from(body);
+  body[0] = "x".charCodeAt(0);
+  assert.deepEqual(Buffer.from(verified.body), want);
+});
+
+test("signed action invocation: accepts null optional strings", async () => {
+  const invocation = parseActionInvocationV1(
+    delivery(await fixture("action-invocation-v1-null-optionals.json")),
+  );
+  assert.equal(invocation.mobius.actor.agentId, undefined);
+  assert.equal(invocation.mobius.origin.runId, undefined);
+});
+
+test("signed action invocation: rejects unsupported schemas", () => {
   assert.throws(
-    () => parseActionInvocationV1(delivery),
+    () =>
+      parseActionInvocationV1(
+        delivery(
+          Buffer.from('{"mobius":{"schema_version":2},"parameters":{}}'),
+        ),
+      ),
     UnsupportedActionInvocationSchemaError,
   );
 });
 
-test("signed action invocation: enforces the agent identity invariant", () => {
-  const delivery: VerifiedDelivery = {
-    signatureVersion: "v1",
-    signature,
-    timestamp,
-    deliveryId,
-    secretRef: "mobius/action/act_fixture",
-    secretVersion: 3,
-    body: Buffer.from(
-      '{"mobius":{"schema_version":1,"scope":{"org_id":"org_1","project_id":"prj_1"},"action":{"id":"act_1","name":"test.action"},"actor":{"principal_id":"prn_1","principal_type":"agent"},"origin":{"kind":"agent_tool_call"}},"parameters":{}}',
-    ),
-  };
-  assert.throws(
-    () => parseActionInvocationV1(delivery),
-    MalformedActionInvocationError,
-  );
-});
+for (const [name, body] of [
+  [
+    "string schema version",
+    '{"mobius":{"schema_version":"1"},"parameters":{}}',
+  ],
+  [
+    "boolean schema version",
+    '{"mobius":{"schema_version":true},"parameters":{}}',
+  ],
+  [
+    "agent missing agent_id",
+    '{"mobius":{"schema_version":1,"scope":{"org_id":"org_1","project_id":"prj_1"},"action":{"id":"act_1","name":"test.action"},"actor":{"principal_id":"prn_1","principal_type":"agent"},"origin":{"kind":"agent_tool_call"}},"parameters":{}}',
+  ],
+  [
+    "human with agent_id",
+    '{"mobius":{"schema_version":1,"scope":{"org_id":"org_1","project_id":"prj_1"},"action":{"id":"act_1","name":"test.action"},"actor":{"principal_id":"prn_1","principal_type":"human","agent_id":"agt_1"},"origin":{"kind":"direct_action_invoke"}},"parameters":{}}',
+  ],
+  [
+    "missing parameters",
+    '{"mobius":{"schema_version":1,"scope":{"org_id":"org_1","project_id":"prj_1"},"action":{"id":"act_1","name":"test.action"},"actor":{"principal_id":"prn_1","principal_type":"human"},"origin":{"kind":"direct_action_invoke"}}}',
+  ],
+  [
+    "null parameters",
+    '{"mobius":{"schema_version":1,"scope":{"org_id":"org_1","project_id":"prj_1"},"action":{"id":"act_1","name":"test.action"},"actor":{"principal_id":"prn_1","principal_type":"human"},"origin":{"kind":"direct_action_invoke"}},"parameters":null}',
+  ],
+  [
+    "array parameters",
+    '{"mobius":{"schema_version":1,"scope":{"org_id":"org_1","project_id":"prj_1"},"action":{"id":"act_1","name":"test.action"},"actor":{"principal_id":"prn_1","principal_type":"human"},"origin":{"kind":"direct_action_invoke"}},"parameters":[]}',
+  ],
+] as const) {
+  test(`signed action invocation: rejects ${name}`, () => {
+    assert.throws(
+      () => parseActionInvocationV1(delivery(Buffer.from(body))),
+      MalformedActionInvocationError,
+    );
+  });
+}

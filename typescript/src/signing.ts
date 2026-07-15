@@ -159,14 +159,15 @@ export async function verifySignedDeliveryBytes(
   headers: HeadersInit,
   opts: VerifySignedDeliveryOptions,
 ): Promise<VerifiedDelivery> {
+  const bodySnapshot = Uint8Array.from(body);
   const meta = readDeliveryMetaFromHeaders(headers);
   verifyFreshness(meta, opts);
   const key = "key" in opts ? opts.key : await opts.resolveKey(meta);
   if (!key?.byteLength) {
     throw new InvalidSignatureError("signing key is required");
   }
-  verifySignature(key, body, meta);
-  return { ...meta, body };
+  verifySignature(key, bodySnapshot, meta);
+  return { ...meta, body: bodySnapshot };
 }
 
 export async function verifyActionInvocationV1(
@@ -226,8 +227,14 @@ export function parseActionInvocationV1(
       "mobius.schema_version is required",
     );
   }
-  if (mobius.schema_version !== 1) {
-    throw new UnsupportedActionInvocationSchemaError(mobius.schema_version);
+  const schemaVersion = mobius.schema_version;
+  if (typeof schemaVersion !== "number" || !Number.isInteger(schemaVersion)) {
+    throw new MalformedActionInvocationError(
+      "mobius.schema_version must be an integer",
+    );
+  }
+  if (schemaVersion !== 1) {
+    throw new UnsupportedActionInvocationSchemaError(schemaVersion);
   }
   const scope = requiredObject(mobius.scope, "mobius.scope");
   const action = requiredObject(mobius.action, "mobius.action");
@@ -351,7 +358,7 @@ function requiredString(value: unknown, path: string): string {
 }
 
 function optionalString(value: unknown, path: string): string | undefined {
-  if (value === undefined) return undefined;
+  if (value === undefined || value === null) return undefined;
   if (typeof value !== "string" || !value.trim()) {
     throw new MalformedActionInvocationError(
       `${path} must be a non-empty string`,

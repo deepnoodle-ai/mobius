@@ -228,6 +228,10 @@ def parse_action_invocation_v1(v: VerifiedDelivery) -> ActionInvocationV1:
     schema_version = mobius.get("schema_version")
     if schema_version is None:
         raise MalformedActionInvocationError("mobius: malformed action invocation: mobius.schema_version is required")
+    if not isinstance(schema_version, int) or isinstance(schema_version, bool):
+        raise MalformedActionInvocationError(
+            "mobius: malformed action invocation: mobius.schema_version must be an integer"
+        )
     if schema_version != 1:
         raise UnsupportedActionInvocationSchemaError(
             f"mobius: unsupported action invocation schema: {schema_version}"
