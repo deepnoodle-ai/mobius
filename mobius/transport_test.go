@@ -346,32 +346,83 @@ func TestRetryingTransport_ExhaustsBudget_ReturnsRateLimitError(t *testing.T) {
 	assert.Equal(t, len(rec.calls), 2)
 }
 
-func TestRetryingTransport_503Retried_FinalPassesThrough(t *testing.T) {
-	var count atomic.Int32
-	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		count.Add(1)
-		w.WriteHeader(503)
-	})
-	srv := httptest.NewServer(h)
-	t.Cleanup(srv.Close)
+func TestRetryingTransport_TransientServerErrorsRetried_FinalPassesThrough(t *testing.T) {
+	for _, status := range []int{500, 502, 503, 504} {
+		t.Run(strconv.Itoa(status), func(t *testing.T) {
+			var count atomic.Int32
+			h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				count.Add(1)
+				w.WriteHeader(status)
+			})
+			srv := httptest.NewServer(h)
+			t.Cleanup(srv.Close)
 
-	rec := &recordingSleep{}
-	tp := &RetryingTransport{MaxRetries: 2, sleep: rec.sleep}
-	req := newRequest(t, http.MethodGet, srv.URL+"/x", "")
+			rec := &recordingSleep{}
+			tp := &RetryingTransport{MaxRetries: 2, sleep: rec.sleep}
+			req := newRequest(t, http.MethodGet, srv.URL+"/x", "")
 
-	resp, err := tp.RoundTrip(req)
-	assert.NoError(t, err)
-	assert.Equal(t, resp.StatusCode, 503)
-	_ = resp.Body.Close()
-	assert.Equal(t, count.Load(), int32(3))
-	assert.Equal(t, len(rec.calls), 2)
+			resp, err := tp.RoundTrip(req)
+			assert.NoError(t, err)
+			assert.Equal(t, resp.StatusCode, status)
+			_ = resp.Body.Close()
+			assert.Equal(t, count.Load(), int32(3))
+			assert.Equal(t, len(rec.calls), 2)
+		})
+	}
+}
+
+func TestRetryingTransport_TransientServerErrorsRespectPostIdempotencyGate(t *testing.T) {
+	for _, status := range []int{500, 502, 503, 504} {
+		t.Run(strconv.Itoa(status), func(t *testing.T) {
+			t.Run("with key", func(t *testing.T) {
+				var count atomic.Int32
+				h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					if count.Add(1) == 1 {
+						w.Header().Set("Retry-After", "0")
+						w.WriteHeader(status)
+						return
+					}
+					w.WriteHeader(http.StatusOK)
+				})
+				srv := httptest.NewServer(h)
+				t.Cleanup(srv.Close)
+
+				tp := &RetryingTransport{MaxRetries: 2, sleep: (&recordingSleep{}).sleep}
+				req := newRequest(t, http.MethodPost, srv.URL+"/x", `{"same":true}`)
+				req.Header.Set("Idempotency-Key", "k1")
+				resp, err := tp.RoundTrip(req)
+				assert.NoError(t, err)
+				assert.Equal(t, resp.StatusCode, http.StatusOK)
+				_ = resp.Body.Close()
+				assert.Equal(t, count.Load(), int32(2))
+			})
+
+			t.Run("without key", func(t *testing.T) {
+				var count atomic.Int32
+				h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					count.Add(1)
+					w.WriteHeader(status)
+				})
+				srv := httptest.NewServer(h)
+				t.Cleanup(srv.Close)
+
+				tp := &RetryingTransport{MaxRetries: 2, sleep: (&recordingSleep{}).sleep}
+				req := newRequest(t, http.MethodPost, srv.URL+"/x", `{"same":true}`)
+				resp, err := tp.RoundTrip(req)
+				assert.NoError(t, err)
+				assert.Equal(t, resp.StatusCode, status)
+				_ = resp.Body.Close()
+				assert.Equal(t, count.Load(), int32(1))
+			})
+		})
+	}
 }
 
 func TestRetryingTransport_NonRetryableStatusPassesThrough(t *testing.T) {
 	var count atomic.Int32
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		count.Add(1)
-		w.WriteHeader(500)
+		w.WriteHeader(http.StatusNotImplemented)
 	})
 	srv := httptest.NewServer(h)
 	t.Cleanup(srv.Close)
@@ -382,7 +433,7 @@ func TestRetryingTransport_NonRetryableStatusPassesThrough(t *testing.T) {
 
 	resp, err := tp.RoundTrip(req)
 	assert.NoError(t, err)
-	assert.Equal(t, resp.StatusCode, 500)
+	assert.Equal(t, resp.StatusCode, http.StatusNotImplemented)
 	_ = resp.Body.Close()
 	assert.Equal(t, count.Load(), int32(1))
 	assert.Equal(t, len(rec.calls), 0)

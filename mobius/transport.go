@@ -21,13 +21,13 @@ const MaxRetryBackoff = 60 * time.Second
 
 const baseRetryBackoff = 1 * time.Second
 
-// RetryingTransport wraps an http.RoundTripper to retry 429 and 503
-// responses and transport-level errors per the policy documented in
-// docs/retries.md:
+// RetryingTransport wraps an http.RoundTripper to retry 429, transient
+// 500/502/503/504 responses, and transport-level errors per the policy
+// documented in docs/retries.md:
 //
-//   - 429 and 503 responses are retried, as are transport-level errors
-//     (connection reset, unexpected EOF, dial failure) that never yield an
-//     HTTP response.
+//   - 429, 500, 502, 503, and 504 responses are retried, as are
+//     transport-level errors (connection reset, unexpected EOF, dial failure)
+//     that never yield an HTTP response.
 //   - GET/HEAD/PUT/DELETE are always replayable; POST/PATCH are replayed
 //     only when an Idempotency-Key header is set. Non-replayable requests
 //     surface the error without a retry.
@@ -93,7 +93,7 @@ func (t *RetryingTransport) RoundTrip(req *http.Request) (*http.Response, error)
 		if err != nil {
 			// Transport-level failure (connection reset, unexpected EOF,
 			// dial error, ...). These never produce an HTTP response, so the
-			// 429/503 handling below cannot see them. Retry idempotent,
+			// HTTP-status handling below cannot see them. Retry idempotent,
 			// replayable requests on the same backoff budget; give up once
 			// the budget is spent, the request is not safe to replay, or the
 			// context is done.
@@ -141,18 +141,18 @@ func (t *RetryingTransport) RoundTrip(req *http.Request) (*http.Response, error)
 		}
 
 		outOfBudget := attempt >= t.MaxRetries || !canRetry
-		if resp.StatusCode == http.StatusTooManyRequests && outOfBudget {
-			rle := parseRateLimitError(resp)
-			_ = resp.Body.Close()
-			return nil, rle
-		}
-		if resp.StatusCode == http.StatusServiceUnavailable && outOfBudget {
+		if outOfBudget {
+			if resp.StatusCode == http.StatusTooManyRequests {
+				rle := parseRateLimitError(resp)
+				_ = resp.Body.Close()
+				return nil, rle
+			}
 			return resp, nil
 		}
 
 		wait := retryAfterOrBackoff(resp, attempt, t.nowFn())
 		if t.Logger != nil {
-			t.Logger.Warn("mobius: retrying after rate-limit response",
+			t.Logger.Warn("mobius: retrying after transient HTTP response",
 				slog.String("method", req.Method),
 				slog.String("url", req.URL.String()),
 				slog.Int("status", resp.StatusCode),
@@ -202,11 +202,20 @@ func prepareReplayableJSONResponse(req *http.Request, resp *http.Response) error
 }
 
 func isRetryableStatus(code int) bool {
-	return code == http.StatusTooManyRequests || code == http.StatusServiceUnavailable
+	switch code {
+	case http.StatusTooManyRequests,
+		http.StatusInternalServerError,
+		http.StatusBadGateway,
+		http.StatusServiceUnavailable,
+		http.StatusGatewayTimeout:
+		return true
+	default:
+		return false
+	}
 }
 
 // isIdempotent reports whether the method-plus-headers combination makes
-// the request safe to retry on a 429/503.
+// the request safe to retry on a transient HTTP response.
 func isIdempotent(req *http.Request) bool {
 	switch strings.ToUpper(req.Method) {
 	case http.MethodGet, http.MethodHead, http.MethodPut, http.MethodDelete, http.MethodOptions:

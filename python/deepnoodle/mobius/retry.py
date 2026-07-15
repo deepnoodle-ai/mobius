@@ -1,4 +1,4 @@
-"""429/503-aware retrying transport for the Mobius Python SDK.
+"""Transient-response-aware retrying transport for the Mobius Python SDK.
 
 Implements the shared retry policy documented in ``../docs/retries.md``.
 Wraps an underlying :class:`httpx.BaseTransport` and transparently retries
@@ -23,6 +23,7 @@ MAX_RETRY_BACKOFF_SECONDS = 60.0
 BASE_RETRY_BACKOFF_SECONDS = 1.0
 
 _IDEMPOTENT_METHODS = frozenset({"GET", "HEAD", "PUT", "DELETE", "OPTIONS"})
+_RETRYABLE_STATUS_CODES = frozenset({429, 500, 502, 503, 504})
 
 
 class _ReplayableResponseError(Exception):
@@ -30,8 +31,7 @@ class _ReplayableResponseError(Exception):
 
 
 class RetryingTransport(httpx.BaseTransport):
-    """Wraps a transport, retrying 429/503 responses and transport-level
-    errors per the shared spec.
+    """Retries transient responses and transport errors per the shared spec.
 
     Only GET/HEAD/PUT/DELETE/OPTIONS and POST/PATCH requests carrying an
     ``Idempotency-Key`` header are retried; other POST/PATCH requests
@@ -77,15 +77,15 @@ class RetryingTransport(httpx.BaseTransport):
 
             status = response.status_code
 
-            if status not in (429, 503):
+            if status not in _RETRYABLE_STATUS_CODES:
                 return response
 
             out_of_budget = attempt >= self._max_retries or not idempotent
 
-            if status == 429 and out_of_budget:
-                _drain(response)
-                raise _build_rate_limit_error(response)
-            if status == 503 and out_of_budget:
+            if out_of_budget:
+                if status == 429:
+                    _drain(response)
+                    raise _build_rate_limit_error(response)
                 return response
 
             wait = _retry_after_or_backoff(response, attempt, self._now())

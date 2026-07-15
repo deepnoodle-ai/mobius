@@ -279,19 +279,51 @@ def test_exp_backoff_without_header() -> None:
     assert calls["n"] == 4
 
 
-def test_503_retried_then_passes_through() -> None:
+@pytest.mark.parametrize("status", [500, 502, 503, 504])
+def test_transient_server_errors_retried_then_pass_through(status: int) -> None:
     calls = {"n": 0}
 
     def handler(_: httpx.Request) -> httpx.Response:
         calls["n"] += 1
-        return httpx.Response(503)
+        return httpx.Response(status)
 
     rec = _Recorder()
     with _wrap(handler, max_retries=2, sleep=rec.sleep) as client:
         resp = client.get("/x")
-    assert resp.status_code == 503
+    assert resp.status_code == status
     assert calls["n"] == 3
     assert len(rec.sleeps) == 2
+
+
+@pytest.mark.parametrize("status", [500, 502, 503, 504])
+def test_transient_server_errors_respect_post_idempotency_gate(status: int) -> None:
+    keyed_calls = {"n": 0}
+
+    def keyed_handler(_: httpx.Request) -> httpx.Response:
+        keyed_calls["n"] += 1
+        if keyed_calls["n"] == 1:
+            return httpx.Response(status, headers={"Retry-After": "0"})
+        return httpx.Response(200)
+
+    with _wrap(keyed_handler, max_retries=2) as client:
+        resp = client.post(
+            "/x",
+            json={"same": True},
+            headers={"Idempotency-Key": "k1"},
+        )
+    assert resp.status_code == 200
+    assert keyed_calls["n"] == 2
+
+    unkeyed_calls = {"n": 0}
+
+    def unkeyed_handler(_: httpx.Request) -> httpx.Response:
+        unkeyed_calls["n"] += 1
+        return httpx.Response(status)
+
+    with _wrap(unkeyed_handler, max_retries=2) as client:
+        resp = client.post("/x", json={"same": True})
+    assert resp.status_code == status
+    assert unkeyed_calls["n"] == 1
 
 
 def test_non_retryable_status_passes_through() -> None:
@@ -299,12 +331,12 @@ def test_non_retryable_status_passes_through() -> None:
 
     def handler(_: httpx.Request) -> httpx.Response:
         calls["n"] += 1
-        return httpx.Response(500)
+        return httpx.Response(501)
 
     rec = _Recorder()
     with _wrap(handler, max_retries=3, sleep=rec.sleep) as client:
         resp = client.get("/x")
-    assert resp.status_code == 500
+    assert resp.status_code == 501
     assert calls["n"] == 1
     assert rec.sleeps == []
 

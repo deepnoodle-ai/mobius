@@ -1,5 +1,5 @@
-// 429/503- and transport-error-aware retrying `fetch` wrapper. Implements the
-// shared retry policy documented in ../../docs/retries.md.
+// Transient-response- and transport-error-aware retrying `fetch` wrapper.
+// Implements the shared retry policy documented in ../../docs/retries.md.
 
 export class RateLimitError extends Error {
   readonly retryAfter: number;
@@ -42,11 +42,12 @@ export const MAX_RETRY_BACKOFF_SECONDS = 60;
 const BASE_RETRY_BACKOFF_SECONDS = 1;
 
 const IDEMPOTENT_METHODS = new Set(["GET", "HEAD", "PUT", "DELETE", "OPTIONS"]);
+const RETRYABLE_STATUS_CODES = new Set([429, 500, 502, 503, 504]);
 
 type FetchFn = typeof globalThis.fetch;
 
 export interface WrapRetryOptions {
-  /** Number of retries for 429/503 responses. 0 disables retries. */
+  /** Number of retries for transient responses. 0 disables retries. */
   maxRetries?: number;
   /** Override for tests — called in place of `setTimeout`-based sleeping. */
   sleep?: (seconds: number) => Promise<void>;
@@ -59,13 +60,17 @@ export interface WrapRetryOptions {
 export interface RetryEvent {
   method: string;
   attempt: number;
-  reason: "transport_error" | "rate_limited" | "service_unavailable";
+  reason:
+    | "transport_error"
+    | "rate_limited"
+    | "server_error"
+    | "service_unavailable";
   status?: number;
   waitSeconds: number;
 }
 
 /**
- * Wrap a `fetch` function so that 429 and 503 responses are retried per
+ * Wrap a `fetch` function so that 429/500/502/503/504 responses are retried per
  * the shared policy. The returned function is a drop-in replacement for
  * the global `fetch`.
  */
@@ -134,17 +139,17 @@ export function wrapFetchWithRetry(
       }
 
       const status = response.status;
-      if (status !== 429 && status !== 503) {
+      if (!RETRYABLE_STATUS_CODES.has(status)) {
         return response;
       }
 
       const outOfBudget = attempt >= maxRetries || !idempotent;
-      if (status === 429 && outOfBudget) {
-        // Drain body so the connection can be reused.
-        await drainBody(response);
-        throw buildRateLimitError(response);
-      }
-      if (status === 503 && outOfBudget) {
+      if (outOfBudget) {
+        if (status === 429) {
+          // Drain body so the connection can be reused.
+          await drainBody(response);
+          throw buildRateLimitError(response);
+        }
         return response;
       }
 
@@ -152,7 +157,12 @@ export function wrapFetchWithRetry(
       onRetry?.({
         method,
         attempt: attempt + 1,
-        reason: status === 429 ? "rate_limited" : "service_unavailable",
+        reason:
+          status === 429
+            ? "rate_limited"
+            : status === 503
+              ? "service_unavailable"
+              : "server_error",
         status,
         waitSeconds: wait,
       });

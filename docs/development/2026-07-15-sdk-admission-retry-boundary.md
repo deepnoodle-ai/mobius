@@ -28,8 +28,9 @@ never re-invoke the turn.
 - Give every high-level body-idempotent mutation equivalent retry behavior in
   Go, Python, and TypeScript.
 - Derive the JSON field and `Idempotency-Key` header from one normalized value.
-- Retry transport errors, `429`, `503`, and unreadable or invalid successful
-  JSON acknowledgements within one bounded transport budget.
+- Retry transport errors, `429`, transient `500`/`502`/`503`/`504` responses,
+  and unreadable or invalid successful JSON acknowledgements within one bounded
+  transport budget.
 - Never re-invoke an inline stream after its response begins.
 - Keep calls without an idempotency key non-retryable.
 - Avoid marking compound `invokeAgent` requests with `session.mode: new` as
@@ -62,16 +63,19 @@ The following methods become replayable when a nonblank key is present:
 | Start existing-session turn | `idempotency_key` | Key present |
 | Nudge session | `idempotency_key` | Key present |
 
-The existing transport remains the single retry-budget owner. For a replayable
-`POST` or `PATCH` that receives a successful JSON response, the transport will
-fully read and syntactically validate a copy of the response before returning
-it. A read failure or invalid JSON is treated like a transient transport failure
-and consumes the same exponential-backoff budget. The response remains readable
-by the generated or high-level decoder.
+The existing transport remains the single retry-budget owner. Its transient
+HTTP allowlist is `429`, `500`, `502`, `503`, and `504`; exhausted `429`
+responses retain the typed `RateLimitError`, while exhausted retryable `5xx`
+responses pass through unchanged. For a replayable `POST` or `PATCH` that
+receives a successful JSON response, the transport will fully read and
+syntactically validate a copy of the response before returning it. A read
+failure or invalid JSON is treated like a transient transport failure and
+consumes the same exponential-backoff budget. The response remains readable by
+the generated or high-level decoder.
 
 Requests advertising `Accept: text/event-stream` are never pre-read. The
-transport may retry a failure before it receives a response, plus `429` or `503`
-responses, but it returns immediately once the successful stream response
+transport may retry a failure before it receives a response, plus any retryable
+HTTP response, but it returns immediately once the successful stream response
 starts. Later SSE read failures remain the cursor-reconnection layer's concern.
 
 Cancellation remains terminal. TypeScript will treat an aborted signal,
