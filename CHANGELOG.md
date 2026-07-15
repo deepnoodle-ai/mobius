@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 
 ## [Unreleased]
 
+## [0.0.51] - 2026-07-14
+
 ### Added
 
 - Turns can declare a structured-output contract via `output.schema`
