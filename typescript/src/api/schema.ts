@@ -2528,6 +2528,27 @@ export interface components {
          * @enum {string}
          */
         SessionVisibility: "project" | "private";
+        /**
+         * @description Controls how long a session is retained. Applied only when the session is first created (like `compaction_policy`); ignored when an existing session is resolved. `standard` is the default and keeps the session forever. `bounded` expires the session — pruning its transcript from every read path — once it has been idle past `ttl_seconds`. Kept for audit after expiry: a tombstone session row with its token totals, and the turn rows with their status, error, usage, and timings.
+         *
+         *     `ttl_seconds` is required when `mode` is `bounded` and ignored for `standard`; the server validates this (a `oneOf` encoding was dropped because it only produced untyped union codegen without adding runtime enforcement in the generated Go/TypeScript clients).
+         * @example {
+         *       "mode": "bounded",
+         *       "ttl_seconds": 86400
+         *     }
+         */
+        SessionRetentionPolicy: {
+            /**
+             * @description `standard` (default) retains the session indefinitely. `bounded` expires the session after it has been idle for `ttl_seconds`.
+             * @enum {string}
+             */
+            mode: "standard" | "bounded";
+            /**
+             * Format: int64
+             * @description Idle lifetime in seconds; required when `mode` is `bounded` and ignored otherwise. Measured from the last message activity (`last_message_at`), not session creation — continuing the session before it expires simply extends its life. Minimum 1 hour, maximum 30 days. The 1-hour floor keeps a caller's idempotency window comfortably inside the retention window: after expiry a retried idempotency key mints a fresh session rather than deduplicating against a pruned one.
+             */
+            ttl_seconds?: number;
+        };
         /** @description Pointer to the latest compaction marker in a session's transcript. The marker is itself a transcript message (role `compaction`); everything at or below `covers_through_sequence` is summarized history. */
         SessionCompactionBoundary: {
             /** @description Id of the compaction summary message in the transcript. */
@@ -2568,6 +2589,13 @@ export interface components {
             model_provider?: string;
             /** @description Resolved message-compaction policy in effect for this session. */
             compaction_policy?: components["schemas"]["SessionCompactionPolicy"];
+            /** @description Resolved retention policy in effect for this session. `standard` for ordinary permanent sessions. */
+            retention?: components["schemas"]["SessionRetentionPolicy"];
+            /**
+             * Format: date-time
+             * @description When a `bounded` session will expire if it stays idle, computed from its last message activity (`last_message_at`) and the retention TTL. Null for `standard` sessions and for bounded sessions with no activity yet. After this time the transcript is pruned and the session reads as deleted.
+             */
+            expires_at?: string | null;
             /** @description This session's reasoning-effort override, or absent when the session inherits the agent default. Turns resolve the effective level as agent default then this override. */
             thinking_effort?: components["schemas"]["ThinkingEffort"];
             /** @description The most recent compaction marker in the transcript, or null when the session has never been compacted. Delineates summarized history (sequences at or below `covers_through_sequence`) from the live tail. Returned on the single-session read; absent from list entries. */
@@ -5419,6 +5447,11 @@ export interface components {
          * @enum {string}
          */
         AgentTurnErrorScope: "agent_turn";
+        /**
+         * @description Provenance of a completed turn's structured `output`: `tool` when the agent submitted it through the reserved `mobius_submit_output` tool, or `text` when Mobius accepted a schema-valid final message as a fallback.
+         * @enum {string}
+         */
+        AgentTurnOutputSource: "tool" | "text";
         /** @description One attempt of an agent running the agent loop — the unit that produces a transcript. A turn is triggered by a direct send to the session, a loop step (run_id + step_key), or an inbound channel message (channel_exchange_id). Its messages are read via the turn's transcript endpoint. */
         AgentTurn: {
             /** @description Stable turn identifier. */
@@ -5444,6 +5477,12 @@ export interface components {
             /** @description Human-readable failure detail when the turn failed. */
             error_message?: string;
             error_scope?: components["schemas"]["AgentTurnErrorScope"];
+            /** @description The validated structured output. Present only on a `completed` turn that declared an output schema. Read this instead of parsing the transcript. */
+            output?: {
+                [key: string]: unknown;
+            };
+            /** @description Where `output` came from: a `mobius_submit_output` submission (`tool`) or the schema-valid final-text fallback (`text`). */
+            output_source?: components["schemas"]["AgentTurnOutputSource"];
             /**
              * Format: int64
              * @description Authoritative active-execution budget selected for the turn.
@@ -5529,6 +5568,12 @@ export interface components {
             usage?: {
                 [key: string]: unknown;
             };
+            /** @description The validated structured output, delivered on the terminal `turn.upsert` frame. Present only on a `completed` turn that declared an output schema. */
+            output?: {
+                [key: string]: unknown;
+            };
+            /** @description Where `output` came from (`tool` or `text`). */
+            output_source?: components["schemas"]["AgentTurnOutputSource"];
             wait?: components["schemas"]["SessionTranscriptWait"];
             /** Format: date-time */
             created_at: string;
@@ -5897,6 +5942,8 @@ export interface components {
             config?: components["schemas"]["InlineAgentConfig"];
             operation?: components["schemas"]["AgentTurnOperationPolicy"];
             input: components["schemas"]["InvokeInput"];
+            /** @description Optional structured-output contract for this turn. Read the validated value from the completed turn's `output`. */
+            output?: components["schemas"]["TurnOutputSpec"];
             channel_context?: components["schemas"]["ChannelContext"];
         };
         /**
@@ -5968,6 +6015,8 @@ export interface components {
             visibility?: components["schemas"]["SessionVisibility"];
             /** @description Per-session compaction overrides applied when the session is first created. Merged over the agent's default policy and server defaults. Ignored when an existing session is resolved. */
             compaction_policy?: components["schemas"]["SessionCompactionPolicy"];
+            /** @description Retention policy applied when the session is first created. Ignored when an existing session is resolved. */
+            retention?: components["schemas"]["SessionRetentionPolicy"];
             /** @description Reasoning-effort override applied when the session is first created. Overrides the agent default. Ignored when an existing session is resolved. */
             thinking_effort?: components["schemas"]["ThinkingEffort"];
             /** @description Free-form caller metadata stored on a newly created session. */
@@ -5987,6 +6036,13 @@ export interface components {
          *     Context remains at contextual authority and cannot grant permissions. A retry using the same `idempotency_key` returns the original turn and ignores any newly supplied context.
          */
         RuntimeContext: components["schemas"]["RuntimeContextItem"][];
+        /** @description Attaches a structured-output contract to a turn. When present, Mobius exposes a reserved submit tool whose input schema is the schema below, validates the submission server-side, and a turn that never produces a schema-valid object fails with `error_type: output_schema_unsatisfied` instead of completing. Read the validated value from the completed turn's `output`. This is a per-turn contract, not agent identity, so it works with stored agents and may differ between turns of one session. */
+        TurnOutputSpec: {
+            /** @description JSON Schema the turn's final output must satisfy. The root must be `type: object` and self-contained (no `$ref`); the serialized schema must not exceed 32 KiB. Mobius enforces the OpenAPI 3.0 subset: `required`, `enum`, `additionalProperties`, `minItems`/`maxItems`, `minLength`/`maxLength`, `pattern`, numeric bounds, nested objects/arrays, `oneOf`/`anyOf`/`allOf`, and `nullable`. Not supported: `$ref`/`$defs`, `if`/`then`/`else`, `const` (use a one-value `enum`), `patternProperties`, and `prefixItems`. */
+            schema: {
+                [key: string]: unknown;
+            };
+        };
         /** @description The caller input message that starts the agent turn. */
         InvokeInput: {
             /** @description Ordered content blocks (text, images) for the input message. */
@@ -6030,6 +6086,8 @@ export interface components {
             model?: string;
             /** @description Per-session compaction overrides applied when the session is first created. Merged over the agent's default policy and server defaults. Ignored when an existing session is resolved. */
             compaction_policy?: components["schemas"]["SessionCompactionPolicy"];
+            /** @description Retention policy applied when the session is first created. Ignored when an existing session is resolved. */
+            retention?: components["schemas"]["SessionRetentionPolicy"];
             /** @description Reasoning-effort override applied when the session is first created. Overrides the agent default. Ignored when an existing session is resolved. */
             thinking_effort?: components["schemas"]["ThinkingEffort"];
             /** @description Free-form caller metadata for the session. */
@@ -6053,6 +6111,8 @@ export interface components {
             idempotency_key?: string;
             operation?: components["schemas"]["AgentTurnOperationPolicy"];
             context?: components["schemas"]["RuntimeContext"];
+            /** @description Optional structured-output contract for this turn. Read the validated value from the completed turn's `output`. */
+            output?: components["schemas"]["TurnOutputSpec"];
             /** @description Free-form caller metadata attached to the input message. */
             metadata?: {
                 [key: string]: unknown;
@@ -8237,6 +8297,8 @@ export interface components {
         IntegrationEventIDParam: string;
         /** @description Framework provider identifier from the integration provider catalog. */
         IntegrationProviderParam: string;
+        /** @description Stable caller-generated key. Reusing it returns the original operation. */
+        IdempotencyKey: string;
         /** @description Organization ID. */
         OrgIDParam: string;
         /** @description The key identifying a memory entry. Restricted to a path-safe character set (letters, numbers, and `. _ : -`) so it stays reliably addressable. */

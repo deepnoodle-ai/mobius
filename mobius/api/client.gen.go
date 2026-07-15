@@ -329,6 +329,24 @@ func (e AgentTurnErrorScope) Valid() bool {
 	}
 }
 
+// Defines values for AgentTurnOutputSource.
+const (
+	AgentTurnOutputSourceText AgentTurnOutputSource = "text"
+	AgentTurnOutputSourceTool AgentTurnOutputSource = "tool"
+)
+
+// Valid indicates whether the value is a known member of the AgentTurnOutputSource enum.
+func (e AgentTurnOutputSource) Valid() bool {
+	switch e {
+	case AgentTurnOutputSourceText:
+		return true
+	case AgentTurnOutputSourceTool:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for AgentTurnStatus.
 const (
 	AgentTurnStatusCancelled AgentTurnStatus = "cancelled"
@@ -2534,6 +2552,24 @@ func (e SessionResyncFrameEventType) Valid() bool {
 	}
 }
 
+// Defines values for SessionRetentionPolicyMode.
+const (
+	SessionRetentionPolicyModeBounded  SessionRetentionPolicyMode = "bounded"
+	SessionRetentionPolicyModeStandard SessionRetentionPolicyMode = "standard"
+)
+
+// Valid indicates whether the value is a known member of the SessionRetentionPolicyMode enum.
+func (e SessionRetentionPolicyMode) Valid() bool {
+	switch e {
+	case SessionRetentionPolicyModeBounded:
+		return true
+	case SessionRetentionPolicyModeStandard:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for SessionScope.
 const (
 	SessionScopeAgent SessionScope = "agent"
@@ -4206,6 +4242,12 @@ type AgentTurn struct {
 	// Id Stable turn identifier.
 	Id string `json:"id"`
 
+	// Output The validated structured output. Present only on a `completed` turn that declared an output schema. Read this instead of parsing the transcript.
+	Output *map[string]interface{} `json:"output,omitempty"`
+
+	// OutputSource Provenance of a completed turn's structured `output`: `tool` when the agent submitted it through the reserved `mobius_submit_output` tool, or `text` when Mobius accepted a schema-valid final message as a fallback.
+	OutputSource *AgentTurnOutputSource `json:"output_source,omitempty"`
+
 	// RunId Loop run that triggered this turn. Absent for messaging turns.
 	RunId *string `json:"run_id,omitempty"`
 
@@ -4245,6 +4287,9 @@ type AgentTurnOperationPolicy struct {
 	// TimeoutSeconds Overall active-execution budget for this logical turn.
 	TimeoutSeconds *int64 `json:"timeout_seconds,omitempty"`
 }
+
+// AgentTurnOutputSource Provenance of a completed turn's structured `output`: `tool` when the agent submitted it through the reserved `mobius_submit_output` tool, or `text` when Mobius accepted a schema-valid final message as a fallback.
+type AgentTurnOutputSource string
 
 // AgentTurnStatus Agent turn lifecycle status: `queued`, `running`, `waiting`, `completed`, `failed`, or `cancelled`.
 type AgentTurnStatus string
@@ -5179,6 +5224,11 @@ type CreateSessionRequest struct {
 	// Model Model to record on the session.
 	Model *string `json:"model,omitempty"`
 
+	// Retention Controls how long a session is retained. Applied only when the session is first created (like `compaction_policy`); ignored when an existing session is resolved. `standard` is the default and keeps the session forever. `bounded` expires the session — pruning its transcript from every read path — once it has been idle past `ttl_seconds`. Kept for audit after expiry: a tombstone session row with its token totals, and the turn rows with their status, error, usage, and timings.
+	//
+	// `ttl_seconds` is required when `mode` is `bounded` and ignored for `standard`; the server validates this (a `oneOf` encoding was dropped because it only produced untyped union codegen without adding runtime enforcement in the generated Go/TypeScript clients).
+	Retention *SessionRetentionPolicy `json:"retention,omitempty"`
+
 	// SessionKey Stable key identifying the conversation within the agent.
 	SessionKey *string `json:"session_key,omitempty"`
 
@@ -6072,6 +6122,9 @@ type InvokeAgentRequest struct {
 	// Operation Operational policy for this newly admitted turn only. Unlike `config`, this policy is not saved on the session. Its timeout takes precedence over the session's inline-definition timeout and remains constrained by any deployment timeout ceiling. `config.timeout_seconds` may be zero to use the platform default; this operation timeout must be at least one.
 	Operation *AgentTurnOperationPolicy `json:"operation,omitempty"`
 
+	// Output Attaches a structured-output contract to a turn. When present, Mobius exposes a reserved submit tool whose input schema is the schema below, validates the submission server-side, and a turn that never produces a schema-valid object fails with `error_type: output_schema_unsatisfied` instead of completing. Read the validated value from the completed turn's `output`. This is a per-turn contract, not agent identity, so it works with stored agents and may differ between turns of one session.
+	Output *TurnOutputSpec `json:"output,omitempty"`
+
 	// Session How to resolve or create the session this invocation runs in. Mirrors the create-session policy: `mode` + `session_key` resolve a durable conversation for the agent, and the remaining fields seed a session that does not already exist (they are ignored when an existing session is resolved). Omit the whole object to use a single default session per agent in `continue_or_create` mode.
 	Session *InvokeSessionSpec `json:"session,omitempty"`
 }
@@ -6103,6 +6156,11 @@ type InvokeSessionSpec struct {
 
 	// Mode `continue_or_create` (default) resolves an existing session for the `session_key` or creates one; `new` always creates a fresh session; `continue` resolves an existing session and fails if none exists.
 	Mode *InvokeSessionSpecMode `json:"mode,omitempty"`
+
+	// Retention Controls how long a session is retained. Applied only when the session is first created (like `compaction_policy`); ignored when an existing session is resolved. `standard` is the default and keeps the session forever. `bounded` expires the session — pruning its transcript from every read path — once it has been idle past `ttl_seconds`. Kept for audit after expiry: a tombstone session row with its token totals, and the turn rows with their status, error, usage, and timings.
+	//
+	// `ttl_seconds` is required when `mode` is `bounded` and ignored for `standard`; the server validates this (a `oneOf` encoding was dropped because it only produced untyped union codegen without adding runtime enforcement in the generated Go/TypeScript clients).
+	Retention *SessionRetentionPolicy `json:"retention,omitempty"`
 
 	// SessionKey Stable key identifying the conversation within the agent.
 	SessionKey *string `json:"session_key,omitempty"`
@@ -7724,6 +7782,9 @@ type Session struct {
 	// CreatedBy User who created this session, if attribution was captured.
 	CreatedBy *string `json:"created_by,omitempty"`
 
+	// ExpiresAt When a `bounded` session will expire if it stays idle, computed from its last message activity (`last_message_at`) and the retention TTL. Null for `standard` sessions and for bounded sessions with no activity yet. After this time the transcript is pruned and the session reads as deleted.
+	ExpiresAt *time.Time `json:"expires_at,omitempty"`
+
 	// ForkedFromSequence Sequence number in the source session at which the fork was taken.
 	ForkedFromSequence *int `json:"forked_from_sequence,omitempty"`
 
@@ -7753,6 +7814,11 @@ type Session struct {
 
 	// Origin Surface that created the session: `manual`, `api`, `loop`, or `interaction`.
 	Origin SessionOrigin `json:"origin"`
+
+	// Retention Controls how long a session is retained. Applied only when the session is first created (like `compaction_policy`); ignored when an existing session is resolved. `standard` is the default and keeps the session forever. `bounded` expires the session — pruning its transcript from every read path — once it has been idle past `ttl_seconds`. Kept for audit after expiry: a tombstone session row with its token totals, and the turn rows with their status, error, usage, and timings.
+	//
+	// `ttl_seconds` is required when `mode` is `bounded` and ignored for `standard`; the server validates this (a `oneOf` encoding was dropped because it only produced untyped union codegen without adding runtime enforcement in the generated Go/TypeScript clients).
+	Retention *SessionRetentionPolicy `json:"retention,omitempty"`
 
 	// Scope Boundary used to resolve named sessions: `agent` or `loop`.
 	Scope SessionScope `json:"scope"`
@@ -8079,6 +8145,20 @@ type SessionResyncFrame struct {
 // SessionResyncFrameEventType defines model for SessionResyncFrame.EventType.
 type SessionResyncFrameEventType string
 
+// SessionRetentionPolicy Controls how long a session is retained. Applied only when the session is first created (like `compaction_policy`); ignored when an existing session is resolved. `standard` is the default and keeps the session forever. `bounded` expires the session — pruning its transcript from every read path — once it has been idle past `ttl_seconds`. Kept for audit after expiry: a tombstone session row with its token totals, and the turn rows with their status, error, usage, and timings.
+//
+// `ttl_seconds` is required when `mode` is `bounded` and ignored for `standard`; the server validates this (a `oneOf` encoding was dropped because it only produced untyped union codegen without adding runtime enforcement in the generated Go/TypeScript clients).
+type SessionRetentionPolicy struct {
+	// Mode `standard` (default) retains the session indefinitely. `bounded` expires the session after it has been idle for `ttl_seconds`.
+	Mode SessionRetentionPolicyMode `json:"mode"`
+
+	// TtlSeconds Idle lifetime in seconds; required when `mode` is `bounded` and ignored otherwise. Measured from the last message activity (`last_message_at`), not session creation — continuing the session before it expires simply extends its life. Minimum 1 hour, maximum 30 days. The 1-hour floor keeps a caller's idempotency window comfortably inside the retention window: after expiry a retried idempotency key mints a fresh session rather than deduplicating against a pruned one.
+	TtlSeconds *int64 `json:"ttl_seconds,omitempty"`
+}
+
+// SessionRetentionPolicyMode `standard` (default) retains the session indefinitely. `bounded` expires the session after it has been idle for `ttl_seconds`.
+type SessionRetentionPolicyMode string
+
 // SessionScope Boundary used to resolve named sessions: `agent` or `loop`.
 type SessionScope string
 
@@ -8223,9 +8303,15 @@ type SessionTranscriptTurn struct {
 	ErrorMessage      *string    `json:"error_message,omitempty"`
 	ErrorType         *string    `json:"error_type,omitempty"`
 	Id                string     `json:"id"`
-	RunId             *string    `json:"run_id,omitempty"`
-	Seq               *int       `json:"seq,omitempty"`
-	SessionId         string     `json:"session_id"`
+
+	// Output The validated structured output, delivered on the terminal `turn.upsert` frame. Present only on a `completed` turn that declared an output schema.
+	Output *map[string]interface{} `json:"output,omitempty"`
+
+	// OutputSource Provenance of a completed turn's structured `output`: `tool` when the agent submitted it through the reserved `mobius_submit_output` tool, or `text` when Mobius accepted a schema-valid final message as a fallback.
+	OutputSource *AgentTurnOutputSource `json:"output_source,omitempty"`
+	RunId        *string                `json:"run_id,omitempty"`
+	Seq          *int                   `json:"seq,omitempty"`
+	SessionId    string                 `json:"session_id"`
 
 	// Status Known AgentTurn status; unknown values must be preserved.
 	Status    string    `json:"status"`
@@ -8437,6 +8523,9 @@ type StartTurnRequest struct {
 
 	// Operation Operational policy for this newly admitted turn only. Unlike `config`, this policy is not saved on the session. Its timeout takes precedence over the session's inline-definition timeout and remains constrained by any deployment timeout ceiling. `config.timeout_seconds` may be zero to use the platform default; this operation timeout must be at least one.
 	Operation *AgentTurnOperationPolicy `json:"operation,omitempty"`
+
+	// Output Attaches a structured-output contract to a turn. When present, Mobius exposes a reserved submit tool whose input schema is the schema below, validates the submission server-side, and a turn that never produces a schema-valid object fails with `error_type: output_schema_unsatisfied` instead of completing. Read the validated value from the completed turn's `output`. This is a per-turn contract, not agent identity, so it works with stored agents and may differ between turns of one session.
+	Output *TurnOutputSpec `json:"output,omitempty"`
 
 	// Role Role of the input message. A turn carries caller input, so only `user` is accepted; defaults to `user` when omitted.
 	Role *StartTurnRequestRole `json:"role,omitempty"`
@@ -8845,6 +8934,12 @@ type TurnFailedPayload struct {
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
+// TurnOutputSpec Attaches a structured-output contract to a turn. When present, Mobius exposes a reserved submit tool whose input schema is the schema below, validates the submission server-side, and a turn that never produces a schema-valid object fails with `error_type: output_schema_unsatisfied` instead of completing. Read the validated value from the completed turn's `output`. This is a per-turn contract, not agent identity, so it works with stored agents and may differ between turns of one session.
+type TurnOutputSpec struct {
+	// Schema JSON Schema the turn's final output must satisfy. The root must be `type: object` and self-contained (no `$ref`); the serialized schema must not exceed 32 KiB. Mobius enforces the OpenAPI 3.0 subset: `required`, `enum`, `additionalProperties`, `minItems`/`maxItems`, `minLength`/`maxLength`, `pattern`, numeric bounds, nested objects/arrays, `oneOf`/`anyOf`/`allOf`, and `nullable`. Not supported: `$ref`/`$defs`, `if`/`then`/`else`, `const` (use a one-value `enum`), `patternProperties`, and `prefixItems`.
+	Schema map[string]interface{} `json:"schema"`
+}
+
 // TurnStartedPayload Payload of a `turn.started` event. Empty: the turn is identified by the envelope `turn_id`, so nothing is duplicated in the payload.
 type TurnStartedPayload map[string]interface{}
 
@@ -8859,9 +8954,15 @@ type TurnUpsertFrame struct {
 	ErrorType         *string                  `json:"error_type,omitempty"`
 	EventType         TurnUpsertFrameEventType `json:"event_type"`
 	Id                string                   `json:"id"`
-	RunId             *string                  `json:"run_id,omitempty"`
-	Seq               *int                     `json:"seq,omitempty"`
-	SessionId         string                   `json:"session_id"`
+
+	// Output The validated structured output, delivered on the terminal `turn.upsert` frame. Present only on a `completed` turn that declared an output schema.
+	Output *map[string]interface{} `json:"output,omitempty"`
+
+	// OutputSource Provenance of a completed turn's structured `output`: `tool` when the agent submitted it through the reserved `mobius_submit_output` tool, or `text` when Mobius accepted a schema-valid final message as a fallback.
+	OutputSource *AgentTurnOutputSource `json:"output_source,omitempty"`
+	RunId        *string                `json:"run_id,omitempty"`
+	Seq          *int                   `json:"seq,omitempty"`
+	SessionId    string                 `json:"session_id"`
 
 	// Status Known AgentTurn status; unknown values must be preserved.
 	Status    string    `json:"status"`

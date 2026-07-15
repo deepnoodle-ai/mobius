@@ -184,6 +184,7 @@ func registerSessionsCommands(app *cli.App) {
 			cli.String("metadata", "").Help("Free-form caller metadata for the session. Accepts JSON, @file, or @-."),
 			cli.String("mode", "").Help("`continue_or_create` (default) resolves an existing session for the `session_key` or creates one; `new` always creates a fresh session…"),
 			cli.String("model", "").Help("Model to record on the session."),
+			cli.String("retention", "").Help("Controls how long a session is retained. Applied only when the session is first created (like `compaction_policy`); ignored when an… Accepts JSON, @file, or @-."),
 			cli.String("session-key", "").Help("Stable key identifying the conversation within the agent."),
 			cli.String("thinking-effort", "").Help("Reasoning-effort level for a turn, lowest (`low`) to highest (`max`). Higher effort spends more tokens on reasoning, improving quality on…"),
 			cli.String("title", "").Help("Human-friendly session title."),
@@ -223,6 +224,11 @@ func registerSessionsCommands(app *cli.App) {
 			if ctx.IsSet("model") {
 				v := ctx.String("model")
 				body.Model = &v
+			}
+			if ctx.IsSet("retention") {
+				if err := decodeFlagJSON(ctx, "retention", ctx.String("retention"), &body.Retention); err != nil {
+					return err
+				}
 			}
 			if ctx.IsSet("session-key") {
 				v := ctx.String("session-key")
