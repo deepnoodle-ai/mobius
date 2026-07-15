@@ -57,7 +57,7 @@
     "access": "public"
   },
   "scripts": {
-    "generate": "openapi-typescript ../openapi.yaml -o src/api/schema.ts && node scripts/gen-api-index.js",
+    "generate": "openapi-typescript ../openapi.yaml --default-non-nullable false -o src/api/schema.ts && node scripts/gen-api-index.js",
     "build": "tsc",
     "typecheck": "tsc --noEmit",
     "test": "tsc -p tsconfig.test.json && node --test build-test/test/*.test.js",

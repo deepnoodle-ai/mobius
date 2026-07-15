@@ -37,6 +37,61 @@ const event = parseWebhookDelivery(verified);
 When the key must be selected from the delivery headers, use the resolver form:
 `ResolveKey` in Go, `resolve_key` in Python, or `resolveKey` in TypeScript.
 
+## Signed Action Invocations
+
+HTTP actions configured with `invocation_format: signed_context_v1` receive a
+typed identity envelope. Verify the exact raw request bytes before parsing them:
+
+```go
+body, err := io.ReadAll(r.Body)
+if err != nil { return err }
+verified, err := mobius.VerifyActionInvocationV1(
+	body,
+	r.Header,
+	mobius.VerifySignedDeliveryOptions{Key: signingKey},
+)
+if err != nil { return err }
+invocation := verified.Invocation
+```
+
+```python
+verified = mobius.verify_action_invocation_v1(
+    body,
+    headers,
+    key=signing_key,
+)
+invocation = verified.invocation
+```
+
+```ts
+const body = new Uint8Array(await request.arrayBuffer());
+const verified = await verifyActionInvocationV1(body, request.headers, {
+  key: signingKey,
+});
+const invocation = verified.invocation;
+```
+
+The typed helpers ignore unknown fields but require every v1 scope, action,
+actor, origin, and parameters field. Agent actors must include `agent_id`, and
+non-agent actors must not. They report invalid signatures, stale deliveries,
+unsupported schemas, and malformed envelopes as distinct errors. Generic
+`ParseActionInvocation` / `parse_action_invocation` /
+`parseActionInvocation` remains available for legacy bodies.
+
+The formal wire contract is `ActionInvocationV1` in `openapi.yaml`. In Go,
+stale deliveries match both `ErrInvalidSignedDelivery` and
+`ErrStaleSignedDelivery`; schema and structure errors match
+`ErrUnsupportedActionInvocationSchema` and `ErrMalformedActionInvocation`.
+Python and TypeScript expose the corresponding `InvalidSignatureError`,
+`StaleDeliveryError`, `UnsupportedActionInvocationSchemaError`, and
+`MalformedActionInvocationError` classes.
+
+After verification, compare the signed org, project, action ID, and action name
+with the endpoint's configured expectations. Deduplicate by delivery ID within
+the action/secret scope before performing side effects. Never choose a user or
+tenant from `parameters`; user-mapped agent integrations should resolve by the
+signed `(project_id, agent_id)` pair.
+
 ## Synthetic Webhooks
 
 Local development bridges can post a Mobius-shaped webhook to a local app when

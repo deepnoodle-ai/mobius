@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from enum import StrEnum
+from enum import IntEnum, StrEnum
 from typing import Any, Literal
 
 from pydantic import (
@@ -1294,6 +1294,75 @@ class ActionEndpointKind(StrEnum):
     worker = 'worker'
 
 
+class ActionInvocationFormat(StrEnum):
+    """
+    Outbound request-body contract for an HTTP action. `legacy` sends the unversioned `{run_id, step_key, parameters}` body. `signed_context_v1` sends a versioned envelope whose project, action, actor, and origin claims are derived by Mobius and covered by the existing HMAC signature. Worker-backed actions must use `legacy`.
+    """
+
+    legacy = 'legacy'
+    signed_context_v1 = 'signed_context_v1'
+
+
+class SchemaVersion(IntEnum):
+    integer_1 = 1
+
+
+class ActionInvocationScopeV1(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    org_id: str
+    project_id: str
+
+
+class ActionInvocationActionV1(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    id: str
+    name: str
+
+
+class PrincipalType(StrEnum):
+    human = 'human'
+    agent = 'agent'
+    service = 'service'
+    system = 'system'
+
+
+class ActionInvocationActorV1(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    principal_id: str
+    principal_type: PrincipalType
+    agent_id: str | None = Field(
+        None,
+        description='Required for agent principals and forbidden for all other principal types.',
+    )
+
+
+class Kind(StrEnum):
+    agent_tool_call = 'agent_tool_call'
+    loop_action_step = 'loop_action_step'
+    direct_action_invoke = 'direct_action_invoke'
+    server_internal = 'server_internal'
+
+
+class ActionInvocationOriginV1(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    kind: Kind
+    run_id: str | None = None
+    channel_exchange_id: str | None = None
+    loop_id: str | None = None
+    step_key: str | None = None
+    agent_turn_id: str | None = None
+    session_id: str | None = None
+    tool_call_id: str | None = None
+
+
 class CreateActionRequest(BaseModel):
     """
     Registers a project-owned custom action callable from loops and agents.
@@ -1315,6 +1384,10 @@ class CreateActionRequest(BaseModel):
     endpoint_kind: ActionEndpointKind = Field(
         'http',
         description='Backing kind for the action. `http` actions POST to `endpoint_url` with a Mobius signature. `worker` actions are dispatched through jobs to connected workers that advertise this registered name.',
+    )
+    invocation_format: ActionInvocationFormat = Field(
+        'legacy',
+        description='Request-body contract for HTTP invocations. Omit to preserve the legacy body. `signed_context_v1` is valid only with `endpoint_kind: http`.',
     )
     endpoint_url: AnyUrl | None = Field(
         None,
@@ -1349,6 +1422,10 @@ class UpdateActionRequest(BaseModel):
     )
     endpoint_url: AnyUrl | None = Field(
         None, description='Replacement endpoint URL. Valid for HTTP actions only.'
+    )
+    invocation_format: ActionInvocationFormat | None = Field(
+        None,
+        description='Replacement HTTP request-body contract. `signed_context_v1` is valid only for HTTP-backed actions.',
     )
     input_schema: dict[str, Any] | None = Field(
         None,
@@ -1385,6 +1462,9 @@ class Action(BaseModel):
     endpoint_kind: ActionEndpointKind = Field(
         ...,
         description='Backing kind of this project-owned action. `http` actions POST to an endpoint URL. `worker` actions are dispatched through jobs to connected workers that advertise this registered name.',
+    )
+    invocation_format: ActionInvocationFormat = Field(
+        ..., description='Resolved outbound request-body contract for this action.'
     )
     endpoint_url: AnyUrl | None = Field(
         None,
@@ -1566,6 +1646,17 @@ class ActionInvocationResult(BaseModel):
     )
 
 
+class ActorPrincipalType(StrEnum):
+    """
+    Kind of principal attributed as the executing actor.
+    """
+
+    human = 'human'
+    agent = 'agent'
+    service = 'service'
+    system = 'system'
+
+
 class ActionInvocationEntry(BaseModel):
     """
     Per-invocation telemetry record for one action execution.
@@ -1588,7 +1679,57 @@ class ActionInvocationEntry(BaseModel):
     step_name: str | None = Field(
         None, description='Loop step name that triggered this invocation.'
     )
+    action_id: str | None = Field(
+        None, description='Immutable action definition ID used for this invocation.'
+    )
     action_name: str = Field(..., description='Name of the action that was invoked.')
+    invocation_format: ActionInvocationFormat | None = None
+    schema_version: int | None = Field(
+        None,
+        description='Signed request-envelope schema version, when applicable.',
+        ge=1,
+    )
+    actor_principal_id: str | None = Field(
+        None, description='Immutable principal attributed as the executing actor.'
+    )
+    actor_principal_type: ActorPrincipalType | None = Field(
+        None, description='Kind of principal attributed as the executing actor.'
+    )
+    agent_id: str | None = Field(
+        None, description='Agent resource ID when the actor was an agent.'
+    )
+    loop_id: str | None = Field(
+        None,
+        description='Loop definition correlated with this invocation, when applicable.',
+    )
+    channel_exchange_id: str | None = Field(
+        None,
+        description='Channel exchange correlated with this invocation, when applicable.',
+    )
+    agent_turn_id: str | None = Field(
+        None, description='Agent turn correlated with this invocation, when applicable.'
+    )
+    session_id: str | None = Field(
+        None,
+        description='Agent session correlated with this invocation, when applicable.',
+    )
+    tool_call_id: str | None = Field(
+        None,
+        description='Provider tool-call ID correlated with this invocation, when applicable.',
+    )
+    delivery_id: str | None = Field(
+        None,
+        description='Stable signed delivery and idempotency identity, when HTTP-backed.',
+    )
+    secret_version: int | None = Field(
+        None, description='Signing-secret version used for the HTTP delivery.', ge=1
+    )
+    http_status: int | None = Field(
+        None,
+        description='Receiver HTTP status for a completed delivery attempt.',
+        ge=100,
+        le=599,
+    )
     source: str = Field(..., description='Invocation source ("loop", "direct", etc.).')
     parameters: dict[str, Any] | None = Field(
         None, description='Input parameters passed to the action.'
@@ -1636,7 +1777,7 @@ class ActionInvocationListResponse(BaseModel):
     has_more: bool = Field(..., description='Whether additional pages are available.')
 
 
-class Kind(StrEnum):
+class Kind1(StrEnum):
     """
     `integration` for provider event sources; `capability` for built-in Mobius platform event sources.
     """
@@ -1670,7 +1811,7 @@ class EventCatalogEventType(BaseModel):
     )
 
 
-class Kind1(StrEnum):
+class Kind2(StrEnum):
     """
     Whether the prefix names a platform capability or an authoring utility namespace.
     """
@@ -1688,7 +1829,7 @@ class EventCatalogReservedPrefix(BaseModel):
         extra='forbid',
     )
     prefix: str = Field(..., description='Reserved top-level event prefix.')
-    kind: Kind1 = Field(
+    kind: Kind2 = Field(
         ...,
         description='Whether the prefix names a platform capability or an authoring utility namespace.',
     )
@@ -2106,7 +2247,7 @@ class WorkerSocketJobsClaimFrame(BaseModel):
     models: list[WorkerSocketModelCapability] | None = None
 
 
-class Kind2(StrEnum):
+class Kind3(StrEnum):
     action_execution = 'action_execution'
     llm_generation = 'llm_generation'
 
@@ -2131,7 +2272,7 @@ class WorkerSocketClaimedJob(BaseModel):
         extra='forbid',
     )
     id: str = Field(..., description='Job ID.')
-    kind: Kind2
+    kind: Kind3
     origin: Origin
     executor_kind: ExecutorKind
     queue: str
@@ -3084,7 +3225,7 @@ class InteractionResponder(BaseModel):
     user_id: str = Field(..., description='Responder user ID.')
 
 
-class Kind3(StrEnum):
+class Kind4(StrEnum):
     external_url = 'external_url'
     mobius_entity = 'mobius_entity'
 
@@ -3097,7 +3238,7 @@ class InteractionReference(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    kind: Kind3
+    kind: Kind4
     url: AnyUrl | None = Field(
         None, description='Required when kind is `external_url`.'
     )
@@ -3113,7 +3254,7 @@ class InteractionReference(BaseModel):
     label: str | None = Field(None, description='User-facing label for display.')
 
 
-class Kind4(StrEnum):
+class Kind5(StrEnum):
     inbox_only = 'inbox_only'
     email = 'email'
 
@@ -3125,7 +3266,7 @@ class EmailDelivery(BaseModel):
     to: list[EmailStr] = Field(..., min_length=1)
 
 
-class Kind5(StrEnum):
+class Kind6(StrEnum):
     run = 'run'
     agent_tool = 'agent_tool'
     http_subscriber = 'http_subscriber'
@@ -4353,7 +4494,7 @@ class ToolCallPayload(BaseModel):
     )
 
 
-class Kind6(StrEnum):
+class Kind7(StrEnum):
     interaction = 'interaction'
 
 
@@ -4361,7 +4502,7 @@ class SessionTranscriptWait(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    kind: Kind6
+    kind: Kind7
     interaction_id: str
     tool_call_id: str
     expires_at: AwareDatetime | None = None
@@ -4793,7 +4934,7 @@ class SessionNudgeAck(BaseModel):
     )
 
 
-class SchemaVersion(StrEnum):
+class SchemaVersion1(StrEnum):
     """
     Loop authoring schema version. Only schema version 1 is accepted.
     """
@@ -4916,7 +5057,7 @@ class LoopSpecInput(BaseModel):
     )
 
 
-class Kind7(StrEnum):
+class Kind8(StrEnum):
     """
     Trigger mechanism: `http`, `schedule`, `event`, or `manual`.
     """
@@ -4994,7 +5135,7 @@ class EventTriggerConfig(BaseModel):
     )
 
 
-class Kind8(StrEnum):
+class Kind9(StrEnum):
     """
     Step discriminator value; always `agent`.
     """
@@ -5002,7 +5143,7 @@ class Kind8(StrEnum):
     agent = 'agent'
 
 
-class Kind9(StrEnum):
+class Kind10(StrEnum):
     """
     Step discriminator value; always `action`.
     """
@@ -5010,7 +5151,7 @@ class Kind9(StrEnum):
     action = 'action'
 
 
-class Kind10(StrEnum):
+class Kind11(StrEnum):
     """
     Step discriminator value; always `sleep`.
     """
@@ -5018,7 +5159,7 @@ class Kind10(StrEnum):
     sleep = 'sleep'
 
 
-class Kind11(StrEnum):
+class Kind12(StrEnum):
     """
     Step discriminator value; always `wait_for_event`.
     """
@@ -5026,7 +5167,7 @@ class Kind11(StrEnum):
     wait_for_event = 'wait_for_event'
 
 
-class Kind12(StrEnum):
+class Kind13(StrEnum):
     """
     Step discriminator value; always `loop`.
     """
@@ -5034,7 +5175,7 @@ class Kind12(StrEnum):
     loop = 'loop'
 
 
-class Kind13(StrEnum):
+class Kind14(StrEnum):
     """
     Step discriminator value; always `check`.
     """
@@ -5301,7 +5442,7 @@ class OnFail(StrEnum):
     gate = 'gate'
 
 
-class Kind14(StrEnum):
+class Kind15(StrEnum):
     """
     `expr` evaluates a deterministic predicate with the same language as step conditions and event waits. `agent` runs a bounded judge turn returning a strict `{pass, reason}` verdict; its spend counts against the run budget and it consumes one run agent turn.
     """
@@ -5321,7 +5462,7 @@ class LoopCheckAssertion(BaseModel):
     name: str = Field(
         ..., description='Unique assertion name shown on the timeline proof row.'
     )
-    kind: Kind14 = Field(
+    kind: Kind15 = Field(
         ...,
         description='`expr` evaluates a deterministic predicate with the same language as step conditions and event waits. `agent` runs a bounded judge turn returning a strict `{pass, reason}` verdict; its spend counts against the run budget and it consumes one run agent turn.',
     )
@@ -5815,7 +5956,7 @@ class Status5(StrEnum):
     paused = 'paused'
 
 
-class SchemaVersion3(StrEnum):
+class SchemaVersion4(StrEnum):
     """
     Loop authoring schema version. Only version 1 is accepted.
     """
@@ -6582,6 +6723,17 @@ class ArtifactQuotaUsage(BaseModel):
     )
 
 
+class ActionInvocationContextV1(BaseModel):
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    schema_version: SchemaVersion
+    scope: ActionInvocationScopeV1
+    action: ActionInvocationActionV1
+    actor: ActionInvocationActorV1
+    origin: ActionInvocationOriginV1
+
+
 class ActionCatalogEntry(BaseModel):
     """
     One built-in, integration, or custom-backed action available to agents and loop authors.
@@ -6638,6 +6790,10 @@ class ActionCatalogEntry(BaseModel):
         None,
         description='Endpoint URL (populated for endpoint_kind: http actions only).',
     )
+    invocation_format: ActionInvocationFormat | None = Field(
+        None,
+        description='Resolved request-body contract for a project-owned custom action.',
+    )
     execution: ActionExecutionMetadata | None = Field(
         None,
         description='Execution locations and worker requirements available to loop authors.',
@@ -6669,7 +6825,7 @@ class EventCatalogSource(BaseModel):
         ...,
         description='Top-level dotted segment that names the source (`table`, `github`).',
     )
-    kind: Kind = Field(
+    kind: Kind1 = Field(
         ...,
         description='`integration` for provider event sources; `capability` for built-in Mobius platform event sources.',
     )
@@ -6833,7 +6989,7 @@ class DeliveryChannel(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    kind: Kind4
+    kind: Kind5
     email: EmailDelivery | None = Field(
         None,
         description='Email delivery payload when `kind=email`; null for inbox-only delivery.',
@@ -6848,7 +7004,7 @@ class Consumer(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    kind: Kind5
+    kind: Kind6
     run: RunConsumer | None = Field(
         None,
         description='Run resume target when `kind=run`; null for other consumer kinds.',
@@ -7098,7 +7254,7 @@ class LoopSpecTrigger(BaseModel):
         None, description='Stable user-authored trigger key within the spec.'
     )
     name: str | None = Field(None, description='Human-readable trigger name.')
-    kind: Kind7 = Field(
+    kind: Kind8 = Field(
         ..., description='Trigger mechanism: `http`, `schedule`, `event`, or `manual`.'
     )
     enabled: bool | None = Field(
@@ -7600,7 +7756,7 @@ class BlueprintLoopInput(BaseModel):
     description: str | None = None
     agent: BlueprintResourceRef | None = None
     status: Status5 | None = None
-    schema_version: SchemaVersion3 = Field(
+    schema_version: SchemaVersion4 = Field(
         '1', description='Loop authoring schema version. Only version 1 is accepted.'
     )
     steps: list[dict[str, Any]] | None = None
@@ -7669,6 +7825,21 @@ class BlueprintApplyResult(BaseModel):
     blueprint_version: str | None = None
     changes: list[BlueprintChange]
     bindings: list[BlueprintBinding]
+
+
+class ActionInvocationV1(BaseModel):
+    """
+    Signed HTTP action request body for `signed_context_v1`. Receivers must verify the HMAC over the exact raw body before parsing this envelope. Unknown fields are permitted for forward compatibility.
+    """
+
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    mobius: ActionInvocationContextV1
+    parameters: dict[str, Any] = Field(
+        ...,
+        description='Caller-supplied action parameters. These are not an authorization identity.',
+    )
 
 
 class EventCatalogResponse(BaseModel):
@@ -8165,7 +8336,7 @@ class Loop(BaseModel):
         None,
         description='Agent associated with this loop. Agent steps use it when they do not pin `config.agent_id`.',
     )
-    schema_version: SchemaVersion = Field(
+    schema_version: SchemaVersion1 = Field(
         '1',
         description='Loop authoring schema version. Only schema version 1 is accepted.',
     )
@@ -8250,7 +8421,7 @@ class CreateLoopRequest(BaseModel):
         None,
         description='Agent associated with this loop. Agent steps use it when they do not pin `config.agent_id`.',
     )
-    schema_version: SchemaVersion = Field(
+    schema_version: SchemaVersion1 = Field(
         '1',
         description='Loop authoring schema version. Only schema version 1 is accepted.',
     )
@@ -8324,7 +8495,7 @@ class UpdateLoopRequest(BaseModel):
         None,
         description='Agent associated with this loop. Agent steps use it when they do not pin `config.agent_id`.',
     )
-    schema_version: SchemaVersion | None = Field(
+    schema_version: SchemaVersion1 | None = Field(
         '1',
         description='Loop authoring schema version. Only schema version 1 is accepted.',
     )

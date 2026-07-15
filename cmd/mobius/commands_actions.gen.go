@@ -27,6 +27,7 @@ func registerActionsCommands(app *cli.App) {
 			cli.String("endpoint-kind", "").Help("Backing kind for the action. `http` actions POST to `endpoint_url` with a Mobius signature. `worker` actions are dispatched through jobs to…"),
 			cli.String("endpoint-url", "").Help("Required when endpoint_kind is `http`; omitted for worker actions."),
 			cli.String("input-schema", "").Help("JSON Schema describing the expected input parameters. Accepts JSON, @file, or @-."),
+			cli.String("invocation-format", "").Help("Request-body contract for HTTP invocations. Omit to preserve the legacy body. `signed_context_v1` is valid only with `endpoint_kind: http`."),
 			cli.String("name", "").Help("[required] Identifier used in loop step definitions. Lowercase alphanumeric + hyphens, e.g. \"send-email\". Must be unique within the project. Cannot…"),
 			cli.String("output-schema", "").Help("JSON Schema describing the expected output shape. Accepts JSON, @file, or @-."),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
@@ -67,6 +68,10 @@ func registerActionsCommands(app *cli.App) {
 				if err := decodeFlagJSON(ctx, "input-schema", ctx.String("input-schema"), &body.InputSchema); err != nil {
 					return err
 				}
+			}
+			if ctx.IsSet("invocation-format") {
+				v := api.ActionInvocationFormat(ctx.String("invocation-format"))
+				body.InvocationFormat = &v
 			}
 			if ctx.IsSet("name") {
 				body.Name = ctx.String("name")
@@ -244,6 +249,7 @@ func registerActionsCommands(app *cli.App) {
 			cli.String("description", "").Help("Replacement Markdown description."),
 			cli.String("endpoint-url", "").Help("Replacement endpoint URL. Valid for HTTP actions only."),
 			cli.String("input-schema", "").Help("Replacement JSON Schema for inputs. Replaces the existing schema. Accepts JSON, @file, or @-."),
+			cli.String("invocation-format", "").Help("Replacement HTTP request-body contract. `signed_context_v1` is valid only for HTTP-backed actions."),
 			cli.String("output-schema", "").Help("Replacement JSON Schema for outputs. Replaces the existing schema. Accepts JSON, @file, or @-."),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
 			cli.String("title", "").Help("Replacement display title."),
@@ -281,6 +287,10 @@ func registerActionsCommands(app *cli.App) {
 					return err
 				}
 			}
+			if ctx.IsSet("invocation-format") {
+				v := api.ActionInvocationFormat(ctx.String("invocation-format"))
+				body.InvocationFormat = &v
+			}
 			if ctx.IsSet("output-schema") {
 				if err := decodeFlagJSON(ctx, "output-schema", ctx.String("output-schema"), &body.OutputSchema); err != nil {
 					return err
@@ -296,7 +306,7 @@ func registerActionsCommands(app *cli.App) {
 				v := ctx.String("title")
 				body.Title = &v
 			}
-			if ctx.String("file") == "" && !ctx.IsSet("annotations") && !ctx.IsSet("description") && !ctx.IsSet("endpoint-url") && !ctx.IsSet("input-schema") && !ctx.IsSet("output-schema") && !ctx.IsSet("tag") && !ctx.IsSet("title") {
+			if ctx.String("file") == "" && !ctx.IsSet("annotations") && !ctx.IsSet("description") && !ctx.IsSet("endpoint-url") && !ctx.IsSet("input-schema") && !ctx.IsSet("invocation-format") && !ctx.IsSet("output-schema") && !ctx.IsSet("tag") && !ctx.IsSet("title") {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
 			if ctx.Bool("dry-run") {

@@ -1,6 +1,7 @@
 package mobius
 
 import (
+	"bytes"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
@@ -27,7 +28,12 @@ const (
 	defaultMaxAge         = 5 * time.Minute
 )
 
-var ErrInvalidSignedDelivery = errors.New("mobius: invalid signed delivery")
+var (
+	ErrInvalidSignedDelivery             = errors.New("mobius: invalid signed delivery")
+	ErrStaleSignedDelivery               = errors.New("mobius: stale signed delivery")
+	ErrUnsupportedActionInvocationSchema = errors.New("mobius: unsupported action invocation schema")
+	ErrMalformedActionInvocation         = errors.New("mobius: malformed action invocation")
+)
 
 type DeliveryMeta struct {
 	SignatureVersion string
@@ -41,6 +47,52 @@ type DeliveryMeta struct {
 type VerifiedDelivery struct {
 	DeliveryMeta
 	Body []byte
+}
+
+type ActionInvocationV1 struct {
+	Mobius     ActionInvocationContextV1 `json:"mobius"`
+	Parameters map[string]any            `json:"parameters"`
+}
+
+type ActionInvocationContextV1 struct {
+	SchemaVersion int                      `json:"schema_version"`
+	Scope         ActionInvocationScopeV1  `json:"scope"`
+	Action        ActionInvocationActionV1 `json:"action"`
+	Actor         ActionInvocationActorV1  `json:"actor"`
+	Origin        ActionInvocationOriginV1 `json:"origin"`
+}
+
+type ActionInvocationScopeV1 struct {
+	OrgID     string `json:"org_id"`
+	ProjectID string `json:"project_id"`
+}
+
+type ActionInvocationActionV1 struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+}
+
+type ActionInvocationActorV1 struct {
+	PrincipalID   string `json:"principal_id"`
+	PrincipalType string `json:"principal_type"`
+	AgentID       string `json:"agent_id,omitempty"`
+}
+
+type ActionInvocationOriginV1 struct {
+	Kind              string `json:"kind"`
+	RunID             string `json:"run_id,omitempty"`
+	ChannelExchangeID string `json:"channel_exchange_id,omitempty"`
+	LoopID            string `json:"loop_id,omitempty"`
+	StepKey           string `json:"step_key,omitempty"`
+	AgentTurnID       string `json:"agent_turn_id,omitempty"`
+	SessionID         string `json:"session_id,omitempty"`
+	ToolCallID        string `json:"tool_call_id,omitempty"`
+}
+
+type VerifiedActionInvocationV1 struct {
+	DeliveryMeta
+	Body       []byte
+	Invocation ActionInvocationV1
 }
 
 type SigningKeyResolver func(meta DeliveryMeta) ([]byte, error)
@@ -98,7 +150,14 @@ func VerifySignedDelivery(r *http.Request, opts VerifySignedDeliveryOptions) (*V
 	if err != nil {
 		return nil, fmt.Errorf("mobius: read signed delivery: %w", err)
 	}
-	meta, err := ReadDeliveryMeta(r.Header)
+	return VerifySignedDeliveryBytes(body, r.Header, opts)
+}
+
+// VerifySignedDeliveryBytes authenticates the exact raw bytes received from
+// Mobius. Callers must not parse and reserialize JSON before invoking it.
+func VerifySignedDeliveryBytes(body []byte, headers http.Header, opts VerifySignedDeliveryOptions) (*VerifiedDelivery, error) {
+	bodySnapshot := bytes.Clone(body)
+	meta, err := ReadDeliveryMeta(headers)
 	if err != nil {
 		return nil, err
 	}
@@ -115,10 +174,28 @@ func VerifySignedDelivery(r *http.Request, opts VerifySignedDeliveryOptions) (*V
 	if len(key) == 0 {
 		return nil, fmt.Errorf("%w: signing key is required", ErrInvalidSignedDelivery)
 	}
-	if err := verifyDeliverySignature(key, body, meta); err != nil {
+	if err := verifyDeliverySignature(key, bodySnapshot, meta); err != nil {
 		return nil, err
 	}
-	return &VerifiedDelivery{DeliveryMeta: meta, Body: body}, nil
+	return &VerifiedDelivery{DeliveryMeta: meta, Body: bodySnapshot}, nil
+}
+
+// VerifyActionInvocationV1 verifies the signed raw body before parsing its
+// identity claims. Unknown JSON fields are ignored for forward compatibility.
+func VerifyActionInvocationV1(body []byte, headers http.Header, opts VerifySignedDeliveryOptions) (*VerifiedActionInvocationV1, error) {
+	verified, err := VerifySignedDeliveryBytes(body, headers, opts)
+	if err != nil {
+		return nil, err
+	}
+	invocation, err := ParseActionInvocationV1(verified)
+	if err != nil {
+		return nil, err
+	}
+	return &VerifiedActionInvocationV1{
+		DeliveryMeta: verified.DeliveryMeta,
+		Body:         verified.Body,
+		Invocation:   *invocation,
+	}, nil
 }
 
 func ParseWebhookDelivery(v *VerifiedDelivery) (*WebhookEvent, error) {
@@ -130,6 +207,20 @@ func ParseWebhookDelivery(v *VerifiedDelivery) (*WebhookEvent, error) {
 
 func ParseActionInvocation(v *VerifiedDelivery) (map[string]any, error) {
 	return parseVerifiedDeliveryJSON(v)
+}
+
+func ParseActionInvocationV1(v *VerifiedDelivery) (*ActionInvocationV1, error) {
+	if v == nil {
+		return nil, fmt.Errorf("%w: nil verified delivery", ErrMalformedActionInvocation)
+	}
+	var invocation ActionInvocationV1
+	if err := json.Unmarshal(v.Body, &invocation); err != nil {
+		return nil, fmt.Errorf("%w: invalid JSON: %v", ErrMalformedActionInvocation, err)
+	}
+	if err := validateActionInvocationV1(&invocation); err != nil {
+		return nil, err
+	}
+	return &invocation, nil
 }
 
 func ParseInteractionCallback(v *VerifiedDelivery) (map[string]any, error) {
@@ -150,7 +241,46 @@ func verifyDeliveryFreshness(timestamp int64, opts VerifySignedDeliveryOptions) 
 		age = -age
 	}
 	if age > maxAge {
-		return fmt.Errorf("%w: timestamp outside max age", ErrInvalidSignedDelivery)
+		return fmt.Errorf("%w: %w: timestamp outside max age", ErrInvalidSignedDelivery, ErrStaleSignedDelivery)
+	}
+	return nil
+}
+
+func validateActionInvocationV1(invocation *ActionInvocationV1) error {
+	if invocation.Mobius.SchemaVersion == 0 {
+		return fmt.Errorf("%w: mobius.schema_version is required", ErrMalformedActionInvocation)
+	}
+	if invocation.Mobius.SchemaVersion != 1 {
+		return fmt.Errorf("%w: %d", ErrUnsupportedActionInvocationSchema, invocation.Mobius.SchemaVersion)
+	}
+	if strings.TrimSpace(invocation.Mobius.Scope.OrgID) == "" || strings.TrimSpace(invocation.Mobius.Scope.ProjectID) == "" {
+		return fmt.Errorf("%w: mobius.scope org_id and project_id are required", ErrMalformedActionInvocation)
+	}
+	if strings.TrimSpace(invocation.Mobius.Action.ID) == "" || strings.TrimSpace(invocation.Mobius.Action.Name) == "" {
+		return fmt.Errorf("%w: mobius.action id and name are required", ErrMalformedActionInvocation)
+	}
+	actor := invocation.Mobius.Actor
+	if strings.TrimSpace(actor.PrincipalID) == "" {
+		return fmt.Errorf("%w: mobius.actor.principal_id is required", ErrMalformedActionInvocation)
+	}
+	switch actor.PrincipalType {
+	case "human", "agent", "service", "system":
+	default:
+		return fmt.Errorf("%w: mobius.actor.principal_type is invalid", ErrMalformedActionInvocation)
+	}
+	if actor.PrincipalType == "agent" && strings.TrimSpace(actor.AgentID) == "" {
+		return fmt.Errorf("%w: mobius.actor.agent_id is required for agent actors", ErrMalformedActionInvocation)
+	}
+	if actor.PrincipalType != "agent" && strings.TrimSpace(actor.AgentID) != "" {
+		return fmt.Errorf("%w: mobius.actor.agent_id is only valid for agent actors", ErrMalformedActionInvocation)
+	}
+	switch invocation.Mobius.Origin.Kind {
+	case "agent_tool_call", "loop_action_step", "direct_action_invoke", "server_internal":
+	default:
+		return fmt.Errorf("%w: mobius.origin.kind is invalid", ErrMalformedActionInvocation)
+	}
+	if invocation.Parameters == nil {
+		return fmt.Errorf("%w: parameters must be an object", ErrMalformedActionInvocation)
 	}
 	return nil
 }
