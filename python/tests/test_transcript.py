@@ -563,6 +563,26 @@ def test_invoke_agent_streams_turn_to_terminal() -> None:
     assert turn.transcript.cursor == "43.9"
 
 
+def test_turn_transcript_exposes_structured_output() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(202, json=_ack_body())
+
+    client = _client_with(handler)
+    turn = client.invoke_agent(
+        InvokeAgentOptions(agent_name="support", content=[{"type": "text", "text": "hi"}])
+    )
+    assert turn.output is None
+    assert turn.output_source is None
+
+    _apply(
+        turn.transcript,
+        _turn(status="completed", output={"answer": "42"}, output_source="tool"),
+    )
+    assert turn.status == "completed"
+    assert turn.output == {"answer": "42"}
+    assert turn.output_source == "tool"
+
+
 def test_invoke_agent_redrains_from_invocation_cursor_before_final_update() -> None:
     durable_messages = [
         _ack_body()["user_message"],

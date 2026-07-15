@@ -70,6 +70,7 @@ export type {
 } from "./chat.js";
 export type {
   AgentTurnOperationPolicy,
+  AgentTurnOutputSource,
   ApplyBlueprintRequest,
   BlueprintApplyResult,
   BlueprintBindingListResponse,
@@ -103,6 +104,7 @@ export type {
   StreamEndFrame,
   StreamReadyFrame,
   TurnAck,
+  TurnOutputSpec,
   UpdatePrincipalRequest,
   UpdateRoleRequest,
 } from "./api/index.js";

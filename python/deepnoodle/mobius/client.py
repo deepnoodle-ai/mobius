@@ -64,6 +64,7 @@ from ._api.models import (
     StartTurnRequest,
     TagMap,
     TurnAck,
+    TurnOutputSpec,
     UpdateLoopRequest,
     UpdatePrincipalRequest,
     UpdateRoleRequest,
@@ -206,6 +207,11 @@ class InvokeAgentOptions:
     # Policy for only this newly admitted turn. Its timeout takes precedence
     # over the saved config timeout and is not saved on the session.
     operation: AgentTurnOperationPolicy | None = None
+    # Structured-output contract for this turn. When set, Mobius exposes a
+    # reserved submit tool for the schema, validates the submission
+    # server-side, and fails the turn if it never produces a schema-valid
+    # object. Read the validated value from TurnTranscript.output.
+    output: TurnOutputSpec | None = None
     # Optional messaging provider/channel routing context (Slack, Telegram,
     # ...) recorded on the started turn.
     channel_context: ChannelContext | None = None
@@ -224,6 +230,9 @@ class StartTurnOptions:
     # Policy for only this newly admitted turn. Its timeout takes precedence
     # over the saved config timeout and is not saved on the session.
     operation: AgentTurnOperationPolicy | None = None
+    # Structured-output contract for this turn. See InvokeAgentOptions.output;
+    # read the validated value from TurnTranscript.output.
+    output: TurnOutputSpec | None = None
     # Free-form caller metadata attached to the input message.
     metadata: dict[str, Any] | None = None
 
@@ -663,6 +672,7 @@ class Client:
             ),
             idempotency_key=opts.idempotency_key,
             operation=opts.operation,
+            output=opts.output,
             metadata=opts.metadata,
         )
         resp = self._request(
@@ -1143,6 +1153,26 @@ class TurnTranscript:
         return str(value) if value else None
 
     @property
+    def output(self) -> dict[str, Any] | None:
+        """The turn's validated structured output.
+
+        Present only on a completed turn that declared an output contract
+        (see InvokeAgentOptions.output); None until the terminal turn.upsert
+        frame is applied. Read this instead of parsing the transcript messages.
+        """
+        value = (self.transcript.turn(self.id) or {}).get("output")
+        return value if isinstance(value, dict) else None
+
+    @property
+    def output_source(self) -> str | None:
+        """Where output came from: "tool" (reserved mobius_submit_output tool)
+        or "text" (schema-valid final-message fallback); None when the turn
+        produced no structured output.
+        """
+        value = (self.transcript.turn(self.id) or {}).get("output_source")
+        return str(value) if value else None
+
+    @property
     def error(self) -> Exception | None:
         """Combined turn failure, distinct from transcript transport errors."""
         if self.status != "failed":
@@ -1432,7 +1462,10 @@ def _extract_handle_from_api_key(api_key: str) -> str | None:
 
 def _model_dump(value: Any) -> Any:
     if hasattr(value, "model_dump"):
-        return value.model_dump(mode="json", exclude_none=True)
+        # by_alias is required so fields aliased off python-reserved names
+        # (e.g. TurnOutputSpec.schema_ -> "schema", condition "if_" -> "if")
+        # serialize under their wire names.
+        return value.model_dump(mode="json", exclude_none=True, by_alias=True)
     if isinstance(value, dict):
         return {k: _model_dump(v) for k, v in value.items() if v is not None}
     if isinstance(value, list):
@@ -1462,6 +1495,7 @@ def _invoke_agent_request(opts: InvokeAgentOptions) -> InvokeAgentRequest:
         session=opts.session,
         config=opts.config,
         operation=opts.operation,
+        output=opts.output,
         channel_context=opts.channel_context,
     )
 

@@ -7,6 +7,7 @@ import {
   DEFAULT_BASE_URL,
   isTerminalRunStatus,
 } from "../src/client.js";
+import type { SessionTranscriptFrame } from "../src/api/index.js";
 import {
   WEBHOOK_EVENT_TYPE_HEADER,
   buildSyntheticWebhookPayload,
@@ -481,10 +482,30 @@ test("client: invokeAgent posts the compound invoke request shape", async () => 
         toolkits: [{ name: "tickets", actions: ["tickets.search"] }],
       },
       operation: { timeout_seconds: 90 },
+      output: { schema: { type: "object" } },
     });
     assert.equal(turn.afterSequence, 7);
     assert.equal(turn.sessionId, "sess_1");
     assert.equal(turn.id, "turn_1");
+    assert.equal(turn.output, undefined);
+    assert.equal(turn.outputSource, undefined);
+    turn.transcript.apply({
+      frame: {
+        event_type: "turn.upsert",
+        id: "turn_1",
+        session_id: "sess_1",
+        agent_id: "agent_1",
+        attempt: 1,
+        status: "completed",
+        output: { answer: "42" },
+        output_source: "tool",
+        created_at: "2026-05-27T00:00:00Z",
+        updated_at: "2026-05-27T00:00:01Z",
+      } as unknown as SessionTranscriptFrame,
+    });
+    assert.equal(turn.status, "completed");
+    assert.deepEqual(turn.output, { answer: "42" });
+    assert.equal(turn.outputSource, "tool");
   } finally {
     restore();
   }
@@ -502,6 +523,7 @@ test("client: invokeAgent posts the compound invoke request shape", async () => 
   assert.match(requestBody, /"effort":"medium"/);
   assert.match(requestBody, /"toolkits":\[\{"name":"tickets","actions":\["tickets\.search"\]\}\]/);
   assert.match(requestBody, /"operation":\{"timeout_seconds":90\}/);
+  assert.match(requestBody, /"output":\{"schema":\{"type":"object"\}\}/);
 });
 
 test("client: startTurn passes runtime context to an existing session", async () => {
@@ -526,6 +548,7 @@ test("client: startTurn passes runtime context to an existing session", async ()
       context: [{ name: "naming-board", content: "Chosen: none" }],
       idempotencyKey: "evt_1",
       operation: { timeout_seconds: 45 },
+      output: { schema: { type: "object" } },
     });
     assert.equal(turn.id, "turn_1");
   } finally {
@@ -541,6 +564,7 @@ test("client: startTurn passes runtime context to an existing session", async ()
     context: [{ name: "naming-board", content: "Chosen: none" }],
     idempotency_key: "evt_1",
     operation: { timeout_seconds: 45 },
+    output: { schema: { type: "object" } },
   });
 });
 
