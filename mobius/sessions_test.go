@@ -218,6 +218,29 @@ func TestInvokeAgent_ModeNewIsNotMarkedReplaySafe(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestInvokeAgent_WhitespaceIdempotencyKeyIsOmitted(t *testing.T) {
+	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, r.Header.Get("Idempotency-Key"), "")
+		var body map[string]interface{}
+		raw, _ := io.ReadAll(r.Body)
+		assert.NoError(t, json.Unmarshal(raw, &body))
+		_, present := body["input"].(map[string]any)["idempotency_key"]
+		assert.False(t, present)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusAccepted)
+		_, _ = io.WriteString(w, turnAckJSON("sess_1", "turn_1", 7))
+	})
+	c, srv := newTestClient(t, h)
+	defer srv.Close()
+
+	_, err := c.InvokeAgent(context.Background(), InvokeAgentOptions{
+		AgentName:      "support",
+		Content:        []map[string]interface{}{{"type": "text", "text": "hi"}},
+		IdempotencyKey: "  \t  ",
+	})
+	assert.NoError(t, err)
+}
+
 func TestInvokeAgent_StructuredAPIError(t *testing.T) {
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")

@@ -220,6 +220,28 @@ def test_unreadable_and_invalid_replay_safe_json_acknowledgements_are_retried() 
     assert rec.sleeps == [1.0, 2.0]
 
 
+def test_invalid_replay_safe_json_exhaustion_surfaces_public_decoding_error() -> None:
+    calls = 0
+
+    def handler(_: httpx.Request) -> httpx.Response:
+        nonlocal calls
+        calls += 1
+        return httpx.Response(
+            202,
+            content=b"{",
+            headers={"Content-Type": "application/json"},
+        )
+
+    with _wrap(handler, max_retries=1) as client:
+        with pytest.raises(
+            httpx.DecodingError,
+            match="mobius: replay-safe response body is not valid JSON",
+        ):
+            client.post("/x", json={}, headers={"Idempotency-Key": "k1"})
+
+    assert calls == 2
+
+
 def test_sse_failure_after_response_start_never_reinvokes() -> None:
     calls = 0
 
@@ -238,7 +260,7 @@ def test_sse_failure_after_response_start_never_reinvokes() -> None:
             "/x",
             content=b"{}",
             headers={
-                "Accept": "text/event-stream",
+                "Accept": "application/json, text/event-stream; charset=utf-8",
                 "Idempotency-Key": "k1",
             },
         ) as response:

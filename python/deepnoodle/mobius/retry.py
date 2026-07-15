@@ -26,10 +26,6 @@ _IDEMPOTENT_METHODS = frozenset({"GET", "HEAD", "PUT", "DELETE", "OPTIONS"})
 _RETRYABLE_STATUS_CODES = frozenset({429, 500, 502, 503, 504})
 
 
-class _ReplayableResponseError(Exception):
-    pass
-
-
 class RetryingTransport(httpx.BaseTransport):
     """Retries transient responses and transport errors per the shared spec.
 
@@ -60,7 +56,7 @@ class RetryingTransport(httpx.BaseTransport):
             try:
                 response = self._base.handle_request(request)
                 _prepare_replayable_json_response(request, response)
-            except (httpx.TransportError, _ReplayableResponseError):
+            except (httpx.TransportError, httpx.DecodingError):
                 # No HTTP response was produced (connection reset, EOF,
                 # I/O timeout, ...) or the acknowledgement body could not be
                 # read and validated. Retry replayable, idempotent requests on
@@ -122,7 +118,7 @@ def _prepare_replayable_json_response(
     if (
         request.method.upper() not in {"POST", "PATCH"}
         or not request.headers.get("Idempotency-Key")
-        or "text/event-stream" in request.headers.get("Accept", "").lower()
+        or _accepts_event_stream(request.headers.get("Accept", ""))
         or not 200 <= response.status_code < 300
         or response.status_code == 204
         or "json" not in content_type
@@ -135,9 +131,17 @@ def _prepare_replayable_json_response(
     except httpx.TransportError:
         raise
     except (json.JSONDecodeError, UnicodeDecodeError) as exc:
-        raise _ReplayableResponseError(
-            "mobius: replay-safe response body is not valid JSON"
+        raise httpx.DecodingError(
+            "mobius: replay-safe response body is not valid JSON",
+            request=request,
         ) from exc
+
+
+def _accepts_event_stream(value: str) -> bool:
+    return any(
+        media_range.split(";", 1)[0].strip().lower() == "text/event-stream"
+        for media_range in value.split(",")
+    )
 
 
 def _drain(response: httpx.Response) -> None:

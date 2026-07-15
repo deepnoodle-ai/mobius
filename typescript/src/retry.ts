@@ -195,13 +195,25 @@ function describeRequest(
   const hasIdempotencyKey = headers
     ? (headers.get("Idempotency-Key") ?? "").trim() !== ""
     : false;
-  const acceptsEventStream =
-    headers
-      ?.get("Accept")
-      ?.split(",")
-      .some((value) => value.trim().toLowerCase() === "text/event-stream") ??
-    false;
+  const acceptsEventStream = acceptsMediaType(
+    headers?.get("Accept"),
+    "text/event-stream",
+  );
   return { method, hasIdempotencyKey, acceptsEventStream };
+}
+
+function acceptsMediaType(
+  value: string | null | undefined,
+  mediaType: string,
+): boolean {
+  return (
+    value
+      ?.split(",")
+      .some(
+        (mediaRange) =>
+          mediaRange.split(";", 1)[0]?.trim().toLowerCase() === mediaType,
+      ) ?? false
+  );
 }
 
 function isIdempotent(method: string, hasIdempotencyKey: boolean): boolean {

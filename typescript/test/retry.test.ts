@@ -226,6 +226,41 @@ test("retry: unreadable or invalid replay-safe JSON acknowledgement is retried",
   assert.deepEqual(rec.calls, [1]);
 });
 
+test("retry: mid-body replay-safe JSON read failure is retried", async () => {
+  let calls = 0;
+  const fetchFn: typeof globalThis.fetch = async () => {
+    calls += 1;
+    if (calls === 1) {
+      const body = new ReadableStream<Uint8Array>({
+        start(controller) {
+          controller.enqueue(new TextEncoder().encode('{"accepted":'));
+          controller.error(new Error("mid-body read failed"));
+        },
+      });
+      return new Response(body, {
+        status: 202,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    return Response.json({ accepted: true }, { status: 202 });
+  };
+  const rec = new SleepRecorder();
+  const wrapped = wrapFetchWithRetry(fetchFn, {
+    maxRetries: 1,
+    sleep: rec.sleep,
+  });
+
+  const resp = await wrapped("https://x/y", {
+    method: "POST",
+    headers: { "Idempotency-Key": "k1" },
+    body: "{}",
+  });
+
+  assert.deepEqual(await resp.json(), { accepted: true });
+  assert.equal(calls, 2);
+  assert.deepEqual(rec.calls, [1]);
+});
+
 test("retry: SSE failures after response start never reinvoke", async () => {
   let calls = 0;
   const fetchFn: typeof globalThis.fetch = async () => {
@@ -246,7 +281,7 @@ test("retry: SSE failures after response start never reinvoke", async () => {
   const resp = await wrapped("https://x/y", {
     method: "POST",
     headers: {
-      Accept: "text/event-stream",
+      Accept: "application/json, text/event-stream; charset=utf-8",
       "Idempotency-Key": "k1",
     },
     body: "{}",

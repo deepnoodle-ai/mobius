@@ -181,7 +181,7 @@ func prepareReplayableJSONResponse(req *http.Request, resp *http.Response) error
 	if (method != http.MethodPost && method != http.MethodPatch) || req.Header.Get("Idempotency-Key") == "" {
 		return nil
 	}
-	if strings.Contains(strings.ToLower(req.Header.Get("Accept")), "text/event-stream") {
+	if acceptsEventStream(req.Header.Get("Accept")) {
 		return nil
 	}
 	if !strings.Contains(strings.ToLower(resp.Header.Get("Content-Type")), "json") {
@@ -198,7 +198,20 @@ func prepareReplayableJSONResponse(req *http.Request, resp *http.Response) error
 	}
 	resp.Body = io.NopCloser(bytes.NewReader(body))
 	resp.ContentLength = int64(len(body))
+	resp.TransferEncoding = nil
+	resp.Header.Del("Transfer-Encoding")
+	resp.Header.Set("Content-Length", strconv.Itoa(len(body)))
 	return nil
+}
+
+func acceptsEventStream(value string) bool {
+	for _, mediaRange := range strings.Split(value, ",") {
+		mediaType := strings.TrimSpace(strings.SplitN(mediaRange, ";", 2)[0])
+		if strings.EqualFold(mediaType, "text/event-stream") {
+			return true
+		}
+	}
+	return false
 }
 
 func isRetryableStatus(code int) bool {

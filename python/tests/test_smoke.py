@@ -427,6 +427,27 @@ def test_invoke_agent_mode_new_is_not_marked_replay_safe() -> None:
     assert seen["idempotency_key"] is None
 
 
+def test_invoke_agent_whitespace_idempotency_key_is_omitted() -> None:
+    seen: dict[str, object] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen["body"] = json.loads(request.read())
+        seen["idempotency_key"] = request.headers.get("Idempotency-Key")
+        return httpx.Response(202, json=_turn_ack_body("sess_1", "turn_1", 7))
+
+    client = _client_with(handler)
+    client.invoke_agent(
+        InvokeAgentOptions(
+            agent_name="support",
+            content=[{"type": "text", "text": "hi"}],
+            idempotency_key="  \t  ",
+        )
+    )
+
+    assert "idempotency_key" not in seen["body"]["input"]
+    assert seen["idempotency_key"] is None
+
+
 def test_session_nudge_lifecycle_routes() -> None:
     seen: list[str] = []
     queued = {

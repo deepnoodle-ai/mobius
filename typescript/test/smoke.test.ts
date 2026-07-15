@@ -604,6 +604,32 @@ test("client: invokeAgent does not mark mode new as replay-safe", async () => {
   assert.equal(idempotencyHeader, null);
 });
 
+test("client: invokeAgent omits a whitespace-only idempotency key", async () => {
+  let idempotencyHeader: string | null = null;
+  let requestBody = "";
+  const restore = installFakeFetch({
+    status: 202,
+    body: turnAck("sess_1", "turn_1", 7),
+    capture: (_input, init) => {
+      requestBody = String(init?.body ?? "");
+      idempotencyHeader = new Headers(init?.headers).get("Idempotency-Key");
+    },
+  });
+  try {
+    const client = new Client({ apiKey: "mbx_test", project: "test-project" });
+    await client.invokeAgent({
+      agentName: "support",
+      content: [{ type: "text", text: "hi" }],
+      idempotencyKey: "  \t  ",
+    });
+  } finally {
+    restore();
+  }
+
+  assert.equal("idempotency_key" in JSON.parse(requestBody).input, false);
+  assert.equal(idempotencyHeader, null);
+});
+
 test("client: nudgeSession mirrors its normalized idempotency key", async () => {
   let requestBody = "";
   let idempotencyHeader: string | null = null;

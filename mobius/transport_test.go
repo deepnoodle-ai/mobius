@@ -260,8 +260,13 @@ func TestRetryingTransport_RetriesUnreadableAndInvalidReplaySafeJSONAcknowledgem
 		}
 		return &http.Response{
 			StatusCode: http.StatusAccepted,
-			Header:     http.Header{"Content-Type": []string{"application/json"}},
-			Body:       body,
+			Header: http.Header{
+				"Content-Type":      []string{"application/json"},
+				"Transfer-Encoding": []string{"chunked"},
+			},
+			Body:             body,
+			ContentLength:    -1,
+			TransferEncoding: []string{"chunked"},
 		}, nil
 	})
 	rec := &recordingSleep{}
@@ -277,6 +282,10 @@ func TestRetryingTransport_RetriesUnreadableAndInvalidReplaySafeJSONAcknowledgem
 	assert.Equal(t, string(body), `{"accepted":true}`)
 	assert.Equal(t, calls, 3)
 	assert.Equal(t, len(rec.calls), 2)
+	assert.Equal(t, resp.ContentLength, int64(len(body)))
+	assert.Equal(t, resp.TransferEncoding, []string(nil))
+	assert.Equal(t, resp.Header.Get("Transfer-Encoding"), "")
+	assert.Equal(t, resp.Header.Get("Content-Length"), strconv.Itoa(len(body)))
 }
 
 func TestRetryingTransport_DoesNotReadOrReinvokeSSEAfterResponseStart(t *testing.T) {
@@ -292,7 +301,7 @@ func TestRetryingTransport_DoesNotReadOrReinvokeSSEAfterResponseStart(t *testing
 	})
 	tp := &RetryingTransport{Base: base, MaxRetries: 3, sleep: (&recordingSleep{}).sleep}
 	req := newRequest(t, http.MethodPost, "http://example.test/invoke", `{}`)
-	req.Header.Set("Accept", "text/event-stream")
+	req.Header.Set("Accept", "application/json, text/event-stream; charset=utf-8")
 	req.Header.Set("Idempotency-Key", "k1")
 
 	resp, err := tp.RoundTrip(req)
