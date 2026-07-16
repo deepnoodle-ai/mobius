@@ -2542,16 +2542,23 @@ paths:
       - agents
       summary: List agent memory entries
       description: Lists the entries in an agent's private memory, each a keyed, durable memory
-        the agent remembered. Pass `query` to keyword-search over keys and content, and `kind`
-        to filter to one kind. Returns an empty page when the agent has no memory yet.
+        the agent remembered. Pass `query` to search over keys, kinds, summaries, and content;
+        choose keyword, semantic, or hybrid ranking with `search_mode`; and use `kind` to
+        filter to one kind. Returns an empty page when the agent has no memory yet.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/IDParam'
       - name: query
         in: query
-        description: Optional keyword search over entry keys and content. Omit to list.
+        description: Optional search over entry keys, kinds, summaries, and content. Omit
+          to list.
         schema:
           type: string
+      - name: search_mode
+        in: query
+        description: Search ranking mode. Omit for backwards-compatible keyword search.
+        schema:
+          $ref: '#/components/schemas/MemorySearchMode'
       - name: kind
         in: query
         description: Optional filter to a single memory kind.
@@ -2572,6 +2579,43 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+  /v1/projects/{project_handle}/agents/{resource_id}/memory/changes:
+    get:
+      operationId: listAgentMemoryChanges
+      tags:
+      - agents
+      summary: List agent memory changes
+      description: Returns the content-free, append-only change feed for this agent's memory.
+        Consumers use the opaque cursor to resume after the last observed mutation. If the
+        cursor has expired, relist current entries and restart from the current feed head.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/IDParam'
+      - name: after
+        in: query
+        description: Opaque cursor returned by the previous response.
+        schema:
+          type: string
+      - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentMemoryChangeListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '410':
+          description: The supplied change cursor is older than retained history.
   /v1/projects/{project_handle}/agents/{resource_id}/memory/entries/{memory_key}:
     put:
       operationId: saveAgentMemoryEntry
@@ -6390,6 +6434,28 @@ components:
         strategy: auto
         threshold: sm
         summary_model: claude-haiku-4-5-20251001
+    MemoryContextMode:
+      type: string
+      enum:
+      - index
+      - full
+      - 'off'
+      description: Automatic memory delivery mode for agent turns.
+    MemoryContextPolicy:
+      type: object
+      additionalProperties: false
+      required:
+      - mode
+      properties:
+        mode:
+          $ref: '#/components/schemas/MemoryContextMode'
+        max_bytes:
+          type: integer
+          minimum: 0
+          maximum: 245760
+          description: UTF-8 byte budget for the rendered memory reminder. Omit for the mode
+            default (1536 bytes for index, 131072 bytes for full). Full mode fails the turn
+            rather than truncating when the snapshot does not fit.
     ThinkingEffort:
       type: string
       enum:
@@ -6473,6 +6539,9 @@ components:
           description: Default session-compaction policy. New sessions opened against this
             agent inherit it (below server defaults, above explicit per-session overrides).
             Absent when the agent has no default.
+        memory_context:
+          $ref: '#/components/schemas/MemoryContextPolicy'
+          description: Automatic memory delivery policy. Absent means the bounded index default.
         thinking_effort:
           $ref: '#/components/schemas/ThinkingEffort'
           description: Default reasoning-effort level. New sessions and loop agent steps inherit
@@ -11136,6 +11205,9 @@ components:
         compaction_policy:
           $ref: '#/components/schemas/SessionCompactionPolicy'
           description: Default session-compaction policy new sessions inherit from this agent.
+        memory_context:
+          $ref: '#/components/schemas/MemoryContextPolicy'
+          description: Automatic memory delivery policy. Omit for the bounded index default.
         thinking_effort:
           $ref: '#/components/schemas/ThinkingEffort'
           description: Default reasoning-effort level new sessions and loop agent steps inherit
@@ -11206,6 +11278,9 @@ components:
           $ref: '#/components/schemas/SessionCompactionPolicy'
           description: Replacement default session-compaction policy. Send an empty object
             to clear the default and fall back to server defaults.
+        memory_context:
+          $ref: '#/components/schemas/MemoryContextPolicy'
+          description: Replacement automatic memory delivery policy.
         thinking_effort:
           $ref: '#/components/schemas/ThinkingEffort'
           description: Replacement default reasoning-effort level. Send `inherit` to clear
@@ -11223,6 +11298,29 @@ components:
       description: 'Classifies a memory entry. Kinds carry different retention and compaction
         semantics: facts and preferences are durable, episodes are the primary input to compaction,
         and a summary is the compacted product of other entries.'
+    MemorySearchMode:
+      type: string
+      enum:
+      - keyword
+      - semantic
+      - hybrid
+      description: Memory search ranking mode.
+    MemorySearchCoverage:
+      type: object
+      additionalProperties: false
+      required:
+      - indexed_entries
+      - total_entries
+      - complete
+      properties:
+        indexed_entries:
+          type: integer
+          minimum: 0
+        total_entries:
+          type: integer
+          minimum: 0
+        complete:
+          type: boolean
     AgentMemory:
       type: object
       additionalProperties: false
@@ -11322,6 +11420,70 @@ components:
         next_cursor:
           type: string
           description: Cursor to fetch the next page, when has_more is true.
+        search_coverage:
+          $ref: '#/components/schemas/MemorySearchCoverage'
+          description: Present for semantic and hybrid search.
+    AgentMemoryChangeOperation:
+      type: string
+      enum:
+      - created
+      - updated
+      - deleted
+    AgentMemoryChangeReason:
+      type: string
+      enum:
+      - remembered
+      - api
+      - soft_cap
+    AgentMemoryChange:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - agent_id
+      - memory_entry_id
+      - memory_key
+      - operation
+      - version
+      - reason
+      - created_at
+      properties:
+        id:
+          type: string
+        agent_id:
+          type: string
+        memory_entry_id:
+          type: string
+        memory_key:
+          type: string
+        operation:
+          $ref: '#/components/schemas/AgentMemoryChangeOperation'
+        version:
+          type: integer
+        reason:
+          $ref: '#/components/schemas/AgentMemoryChangeReason'
+        source_run_id:
+          type: string
+        actor_id:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+    AgentMemoryChangeListResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - has_more
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AgentMemoryChange'
+        has_more:
+          type: boolean
+        next_cursor:
+          type: string
     SaveAgentMemoryEntryRequest:
       type: object
       additionalProperties: false
@@ -12728,6 +12890,10 @@ components:
           minimum: 0
           description: Per-turn execution timeout in seconds. Zero uses the platform default.
             A loop step's own timeout still overrides this.
+        memory_context:
+          $ref: '#/components/schemas/MemoryContextPolicy'
+          description: Automatic memory delivery policy for this session's resolved agent
+            definition. Replaces the stored or client-resolved policy.
         toolkits:
           type: array
           description: Toolkit selections that replace the agent's toolkit assignments for

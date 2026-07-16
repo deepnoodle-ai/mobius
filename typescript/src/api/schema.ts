@@ -1025,9 +1025,29 @@ export interface paths {
         };
         /**
          * List agent memory entries
-         * @description Lists the entries in an agent's private memory, each a keyed, durable memory the agent remembered. Pass `query` to keyword-search over keys and content, and `kind` to filter to one kind. Returns an empty page when the agent has no memory yet.
+         * @description Lists the entries in an agent's private memory, each a keyed, durable memory the agent remembered. Pass `query` to search over keys, kinds, summaries, and content; choose keyword, semantic, or hybrid ranking with `search_mode`; and use `kind` to filter to one kind. Returns an empty page when the agent has no memory yet.
          */
         get: operations["listAgentMemoryEntries"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project_handle}/agents/{resource_id}/memory/changes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List agent memory changes
+         * @description Returns the content-free, append-only change feed for this agent's memory. Consumers use the opaque cursor to resume after the last observed mutation. If the cursor has expired, relist current entries and restart from the current feed head.
+         */
+        get: operations["listAgentMemoryChanges"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2436,6 +2456,16 @@ export interface components {
             summary_model?: string;
         };
         /**
+         * @description Automatic memory delivery mode for agent turns.
+         * @enum {string}
+         */
+        MemoryContextMode: "index" | "full" | "off";
+        MemoryContextPolicy: {
+            mode: components["schemas"]["MemoryContextMode"];
+            /** @description UTF-8 byte budget for the rendered memory reminder. Omit for the mode default (1536 bytes for index, 131072 bytes for full). Full mode fails the turn rather than truncating when the snapshot does not fit. */
+            max_bytes?: number;
+        };
+        /**
          * @description Reasoning-effort level for a turn, lowest (`low`) to highest (`max`). Higher effort spends more tokens on reasoning, improving quality on hard tasks at the cost of latency and credits. Levels above what the resolved model supports are clamped down. Set on an agent it is the default; set on a session or loop step it overrides the agent default. `inherit` (or omitting the field) defers to the layer below — the agent default for a session/step, or the provider's own default when nothing sets a level.
          * @enum {string}
          */
@@ -2486,6 +2516,8 @@ export interface components {
             timeout_seconds?: number;
             /** @description Default session-compaction policy. New sessions opened against this agent inherit it (below server defaults, above explicit per-session overrides). Absent when the agent has no default. */
             compaction_policy?: components["schemas"]["SessionCompactionPolicy"];
+            /** @description Automatic memory delivery policy. Absent means the bounded index default. */
+            memory_context?: components["schemas"]["MemoryContextPolicy"];
             /** @description Default reasoning-effort level. New sessions and loop agent steps inherit it, above the provider default and below explicit per-session/per-step overrides. Absent when the agent has no default. */
             thinking_effort?: components["schemas"]["ThinkingEffort"];
             /** @description Current agent status: `active` or `inactive`. */
@@ -5152,6 +5184,8 @@ export interface components {
             timeout_seconds?: number;
             /** @description Default session-compaction policy new sessions inherit from this agent. */
             compaction_policy?: components["schemas"]["SessionCompactionPolicy"];
+            /** @description Automatic memory delivery policy. Omit for the bounded index default. */
+            memory_context?: components["schemas"]["MemoryContextPolicy"];
             /** @description Default reasoning-effort level new sessions and loop agent steps inherit from this agent. */
             thinking_effort?: components["schemas"]["ThinkingEffort"];
             /** @description Initial labels used for filtering, ownership, or automation. */
@@ -5185,6 +5219,8 @@ export interface components {
             status?: "active" | "inactive";
             /** @description Replacement default session-compaction policy. Send an empty object to clear the default and fall back to server defaults. */
             compaction_policy?: components["schemas"]["SessionCompactionPolicy"];
+            /** @description Replacement automatic memory delivery policy. */
+            memory_context?: components["schemas"]["MemoryContextPolicy"];
             /** @description Replacement default reasoning-effort level. Send `inherit` to clear the default and leave the provider default in place. */
             thinking_effort?: components["schemas"]["ThinkingEffort"];
             /** @description Replacement labels; send an empty object to clear all tags. */
@@ -5195,6 +5231,16 @@ export interface components {
          * @enum {string}
          */
         MemoryKind: "fact" | "preference" | "episode" | "summary";
+        /**
+         * @description Memory search ranking mode.
+         * @enum {string}
+         */
+        MemorySearchMode: "keyword" | "semantic" | "hybrid";
+        MemorySearchCoverage: {
+            indexed_entries: number;
+            total_entries: number;
+            complete: boolean;
+        };
         /** @description Summary of an agent's private memory: how many entries it holds, a breakdown by kind, and when it last changed. */
         AgentMemory: {
             /** @description The agent that owns this memory. */
@@ -5251,6 +5297,30 @@ export interface components {
             /** @description Whether more entries follow this page. */
             has_more: boolean;
             /** @description Cursor to fetch the next page, when has_more is true. */
+            next_cursor?: string;
+            /** @description Present for semantic and hybrid search. */
+            search_coverage?: components["schemas"]["MemorySearchCoverage"];
+        };
+        /** @enum {string} */
+        AgentMemoryChangeOperation: "created" | "updated" | "deleted";
+        /** @enum {string} */
+        AgentMemoryChangeReason: "remembered" | "api" | "soft_cap";
+        AgentMemoryChange: {
+            id: string;
+            agent_id: string;
+            memory_entry_id: string;
+            memory_key: string;
+            operation: components["schemas"]["AgentMemoryChangeOperation"];
+            version: number;
+            reason: components["schemas"]["AgentMemoryChangeReason"];
+            source_run_id?: string;
+            actor_id?: string;
+            /** Format: date-time */
+            created_at: string;
+        };
+        AgentMemoryChangeListResponse: {
+            items: components["schemas"]["AgentMemoryChange"][];
+            has_more: boolean;
             next_cursor?: string;
         };
         /** @description Content for a memory entry. The key comes from the path. */
@@ -6070,6 +6140,8 @@ export interface components {
              * @description Per-turn execution timeout in seconds. Zero uses the platform default. A loop step's own timeout still overrides this.
              */
             timeout_seconds?: number;
+            /** @description Automatic memory delivery policy for this session's resolved agent definition. Replaces the stored or client-resolved policy. */
+            memory_context?: components["schemas"]["MemoryContextPolicy"];
             /** @description Toolkit selections that replace the agent's toolkit assignments for this session. Each names the actions (from this project's action catalog) the agent may call. Replaces wholesale — an omitted `toolkits` inherits the agent's assignments. */
             toolkits?: components["schemas"]["InlineToolkit"][];
             /** @description Skills that replace the agent's skill assignments for this session. Each carries its full instruction body, lazy-loaded via the invoke_skill tool. Replaces wholesale. */
@@ -11089,8 +11161,10 @@ export interface operations {
     listAgentMemoryEntries: {
         parameters: {
             query?: {
-                /** @description Optional keyword search over entry keys and content. Omit to list. */
+                /** @description Optional search over entry keys, kinds, summaries, and content. Omit to list. */
                 query?: string;
+                /** @description Search ranking mode. Omit for backwards-compatible keyword search. */
+                search_mode?: components["schemas"]["MemorySearchMode"];
                 /** @description Optional filter to a single memory kind. */
                 kind?: components["schemas"]["MemoryKind"];
                 /** @description Cursor for pagination (opaque string from previous response) */
@@ -11121,6 +11195,48 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            503: components["responses"]["ServiceUnavailable"];
+        };
+    };
+    listAgentMemoryChanges: {
+        parameters: {
+            query?: {
+                /** @description Opaque cursor returned by the previous response. */
+                after?: string;
+                /** @description Maximum number of items to return */
+                limit?: components["parameters"]["LimitParam"];
+            };
+            header?: never;
+            path: {
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
+                resource_id: components["parameters"]["IDParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentMemoryChangeListResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description The supplied change cursor is older than retained history. */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
         };
     };
     saveAgentMemoryEntry: {
