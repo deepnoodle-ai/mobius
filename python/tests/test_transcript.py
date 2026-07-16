@@ -411,6 +411,7 @@ def test_nudge_session_is_a_thin_typed_wrapper() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         seen["path"] = request.url.path
         seen["body"] = __import__("json").loads(request.content)
+        seen["idempotency_key"] = request.headers.get("Idempotency-Key")
         return httpx.Response(
             202,
             json={
@@ -433,6 +434,7 @@ def test_nudge_session_is_a_thin_typed_wrapper() -> None:
     )
     assert ack.nudge_id == "nudge_1"
     assert seen["path"] == "/v1/projects/test-project/sessions/s1/nudges"
+    assert seen["idempotency_key"] == "event_2"
     assert seen["body"] == {
         "content": "Use the shorter name",
         "idempotency_key": "event_2",

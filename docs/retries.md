@@ -1,12 +1,12 @@
 # SDK Retry & Rate-Limit Handling
 
 The Mobius API may respond to any authenticated request with `429 Too Many
-Requests` when a rate-limit bucket is exhausted, or `503 Service Unavailable`
-when the backend is transiently overloaded. A request may also fail at the
-transport layer — connection reset, unexpected EOF, DNS failure, I/O timeout —
-before any response is produced. All official SDKs (Go, Python, TypeScript)
-share the same retry semantics for these cases so that customer behavior is
-consistent across languages.
+Requests` when a rate-limit bucket is exhausted, or a transient server error
+(`500`, `502`, `503`, or `504`). A request may also fail at the transport layer
+— connection reset, unexpected EOF, DNS failure, I/O timeout — before any
+response is produced. All official SDKs (Go, Python, TypeScript) share the same
+retry semantics for these cases so that customer behavior is consistent across
+languages.
 
 This document is the authoritative spec. If one language drifts from it,
 that language has a bug.
@@ -14,8 +14,10 @@ that language has a bug.
 ## Scope
 
 The retry layer sits **below** the generated client and wraps every outbound
-request. It observes only the response status code and a small set of
-headers; it does not inspect request or response bodies.
+request. It normally observes only the response status code and a small set of
+headers. For a successful replay-safe JSON write, it also fully reads and
+syntactically validates the acknowledgement before returning it; it does not
+interpret application fields in request or response bodies.
 
 ## Retryable failures
 
@@ -24,12 +26,15 @@ A retry is triggered by any of:
 | Failure | Meaning |
 |---------|---------|
 | `429 Too Many Requests` | Rate-limit exceeded for the credential or org. |
-| `503 Service Unavailable` | Backend signalling transient unavailability. |
+| `500 Internal Server Error` | The server failed unexpectedly before it could provide a stable application response. |
+| `502 Bad Gateway` | A gateway or proxy received an invalid upstream response. |
+| `503 Service Unavailable` | The backend is transiently unavailable or overloaded. |
+| `504 Gateway Timeout` | A gateway or proxy timed out waiting for an upstream response. |
 | Transport-level error | The request never produced an HTTP response — DNS failure, connection reset, unexpected EOF, or I/O timeout. |
+| Replay-safe JSON acknowledgement failure | A successful `POST`/`PATCH` response could not be fully read or was not valid JSON. |
 
-Any other status — including `500`, `502`, and `504` — is **not** retried.
-(Those reach the caller as an ordinary response; they can indicate
-half-applied writes, so the caller decides how to handle.)
+Other statuses, including non-transient `5xx` responses such as `501` and
+`505`, are **not** retried. They reach the caller as ordinary responses.
 
 Transport-level errors are retried only for replayable, idempotent requests
 (see [idempotency gating](#idempotency-gating)); a non-idempotent request
@@ -66,6 +71,10 @@ For each retry the SDK sleeps a bounded number of seconds, chosen as:
 Transport-level errors carry no `Retry-After`, so they always use the
 exponential-backoff schedule.
 
+Unreadable or invalid successful JSON acknowledgements use the same
+exponential-backoff schedule and consume the same retry budget. They do not
+start a second high-level retry loop.
+
 The context/`AbortSignal` passed by the caller is respected during sleep —
 cancellation aborts the retry loop with the cancellation error.
 
@@ -78,11 +87,36 @@ cancellation aborts the retry loop with the cancellation error.
   [idempotency gating](#idempotency-gating)), the SDK raises a typed
   `RateLimitError` populated from the last response's headers.
 
-`503` retries that eventually give up do **not** wrap into `RateLimitError`
-— the SDK passes the underlying response through so the caller's existing
-status handling applies. Likewise, a transport-level error that exhausts its
-budget (or is not allowed to retry) surfaces the underlying network error
-unchanged — never wrapped as `RateLimitError`.
+Retryable `5xx` responses that eventually give up do **not** wrap into
+`RateLimitError` — the SDK passes the underlying response through so the
+caller's existing status handling applies. Likewise, a transport-level error
+that exhausts its budget (or is not allowed to retry) surfaces the underlying
+network error unchanged — never wrapped as `RateLimitError`.
+
+## High-level replay-safe writes
+
+The Go, Python, and TypeScript high-level clients mirror a normalized caller
+key into both the existing JSON field and the `Idempotency-Key` header. The
+JSON field remains the server deduplication contract; the matching header tells
+the SDK transport that replay is safe.
+
+| High-level operation | JSON field | When the header is sent |
+|---|---|---|
+| Start loop run | `idempotency_key` | Nonblank key supplied |
+| Invoke agent | `input.idempotency_key` | Nonblank key and session mode is not `new` |
+| Invoke agent inline stream | `input.idempotency_key` | Same as invoke agent, before response start only |
+| Start turn in an existing session | `idempotency_key` | Nonblank key supplied |
+| Nudge session | `idempotency_key` | Nonblank key supplied |
+
+Keys are trimmed once and blank values are omitted, so the body and header
+cannot diverge. `invokeAgent` with `session.mode: new` intentionally keeps the
+body key but omits the header: each replay would create a fresh session before
+the server applies session-scoped turn deduplication.
+
+For inline SSE, the transport may retry a network failure before any response,
+or a retryable HTTP response. Once a successful stream response begins, it
+returns the response without pre-reading it and never invokes again. Later
+disconnects are handled by transcript cursor reconnection, not admission retry.
 
 ## `RateLimitError` shape
 
@@ -123,10 +157,11 @@ Each SDK surfaces `RateLimitError` in a way idiomatic for that language:
 
 | Knob | Default |
 |------|---------|
-| Retry statuses | `{429, 503}` |
+| Retry statuses | `{429, 500, 502, 503, 504}` |
 | Retry transport errors | yes (idempotent + replayable only) |
+| Retry unreadable/invalid successful JSON ack | yes (replay-safe write only) |
 | Retries | `3` |
-| Retry non-idempotent POST on 429 / transport error | no (surface error) |
+| Retry non-idempotent POST on retryable status / transport error | no (surface error) |
 | Max sleep per attempt | `60s` |
 | Exp backoff base | `1s`, doubled each attempt |
 
@@ -138,7 +173,8 @@ Set the per-client knob to `0`:
 - Python: `Client(..., retry=0)`
 - TypeScript: `new Client({ ..., retry: 0 })`
 
-With retries disabled, every 429 surfaces as `RateLimitError`, immediately.
+With retries disabled, every `429` surfaces as `RateLimitError` immediately;
+retryable `5xx` responses pass through unchanged on the first attempt.
 
 ## What the server expects
 

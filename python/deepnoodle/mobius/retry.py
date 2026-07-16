@@ -1,4 +1,4 @@
-"""429/503-aware retrying transport for the Mobius Python SDK.
+"""Transient-response-aware retrying transport for the Mobius Python SDK.
 
 Implements the shared retry policy documented in ``../docs/retries.md``.
 Wraps an underlying :class:`httpx.BaseTransport` and transparently retries
@@ -9,6 +9,7 @@ cannot be retried.
 from __future__ import annotations
 
 import email.utils
+import json
 import time
 from datetime import datetime, timezone
 from typing import Callable
@@ -22,11 +23,11 @@ MAX_RETRY_BACKOFF_SECONDS = 60.0
 BASE_RETRY_BACKOFF_SECONDS = 1.0
 
 _IDEMPOTENT_METHODS = frozenset({"GET", "HEAD", "PUT", "DELETE", "OPTIONS"})
+_RETRYABLE_STATUS_CODES = frozenset({429, 500, 502, 503, 504})
 
 
 class RetryingTransport(httpx.BaseTransport):
-    """Wraps a transport, retrying 429/503 responses and transport-level
-    errors per the shared spec.
+    """Retries transient responses and transport errors per the shared spec.
 
     Only GET/HEAD/PUT/DELETE/OPTIONS and POST/PATCH requests carrying an
     ``Idempotency-Key`` header are retried; other POST/PATCH requests
@@ -51,12 +52,17 @@ class RetryingTransport(httpx.BaseTransport):
         attempt = 0
         idempotent = _is_idempotent(request)
         while True:
+            response: httpx.Response | None = None
             try:
                 response = self._base.handle_request(request)
-            except httpx.TransportError:
+                _prepare_replayable_json_response(request, response)
+            except (httpx.TransportError, httpx.DecodingError):
                 # No HTTP response was produced (connection reset, EOF,
-                # I/O timeout, ...). Retry replayable, idempotent requests
-                # on the exponential-backoff schedule; otherwise re-raise.
+                # I/O timeout, ...) or the acknowledgement body could not be
+                # read and validated. Retry replayable, idempotent requests on
+                # the same exponential-backoff budget; otherwise re-raise.
+                if response is not None:
+                    response.close()
                 if not idempotent or attempt >= self._max_retries:
                     raise
                 wait = _clamp(BASE_RETRY_BACKOFF_SECONDS * (2**attempt))
@@ -67,15 +73,15 @@ class RetryingTransport(httpx.BaseTransport):
 
             status = response.status_code
 
-            if status not in (429, 503):
+            if status not in _RETRYABLE_STATUS_CODES:
                 return response
 
             out_of_budget = attempt >= self._max_retries or not idempotent
 
-            if status == 429 and out_of_budget:
-                _drain(response)
-                raise _build_rate_limit_error(response)
-            if status == 503 and out_of_budget:
+            if out_of_budget:
+                if status == 429:
+                    _drain(response)
+                    raise _build_rate_limit_error(response)
                 return response
 
             wait = _retry_after_or_backoff(response, attempt, self._now())
@@ -95,6 +101,47 @@ def _is_idempotent(request: httpx.Request) -> bool:
     if method in {"POST", "PATCH"}:
         return request.headers.get("Idempotency-Key") not in (None, "")
     return False
+
+
+def _prepare_replayable_json_response(
+    request: httpx.Request,
+    response: httpx.Response,
+) -> None:
+    """Complete replay-safe JSON acknowledgements inside the retry budget.
+
+    SSE responses are deliberately left unread: once the response starts, a
+    later stream failure must be handled by transcript reconnection rather
+    than reinvoking the admission request.
+    """
+
+    content_type = response.headers.get("Content-Type", "").lower()
+    if (
+        request.method.upper() not in {"POST", "PATCH"}
+        or not request.headers.get("Idempotency-Key")
+        or _accepts_event_stream(request.headers.get("Accept", ""))
+        or not 200 <= response.status_code < 300
+        or response.status_code == 204
+        or "json" not in content_type
+    ):
+        return
+
+    try:
+        content = response.read()
+        json.loads(content)
+    except httpx.TransportError:
+        raise
+    except (json.JSONDecodeError, UnicodeDecodeError) as exc:
+        raise httpx.DecodingError(
+            "mobius: replay-safe response body is not valid JSON",
+            request=request,
+        ) from exc
+
+
+def _accepts_event_stream(value: str) -> bool:
+    return any(
+        media_range.split(";", 1)[0].strip().lower() == "text/event-stream"
+        for media_range in value.split(",")
+    )
 
 
 def _drain(response: httpx.Response) -> None:

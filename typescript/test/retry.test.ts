@@ -157,6 +157,140 @@ test("retry: POST with Idempotency-Key is retried on 429", async () => {
   assert.equal(callCount(), 2);
 });
 
+test("retry: replay-safe POST reuses the exact body and key after network and 503 failures", async () => {
+  const bodies: string[] = [];
+  const keys: Array<string | null> = [];
+  let calls = 0;
+  const fetchFn: typeof globalThis.fetch = async (_input, init) => {
+    calls += 1;
+    bodies.push(String(init?.body));
+    keys.push(new Headers(init?.headers).get("Idempotency-Key"));
+    if (calls === 1) throw new Error("connection reset by peer");
+    if (calls === 2) {
+      return new Response(null, {
+        status: 503,
+        headers: { "Retry-After": "0" },
+      });
+    }
+    return Response.json({ ok: true });
+  };
+  const rec = new SleepRecorder();
+  const wrapped = wrapFetchWithRetry(fetchFn, {
+    maxRetries: 3,
+    sleep: rec.sleep,
+  });
+
+  const resp = await wrapped("https://x/y", {
+    method: "POST",
+    headers: { "Idempotency-Key": "k1" },
+    body: '{"message":"same"}',
+  });
+
+  assert.equal(resp.status, 200);
+  assert.equal(calls, 3);
+  assert.deepEqual(bodies, [
+    '{"message":"same"}',
+    '{"message":"same"}',
+    '{"message":"same"}',
+  ]);
+  assert.deepEqual(keys, ["k1", "k1", "k1"]);
+  assert.deepEqual(rec.calls, [1]);
+});
+
+test("retry: unreadable or invalid replay-safe JSON acknowledgement is retried", async () => {
+  let calls = 0;
+  const fetchFn: typeof globalThis.fetch = async () => {
+    calls += 1;
+    if (calls === 1) {
+      return new Response("{", {
+        status: 202,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    return Response.json({ accepted: true }, { status: 202 });
+  };
+  const rec = new SleepRecorder();
+  const wrapped = wrapFetchWithRetry(fetchFn, {
+    maxRetries: 2,
+    sleep: rec.sleep,
+  });
+
+  const resp = await wrapped("https://x/y", {
+    method: "POST",
+    headers: { "Idempotency-Key": "k1" },
+    body: "{}",
+  });
+
+  assert.deepEqual(await resp.json(), { accepted: true });
+  assert.equal(calls, 2);
+  assert.deepEqual(rec.calls, [1]);
+});
+
+test("retry: mid-body replay-safe JSON read failure is retried", async () => {
+  let calls = 0;
+  const fetchFn: typeof globalThis.fetch = async () => {
+    calls += 1;
+    if (calls === 1) {
+      const body = new ReadableStream<Uint8Array>({
+        start(controller) {
+          controller.enqueue(new TextEncoder().encode('{"accepted":'));
+          controller.error(new Error("mid-body read failed"));
+        },
+      });
+      return new Response(body, {
+        status: 202,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    return Response.json({ accepted: true }, { status: 202 });
+  };
+  const rec = new SleepRecorder();
+  const wrapped = wrapFetchWithRetry(fetchFn, {
+    maxRetries: 1,
+    sleep: rec.sleep,
+  });
+
+  const resp = await wrapped("https://x/y", {
+    method: "POST",
+    headers: { "Idempotency-Key": "k1" },
+    body: "{}",
+  });
+
+  assert.deepEqual(await resp.json(), { accepted: true });
+  assert.equal(calls, 2);
+  assert.deepEqual(rec.calls, [1]);
+});
+
+test("retry: SSE failures after response start never reinvoke", async () => {
+  let calls = 0;
+  const fetchFn: typeof globalThis.fetch = async () => {
+    calls += 1;
+    const body = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(new TextEncoder().encode("event: ready\n\n"));
+        controller.error(new Error("stream disconnected"));
+      },
+    });
+    return new Response(body, {
+      status: 200,
+      headers: { "Content-Type": "text/event-stream" },
+    });
+  };
+  const wrapped = wrapFetchWithRetry(fetchFn, { maxRetries: 3 });
+
+  const resp = await wrapped("https://x/y", {
+    method: "POST",
+    headers: {
+      Accept: "application/json, text/event-stream; charset=utf-8",
+      "Idempotency-Key": "k1",
+    },
+    body: "{}",
+  });
+
+  await assert.rejects(() => resp.text(), /stream disconnected/);
+  assert.equal(calls, 1);
+});
+
 test("retry: maxRetries=0 surfaces RateLimitError immediately", async () => {
   const { fetch, callCount } = sequencedFetch([
     { status: 429, headers: { "X-RateLimit-Scope": "org" } },
@@ -196,32 +330,83 @@ test("retry: exhausts budget and returns RateLimitError", async () => {
   assert.deepEqual(rec.calls, [1, 2, 4]);
 });
 
-test("retry: 503 is retried then passes through", async () => {
-  const { fetch, callCount } = sequencedFetch([
-    { status: 503 },
-    { status: 503 },
-    { status: 503 },
-  ]);
-  const rec = new SleepRecorder();
-  const wrapped = wrapFetchWithRetry(fetch, {
-    maxRetries: 2,
-    sleep: rec.sleep,
-  });
-  const resp = await wrapped("https://x/y");
-  assert.equal(resp.status, 503);
-  assert.equal(callCount(), 3);
-  assert.deepEqual(rec.calls, [1, 2]);
+test("retry: reports the status-specific reason for every transient response", async () => {
+  const cases = [
+    { status: 429, reason: "rate_limited" },
+    { status: 500, reason: "server_error" },
+    { status: 502, reason: "server_error" },
+    { status: 503, reason: "service_unavailable" },
+    { status: 504, reason: "server_error" },
+  ] as const;
+
+  for (const { status, reason } of cases) {
+    const events: string[] = [];
+    const { fetch } = sequencedFetch([
+      { status, headers: { "Retry-After": "0" } },
+      { status: 200 },
+    ]);
+    const wrapped = wrapFetchWithRetry(fetch, {
+      maxRetries: 1,
+      onRetry: (event) => events.push(event.reason),
+    });
+
+    assert.equal((await wrapped("https://x/y")).status, 200);
+    assert.deepEqual(events, [reason]);
+  }
 });
 
+for (const status of [500, 502, 503, 504]) {
+  test(`retry: ${status} is retried then passes through`, async () => {
+    const { fetch, callCount } = sequencedFetch([
+      { status },
+      { status },
+      { status },
+    ]);
+    const rec = new SleepRecorder();
+    const wrapped = wrapFetchWithRetry(fetch, {
+      maxRetries: 2,
+      sleep: rec.sleep,
+    });
+    const resp = await wrapped("https://x/y");
+    assert.equal(resp.status, status);
+    assert.equal(callCount(), 3);
+    assert.deepEqual(rec.calls, [1, 2]);
+  });
+
+  test(`retry: ${status} respects the POST idempotency gate`, async () => {
+    const keyed = sequencedFetch([
+      { status, headers: { "Retry-After": "0" } },
+      { status: 200 },
+    ]);
+    const wrappedKeyed = wrapFetchWithRetry(keyed.fetch, { maxRetries: 2 });
+    const keyedResp = await wrappedKeyed("https://x/y", {
+      method: "POST",
+      body: '{"same":true}',
+      headers: { "Idempotency-Key": "k1" },
+    });
+    assert.equal(keyedResp.status, 200);
+    assert.equal(keyed.callCount(), 2);
+
+    const unkeyed = sequencedFetch([{ status }]);
+    const wrappedUnkeyed = wrapFetchWithRetry(unkeyed.fetch, { maxRetries: 2 });
+    const unkeyedResp = await wrappedUnkeyed("https://x/y", {
+      method: "POST",
+      body: '{"same":true}',
+    });
+    assert.equal(unkeyedResp.status, status);
+    assert.equal(unkeyed.callCount(), 1);
+  });
+}
+
 test("retry: non-retryable statuses pass through unchanged", async () => {
-  const { fetch, callCount } = sequencedFetch([{ status: 500 }]);
+  const { fetch, callCount } = sequencedFetch([{ status: 501 }]);
   const rec = new SleepRecorder();
   const wrapped = wrapFetchWithRetry(fetch, {
     maxRetries: 3,
     sleep: rec.sleep,
   });
   const resp = await wrapped("https://x/y");
-  assert.equal(resp.status, 500);
+  assert.equal(resp.status, 501);
   assert.equal(callCount(), 1);
   assert.deepEqual(rec.calls, []);
 });
@@ -286,6 +471,24 @@ test("retry: aborted request is not retried", async () => {
   await assert.rejects(
     () => wrapped("https://x/y"),
     (e: unknown) => (e as Error).name === "AbortError",
+  );
+  assert.equal(callCount(), 1);
+  assert.deepEqual(rec.calls, []);
+});
+
+test("retry: timeout errors are not retried", async () => {
+  const timeout = new Error("request timed out");
+  timeout.name = "TimeoutError";
+  const { fetch, callCount } = throwingFetch(100, timeout);
+  const rec = new SleepRecorder();
+  const wrapped = wrapFetchWithRetry(fetch, { maxRetries: 3, sleep: rec.sleep });
+  await assert.rejects(
+    () =>
+      wrapped("https://x/y", {
+        method: "POST",
+        headers: { "Idempotency-Key": "k1" },
+      }),
+    (e: unknown) => (e as Error).name === "TimeoutError",
   );
   assert.equal(callCount(), 1);
   assert.deepEqual(rec.calls, []);

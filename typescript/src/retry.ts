@@ -1,5 +1,5 @@
-// 429/503- and transport-error-aware retrying `fetch` wrapper. Implements the
-// shared retry policy documented in ../../docs/retries.md.
+// Transient-response- and transport-error-aware retrying `fetch` wrapper.
+// Implements the shared retry policy documented in ../../docs/retries.md.
 
 export class RateLimitError extends Error {
   readonly retryAfter: number;
@@ -42,11 +42,12 @@ export const MAX_RETRY_BACKOFF_SECONDS = 60;
 const BASE_RETRY_BACKOFF_SECONDS = 1;
 
 const IDEMPOTENT_METHODS = new Set(["GET", "HEAD", "PUT", "DELETE", "OPTIONS"]);
+const RETRYABLE_STATUS_CODES = new Set([429, 500, 502, 503, 504]);
 
 type FetchFn = typeof globalThis.fetch;
 
 export interface WrapRetryOptions {
-  /** Number of retries for 429/503 responses. 0 disables retries. */
+  /** Number of retries for transient responses. 0 disables retries. */
   maxRetries?: number;
   /** Override for tests — called in place of `setTimeout`-based sleeping. */
   sleep?: (seconds: number) => Promise<void>;
@@ -59,13 +60,17 @@ export interface WrapRetryOptions {
 export interface RetryEvent {
   method: string;
   attempt: number;
-  reason: "transport_error" | "rate_limited" | "service_unavailable";
+  reason:
+    | "transport_error"
+    | "rate_limited"
+    | "server_error"
+    | "service_unavailable";
   status?: number;
   waitSeconds: number;
 }
 
 /**
- * Wrap a `fetch` function so that 429 and 503 responses are retried per
+ * Wrap a `fetch` function so that 429/500/502/503/504 responses are retried per
  * the shared policy. The returned function is a drop-in replacement for
  * the global `fetch`.
  */
@@ -81,19 +86,42 @@ export function wrapFetchWithRetry(
   return (async (input: RequestInfo | URL, init?: RequestInit) => {
     let attempt = 0;
     // Capture method / idempotency bits once — retries re-send the same request.
-    const { method, hasIdempotencyKey } = describeRequest(input, init);
+    const { method, hasIdempotencyKey, acceptsEventStream } = describeRequest(
+      input,
+      init,
+    );
     const idempotent = isIdempotent(method, hasIdempotencyKey);
 
     while (true) {
-      let response: Response;
+      let response: Response | undefined;
       try {
         response = await fetchFn(input, init);
+        // Fetch resolves once response headers arrive. For replay-safe JSON
+        // writes, force the successful body to finish and parse before this
+        // attempt counts as acknowledged. Reading a clone keeps the original
+        // response available to the SDK's generated/high-level decoder.
+        if (
+          shouldValidateReplayableJSONResponse(
+            response,
+            method,
+            hasIdempotencyKey,
+            acceptsEventStream,
+          )
+        ) {
+          await response.clone().json();
+        }
       } catch (err) {
+        if (response) await drainBody(response);
         // No HTTP response was produced (network error: connection reset,
-        // DNS failure, I/O timeout, ...). Retry replayable, idempotent
-        // requests on the exponential-backoff schedule; an aborted request
-        // or an exhausted budget re-throws the underlying error.
-        if (!idempotent || attempt >= maxRetries || isAbortError(err)) {
+        // DNS failure, I/O timeout, ...), or a successful replayable JSON
+        // acknowledgement could not be fully read/parsed. Retry replayable,
+        // idempotent requests on the exponential-backoff schedule; an aborted
+        // request or an exhausted budget re-throws the underlying error.
+        if (
+          !idempotent ||
+          attempt >= maxRetries ||
+          isRequestCancelled(err, input, init)
+        ) {
           throw err;
         }
         const wait = clamp(BASE_RETRY_BACKOFF_SECONDS * 2 ** attempt);
@@ -111,17 +139,17 @@ export function wrapFetchWithRetry(
       }
 
       const status = response.status;
-      if (status !== 429 && status !== 503) {
+      if (!RETRYABLE_STATUS_CODES.has(status)) {
         return response;
       }
 
       const outOfBudget = attempt >= maxRetries || !idempotent;
-      if (status === 429 && outOfBudget) {
-        // Drain body so the connection can be reused.
-        await drainBody(response);
-        throw buildRateLimitError(response);
-      }
-      if (status === 503 && outOfBudget) {
+      if (outOfBudget) {
+        if (status === 429) {
+          // Drain body so the connection can be reused.
+          await drainBody(response);
+          throw buildRateLimitError(response);
+        }
         return response;
       }
 
@@ -129,7 +157,12 @@ export function wrapFetchWithRetry(
       onRetry?.({
         method,
         attempt: attempt + 1,
-        reason: status === 429 ? "rate_limited" : "service_unavailable",
+        reason:
+          status === 429
+            ? "rate_limited"
+            : status === 503
+              ? "service_unavailable"
+              : "server_error",
         status,
         waitSeconds: wait,
       });
@@ -145,7 +178,11 @@ export function wrapFetchWithRetry(
 function describeRequest(
   input: RequestInfo | URL,
   init?: RequestInit,
-): { method: string; hasIdempotencyKey: boolean } {
+): {
+  method: string;
+  hasIdempotencyKey: boolean;
+  acceptsEventStream: boolean;
+} {
   let method = (init?.method ?? "GET").toUpperCase();
   let headers: Headers | undefined;
   if (init?.headers) {
@@ -158,7 +195,25 @@ function describeRequest(
   const hasIdempotencyKey = headers
     ? (headers.get("Idempotency-Key") ?? "").trim() !== ""
     : false;
-  return { method, hasIdempotencyKey };
+  const acceptsEventStream = acceptsMediaType(
+    headers?.get("Accept"),
+    "text/event-stream",
+  );
+  return { method, hasIdempotencyKey, acceptsEventStream };
+}
+
+function acceptsMediaType(
+  value: string | null | undefined,
+  mediaType: string,
+): boolean {
+  return (
+    value
+      ?.split(",")
+      .some(
+        (mediaRange) =>
+          mediaRange.split(";", 1)[0]?.trim().toLowerCase() === mediaType,
+      ) ?? false
+  );
 }
 
 function isIdempotent(method: string, hasIdempotencyKey: boolean): boolean {
@@ -167,16 +222,37 @@ function isIdempotent(method: string, hasIdempotencyKey: boolean): boolean {
   return false;
 }
 
-// isAbortError reports whether a thrown fetch error is caller cancellation
-// (an aborted AbortSignal) rather than a transient transport failure. Abort
-// is terminal and must never be retried.
-function isAbortError(err: unknown): boolean {
-  return (
-    typeof err === "object" &&
-    err !== null &&
-    "name" in err &&
-    (err as { name?: unknown }).name === "AbortError"
-  );
+function shouldValidateReplayableJSONResponse(
+  response: Response,
+  method: string,
+  hasIdempotencyKey: boolean,
+  acceptsEventStream: boolean,
+): boolean {
+  if (method !== "POST" && method !== "PATCH") return false;
+  if (!hasIdempotencyKey || acceptsEventStream) return false;
+  if (!response.ok || response.status === 204) return false;
+  return (response.headers.get("Content-Type") ?? "")
+    .toLowerCase()
+    .includes("json");
+}
+
+// Caller cancellation and request timeouts are terminal. Checking the signal
+// matters for AbortSignal.timeout(), whose rejection is named TimeoutError
+// rather than AbortError and would otherwise retry with an already-aborted
+// signal.
+function isRequestCancelled(
+  err: unknown,
+  input: RequestInfo | URL,
+  init?: RequestInit,
+): boolean {
+  const signal =
+    init?.signal ?? (input instanceof Request ? input.signal : undefined);
+  if (signal?.aborted) return true;
+  if (typeof err !== "object" || err === null || !("name" in err)) {
+    return false;
+  }
+  const name = (err as { name?: unknown }).name;
+  return name === "AbortError" || name === "TimeoutError";
 }
 
 async function drainBody(response: Response): Promise<void> {

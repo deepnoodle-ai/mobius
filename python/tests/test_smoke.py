@@ -215,6 +215,7 @@ def test_start_run_posts_to_loop_bound_route() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         seen["path"] = request.url.path
         seen["body"] = request.read().decode()
+        seen["idempotency_key"] = request.headers.get("Idempotency-Key")
         return httpx.Response(202, json=_run_body("run_1", "running"))
 
     client = _client_with(handler)
@@ -230,6 +231,7 @@ def test_start_run_posts_to_loop_bound_route() -> None:
 
     assert run.id == "run_1"
     assert seen["path"] == "/v1/projects/test-project/loops/loop_1/runs"
+    assert seen["idempotency_key"] == "run-request-1"
     assert '"idempotency_key":"run-request-1"' in str(seen["body"])
     assert '"event":{"topic":"sdk"}' in str(seen["body"])
     assert '"config":{"priority":"normal"}' in str(seen["body"])
@@ -284,6 +286,7 @@ def test_invoke_agent_posts_the_compound_invoke_request_shape() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         seen["path"] = request.url.path
         seen["body"] = request.read().decode()
+        seen["idempotency_key"] = request.headers.get("Idempotency-Key")
         return httpx.Response(202, json=_turn_ack_body("sess_1", "turn_1", 7))
 
     client = _client_with(handler)
@@ -310,6 +313,7 @@ def test_invoke_agent_posts_the_compound_invoke_request_shape() -> None:
     assert turn.id == "turn_1"
     assert turn.deduped is False
     assert seen["path"] == "/v1/projects/test-project/agents/invoke"
+    assert seen["idempotency_key"] == "evt_1"
     assert '"agent_ref":{"id":"agent_1"}' in str(seen["body"])
     assert '"idempotency_key":"evt_1"' in str(seen["body"])
     assert '"context":[{"name":"naming-board","content":"Chosen: none"}]' in str(
@@ -332,6 +336,7 @@ def test_start_turn_passes_runtime_context_to_existing_session() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         seen["path"] = request.url.path
         seen["body"] = json.loads(request.read())
+        seen["idempotency_key"] = request.headers.get("Idempotency-Key")
         return httpx.Response(202, json=_turn_ack_body("sess_1", "turn_1", 7))
 
     client = _client_with(handler)
@@ -349,6 +354,7 @@ def test_start_turn_passes_runtime_context_to_existing_session() -> None:
 
     assert turn.id == "turn_1"
     assert seen["path"] == "/v1/projects/test-project/sessions/sess_1/turns"
+    assert seen["idempotency_key"] == "evt_1"
     assert seen["body"] == {
         "role": "user",
         "content": [{"type": "text", "text": "hi"}],
@@ -397,6 +403,49 @@ def test_list_session_messages_can_include_runtime_context() -> None:
     reminder = messages.items[0].content[0].root
     assert reminder.name == "app-board"
     assert reminder.content == "Chosen: none"
+
+
+def test_invoke_agent_mode_new_is_not_marked_replay_safe() -> None:
+    seen: dict[str, object] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen["body"] = json.loads(request.read())
+        seen["idempotency_key"] = request.headers.get("Idempotency-Key")
+        return httpx.Response(202, json=_turn_ack_body("sess_1", "turn_1", 7))
+
+    client = _client_with(handler)
+    client.invoke_agent(
+        InvokeAgentOptions(
+            agent_name="support",
+            content=[{"type": "text", "text": "hi"}],
+            idempotency_key="evt_1",
+            session=InvokeSessionSpec(mode="new"),
+        )
+    )
+
+    assert seen["body"]["input"]["idempotency_key"] == "evt_1"
+    assert seen["idempotency_key"] is None
+
+
+def test_invoke_agent_whitespace_idempotency_key_is_omitted() -> None:
+    seen: dict[str, object] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen["body"] = json.loads(request.read())
+        seen["idempotency_key"] = request.headers.get("Idempotency-Key")
+        return httpx.Response(202, json=_turn_ack_body("sess_1", "turn_1", 7))
+
+    client = _client_with(handler)
+    client.invoke_agent(
+        InvokeAgentOptions(
+            agent_name="support",
+            content=[{"type": "text", "text": "hi"}],
+            idempotency_key="  \t  ",
+        )
+    )
+
+    assert "idempotency_key" not in seen["body"]["input"]
+    assert seen["idempotency_key"] is None
 
 
 def test_session_nudge_lifecycle_routes() -> None:
@@ -454,6 +503,7 @@ def test_invoke_agent_requires_agent_ref_and_content() -> None:
 def test_invoke_agent_stream_streams_session_frames_inline() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         assert request.headers["accept"] == "text/event-stream"
+        assert request.headers["idempotency-key"] == "evt_stream_1"
         return httpx.Response(
             200,
             text='event: turn.completed\ndata: {"usage":{"input_tokens":42}}\n\n',
@@ -463,7 +513,11 @@ def test_invoke_agent_stream_streams_session_frames_inline() -> None:
     client = _client_with(handler)
     events = list(
         client.invoke_agent_stream(
-            InvokeAgentOptions(agent_name="support", content=[{"type": "text", "text": "hi"}])
+            InvokeAgentOptions(
+                agent_name="support",
+                content=[{"type": "text", "text": "hi"}],
+                idempotency_key="evt_stream_1",
+            )
         )
     )
 

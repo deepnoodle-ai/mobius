@@ -36,6 +36,7 @@ func TestInvokeAgent_HighLevelClient(t *testing.T) {
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case r.Method == http.MethodPost && r.URL.Path == "/v1/projects/test-project/agents/invoke":
+			assert.Equal(t, r.Header.Get("Idempotency-Key"), "evt_1")
 			b, _ := io.ReadAll(r.Body)
 			assert.NoError(t, json.Unmarshal(b, &body))
 			w.Header().Set("Content-Type", "application/json")
@@ -128,6 +129,7 @@ func TestStartTurn_HighLevelClient(t *testing.T) {
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, r.Method, http.MethodPost)
 		assert.Equal(t, r.URL.Path, "/v1/projects/test-project/sessions/sess_1/turns")
+		assert.Equal(t, r.Header.Get("Idempotency-Key"), "evt_1")
 		raw, _ := io.ReadAll(r.Body)
 		assert.NoError(t, json.Unmarshal(raw, &body))
 		w.Header().Set("Content-Type", "application/json")
@@ -192,6 +194,53 @@ func TestInvokeAgent_RequiresAgentRefAndContent(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func TestInvokeAgent_ModeNewIsNotMarkedReplaySafe(t *testing.T) {
+	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, r.Header.Get("Idempotency-Key"), "")
+		var body map[string]interface{}
+		raw, _ := io.ReadAll(r.Body)
+		assert.NoError(t, json.Unmarshal(raw, &body))
+		assert.Equal(t, body["input"].(map[string]any)["idempotency_key"], "evt_1")
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusAccepted)
+		_, _ = io.WriteString(w, turnAckJSON("sess_1", "turn_1", 7))
+	})
+	c, srv := newTestClient(t, h)
+	defer srv.Close()
+
+	mode := api.InvokeSessionSpecModeNew
+	_, err := c.InvokeAgent(context.Background(), InvokeAgentOptions{
+		AgentName:      "support",
+		Content:        []map[string]interface{}{{"type": "text", "text": "hi"}},
+		IdempotencyKey: "evt_1",
+		Session:        &api.InvokeSessionSpec{Mode: &mode},
+	})
+	assert.NoError(t, err)
+}
+
+func TestInvokeAgent_WhitespaceIdempotencyKeyIsOmitted(t *testing.T) {
+	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, r.Header.Get("Idempotency-Key"), "")
+		var body map[string]interface{}
+		raw, _ := io.ReadAll(r.Body)
+		assert.NoError(t, json.Unmarshal(raw, &body))
+		_, present := body["input"].(map[string]any)["idempotency_key"]
+		assert.False(t, present)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusAccepted)
+		_, _ = io.WriteString(w, turnAckJSON("sess_1", "turn_1", 7))
+	})
+	c, srv := newTestClient(t, h)
+	defer srv.Close()
+
+	_, err := c.InvokeAgent(context.Background(), InvokeAgentOptions{
+		AgentName:      "support",
+		Content:        []map[string]interface{}{{"type": "text", "text": "hi"}},
+		IdempotencyKey: "  \t  ",
+	})
+	assert.NoError(t, err)
+}
+
 func TestInvokeAgent_StructuredAPIError(t *testing.T) {
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -221,6 +270,7 @@ func TestNudgeSession_HighLevelClient(t *testing.T) {
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, r.Method, http.MethodPost)
 		assert.Equal(t, r.URL.Path, "/v1/projects/test-project/sessions/s1/nudges")
+		assert.Equal(t, r.Header.Get("Idempotency-Key"), "event_2")
 		raw, _ := io.ReadAll(r.Body)
 		assert.NoError(t, json.Unmarshal(raw, &body))
 		w.Header().Set("Content-Type", "application/json")
@@ -285,6 +335,7 @@ func TestInvokeAgentStream_HighLevelClient(t *testing.T) {
 		switch {
 		case r.Method == http.MethodPost && r.URL.Path == "/v1/projects/test-project/agents/invoke":
 			assert.Equal(t, r.Header.Get("Accept"), "text/event-stream")
+			assert.Equal(t, r.Header.Get("Idempotency-Key"), "evt_stream_1")
 			w.Header().Set("Content-Type", "text/event-stream")
 			_, _ = io.WriteString(w, "event: turn.completed\ndata: {\"usage\":{\"input_tokens\":42}}\n\n")
 		default:
@@ -295,8 +346,9 @@ func TestInvokeAgentStream_HighLevelClient(t *testing.T) {
 	defer srv.Close()
 
 	events, err := c.InvokeAgentStream(context.Background(), InvokeAgentOptions{
-		AgentName: "support",
-		Content:   []map[string]interface{}{{"type": "text", "text": "hi"}},
+		AgentName:      "support",
+		Content:        []map[string]interface{}{{"type": "text", "text": "hi"}},
+		IdempotencyKey: "evt_stream_1",
 	})
 	assert.NoError(t, err)
 

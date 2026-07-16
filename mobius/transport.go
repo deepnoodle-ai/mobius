@@ -1,7 +1,10 @@
 package mobius
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"fmt"
 	"io"
 	"log/slog"
 	"math"
@@ -18,13 +21,13 @@ const MaxRetryBackoff = 60 * time.Second
 
 const baseRetryBackoff = 1 * time.Second
 
-// RetryingTransport wraps an http.RoundTripper to retry 429 and 503
-// responses and transport-level errors per the policy documented in
-// docs/retries.md:
+// RetryingTransport wraps an http.RoundTripper to retry 429, transient
+// 500/502/503/504 responses, and transport-level errors per the policy
+// documented in docs/retries.md:
 //
-//   - 429 and 503 responses are retried, as are transport-level errors
-//     (connection reset, unexpected EOF, dial failure) that never yield an
-//     HTTP response.
+//   - 429, 500, 502, 503, and 504 responses are retried, as are
+//     transport-level errors (connection reset, unexpected EOF, dial failure)
+//     that never yield an HTTP response.
 //   - GET/HEAD/PUT/DELETE are always replayable; POST/PATCH are replayed
 //     only when an Idempotency-Key header is set. Non-replayable requests
 //     surface the error without a retry.
@@ -90,7 +93,7 @@ func (t *RetryingTransport) RoundTrip(req *http.Request) (*http.Response, error)
 		if err != nil {
 			// Transport-level failure (connection reset, unexpected EOF,
 			// dial error, ...). These never produce an HTTP response, so the
-			// 429/503 handling below cannot see them. Retry idempotent,
+			// HTTP-status handling below cannot see them. Retry idempotent,
 			// replayable requests on the same backoff budget; give up once
 			// the budget is spent, the request is not safe to replay, or the
 			// context is done.
@@ -114,22 +117,42 @@ func (t *RetryingTransport) RoundTrip(req *http.Request) (*http.Response, error)
 		}
 
 		if !isRetryableStatus(resp.StatusCode) {
+			if err := prepareReplayableJSONResponse(req, resp); err != nil {
+				_ = resp.Body.Close()
+				if !canRetry || attempt >= t.MaxRetries || ctx.Err() != nil {
+					return nil, err
+				}
+				wait := expBackoff(attempt)
+				if t.Logger != nil {
+					t.Logger.Warn("mobius: retrying after response body error",
+						slog.String("method", req.Method),
+						slog.String("url", req.URL.String()),
+						slog.String("error", err.Error()),
+						slog.Int("attempt", attempt+1),
+						slog.Duration("wait", wait),
+					)
+				}
+				if serr := t.sleepFn()(ctx, wait); serr != nil {
+					return nil, err
+				}
+				continue
+			}
 			return resp, nil
 		}
 
 		outOfBudget := attempt >= t.MaxRetries || !canRetry
-		if resp.StatusCode == http.StatusTooManyRequests && outOfBudget {
-			rle := parseRateLimitError(resp)
-			_ = resp.Body.Close()
-			return nil, rle
-		}
-		if resp.StatusCode == http.StatusServiceUnavailable && outOfBudget {
+		if outOfBudget {
+			if resp.StatusCode == http.StatusTooManyRequests {
+				rle := parseRateLimitError(resp)
+				_ = resp.Body.Close()
+				return nil, rle
+			}
 			return resp, nil
 		}
 
 		wait := retryAfterOrBackoff(resp, attempt, t.nowFn())
 		if t.Logger != nil {
-			t.Logger.Warn("mobius: retrying after rate-limit response",
+			t.Logger.Warn("mobius: retrying after transient HTTP response",
 				slog.String("method", req.Method),
 				slog.String("url", req.URL.String()),
 				slog.Int("status", resp.StatusCode),
@@ -145,12 +168,67 @@ func (t *RetryingTransport) RoundTrip(req *http.Request) (*http.Response, error)
 	}
 }
 
+// prepareReplayableJSONResponse completes the acknowledgement boundary for
+// replay-safe writes. Reading and validating the small JSON response here
+// keeps response-body failures inside the transport's single retry budget.
+// Event streams are intentionally excluded: once their response begins, the
+// original invocation must never be sent again.
+func prepareReplayableJSONResponse(req *http.Request, resp *http.Response) error {
+	if resp == nil || resp.Body == nil || resp.StatusCode < 200 || resp.StatusCode >= 300 || resp.StatusCode == http.StatusNoContent {
+		return nil
+	}
+	method := strings.ToUpper(req.Method)
+	if (method != http.MethodPost && method != http.MethodPatch) || req.Header.Get("Idempotency-Key") == "" {
+		return nil
+	}
+	if acceptsEventStream(req.Header.Get("Accept")) {
+		return nil
+	}
+	if !strings.Contains(strings.ToLower(resp.Header.Get("Content-Type")), "json") {
+		return nil
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("mobius: read replay-safe response body: %w", err)
+	}
+	_ = resp.Body.Close()
+	if !json.Valid(body) {
+		return fmt.Errorf("mobius: replay-safe response body is not valid JSON")
+	}
+	resp.Body = io.NopCloser(bytes.NewReader(body))
+	resp.ContentLength = int64(len(body))
+	resp.TransferEncoding = nil
+	resp.Header.Del("Transfer-Encoding")
+	resp.Header.Set("Content-Length", strconv.Itoa(len(body)))
+	return nil
+}
+
+func acceptsEventStream(value string) bool {
+	for _, mediaRange := range strings.Split(value, ",") {
+		mediaType := strings.TrimSpace(strings.SplitN(mediaRange, ";", 2)[0])
+		if strings.EqualFold(mediaType, "text/event-stream") {
+			return true
+		}
+	}
+	return false
+}
+
 func isRetryableStatus(code int) bool {
-	return code == http.StatusTooManyRequests || code == http.StatusServiceUnavailable
+	switch code {
+	case http.StatusTooManyRequests,
+		http.StatusInternalServerError,
+		http.StatusBadGateway,
+		http.StatusServiceUnavailable,
+		http.StatusGatewayTimeout:
+		return true
+	default:
+		return false
+	}
 }
 
 // isIdempotent reports whether the method-plus-headers combination makes
-// the request safe to retry on a 429/503.
+// the request safe to retry on a transient HTTP response.
 func isIdempotent(req *http.Request) bool {
 	switch strings.ToUpper(req.Method) {
 	case http.MethodGet, http.MethodHead, http.MethodPut, http.MethodDelete, http.MethodOptions:
