@@ -6,11 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 
 ## [Unreleased]
 
+## [0.0.52] - 2026-07-15
+
 ### Added
 
 - Typed Go, Python, and TypeScript verify-then-parse helpers for signed action
   invocation v1 envelopes, with explicit signature, freshness, schema, and
   structure errors. See `docs/sdk-helpers.md`.
+
+### Fixed
+
+- Go, Python, and TypeScript clients now forward idempotency keys and retry
+  replay-safe admissions after transient transport, response-body, `429`, and
+  `5xx` failures without replaying unsafe new-session or streaming requests.
 
 ## [0.0.51] - 2026-07-14
 
