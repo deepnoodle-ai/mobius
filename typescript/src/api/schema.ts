@@ -2147,7 +2147,11 @@ export interface paths {
          */
         get: operations["listArtifacts"];
         put?: never;
-        post?: never;
+        /**
+         * Create artifact
+         * @description Accepts a project-authorized multipart file upload. Without a worker lease, the caller needs `mobius.project.edit`; the artifact is private to the authenticated principal and has no run or step lineage. A worker may instead supply `X-Mobius-Lease-Token` with `mobius.work.execute`; Mobius then derives run, step, job, worker session, attempt, and shared visibility from the active claim. Caller-supplied lineage, ownership, and visibility fields are rejected in both modes.
+         */
+        post: operations["createArtifact"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2443,7 +2447,6 @@ export interface components {
          *       "principal_id": "agent_5n8p2q7m4x9r3v6t",
          *       "name": "PR reviewer",
          *       "description": "Reviews pull requests for risky changes.",
-         *       "kind": "llm",
          *       "color": "teal",
          *       "model": "claude-sonnet-4-6",
          *       "tool_presentation": "meta",
@@ -2466,21 +2469,19 @@ export interface components {
             name: string;
             /** @description Optional human-readable description. */
             description?: string;
-            /** @description Freeform agent classification for tooling and filtering (e.g. "llm", "rpa"). */
-            kind?: string;
             /** @description Display color for this agent in UI surfaces. One of the Mantine color palette keys (e.g. `indigo`, `teal`, `grape`); empty string falls back to a hash-derived color. */
             color?: string;
-            /** @description Model identifier for platform agents. Accepts any id returned by `GET /v1/projects/{project_handle}/catalog/models` (including slash-bearing OpenRouter catalog ids), optionally `provider/`-prefixed (e.g. `xai/grok-4`); bare known ids (e.g. `claude-sonnet-4-6`) are auto-detected to their provider. Empty string falls back to the platform default. */
+            /** @description Model identifier for agents. Accepts any id returned by `GET /v1/projects/{project_handle}/catalog/models` (including slash-bearing OpenRouter catalog ids), optionally `provider/`-prefixed (e.g. `xai/grok-4`); bare known ids (e.g. `claude-sonnet-4-6`) are auto-detected to their provider. Empty string falls back to the platform default. */
             model?: string;
             /** @description Default route for model calls made by this agent. */
             model_route?: components["schemas"]["AgentModelRoute"];
             /** @description Default tool presentation used by loop agent steps and built-in channel-message replies for this agent. */
             tool_presentation?: components["schemas"]["AgentToolPresentation"];
-            /** @description Custom system prompt for platform agents. Empty string uses the generated default based on the agent name. */
+            /** @description Custom system prompt for agents. Empty string uses the generated default based on the agent name. */
             system_prompt?: string;
             /**
              * Format: int64
-             * @description Execution timeout, in seconds, for a single turn of this platform agent. `0` (or omitted) uses the platform default (600s / 10 minutes). A loop step's own timeout overrides this for that step.
+             * @description Execution timeout, in seconds, for a single turn of this agent. `0` (or omitted) uses the platform default (600s / 10 minutes). A loop step's own timeout overrides this for that step.
              */
             timeout_seconds?: number;
             /** @description Default session-compaction policy. New sessions opened against this agent inherit it (below server defaults, above explicit per-session overrides). Absent when the agent has no default. */
@@ -4500,11 +4501,15 @@ export interface components {
              * @enum {string}
              */
             on_unavailable: "last_known_good" | "fail";
-            /** @description Digest of the durable last-known-good bundle, when one exists. */
+            /**
+             * @deprecated
+             * @description Deprecated compatibility field. Resolver results are scoped by project and agent, so Mobius no longer populates an org-wide digest.
+             */
             last_good_digest?: string;
             /**
              * Format: date-time
-             * @description When the last-known-good bundle was recorded.
+             * @deprecated
+             * @description Deprecated compatibility field. Resolver results are scoped by project and agent, so Mobius no longer populates an org-wide timestamp.
              */
             last_good_at?: string | null;
             /**
@@ -5117,7 +5122,6 @@ export interface components {
          * @example {
          *       "name": "PR reviewer",
          *       "description": "Reviews pull requests for risky changes.",
-         *       "kind": "llm",
          *       "color": "teal",
          *       "model": "claude-sonnet-4-6",
          *       "tool_presentation": "meta",
@@ -5131,21 +5135,19 @@ export interface components {
             name: string;
             /** @description Optional human-readable description. */
             description?: string;
-            /** @description Freeform classification (e.g. "llm", "rpa", "integration"). */
-            kind?: string;
             /** @description Display color for this agent (Mantine palette key, e.g. `indigo`). Optional; empty falls back to a hash-derived color. */
             color?: string;
-            /** @description Model identifier for platform agents. Any id from `GET /v1/projects/{project_handle}/catalog/models`, including slash-bearing OpenRouter catalog ids, or an optionally `provider/`-prefixed id (e.g. `xai/grok-4`); bare known ids (e.g. `claude-sonnet-4-6`) are auto-detected. Empty falls back to the platform default. */
+            /** @description Model identifier for agents. Any id from `GET /v1/projects/{project_handle}/catalog/models`, including slash-bearing OpenRouter catalog ids, or an optionally `provider/`-prefixed id (e.g. `xai/grok-4`); bare known ids (e.g. `claude-sonnet-4-6`) are auto-detected. Empty falls back to the platform default. */
             model?: string;
             /** @description Default route for model calls made by this agent. */
             model_route?: components["schemas"]["AgentModelRoute"];
             /** @description Omit to use the create-time default, `flat`. */
             tool_presentation?: components["schemas"]["AgentToolPresentation"];
-            /** @description Custom system prompt for platform agents. Empty uses the generated default. */
+            /** @description Custom system prompt for agents. Empty uses the generated default. */
             system_prompt?: string;
             /**
              * Format: int64
-             * @description Per-turn execution timeout in seconds for this platform agent. Omit or `0` to use the platform default (600s / 10 minutes); a loop step's own timeout overrides it for that step.
+             * @description Per-turn execution timeout in seconds for this agent. Omit or `0` to use the platform default (600s / 10 minutes); a loop step's own timeout overrides it for that step.
              */
             timeout_seconds?: number;
             /** @description Default session-compaction policy new sessions inherit from this agent. */
@@ -5161,21 +5163,19 @@ export interface components {
             name?: string;
             /** @description Replacement description. */
             description?: string;
-            /** @description Replacement freeform agent classification (e.g. `llm`, `rpa`). */
-            kind?: string;
             /** @description Replacement display color (Mantine palette key, e.g. `indigo`). Pass empty string to clear and fall back to a hash-derived color. */
             color?: string;
-            /** @description Replacement model identifier for platform agents (any id from `GET /v1/projects/{project_handle}/catalog/models`, including slash-bearing OpenRouter catalog ids, or an optionally `provider/`-prefixed id). */
+            /** @description Replacement model identifier for agents (any id from `GET /v1/projects/{project_handle}/catalog/models`, including slash-bearing OpenRouter catalog ids, or an optionally `provider/`-prefixed id). */
             model?: string;
             /** @description Replacement default route for model calls made by this agent. */
             model_route?: components["schemas"]["AgentModelRoute"];
             /** @description Replacement tool presentation used by loop agent steps and channel replies. */
             tool_presentation?: components["schemas"]["AgentToolPresentation"];
-            /** @description Replacement system prompt for platform agents. */
+            /** @description Replacement system prompt for agents. */
             system_prompt?: string;
             /**
              * Format: int64
-             * @description Replacement per-turn execution timeout in seconds for this platform agent. `0` resets to the platform default (600s / 10 minutes); a loop step's own timeout overrides it for that step.
+             * @description Replacement per-turn execution timeout in seconds for this agent. `0` resets to the platform default (600s / 10 minutes); a loop step's own timeout overrides it for that step.
              */
             timeout_seconds?: number;
             /**
@@ -7561,7 +7561,6 @@ export interface components {
             compaction_policy?: components["schemas"]["SessionCompactionPolicy"];
             /** @description Default reasoning-effort level for sessions and Loop agent steps. */
             thinking_effort?: components["schemas"]["ThinkingEffort"];
-            kind?: string;
             color?: string;
             toolkits?: components["schemas"]["BlueprintResourceRef"][];
             skills?: components["schemas"]["BlueprintResourceRef"][];
@@ -8173,9 +8172,9 @@ export interface components {
             id: string;
             /** @description Visibility policy for the artifact. */
             visibility: components["schemas"]["ArtifactVisibility"];
-            /** @description Loop run that produced this artifact, derived from the active worker lease. */
+            /** @description Loop run that produced this artifact, derived from the trusted worker lease when present. */
             run_id?: string;
-            /** @description Loop step that produced this artifact, derived from the active worker lease. */
+            /** @description Loop step that produced this artifact, derived from the trusted worker lease when present. */
             step_id?: string;
             /** @description Display name or relative virtual path. Forward slash may be used to organize artifacts inside private or shared project space. */
             name: string;
@@ -8202,6 +8201,10 @@ export interface components {
             updated_at?: string;
             /** @description Principal ID of the actor who last updated this artifact. Empty for system-initiated writes. */
             updated_by?: string;
+            /** @description Caller-supplied artifact metadata. Mobius-owned storage metadata is not exposed. */
+            metadata?: {
+                [key: string]: unknown;
+            };
         };
         /**
          * @example {
@@ -8225,6 +8228,26 @@ export interface components {
             has_more: boolean;
             /** @description Cursor to pass on the next request when `has_more` is true. */
             next_cursor?: string;
+        };
+        CreateArtifactRequest: {
+            /**
+             * Format: binary
+             * @description File bytes to upload into artifact storage. Multipart parts may be sent in any order; Mobius reads metadata fields and temporarily spools the file part when needed before streaming bytes to artifact storage.
+             */
+            file: string;
+            /** @description Display name or relative virtual path. Forward slash may be used to organize artifacts inside private or shared project space. */
+            name: string;
+            /** @description Optional MIME type override. Defaults to the uploaded file part content type, then `application/octet-stream`. */
+            mime?: string;
+            /**
+             * Format: int64
+             * @description Optional declared file size. When supplied, Mobius verifies the streamed byte count exactly matches this value.
+             */
+            size_bytes?: number;
+            /** @description Optional caller metadata JSON object. Encoded as JSON in the multipart field and limited to 64 KiB. */
+            metadata?: {
+                [key: string]: unknown;
+            };
         };
         /** @description Short-lived URL for downloading artifact content. */
         ArtifactSignedUrl: {
@@ -10543,7 +10566,6 @@ export interface operations {
                  * @example {
                  *       "name": "PR reviewer",
                  *       "description": "Reviews pull requests for risky changes.",
-                 *       "kind": "llm",
                  *       "color": "teal",
                  *       "model": "claude-sonnet-4-6",
                  *       "tool_presentation": "meta",
@@ -10568,7 +10590,6 @@ export interface operations {
                      *       "principal_id": "agent_5n8p2q7m4x9r3v6t",
                      *       "name": "PR reviewer",
                      *       "description": "Reviews pull requests for risky changes.",
-                     *       "kind": "llm",
                      *       "color": "teal",
                      *       "model": "claude-sonnet-4-6",
                      *       "tool_presentation": "meta",
@@ -14263,6 +14284,51 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+        };
+    };
+    createArtifact: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Active job lease token for worker-produced artifacts. */
+                "X-Mobius-Lease-Token"?: string;
+                /** @description Optional durable retry key, unique within the authenticated principal's project scope. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["CreateArtifactRequest"];
+            };
+        };
+        responses: {
+            /** @description Existing artifact returned for an idempotent retry */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Artifact"];
+                };
+            };
+            /** @description Artifact uploaded */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Artifact"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
         };
     };
     getArtifact: {
