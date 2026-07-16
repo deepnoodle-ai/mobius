@@ -3977,10 +3977,7 @@ type Agent struct {
 	// Id Unique identifier for this agent.
 	Id string `json:"id"`
 
-	// Kind Freeform agent classification for tooling and filtering (e.g. "llm", "rpa").
-	Kind *string `json:"kind,omitempty"`
-
-	// Model Model identifier for platform agents. Accepts any id returned by `GET /v1/projects/{project_handle}/catalog/models` (including slash-bearing OpenRouter catalog ids), optionally `provider/`-prefixed (e.g. `xai/grok-4`); bare known ids (e.g. `claude-sonnet-4-6`) are auto-detected to their provider. Empty string falls back to the platform default.
+	// Model Model identifier for agents. Accepts any id returned by `GET /v1/projects/{project_handle}/catalog/models` (including slash-bearing OpenRouter catalog ids), optionally `provider/`-prefixed (e.g. `xai/grok-4`); bare known ids (e.g. `claude-sonnet-4-6`) are auto-detected to their provider. Empty string falls back to the platform default.
 	Model *string `json:"model,omitempty"`
 
 	// ModelRoute Default model route used by built-in messaging and by loop agent steps that do not override the route.
@@ -3995,7 +3992,7 @@ type Agent struct {
 	// Status Administrative status. Inactive agents cannot claim new jobs. Deleted agents are excluded from normal reads.
 	Status AgentStatus `json:"status"`
 
-	// SystemPrompt Custom system prompt for platform agents. Empty string uses the generated default based on the agent name.
+	// SystemPrompt Custom system prompt for agents. Empty string uses the generated default based on the agent name.
 	SystemPrompt *string `json:"system_prompt,omitempty"`
 
 	// Tags Key/value tags for organizing and filtering resources. Up to 8 per resource; keys 1–128 characters, values up to 256. Keys prefixed `mobius:` are system-managed and cannot be set by callers.
@@ -4004,7 +4001,7 @@ type Agent struct {
 	// ThinkingEffort Reasoning-effort level for a turn, lowest (`low`) to highest (`max`). Higher effort spends more tokens on reasoning, improving quality on hard tasks at the cost of latency and credits. Levels above what the resolved model supports are clamped down. Set on an agent it is the default; set on a session or loop step it overrides the agent default. `inherit` (or omitting the field) defers to the layer below — the agent default for a session/step, or the provider's own default when nothing sets a level.
 	ThinkingEffort *ThinkingEffort `json:"thinking_effort,omitempty"`
 
-	// TimeoutSeconds Execution timeout, in seconds, for a single turn of this platform agent. `0` (or omitted) uses the platform default (600s / 10 minutes). A loop step's own timeout overrides this for that step.
+	// TimeoutSeconds Execution timeout, in seconds, for a single turn of this agent. `0` (or omitted) uses the platform default (600s / 10 minutes). A loop step's own timeout overrides this for that step.
 	TimeoutSeconds *int64 `json:"timeout_seconds,omitempty"`
 
 	// ToolPresentation Controls how granted actions are surfaced to the model in Mobius-hosted agent turns. `meta` (the default) groups related actions behind compact command routers, while `flat` exposes one tool per action.
@@ -4461,13 +4458,16 @@ type Artifact struct {
 	// Id Unique artifact identifier.
 	Id string `json:"id"`
 
+	// Metadata Caller-supplied artifact metadata. Mobius-owned storage metadata is not exposed.
+	Metadata *map[string]interface{} `json:"metadata,omitempty"`
+
 	// MimeType MIME type recorded for the artifact content.
 	MimeType string `json:"mime_type"`
 
 	// Name Display name or relative virtual path. Forward slash may be used to organize artifacts inside private or shared project space.
 	Name string `json:"name"`
 
-	// RunId Loop run that produced this artifact, derived from the active worker lease.
+	// RunId Loop run that produced this artifact, derived from the trusted worker lease when present.
 	RunId *string `json:"run_id,omitempty"`
 
 	// Sha256 SHA-256 digest of the artifact content, when available.
@@ -4476,7 +4476,7 @@ type Artifact struct {
 	// SizeBytes Artifact content size in bytes.
 	SizeBytes int64 `json:"size_bytes"`
 
-	// StepId Loop step that produced this artifact, derived from the active worker lease.
+	// StepId Loop step that produced this artifact, derived from the trusted worker lease when present.
 	StepId *string `json:"step_id,omitempty"`
 
 	// UpdatedAt Time the artifact metadata was last updated.
@@ -4588,7 +4588,6 @@ type BlueprintAgentInput struct {
 	CompactionPolicy *SessionCompactionPolicy `json:"compaction_policy,omitempty"`
 	Description      *string                  `json:"description,omitempty"`
 	Key              string                   `json:"key"`
-	Kind             *string                  `json:"kind,omitempty"`
 	Model            *string                  `json:"model,omitempty"`
 
 	// ModelRoute Default model route used by built-in messaging and by loop agent steps that do not override the route.
@@ -5024,10 +5023,7 @@ type CreateAgentRequest struct {
 	// Description Optional human-readable description.
 	Description *string `json:"description,omitempty"`
 
-	// Kind Freeform classification (e.g. "llm", "rpa", "integration").
-	Kind *string `json:"kind,omitempty"`
-
-	// Model Model identifier for platform agents. Any id from `GET /v1/projects/{project_handle}/catalog/models`, including slash-bearing OpenRouter catalog ids, or an optionally `provider/`-prefixed id (e.g. `xai/grok-4`); bare known ids (e.g. `claude-sonnet-4-6`) are auto-detected. Empty falls back to the platform default.
+	// Model Model identifier for agents. Any id from `GET /v1/projects/{project_handle}/catalog/models`, including slash-bearing OpenRouter catalog ids, or an optionally `provider/`-prefixed id (e.g. `xai/grok-4`); bare known ids (e.g. `claude-sonnet-4-6`) are auto-detected. Empty falls back to the platform default.
 	Model *string `json:"model,omitempty"`
 
 	// ModelRoute Default model route used by built-in messaging and by loop agent steps that do not override the route.
@@ -5036,7 +5032,7 @@ type CreateAgentRequest struct {
 	// Name Unique name for this agent. Free-form human-readable label, 1-63 characters.
 	Name string `json:"name"`
 
-	// SystemPrompt Custom system prompt for platform agents. Empty uses the generated default.
+	// SystemPrompt Custom system prompt for agents. Empty uses the generated default.
 	SystemPrompt *string `json:"system_prompt,omitempty"`
 
 	// Tags Key/value tags for organizing and filtering resources. Up to 8 per resource; keys 1–128 characters, values up to 256. Keys prefixed `mobius:` are system-managed and cannot be set by callers.
@@ -5045,11 +5041,29 @@ type CreateAgentRequest struct {
 	// ThinkingEffort Reasoning-effort level for a turn, lowest (`low`) to highest (`max`). Higher effort spends more tokens on reasoning, improving quality on hard tasks at the cost of latency and credits. Levels above what the resolved model supports are clamped down. Set on an agent it is the default; set on a session or loop step it overrides the agent default. `inherit` (or omitting the field) defers to the layer below — the agent default for a session/step, or the provider's own default when nothing sets a level.
 	ThinkingEffort *ThinkingEffort `json:"thinking_effort,omitempty"`
 
-	// TimeoutSeconds Per-turn execution timeout in seconds for this platform agent. Omit or `0` to use the platform default (600s / 10 minutes); a loop step's own timeout overrides it for that step.
+	// TimeoutSeconds Per-turn execution timeout in seconds for this agent. Omit or `0` to use the platform default (600s / 10 minutes); a loop step's own timeout overrides it for that step.
 	TimeoutSeconds *int64 `json:"timeout_seconds,omitempty"`
 
 	// ToolPresentation Controls how granted actions are surfaced to the model in Mobius-hosted agent turns. `meta` (the default) groups related actions behind compact command routers, while `flat` exposes one tool per action.
 	ToolPresentation *AgentToolPresentation `json:"tool_presentation,omitempty"`
+}
+
+// CreateArtifactRequest defines model for CreateArtifactRequest.
+type CreateArtifactRequest struct {
+	// File File bytes to upload into artifact storage. Multipart parts may be sent in any order; Mobius reads metadata fields and temporarily spools the file part when needed before streaming bytes to artifact storage.
+	File openapi_types.File `json:"file"`
+
+	// Metadata Optional caller metadata JSON object. Encoded as JSON in the multipart field and limited to 64 KiB.
+	Metadata *map[string]interface{} `json:"metadata,omitempty"`
+
+	// Mime Optional MIME type override. Defaults to the uploaded file part content type, then `application/octet-stream`.
+	Mime *string `json:"mime,omitempty"`
+
+	// Name Display name or relative virtual path. Forward slash may be used to organize artifacts inside private or shared project space.
+	Name string `json:"name"`
+
+	// SizeBytes Optional declared file size. When supplied, Mobius verifies the streamed byte count exactly matches this value.
+	SizeBytes *int64 `json:"size_bytes,omitempty"`
 }
 
 // CreateEnvironmentRequest Request body for creating a managed environment.
@@ -5457,10 +5471,12 @@ type DefinitionResolverConfig struct {
 	// EndpointUrl HTTPS endpoint Mobius posts resolve requests to (client_resolver only).
 	EndpointUrl *string `json:"endpoint_url,omitempty"`
 
-	// LastGoodAt When the last-known-good bundle was recorded.
+	// LastGoodAt Deprecated compatibility field. Resolver results are scoped by project and agent, so Mobius no longer populates an org-wide timestamp.
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
 	LastGoodAt *time.Time `json:"last_good_at,omitempty"`
 
-	// LastGoodDigest Digest of the durable last-known-good bundle, when one exists.
+	// LastGoodDigest Deprecated compatibility field. Resolver results are scoped by project and agent, so Mobius no longer populates an org-wide digest.
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
 	LastGoodDigest *string `json:"last_good_digest,omitempty"`
 
 	// OnUnavailable Behavior when the resolver endpoint is unreachable.
@@ -9122,10 +9138,7 @@ type UpdateAgentRequest struct {
 	// Description Replacement description.
 	Description *string `json:"description,omitempty"`
 
-	// Kind Replacement freeform agent classification (e.g. `llm`, `rpa`).
-	Kind *string `json:"kind,omitempty"`
-
-	// Model Replacement model identifier for platform agents (any id from `GET /v1/projects/{project_handle}/catalog/models`, including slash-bearing OpenRouter catalog ids, or an optionally `provider/`-prefixed id).
+	// Model Replacement model identifier for agents (any id from `GET /v1/projects/{project_handle}/catalog/models`, including slash-bearing OpenRouter catalog ids, or an optionally `provider/`-prefixed id).
 	Model *string `json:"model,omitempty"`
 
 	// ModelRoute Default model route used by built-in messaging and by loop agent steps that do not override the route.
@@ -9137,7 +9150,7 @@ type UpdateAgentRequest struct {
 	// Status Replacement agent status: `active` or `inactive`. Use DELETE to delete the agent.
 	Status *UpdateAgentRequestStatus `json:"status,omitempty"`
 
-	// SystemPrompt Replacement system prompt for platform agents.
+	// SystemPrompt Replacement system prompt for agents.
 	SystemPrompt *string `json:"system_prompt,omitempty"`
 
 	// Tags Key/value tags for organizing and filtering resources. Up to 8 per resource; keys 1–128 characters, values up to 256. Keys prefixed `mobius:` are system-managed and cannot be set by callers.
@@ -9146,7 +9159,7 @@ type UpdateAgentRequest struct {
 	// ThinkingEffort Reasoning-effort level for a turn, lowest (`low`) to highest (`max`). Higher effort spends more tokens on reasoning, improving quality on hard tasks at the cost of latency and credits. Levels above what the resolved model supports are clamped down. Set on an agent it is the default; set on a session or loop step it overrides the agent default. `inherit` (or omitting the field) defers to the layer below — the agent default for a session/step, or the provider's own default when nothing sets a level.
 	ThinkingEffort *ThinkingEffort `json:"thinking_effort,omitempty"`
 
-	// TimeoutSeconds Replacement per-turn execution timeout in seconds for this platform agent. `0` resets to the platform default (600s / 10 minutes); a loop step's own timeout overrides it for that step.
+	// TimeoutSeconds Replacement per-turn execution timeout in seconds for this agent. `0` resets to the platform default (600s / 10 minutes); a loop step's own timeout overrides it for that step.
 	TimeoutSeconds *int64 `json:"timeout_seconds,omitempty"`
 
 	// ToolPresentation Controls how granted actions are surfaced to the model in Mobius-hosted agent turns. `meta` (the default) groups related actions behind compact command routers, while `flat` exposes one tool per action.
@@ -10075,6 +10088,15 @@ type ListArtifactsParams struct {
 	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
+// CreateArtifactParams defines parameters for CreateArtifact.
+type CreateArtifactParams struct {
+	// XMobiusLeaseToken Active job lease token for worker-produced artifacts.
+	XMobiusLeaseToken *string `json:"X-Mobius-Lease-Token,omitempty"`
+
+	// IdempotencyKey Optional durable retry key, unique within the authenticated principal's project scope.
+	IdempotencyKey *string `json:"Idempotency-Key,omitempty"`
+}
+
 // CreateArtifactSignedUrlParams defines parameters for CreateArtifactSignedUrl.
 type CreateArtifactSignedUrlParams struct {
 	// TtlSeconds Requested signed URL TTL. The server caps this at the maximum supported artifact download TTL.
@@ -10473,6 +10495,9 @@ type ReplaceAgentToolkitAssignmentsJSONRequestBody = ReplaceToolkitsRequest
 
 // CreateAPIKeyJSONRequestBody defines body for CreateAPIKey for application/json ContentType.
 type CreateAPIKeyJSONRequestBody = CreateAPIKeyRequest
+
+// CreateArtifactMultipartRequestBody defines body for CreateArtifact for multipart/form-data ContentType.
+type CreateArtifactMultipartRequestBody = CreateArtifactRequest
 
 // ApplyBlueprintJSONRequestBody defines body for ApplyBlueprint for application/json ContentType.
 type ApplyBlueprintJSONRequestBody = ApplyBlueprintRequest
@@ -18492,6 +18517,9 @@ type ClientInterface interface {
 	// ListArtifacts request
 	ListArtifacts(ctx context.Context, projectHandle ProjectHandleParam, params *ListArtifactsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// CreateArtifactWithBody request with any body
+	CreateArtifactWithBody(ctx context.Context, projectHandle ProjectHandleParam, params *CreateArtifactParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// DeleteArtifact request
 	DeleteArtifact(ctx context.Context, projectHandle ProjectHandleParam, artifactId ArtifactIdParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -19570,6 +19598,18 @@ func (c *Client) GetAPIKey(ctx context.Context, projectHandle ProjectHandleParam
 
 func (c *Client) ListArtifacts(ctx context.Context, projectHandle ProjectHandleParam, params *ListArtifactsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewListArtifactsRequest(c.Server, projectHandle, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateArtifactWithBody(ctx context.Context, projectHandle ProjectHandleParam, params *CreateArtifactParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateArtifactRequestWithBody(c.Server, projectHandle, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -23613,6 +23653,68 @@ func NewListArtifactsRequest(server string, projectHandle ProjectHandleParam, pa
 	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
 	if err != nil {
 		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCreateArtifactRequestWithBody generates requests for CreateArtifact with any type of body
+func NewCreateArtifactRequestWithBody(server string, projectHandle ProjectHandleParam, params *CreateArtifactParams, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project_handle", projectHandle, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/artifacts", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	if params != nil {
+
+		if params.XMobiusLeaseToken != nil {
+			var headerParam0 string
+
+			headerParam0, err = runtime.StyleParamWithOptions("simple", false, "X-Mobius-Lease-Token", *params.XMobiusLeaseToken, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("X-Mobius-Lease-Token", headerParam0)
+		}
+
+		if params.IdempotencyKey != nil {
+			var headerParam1 string
+
+			headerParam1, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", *params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("Idempotency-Key", headerParam1)
+		}
+
 	}
 
 	return req, nil
@@ -30157,6 +30259,9 @@ type ClientWithResponsesInterface interface {
 	// ListArtifactsWithResponse request
 	ListArtifactsWithResponse(ctx context.Context, projectHandle ProjectHandleParam, params *ListArtifactsParams, reqEditors ...RequestEditorFn) (*ListArtifactsResponse, error)
 
+	// CreateArtifactWithBodyWithResponse request with any body
+	CreateArtifactWithBodyWithResponse(ctx context.Context, projectHandle ProjectHandleParam, params *CreateArtifactParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateArtifactResponse, error)
+
 	// DeleteArtifactWithResponse request
 	DeleteArtifactWithResponse(ctx context.Context, projectHandle ProjectHandleParam, artifactId ArtifactIdParam, reqEditors ...RequestEditorFn) (*DeleteArtifactResponse, error)
 
@@ -31959,6 +32064,41 @@ func (r ListArtifactsResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r ListArtifactsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type CreateArtifactResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Artifact
+	JSON201      *Artifact
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON409      *Conflict
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateArtifactResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateArtifactResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CreateArtifactResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -36217,6 +36357,15 @@ func (c *ClientWithResponses) ListArtifactsWithResponse(ctx context.Context, pro
 	return ParseListArtifactsResponse(rsp)
 }
 
+// CreateArtifactWithBodyWithResponse request with arbitrary body returning *CreateArtifactResponse
+func (c *ClientWithResponses) CreateArtifactWithBodyWithResponse(ctx context.Context, projectHandle ProjectHandleParam, params *CreateArtifactParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateArtifactResponse, error) {
+	rsp, err := c.CreateArtifactWithBody(ctx, projectHandle, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateArtifactResponse(rsp)
+}
+
 // DeleteArtifactWithResponse request returning *DeleteArtifactResponse
 func (c *ClientWithResponses) DeleteArtifactWithResponse(ctx context.Context, projectHandle ProjectHandleParam, artifactId ArtifactIdParam, reqEditors ...RequestEditorFn) (*DeleteArtifactResponse, error) {
 	rsp, err := c.DeleteArtifact(ctx, projectHandle, artifactId, reqEditors...)
@@ -39738,6 +39887,67 @@ func ParseListArtifactsResponse(rsp *http.Response) (*ListArtifactsResponse, err
 			return nil, err
 		}
 		response.JSON403 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateArtifactResponse parses an HTTP response from a CreateArtifactWithResponse call
+func ParseCreateArtifactResponse(rsp *http.Response) (*CreateArtifactResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateArtifactResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Artifact
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest Artifact
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	}
 

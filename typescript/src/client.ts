@@ -6,6 +6,7 @@ import type {
   AgentTurnOperationPolicy,
   AgentTurnOutputSource,
   AgentRef,
+  Artifact,
   ApplyBlueprintRequest,
   BlueprintApplyResult,
   BlueprintBindingListResponse,
@@ -102,6 +103,18 @@ export interface ClientLogEvent {
   waitSeconds?: number;
   frameType?: string;
   error?: string;
+}
+
+export interface CreateArtifactOptions {
+  /** Display name or relative virtual path for the artifact. */
+  name: string;
+  /** Artifact bytes. A Blob's existing MIME type is preserved unless mimeType is supplied. */
+  file: Blob | Uint8Array;
+  /** Optional durable retry key for this one artifact. */
+  idempotencyKey?: string;
+  mimeType?: string;
+  metadata?: Record<string, unknown>;
+  signal?: AbortSignal;
 }
 
 export const DEFAULT_BASE_URL = "https://api.mobiusops.ai";
@@ -598,6 +611,50 @@ export class Client {
     url.pathname = `${url.pathname.replace(/\/$/, "")}/v1/projects/${encodeURIComponent(this.project)}/workers/socket`;
     url.search = "";
     return url.toString();
+  }
+
+  /** Publish a private artifact using the client's project authorization. */
+  async createArtifact(opts: CreateArtifactOptions): Promise<Artifact> {
+    const idempotencyKey = normalizeIdempotencyKey(opts.idempotencyKey);
+    if (idempotencyKey != null && idempotencyKey.length > 255) {
+      throw new ConfigError(
+        "artifact idempotencyKey must be at most 255 characters",
+      );
+    }
+    const name = opts.name.trim();
+    if (!name) throw new ConfigError("artifact name is required");
+
+    const mimeType = opts.mimeType?.trim();
+    let file: Blob;
+    if (opts.file instanceof Blob) {
+      file =
+        mimeType && mimeType !== opts.file.type
+          ? new Blob([opts.file], { type: mimeType })
+          : opts.file;
+    } else {
+      const bytes = Uint8Array.from(opts.file);
+      file = new Blob([bytes.buffer], {
+        type: mimeType || "application/octet-stream",
+      });
+    }
+
+    const form = new FormData();
+    form.append("name", name);
+    form.append("mime", mimeType || file.type || "application/octet-stream");
+    form.append("size_bytes", String(file.size));
+    if (opts.metadata != null) {
+      form.append("metadata", JSON.stringify(opts.metadata));
+    }
+    const filename = name.split("/").pop() || "artifact";
+    form.append("file", file, filename);
+
+    const resp = await this.request("/v1/projects/:project/artifacts", {
+      method: "POST",
+      formData: form,
+      idempotencyKey,
+      signal: opts.signal,
+    });
+    return (await resp.json()) as Artifact;
   }
 
   async listLoops(opts: ListLoopsOptions = {}): Promise<LoopListResponse> {
@@ -1457,6 +1514,7 @@ export class Client {
     opts: {
       method: string;
       body?: unknown;
+      formData?: FormData;
       idempotencyKey?: string | undefined;
       signal?: AbortSignal | undefined;
     },
@@ -1464,12 +1522,15 @@ export class Client {
     const started = Date.now();
     const timeout = AbortSignal.timeout(this.timeoutMs);
     const signal = opts.signal ? anySignal(opts.signal, timeout) : timeout;
+    const headers = this.requestHeaders(opts.idempotencyKey);
+    if (opts.formData != null) headers.delete("Content-Type");
     const init: RequestInit = {
       method: opts.method,
-      headers: this.requestHeaders(opts.idempotencyKey),
+      headers,
       signal,
     };
-    if (opts.body != null) init.body = JSON.stringify(opts.body);
+    if (opts.formData != null) init.body = opts.formData;
+    else if (opts.body != null) init.body = JSON.stringify(opts.body);
     let resp: Response;
     try {
       resp = await this.fetchFn(this.url(path), init);

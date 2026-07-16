@@ -2029,7 +2029,6 @@ paths:
             example:
               name: PR reviewer
               description: Reviews pull requests for risky changes.
-              kind: llm
               color: teal
               model: claude-sonnet-4-6
               tool_presentation: meta
@@ -2047,7 +2046,6 @@ paths:
                 principal_id: agent_5n8p2q7m4x9r3v6t
                 name: PR reviewer
                 description: Reviews pull requests for risky changes.
-                kind: llm
                 color: teal
                 model: claude-sonnet-4-6
                 tool_presentation: meta
@@ -5559,6 +5557,60 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+    post:
+      operationId: createArtifact
+      tags:
+      - artifacts
+      summary: Create artifact
+      description: Accepts a project-authorized multipart file upload. Without a worker lease,
+        the caller needs `mobius.project.edit`; the artifact is private to the authenticated
+        principal and has no run or step lineage. A worker may instead supply `X-Mobius-Lease-Token`
+        with `mobius.work.execute`; Mobius then derives run, step, job, worker session, attempt,
+        and shared visibility from the active claim. Caller-supplied lineage, ownership, and
+        visibility fields are rejected in both modes.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - name: X-Mobius-Lease-Token
+        in: header
+        required: false
+        schema:
+          type: string
+        description: Active job lease token for worker-produced artifacts.
+      - name: Idempotency-Key
+        in: header
+        required: false
+        schema:
+          type: string
+          maxLength: 255
+        description: Optional durable retry key, unique within the authenticated principal's
+          project scope.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CreateArtifactRequest'
+      responses:
+        '200':
+          description: Existing artifact returned for an idempotent retry
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Artifact'
+        '201':
+          description: Artifact uploaded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Artifact'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
   /v1/projects/{project_handle}/artifacts/{artifact_id}:
     get:
       operationId: getArtifact
@@ -6386,10 +6438,6 @@ components:
           type: string
           description: Optional human-readable description.
           maxLength: 500
-        kind:
-          type: string
-          description: Freeform agent classification for tooling and filtering (e.g. "llm",
-            "rpa").
         color:
           type: string
           description: Display color for this agent in UI surfaces. One of the Mantine color
@@ -6398,11 +6446,10 @@ components:
           maxLength: 24
         model:
           type: string
-          description: Model identifier for platform agents. Accepts any id returned by `GET
-            /v1/projects/{project_handle}/catalog/models` (including slash-bearing OpenRouter
-            catalog ids), optionally `provider/`-prefixed (e.g. `xai/grok-4`); bare known
-            ids (e.g. `claude-sonnet-4-6`) are auto-detected to their provider. Empty string
-            falls back to the platform default.
+          description: Model identifier for agents. Accepts any id returned by `GET /v1/projects/{project_handle}/catalog/models`
+            (including slash-bearing OpenRouter catalog ids), optionally `provider/`-prefixed
+            (e.g. `xai/grok-4`); bare known ids (e.g. `claude-sonnet-4-6`) are auto-detected
+            to their provider. Empty string falls back to the platform default.
         model_route:
           $ref: '#/components/schemas/AgentModelRoute'
           description: Default route for model calls made by this agent.
@@ -6412,15 +6459,15 @@ components:
             replies for this agent.
         system_prompt:
           type: string
-          description: Custom system prompt for platform agents. Empty string uses the generated
-            default based on the agent name.
+          description: Custom system prompt for agents. Empty string uses the generated default
+            based on the agent name.
         timeout_seconds:
           type: integer
           format: int64
           minimum: 0
-          description: Execution timeout, in seconds, for a single turn of this platform agent.
-            `0` (or omitted) uses the platform default (600s / 10 minutes). A loop step's
-            own timeout overrides this for that step.
+          description: Execution timeout, in seconds, for a single turn of this agent. `0`
+            (or omitted) uses the platform default (600s / 10 minutes). A loop step's own
+            timeout overrides this for that step.
         compaction_policy:
           $ref: '#/components/schemas/SessionCompactionPolicy'
           description: Default session-compaction policy. New sessions opened against this
@@ -6463,7 +6510,6 @@ components:
         principal_id: agent_5n8p2q7m4x9r3v6t
         name: PR reviewer
         description: Reviews pull requests for risky changes.
-        kind: llm
         color: teal
         model: claude-sonnet-4-6
         tool_presentation: meta
@@ -9864,12 +9910,16 @@ components:
           description: Behavior when the resolver endpoint is unreachable.
         last_good_digest:
           type: string
-          description: Digest of the durable last-known-good bundle, when one exists.
+          deprecated: true
+          description: Deprecated compatibility field. Resolver results are scoped by project
+            and agent, so Mobius no longer populates an org-wide digest.
         last_good_at:
           type: string
           format: date-time
           nullable: true
-          description: When the last-known-good bundle was recorded.
+          deprecated: true
+          description: Deprecated compatibility field. Resolver results are scoped by project
+            and agent, so Mobius no longer populates an org-wide timestamp.
         updated_at:
           type: string
           format: date-time
@@ -11056,9 +11106,6 @@ components:
           type: string
           description: Optional human-readable description.
           maxLength: 500
-        kind:
-          type: string
-          description: Freeform classification (e.g. "llm", "rpa", "integration").
         color:
           type: string
           description: Display color for this agent (Mantine palette key, e.g. `indigo`).
@@ -11066,7 +11113,7 @@ components:
           maxLength: 24
         model:
           type: string
-          description: Model identifier for platform agents. Any id from `GET /v1/projects/{project_handle}/catalog/models`,
+          description: Model identifier for agents. Any id from `GET /v1/projects/{project_handle}/catalog/models`,
             including slash-bearing OpenRouter catalog ids, or an optionally `provider/`-prefixed
             id (e.g. `xai/grok-4`); bare known ids (e.g. `claude-sonnet-4-6`) are auto-detected.
             Empty falls back to the platform default.
@@ -11078,15 +11125,14 @@ components:
           description: Omit to use the create-time default, `flat`.
         system_prompt:
           type: string
-          description: Custom system prompt for platform agents. Empty uses the generated
-            default.
+          description: Custom system prompt for agents. Empty uses the generated default.
         timeout_seconds:
           type: integer
           format: int64
           minimum: 0
-          description: Per-turn execution timeout in seconds for this platform agent. Omit
-            or `0` to use the platform default (600s / 10 minutes); a loop step's own timeout
-            overrides it for that step.
+          description: Per-turn execution timeout in seconds for this agent. Omit or `0` to
+            use the platform default (600s / 10 minutes); a loop step's own timeout overrides
+            it for that step.
         compaction_policy:
           $ref: '#/components/schemas/SessionCompactionPolicy'
           description: Default session-compaction policy new sessions inherit from this agent.
@@ -11100,7 +11146,6 @@ components:
       example:
         name: PR reviewer
         description: Reviews pull requests for risky changes.
-        kind: llm
         color: teal
         model: claude-sonnet-4-6
         tool_presentation: meta
@@ -11123,9 +11168,6 @@ components:
           type: string
           description: Replacement description.
           maxLength: 500
-        kind:
-          type: string
-          description: Replacement freeform agent classification (e.g. `llm`, `rpa`).
         color:
           type: string
           description: Replacement display color (Mantine palette key, e.g. `indigo`). Pass
@@ -11133,9 +11175,9 @@ components:
           maxLength: 24
         model:
           type: string
-          description: Replacement model identifier for platform agents (any id from `GET
-            /v1/projects/{project_handle}/catalog/models`, including slash-bearing OpenRouter
-            catalog ids, or an optionally `provider/`-prefixed id).
+          description: Replacement model identifier for agents (any id from `GET /v1/projects/{project_handle}/catalog/models`,
+            including slash-bearing OpenRouter catalog ids, or an optionally `provider/`-prefixed
+            id).
         model_route:
           $ref: '#/components/schemas/AgentModelRoute'
           description: Replacement default route for model calls made by this agent.
@@ -11145,14 +11187,14 @@ components:
             replies.
         system_prompt:
           type: string
-          description: Replacement system prompt for platform agents.
+          description: Replacement system prompt for agents.
         timeout_seconds:
           type: integer
           format: int64
           minimum: 0
-          description: Replacement per-turn execution timeout in seconds for this platform
-            agent. `0` resets to the platform default (600s / 10 minutes); a loop step's own
-            timeout overrides it for that step.
+          description: Replacement per-turn execution timeout in seconds for this agent. `0`
+            resets to the platform default (600s / 10 minutes); a loop step's own timeout
+            overrides it for that step.
         status:
           type: string
           enum:
@@ -15169,8 +15211,6 @@ components:
         thinking_effort:
           $ref: '#/components/schemas/ThinkingEffort'
           description: Default reasoning-effort level for sessions and Loop agent steps.
-        kind:
-          type: string
         color:
           type: string
         toolkits:
@@ -16134,12 +16174,12 @@ components:
           description: Visibility policy for the artifact.
         run_id:
           type: string
-          description: Loop run that produced this artifact, derived from the active worker
-            lease.
+          description: Loop run that produced this artifact, derived from the trusted worker
+            lease when present.
         step_id:
           type: string
-          description: Loop step that produced this artifact, derived from the active worker
-            lease.
+          description: Loop step that produced this artifact, derived from the trusted worker
+            lease when present.
         name:
           type: string
           description: Display name or relative virtual path. Forward slash may be used to
@@ -16170,6 +16210,11 @@ components:
           type: string
           description: Principal ID of the actor who last updated this artifact. Empty for
             system-initiated writes.
+        metadata:
+          type: object
+          additionalProperties: true
+          description: Caller-supplied artifact metadata. Mobius-owned storage metadata is
+            not exposed.
       example:
         id: art_2m7q9x5v3p8n4r6t
         visibility: shared
@@ -16208,6 +16253,39 @@ components:
           size_bytes: 1842
           created_at: '2026-06-15T14:30:00Z'
         has_more: false
+    CreateArtifactRequest:
+      type: object
+      required:
+      - file
+      - name
+      additionalProperties: false
+      properties:
+        file:
+          type: string
+          format: binary
+          description: File bytes to upload into artifact storage. Multipart parts may be
+            sent in any order; Mobius reads metadata fields and temporarily spools the file
+            part when needed before streaming bytes to artifact storage.
+        name:
+          type: string
+          maxLength: 256
+          description: Display name or relative virtual path. Forward slash may be used to
+            organize artifacts inside private or shared project space.
+        mime:
+          type: string
+          description: Optional MIME type override. Defaults to the uploaded file part content
+            type, then `application/octet-stream`.
+        size_bytes:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Optional declared file size. When supplied, Mobius verifies the streamed
+            byte count exactly matches this value.
+        metadata:
+          type: object
+          additionalProperties: true
+          description: Optional caller metadata JSON object. Encoded as JSON in the multipart
+            field and limited to 64 KiB.
     ArtifactSignedUrl:
       type: object
       description: Short-lived URL for downloading artifact content.

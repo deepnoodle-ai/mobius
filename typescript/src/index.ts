@@ -18,6 +18,7 @@ export {
 export type {
   ClientOptions,
   ClientLogEvent,
+  CreateArtifactOptions,
   GetSessionTranscriptOptions,
   InvokeAgentOptions,
   DeleteBlueprintOptions,

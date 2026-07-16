@@ -7,6 +7,7 @@ common integration tasks:
 - delivering Mobius-shaped synthetic webhooks for local/test bridges
 - managing loops and loop runs from code
 - managing project blueprints, principals, roles, and role assignments
+- publishing project artifacts with metadata and safe retry keys
 - listing interactions with run, session, target, inbox, and status filters
 - invoking agents and following a session's live transcript (message rows,
   turns, and human-input interactions) as it streams
@@ -91,6 +92,28 @@ with the endpoint's configured expectations. Deduplicate by delivery ID within
 the action/secret scope before performing side effects. Never choose a user or
 tenant from `parameters`; user-mapped agent integrations should resolve by the
 signed `(project_id, agent_id)` pair.
+
+## Artifact Uploads
+
+An action handler or other project service that produces deterministic bytes
+can publish them directly to Mobius with a project API key holding
+`mobius.project.edit`:
+
+```ts
+const artifact = await client.createArtifact({
+  name: "renders/report.html",
+  file: renderedBytes,
+  mimeType: "text/html",
+  metadata: { renderer: "omni" },
+  idempotencyKey: `${deliveryId}:report`,
+});
+```
+
+The API key authorizes the upload; the action envelope is not forwarded to
+Mobius. Lease-free artifacts are private to the API key's principal and do not
+claim run or step lineage. Use a distinct idempotency key for each artifact
+produced by one delivery. Repeating the same key under the same authenticated
+principal returns the original artifact without uploading the bytes again.
 
 ## Synthetic Webhooks
 

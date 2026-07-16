@@ -331,10 +331,6 @@ class Agent(BaseModel):
     description: str | None = Field(
         None, description='Optional human-readable description.', max_length=500
     )
-    kind: str | None = Field(
-        None,
-        description='Freeform agent classification for tooling and filtering (e.g. "llm", "rpa").',
-    )
     color: str | None = Field(
         None,
         description='Display color for this agent in UI surfaces. One of the Mantine color palette keys (e.g. `indigo`, `teal`, `grape`); empty string falls back to a hash-derived color.',
@@ -342,7 +338,7 @@ class Agent(BaseModel):
     )
     model: str | None = Field(
         None,
-        description='Model identifier for platform agents. Accepts any id returned by `GET /v1/projects/{project_handle}/catalog/models` (including slash-bearing OpenRouter catalog ids), optionally `provider/`-prefixed (e.g. `xai/grok-4`); bare known ids (e.g. `claude-sonnet-4-6`) are auto-detected to their provider. Empty string falls back to the platform default.',
+        description='Model identifier for agents. Accepts any id returned by `GET /v1/projects/{project_handle}/catalog/models` (including slash-bearing OpenRouter catalog ids), optionally `provider/`-prefixed (e.g. `xai/grok-4`); bare known ids (e.g. `claude-sonnet-4-6`) are auto-detected to their provider. Empty string falls back to the platform default.',
     )
     model_route: AgentModelRoute | None = Field(
         None, description='Default route for model calls made by this agent.'
@@ -353,11 +349,11 @@ class Agent(BaseModel):
     )
     system_prompt: str | None = Field(
         None,
-        description='Custom system prompt for platform agents. Empty string uses the generated default based on the agent name.',
+        description='Custom system prompt for agents. Empty string uses the generated default based on the agent name.',
     )
     timeout_seconds: int | None = Field(
         None,
-        description="Execution timeout, in seconds, for a single turn of this platform agent. `0` (or omitted) uses the platform default (600s / 10 minutes). A loop step's own timeout overrides this for that step.",
+        description="Execution timeout, in seconds, for a single turn of this agent. `0` (or omitted) uses the platform default (600s / 10 minutes). A loop step's own timeout overrides this for that step.",
         ge=0,
     )
     compaction_policy: SessionCompactionPolicy | None = Field(
@@ -3073,10 +3069,13 @@ class DefinitionResolverConfig(BaseModel):
     )
     last_good_digest: str | None = Field(
         None,
-        description='Digest of the durable last-known-good bundle, when one exists.',
+        deprecated=True,
+        description='Deprecated compatibility field. Resolver results are scoped by project and agent, so Mobius no longer populates an org-wide digest.',
     )
     last_good_at: AwareDatetime | None = Field(
-        None, description='When the last-known-good bundle was recorded.'
+        None,
+        deprecated=True,
+        description='Deprecated compatibility field. Resolver results are scoped by project and agent, so Mobius no longer populates an org-wide timestamp.',
     )
     updated_at: AwareDatetime = Field(
         ..., description='When the config was last updated.'
@@ -3676,9 +3675,6 @@ class CreateAgentRequest(BaseModel):
     description: str | None = Field(
         None, description='Optional human-readable description.', max_length=500
     )
-    kind: str | None = Field(
-        None, description='Freeform classification (e.g. "llm", "rpa", "integration").'
-    )
     color: str | None = Field(
         None,
         description='Display color for this agent (Mantine palette key, e.g. `indigo`). Optional; empty falls back to a hash-derived color.',
@@ -3686,7 +3682,7 @@ class CreateAgentRequest(BaseModel):
     )
     model: str | None = Field(
         None,
-        description='Model identifier for platform agents. Any id from `GET /v1/projects/{project_handle}/catalog/models`, including slash-bearing OpenRouter catalog ids, or an optionally `provider/`-prefixed id (e.g. `xai/grok-4`); bare known ids (e.g. `claude-sonnet-4-6`) are auto-detected. Empty falls back to the platform default.',
+        description='Model identifier for agents. Any id from `GET /v1/projects/{project_handle}/catalog/models`, including slash-bearing OpenRouter catalog ids, or an optionally `provider/`-prefixed id (e.g. `xai/grok-4`); bare known ids (e.g. `claude-sonnet-4-6`) are auto-detected. Empty falls back to the platform default.',
     )
     model_route: AgentModelRoute | None = Field(
         None, description='Default route for model calls made by this agent.'
@@ -3696,11 +3692,11 @@ class CreateAgentRequest(BaseModel):
     )
     system_prompt: str | None = Field(
         None,
-        description='Custom system prompt for platform agents. Empty uses the generated default.',
+        description='Custom system prompt for agents. Empty uses the generated default.',
     )
     timeout_seconds: int | None = Field(
         None,
-        description="Per-turn execution timeout in seconds for this platform agent. Omit or `0` to use the platform default (600s / 10 minutes); a loop step's own timeout overrides it for that step.",
+        description="Per-turn execution timeout in seconds for this agent. Omit or `0` to use the platform default (600s / 10 minutes); a loop step's own timeout overrides it for that step.",
         ge=0,
     )
     compaction_policy: SessionCompactionPolicy | None = Field(
@@ -3742,10 +3738,6 @@ class UpdateAgentRequest(BaseModel):
     description: str | None = Field(
         None, description='Replacement description.', max_length=500
     )
-    kind: str | None = Field(
-        None,
-        description='Replacement freeform agent classification (e.g. `llm`, `rpa`).',
-    )
     color: str | None = Field(
         None,
         description='Replacement display color (Mantine palette key, e.g. `indigo`). Pass empty string to clear and fall back to a hash-derived color.',
@@ -3753,7 +3745,7 @@ class UpdateAgentRequest(BaseModel):
     )
     model: str | None = Field(
         None,
-        description='Replacement model identifier for platform agents (any id from `GET /v1/projects/{project_handle}/catalog/models`, including slash-bearing OpenRouter catalog ids, or an optionally `provider/`-prefixed id).',
+        description='Replacement model identifier for agents (any id from `GET /v1/projects/{project_handle}/catalog/models`, including slash-bearing OpenRouter catalog ids, or an optionally `provider/`-prefixed id).',
     )
     model_route: AgentModelRoute | None = Field(
         None,
@@ -3764,11 +3756,11 @@ class UpdateAgentRequest(BaseModel):
         description='Replacement tool presentation used by loop agent steps and channel replies.',
     )
     system_prompt: str | None = Field(
-        None, description='Replacement system prompt for platform agents.'
+        None, description='Replacement system prompt for agents.'
     )
     timeout_seconds: int | None = Field(
         None,
-        description="Replacement per-turn execution timeout in seconds for this platform agent. `0` resets to the platform default (600s / 10 minutes); a loop step's own timeout overrides it for that step.",
+        description="Replacement per-turn execution timeout in seconds for this agent. `0` resets to the platform default (600s / 10 minutes); a loop step's own timeout overrides it for that step.",
         ge=0,
     )
     status: Status3 | None = Field(
@@ -6631,11 +6623,11 @@ class Artifact(BaseModel):
     )
     run_id: str | None = Field(
         None,
-        description='Loop run that produced this artifact, derived from the active worker lease.',
+        description='Loop run that produced this artifact, derived from the trusted worker lease when present.',
     )
     step_id: str | None = Field(
         None,
-        description='Loop step that produced this artifact, derived from the active worker lease.',
+        description='Loop step that produced this artifact, derived from the trusted worker lease when present.',
     )
     name: str = Field(
         ...,
@@ -6662,6 +6654,10 @@ class Artifact(BaseModel):
         None,
         description='Principal ID of the actor who last updated this artifact. Empty for system-initiated writes.',
     )
+    metadata: dict[str, Any] | None = Field(
+        None,
+        description='Caller-supplied artifact metadata. Mobius-owned storage metadata is not exposed.',
+    )
 
 
 class ArtifactListResponse(BaseModel):
@@ -6672,6 +6668,34 @@ class ArtifactListResponse(BaseModel):
     has_more: bool = Field(..., description='Whether another page is available.')
     next_cursor: str | None = Field(
         None, description='Cursor to pass on the next request when `has_more` is true.'
+    )
+
+
+class CreateArtifactRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    file: bytes = Field(
+        ...,
+        description='File bytes to upload into artifact storage. Multipart parts may be sent in any order; Mobius reads metadata fields and temporarily spools the file part when needed before streaming bytes to artifact storage.',
+    )
+    name: str = Field(
+        ...,
+        description='Display name or relative virtual path. Forward slash may be used to organize artifacts inside private or shared project space.',
+        max_length=256,
+    )
+    mime: str | None = Field(
+        None,
+        description='Optional MIME type override. Defaults to the uploaded file part content type, then `application/octet-stream`.',
+    )
+    size_bytes: int | None = Field(
+        None,
+        description='Optional declared file size. When supplied, Mobius verifies the streamed byte count exactly matches this value.',
+        ge=0,
+    )
+    metadata: dict[str, Any] | None = Field(
+        None,
+        description='Optional caller metadata JSON object. Encoded as JSON in the multipart field and limited to 64 KiB.',
     )
 
 
@@ -7736,7 +7760,6 @@ class BlueprintAgentInput(BaseModel):
         None,
         description='Default reasoning-effort level for sessions and Loop agent steps.',
     )
-    kind: str | None = None
     color: str | None = None
     toolkits: list[BlueprintResourceRef] | None = None
     skills: list[BlueprintResourceRef] | None = None

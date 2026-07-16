@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 
 ## [Unreleased]
 
+### Added
+
+- Project-authorized artifact uploads plus a TypeScript `createArtifact`
+  helper for multipart bytes, metadata, and optional durable idempotency keys.
+
 ## [0.0.52] - 2026-07-15
 
 ### Added

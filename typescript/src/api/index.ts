@@ -105,6 +105,7 @@ export type ContextIncludeParam = components["schemas"]["ContextIncludeParam"];
 export type CreateAPIKeyRequest = components["schemas"]["CreateAPIKeyRequest"];
 export type CreateActionRequest = components["schemas"]["CreateActionRequest"];
 export type CreateAgentRequest = components["schemas"]["CreateAgentRequest"];
+export type CreateArtifactRequest = components["schemas"]["CreateArtifactRequest"];
 export type CreateEnvironmentRequest = components["schemas"]["CreateEnvironmentRequest"];
 export type CreateInteractionRequest = components["schemas"]["CreateInteractionRequest"];
 export type CreateLoopRequest = components["schemas"]["CreateLoopRequest"];
