@@ -170,7 +170,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
   with identical content returns the original acknowledgement (different content
   conflicts).
 - Interactions `session_id` filter (`mobius interactions list --session-id`): returns
-  the pending `request_human_input` interactions raised by agent tool calls
+  pending interactions raised by agent tool calls
   (`consumer.kind=agent_tool`) whose invocation is a turn of the given chat session, so
   a chat surface can show which interactions its own turns are waiting on.
 
