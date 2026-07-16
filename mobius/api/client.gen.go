@@ -4001,7 +4001,7 @@ type Agent struct {
 	// ThinkingEffort Reasoning-effort level for a turn, lowest (`low`) to highest (`max`). Higher effort spends more tokens on reasoning, improving quality on hard tasks at the cost of latency and credits. Levels above what the resolved model supports are clamped down. Set on an agent it is the default; set on a session or loop step it overrides the agent default. `inherit` (or omitting the field) defers to the layer below — the agent default for a session/step, or the provider's own default when nothing sets a level.
 	ThinkingEffort *ThinkingEffort `json:"thinking_effort,omitempty"`
 
-	// TimeoutSeconds Execution timeout, in seconds, for a single turn of this platform agent. `0` (or omitted) uses the platform default (600s / 10 minutes). A loop step's own timeout overrides this for that step.
+	// TimeoutSeconds Execution timeout, in seconds, for a single turn of this agent. `0` (or omitted) uses the platform default (600s / 10 minutes). A loop step's own timeout overrides this for that step.
 	TimeoutSeconds *int64 `json:"timeout_seconds,omitempty"`
 
 	// ToolPresentation Controls how granted actions are surfaced to the model in Mobius-hosted agent turns. `meta` (the default) groups related actions behind compact command routers, while `flat` exposes one tool per action.

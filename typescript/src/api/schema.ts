@@ -2477,7 +2477,7 @@ export interface components {
             system_prompt?: string;
             /**
              * Format: int64
-             * @description Execution timeout, in seconds, for a single turn of this platform agent. `0` (or omitted) uses the platform default (600s / 10 minutes). A loop step's own timeout overrides this for that step.
+             * @description Execution timeout, in seconds, for a single turn of this agent. `0` (or omitted) uses the platform default (600s / 10 minutes). A loop step's own timeout overrides this for that step.
              */
             timeout_seconds?: number;
             /** @description Default session-compaction policy. New sessions opened against this agent inherit it (below server defaults, above explicit per-session overrides). Absent when the agent has no default. */

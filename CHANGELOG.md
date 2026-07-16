@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 
 ## [Unreleased]
 
+### Changed
+
+- **Breaking:** Agent create/update requests, responses, Blueprint inputs, and
+  generated CLI commands no longer accept or expose the freeform `kind` field.
+  Remove it from hand-written clients and stored Blueprint JSON before upgrading.
+
 ## [0.0.52] - 2026-07-15
 
 ### Added

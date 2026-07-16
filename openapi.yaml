@@ -6411,9 +6411,9 @@ components:
           type: integer
           format: int64
           minimum: 0
-          description: Execution timeout, in seconds, for a single turn of this platform agent.
-            `0` (or omitted) uses the platform default (600s / 10 minutes). A loop step's
-            own timeout overrides this for that step.
+          description: Execution timeout, in seconds, for a single turn of this agent. `0`
+            (or omitted) uses the platform default (600s / 10 minutes). A loop step's own
+            timeout overrides this for that step.
         compaction_policy:
           $ref: '#/components/schemas/SessionCompactionPolicy'
           description: Default session-compaction policy. New sessions opened against this

@@ -353,7 +353,7 @@ class Agent(BaseModel):
     )
     timeout_seconds: int | None = Field(
         None,
-        description="Execution timeout, in seconds, for a single turn of this platform agent. `0` (or omitted) uses the platform default (600s / 10 minutes). A loop step's own timeout overrides this for that step.",
+        description="Execution timeout, in seconds, for a single turn of this agent. `0` (or omitted) uses the platform default (600s / 10 minutes). A loop step's own timeout overrides this for that step.",
         ge=0,
     )
     compaction_policy: SessionCompactionPolicy | None = Field(
