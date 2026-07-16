@@ -25,14 +25,13 @@ func registerAgentsCommands(app *cli.App) {
 			cli.String("color", "").Help("Display color for this agent (Mantine palette key, e.g. `indigo`). Optional; empty falls back to a hash-derived color."),
 			cli.String("compaction-policy", "").Help("Controls how a session's transcript is automatically summarized as it grows. On create the supplied fields are merged over the owning… Accepts JSON, @file, or @-."),
 			cli.String("description", "").Help("Optional human-readable description."),
-			cli.String("kind", "").Help("Freeform classification (e.g. \"llm\", \"rpa\", \"integration\")."),
-			cli.String("model", "").Help("Model identifier for platform agents. Any id from `GET /v1/projects/{project_handle}/catalog/models`, including slash-bearing OpenRouter…"),
+			cli.String("model", "").Help("Model identifier for agents. Any id from `GET /v1/projects/{project_handle}/catalog/models`, including slash-bearing OpenRouter catalog…"),
 			cli.String("model-route", "").Help("Default model route used by built-in messaging and by loop agent steps that do not override the route. Accepts JSON, @file, or @-."),
 			cli.String("name", "").Help("[required] Unique name for this agent. Free-form human-readable label, 1-63 characters."),
-			cli.String("system-prompt", "").Help("Custom system prompt for platform agents. Empty uses the generated default."),
+			cli.String("system-prompt", "").Help("Custom system prompt for agents. Empty uses the generated default."),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
 			cli.String("thinking-effort", "").Help("Reasoning-effort level for a turn, lowest (`low`) to highest (`max`). Higher effort spends more tokens on reasoning, improving quality on…"),
-			cli.Int("timeout-seconds", "").Help("Per-turn execution timeout in seconds for this platform agent. Omit or `0` to use the platform default (600s / 10 minutes); a loop step's…"),
+			cli.Int("timeout-seconds", "").Help("Per-turn execution timeout in seconds for this agent. Omit or `0` to use the platform default (600s / 10 minutes); a loop step's own…"),
 			cli.String("tool-presentation", "").Help("Controls how granted actions are surfaced to the model in Mobius-hosted agent turns. `meta` (the default) groups related actions behind…"),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
@@ -61,10 +60,6 @@ func registerAgentsCommands(app *cli.App) {
 			if ctx.IsSet("description") {
 				v := ctx.String("description")
 				body.Description = &v
-			}
-			if ctx.IsSet("kind") {
-				v := ctx.String("kind")
-				body.Kind = &v
 			}
 			if ctx.IsSet("model") {
 				v := ctx.String("model")
@@ -693,15 +688,14 @@ func registerAgentsCommands(app *cli.App) {
 			cli.String("color", "").Help("Replacement display color (Mantine palette key, e.g. `indigo`). Pass empty string to clear and fall back to a hash-derived color."),
 			cli.String("compaction-policy", "").Help("Controls how a session's transcript is automatically summarized as it grows. On create the supplied fields are merged over the owning… Accepts JSON, @file, or @-."),
 			cli.String("description", "").Help("Replacement description."),
-			cli.String("kind", "").Help("Replacement freeform agent classification (e.g. `llm`, `rpa`)."),
-			cli.String("model", "").Help("Replacement model identifier for platform agents (any id from `GET /v1/projects/{project_handle}/catalog/models`, including slash-bearing…"),
+			cli.String("model", "").Help("Replacement model identifier for agents (any id from `GET /v1/projects/{project_handle}/catalog/models`, including slash-bearing OpenRouter…"),
 			cli.String("model-route", "").Help("Default model route used by built-in messaging and by loop agent steps that do not override the route. Accepts JSON, @file, or @-."),
 			cli.String("name", "").Help("Free-form human-readable label, 1-63 characters; must be unique within the project."),
 			cli.String("status", "").Help("Replacement agent status: `active` or `inactive`. Use DELETE to delete the agent."),
-			cli.String("system-prompt", "").Help("Replacement system prompt for platform agents."),
+			cli.String("system-prompt", "").Help("Replacement system prompt for agents."),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
 			cli.String("thinking-effort", "").Help("Reasoning-effort level for a turn, lowest (`low`) to highest (`max`). Higher effort spends more tokens on reasoning, improving quality on…"),
-			cli.Int("timeout-seconds", "").Help("Replacement per-turn execution timeout in seconds for this platform agent. `0` resets to the platform default (600s / 10 minutes); a loop…"),
+			cli.Int("timeout-seconds", "").Help("Replacement per-turn execution timeout in seconds for this agent. `0` resets to the platform default (600s / 10 minutes); a loop step's own…"),
 			cli.String("tool-presentation", "").Help("Controls how granted actions are surfaced to the model in Mobius-hosted agent turns. `meta` (the default) groups related actions behind…"),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
@@ -731,10 +725,6 @@ func registerAgentsCommands(app *cli.App) {
 			if ctx.IsSet("description") {
 				v := ctx.String("description")
 				body.Description = &v
-			}
-			if ctx.IsSet("kind") {
-				v := ctx.String("kind")
-				body.Kind = &v
 			}
 			if ctx.IsSet("model") {
 				v := ctx.String("model")
@@ -775,7 +765,7 @@ func registerAgentsCommands(app *cli.App) {
 				v := api.AgentToolPresentation(ctx.String("tool-presentation"))
 				body.ToolPresentation = &v
 			}
-			if ctx.String("file") == "" && !ctx.IsSet("color") && !ctx.IsSet("compaction-policy") && !ctx.IsSet("description") && !ctx.IsSet("kind") && !ctx.IsSet("model") && !ctx.IsSet("model-route") && !ctx.IsSet("name") && !ctx.IsSet("status") && !ctx.IsSet("system-prompt") && !ctx.IsSet("tag") && !ctx.IsSet("thinking-effort") && !ctx.IsSet("timeout-seconds") && !ctx.IsSet("tool-presentation") {
+			if ctx.String("file") == "" && !ctx.IsSet("color") && !ctx.IsSet("compaction-policy") && !ctx.IsSet("description") && !ctx.IsSet("model") && !ctx.IsSet("model-route") && !ctx.IsSet("name") && !ctx.IsSet("status") && !ctx.IsSet("system-prompt") && !ctx.IsSet("tag") && !ctx.IsSet("thinking-effort") && !ctx.IsSet("timeout-seconds") && !ctx.IsSet("tool-presentation") {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
 			if ctx.Bool("dry-run") {

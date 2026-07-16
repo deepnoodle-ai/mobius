@@ -2443,7 +2443,6 @@ export interface components {
          *       "principal_id": "agent_5n8p2q7m4x9r3v6t",
          *       "name": "PR reviewer",
          *       "description": "Reviews pull requests for risky changes.",
-         *       "kind": "llm",
          *       "color": "teal",
          *       "model": "claude-sonnet-4-6",
          *       "tool_presentation": "meta",
@@ -2466,17 +2465,15 @@ export interface components {
             name: string;
             /** @description Optional human-readable description. */
             description?: string;
-            /** @description Freeform agent classification for tooling and filtering (e.g. "llm", "rpa"). */
-            kind?: string;
             /** @description Display color for this agent in UI surfaces. One of the Mantine color palette keys (e.g. `indigo`, `teal`, `grape`); empty string falls back to a hash-derived color. */
             color?: string;
-            /** @description Model identifier for platform agents. Accepts any id returned by `GET /v1/projects/{project_handle}/catalog/models` (including slash-bearing OpenRouter catalog ids), optionally `provider/`-prefixed (e.g. `xai/grok-4`); bare known ids (e.g. `claude-sonnet-4-6`) are auto-detected to their provider. Empty string falls back to the platform default. */
+            /** @description Model identifier for agents. Accepts any id returned by `GET /v1/projects/{project_handle}/catalog/models` (including slash-bearing OpenRouter catalog ids), optionally `provider/`-prefixed (e.g. `xai/grok-4`); bare known ids (e.g. `claude-sonnet-4-6`) are auto-detected to their provider. Empty string falls back to the platform default. */
             model?: string;
             /** @description Default route for model calls made by this agent. */
             model_route?: components["schemas"]["AgentModelRoute"];
             /** @description Default tool presentation used by loop agent steps and built-in channel-message replies for this agent. */
             tool_presentation?: components["schemas"]["AgentToolPresentation"];
-            /** @description Custom system prompt for platform agents. Empty string uses the generated default based on the agent name. */
+            /** @description Custom system prompt for agents. Empty string uses the generated default based on the agent name. */
             system_prompt?: string;
             /**
              * Format: int64
@@ -4500,11 +4497,15 @@ export interface components {
              * @enum {string}
              */
             on_unavailable: "last_known_good" | "fail";
-            /** @description Digest of the durable last-known-good bundle, when one exists. */
+            /**
+             * @deprecated
+             * @description Deprecated compatibility field. Resolver results are scoped by project and agent, so Mobius no longer populates an org-wide digest.
+             */
             last_good_digest?: string;
             /**
              * Format: date-time
-             * @description When the last-known-good bundle was recorded.
+             * @deprecated
+             * @description Deprecated compatibility field. Resolver results are scoped by project and agent, so Mobius no longer populates an org-wide timestamp.
              */
             last_good_at?: string | null;
             /**
@@ -5117,7 +5118,6 @@ export interface components {
          * @example {
          *       "name": "PR reviewer",
          *       "description": "Reviews pull requests for risky changes.",
-         *       "kind": "llm",
          *       "color": "teal",
          *       "model": "claude-sonnet-4-6",
          *       "tool_presentation": "meta",
@@ -5131,21 +5131,19 @@ export interface components {
             name: string;
             /** @description Optional human-readable description. */
             description?: string;
-            /** @description Freeform classification (e.g. "llm", "rpa", "integration"). */
-            kind?: string;
             /** @description Display color for this agent (Mantine palette key, e.g. `indigo`). Optional; empty falls back to a hash-derived color. */
             color?: string;
-            /** @description Model identifier for platform agents. Any id from `GET /v1/projects/{project_handle}/catalog/models`, including slash-bearing OpenRouter catalog ids, or an optionally `provider/`-prefixed id (e.g. `xai/grok-4`); bare known ids (e.g. `claude-sonnet-4-6`) are auto-detected. Empty falls back to the platform default. */
+            /** @description Model identifier for agents. Any id from `GET /v1/projects/{project_handle}/catalog/models`, including slash-bearing OpenRouter catalog ids, or an optionally `provider/`-prefixed id (e.g. `xai/grok-4`); bare known ids (e.g. `claude-sonnet-4-6`) are auto-detected. Empty falls back to the platform default. */
             model?: string;
             /** @description Default route for model calls made by this agent. */
             model_route?: components["schemas"]["AgentModelRoute"];
             /** @description Omit to use the create-time default, `flat`. */
             tool_presentation?: components["schemas"]["AgentToolPresentation"];
-            /** @description Custom system prompt for platform agents. Empty uses the generated default. */
+            /** @description Custom system prompt for agents. Empty uses the generated default. */
             system_prompt?: string;
             /**
              * Format: int64
-             * @description Per-turn execution timeout in seconds for this platform agent. Omit or `0` to use the platform default (600s / 10 minutes); a loop step's own timeout overrides it for that step.
+             * @description Per-turn execution timeout in seconds for this agent. Omit or `0` to use the platform default (600s / 10 minutes); a loop step's own timeout overrides it for that step.
              */
             timeout_seconds?: number;
             /** @description Default session-compaction policy new sessions inherit from this agent. */
@@ -5161,21 +5159,19 @@ export interface components {
             name?: string;
             /** @description Replacement description. */
             description?: string;
-            /** @description Replacement freeform agent classification (e.g. `llm`, `rpa`). */
-            kind?: string;
             /** @description Replacement display color (Mantine palette key, e.g. `indigo`). Pass empty string to clear and fall back to a hash-derived color. */
             color?: string;
-            /** @description Replacement model identifier for platform agents (any id from `GET /v1/projects/{project_handle}/catalog/models`, including slash-bearing OpenRouter catalog ids, or an optionally `provider/`-prefixed id). */
+            /** @description Replacement model identifier for agents (any id from `GET /v1/projects/{project_handle}/catalog/models`, including slash-bearing OpenRouter catalog ids, or an optionally `provider/`-prefixed id). */
             model?: string;
             /** @description Replacement default route for model calls made by this agent. */
             model_route?: components["schemas"]["AgentModelRoute"];
             /** @description Replacement tool presentation used by loop agent steps and channel replies. */
             tool_presentation?: components["schemas"]["AgentToolPresentation"];
-            /** @description Replacement system prompt for platform agents. */
+            /** @description Replacement system prompt for agents. */
             system_prompt?: string;
             /**
              * Format: int64
-             * @description Replacement per-turn execution timeout in seconds for this platform agent. `0` resets to the platform default (600s / 10 minutes); a loop step's own timeout overrides it for that step.
+             * @description Replacement per-turn execution timeout in seconds for this agent. `0` resets to the platform default (600s / 10 minutes); a loop step's own timeout overrides it for that step.
              */
             timeout_seconds?: number;
             /**
@@ -7561,7 +7557,6 @@ export interface components {
             compaction_policy?: components["schemas"]["SessionCompactionPolicy"];
             /** @description Default reasoning-effort level for sessions and Loop agent steps. */
             thinking_effort?: components["schemas"]["ThinkingEffort"];
-            kind?: string;
             color?: string;
             toolkits?: components["schemas"]["BlueprintResourceRef"][];
             skills?: components["schemas"]["BlueprintResourceRef"][];
@@ -10543,7 +10538,6 @@ export interface operations {
                  * @example {
                  *       "name": "PR reviewer",
                  *       "description": "Reviews pull requests for risky changes.",
-                 *       "kind": "llm",
                  *       "color": "teal",
                  *       "model": "claude-sonnet-4-6",
                  *       "tool_presentation": "meta",
@@ -10568,7 +10562,6 @@ export interface operations {
                      *       "principal_id": "agent_5n8p2q7m4x9r3v6t",
                      *       "name": "PR reviewer",
                      *       "description": "Reviews pull requests for risky changes.",
-                     *       "kind": "llm",
                      *       "color": "teal",
                      *       "model": "claude-sonnet-4-6",
                      *       "tool_presentation": "meta",

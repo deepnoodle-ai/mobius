@@ -2029,7 +2029,6 @@ paths:
             example:
               name: PR reviewer
               description: Reviews pull requests for risky changes.
-              kind: llm
               color: teal
               model: claude-sonnet-4-6
               tool_presentation: meta
@@ -2047,7 +2046,6 @@ paths:
                 principal_id: agent_5n8p2q7m4x9r3v6t
                 name: PR reviewer
                 description: Reviews pull requests for risky changes.
-                kind: llm
                 color: teal
                 model: claude-sonnet-4-6
                 tool_presentation: meta
@@ -6386,10 +6384,6 @@ components:
           type: string
           description: Optional human-readable description.
           maxLength: 500
-        kind:
-          type: string
-          description: Freeform agent classification for tooling and filtering (e.g. "llm",
-            "rpa").
         color:
           type: string
           description: Display color for this agent in UI surfaces. One of the Mantine color
@@ -6398,11 +6392,10 @@ components:
           maxLength: 24
         model:
           type: string
-          description: Model identifier for platform agents. Accepts any id returned by `GET
-            /v1/projects/{project_handle}/catalog/models` (including slash-bearing OpenRouter
-            catalog ids), optionally `provider/`-prefixed (e.g. `xai/grok-4`); bare known
-            ids (e.g. `claude-sonnet-4-6`) are auto-detected to their provider. Empty string
-            falls back to the platform default.
+          description: Model identifier for agents. Accepts any id returned by `GET /v1/projects/{project_handle}/catalog/models`
+            (including slash-bearing OpenRouter catalog ids), optionally `provider/`-prefixed
+            (e.g. `xai/grok-4`); bare known ids (e.g. `claude-sonnet-4-6`) are auto-detected
+            to their provider. Empty string falls back to the platform default.
         model_route:
           $ref: '#/components/schemas/AgentModelRoute'
           description: Default route for model calls made by this agent.
@@ -6412,8 +6405,8 @@ components:
             replies for this agent.
         system_prompt:
           type: string
-          description: Custom system prompt for platform agents. Empty string uses the generated
-            default based on the agent name.
+          description: Custom system prompt for agents. Empty string uses the generated default
+            based on the agent name.
         timeout_seconds:
           type: integer
           format: int64
@@ -6463,7 +6456,6 @@ components:
         principal_id: agent_5n8p2q7m4x9r3v6t
         name: PR reviewer
         description: Reviews pull requests for risky changes.
-        kind: llm
         color: teal
         model: claude-sonnet-4-6
         tool_presentation: meta
@@ -9864,12 +9856,16 @@ components:
           description: Behavior when the resolver endpoint is unreachable.
         last_good_digest:
           type: string
-          description: Digest of the durable last-known-good bundle, when one exists.
+          deprecated: true
+          description: Deprecated compatibility field. Resolver results are scoped by project
+            and agent, so Mobius no longer populates an org-wide digest.
         last_good_at:
           type: string
           format: date-time
           nullable: true
-          description: When the last-known-good bundle was recorded.
+          deprecated: true
+          description: Deprecated compatibility field. Resolver results are scoped by project
+            and agent, so Mobius no longer populates an org-wide timestamp.
         updated_at:
           type: string
           format: date-time
@@ -11056,9 +11052,6 @@ components:
           type: string
           description: Optional human-readable description.
           maxLength: 500
-        kind:
-          type: string
-          description: Freeform classification (e.g. "llm", "rpa", "integration").
         color:
           type: string
           description: Display color for this agent (Mantine palette key, e.g. `indigo`).
@@ -11066,7 +11059,7 @@ components:
           maxLength: 24
         model:
           type: string
-          description: Model identifier for platform agents. Any id from `GET /v1/projects/{project_handle}/catalog/models`,
+          description: Model identifier for agents. Any id from `GET /v1/projects/{project_handle}/catalog/models`,
             including slash-bearing OpenRouter catalog ids, or an optionally `provider/`-prefixed
             id (e.g. `xai/grok-4`); bare known ids (e.g. `claude-sonnet-4-6`) are auto-detected.
             Empty falls back to the platform default.
@@ -11078,15 +11071,14 @@ components:
           description: Omit to use the create-time default, `flat`.
         system_prompt:
           type: string
-          description: Custom system prompt for platform agents. Empty uses the generated
-            default.
+          description: Custom system prompt for agents. Empty uses the generated default.
         timeout_seconds:
           type: integer
           format: int64
           minimum: 0
-          description: Per-turn execution timeout in seconds for this platform agent. Omit
-            or `0` to use the platform default (600s / 10 minutes); a loop step's own timeout
-            overrides it for that step.
+          description: Per-turn execution timeout in seconds for this agent. Omit or `0` to
+            use the platform default (600s / 10 minutes); a loop step's own timeout overrides
+            it for that step.
         compaction_policy:
           $ref: '#/components/schemas/SessionCompactionPolicy'
           description: Default session-compaction policy new sessions inherit from this agent.
@@ -11100,7 +11092,6 @@ components:
       example:
         name: PR reviewer
         description: Reviews pull requests for risky changes.
-        kind: llm
         color: teal
         model: claude-sonnet-4-6
         tool_presentation: meta
@@ -11123,9 +11114,6 @@ components:
           type: string
           description: Replacement description.
           maxLength: 500
-        kind:
-          type: string
-          description: Replacement freeform agent classification (e.g. `llm`, `rpa`).
         color:
           type: string
           description: Replacement display color (Mantine palette key, e.g. `indigo`). Pass
@@ -11133,9 +11121,9 @@ components:
           maxLength: 24
         model:
           type: string
-          description: Replacement model identifier for platform agents (any id from `GET
-            /v1/projects/{project_handle}/catalog/models`, including slash-bearing OpenRouter
-            catalog ids, or an optionally `provider/`-prefixed id).
+          description: Replacement model identifier for agents (any id from `GET /v1/projects/{project_handle}/catalog/models`,
+            including slash-bearing OpenRouter catalog ids, or an optionally `provider/`-prefixed
+            id).
         model_route:
           $ref: '#/components/schemas/AgentModelRoute'
           description: Replacement default route for model calls made by this agent.
@@ -11145,14 +11133,14 @@ components:
             replies.
         system_prompt:
           type: string
-          description: Replacement system prompt for platform agents.
+          description: Replacement system prompt for agents.
         timeout_seconds:
           type: integer
           format: int64
           minimum: 0
-          description: Replacement per-turn execution timeout in seconds for this platform
-            agent. `0` resets to the platform default (600s / 10 minutes); a loop step's own
-            timeout overrides it for that step.
+          description: Replacement per-turn execution timeout in seconds for this agent. `0`
+            resets to the platform default (600s / 10 minutes); a loop step's own timeout
+            overrides it for that step.
         status:
           type: string
           enum:
@@ -15169,8 +15157,6 @@ components:
         thinking_effort:
           $ref: '#/components/schemas/ThinkingEffort'
           description: Default reasoning-effort level for sessions and Loop agent steps.
-        kind:
-          type: string
         color:
           type: string
         toolkits:

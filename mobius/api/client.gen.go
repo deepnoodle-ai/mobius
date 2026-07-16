@@ -3977,10 +3977,7 @@ type Agent struct {
 	// Id Unique identifier for this agent.
 	Id string `json:"id"`
 
-	// Kind Freeform agent classification for tooling and filtering (e.g. "llm", "rpa").
-	Kind *string `json:"kind,omitempty"`
-
-	// Model Model identifier for platform agents. Accepts any id returned by `GET /v1/projects/{project_handle}/catalog/models` (including slash-bearing OpenRouter catalog ids), optionally `provider/`-prefixed (e.g. `xai/grok-4`); bare known ids (e.g. `claude-sonnet-4-6`) are auto-detected to their provider. Empty string falls back to the platform default.
+	// Model Model identifier for agents. Accepts any id returned by `GET /v1/projects/{project_handle}/catalog/models` (including slash-bearing OpenRouter catalog ids), optionally `provider/`-prefixed (e.g. `xai/grok-4`); bare known ids (e.g. `claude-sonnet-4-6`) are auto-detected to their provider. Empty string falls back to the platform default.
 	Model *string `json:"model,omitempty"`
 
 	// ModelRoute Default model route used by built-in messaging and by loop agent steps that do not override the route.
@@ -3995,7 +3992,7 @@ type Agent struct {
 	// Status Administrative status. Inactive agents cannot claim new jobs. Deleted agents are excluded from normal reads.
 	Status AgentStatus `json:"status"`
 
-	// SystemPrompt Custom system prompt for platform agents. Empty string uses the generated default based on the agent name.
+	// SystemPrompt Custom system prompt for agents. Empty string uses the generated default based on the agent name.
 	SystemPrompt *string `json:"system_prompt,omitempty"`
 
 	// Tags Key/value tags for organizing and filtering resources. Up to 8 per resource; keys 1–128 characters, values up to 256. Keys prefixed `mobius:` are system-managed and cannot be set by callers.
@@ -4588,7 +4585,6 @@ type BlueprintAgentInput struct {
 	CompactionPolicy *SessionCompactionPolicy `json:"compaction_policy,omitempty"`
 	Description      *string                  `json:"description,omitempty"`
 	Key              string                   `json:"key"`
-	Kind             *string                  `json:"kind,omitempty"`
 	Model            *string                  `json:"model,omitempty"`
 
 	// ModelRoute Default model route used by built-in messaging and by loop agent steps that do not override the route.
@@ -5024,10 +5020,7 @@ type CreateAgentRequest struct {
 	// Description Optional human-readable description.
 	Description *string `json:"description,omitempty"`
 
-	// Kind Freeform classification (e.g. "llm", "rpa", "integration").
-	Kind *string `json:"kind,omitempty"`
-
-	// Model Model identifier for platform agents. Any id from `GET /v1/projects/{project_handle}/catalog/models`, including slash-bearing OpenRouter catalog ids, or an optionally `provider/`-prefixed id (e.g. `xai/grok-4`); bare known ids (e.g. `claude-sonnet-4-6`) are auto-detected. Empty falls back to the platform default.
+	// Model Model identifier for agents. Any id from `GET /v1/projects/{project_handle}/catalog/models`, including slash-bearing OpenRouter catalog ids, or an optionally `provider/`-prefixed id (e.g. `xai/grok-4`); bare known ids (e.g. `claude-sonnet-4-6`) are auto-detected. Empty falls back to the platform default.
 	Model *string `json:"model,omitempty"`
 
 	// ModelRoute Default model route used by built-in messaging and by loop agent steps that do not override the route.
@@ -5036,7 +5029,7 @@ type CreateAgentRequest struct {
 	// Name Unique name for this agent. Free-form human-readable label, 1-63 characters.
 	Name string `json:"name"`
 
-	// SystemPrompt Custom system prompt for platform agents. Empty uses the generated default.
+	// SystemPrompt Custom system prompt for agents. Empty uses the generated default.
 	SystemPrompt *string `json:"system_prompt,omitempty"`
 
 	// Tags Key/value tags for organizing and filtering resources. Up to 8 per resource; keys 1–128 characters, values up to 256. Keys prefixed `mobius:` are system-managed and cannot be set by callers.
@@ -5045,7 +5038,7 @@ type CreateAgentRequest struct {
 	// ThinkingEffort Reasoning-effort level for a turn, lowest (`low`) to highest (`max`). Higher effort spends more tokens on reasoning, improving quality on hard tasks at the cost of latency and credits. Levels above what the resolved model supports are clamped down. Set on an agent it is the default; set on a session or loop step it overrides the agent default. `inherit` (or omitting the field) defers to the layer below — the agent default for a session/step, or the provider's own default when nothing sets a level.
 	ThinkingEffort *ThinkingEffort `json:"thinking_effort,omitempty"`
 
-	// TimeoutSeconds Per-turn execution timeout in seconds for this platform agent. Omit or `0` to use the platform default (600s / 10 minutes); a loop step's own timeout overrides it for that step.
+	// TimeoutSeconds Per-turn execution timeout in seconds for this agent. Omit or `0` to use the platform default (600s / 10 minutes); a loop step's own timeout overrides it for that step.
 	TimeoutSeconds *int64 `json:"timeout_seconds,omitempty"`
 
 	// ToolPresentation Controls how granted actions are surfaced to the model in Mobius-hosted agent turns. `meta` (the default) groups related actions behind compact command routers, while `flat` exposes one tool per action.
@@ -5457,10 +5450,12 @@ type DefinitionResolverConfig struct {
 	// EndpointUrl HTTPS endpoint Mobius posts resolve requests to (client_resolver only).
 	EndpointUrl *string `json:"endpoint_url,omitempty"`
 
-	// LastGoodAt When the last-known-good bundle was recorded.
+	// LastGoodAt Deprecated compatibility field. Resolver results are scoped by project and agent, so Mobius no longer populates an org-wide timestamp.
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
 	LastGoodAt *time.Time `json:"last_good_at,omitempty"`
 
-	// LastGoodDigest Digest of the durable last-known-good bundle, when one exists.
+	// LastGoodDigest Deprecated compatibility field. Resolver results are scoped by project and agent, so Mobius no longer populates an org-wide digest.
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
 	LastGoodDigest *string `json:"last_good_digest,omitempty"`
 
 	// OnUnavailable Behavior when the resolver endpoint is unreachable.
@@ -9122,10 +9117,7 @@ type UpdateAgentRequest struct {
 	// Description Replacement description.
 	Description *string `json:"description,omitempty"`
 
-	// Kind Replacement freeform agent classification (e.g. `llm`, `rpa`).
-	Kind *string `json:"kind,omitempty"`
-
-	// Model Replacement model identifier for platform agents (any id from `GET /v1/projects/{project_handle}/catalog/models`, including slash-bearing OpenRouter catalog ids, or an optionally `provider/`-prefixed id).
+	// Model Replacement model identifier for agents (any id from `GET /v1/projects/{project_handle}/catalog/models`, including slash-bearing OpenRouter catalog ids, or an optionally `provider/`-prefixed id).
 	Model *string `json:"model,omitempty"`
 
 	// ModelRoute Default model route used by built-in messaging and by loop agent steps that do not override the route.
@@ -9137,7 +9129,7 @@ type UpdateAgentRequest struct {
 	// Status Replacement agent status: `active` or `inactive`. Use DELETE to delete the agent.
 	Status *UpdateAgentRequestStatus `json:"status,omitempty"`
 
-	// SystemPrompt Replacement system prompt for platform agents.
+	// SystemPrompt Replacement system prompt for agents.
 	SystemPrompt *string `json:"system_prompt,omitempty"`
 
 	// Tags Key/value tags for organizing and filtering resources. Up to 8 per resource; keys 1–128 characters, values up to 256. Keys prefixed `mobius:` are system-managed and cannot be set by callers.
@@ -9146,7 +9138,7 @@ type UpdateAgentRequest struct {
 	// ThinkingEffort Reasoning-effort level for a turn, lowest (`low`) to highest (`max`). Higher effort spends more tokens on reasoning, improving quality on hard tasks at the cost of latency and credits. Levels above what the resolved model supports are clamped down. Set on an agent it is the default; set on a session or loop step it overrides the agent default. `inherit` (or omitting the field) defers to the layer below — the agent default for a session/step, or the provider's own default when nothing sets a level.
 	ThinkingEffort *ThinkingEffort `json:"thinking_effort,omitempty"`
 
-	// TimeoutSeconds Replacement per-turn execution timeout in seconds for this platform agent. `0` resets to the platform default (600s / 10 minutes); a loop step's own timeout overrides it for that step.
+	// TimeoutSeconds Replacement per-turn execution timeout in seconds for this agent. `0` resets to the platform default (600s / 10 minutes); a loop step's own timeout overrides it for that step.
 	TimeoutSeconds *int64 `json:"timeout_seconds,omitempty"`
 
 	// ToolPresentation Controls how granted actions are surfaced to the model in Mobius-hosted agent turns. `meta` (the default) groups related actions behind compact command routers, while `flat` exposes one tool per action.
