@@ -1821,7 +1821,7 @@ paths:
           type: string
         description: Filter to interactions raised by an agent tool call (`consumer.kind=agent_tool`)
           whose invocation is a turn of the given chat session. Lets a chat surface the pending
-          `request_human_input` interactions its own turns are waiting on.
+          interactions opened by its own agent tool calls.
       - name: target_user_id
         in: query
         schema:

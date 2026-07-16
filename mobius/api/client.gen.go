@@ -10159,7 +10159,7 @@ type ListInteractionsParams struct {
 	// RunId Filter by originating run ID
 	RunId *string `form:"run_id,omitempty" json:"run_id,omitempty"`
 
-	// SessionId Filter to interactions raised by an agent tool call (`consumer.kind=agent_tool`) whose invocation is a turn of the given chat session. Lets a chat surface the pending `request_human_input` interactions its own turns are waiting on.
+	// SessionId Filter to interactions raised by an agent tool call (`consumer.kind=agent_tool`) whose invocation is a turn of the given chat session. Lets a chat surface the pending interactions opened by its own agent tool calls.
 	SessionId *string `form:"session_id,omitempty" json:"session_id,omitempty"`
 
 	// TargetUserId Filter by resolved target user ID.

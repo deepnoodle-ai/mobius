@@ -10232,7 +10232,7 @@ export interface operations {
                 kind?: components["schemas"]["InteractionKind"];
                 /** @description Filter by originating run ID */
                 run_id?: string;
-                /** @description Filter to interactions raised by an agent tool call (`consumer.kind=agent_tool`) whose invocation is a turn of the given chat session. Lets a chat surface the pending `request_human_input` interactions its own turns are waiting on. */
+                /** @description Filter to interactions raised by an agent tool call (`consumer.kind=agent_tool`) whose invocation is a turn of the given chat session. Lets a chat surface the pending interactions opened by its own agent tool calls. */
                 session_id?: string;
                 /** @description Filter by resolved target user ID. */
                 target_user_id?: string;
