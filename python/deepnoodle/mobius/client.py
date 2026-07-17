@@ -7,7 +7,7 @@ import os
 import re
 import time
 from dataclasses import dataclass, field
-from collections.abc import Iterator
+from collections.abc import Iterator, Sequence
 from typing import Any, BinaryIO
 from urllib.parse import quote, urlencode, urlparse, urlunparse
 
@@ -62,6 +62,13 @@ from ._api.models import (
     RuntimeContext,
     RuntimeContextItem,
     SaveAgentMemoryEntryRequest,
+    ImportSkillRequest,
+    OrganizationSkillUsage,
+    ReplaceSkillsRequest,
+    Skill,
+    SkillAssignmentListResponse,
+    SkillListResponse,
+    SkillRequest,
     Role1 as ProjectRole,
     RoleAssignment,
     RoleAssignmentListResponse,
@@ -957,6 +964,171 @@ class Client:
             f"/v1/organization/actions/{quote(action_id, safe='')}/secret/versions/{version}/revoke",
         )
         return OrganizationAction.model_validate(resp.json())
+
+    def list_skills(self, *, include_system: bool | None = None) -> SkillListResponse:
+        """List project-local, organization-shared, and system skills.
+
+        System skill templates are included by default; pass
+        ``include_system=False`` to omit them. Organization skills are
+        read-only through project mutation routes.
+        """
+        params: dict[str, Any] = {}
+        if include_system is not None:
+            params["include_system"] = "true" if include_system else "false"
+        resp = self._request(
+            "GET", "/v1/projects/{project}/skills", params=params or None
+        )
+        return SkillListResponse.model_validate(resp.json())
+
+    def create_skill(self, request: SkillRequest) -> Skill:
+        """Create a project-local skill."""
+        resp = self._request("POST", "/v1/projects/{project}/skills", json=request)
+        return Skill.model_validate(resp.json())
+
+    def import_skill(self, content: str, *, name: str | None = None) -> Skill:
+        """Import a Claude Code or Dive-style skill document.
+
+        ``content`` is sent verbatim, including any YAML frontmatter; pass
+        ``name`` to override the document's own.
+        """
+        resp = self._request(
+            "POST",
+            "/v1/projects/{project}/skills/import",
+            json=ImportSkillRequest(content=content, name=name),
+        )
+        return Skill.model_validate(resp.json())
+
+    def get_skill(self, skill_id: str) -> Skill:
+        """Return a single project-local, organization-shared, or system skill."""
+        resp = self._request(
+            "GET", f"/v1/projects/{{project}}/skills/{quote(skill_id, safe='')}"
+        )
+        return Skill.model_validate(resp.json())
+
+    def update_skill(self, skill_id: str, request: SkillRequest) -> Skill:
+        """Replace a project-local skill.
+
+        The server requires the full body — including ``name`` and
+        ``instructions`` — on every update; there is no partial patch, so
+        read-modify-write is the caller's responsibility.
+        """
+        resp = self._request(
+            "PUT",
+            f"/v1/projects/{{project}}/skills/{quote(skill_id, safe='')}",
+            json=request,
+        )
+        return Skill.model_validate(resp.json())
+
+    def delete_skill(self, skill_id: str) -> None:
+        """Delete a project-local skill.
+
+        The skill is automatically detached from any agents that reference it.
+        """
+        self._request(
+            "DELETE", f"/v1/projects/{{project}}/skills/{quote(skill_id, safe='')}"
+        )
+
+    def list_organization_skills(self) -> SkillListResponse:
+        """List skills owned by the active organization.
+
+        Any organization member may read this catalog.
+        """
+        resp = self._request("GET", "/v1/organization/skills")
+        return SkillListResponse.model_validate(resp.json())
+
+    def create_organization_skill(self, request: SkillRequest) -> Skill:
+        """Create a skill shared across the active organization.
+
+        Requires Admin or Owner membership.
+        """
+        resp = self._request("POST", "/v1/organization/skills", json=request)
+        return Skill.model_validate(resp.json())
+
+    def import_organization_skill(
+        self, content: str, *, name: str | None = None
+    ) -> Skill:
+        """Import a Claude Code or Dive-style document as an organization skill.
+
+        ``content`` is sent verbatim, including any YAML frontmatter; pass
+        ``name`` to override the document's own. Requires Admin or Owner
+        membership.
+        """
+        resp = self._request(
+            "POST",
+            "/v1/organization/skills/import",
+            json=ImportSkillRequest(content=content, name=name),
+        )
+        return Skill.model_validate(resp.json())
+
+    def get_organization_skill(self, skill_id: str) -> Skill:
+        """Return one skill owned by the active organization."""
+        resp = self._request(
+            "GET", f"/v1/organization/skills/{quote(skill_id, safe='')}"
+        )
+        return Skill.model_validate(resp.json())
+
+    def replace_organization_skill(self, skill_id: str, request: SkillRequest) -> Skill:
+        """Replace the shared skill for subsequent agent turns.
+
+        The server requires the full body — including ``name`` and
+        ``instructions`` — on every update; there is no partial patch, so
+        read-modify-write is the caller's responsibility. Requires Admin or
+        Owner membership.
+        """
+        resp = self._request(
+            "PUT",
+            f"/v1/organization/skills/{quote(skill_id, safe='')}",
+            json=request,
+        )
+        return Skill.model_validate(resp.json())
+
+    def delete_organization_skill(self, skill_id: str) -> None:
+        """Delete an unused organization skill.
+
+        A skill that is still assigned raises a 409 ``skill_in_use``
+        :class:`MobiusAPIError`; inspect
+        :meth:`get_organization_skill_usage` and remove the assignments
+        first — the SDK never detaches agents implicitly.
+        """
+        self._request(
+            "DELETE", f"/v1/organization/skills/{quote(skill_id, safe='')}"
+        )
+
+    def get_organization_skill_usage(self, skill_id: str) -> OrganizationSkillUsage:
+        """Report an organization skill's assignment impact across projects.
+
+        Lets callers see what a replace or delete would touch. Requires
+        Admin or Owner membership.
+        """
+        resp = self._request(
+            "GET", f"/v1/organization/skills/{quote(skill_id, safe='')}/usage"
+        )
+        return OrganizationSkillUsage.model_validate(resp.json())
+
+    def list_agent_skill_assignments(
+        self, agent_id: str
+    ) -> SkillAssignmentListResponse:
+        """Return the skills assigned to an agent in assignment order."""
+        resp = self._request(
+            "GET",
+            f"/v1/projects/{{project}}/agents/{quote(agent_id, safe='')}/skill-assignments",
+        )
+        return SkillAssignmentListResponse.model_validate(resp.json())
+
+    def replace_agent_skill_assignments(
+        self, agent_id: str, skill_ids: Sequence[str]
+    ) -> SkillAssignmentListResponse:
+        """Replace the agent's skill assignment set as a whole.
+
+        ``skill_ids`` is the full replace-set in desired order; pass an
+        empty sequence to remove every assignment.
+        """
+        resp = self._request(
+            "PUT",
+            f"/v1/projects/{{project}}/agents/{quote(agent_id, safe='')}/skill-assignments",
+            json=ReplaceSkillsRequest(skill_ids=list(skill_ids)),
+        )
+        return SkillAssignmentListResponse.model_validate(resp.json())
 
     def start_run(self, loop_id: str, opts: StartRunOptions | None = None) -> LoopRun:
         opts = opts or StartRunOptions()

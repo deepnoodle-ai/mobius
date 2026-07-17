@@ -66,17 +66,19 @@ var overrides = map[string]Override{
 	"createPrincipal": {Skip: true},
 
 	// --- skills -----------------------------------------------------------
-	// `import` isn't in the verb list, so the auto-derive keeps the
-	// redundant `-skill` suffix; strip it.
-	"importSkill": {Command: "import"},
+	// Hand-written so `skills import PATH|-` takes the skill document itself
+	// (a Claude Code / Dive-style markdown file) instead of a JSON request
+	// body wrapping it.
+	"importSkill": {Skip: true},
 
 	// --- org-skills -------------------------------------------------------
 	// Organization Skills have org-wide authority and do not require a
 	// project profile. Keep them in a distinct group so their CRUD verbs do
 	// not collide with the existing project-scoped `skills` commands.
-	"listOrganizationSkills":    {Group: "org-skills", Command: "list"},
-	"createOrganizationSkill":   {Group: "org-skills", Command: "create"},
-	"importOrganizationSkill":   {Group: "org-skills", Command: "import"},
+	"listOrganizationSkills":  {Group: "org-skills", Command: "list"},
+	"createOrganizationSkill": {Group: "org-skills", Command: "create"},
+	// Hand-written for the same reason as `importSkill`.
+	"importOrganizationSkill":   {Skip: true},
 	"getOrganizationSkill":      {Group: "org-skills", Command: "get"},
 	"replaceOrganizationSkill":  {Group: "org-skills", Command: "update"},
 	"deleteOrganizationSkill":   {Group: "org-skills", Command: "delete"},

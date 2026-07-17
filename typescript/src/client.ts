@@ -23,6 +23,7 @@ import type {
   CreateRoleAssignmentRequest,
   CreateRoleRequest,
   CreateLoopRequest,
+  ImportSkillRequest,
   InlineAgentConfig,
   Interaction,
   InteractionKind,
@@ -42,11 +43,13 @@ import type {
   MemorySearchMode,
   OrganizationAction,
   OrganizationActionListResponse,
+  OrganizationSkillUsage,
   PermissionCatalogResponse,
   Principal,
   PrincipalKind,
   PrincipalListResponse,
   RuntimeContextItem,
+  ReplaceSkillsRequest,
   SaveAgentMemoryEntryRequest,
   Session,
   SessionListResponse,
@@ -65,6 +68,10 @@ import type {
   RoleAssignmentListResponse,
   RoleListResponse,
   SignalLoopRunRequest,
+  Skill,
+  SkillAssignmentListResponse,
+  SkillListResponse,
+  SkillRequest,
   StartTurnRequest,
   StartLoopRunRequest,
   StreamEndFrame,
@@ -642,6 +649,19 @@ export interface OrganizationActionSecretMaterial {
   keyBytes: Uint8Array;
 }
 
+export interface ListSkillsOptions {
+  /**
+   * Include read-only system skill templates. The server includes them by
+   * default; pass false to omit them.
+   */
+  includeSystem?: boolean;
+}
+
+export interface ImportSkillOptions {
+  /** Override the skill name derived from the document. */
+  name?: string;
+}
+
 export class Client {
   private readonly baseURL: string;
   readonly project: string;
@@ -1111,6 +1131,206 @@ export class Client {
       { method: "POST" },
     );
     return (await resp.json()) as OrganizationAction;
+  }
+
+  /**
+   * Lists project-local, organization-shared, and system skills. System
+   * skill templates are included by default; pass includeSystem: false to
+   * omit them. Organization skills are read-only through project mutation
+   * routes.
+   */
+  async listSkills(opts: ListSkillsOptions = {}): Promise<SkillListResponse> {
+    const path = withQuery("/v1/projects/:project/skills", {
+      include_system: opts.includeSystem,
+    });
+    const resp = await this.request(path, { method: "GET" });
+    return (await resp.json()) as SkillListResponse;
+  }
+
+  /** Creates a project-local skill. */
+  async createSkill(input: SkillRequest): Promise<Skill> {
+    const resp = await this.request("/v1/projects/:project/skills", {
+      method: "POST",
+      body: input,
+    });
+    return (await resp.json()) as Skill;
+  }
+
+  /**
+   * Imports a Claude Code or Dive-style skill document into a project-local
+   * skill. The content string is sent verbatim, including any YAML
+   * frontmatter; pass opts.name to override the document's own.
+   */
+  async importSkill(
+    content: string,
+    opts: ImportSkillOptions = {},
+  ): Promise<Skill> {
+    const body: ImportSkillRequest = { content };
+    if (opts.name != null) body.name = opts.name;
+    const resp = await this.request("/v1/projects/:project/skills/import", {
+      method: "POST",
+      body,
+    });
+    return (await resp.json()) as Skill;
+  }
+
+  /**
+   * Returns a single project-local, organization-shared, or system skill by
+   * ID.
+   */
+  async getSkill(skillId: string): Promise<Skill> {
+    const resp = await this.request(
+      `/v1/projects/:project/skills/${encodeURIComponent(skillId)}`,
+      { method: "GET" },
+    );
+    return (await resp.json()) as Skill;
+  }
+
+  /**
+   * Replaces a project-local skill. The server requires the full body —
+   * including name and instructions — on every update; there is no partial
+   * patch, so read-modify-write is the caller's responsibility.
+   */
+  async updateSkill(skillId: string, input: SkillRequest): Promise<Skill> {
+    const resp = await this.request(
+      `/v1/projects/:project/skills/${encodeURIComponent(skillId)}`,
+      { method: "PUT", body: input },
+    );
+    return (await resp.json()) as Skill;
+  }
+
+  /**
+   * Deletes a project-local skill. The skill is automatically detached from
+   * any agents that reference it.
+   */
+  async deleteSkill(skillId: string): Promise<void> {
+    await this.request(
+      `/v1/projects/:project/skills/${encodeURIComponent(skillId)}`,
+      { method: "DELETE" },
+    );
+  }
+
+  /**
+   * Lists skills owned by the active organization. Any organization member
+   * may read this catalog.
+   */
+  async listOrganizationSkills(): Promise<SkillListResponse> {
+    const resp = await this.request("/v1/organization/skills", {
+      method: "GET",
+    });
+    return (await resp.json()) as SkillListResponse;
+  }
+
+  /**
+   * Creates a skill shared across the active organization. Requires Admin
+   * or Owner membership.
+   */
+  async createOrganizationSkill(input: SkillRequest): Promise<Skill> {
+    const resp = await this.request("/v1/organization/skills", {
+      method: "POST",
+      body: input,
+    });
+    return (await resp.json()) as Skill;
+  }
+
+  /**
+   * Imports a Claude Code or Dive-style skill document as an organization
+   * skill. The content string is sent verbatim, including any YAML
+   * frontmatter; pass opts.name to override the document's own. Requires
+   * Admin or Owner membership.
+   */
+  async importOrganizationSkill(
+    content: string,
+    opts: ImportSkillOptions = {},
+  ): Promise<Skill> {
+    const body: ImportSkillRequest = { content };
+    if (opts.name != null) body.name = opts.name;
+    const resp = await this.request("/v1/organization/skills/import", {
+      method: "POST",
+      body,
+    });
+    return (await resp.json()) as Skill;
+  }
+
+  /** Returns one skill owned by the active organization. */
+  async getOrganizationSkill(skillId: string): Promise<Skill> {
+    const resp = await this.request(
+      `/v1/organization/skills/${encodeURIComponent(skillId)}`,
+      { method: "GET" },
+    );
+    return (await resp.json()) as Skill;
+  }
+
+  /**
+   * Replaces the shared skill for subsequent agent turns. The server
+   * requires the full body — including name and instructions — on every
+   * update; there is no partial patch, so read-modify-write is the caller's
+   * responsibility. Requires Admin or Owner membership.
+   */
+  async replaceOrganizationSkill(
+    skillId: string,
+    input: SkillRequest,
+  ): Promise<Skill> {
+    const resp = await this.request(
+      `/v1/organization/skills/${encodeURIComponent(skillId)}`,
+      { method: "PUT", body: input },
+    );
+    return (await resp.json()) as Skill;
+  }
+
+  /**
+   * Deletes an unused organization skill. A skill that is still assigned
+   * fails with a 409 skill_in_use {@link MobiusAPIError}; inspect
+   * {@link getOrganizationSkillUsage} and remove the assignments first —
+   * the SDK never detaches agents implicitly.
+   */
+  async deleteOrganizationSkill(skillId: string): Promise<void> {
+    await this.request(
+      `/v1/organization/skills/${encodeURIComponent(skillId)}`,
+      { method: "DELETE" },
+    );
+  }
+
+  /**
+   * Reports an organization skill's assignment impact across projects, so
+   * callers can see what a replace or delete would touch. Requires Admin or
+   * Owner membership.
+   */
+  async getOrganizationSkillUsage(
+    skillId: string,
+  ): Promise<OrganizationSkillUsage> {
+    const resp = await this.request(
+      `/v1/organization/skills/${encodeURIComponent(skillId)}/usage`,
+      { method: "GET" },
+    );
+    return (await resp.json()) as OrganizationSkillUsage;
+  }
+
+  /** Returns the skills assigned to an agent in assignment order. */
+  async listAgentSkillAssignments(
+    agentId: string,
+  ): Promise<SkillAssignmentListResponse> {
+    const resp = await this.request(
+      `/v1/projects/:project/agents/${encodeURIComponent(agentId)}/skill-assignments`,
+      { method: "GET" },
+    );
+    return (await resp.json()) as SkillAssignmentListResponse;
+  }
+
+  /**
+   * Replaces the agent's skill assignment set as a whole with skillIds, in
+   * the given order. Pass an empty array to remove every assignment.
+   */
+  async replaceAgentSkillAssignments(
+    agentId: string,
+    skillIds: string[],
+  ): Promise<SkillAssignmentListResponse> {
+    const body: ReplaceSkillsRequest = { skill_ids: skillIds };
+    const resp = await this.request(
+      `/v1/projects/:project/agents/${encodeURIComponent(agentId)}/skill-assignments`,
+      { method: "PUT", body },
+    );
+    return (await resp.json()) as SkillAssignmentListResponse;
   }
 
   async startRun(loopId: string, opts: StartRunOptions = {}): Promise<LoopRun> {
