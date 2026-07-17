@@ -1268,6 +1268,43 @@ class CreateOrgAPIKeyRequest(BaseModel):
     tags: TagMap | None = Field(None, description='Labels to apply to the new API key.')
 
 
+class InvocationFormat(StrEnum):
+    signed_context_v1 = 'signed_context_v1'
+
+
+class ActivateOrganizationActionSecretRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    overlap_seconds: int = Field(
+        86400,
+        description='Verification overlap for the previous active version. Omit for 24 hours.',
+        ge=0,
+        le=86400,
+    )
+
+
+class Status(StrEnum):
+    pending = 'pending'
+    active = 'active'
+    retiring = 'retiring'
+    retired = 'retired'
+    revoked = 'revoked'
+
+
+class OrganizationActionSecretVersion(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    version: int
+    status: Status
+    created_at: AwareDatetime
+    activated_at: AwareDatetime | None = None
+    accept_until: AwareDatetime | None = None
+    retired_at: AwareDatetime | None = None
+    revoked_at: AwareDatetime | None = None
+
+
 class ActionAnnotationsRequest(BaseModel):
     """
     Request hints that describe the safe-use properties of the action. Used by the engine and tooling to decide retry behavior, dry-run eligibility, etc. Unknown request properties are rejected.
@@ -1552,11 +1589,21 @@ class EndpointKind(StrEnum):
 
 class Source(StrEnum):
     """
-    Origin of this action: "platform" for built-in or integration-backed actions provided by Mobius, "custom" for project-specific HTTP or worker-backed actions. The `integration` field carries the provider slug for integration-backed platform actions.
+    Origin of this action: "platform" for built-in or integration-backed actions provided by Mobius, "custom" for project- or organization-owned HTTP or worker-backed actions. The `integration` field carries the provider slug for integration-backed platform actions.
     """
 
     platform = 'platform'
     custom = 'custom'
+
+
+class DefinitionScope(StrEnum):
+    """
+    Scope that owns the selected definition. A project definition shadows an organization definition with the same canonical name; execution still occurs in the consuming project.
+    """
+
+    platform = 'platform'
+    project = 'project'
+    organization = 'organization'
 
 
 class Risk(StrEnum):
@@ -1638,7 +1685,7 @@ class InvokeActionRequest(BaseModel):
     )
 
 
-class Status(StrEnum):
+class Status1(StrEnum):
     """
     Invocation status: `active`, `completed`, or `failed`.
     """
@@ -1656,7 +1703,7 @@ class ActionInvocationResult(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    status: Status = Field(
+    status: Status1 = Field(
         ..., description='Invocation status: `active`, `completed`, or `failed`.'
     )
     job_id: str | None = Field(
@@ -1671,6 +1718,16 @@ class ActionInvocationResult(BaseModel):
     error: str | None = Field(
         None, description='Error message. Present when status is "failed".'
     )
+
+
+class DefinitionScope1(StrEnum):
+    """
+    Scope that owned the selected action definition.
+    """
+
+    platform = 'platform'
+    project = 'project'
+    organization = 'organization'
 
 
 class ActorPrincipalType(StrEnum):
@@ -1710,6 +1767,9 @@ class ActionInvocationEntry(BaseModel):
         None, description='Immutable action definition ID used for this invocation.'
     )
     action_name: str = Field(..., description='Name of the action that was invoked.')
+    definition_scope: DefinitionScope1 | None = Field(
+        None, description='Scope that owned the selected action definition.'
+    )
     invocation_format: ActionInvocationFormat | None = None
     schema_version: int | None = Field(
         None,
@@ -1747,6 +1807,9 @@ class ActionInvocationEntry(BaseModel):
     delivery_id: str | None = Field(
         None,
         description='Stable signed delivery and idempotency identity, when HTTP-backed.',
+    )
+    correlation_id: str | None = Field(
+        None, description='Request or dispatch identity that correlated the invocation.'
     )
     secret_version: int | None = Field(
         None, description='Signing-secret version used for the HTTP delivery.', ge=1
@@ -2387,7 +2450,7 @@ class Type8(StrEnum):
     job_report = 'job.report'
 
 
-class Status1(StrEnum):
+class Status2(StrEnum):
     completed = 'completed'
     failed = 'failed'
     cancelled = 'cancelled'
@@ -2403,7 +2466,7 @@ class WorkerSocketJobReportFrame(BaseModel):
     lease_token: str = Field(
         ..., description='Opaque per-job lease fence returned by claim.'
     )
-    status: Status1 = 'completed'
+    status: Status2 = 'completed'
     result: dict[str, Any] | None = Field(
         None,
         description='Terminal result payload. For `llm_generation` jobs, this object must follow `WorkerSocketLLMGenerationResult`; plain text fallback results are not accepted.',
@@ -3416,7 +3479,7 @@ class ResolutionPolicy(BaseModel):
     )
 
 
-class Status2(StrEnum):
+class Status3(StrEnum):
     """
     Current status of the interaction: pending, completed, expired, or cancelled.
     """
@@ -3764,7 +3827,7 @@ class CreateAgentRequest(BaseModel):
     )
 
 
-class Status3(StrEnum):
+class Status4(StrEnum):
     """
     Replacement agent status: `active` or `inactive`. Use DELETE to delete the agent.
     """
@@ -3815,7 +3878,7 @@ class UpdateAgentRequest(BaseModel):
         description="Replacement per-turn execution timeout in seconds for this agent. `0` resets to the platform default (600s / 10 minutes); a loop step's own timeout overrides it for that step.",
         ge=0,
     )
-    status: Status3 | None = Field(
+    status: Status4 | None = Field(
         None,
         description='Replacement agent status: `active` or `inactive`. Use DELETE to delete the agent.',
     )
@@ -5680,7 +5743,7 @@ class HTTPTriggerDeliveryRequest(BaseModel):
     )
 
 
-class Status4(StrEnum):
+class Status5(StrEnum):
     """
     Acceptance status of the source-event row. The only synchronous success value is `accepted`; processing happens asynchronously after the source event is durable.
     """
@@ -5700,7 +5763,7 @@ class HTTPTriggerDeliveryResult(BaseModel):
         ...,
         description='Durable source-event id (also the `dedup_key` seed). Stable across retries with the same `Idempotency-Key`.',
     )
-    status: Status4 = Field(
+    status: Status5 = Field(
         ...,
         description='Acceptance status of the source-event row. The only synchronous success value is `accepted`; processing happens asynchronously after the source event is durable.',
     )
@@ -6083,7 +6146,7 @@ class BlueprintSkillInput(BaseModel):
     tags: TagMap | None = None
 
 
-class Status5(StrEnum):
+class Status6(StrEnum):
     draft = 'draft'
     active = 'active'
     paused = 'paused'
@@ -6097,7 +6160,7 @@ class SchemaVersion4(StrEnum):
     field_1 = '1'
 
 
-class Status6(StrEnum):
+class Status7(StrEnum):
     """
     `applied` for a mutating apply, `previewed` for a preview.
     """
@@ -6152,7 +6215,7 @@ class SetBlueprintProtectionRequest(BaseModel):
     protected: bool
 
 
-class Status7(StrEnum):
+class Status8(StrEnum):
     deleted = 'deleted'
 
 
@@ -6160,7 +6223,7 @@ class BlueprintDeleteResult(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    status: Status7
+    status: Status8
     namespace: str | None = None
     blueprint_key: str
     deleted: list[BlueprintBinding] = Field(
@@ -6888,6 +6951,71 @@ class ArtifactQuotaUsage(BaseModel):
     )
 
 
+class CreateOrganizationActionRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    name: str = Field(
+        ..., description='Canonical dotted name selected by project toolkits.'
+    )
+    title: str | None = None
+    description: str | None = None
+    endpoint_url: AnyUrl
+    invocation_format: InvocationFormat = 'signed_context_v1'
+    input_schema: dict[str, Any] | None = None
+    output_schema: dict[str, Any] | None = None
+    annotations: ActionAnnotationsRequest | None = None
+    enabled: bool = True
+
+
+class UpdateOrganizationActionRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    name: str | None = None
+    title: str | None = None
+    description: str | None = None
+    endpoint_url: AnyUrl | None = None
+    input_schema: dict[str, Any] | None = None
+    output_schema: dict[str, Any] | None = None
+    annotations: ActionAnnotationsRequest | None = None
+    enabled: bool | None = None
+
+
+class OrganizationAction(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str
+    name: str
+    title: str | None = None
+    description: str | None = None
+    endpoint_url: AnyUrl
+    invocation_format: InvocationFormat
+    input_schema: dict[str, Any] | None = None
+    output_schema: dict[str, Any] | None = None
+    annotations: ActionAnnotations | None = None
+    enabled: bool
+    secret_ref: str
+    active_signing_version: int
+    secret_versions: list[OrganizationActionSecretVersion]
+    signing_secret: str | None = Field(
+        None,
+        description='Base64-encoded signing key returned only on create and rotate.',
+    )
+    created_at: AwareDatetime
+    updated_at: AwareDatetime
+
+
+class OrganizationActionListResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    items: list[OrganizationAction]
+    has_more: bool
+    next_cursor: str | None = None
+
+
 class ActionInvocationContextV1(BaseModel):
     model_config = ConfigDict(
         extra='allow',
@@ -6927,7 +7055,11 @@ class ActionCatalogEntry(BaseModel):
     )
     source: Source = Field(
         ...,
-        description='Origin of this action: "platform" for built-in or integration-backed actions provided by Mobius, "custom" for project-specific HTTP or worker-backed actions. The `integration` field carries the provider slug for integration-backed platform actions.',
+        description='Origin of this action: "platform" for built-in or integration-backed actions provided by Mobius, "custom" for project- or organization-owned HTTP or worker-backed actions. The `integration` field carries the provider slug for integration-backed platform actions.',
+    )
+    definition_scope: DefinitionScope = Field(
+        ...,
+        description='Scope that owns the selected definition. A project definition shadows an organization definition with the same canonical name; execution still occurs in the consuming project.',
     )
     readiness: CapabilityReadiness = Field(
         ...,
@@ -7943,7 +8075,7 @@ class BlueprintLoopInput(BaseModel):
     name: str
     description: str | None = None
     agent: BlueprintResourceRef | None = None
-    status: Status5 | None = None
+    status: Status6 | None = None
     schema_version: SchemaVersion4 = Field(
         '1', description='Loop authoring schema version. Only version 1 is accepted.'
     )
@@ -8005,7 +8137,7 @@ class BlueprintApplyResult(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    status: Status6 = Field(
+    status: Status7 = Field(
         ..., description='`applied` for a mutating apply, `previewed` for a preview.'
     )
     namespace: str | None = None
@@ -8111,7 +8243,7 @@ class Interaction(BaseModel):
         description='Canonical principal ID of the human or agent that created the interaction; null for legacy/system-created rows.',
     )
     kind: InteractionKind = Field(..., description='Protocol kind of the interaction.')
-    status: Status2 = Field(
+    status: Status3 = Field(
         ...,
         description='Current status of the interaction: pending, completed, expired, or cancelled.',
     )

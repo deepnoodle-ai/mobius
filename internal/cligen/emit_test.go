@@ -30,3 +30,9 @@ func TestEmitStringSliceValue(t *testing.T) {
 		}
 	})
 }
+
+func TestInt64PathParamsAreSupported(t *testing.T) {
+	if !isSimplePathParam("int64", &ClientInfo{}) {
+		t.Fatal("int64 path parameter was not classified as a supported positional argument")
+	}
+}

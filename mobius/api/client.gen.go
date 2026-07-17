@@ -23,6 +23,27 @@ const (
 	BearerAuthScopes bearerAuthContextKey = "BearerAuth.Scopes"
 )
 
+// Defines values for ActionCatalogEntryDefinitionScope.
+const (
+	ActionCatalogEntryDefinitionScopeOrganization ActionCatalogEntryDefinitionScope = "organization"
+	ActionCatalogEntryDefinitionScopePlatform     ActionCatalogEntryDefinitionScope = "platform"
+	ActionCatalogEntryDefinitionScopeProject      ActionCatalogEntryDefinitionScope = "project"
+)
+
+// Valid indicates whether the value is a known member of the ActionCatalogEntryDefinitionScope enum.
+func (e ActionCatalogEntryDefinitionScope) Valid() bool {
+	switch e {
+	case ActionCatalogEntryDefinitionScopeOrganization:
+		return true
+	case ActionCatalogEntryDefinitionScopePlatform:
+		return true
+	case ActionCatalogEntryDefinitionScopeProject:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ActionCatalogEntryEndpointKind.
 const (
 	ActionCatalogEntryEndpointKindBuiltin ActionCatalogEntryEndpointKind = "builtin"
@@ -164,6 +185,27 @@ func (e ActionInvocationEntryActorPrincipalType) Valid() bool {
 	case ActionInvocationEntryActorPrincipalTypeService:
 		return true
 	case ActionInvocationEntryActorPrincipalTypeSystem:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ActionInvocationEntryDefinitionScope.
+const (
+	ActionInvocationEntryDefinitionScopeOrganization ActionInvocationEntryDefinitionScope = "organization"
+	ActionInvocationEntryDefinitionScopePlatform     ActionInvocationEntryDefinitionScope = "platform"
+	ActionInvocationEntryDefinitionScopeProject      ActionInvocationEntryDefinitionScope = "project"
+)
+
+// Valid indicates whether the value is a known member of the ActionInvocationEntryDefinitionScope enum.
+func (e ActionInvocationEntryDefinitionScope) Valid() bool {
+	switch e {
+	case ActionInvocationEntryDefinitionScopeOrganization:
+		return true
+	case ActionInvocationEntryDefinitionScopePlatform:
+		return true
+	case ActionInvocationEntryDefinitionScopeProject:
 		return true
 	default:
 		return false
@@ -875,6 +917,21 @@ func (e CreateOrgAPIKeyRequestRole) Valid() bool {
 	case CreateOrgAPIKeyRequestRoleOwner:
 		return true
 	case CreateOrgAPIKeyRequestRoleViewer:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CreateOrganizationActionRequestInvocationFormat.
+const (
+	CreateOrganizationActionRequestInvocationFormatSignedContextV1 CreateOrganizationActionRequestInvocationFormat = "signed_context_v1"
+)
+
+// Valid indicates whether the value is a known member of the CreateOrganizationActionRequestInvocationFormat enum.
+func (e CreateOrganizationActionRequestInvocationFormat) Valid() bool {
+	switch e {
+	case CreateOrganizationActionRequestInvocationFormatSignedContextV1:
 		return true
 	default:
 		return false
@@ -2078,6 +2135,48 @@ func (e ModelProviderGroupSource) Valid() bool {
 	case ModelProviderGroupSourceByok:
 		return true
 	case ModelProviderGroupSourcePlatform:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for OrganizationActionInvocationFormat.
+const (
+	OrganizationActionInvocationFormatSignedContextV1 OrganizationActionInvocationFormat = "signed_context_v1"
+)
+
+// Valid indicates whether the value is a known member of the OrganizationActionInvocationFormat enum.
+func (e OrganizationActionInvocationFormat) Valid() bool {
+	switch e {
+	case OrganizationActionInvocationFormatSignedContextV1:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for OrganizationActionSecretVersionStatus.
+const (
+	OrganizationActionSecretVersionStatusActive   OrganizationActionSecretVersionStatus = "active"
+	OrganizationActionSecretVersionStatusPending  OrganizationActionSecretVersionStatus = "pending"
+	OrganizationActionSecretVersionStatusRetired  OrganizationActionSecretVersionStatus = "retired"
+	OrganizationActionSecretVersionStatusRetiring OrganizationActionSecretVersionStatus = "retiring"
+	OrganizationActionSecretVersionStatusRevoked  OrganizationActionSecretVersionStatus = "revoked"
+)
+
+// Valid indicates whether the value is a known member of the OrganizationActionSecretVersionStatus enum.
+func (e OrganizationActionSecretVersionStatus) Valid() bool {
+	switch e {
+	case OrganizationActionSecretVersionStatusActive:
+		return true
+	case OrganizationActionSecretVersionStatusPending:
+		return true
+	case OrganizationActionSecretVersionStatusRetired:
+		return true
+	case OrganizationActionSecretVersionStatusRetiring:
+		return true
+	case OrganizationActionSecretVersionStatusRevoked:
 		return true
 	default:
 		return false
@@ -3515,6 +3614,27 @@ func (e OrderParam) Valid() bool {
 	}
 }
 
+// Defines values for ListActionInvocationsParamsDefinitionScope.
+const (
+	ListActionInvocationsParamsDefinitionScopeOrganization ListActionInvocationsParamsDefinitionScope = "organization"
+	ListActionInvocationsParamsDefinitionScopePlatform     ListActionInvocationsParamsDefinitionScope = "platform"
+	ListActionInvocationsParamsDefinitionScopeProject      ListActionInvocationsParamsDefinitionScope = "project"
+)
+
+// Valid indicates whether the value is a known member of the ListActionInvocationsParamsDefinitionScope enum.
+func (e ListActionInvocationsParamsDefinitionScope) Valid() bool {
+	switch e {
+	case ListActionInvocationsParamsDefinitionScopeOrganization:
+		return true
+	case ListActionInvocationsParamsDefinitionScopePlatform:
+		return true
+	case ListActionInvocationsParamsDefinitionScopeProject:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ListInteractionsParamsStatus.
 const (
 	ListInteractionsParamsStatusCancelled ListInteractionsParamsStatus = "cancelled"
@@ -3784,6 +3904,9 @@ type ActionCatalogEntry struct {
 	// Annotations Response hints that describe the safe-use properties of the action. Response annotations are forward-compatible so the server can add response-only hints without breaking strict clients.
 	Annotations ActionAnnotations `json:"annotations"`
 
+	// DefinitionScope Scope that owns the selected definition. A project definition shadows an organization definition with the same canonical name; execution still occurs in the consuming project.
+	DefinitionScope ActionCatalogEntryDefinitionScope `json:"definition_scope"`
+
 	// Description Markdown description of what the action does.
 	Description *string `json:"description,omitempty"`
 
@@ -3820,12 +3943,15 @@ type ActionCatalogEntry struct {
 	// Risk Author-declared risk classification: `low`, `medium`, `high`, or `critical`. Used by toolkit-author UIs to surface warnings and by audit views to prioritize attention.
 	Risk ActionCatalogEntryRisk `json:"risk"`
 
-	// Source Origin of this action: "platform" for built-in or integration-backed actions provided by Mobius, "custom" for project-specific HTTP or worker-backed actions. The `integration` field carries the provider slug for integration-backed platform actions.
+	// Source Origin of this action: "platform" for built-in or integration-backed actions provided by Mobius, "custom" for project- or organization-owned HTTP or worker-backed actions. The `integration` field carries the provider slug for integration-backed platform actions.
 	Source ActionCatalogEntrySource `json:"source"`
 
 	// Title Human-readable display title for the action.
 	Title *string `json:"title,omitempty"`
 }
+
+// ActionCatalogEntryDefinitionScope Scope that owns the selected definition. A project definition shadows an organization definition with the same canonical name; execution still occurs in the consuming project.
+type ActionCatalogEntryDefinitionScope string
 
 // ActionCatalogEntryEndpointKind Backing kind. "builtin" for Mobius platform actions implemented in Go (no DB row), "http" for project-owned or integration HTTP endpoints, and "worker" for project-owned custom actions dispatched to connected workers.
 type ActionCatalogEntryEndpointKind string
@@ -3833,7 +3959,7 @@ type ActionCatalogEntryEndpointKind string
 // ActionCatalogEntryRisk Author-declared risk classification: `low`, `medium`, `high`, or `critical`. Used by toolkit-author UIs to surface warnings and by audit views to prioritize attention.
 type ActionCatalogEntryRisk string
 
-// ActionCatalogEntrySource Origin of this action: "platform" for built-in or integration-backed actions provided by Mobius, "custom" for project-specific HTTP or worker-backed actions. The `integration` field carries the provider slug for integration-backed platform actions.
+// ActionCatalogEntrySource Origin of this action: "platform" for built-in or integration-backed actions provided by Mobius, "custom" for project- or organization-owned HTTP or worker-backed actions. The `integration` field carries the provider slug for integration-backed platform actions.
 type ActionCatalogEntrySource string
 
 // ActionCatalogListResponse Unpaginated project action catalog. This endpoint returns the complete set of available project and platform actions so clients can build pickers without paging across a small catalog.
@@ -3906,6 +4032,12 @@ type ActionInvocationEntry struct {
 	// ChannelExchangeId Channel exchange correlated with this invocation, when applicable.
 	ChannelExchangeId *string `json:"channel_exchange_id,omitempty"`
 
+	// CorrelationId Request or dispatch identity that correlated the invocation.
+	CorrelationId *string `json:"correlation_id,omitempty"`
+
+	// DefinitionScope Scope that owned the selected action definition.
+	DefinitionScope *ActionInvocationEntryDefinitionScope `json:"definition_scope,omitempty"`
+
 	// DeliveryId Stable signed delivery and idempotency identity, when HTTP-backed.
 	DeliveryId *string `json:"delivery_id,omitempty"`
 
@@ -3976,6 +4108,9 @@ type ActionInvocationEntry struct {
 // ActionInvocationEntryActorPrincipalType Kind of principal attributed as the executing actor.
 type ActionInvocationEntryActorPrincipalType string
 
+// ActionInvocationEntryDefinitionScope Scope that owned the selected action definition.
+type ActionInvocationEntryDefinitionScope string
+
 // ActionInvocationFormat Outbound request-body contract for an HTTP action. `legacy` sends the unversioned `{run_id, step_key, parameters}` body. `signed_context_v1` sends a versioned envelope whose project, action, actor, and origin claims are derived by Mobius and covered by the existing HMAC signature. Worker-backed actions must use `legacy`.
 type ActionInvocationFormat string
 
@@ -4039,6 +4174,12 @@ type ActionRetriedPayload struct {
 	Attempt              *int                   `json:"attempt,omitempty"`
 	MaxAttempts          *int                   `json:"max_attempts,omitempty"`
 	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// ActivateOrganizationActionSecretRequest defines model for ActivateOrganizationActionSecretRequest.
+type ActivateOrganizationActionSecretRequest struct {
+	// OverlapSeconds Verification overlap for the previous active version. Omit for 24 hours.
+	OverlapSeconds *int `json:"overlap_seconds,omitempty"`
 }
 
 // Agent AI actor identity. An agent IS a principal (its permissions are role grants on that principal); agents are useful when loops need a named actor with instructions, configuration, and session presence.
@@ -5300,6 +5441,25 @@ type CreateOrgAPIKeyRequest struct {
 
 // CreateOrgAPIKeyRequestRole System role the key acts as, applied org-wide across every project. Defaults to `Admin`. `Owner` grants full control (including billing and org deletion); `Admin` covers org and project administration without billing; lower roles narrow to build/run, run-only, or read-only.
 type CreateOrgAPIKeyRequestRole string
+
+// CreateOrganizationActionRequest defines model for CreateOrganizationActionRequest.
+type CreateOrganizationActionRequest struct {
+	// Annotations Request hints that describe the safe-use properties of the action. Used by the engine and tooling to decide retry behavior, dry-run eligibility, etc. Unknown request properties are rejected.
+	Annotations      *ActionAnnotationsRequest                        `json:"annotations,omitempty"`
+	Description      *string                                          `json:"description,omitempty"`
+	Enabled          *bool                                            `json:"enabled,omitempty"`
+	EndpointUrl      string                                           `json:"endpoint_url"`
+	InputSchema      *map[string]interface{}                          `json:"input_schema,omitempty"`
+	InvocationFormat *CreateOrganizationActionRequestInvocationFormat `json:"invocation_format,omitempty"`
+
+	// Name Canonical dotted name selected by project toolkits.
+	Name         string                  `json:"name"`
+	OutputSchema *map[string]interface{} `json:"output_schema,omitempty"`
+	Title        *string                 `json:"title,omitempty"`
+}
+
+// CreateOrganizationActionRequestInvocationFormat defines model for CreateOrganizationActionRequest.InvocationFormat.
+type CreateOrganizationActionRequestInvocationFormat string
 
 // CreatePrincipalRequest defines model for CreatePrincipalRequest.
 type CreatePrincipalRequest struct {
@@ -7503,6 +7663,54 @@ type NudgeSessionRequest struct {
 	Wake *bool `json:"wake,omitempty"`
 }
 
+// OrganizationAction defines model for OrganizationAction.
+type OrganizationAction struct {
+	ActiveSigningVersion int64 `json:"active_signing_version"`
+
+	// Annotations Response hints that describe the safe-use properties of the action. Response annotations are forward-compatible so the server can add response-only hints without breaking strict clients.
+	Annotations      *ActionAnnotations                 `json:"annotations,omitempty"`
+	CreatedAt        time.Time                          `json:"created_at"`
+	Description      *string                            `json:"description,omitempty"`
+	Enabled          bool                               `json:"enabled"`
+	EndpointUrl      string                             `json:"endpoint_url"`
+	Id               string                             `json:"id"`
+	InputSchema      *map[string]interface{}            `json:"input_schema,omitempty"`
+	InvocationFormat OrganizationActionInvocationFormat `json:"invocation_format"`
+	Name             string                             `json:"name"`
+	OutputSchema     *map[string]interface{}            `json:"output_schema,omitempty"`
+	SecretRef        string                             `json:"secret_ref"`
+	SecretVersions   []OrganizationActionSecretVersion  `json:"secret_versions"`
+
+	// SigningSecret Base64-encoded signing key returned only on create and rotate.
+	SigningSecret *string   `json:"signing_secret,omitempty"`
+	Title         *string   `json:"title,omitempty"`
+	UpdatedAt     time.Time `json:"updated_at"`
+}
+
+// OrganizationActionInvocationFormat defines model for OrganizationAction.InvocationFormat.
+type OrganizationActionInvocationFormat string
+
+// OrganizationActionListResponse defines model for OrganizationActionListResponse.
+type OrganizationActionListResponse struct {
+	HasMore    bool                 `json:"has_more"`
+	Items      []OrganizationAction `json:"items"`
+	NextCursor *string              `json:"next_cursor,omitempty"`
+}
+
+// OrganizationActionSecretVersion defines model for OrganizationActionSecretVersion.
+type OrganizationActionSecretVersion struct {
+	AcceptUntil *time.Time                            `json:"accept_until,omitempty"`
+	ActivatedAt *time.Time                            `json:"activated_at,omitempty"`
+	CreatedAt   time.Time                             `json:"created_at"`
+	RetiredAt   *time.Time                            `json:"retired_at,omitempty"`
+	RevokedAt   *time.Time                            `json:"revoked_at,omitempty"`
+	Status      OrganizationActionSecretVersionStatus `json:"status"`
+	Version     int64                                 `json:"version"`
+}
+
+// OrganizationActionSecretVersionStatus defines model for OrganizationActionSecretVersion.Status.
+type OrganizationActionSecretVersionStatus string
+
 // OrganizationSkillProjectUsage defines model for OrganizationSkillProjectUsage.
 type OrganizationSkillProjectUsage struct {
 	// AgentCount Number of agents assigned the Skill in this project.
@@ -9438,6 +9646,18 @@ type UpdateMemoryContextPolicy struct {
 	Mode *MemoryContextMode `json:"mode,omitempty"`
 }
 
+// UpdateOrganizationActionRequest defines model for UpdateOrganizationActionRequest.
+type UpdateOrganizationActionRequest struct {
+	Annotations  *ActionAnnotationsRequest `json:"annotations,omitempty"`
+	Description  *string                   `json:"description,omitempty"`
+	Enabled      *bool                     `json:"enabled,omitempty"`
+	EndpointUrl  *string                   `json:"endpoint_url,omitempty"`
+	InputSchema  *map[string]interface{}   `json:"input_schema,omitempty"`
+	Name         *string                   `json:"name,omitempty"`
+	OutputSchema *map[string]interface{}   `json:"output_schema,omitempty"`
+	Title        *string                   `json:"title,omitempty"`
+}
+
 // UpdatePrincipalRequest defines model for UpdatePrincipalRequest.
 type UpdatePrincipalRequest struct {
 	// Description Replacement description.
@@ -10174,6 +10394,15 @@ type ListOrgAPIKeysParams struct {
 	Cursor *CursorParam `form:"cursor,omitempty" json:"cursor,omitempty"`
 }
 
+// ListOrganizationActionsParams defines parameters for ListOrganizationActions.
+type ListOrganizationActionsParams struct {
+	// Cursor Cursor for pagination (opaque string from previous response)
+	Cursor *CursorParam `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Limit Maximum number of items to return
+	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
 // ListProjectsParams defines parameters for ListProjects.
 type ListProjectsParams struct {
 	// Search Case-insensitive substring filter applied to project name, handle, and description.
@@ -10209,9 +10438,27 @@ type ListActionInvocationsParams struct {
 	// ActionName Filter to invocations of a specific action.
 	ActionName *string `form:"action_name,omitempty" json:"action_name,omitempty"`
 
+	// ActionId Filter to an immutable project or organization Action ID.
+	ActionId *string `form:"action_id,omitempty" json:"action_id,omitempty"`
+
+	// DefinitionScope Filter by the scope that owned the selected definition.
+	DefinitionScope *ListActionInvocationsParamsDefinitionScope `form:"definition_scope,omitempty" json:"definition_scope,omitempty"`
+
+	// SecretVersion Filter to deliveries signed with a specific secret version.
+	SecretVersion *int64 `form:"secret_version,omitempty" json:"secret_version,omitempty"`
+
+	// DeliveryId Filter to a signed delivery identity.
+	DeliveryId *string `form:"delivery_id,omitempty" json:"delivery_id,omitempty"`
+
+	// CorrelationId Filter to the request or dispatch correlation identity.
+	CorrelationId *string `form:"correlation_id,omitempty" json:"correlation_id,omitempty"`
+
 	// Status Filter by terminal status (e.g. "success", "failed").
 	Status *string `form:"status,omitempty" json:"status,omitempty"`
 }
+
+// ListActionInvocationsParamsDefinitionScope defines parameters for ListActionInvocations.
+type ListActionInvocationsParamsDefinitionScope string
 
 // ListAgentsParams defines parameters for ListAgents.
 type ListAgentsParams struct {
@@ -10659,6 +10906,15 @@ type DeliverHTTPTriggerParams struct {
 
 // CreateOrgAPIKeyJSONRequestBody defines body for CreateOrgAPIKey for application/json ContentType.
 type CreateOrgAPIKeyJSONRequestBody = CreateOrgAPIKeyRequest
+
+// CreateOrganizationActionJSONRequestBody defines body for CreateOrganizationAction for application/json ContentType.
+type CreateOrganizationActionJSONRequestBody = CreateOrganizationActionRequest
+
+// UpdateOrganizationActionJSONRequestBody defines body for UpdateOrganizationAction for application/json ContentType.
+type UpdateOrganizationActionJSONRequestBody = UpdateOrganizationActionRequest
+
+// ActivateOrganizationActionSecretVersionJSONRequestBody defines body for ActivateOrganizationActionSecretVersion for application/json ContentType.
+type ActivateOrganizationActionSecretVersionJSONRequestBody = ActivateOrganizationActionSecretRequest
 
 // ReplaceDefinitionResolverJSONRequestBody defines body for ReplaceDefinitionResolver for application/json ContentType.
 type ReplaceDefinitionResolverJSONRequestBody = PutDefinitionResolverRequest
@@ -18593,6 +18849,36 @@ type ClientInterface interface {
 	// GetOrgAPIKey request
 	GetOrgAPIKey(ctx context.Context, resourceId IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ListOrganizationActions request
+	ListOrganizationActions(ctx context.Context, params *ListOrganizationActionsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateOrganizationActionWithBody request with any body
+	CreateOrganizationActionWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	CreateOrganizationAction(ctx context.Context, body CreateOrganizationActionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DeleteOrganizationAction request
+	DeleteOrganizationAction(ctx context.Context, actionId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetOrganizationAction request
+	GetOrganizationAction(ctx context.Context, actionId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateOrganizationActionWithBody request with any body
+	UpdateOrganizationActionWithBody(ctx context.Context, actionId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	UpdateOrganizationAction(ctx context.Context, actionId string, body UpdateOrganizationActionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RotateOrganizationActionSecret request
+	RotateOrganizationActionSecret(ctx context.Context, actionId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ActivateOrganizationActionSecretVersionWithBody request with any body
+	ActivateOrganizationActionSecretVersionWithBody(ctx context.Context, actionId string, secretVersion int64, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	ActivateOrganizationActionSecretVersion(ctx context.Context, actionId string, secretVersion int64, body ActivateOrganizationActionSecretVersionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RevokeOrganizationActionSecretVersion request
+	RevokeOrganizationActionSecretVersion(ctx context.Context, actionId string, secretVersion int64, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetDefinitionResolver request
 	GetDefinitionResolver(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -19231,6 +19517,138 @@ func (c *Client) DeleteOrgAPIKey(ctx context.Context, resourceId IDParam, reqEdi
 
 func (c *Client) GetOrgAPIKey(ctx context.Context, resourceId IDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetOrgAPIKeyRequest(c.Server, resourceId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListOrganizationActions(ctx context.Context, params *ListOrganizationActionsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListOrganizationActionsRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateOrganizationActionWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateOrganizationActionRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateOrganizationAction(ctx context.Context, body CreateOrganizationActionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateOrganizationActionRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) DeleteOrganizationAction(ctx context.Context, actionId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteOrganizationActionRequest(c.Server, actionId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetOrganizationAction(ctx context.Context, actionId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetOrganizationActionRequest(c.Server, actionId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateOrganizationActionWithBody(ctx context.Context, actionId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateOrganizationActionRequestWithBody(c.Server, actionId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateOrganizationAction(ctx context.Context, actionId string, body UpdateOrganizationActionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateOrganizationActionRequest(c.Server, actionId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) RotateOrganizationActionSecret(ctx context.Context, actionId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRotateOrganizationActionSecretRequest(c.Server, actionId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ActivateOrganizationActionSecretVersionWithBody(ctx context.Context, actionId string, secretVersion int64, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewActivateOrganizationActionSecretVersionRequestWithBody(c.Server, actionId, secretVersion, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ActivateOrganizationActionSecretVersion(ctx context.Context, actionId string, secretVersion int64, body ActivateOrganizationActionSecretVersionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewActivateOrganizationActionSecretVersionRequest(c.Server, actionId, secretVersion, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) RevokeOrganizationActionSecretVersion(ctx context.Context, actionId string, secretVersion int64, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRevokeOrganizationActionSecretVersionRequest(c.Server, actionId, secretVersion)
 	if err != nil {
 		return nil, err
 	}
@@ -21995,6 +22413,356 @@ func NewGetOrgAPIKeyRequest(server string, resourceId IDParam) (*http.Request, e
 	return req, nil
 }
 
+// NewListOrganizationActionsRequest generates requests for ListOrganizationActions
+func NewListOrganizationActionsRequest(server string, params *ListOrganizationActionsParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/organization/actions")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Cursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "cursor", *params.Cursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCreateOrganizationActionRequest calls the generic CreateOrganizationAction builder with application/json body
+func NewCreateOrganizationActionRequest(server string, body CreateOrganizationActionJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateOrganizationActionRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewCreateOrganizationActionRequestWithBody generates requests for CreateOrganizationAction with any type of body
+func NewCreateOrganizationActionRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/organization/actions")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewDeleteOrganizationActionRequest generates requests for DeleteOrganizationAction
+func NewDeleteOrganizationActionRequest(server string, actionId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "action_id", actionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/organization/actions/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetOrganizationActionRequest generates requests for GetOrganizationAction
+func NewGetOrganizationActionRequest(server string, actionId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "action_id", actionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/organization/actions/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewUpdateOrganizationActionRequest calls the generic UpdateOrganizationAction builder with application/json body
+func NewUpdateOrganizationActionRequest(server string, actionId string, body UpdateOrganizationActionJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpdateOrganizationActionRequestWithBody(server, actionId, "application/json", bodyReader)
+}
+
+// NewUpdateOrganizationActionRequestWithBody generates requests for UpdateOrganizationAction with any type of body
+func NewUpdateOrganizationActionRequestWithBody(server string, actionId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "action_id", actionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/organization/actions/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPatch, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewRotateOrganizationActionSecretRequest generates requests for RotateOrganizationActionSecret
+func NewRotateOrganizationActionSecretRequest(server string, actionId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "action_id", actionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/organization/actions/%s/secret/rotate", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewActivateOrganizationActionSecretVersionRequest calls the generic ActivateOrganizationActionSecretVersion builder with application/json body
+func NewActivateOrganizationActionSecretVersionRequest(server string, actionId string, secretVersion int64, body ActivateOrganizationActionSecretVersionJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewActivateOrganizationActionSecretVersionRequestWithBody(server, actionId, secretVersion, "application/json", bodyReader)
+}
+
+// NewActivateOrganizationActionSecretVersionRequestWithBody generates requests for ActivateOrganizationActionSecretVersion with any type of body
+func NewActivateOrganizationActionSecretVersionRequestWithBody(server string, actionId string, secretVersion int64, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "action_id", actionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "secret_version", secretVersion, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "integer", Format: "int64"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/organization/actions/%s/secret/versions/%s/activate", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewRevokeOrganizationActionSecretVersionRequest generates requests for RevokeOrganizationActionSecretVersion
+func NewRevokeOrganizationActionSecretVersionRequest(server string, actionId string, secretVersion int64) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "action_id", actionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "secret_version", secretVersion, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "integer", Format: "int64"})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/organization/actions/%s/secret/versions/%s/revoke", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewGetDefinitionResolverRequest generates requests for GetDefinitionResolver
 func NewGetDefinitionResolverRequest(server string) (*http.Request, error) {
 	var err error
@@ -22661,6 +23429,66 @@ func NewListActionInvocationsRequest(server string, projectHandle ProjectHandleP
 		if params.ActionName != nil {
 
 			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "action_name", *params.ActionName, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.ActionId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "action_id", *params.ActionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.DefinitionScope != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "definition_scope", *params.DefinitionScope, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.SecretVersion != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "secret_version", *params.SecretVersion, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: "int64"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.DeliveryId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "delivery_id", *params.DeliveryId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.CorrelationId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "correlation_id", *params.CorrelationId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -30845,6 +31673,36 @@ type ClientWithResponsesInterface interface {
 	// GetOrgAPIKeyWithResponse request
 	GetOrgAPIKeyWithResponse(ctx context.Context, resourceId IDParam, reqEditors ...RequestEditorFn) (*GetOrgAPIKeyResponse, error)
 
+	// ListOrganizationActionsWithResponse request
+	ListOrganizationActionsWithResponse(ctx context.Context, params *ListOrganizationActionsParams, reqEditors ...RequestEditorFn) (*ListOrganizationActionsResponse, error)
+
+	// CreateOrganizationActionWithBodyWithResponse request with any body
+	CreateOrganizationActionWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateOrganizationActionResponse, error)
+
+	CreateOrganizationActionWithResponse(ctx context.Context, body CreateOrganizationActionJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateOrganizationActionResponse, error)
+
+	// DeleteOrganizationActionWithResponse request
+	DeleteOrganizationActionWithResponse(ctx context.Context, actionId string, reqEditors ...RequestEditorFn) (*DeleteOrganizationActionResponse, error)
+
+	// GetOrganizationActionWithResponse request
+	GetOrganizationActionWithResponse(ctx context.Context, actionId string, reqEditors ...RequestEditorFn) (*GetOrganizationActionResponse, error)
+
+	// UpdateOrganizationActionWithBodyWithResponse request with any body
+	UpdateOrganizationActionWithBodyWithResponse(ctx context.Context, actionId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateOrganizationActionResponse, error)
+
+	UpdateOrganizationActionWithResponse(ctx context.Context, actionId string, body UpdateOrganizationActionJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateOrganizationActionResponse, error)
+
+	// RotateOrganizationActionSecretWithResponse request
+	RotateOrganizationActionSecretWithResponse(ctx context.Context, actionId string, reqEditors ...RequestEditorFn) (*RotateOrganizationActionSecretResponse, error)
+
+	// ActivateOrganizationActionSecretVersionWithBodyWithResponse request with any body
+	ActivateOrganizationActionSecretVersionWithBodyWithResponse(ctx context.Context, actionId string, secretVersion int64, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ActivateOrganizationActionSecretVersionResponse, error)
+
+	ActivateOrganizationActionSecretVersionWithResponse(ctx context.Context, actionId string, secretVersion int64, body ActivateOrganizationActionSecretVersionJSONRequestBody, reqEditors ...RequestEditorFn) (*ActivateOrganizationActionSecretVersionResponse, error)
+
+	// RevokeOrganizationActionSecretVersionWithResponse request
+	RevokeOrganizationActionSecretVersionWithResponse(ctx context.Context, actionId string, secretVersion int64, reqEditors ...RequestEditorFn) (*RevokeOrganizationActionSecretVersionResponse, error)
+
 	// GetDefinitionResolverWithResponse request
 	GetDefinitionResolverWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetDefinitionResolverResponse, error)
 
@@ -31560,6 +32418,275 @@ func (r GetOrgAPIKeyResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r GetOrgAPIKeyResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ListOrganizationActionsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *OrganizationActionListResponse
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+}
+
+// Status returns HTTPResponse.Status
+func (r ListOrganizationActionsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListOrganizationActionsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListOrganizationActionsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type CreateOrganizationActionResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON201      *OrganizationAction
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON409      *Conflict
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateOrganizationActionResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateOrganizationActionResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CreateOrganizationActionResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type DeleteOrganizationActionResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteOrganizationActionResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteOrganizationActionResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r DeleteOrganizationActionResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetOrganizationActionResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *OrganizationAction
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r GetOrganizationActionResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetOrganizationActionResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetOrganizationActionResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type UpdateOrganizationActionResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *OrganizationAction
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+	JSON409      *Conflict
+}
+
+// Status returns HTTPResponse.Status
+func (r UpdateOrganizationActionResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpdateOrganizationActionResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r UpdateOrganizationActionResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type RotateOrganizationActionSecretResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *OrganizationAction
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+	JSON409      *Conflict
+}
+
+// Status returns HTTPResponse.Status
+func (r RotateOrganizationActionSecretResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r RotateOrganizationActionSecretResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r RotateOrganizationActionSecretResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ActivateOrganizationActionSecretVersionResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *OrganizationAction
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+	JSON409      *Conflict
+}
+
+// Status returns HTTPResponse.Status
+func (r ActivateOrganizationActionSecretVersionResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ActivateOrganizationActionSecretVersionResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ActivateOrganizationActionSecretVersionResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type RevokeOrganizationActionSecretVersionResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *OrganizationAction
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+	JSON409      *Conflict
+}
+
+// Status returns HTTPResponse.Status
+func (r RevokeOrganizationActionSecretVersionResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r RevokeOrganizationActionSecretVersionResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r RevokeOrganizationActionSecretVersionResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -36941,6 +38068,102 @@ func (c *ClientWithResponses) GetOrgAPIKeyWithResponse(ctx context.Context, reso
 	return ParseGetOrgAPIKeyResponse(rsp)
 }
 
+// ListOrganizationActionsWithResponse request returning *ListOrganizationActionsResponse
+func (c *ClientWithResponses) ListOrganizationActionsWithResponse(ctx context.Context, params *ListOrganizationActionsParams, reqEditors ...RequestEditorFn) (*ListOrganizationActionsResponse, error) {
+	rsp, err := c.ListOrganizationActions(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListOrganizationActionsResponse(rsp)
+}
+
+// CreateOrganizationActionWithBodyWithResponse request with arbitrary body returning *CreateOrganizationActionResponse
+func (c *ClientWithResponses) CreateOrganizationActionWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateOrganizationActionResponse, error) {
+	rsp, err := c.CreateOrganizationActionWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateOrganizationActionResponse(rsp)
+}
+
+func (c *ClientWithResponses) CreateOrganizationActionWithResponse(ctx context.Context, body CreateOrganizationActionJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateOrganizationActionResponse, error) {
+	rsp, err := c.CreateOrganizationAction(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateOrganizationActionResponse(rsp)
+}
+
+// DeleteOrganizationActionWithResponse request returning *DeleteOrganizationActionResponse
+func (c *ClientWithResponses) DeleteOrganizationActionWithResponse(ctx context.Context, actionId string, reqEditors ...RequestEditorFn) (*DeleteOrganizationActionResponse, error) {
+	rsp, err := c.DeleteOrganizationAction(ctx, actionId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteOrganizationActionResponse(rsp)
+}
+
+// GetOrganizationActionWithResponse request returning *GetOrganizationActionResponse
+func (c *ClientWithResponses) GetOrganizationActionWithResponse(ctx context.Context, actionId string, reqEditors ...RequestEditorFn) (*GetOrganizationActionResponse, error) {
+	rsp, err := c.GetOrganizationAction(ctx, actionId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetOrganizationActionResponse(rsp)
+}
+
+// UpdateOrganizationActionWithBodyWithResponse request with arbitrary body returning *UpdateOrganizationActionResponse
+func (c *ClientWithResponses) UpdateOrganizationActionWithBodyWithResponse(ctx context.Context, actionId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateOrganizationActionResponse, error) {
+	rsp, err := c.UpdateOrganizationActionWithBody(ctx, actionId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateOrganizationActionResponse(rsp)
+}
+
+func (c *ClientWithResponses) UpdateOrganizationActionWithResponse(ctx context.Context, actionId string, body UpdateOrganizationActionJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateOrganizationActionResponse, error) {
+	rsp, err := c.UpdateOrganizationAction(ctx, actionId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateOrganizationActionResponse(rsp)
+}
+
+// RotateOrganizationActionSecretWithResponse request returning *RotateOrganizationActionSecretResponse
+func (c *ClientWithResponses) RotateOrganizationActionSecretWithResponse(ctx context.Context, actionId string, reqEditors ...RequestEditorFn) (*RotateOrganizationActionSecretResponse, error) {
+	rsp, err := c.RotateOrganizationActionSecret(ctx, actionId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRotateOrganizationActionSecretResponse(rsp)
+}
+
+// ActivateOrganizationActionSecretVersionWithBodyWithResponse request with arbitrary body returning *ActivateOrganizationActionSecretVersionResponse
+func (c *ClientWithResponses) ActivateOrganizationActionSecretVersionWithBodyWithResponse(ctx context.Context, actionId string, secretVersion int64, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ActivateOrganizationActionSecretVersionResponse, error) {
+	rsp, err := c.ActivateOrganizationActionSecretVersionWithBody(ctx, actionId, secretVersion, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseActivateOrganizationActionSecretVersionResponse(rsp)
+}
+
+func (c *ClientWithResponses) ActivateOrganizationActionSecretVersionWithResponse(ctx context.Context, actionId string, secretVersion int64, body ActivateOrganizationActionSecretVersionJSONRequestBody, reqEditors ...RequestEditorFn) (*ActivateOrganizationActionSecretVersionResponse, error) {
+	rsp, err := c.ActivateOrganizationActionSecretVersion(ctx, actionId, secretVersion, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseActivateOrganizationActionSecretVersionResponse(rsp)
+}
+
+// RevokeOrganizationActionSecretVersionWithResponse request returning *RevokeOrganizationActionSecretVersionResponse
+func (c *ClientWithResponses) RevokeOrganizationActionSecretVersionWithResponse(ctx context.Context, actionId string, secretVersion int64, reqEditors ...RequestEditorFn) (*RevokeOrganizationActionSecretVersionResponse, error) {
+	rsp, err := c.RevokeOrganizationActionSecretVersion(ctx, actionId, secretVersion, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRevokeOrganizationActionSecretVersionResponse(rsp)
+}
+
 // GetDefinitionResolverWithResponse request returning *GetDefinitionResolverResponse
 func (c *ClientWithResponses) GetDefinitionResolverWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetDefinitionResolverResponse, error) {
 	rsp, err := c.GetDefinitionResolver(ctx, reqEditors...)
@@ -39007,6 +40230,417 @@ func ParseGetOrgAPIKeyResponse(rsp *http.Response) (*GetOrgAPIKeyResponse, error
 			return nil, err
 		}
 		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListOrganizationActionsResponse parses an HTTP response from a ListOrganizationActionsWithResponse call
+func ParseListOrganizationActionsResponse(rsp *http.Response) (*ListOrganizationActionsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListOrganizationActionsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest OrganizationActionListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateOrganizationActionResponse parses an HTTP response from a CreateOrganizationActionWithResponse call
+func ParseCreateOrganizationActionResponse(rsp *http.Response) (*CreateOrganizationActionResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateOrganizationActionResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest OrganizationAction
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDeleteOrganizationActionResponse parses an HTTP response from a DeleteOrganizationActionWithResponse call
+func ParseDeleteOrganizationActionResponse(rsp *http.Response) (*DeleteOrganizationActionResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteOrganizationActionResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetOrganizationActionResponse parses an HTTP response from a GetOrganizationActionWithResponse call
+func ParseGetOrganizationActionResponse(rsp *http.Response) (*GetOrganizationActionResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetOrganizationActionResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest OrganizationAction
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUpdateOrganizationActionResponse parses an HTTP response from a UpdateOrganizationActionWithResponse call
+func ParseUpdateOrganizationActionResponse(rsp *http.Response) (*UpdateOrganizationActionResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpdateOrganizationActionResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest OrganizationAction
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseRotateOrganizationActionSecretResponse parses an HTTP response from a RotateOrganizationActionSecretWithResponse call
+func ParseRotateOrganizationActionSecretResponse(rsp *http.Response) (*RotateOrganizationActionSecretResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &RotateOrganizationActionSecretResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest OrganizationAction
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseActivateOrganizationActionSecretVersionResponse parses an HTTP response from a ActivateOrganizationActionSecretVersionWithResponse call
+func ParseActivateOrganizationActionSecretVersionResponse(rsp *http.Response) (*ActivateOrganizationActionSecretVersionResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ActivateOrganizationActionSecretVersionResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest OrganizationAction
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseRevokeOrganizationActionSecretVersionResponse parses an HTTP response from a RevokeOrganizationActionSecretVersionWithResponse call
+func ParseRevokeOrganizationActionSecretVersionResponse(rsp *http.Response) (*RevokeOrganizationActionSecretVersionResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &RevokeOrganizationActionSecretVersionResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest OrganizationAction
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	}
 

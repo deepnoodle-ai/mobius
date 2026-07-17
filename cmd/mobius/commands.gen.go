@@ -788,3 +788,13 @@ func parseIntArg(s, name string) (int, error) {
 	}
 	return n, nil
 }
+
+// parseInt64Arg parses a positional int64 argument, returning a friendly error
+// when the value is not a valid integer.
+func parseInt64Arg(s, name string) (int64, error) {
+	var n int64
+	if _, err := fmt.Sscanf(s, "%d", &n); err != nil {
+		return 0, fmt.Errorf("invalid %s: %q is not an integer", name, s)
+	}
+	return n, nil
+}

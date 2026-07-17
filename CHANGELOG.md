@@ -11,6 +11,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 - Organization-scoped Skill CRUD and usage contracts across Go, Python,
   TypeScript, plus explicit `mobius org-skills` CLI commands.
 
+- Organization-scoped signed HTTP Action administration, catalog provenance,
+  rotation-safe secret versions, and invocation audit metadata in generated
+  Go, Python, TypeScript, and CLI contracts.
+
 ## [0.0.53] - 2026-07-17
 
 ### Added

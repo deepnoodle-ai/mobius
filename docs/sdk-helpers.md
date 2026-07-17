@@ -93,6 +93,14 @@ the action/secret scope before performing side effects. Never choose a user or
 tenant from `parameters`; user-mapped agent integrations should resolve by the
 signed `(project_id, agent_id)` pair.
 
+Organization-scoped Actions use the stable secret reference
+`mobius/org-action/{action_id}`. During key rotation, select the verification
+key using both `X-Mobius-Secret-Ref` and `X-Mobius-Secret-Version`, and retain
+the retiring version until its advertised retirement time. A delivery always
+signs the consuming project's `project_id`, even though the Action definition
+and signing key belong to the organization. The Action ID is stable across
+renames and should be the primary endpoint-side identity check.
+
 ## Artifact Uploads
 
 An action handler or other project service that produces deterministic bytes

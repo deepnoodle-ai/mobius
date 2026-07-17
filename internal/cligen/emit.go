@@ -37,6 +37,7 @@ type PathArg struct {
 	GoType      string // e.g. "IDParam" or "string"
 	Description string // help text from the OpenAPI parameter description
 	IsInt       bool
+	IsInt64     bool
 	AsFlag      bool // read from a global flag rather than a positional arg
 }
 
@@ -186,6 +187,7 @@ func classifyParams(m *Method, client *ClientInfo, pc *PlannedCommand) (bool, st
 				FlagName: toKebab(p.Name),
 				GoType:   p.Type,
 				IsInt:    kind == "int",
+				IsInt64:  kind == "int64",
 			}
 			if (p.Name == "projectHandle" || p.Name == "project") && kind == "string" {
 				arg.AsFlag = true
@@ -389,7 +391,7 @@ func isCommandTailField(c PlannedCommand, f BodyField) bool {
 
 func isSimplePathParam(t string, client *ClientInfo) bool {
 	switch underlyingKind(t, client) {
-	case "string", "int":
+	case "string", "int", "int64":
 		return true
 	}
 	return false
@@ -794,6 +796,10 @@ func renderCommand(b *bytes.Buffer, group string, c PlannedCommand) error {
 			fmt.Fprintf(b, "\t\t\tp%d := ctx.String(%q)\n", i, p.FlagName)
 		case p.IsInt:
 			fmt.Fprintf(b, "\t\t\tp%d, err := parseIntArg(ctx.Arg(%d), %q)\n", i, argIdx, p.FlagName)
+			fmt.Fprintf(b, "\t\t\tif err != nil { return err }\n")
+			argIdx++
+		case p.IsInt64:
+			fmt.Fprintf(b, "\t\t\tp%d, err := parseInt64Arg(ctx.Arg(%d), %q)\n", i, argIdx, p.FlagName)
 			fmt.Fprintf(b, "\t\t\tif err != nil { return err }\n")
 			argIdx++
 		default:
@@ -1754,6 +1760,16 @@ func marshalForOutput(ctx *cli.Context, v any) ([]byte, error) {
 // when the value is not a valid integer.
 func parseIntArg(s, name string) (int, error) {
 	var n int
+	if _, err := fmt.Sscanf(s, "%d", &n); err != nil {
+		return 0, fmt.Errorf("invalid %s: %q is not an integer", name, s)
+	}
+	return n, nil
+}
+
+// parseInt64Arg parses a positional int64 argument, returning a friendly error
+// when the value is not a valid integer.
+func parseInt64Arg(s, name string) (int64, error) {
+	var n int64
 	if _, err := fmt.Sscanf(s, "%d", &n); err != nil {
 		return 0, fmt.Errorf("invalid %s: %q is not an integer", name, s)
 	}

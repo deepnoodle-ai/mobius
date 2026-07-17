@@ -315,6 +315,266 @@ paths:
           $ref: '#/components/responses/NotFound'
         '429':
           $ref: '#/components/responses/TooManyRequests'
+  /v1/organization/actions:
+    get:
+      operationId: listOrganizationActions
+      tags:
+      - actions
+      x-public: true
+      summary: List organization actions
+      description: Lists signed HTTP actions owned by the active organization. These definitions
+        are available to every project in the organization, but a toolkit must still select
+        an action before an agent can call it. Requires Admin or Owner membership.
+      parameters:
+      - $ref: '#/components/parameters/CursorParam'
+      - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrganizationActionListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      operationId: createOrganizationAction
+      tags:
+      - actions
+      x-public: true
+      summary: Create organization action
+      description: Creates an organization-owned HTTP action using the signed_context_v1 request
+        contract. The initial signing secret is returned once. Store it immediately; later
+        reads expose lifecycle metadata only. Requires Admin or Owner membership.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOrganizationActionRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrganizationAction'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /v1/organization/actions/{action_id}:
+    get:
+      operationId: getOrganizationAction
+      tags:
+      - actions
+      x-public: true
+      summary: Get organization action
+      description: Returns one organization action without prior secret material. Requires
+        Admin or Owner membership.
+      parameters:
+      - name: action_id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Organization action ID.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrganizationAction'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      operationId: updateOrganizationAction
+      tags:
+      - actions
+      x-public: true
+      summary: Update organization action
+      description: Updates the shared definition or enables/disables invocation. A project
+        action with the same canonical name continues to shadow this definition in that project.
+        Requires Admin or Owner membership.
+      parameters:
+      - name: action_id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Organization action ID.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateOrganizationActionRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrganizationAction'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+    delete:
+      operationId: deleteOrganizationAction
+      tags:
+      - actions
+      x-public: true
+      summary: Delete organization action
+      description: Deletes the shared definition from future project catalogs. Requires Admin
+        or Owner membership.
+      parameters:
+      - name: action_id
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Organization action ID.
+      responses:
+        '204':
+          $ref: '#/components/responses/NoContent'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/organization/actions/{action_id}/secret/rotate:
+    post:
+      operationId: rotateOrganizationActionSecret
+      tags:
+      - actions
+      x-public: true
+      summary: Rotate an organization action secret
+      description: Creates a pending key version and reveals it once. Mobius continues signing
+        with the active version until the pending version is activated. Requires Admin or
+        Owner membership.
+      parameters:
+      - name: action_id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrganizationAction'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /v1/organization/actions/{action_id}/secret/versions/{secret_version}/activate:
+    post:
+      operationId: activateOrganizationActionSecretVersion
+      tags:
+      - actions
+      x-public: true
+      summary: Activate an organization action secret version
+      description: Atomically makes a pending version active and moves the previous active
+        version into its bounded verification overlap. Requires Admin or Owner membership.
+      parameters:
+      - name: action_id
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: secret_version
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActivateOrganizationActionSecretRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrganizationAction'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /v1/organization/actions/{action_id}/secret/versions/{secret_version}/revoke:
+    post:
+      operationId: revokeOrganizationActionSecretVersion
+      tags:
+      - actions
+      x-public: true
+      summary: Revoke an organization action secret version
+      description: Immediately revokes a non-active key version. The active signing version
+        can be revoked only after another version is activated or the action is disabled.
+        Requires Admin or Owner membership.
+      parameters:
+      - name: action_id
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: secret_version
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrganizationAction'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
   /v1/projects/{project_handle}/actions:
     post:
       operationId: createAction
@@ -513,6 +773,37 @@ paths:
       - name: action_name
         in: query
         description: Filter to invocations of a specific action.
+        schema:
+          type: string
+      - name: action_id
+        in: query
+        description: Filter to an immutable project or organization Action ID.
+        schema:
+          type: string
+      - name: definition_scope
+        in: query
+        description: Filter by the scope that owned the selected definition.
+        schema:
+          type: string
+          enum:
+          - platform
+          - project
+          - organization
+      - name: secret_version
+        in: query
+        description: Filter to deliveries signed with a specific secret version.
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+      - name: delivery_id
+        in: query
+        description: Filter to a signed delivery identity.
+        schema:
+          type: string
+      - name: correlation_id
+        in: query
+        description: Filter to the request or dispatch correlation identity.
         schema:
           type: string
       - name: status
@@ -7811,6 +8102,180 @@ components:
         role: Admin
         tags:
           owner: platform
+    CreateOrganizationActionRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - name
+      - endpoint_url
+      properties:
+        name:
+          type: string
+          description: Canonical dotted name selected by project toolkits.
+        title:
+          type: string
+        description:
+          type: string
+        endpoint_url:
+          type: string
+          format: uri
+        invocation_format:
+          type: string
+          enum:
+          - signed_context_v1
+          default: signed_context_v1
+        input_schema:
+          type: object
+          additionalProperties: true
+        output_schema:
+          type: object
+          additionalProperties: true
+        annotations:
+          $ref: '#/components/schemas/ActionAnnotationsRequest'
+        enabled:
+          type: boolean
+          default: true
+    UpdateOrganizationActionRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        endpoint_url:
+          type: string
+          format: uri
+        input_schema:
+          type: object
+          additionalProperties: true
+        output_schema:
+          type: object
+          additionalProperties: true
+        annotations:
+          allOf:
+          - $ref: '#/components/schemas/ActionAnnotationsRequest'
+        enabled:
+          type: boolean
+    ActivateOrganizationActionSecretRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        overlap_seconds:
+          type: integer
+          minimum: 0
+          maximum: 86400
+          default: 86400
+          description: Verification overlap for the previous active version. Omit for 24 hours.
+    OrganizationActionSecretVersion:
+      type: object
+      additionalProperties: false
+      required:
+      - version
+      - status
+      - created_at
+      properties:
+        version:
+          type: integer
+          format: int64
+        status:
+          type: string
+          enum:
+          - pending
+          - active
+          - retiring
+          - retired
+          - revoked
+        created_at:
+          type: string
+          format: date-time
+        activated_at:
+          type: string
+          format: date-time
+        accept_until:
+          type: string
+          format: date-time
+        retired_at:
+          type: string
+          format: date-time
+        revoked_at:
+          type: string
+          format: date-time
+    OrganizationAction:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - name
+      - endpoint_url
+      - invocation_format
+      - enabled
+      - secret_ref
+      - active_signing_version
+      - secret_versions
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        endpoint_url:
+          type: string
+          format: uri
+        invocation_format:
+          type: string
+          enum:
+          - signed_context_v1
+        input_schema:
+          type: object
+          additionalProperties: true
+        output_schema:
+          type: object
+          additionalProperties: true
+        annotations:
+          $ref: '#/components/schemas/ActionAnnotations'
+        enabled:
+          type: boolean
+        secret_ref:
+          type: string
+        active_signing_version:
+          type: integer
+          format: int64
+        secret_versions:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrganizationActionSecretVersion'
+        signing_secret:
+          type: string
+          description: Base64-encoded signing key returned only on create and rotate.
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    OrganizationActionListResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - has_more
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrganizationAction'
+        has_more:
+          type: boolean
+        next_cursor:
+          type: string
     ActionAnnotationsRequest:
       type: object
       additionalProperties: false
@@ -8217,6 +8682,7 @@ components:
       required:
       - name
       - source
+      - definition_scope
       - readiness
       - endpoint_kind
       - risk
@@ -8250,9 +8716,18 @@ components:
           - platform
           - custom
           description: 'Origin of this action: "platform" for built-in or integration-backed
-            actions provided by Mobius, "custom" for project-specific HTTP or worker-backed
-            actions. The `integration` field carries the provider slug for integration-backed
+            actions provided by Mobius, "custom" for project- or organization-owned HTTP or
+            worker-backed actions. The `integration` field carries the provider slug for integration-backed
             platform actions.'
+        definition_scope:
+          type: string
+          enum:
+          - platform
+          - project
+          - organization
+          description: Scope that owns the selected definition. A project definition shadows
+            an organization definition with the same canonical name; execution still occurs
+            in the consuming project.
         readiness:
           $ref: '#/components/schemas/CapabilityReadiness'
           description: Whether this action can be called right now. `needs_setup` when the
@@ -8422,6 +8897,13 @@ components:
         action_name:
           type: string
           description: Name of the action that was invoked.
+        definition_scope:
+          type: string
+          enum:
+          - platform
+          - project
+          - organization
+          description: Scope that owned the selected action definition.
         invocation_format:
           $ref: '#/components/schemas/ActionInvocationFormat'
         schema_version:
@@ -8460,6 +8942,9 @@ components:
         delivery_id:
           type: string
           description: Stable signed delivery and idempotency identity, when HTTP-backed.
+        correlation_id:
+          type: string
+          description: Request or dispatch identity that correlated the invocation.
         secret_version:
           type: integer
           format: int64
