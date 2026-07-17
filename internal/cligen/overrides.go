@@ -59,6 +59,18 @@ var overrides = map[string]Override{
 	// redundant `-skill` suffix; strip it.
 	"importSkill": {Command: "import"},
 
+	// --- org-skills -------------------------------------------------------
+	// Organization Skills have org-wide authority and do not require a
+	// project profile. Keep them in a distinct group so their CRUD verbs do
+	// not collide with the existing project-scoped `skills` commands.
+	"listOrganizationSkills":    {Group: "org-skills", Command: "list"},
+	"createOrganizationSkill":   {Group: "org-skills", Command: "create"},
+	"importOrganizationSkill":   {Group: "org-skills", Command: "import"},
+	"getOrganizationSkill":      {Group: "org-skills", Command: "get"},
+	"replaceOrganizationSkill":  {Group: "org-skills", Command: "update"},
+	"deleteOrganizationSkill":   {Group: "org-skills", Command: "delete"},
+	"getOrganizationSkillUsage": {Group: "org-skills", Command: "usage"},
+
 	// --- interactions -----------------------------------------------------
 	// `respond` isn't in the verb list, so the auto-derive keeps the
 	// redundant `-interaction` suffix; strip it (the group already carries it).
@@ -153,6 +165,7 @@ var groupDescriptions = map[string]string{
 	"agents":        "Agent identities, presence, and lifecycle",
 	"api-keys":      "API keys scoped to a single project",
 	"org-api-keys":  "API keys acting org-wide across all projects",
+	"org-skills":    "Skills shared across organization projects",
 	"artifacts":     "Run output artifacts and storage quota",
 	"blueprints":    "Project blueprint application and bindings",
 	"catalog":       "Available actions and triggerable events",

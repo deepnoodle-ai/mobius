@@ -1759,7 +1759,7 @@ export interface paths {
         };
         /**
          * List skills
-         * @description Returns project-local and system skill templates visible to the project by default.
+         * @description Returns project-local, organization-shared, and system skills visible to the project by default. Organization skills are read-only through project mutation routes.
          */
         get: operations["listSkills"];
         put?: never;
@@ -1803,7 +1803,7 @@ export interface paths {
         };
         /**
          * Get skill
-         * @description Returns a single project-local or system skill template by ID.
+         * @description Returns a single project-local, organization-shared, or system skill by ID.
          */
         get: operations["getSkill"];
         /**
@@ -1817,6 +1817,98 @@ export interface paths {
          * @description Deletes a project-local skill. The skill is automatically detached from any agents that reference it, so deletion is never blocked by existing assignments.
          */
         delete: operations["deleteSkill"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/organization/skills": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List organization skills
+         * @description Returns Skills owned by the active organization. Any organization member may read this catalog.
+         */
+        get: operations["listOrganizationSkills"];
+        put?: never;
+        /**
+         * Create organization skill
+         * @description Creates a Skill shared across the active organization. Requires organization Admin or Owner access.
+         */
+        post: operations["createOrganizationSkill"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/organization/skills/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Import organization skill
+         * @description Imports a Claude Code or Dive-style document as an organization Skill. Requires organization Admin or Owner access.
+         */
+        post: operations["importOrganizationSkill"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/organization/skills/{skill_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get organization skill
+         * @description Returns one Skill owned by the active organization.
+         */
+        get: operations["getOrganizationSkill"];
+        /**
+         * Update organization skill
+         * @description Updates the shared Skill for subsequent agent turns. Send the full request body. Requires organization Admin or Owner access.
+         */
+        put: operations["replaceOrganizationSkill"];
+        post?: never;
+        /**
+         * Delete organization skill
+         * @description Deletes an unused organization Skill. Assigned Skills return `skill_in_use` until every agent assignment is removed.
+         */
+        delete: operations["deleteOrganizationSkill"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/organization/skills/{skill_id}/usage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get organization skill usage
+         * @description Returns assignment impact across projects. Requires organization Admin or Owner access.
+         */
+        get: operations["getOrganizationSkillUsage"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -5598,10 +5690,10 @@ export interface components {
             /** @description Markdown description of the skill's purpose. */
             description?: string;
             /**
-             * @description Provenance of this skill. `system` is built-in; `project` is project-local.
+             * @description Ownership and mutability of the Skill. `system` is built-in, `organization` is shared, and `project` is project-local.
              * @enum {string}
              */
-            source: "system" | "project";
+            source: "system" | "organization" | "project";
             /** @description Markdown instructions loaded when the skill is active. */
             instructions: string;
             /** @description Canonical action names, wildcard selectors, or group references that narrow the agent's effective tool set while this skill is active. Uses the same selector vocabulary as toolkit grants. */
@@ -7502,6 +7594,23 @@ export interface components {
         SkillListResponse: {
             /** @description The list of results for this page. */
             items: components["schemas"]["Skill"][];
+        };
+        /** @description Assignment impact for one organization Skill. */
+        OrganizationSkillUsage: {
+            /** @description Organization Skill ID. */
+            skill_id: string;
+            /** @description Number of agents assigned this Skill. */
+            assignment_count: number;
+            /** @description Number of projects containing an assignment. */
+            project_count: number;
+            /** @description Assignment counts grouped by consuming project. */
+            projects: components["schemas"]["OrganizationSkillProjectUsage"][];
+        };
+        OrganizationSkillProjectUsage: {
+            /** @description Consuming project ID. */
+            project_id: string;
+            /** @description Number of agents assigned the Skill in this project. */
+            agent_count: number;
         };
         /**
          * @description `apply` performs the change; `preview` validates and returns a plan without mutating resources.
@@ -13300,6 +13409,197 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             429: components["responses"]["TooManyRequests"];
+        };
+    };
+    listOrganizationSkills: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SkillListResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    createOrganizationSkill: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SkillRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Skill"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    importOrganizationSkill: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ImportSkillRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Skill"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    getOrganizationSkill: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Skill ID. */
+                skill_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Skill"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    replaceOrganizationSkill: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Skill ID. */
+                skill_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SkillRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Skill"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    deleteOrganizationSkill: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Skill ID. */
+                skill_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    getOrganizationSkillUsage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Skill ID. */
+                skill_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrganizationSkillUsage"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
         };
     };
     applyBlueprint: {

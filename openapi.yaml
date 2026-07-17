@@ -4374,8 +4374,9 @@ paths:
       tags:
       - skills
       summary: List skills
-      description: Returns project-local and system skill templates visible to the project
-        by default.
+      description: Returns project-local, organization-shared, and system skills visible to
+        the project by default. Organization skills are read-only through project mutation
+        routes.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - name: include_system
@@ -4515,7 +4516,8 @@ paths:
       tags:
       - skills
       summary: Get skill
-      description: Returns a single project-local or system skill template by ID.
+      description: Returns a single project-local, organization-shared, or system skill by
+        ID.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - name: skill_id
@@ -4611,6 +4613,207 @@ paths:
           $ref: '#/components/responses/NotFound'
         '429':
           $ref: '#/components/responses/TooManyRequests'
+  /v1/organization/skills:
+    get:
+      operationId: listOrganizationSkills
+      tags:
+      - skills
+      summary: List organization skills
+      description: Returns Skills owned by the active organization. Any organization member
+        may read this catalog.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SkillListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      operationId: createOrganizationSkill
+      tags:
+      - skills
+      summary: Create organization skill
+      description: Creates a Skill shared across the active organization. Requires organization
+        Admin or Owner access.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SkillRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Skill'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /v1/organization/skills/import:
+    post:
+      operationId: importOrganizationSkill
+      tags:
+      - skills
+      summary: Import organization skill
+      description: Imports a Claude Code or Dive-style document as an organization Skill.
+        Requires organization Admin or Owner access.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ImportSkillRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Skill'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /v1/organization/skills/{skill_id}:
+    get:
+      operationId: getOrganizationSkill
+      tags:
+      - skills
+      summary: Get organization skill
+      description: Returns one Skill owned by the active organization.
+      parameters:
+      - name: skill_id
+        in: path
+        required: true
+        description: Skill ID.
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Skill'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      operationId: replaceOrganizationSkill
+      tags:
+      - skills
+      summary: Update organization skill
+      description: Updates the shared Skill for subsequent agent turns. Send the full request
+        body. Requires organization Admin or Owner access.
+      parameters:
+      - name: skill_id
+        in: path
+        required: true
+        description: Skill ID.
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SkillRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Skill'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+    delete:
+      operationId: deleteOrganizationSkill
+      tags:
+      - skills
+      summary: Delete organization skill
+      description: Deletes an unused organization Skill. Assigned Skills return `skill_in_use`
+        until every agent assignment is removed.
+      parameters:
+      - name: skill_id
+        in: path
+        required: true
+        description: Skill ID.
+        schema:
+          type: string
+      responses:
+        '204':
+          description: No Content
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+  /v1/organization/skills/{skill_id}/usage:
+    get:
+      operationId: getOrganizationSkillUsage
+      tags:
+      - skills
+      summary: Get organization skill usage
+      description: Returns assignment impact across projects. Requires organization Admin
+        or Owner access.
+      parameters:
+      - name: skill_id
+        in: path
+        required: true
+        description: Skill ID.
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrganizationSkillUsage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /v1/projects/{project_handle}/blueprints/apply:
     post:
       operationId: applyBlueprint
@@ -11934,8 +12137,10 @@ components:
           type: string
           enum:
           - system
+          - organization
           - project
-          description: Provenance of this skill. `system` is built-in; `project` is project-local.
+          description: Ownership and mutability of the Skill. `system` is built-in, `organization`
+            is shared, and `project` is project-local.
         instructions:
           type: string
           description: Markdown instructions loaded when the skill is active.
@@ -15144,6 +15349,46 @@ components:
           description: The list of results for this page.
           items:
             $ref: '#/components/schemas/Skill'
+    OrganizationSkillUsage:
+      type: object
+      additionalProperties: false
+      description: Assignment impact for one organization Skill.
+      required:
+      - skill_id
+      - assignment_count
+      - project_count
+      - projects
+      properties:
+        skill_id:
+          type: string
+          description: Organization Skill ID.
+        assignment_count:
+          type: integer
+          minimum: 0
+          description: Number of agents assigned this Skill.
+        project_count:
+          type: integer
+          minimum: 0
+          description: Number of projects containing an assignment.
+        projects:
+          type: array
+          description: Assignment counts grouped by consuming project.
+          items:
+            $ref: '#/components/schemas/OrganizationSkillProjectUsage'
+    OrganizationSkillProjectUsage:
+      type: object
+      additionalProperties: false
+      required:
+      - project_id
+      - agent_count
+      properties:
+        project_id:
+          type: string
+          description: Consuming project ID.
+        agent_count:
+          type: integer
+          minimum: 1
+          description: Number of agents assigned the Skill in this project.
     BlueprintApplyMode:
       type: string
       description: '`apply` performs the change; `preview` validates and returns a plan without
