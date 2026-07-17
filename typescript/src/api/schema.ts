@@ -100,6 +100,118 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/organization/actions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List organization actions
+         * @description Lists signed HTTP actions owned by the active organization. These definitions are available to every project in the organization, but a toolkit must still select an action before an agent can call it. Requires Admin or Owner membership.
+         */
+        get: operations["listOrganizationActions"];
+        put?: never;
+        /**
+         * Create organization action
+         * @description Creates an organization-owned HTTP action using the signed_context_v1 request contract. The initial signing secret is returned once. Store it immediately; later reads expose lifecycle metadata only. Requires Admin or Owner membership.
+         */
+        post: operations["createOrganizationAction"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/organization/actions/{action_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get organization action
+         * @description Returns one organization action without prior secret material. Requires Admin or Owner membership.
+         */
+        get: operations["getOrganizationAction"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete organization action
+         * @description Deletes the shared definition from future project catalogs. Requires Admin or Owner membership.
+         */
+        delete: operations["deleteOrganizationAction"];
+        options?: never;
+        head?: never;
+        /**
+         * Update organization action
+         * @description Updates the shared definition or enables/disables invocation. A project action with the same canonical name continues to shadow this definition in that project. Requires Admin or Owner membership.
+         */
+        patch: operations["updateOrganizationAction"];
+        trace?: never;
+    };
+    "/v1/organization/actions/{action_id}/secret/rotate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Rotate an organization action secret
+         * @description Creates a pending key version and reveals it once. Mobius continues signing with the active version until the pending version is activated. Requires Admin or Owner membership.
+         */
+        post: operations["rotateOrganizationActionSecret"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/organization/actions/{action_id}/secret/versions/{secret_version}/activate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Activate an organization action secret version
+         * @description Atomically makes a pending version active and moves the previous active version, if any, into its bounded verification overlap. This also recovers a disabled action after its active version was revoked. Requires Admin or Owner membership.
+         */
+        post: operations["activateOrganizationActionSecretVersion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/organization/actions/{action_id}/secret/versions/{secret_version}/revoke": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Revoke an organization action secret version
+         * @description Immediately revokes a non-active key version. The active signing version can be revoked only after another version is activated or the action is disabled. Requires Admin or Owner membership.
+         */
+        post: operations["revokeOrganizationActionSecretVersion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/projects/{project_handle}/actions": {
         parameters: {
             query?: never;
@@ -3324,6 +3436,111 @@ export interface components {
             /** @description Labels to apply to the new API key. */
             tags?: components["schemas"]["TagMap"];
         };
+        CreateOrganizationActionRequest: {
+            /** @description Canonical dotted name selected by project toolkits. */
+            name: string;
+            title?: string;
+            description?: string;
+            /**
+             * Format: uri
+             * @description Public HTTPS endpoint. Private, loopback, link-local, and redirect targets are rejected.
+             */
+            endpoint_url: string;
+            /**
+             * @default signed_context_v1
+             * @enum {string}
+             */
+            invocation_format?: "signed_context_v1";
+            input_schema?: {
+                [key: string]: unknown;
+            };
+            output_schema?: {
+                [key: string]: unknown;
+            };
+            annotations?: components["schemas"]["ActionAnnotationsRequest"];
+            /** @default true */
+            enabled?: boolean;
+        };
+        UpdateOrganizationActionRequest: {
+            name?: string;
+            title?: string;
+            description?: string;
+            /**
+             * Format: uri
+             * @description Public HTTPS endpoint. Private, loopback, link-local, and redirect targets are rejected.
+             */
+            endpoint_url?: string;
+            input_schema?: {
+                [key: string]: unknown;
+            };
+            output_schema?: {
+                [key: string]: unknown;
+            };
+            annotations?: components["schemas"]["ActionAnnotationsRequest"];
+            enabled?: boolean;
+        };
+        ActivateOrganizationActionSecretRequest: {
+            /**
+             * @description Verification overlap for the previous active version. Omit for 24 hours.
+             * @default 86400
+             */
+            overlap_seconds?: number;
+        };
+        OrganizationActionSecretVersion: {
+            /** Format: int64 */
+            version: number;
+            /** @enum {string} */
+            status: "pending" | "active" | "retiring" | "retired" | "revoked";
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            activated_at?: string;
+            /** Format: date-time */
+            accept_until?: string;
+            /** Format: date-time */
+            retired_at?: string;
+            /** Format: date-time */
+            revoked_at?: string;
+        };
+        OrganizationAction: {
+            id: string;
+            name: string;
+            title?: string;
+            description?: string;
+            /**
+             * Format: uri
+             * @description Public HTTPS endpoint. Private, loopback, link-local, and redirect targets are rejected.
+             */
+            endpoint_url: string;
+            /** @enum {string} */
+            invocation_format: "signed_context_v1";
+            input_schema?: {
+                [key: string]: unknown;
+            };
+            output_schema?: {
+                [key: string]: unknown;
+            };
+            annotations?: components["schemas"]["ActionAnnotations"];
+            enabled: boolean;
+            secret_ref: string;
+            /**
+             * Format: int64
+             * @description Current signing-key version. Omitted when the disabled action has no active version.
+             */
+            active_signing_version?: number;
+            secret_versions: components["schemas"]["OrganizationActionSecretVersion"][];
+            /** @description Base64-encoded signing key returned only on create and rotate. */
+            signing_secret?: string;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        OrganizationActionListResponse: {
+            items: components["schemas"]["OrganizationAction"][];
+            has_more: boolean;
+            next_cursor?: string;
+        };
         /** @description Request hints that describe the safe-use properties of the action. Used by the engine and tooling to decide retry behavior, dry-run eligibility, etc. Unknown request properties are rejected. */
         ActionAnnotationsRequest: {
             /** @description The action produces the same result when called with the same inputs; safe to retry automatically. */
@@ -3625,10 +3842,15 @@ export interface components {
             /** @description Integration slug this action belongs to (e.g. "slack"), if platform-provided. */
             integration?: string;
             /**
-             * @description Origin of this action: "platform" for built-in or integration-backed actions provided by Mobius, "custom" for project-specific HTTP or worker-backed actions. The `integration` field carries the provider slug for integration-backed platform actions.
+             * @description Origin of this action: "platform" for built-in or integration-backed actions provided by Mobius, "custom" for project- or organization-owned HTTP or worker-backed actions. The `integration` field carries the provider slug for integration-backed platform actions.
              * @enum {string}
              */
             source: "platform" | "custom";
+            /**
+             * @description Scope that owns the selected definition. A project definition shadows an organization definition with the same canonical name; execution still occurs in the consuming project.
+             * @enum {string}
+             */
+            definition_scope: "platform" | "project" | "organization";
             /** @description Whether this action can be called right now. `needs_setup` when the required integration is not connected, the caller lacks permission, or the action is a placeholder for a not-yet-implemented capability. */
             readiness: components["schemas"]["CapabilityReadiness"];
             /** @description Why the action is `needs_setup`. Omitted when `readiness` is `ready`. */
@@ -3722,6 +3944,11 @@ export interface components {
             action_id?: string;
             /** @description Name of the action that was invoked. */
             action_name: string;
+            /**
+             * @description Scope that owned the selected action definition.
+             * @enum {string}
+             */
+            definition_scope?: "platform" | "project" | "organization";
             invocation_format?: components["schemas"]["ActionInvocationFormat"];
             /** @description Signed request-envelope schema version, when applicable. */
             schema_version?: number;
@@ -3746,6 +3973,8 @@ export interface components {
             tool_call_id?: string;
             /** @description Stable signed delivery and idempotency identity, when HTTP-backed. */
             delivery_id?: string;
+            /** @description Request or dispatch identity that correlated the invocation. */
+            correlation_id?: string;
             /**
              * Format: int64
              * @description Signing-secret version used for the HTTP delivery.
@@ -8907,6 +9136,222 @@ export interface operations {
             429: components["responses"]["TooManyRequests"];
         };
     };
+    listOrganizationActions: {
+        parameters: {
+            query?: {
+                /** @description Cursor for pagination (opaque string from previous response) */
+                cursor?: components["parameters"]["CursorParam"];
+                /** @description Maximum number of items to return */
+                limit?: components["parameters"]["LimitParam"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrganizationActionListResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    createOrganizationAction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateOrganizationActionRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrganizationAction"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    getOrganizationAction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Organization action ID. */
+                action_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrganizationAction"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    deleteOrganizationAction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Organization action ID. */
+                action_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: components["responses"]["NoContent"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    updateOrganizationAction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Organization action ID. */
+                action_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateOrganizationActionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrganizationAction"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    rotateOrganizationActionSecret: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                action_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrganizationAction"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    activateOrganizationActionSecretVersion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                action_id: string;
+                secret_version: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ActivateOrganizationActionSecretRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrganizationAction"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    revokeOrganizationActionSecretVersion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                action_id: string;
+                secret_version: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrganizationAction"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
     createAction: {
         parameters: {
             query?: never;
@@ -9113,6 +9558,16 @@ export interface operations {
                 environment_id?: string;
                 /** @description Filter to invocations of a specific action. */
                 action_name?: string;
+                /** @description Filter to an immutable project or organization Action ID. */
+                action_id?: string;
+                /** @description Filter by the scope that owned the selected definition. */
+                definition_scope?: "platform" | "project" | "organization";
+                /** @description Filter to deliveries signed with a specific secret version. */
+                secret_version?: number;
+                /** @description Filter to a signed delivery identity. */
+                delivery_id?: string;
+                /** @description Filter to the request or dispatch correlation identity. */
+                correlation_id?: string;
                 /** @description Filter by terminal status (e.g. "success", "failed"). */
                 status?: string;
             };

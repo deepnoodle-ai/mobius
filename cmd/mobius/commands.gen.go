@@ -17,6 +17,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -36,6 +37,7 @@ func registerGeneratedCommands(app *cli.App) {
 	registerEnvironmentsCommands(app)
 	registerInteractionsCommands(app)
 	registerLoopsCommands(app)
+	registerOrgActionsCommands(app)
 	registerOrgApiKeysCommands(app)
 	registerOrgSkillsCommands(app)
 	registerOrganizationsCommands(app)
@@ -782,9 +784,22 @@ func marshalForOutput(ctx *cli.Context, v any) ([]byte, error) {
 // parseIntArg parses a positional int argument, returning a friendly error
 // when the value is not a valid integer.
 func parseIntArg(s, name string) (int, error) {
-	var n int
-	if _, err := fmt.Sscanf(s, "%d", &n); err != nil {
+	n, err := strconv.Atoi(s)
+	if err != nil {
 		return 0, fmt.Errorf("invalid %s: %q is not an integer", name, s)
+	}
+	return n, nil
+}
+
+// parseInt64Arg parses a positional int64 argument, returning a friendly error
+// when the value is not a valid integer.
+func parseInt64Arg(s, name string) (int64, error) {
+	n, err := strconv.ParseInt(s, 10, 64)
+	if err != nil {
+		return 0, fmt.Errorf("invalid %s: %q is not an integer", name, s)
+	}
+	if n < 1 {
+		return 0, fmt.Errorf("invalid %s: %q must be a positive integer", name, s)
 	}
 	return n, nil
 }

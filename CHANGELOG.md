@@ -11,6 +11,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 - Organization-scoped Skill CRUD and usage contracts across Go, Python,
   TypeScript, plus explicit `mobius org-skills` CLI commands.
 
+- Organization-scoped signed HTTP Action administration, catalog provenance,
+  rotation-safe secret versions, and invocation audit metadata in generated
+  Go, Python, TypeScript, and CLI contracts.
+
 ## [0.0.53] - 2026-07-17
 
 ### Added
@@ -23,6 +27,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 
 ### Changed
 
+- **Breaking:** Catalog entries now require `definition_scope` so clients can
+  distinguish project-owned definitions from organization fallback Actions.
 - **Breaking:** Agent create/update requests, responses, Blueprint inputs, and
   generated CLI commands no longer accept or expose the freeform `kind` field.
   Remove it from hand-written clients and stored Blueprint JSON before

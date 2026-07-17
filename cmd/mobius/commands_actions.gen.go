@@ -176,6 +176,11 @@ func registerActionsCommands(app *cli.App) {
 			cli.String("job-id", "").Help("Filter to invocations from a specific job."),
 			cli.String("environment-id", "").Help("Filter to invocations executed in a specific environment."),
 			cli.String("action-name", "").Help("Filter to invocations of a specific action."),
+			cli.String("action-id", "").Help("Filter to an immutable project or organization Action ID."),
+			cli.String("definition-scope", "").Help("Filter by the scope that owned the selected definition."),
+			cli.Int("secret-version", "").Help("Filter to deliveries signed with a specific secret version."),
+			cli.String("delivery-id", "").Help("Filter to a signed delivery identity."),
+			cli.String("correlation-id", "").Help("Filter to the request or dispatch correlation identity."),
 			cli.String("status", "").Help("Filter by terminal status (e.g. \"success\", \"failed\")."),
 		).
 		Use(requireAuth()).
@@ -210,6 +215,26 @@ func registerActionsCommands(app *cli.App) {
 			if ctx.IsSet("action-name") {
 				v := ctx.String("action-name")
 				params.ActionName = &v
+			}
+			if ctx.IsSet("action-id") {
+				v := ctx.String("action-id")
+				params.ActionId = &v
+			}
+			if ctx.IsSet("definition-scope") {
+				v := api.ListActionInvocationsParamsDefinitionScope(ctx.String("definition-scope"))
+				params.DefinitionScope = &v
+			}
+			if ctx.IsSet("secret-version") {
+				v := int64(ctx.Int("secret-version"))
+				params.SecretVersion = &v
+			}
+			if ctx.IsSet("delivery-id") {
+				v := ctx.String("delivery-id")
+				params.DeliveryId = &v
+			}
+			if ctx.IsSet("correlation-id") {
+				v := ctx.String("correlation-id")
+				params.CorrelationId = &v
 			}
 			if ctx.IsSet("status") {
 				v := ctx.String("status")

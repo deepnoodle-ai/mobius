@@ -31,7 +31,15 @@ var overrides = map[string]Override{
 	// --- actions ----------------------------------------------------------
 	// `invoke` isn't in the verb list, so the auto-derive keeps the redundant
 	// `-action` suffix; strip it.
-	"invokeAction": {Command: "invoke"},
+	"invokeAction":                            {Command: "invoke"},
+	"listOrganizationActions":                 {Group: "org-actions", Command: "list"},
+	"createOrganizationAction":                {Group: "org-actions", Command: "create"},
+	"getOrganizationAction":                   {Group: "org-actions", Command: "get"},
+	"updateOrganizationAction":                {Group: "org-actions", Command: "update"},
+	"deleteOrganizationAction":                {Group: "org-actions", Command: "delete"},
+	"rotateOrganizationActionSecret":          {Group: "org-actions", Command: "rotate-secret"},
+	"activateOrganizationActionSecretVersion": {Group: "org-actions", Command: "activate-secret-version"},
+	"revokeOrganizationActionSecretVersion":   {Group: "org-actions", Command: "revoke-secret-version"},
 
 	// --- agents -----------------------------------------------------------
 	// Drop the redundant `agent` token that the auto-derivation can't strip
@@ -165,6 +173,7 @@ var groupDescriptions = map[string]string{
 	"agents":        "Agent identities, presence, and lifecycle",
 	"api-keys":      "API keys scoped to a single project",
 	"org-api-keys":  "API keys acting org-wide across all projects",
+	"org-actions":   "Organization-scoped signed HTTP actions",
 	"org-skills":    "Skills shared across organization projects",
 	"artifacts":     "Run output artifacts and storage quota",
 	"blueprints":    "Project blueprint application and bindings",
