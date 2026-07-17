@@ -5,7 +5,7 @@ import logging
 import os
 import re
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from collections.abc import Iterator
 from typing import Any, BinaryIO
 from urllib.parse import quote, urlencode, urlparse, urlunparse
@@ -13,6 +13,11 @@ from urllib.parse import quote, urlencode, urlparse, urlunparse
 import httpx
 
 from ._api.models import (
+    AgentMemory,
+    AgentMemoryChange,
+    AgentMemoryChangeListResponse,
+    AgentMemoryEntry,
+    AgentMemoryEntryListResponse,
     AgentTurn,
     AgentTurnListResponse,
     AgentTurnOperationPolicy,
@@ -42,6 +47,8 @@ from ._api.models import (
     LoopRunSource,
     LoopRunStatus,
     LoopStatus,
+    MemoryKind,
+    MemorySearchMode,
     NudgeSessionRequest,
     PermissionCatalogResponse,
     Principal,
@@ -49,6 +56,7 @@ from ._api.models import (
     PrincipalListResponse,
     RuntimeContext,
     RuntimeContextItem,
+    SaveAgentMemoryEntryRequest,
     Role1 as ProjectRole,
     RoleAssignment,
     RoleAssignmentListResponse,
@@ -239,6 +247,39 @@ class StartTurnOptions:
     output: TurnOutputSpec | None = None
     # Free-form caller metadata attached to the input message.
     metadata: dict[str, Any] | None = None
+
+
+@dataclass
+class ListAgentMemoryEntriesOptions:
+    # Optional search over entry keys, kinds, summaries, and content; omit to
+    # list.
+    query: str | None = None
+    # Search ranking mode for a non-blank query: keyword (the server
+    # default), semantic, or hybrid. Semantic and hybrid raise a 503
+    # memory_semantic_search_unavailable MobiusAPIError when the index is
+    # unavailable; the SDK never downgrades to keyword silently because that
+    # would change result semantics — retry or fall back explicitly.
+    search_mode: MemorySearchMode | str | None = None
+    # Optional filter to a single memory kind.
+    kind: MemoryKind | str | None = None
+    cursor: str | None = None
+    limit: int | None = None
+
+
+@dataclass
+class MemorySyncResult:
+    """One bounded synchronization step of an agent memory change feed."""
+
+    # True when the supplied cursor predated retained history (HTTP 410).
+    # entries then carries a full current snapshot to replace local state,
+    # and changes is empty.
+    reset: bool
+    # New feed position to persist for the next call.
+    next_cursor: str
+    # All feed items after the supplied cursor, drained across pages.
+    changes: list[AgentMemoryChange] = field(default_factory=list)
+    # Full current entry snapshot, present only when reset is True.
+    entries: list[AgentMemoryEntry] = field(default_factory=list)
 
 
 @dataclass
@@ -670,6 +711,115 @@ class Client:
             "DELETE",
             f"/v1/projects/{{project}}/role-assignments/{quote(assignment_id, safe='')}",
         )
+
+    def get_agent_memory(self, agent_id: str) -> AgentMemory:
+        """Return a summary of an agent's private memory."""
+        resp = self._request(
+            "GET", f"/v1/projects/{{project}}/agents/{quote(agent_id, safe='')}/memory"
+        )
+        return AgentMemory.model_validate(resp.json())
+
+    def list_agent_memory_entries(
+        self, agent_id: str, opts: ListAgentMemoryEntriesOptions | None = None
+    ) -> AgentMemoryEntryListResponse:
+        """List or search an agent's memory entries.
+
+        The response preserves ``search_coverage`` so callers can see when
+        semantic or hybrid results ranked only a partially indexed subset.
+        """
+        resp = self._request(
+            "GET",
+            f"/v1/projects/{{project}}/agents/{quote(agent_id, safe='')}/memory/entries",
+            params=_params(opts),
+        )
+        return AgentMemoryEntryListResponse.model_validate(resp.json())
+
+    def save_agent_memory_entry(
+        self, agent_id: str, key: str, request: SaveAgentMemoryEntryRequest
+    ) -> AgentMemoryEntry:
+        """Create or update the memory entry stored under ``key``."""
+        resp = self._request(
+            "PUT",
+            f"/v1/projects/{{project}}/agents/{quote(agent_id, safe='')}/memory/entries/{quote(key, safe='')}",
+            json=request,
+        )
+        return AgentMemoryEntry.model_validate(resp.json())
+
+    def delete_agent_memory_entry(self, agent_id: str, key: str) -> None:
+        """Delete the memory entry stored under ``key``."""
+        self._request(
+            "DELETE",
+            f"/v1/projects/{{project}}/agents/{quote(agent_id, safe='')}/memory/entries/{quote(key, safe='')}",
+        )
+
+    def list_agent_memory_changes(
+        self, agent_id: str, *, after: str | None = None, limit: int | None = None
+    ) -> AgentMemoryChangeListResponse:
+        """Return one page of the append-only memory change feed.
+
+        A 410 :class:`MobiusAPIError` means ``after`` predates retained
+        history; recover with :meth:`sync_agent_memory` or by relisting
+        entries.
+        """
+        params: dict[str, Any] = {}
+        if after:
+            params["after"] = after
+        if limit:
+            params["limit"] = limit
+        resp = self._request(
+            "GET",
+            f"/v1/projects/{{project}}/agents/{quote(agent_id, safe='')}/memory/changes",
+            params=params or None,
+        )
+        return AgentMemoryChangeListResponse.model_validate(resp.json())
+
+    def sync_agent_memory(
+        self, agent_id: str, cursor: str | None = None
+    ) -> MemorySyncResult:
+        """Advance a memory change-feed consumer by one bounded step.
+
+        Drains every change page after ``cursor`` and returns the new feed
+        position to persist. When the cursor has expired (HTTP 410) it
+        recovers explicitly — establishing a fresh feed position and
+        returning a full entry snapshot with ``reset=True`` — instead of
+        failing or silently replaying. Pass ``None`` on first use. Polling
+        cadence and retry policy stay with the caller; this makes no timing
+        decisions.
+        """
+        try:
+            changes, next_cursor = self._drain_agent_memory_changes(agent_id, cursor)
+            return MemorySyncResult(reset=False, next_cursor=next_cursor, changes=changes)
+        except MobiusAPIError as err:
+            if err.status != 410:
+                raise
+        # The cursor predates retained history. Take the fresh feed position
+        # BEFORE the snapshot: a mutation racing the snapshot then replays
+        # after the new cursor (versions make replays detectable) instead of
+        # being lost.
+        _, next_cursor = self._drain_agent_memory_changes(agent_id, None)
+        entries: list[AgentMemoryEntry] = []
+        entries_cursor: str | None = None
+        while True:
+            page = self.list_agent_memory_entries(
+                agent_id, ListAgentMemoryEntriesOptions(cursor=entries_cursor)
+            )
+            entries.extend(page.items)
+            if not page.has_more or not page.next_cursor:
+                break
+            entries_cursor = page.next_cursor
+        return MemorySyncResult(reset=True, next_cursor=next_cursor, entries=entries)
+
+    def _drain_agent_memory_changes(
+        self, agent_id: str, after: str | None
+    ) -> tuple[list[AgentMemoryChange], str]:
+        changes: list[AgentMemoryChange] = []
+        cursor = after
+        while True:
+            page = self.list_agent_memory_changes(agent_id, after=cursor)
+            changes.extend(page.items)
+            cursor = page.next_cursor
+            if not page.has_more:
+                return changes, cursor
 
     def start_run(self, loop_id: str, opts: StartRunOptions | None = None) -> LoopRun:
         opts = opts or StartRunOptions()

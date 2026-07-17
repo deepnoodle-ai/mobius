@@ -1,6 +1,11 @@
 import type {
   Agent,
   AgentListResponse,
+  AgentMemory,
+  AgentMemoryChange,
+  AgentMemoryChangeListResponse,
+  AgentMemoryEntry,
+  AgentMemoryEntryListResponse,
   AgentTurn,
   AgentTurnListResponse,
   AgentTurnOperationPolicy,
@@ -32,11 +37,14 @@ import type {
   LoopRunSource,
   LoopRunStatus,
   LoopStatus,
+  MemoryKind,
+  MemorySearchMode,
   PermissionCatalogResponse,
   Principal,
   PrincipalKind,
   PrincipalListResponse,
   RuntimeContextItem,
+  SaveAgentMemoryEntryRequest,
   Session,
   SessionListResponse,
   SessionMessageListResponse,
@@ -446,6 +454,43 @@ export interface ListAgentsOptions {
   status?: string;
   limit?: number;
 }
+
+export interface ListAgentMemoryEntriesOptions {
+  /** Searches entry keys, kinds, summaries, and content. Omit to list. */
+  query?: string;
+  /**
+   * Ranks a non-blank query: keyword (the server default), semantic, or
+   * hybrid. Semantic and hybrid surface a 503
+   * memory_semantic_search_unavailable {@link MobiusAPIError} when the index
+   * is unavailable; the SDK never downgrades to keyword silently because that
+   * would change result semantics — retry or fall back explicitly.
+   */
+  searchMode?: MemorySearchMode;
+  /** Filters to a single memory kind. */
+  kind?: MemoryKind;
+  cursor?: string;
+  limit?: number;
+}
+
+export interface ListAgentMemoryChangesOptions {
+  /**
+   * Opaque cursor returned as next_cursor by the previous page. Omit on the
+   * first request to read retained changes oldest-first.
+   */
+  after?: string;
+  limit?: number;
+}
+
+/**
+ * One bounded synchronization step of an agent's memory change feed, returned
+ * by {@link Client.syncAgentMemory}. When reset is true the supplied cursor
+ * predated retained history (HTTP 410) and entries carries a full current
+ * snapshot to replace local state; otherwise changes carries every feed item
+ * after the cursor. nextCursor is the new feed position to persist.
+ */
+export type MemorySyncResult =
+  | { reset: false; changes: AgentMemoryChange[]; nextCursor: string }
+  | { reset: true; entries: AgentMemoryEntry[]; nextCursor: string };
 
 export type TranscriptConnectionState = "open" | "reconnecting" | "ended";
 
@@ -1042,6 +1087,138 @@ export class Client {
       });
     }
     return agent;
+  }
+
+  /** Returns a summary of an agent's private memory. */
+  async getAgentMemory(agentId: string): Promise<AgentMemory> {
+    const resp = await this.request(
+      `/v1/projects/:project/agents/${encodeURIComponent(agentId)}/memory`,
+      { method: "GET" },
+    );
+    return (await resp.json()) as AgentMemory;
+  }
+
+  /**
+   * Lists or searches an agent's memory entries. The response preserves
+   * search_coverage so callers can see when semantic or hybrid results ranked
+   * only a partially indexed subset.
+   */
+  async listAgentMemoryEntries(
+    agentId: string,
+    opts: ListAgentMemoryEntriesOptions = {},
+  ): Promise<AgentMemoryEntryListResponse> {
+    const path = withQuery(
+      `/v1/projects/:project/agents/${encodeURIComponent(agentId)}/memory/entries`,
+      {
+        query: opts.query,
+        search_mode: opts.searchMode,
+        kind: opts.kind,
+        cursor: opts.cursor,
+        limit: opts.limit,
+      },
+    );
+    const resp = await this.request(path, { method: "GET" });
+    return (await resp.json()) as AgentMemoryEntryListResponse;
+  }
+
+  /** Creates or updates the memory entry stored under key. */
+  async saveAgentMemoryEntry(
+    agentId: string,
+    key: string,
+    input: SaveAgentMemoryEntryRequest,
+  ): Promise<AgentMemoryEntry> {
+    const resp = await this.request(
+      `/v1/projects/:project/agents/${encodeURIComponent(agentId)}/memory/entries/${encodeURIComponent(key)}`,
+      { method: "PUT", body: input },
+    );
+    return (await resp.json()) as AgentMemoryEntry;
+  }
+
+  /** Deletes the memory entry stored under key. */
+  async deleteAgentMemoryEntry(agentId: string, key: string): Promise<void> {
+    await this.request(
+      `/v1/projects/:project/agents/${encodeURIComponent(agentId)}/memory/entries/${encodeURIComponent(key)}`,
+      { method: "DELETE" },
+    );
+  }
+
+  /**
+   * Returns one page of the content-free, append-only memory change feed. A
+   * 410 {@link MobiusAPIError} means the cursor predates retained history;
+   * recover with {@link syncAgentMemory} or by relisting entries.
+   */
+  async listAgentMemoryChanges(
+    agentId: string,
+    opts: ListAgentMemoryChangesOptions = {},
+  ): Promise<AgentMemoryChangeListResponse> {
+    const path = withQuery(
+      `/v1/projects/:project/agents/${encodeURIComponent(agentId)}/memory/changes`,
+      { after: opts.after, limit: opts.limit },
+    );
+    const resp = await this.request(path, { method: "GET" });
+    return (await resp.json()) as AgentMemoryChangeListResponse;
+  }
+
+  /**
+   * Advances a memory change-feed consumer by one bounded synchronization
+   * step: drains every change page after cursor and returns the new feed
+   * position to persist. When the cursor has expired (HTTP 410) it recovers
+   * explicitly — establishing a fresh feed position and returning a full
+   * entry snapshot with reset set — instead of failing or silently replaying.
+   * Omit cursor on first use. Polling cadence and retry policy stay with the
+   * caller; this makes no timing decisions.
+   */
+  async syncAgentMemory(
+    agentId: string,
+    cursor?: string,
+  ): Promise<MemorySyncResult> {
+    try {
+      const { changes, nextCursor } = await this.drainAgentMemoryChanges(
+        agentId,
+        cursor,
+      );
+      return { reset: false, changes, nextCursor };
+    } catch (err) {
+      if (!(err instanceof MobiusAPIError) || err.status !== 410) throw err;
+    }
+    // The cursor predates retained history. Take the fresh feed position
+    // BEFORE the snapshot: a mutation racing the snapshot then replays after
+    // the new cursor (versions make replays detectable) instead of being lost.
+    const { nextCursor } = await this.drainAgentMemoryChanges(
+      agentId,
+      undefined,
+    );
+    const entries = await this.drainAgentMemoryEntries(agentId);
+    return { reset: true, entries, nextCursor };
+  }
+
+  private async drainAgentMemoryChanges(
+    agentId: string,
+    after: string | undefined,
+  ): Promise<{ changes: AgentMemoryChange[]; nextCursor: string }> {
+    const changes: AgentMemoryChange[] = [];
+    let cursor = after;
+    for (;;) {
+      const page = await this.listAgentMemoryChanges(agentId, {
+        after: cursor,
+      });
+      changes.push(...page.items);
+      cursor = page.next_cursor;
+      if (!page.has_more) return { changes, nextCursor: cursor };
+    }
+  }
+
+  private async drainAgentMemoryEntries(
+    agentId: string,
+  ): Promise<AgentMemoryEntry[]> {
+    const entries: AgentMemoryEntry[] = [];
+    let cursor: string | undefined;
+    for (;;) {
+      const page = await this.listAgentMemoryEntries(agentId, { cursor });
+      entries.push(...page.items);
+      if (!page.has_more || !page.next_cursor) return entries;
+      cursor = page.next_cursor;
+    }
   }
 
   async getSession(sessionId: string): Promise<Session> {
