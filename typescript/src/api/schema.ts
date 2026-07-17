@@ -183,7 +183,7 @@ export interface paths {
         put?: never;
         /**
          * Activate an organization action secret version
-         * @description Atomically makes a pending version active and moves the previous active version into its bounded verification overlap. Requires Admin or Owner membership.
+         * @description Atomically makes a pending version active and moves the previous active version, if any, into its bounded verification overlap. This also recovers a disabled action after its active version was revoked. Requires Admin or Owner membership.
          */
         post: operations["activateOrganizationActionSecretVersion"];
         delete?: never;
@@ -3441,7 +3441,10 @@ export interface components {
             name: string;
             title?: string;
             description?: string;
-            /** Format: uri */
+            /**
+             * Format: uri
+             * @description Public HTTPS endpoint. Private, loopback, link-local, and redirect targets are rejected.
+             */
             endpoint_url: string;
             /**
              * @default signed_context_v1
@@ -3462,7 +3465,10 @@ export interface components {
             name?: string;
             title?: string;
             description?: string;
-            /** Format: uri */
+            /**
+             * Format: uri
+             * @description Public HTTPS endpoint. Private, loopback, link-local, and redirect targets are rejected.
+             */
             endpoint_url?: string;
             input_schema?: {
                 [key: string]: unknown;
@@ -3501,7 +3507,10 @@ export interface components {
             name: string;
             title?: string;
             description?: string;
-            /** Format: uri */
+            /**
+             * Format: uri
+             * @description Public HTTPS endpoint. Private, loopback, link-local, and redirect targets are rejected.
+             */
             endpoint_url: string;
             /** @enum {string} */
             invocation_format: "signed_context_v1";
@@ -3514,8 +3523,11 @@ export interface components {
             annotations?: components["schemas"]["ActionAnnotations"];
             enabled: boolean;
             secret_ref: string;
-            /** Format: int64 */
-            active_signing_version: number;
+            /**
+             * Format: int64
+             * @description Current signing-key version. Omitted when the disabled action has no active version.
+             */
+            active_signing_version?: number;
             secret_versions: components["schemas"]["OrganizationActionSecretVersion"][];
             /** @description Base64-encoded signing key returned only on create and rotate. */
             signing_secret?: string;

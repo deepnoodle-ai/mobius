@@ -500,7 +500,8 @@ paths:
       x-public: true
       summary: Activate an organization action secret version
       description: Atomically makes a pending version active and moves the previous active
-        version into its bounded verification overlap. Requires Admin or Owner membership.
+        version, if any, into its bounded verification overlap. This also recovers a disabled
+        action after its active version was revoked. Requires Admin or Owner membership.
       parameters:
       - name: action_id
         in: path
@@ -8119,6 +8120,8 @@ components:
         endpoint_url:
           type: string
           format: uri
+          description: Public HTTPS endpoint. Private, loopback, link-local, and redirect
+            targets are rejected.
         invocation_format:
           type: string
           enum:
@@ -8148,6 +8151,8 @@ components:
         endpoint_url:
           type: string
           format: uri
+          description: Public HTTPS endpoint. Private, loopback, link-local, and redirect
+            targets are rejected.
         input_schema:
           type: object
           additionalProperties: true
@@ -8213,7 +8218,6 @@ components:
       - invocation_format
       - enabled
       - secret_ref
-      - active_signing_version
       - secret_versions
       - created_at
       - updated_at
@@ -8229,6 +8233,8 @@ components:
         endpoint_url:
           type: string
           format: uri
+          description: Public HTTPS endpoint. Private, loopback, link-local, and redirect
+            targets are rejected.
         invocation_format:
           type: string
           enum:
@@ -8248,6 +8254,9 @@ components:
         active_signing_version:
           type: integer
           format: int64
+          minimum: 1
+          description: Current signing-key version. Omitted when the disabled action has no
+            active version.
         secret_versions:
           type: array
           items:

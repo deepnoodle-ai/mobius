@@ -36,3 +36,23 @@ func TestInt64PathParamsAreSupported(t *testing.T) {
 		t.Fatal("int64 path parameter was not classified as a supported positional argument")
 	}
 }
+
+func TestGeneratedIntegerParsersUseStrictParsing(t *testing.T) {
+	src, err := renderMasterFile(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	generated := string(src)
+	for _, want := range []string{
+		`strconv.Atoi(s)`,
+		`strconv.ParseInt(s, 10, 64)`,
+		`if n < 1`,
+	} {
+		if !strings.Contains(generated, want) {
+			t.Fatalf("generated runtime does not contain %q", want)
+		}
+	}
+	if strings.Contains(generated, `fmt.Sscanf`) {
+		t.Fatal("generated runtime still accepts numeric prefixes with fmt.Sscanf")
+	}
+}

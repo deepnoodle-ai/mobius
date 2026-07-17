@@ -5445,9 +5445,11 @@ type CreateOrgAPIKeyRequestRole string
 // CreateOrganizationActionRequest defines model for CreateOrganizationActionRequest.
 type CreateOrganizationActionRequest struct {
 	// Annotations Request hints that describe the safe-use properties of the action. Used by the engine and tooling to decide retry behavior, dry-run eligibility, etc. Unknown request properties are rejected.
-	Annotations      *ActionAnnotationsRequest                        `json:"annotations,omitempty"`
-	Description      *string                                          `json:"description,omitempty"`
-	Enabled          *bool                                            `json:"enabled,omitempty"`
+	Annotations *ActionAnnotationsRequest `json:"annotations,omitempty"`
+	Description *string                   `json:"description,omitempty"`
+	Enabled     *bool                     `json:"enabled,omitempty"`
+
+	// EndpointUrl Public HTTPS endpoint. Private, loopback, link-local, and redirect targets are rejected.
 	EndpointUrl      string                                           `json:"endpoint_url"`
 	InputSchema      *map[string]interface{}                          `json:"input_schema,omitempty"`
 	InvocationFormat *CreateOrganizationActionRequestInvocationFormat `json:"invocation_format,omitempty"`
@@ -7665,13 +7667,16 @@ type NudgeSessionRequest struct {
 
 // OrganizationAction defines model for OrganizationAction.
 type OrganizationAction struct {
-	ActiveSigningVersion int64 `json:"active_signing_version"`
+	// ActiveSigningVersion Current signing-key version. Omitted when the disabled action has no active version.
+	ActiveSigningVersion *int64 `json:"active_signing_version,omitempty"`
 
 	// Annotations Response hints that describe the safe-use properties of the action. Response annotations are forward-compatible so the server can add response-only hints without breaking strict clients.
-	Annotations      *ActionAnnotations                 `json:"annotations,omitempty"`
-	CreatedAt        time.Time                          `json:"created_at"`
-	Description      *string                            `json:"description,omitempty"`
-	Enabled          bool                               `json:"enabled"`
+	Annotations *ActionAnnotations `json:"annotations,omitempty"`
+	CreatedAt   time.Time          `json:"created_at"`
+	Description *string            `json:"description,omitempty"`
+	Enabled     bool               `json:"enabled"`
+
+	// EndpointUrl Public HTTPS endpoint. Private, loopback, link-local, and redirect targets are rejected.
 	EndpointUrl      string                             `json:"endpoint_url"`
 	Id               string                             `json:"id"`
 	InputSchema      *map[string]interface{}            `json:"input_schema,omitempty"`
@@ -9648,14 +9653,16 @@ type UpdateMemoryContextPolicy struct {
 
 // UpdateOrganizationActionRequest defines model for UpdateOrganizationActionRequest.
 type UpdateOrganizationActionRequest struct {
-	Annotations  *ActionAnnotationsRequest `json:"annotations,omitempty"`
-	Description  *string                   `json:"description,omitempty"`
-	Enabled      *bool                     `json:"enabled,omitempty"`
-	EndpointUrl  *string                   `json:"endpoint_url,omitempty"`
-	InputSchema  *map[string]interface{}   `json:"input_schema,omitempty"`
-	Name         *string                   `json:"name,omitempty"`
-	OutputSchema *map[string]interface{}   `json:"output_schema,omitempty"`
-	Title        *string                   `json:"title,omitempty"`
+	Annotations *ActionAnnotationsRequest `json:"annotations,omitempty"`
+	Description *string                   `json:"description,omitempty"`
+	Enabled     *bool                     `json:"enabled,omitempty"`
+
+	// EndpointUrl Public HTTPS endpoint. Private, loopback, link-local, and redirect targets are rejected.
+	EndpointUrl  *string                 `json:"endpoint_url,omitempty"`
+	InputSchema  *map[string]interface{} `json:"input_schema,omitempty"`
+	Name         *string                 `json:"name,omitempty"`
+	OutputSchema *map[string]interface{} `json:"output_schema,omitempty"`
+	Title        *string                 `json:"title,omitempty"`
 }
 
 // UpdatePrincipalRequest defines model for UpdatePrincipalRequest.

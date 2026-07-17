@@ -6960,7 +6960,10 @@ class CreateOrganizationActionRequest(BaseModel):
     )
     title: str | None = None
     description: str | None = None
-    endpoint_url: AnyUrl
+    endpoint_url: AnyUrl = Field(
+        ...,
+        description='Public HTTPS endpoint. Private, loopback, link-local, and redirect targets are rejected.',
+    )
     invocation_format: InvocationFormat = 'signed_context_v1'
     input_schema: dict[str, Any] | None = None
     output_schema: dict[str, Any] | None = None
@@ -6975,7 +6978,10 @@ class UpdateOrganizationActionRequest(BaseModel):
     name: str | None = None
     title: str | None = None
     description: str | None = None
-    endpoint_url: AnyUrl | None = None
+    endpoint_url: AnyUrl | None = Field(
+        None,
+        description='Public HTTPS endpoint. Private, loopback, link-local, and redirect targets are rejected.',
+    )
     input_schema: dict[str, Any] | None = None
     output_schema: dict[str, Any] | None = None
     annotations: ActionAnnotationsRequest | None = None
@@ -6990,14 +6996,21 @@ class OrganizationAction(BaseModel):
     name: str
     title: str | None = None
     description: str | None = None
-    endpoint_url: AnyUrl
+    endpoint_url: AnyUrl = Field(
+        ...,
+        description='Public HTTPS endpoint. Private, loopback, link-local, and redirect targets are rejected.',
+    )
     invocation_format: InvocationFormat
     input_schema: dict[str, Any] | None = None
     output_schema: dict[str, Any] | None = None
     annotations: ActionAnnotations | None = None
     enabled: bool
     secret_ref: str
-    active_signing_version: int
+    active_signing_version: int | None = Field(
+        None,
+        description='Current signing-key version. Omitted when the disabled action has no active version.',
+        ge=1,
+    )
     secret_versions: list[OrganizationActionSecretVersion]
     signing_secret: str | None = Field(
         None,
