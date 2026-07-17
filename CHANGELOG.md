@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 
 ## [Unreleased]
 
+### Added
+
+- Organization-scoped Skill CRUD and usage contracts across Go, Python,
+  TypeScript, plus explicit `mobius org-skills` CLI commands.
+
 ## [0.0.53] - 2026-07-17
 
 ### Added

@@ -2830,13 +2830,16 @@ func (e SessionVisibility) Valid() bool {
 
 // Defines values for SkillSource.
 const (
-	SkillSourceProject SkillSource = "project"
-	SkillSourceSystem  SkillSource = "system"
+	SkillSourceOrganization SkillSource = "organization"
+	SkillSourceProject      SkillSource = "project"
+	SkillSourceSystem       SkillSource = "system"
 )
 
 // Valid indicates whether the value is a known member of the SkillSource enum.
 func (e SkillSource) Valid() bool {
 	switch e {
+	case SkillSourceOrganization:
+		return true
 	case SkillSourceProject:
 		return true
 	case SkillSourceSystem:
@@ -7500,6 +7503,30 @@ type NudgeSessionRequest struct {
 	Wake *bool `json:"wake,omitempty"`
 }
 
+// OrganizationSkillProjectUsage defines model for OrganizationSkillProjectUsage.
+type OrganizationSkillProjectUsage struct {
+	// AgentCount Number of agents assigned the Skill in this project.
+	AgentCount int `json:"agent_count"`
+
+	// ProjectId Consuming project ID.
+	ProjectId string `json:"project_id"`
+}
+
+// OrganizationSkillUsage Assignment impact for one organization Skill.
+type OrganizationSkillUsage struct {
+	// AssignmentCount Number of agents assigned this Skill.
+	AssignmentCount int `json:"assignment_count"`
+
+	// ProjectCount Number of projects containing an assignment.
+	ProjectCount int `json:"project_count"`
+
+	// Projects Assignment counts grouped by consuming project.
+	Projects []OrganizationSkillProjectUsage `json:"projects"`
+
+	// SkillId Organization Skill ID.
+	SkillId string `json:"skill_id"`
+}
+
 // PermissionCatalogResponse defines model for PermissionCatalogResponse.
 type PermissionCatalogResponse struct {
 	ActionGroups []ActionPermissionGroup `json:"action_groups"`
@@ -8660,7 +8687,7 @@ type Skill struct {
 	// Name Human-readable skill name.
 	Name string `json:"name"`
 
-	// Source Provenance of this skill. `system` is built-in; `project` is project-local.
+	// Source Ownership and mutability of the Skill. `system` is built-in, `organization` is shared, and `project` is project-local.
 	Source SkillSource `json:"source"`
 
 	// Tags Key/value tags for organizing and filtering resources. Up to 8 per resource; keys 1–128 characters, values up to 256. Keys prefixed `mobius:` are system-managed and cannot be set by callers.
@@ -8673,7 +8700,7 @@ type Skill struct {
 	UpdatedBy *string `json:"updated_by,omitempty"`
 }
 
-// SkillSource Provenance of this skill. `system` is built-in; `project` is project-local.
+// SkillSource Ownership and mutability of the Skill. `system` is built-in, `organization` is shared, and `project` is project-local.
 type SkillSource string
 
 // SkillAssignment Assignment linking a skill to an agent.
@@ -10635,6 +10662,15 @@ type CreateOrgAPIKeyJSONRequestBody = CreateOrgAPIKeyRequest
 
 // ReplaceDefinitionResolverJSONRequestBody defines body for ReplaceDefinitionResolver for application/json ContentType.
 type ReplaceDefinitionResolverJSONRequestBody = PutDefinitionResolverRequest
+
+// CreateOrganizationSkillJSONRequestBody defines body for CreateOrganizationSkill for application/json ContentType.
+type CreateOrganizationSkillJSONRequestBody = SkillRequest
+
+// ImportOrganizationSkillJSONRequestBody defines body for ImportOrganizationSkill for application/json ContentType.
+type ImportOrganizationSkillJSONRequestBody = ImportSkillRequest
+
+// ReplaceOrganizationSkillJSONRequestBody defines body for ReplaceOrganizationSkill for application/json ContentType.
+type ReplaceOrganizationSkillJSONRequestBody = SkillRequest
 
 // CreateProjectJSONRequestBody defines body for CreateProject for application/json ContentType.
 type CreateProjectJSONRequestBody = CreateProjectRequest
@@ -18565,6 +18601,33 @@ type ClientInterface interface {
 
 	ReplaceDefinitionResolver(ctx context.Context, body ReplaceDefinitionResolverJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ListOrganizationSkills request
+	ListOrganizationSkills(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateOrganizationSkillWithBody request with any body
+	CreateOrganizationSkillWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	CreateOrganizationSkill(ctx context.Context, body CreateOrganizationSkillJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ImportOrganizationSkillWithBody request with any body
+	ImportOrganizationSkillWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	ImportOrganizationSkill(ctx context.Context, body ImportOrganizationSkillJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DeleteOrganizationSkill request
+	DeleteOrganizationSkill(ctx context.Context, skillId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetOrganizationSkill request
+	GetOrganizationSkill(ctx context.Context, skillId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ReplaceOrganizationSkillWithBody request with any body
+	ReplaceOrganizationSkillWithBody(ctx context.Context, skillId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	ReplaceOrganizationSkill(ctx context.Context, skillId string, body ReplaceOrganizationSkillJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetOrganizationSkillUsage request
+	GetOrganizationSkillUsage(ctx context.Context, skillId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListProjects request
 	ListProjects(ctx context.Context, params *ListProjectsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -19204,6 +19267,126 @@ func (c *Client) ReplaceDefinitionResolverWithBody(ctx context.Context, contentT
 
 func (c *Client) ReplaceDefinitionResolver(ctx context.Context, body ReplaceDefinitionResolverJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewReplaceDefinitionResolverRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListOrganizationSkills(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListOrganizationSkillsRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateOrganizationSkillWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateOrganizationSkillRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateOrganizationSkill(ctx context.Context, body CreateOrganizationSkillJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateOrganizationSkillRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ImportOrganizationSkillWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewImportOrganizationSkillRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ImportOrganizationSkill(ctx context.Context, body ImportOrganizationSkillJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewImportOrganizationSkillRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) DeleteOrganizationSkill(ctx context.Context, skillId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteOrganizationSkillRequest(c.Server, skillId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetOrganizationSkill(ctx context.Context, skillId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetOrganizationSkillRequest(c.Server, skillId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ReplaceOrganizationSkillWithBody(ctx context.Context, skillId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewReplaceOrganizationSkillRequestWithBody(c.Server, skillId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ReplaceOrganizationSkill(ctx context.Context, skillId string, body ReplaceOrganizationSkillJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewReplaceOrganizationSkillRequest(c.Server, skillId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetOrganizationSkillUsage(ctx context.Context, skillId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetOrganizationSkillUsageRequest(c.Server, skillId)
 	if err != nil {
 		return nil, err
 	}
@@ -21875,6 +22058,262 @@ func NewReplaceDefinitionResolverRequestWithBody(server string, contentType stri
 	}
 
 	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewListOrganizationSkillsRequest generates requests for ListOrganizationSkills
+func NewListOrganizationSkillsRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/organization/skills")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCreateOrganizationSkillRequest calls the generic CreateOrganizationSkill builder with application/json body
+func NewCreateOrganizationSkillRequest(server string, body CreateOrganizationSkillJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateOrganizationSkillRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewCreateOrganizationSkillRequestWithBody generates requests for CreateOrganizationSkill with any type of body
+func NewCreateOrganizationSkillRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/organization/skills")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewImportOrganizationSkillRequest calls the generic ImportOrganizationSkill builder with application/json body
+func NewImportOrganizationSkillRequest(server string, body ImportOrganizationSkillJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewImportOrganizationSkillRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewImportOrganizationSkillRequestWithBody generates requests for ImportOrganizationSkill with any type of body
+func NewImportOrganizationSkillRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/organization/skills/import")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewDeleteOrganizationSkillRequest generates requests for DeleteOrganizationSkill
+func NewDeleteOrganizationSkillRequest(server string, skillId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "skill_id", skillId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/organization/skills/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetOrganizationSkillRequest generates requests for GetOrganizationSkill
+func NewGetOrganizationSkillRequest(server string, skillId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "skill_id", skillId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/organization/skills/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewReplaceOrganizationSkillRequest calls the generic ReplaceOrganizationSkill builder with application/json body
+func NewReplaceOrganizationSkillRequest(server string, skillId string, body ReplaceOrganizationSkillJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewReplaceOrganizationSkillRequestWithBody(server, skillId, "application/json", bodyReader)
+}
+
+// NewReplaceOrganizationSkillRequestWithBody generates requests for ReplaceOrganizationSkill with any type of body
+func NewReplaceOrganizationSkillRequestWithBody(server string, skillId string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "skill_id", skillId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/organization/skills/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetOrganizationSkillUsageRequest generates requests for GetOrganizationSkillUsage
+func NewGetOrganizationSkillUsageRequest(server string, skillId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "skill_id", skillId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/organization/skills/%s/usage", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
 
 	return req, nil
 }
@@ -30414,6 +30853,33 @@ type ClientWithResponsesInterface interface {
 
 	ReplaceDefinitionResolverWithResponse(ctx context.Context, body ReplaceDefinitionResolverJSONRequestBody, reqEditors ...RequestEditorFn) (*ReplaceDefinitionResolverResponse, error)
 
+	// ListOrganizationSkillsWithResponse request
+	ListOrganizationSkillsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListOrganizationSkillsResponse, error)
+
+	// CreateOrganizationSkillWithBodyWithResponse request with any body
+	CreateOrganizationSkillWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateOrganizationSkillResponse, error)
+
+	CreateOrganizationSkillWithResponse(ctx context.Context, body CreateOrganizationSkillJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateOrganizationSkillResponse, error)
+
+	// ImportOrganizationSkillWithBodyWithResponse request with any body
+	ImportOrganizationSkillWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ImportOrganizationSkillResponse, error)
+
+	ImportOrganizationSkillWithResponse(ctx context.Context, body ImportOrganizationSkillJSONRequestBody, reqEditors ...RequestEditorFn) (*ImportOrganizationSkillResponse, error)
+
+	// DeleteOrganizationSkillWithResponse request
+	DeleteOrganizationSkillWithResponse(ctx context.Context, skillId string, reqEditors ...RequestEditorFn) (*DeleteOrganizationSkillResponse, error)
+
+	// GetOrganizationSkillWithResponse request
+	GetOrganizationSkillWithResponse(ctx context.Context, skillId string, reqEditors ...RequestEditorFn) (*GetOrganizationSkillResponse, error)
+
+	// ReplaceOrganizationSkillWithBodyWithResponse request with any body
+	ReplaceOrganizationSkillWithBodyWithResponse(ctx context.Context, skillId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ReplaceOrganizationSkillResponse, error)
+
+	ReplaceOrganizationSkillWithResponse(ctx context.Context, skillId string, body ReplaceOrganizationSkillJSONRequestBody, reqEditors ...RequestEditorFn) (*ReplaceOrganizationSkillResponse, error)
+
+	// GetOrganizationSkillUsageWithResponse request
+	GetOrganizationSkillUsageWithResponse(ctx context.Context, skillId string, reqEditors ...RequestEditorFn) (*GetOrganizationSkillUsageResponse, error)
+
 	// ListProjectsWithResponse request
 	ListProjectsWithResponse(ctx context.Context, params *ListProjectsParams, reqEditors ...RequestEditorFn) (*ListProjectsResponse, error)
 
@@ -31161,6 +31627,244 @@ func (r ReplaceDefinitionResolverResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r ReplaceDefinitionResolverResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ListOrganizationSkillsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *SkillListResponse
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+}
+
+// Status returns HTTPResponse.Status
+func (r ListOrganizationSkillsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListOrganizationSkillsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListOrganizationSkillsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type CreateOrganizationSkillResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON201      *Skill
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON409      *Conflict
+	JSON429      *TooManyRequests
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateOrganizationSkillResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateOrganizationSkillResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CreateOrganizationSkillResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ImportOrganizationSkillResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON201      *Skill
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON409      *Conflict
+	JSON429      *TooManyRequests
+}
+
+// Status returns HTTPResponse.Status
+func (r ImportOrganizationSkillResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ImportOrganizationSkillResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ImportOrganizationSkillResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type DeleteOrganizationSkillResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+	JSON409      *Conflict
+	JSON429      *TooManyRequests
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteOrganizationSkillResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteOrganizationSkillResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r DeleteOrganizationSkillResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetOrganizationSkillResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Skill
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r GetOrganizationSkillResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetOrganizationSkillResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetOrganizationSkillResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ReplaceOrganizationSkillResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Skill
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+	JSON409      *Conflict
+	JSON429      *TooManyRequests
+}
+
+// Status returns HTTPResponse.Status
+func (r ReplaceOrganizationSkillResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ReplaceOrganizationSkillResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ReplaceOrganizationSkillResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetOrganizationSkillUsageResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *OrganizationSkillUsage
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r GetOrganizationSkillUsageResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetOrganizationSkillUsageResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetOrganizationSkillUsageResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -36263,6 +36967,93 @@ func (c *ClientWithResponses) ReplaceDefinitionResolverWithResponse(ctx context.
 	return ParseReplaceDefinitionResolverResponse(rsp)
 }
 
+// ListOrganizationSkillsWithResponse request returning *ListOrganizationSkillsResponse
+func (c *ClientWithResponses) ListOrganizationSkillsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListOrganizationSkillsResponse, error) {
+	rsp, err := c.ListOrganizationSkills(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListOrganizationSkillsResponse(rsp)
+}
+
+// CreateOrganizationSkillWithBodyWithResponse request with arbitrary body returning *CreateOrganizationSkillResponse
+func (c *ClientWithResponses) CreateOrganizationSkillWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateOrganizationSkillResponse, error) {
+	rsp, err := c.CreateOrganizationSkillWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateOrganizationSkillResponse(rsp)
+}
+
+func (c *ClientWithResponses) CreateOrganizationSkillWithResponse(ctx context.Context, body CreateOrganizationSkillJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateOrganizationSkillResponse, error) {
+	rsp, err := c.CreateOrganizationSkill(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateOrganizationSkillResponse(rsp)
+}
+
+// ImportOrganizationSkillWithBodyWithResponse request with arbitrary body returning *ImportOrganizationSkillResponse
+func (c *ClientWithResponses) ImportOrganizationSkillWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ImportOrganizationSkillResponse, error) {
+	rsp, err := c.ImportOrganizationSkillWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseImportOrganizationSkillResponse(rsp)
+}
+
+func (c *ClientWithResponses) ImportOrganizationSkillWithResponse(ctx context.Context, body ImportOrganizationSkillJSONRequestBody, reqEditors ...RequestEditorFn) (*ImportOrganizationSkillResponse, error) {
+	rsp, err := c.ImportOrganizationSkill(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseImportOrganizationSkillResponse(rsp)
+}
+
+// DeleteOrganizationSkillWithResponse request returning *DeleteOrganizationSkillResponse
+func (c *ClientWithResponses) DeleteOrganizationSkillWithResponse(ctx context.Context, skillId string, reqEditors ...RequestEditorFn) (*DeleteOrganizationSkillResponse, error) {
+	rsp, err := c.DeleteOrganizationSkill(ctx, skillId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteOrganizationSkillResponse(rsp)
+}
+
+// GetOrganizationSkillWithResponse request returning *GetOrganizationSkillResponse
+func (c *ClientWithResponses) GetOrganizationSkillWithResponse(ctx context.Context, skillId string, reqEditors ...RequestEditorFn) (*GetOrganizationSkillResponse, error) {
+	rsp, err := c.GetOrganizationSkill(ctx, skillId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetOrganizationSkillResponse(rsp)
+}
+
+// ReplaceOrganizationSkillWithBodyWithResponse request with arbitrary body returning *ReplaceOrganizationSkillResponse
+func (c *ClientWithResponses) ReplaceOrganizationSkillWithBodyWithResponse(ctx context.Context, skillId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ReplaceOrganizationSkillResponse, error) {
+	rsp, err := c.ReplaceOrganizationSkillWithBody(ctx, skillId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseReplaceOrganizationSkillResponse(rsp)
+}
+
+func (c *ClientWithResponses) ReplaceOrganizationSkillWithResponse(ctx context.Context, skillId string, body ReplaceOrganizationSkillJSONRequestBody, reqEditors ...RequestEditorFn) (*ReplaceOrganizationSkillResponse, error) {
+	rsp, err := c.ReplaceOrganizationSkill(ctx, skillId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseReplaceOrganizationSkillResponse(rsp)
+}
+
+// GetOrganizationSkillUsageWithResponse request returning *GetOrganizationSkillUsageResponse
+func (c *ClientWithResponses) GetOrganizationSkillUsageWithResponse(ctx context.Context, skillId string, reqEditors ...RequestEditorFn) (*GetOrganizationSkillUsageResponse, error) {
+	rsp, err := c.GetOrganizationSkillUsage(ctx, skillId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetOrganizationSkillUsageResponse(rsp)
+}
+
 // ListProjectsWithResponse request returning *ListProjectsResponse
 func (c *ClientWithResponses) ListProjectsWithResponse(ctx context.Context, params *ListProjectsParams, reqEditors ...RequestEditorFn) (*ListProjectsResponse, error) {
 	rsp, err := c.ListProjects(ctx, params, reqEditors...)
@@ -38296,6 +39087,384 @@ func ParseReplaceDefinitionResolverResponse(rsp *http.Response) (*ReplaceDefinit
 			return nil, err
 		}
 		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListOrganizationSkillsResponse parses an HTTP response from a ListOrganizationSkillsWithResponse call
+func ParseListOrganizationSkillsResponse(rsp *http.Response) (*ListOrganizationSkillsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListOrganizationSkillsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest SkillListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateOrganizationSkillResponse parses an HTTP response from a CreateOrganizationSkillWithResponse call
+func ParseCreateOrganizationSkillResponse(rsp *http.Response) (*CreateOrganizationSkillResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateOrganizationSkillResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest Skill
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest TooManyRequests
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseImportOrganizationSkillResponse parses an HTTP response from a ImportOrganizationSkillWithResponse call
+func ParseImportOrganizationSkillResponse(rsp *http.Response) (*ImportOrganizationSkillResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ImportOrganizationSkillResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest Skill
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest TooManyRequests
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDeleteOrganizationSkillResponse parses an HTTP response from a DeleteOrganizationSkillWithResponse call
+func ParseDeleteOrganizationSkillResponse(rsp *http.Response) (*DeleteOrganizationSkillResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteOrganizationSkillResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest TooManyRequests
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetOrganizationSkillResponse parses an HTTP response from a GetOrganizationSkillWithResponse call
+func ParseGetOrganizationSkillResponse(rsp *http.Response) (*GetOrganizationSkillResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetOrganizationSkillResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Skill
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseReplaceOrganizationSkillResponse parses an HTTP response from a ReplaceOrganizationSkillWithResponse call
+func ParseReplaceOrganizationSkillResponse(rsp *http.Response) (*ReplaceOrganizationSkillResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ReplaceOrganizationSkillResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Skill
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest TooManyRequests
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetOrganizationSkillUsageResponse parses an HTTP response from a GetOrganizationSkillUsageWithResponse call
+func ParseGetOrganizationSkillUsageResponse(rsp *http.Response) (*GetOrganizationSkillUsageResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetOrganizationSkillUsageResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest OrganizationSkillUsage
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
 		var dest Unauthorized

@@ -4258,10 +4258,11 @@ class Toolkit(BaseModel):
 
 class Source6(StrEnum):
     """
-    Provenance of this skill. `system` is built-in; `project` is project-local.
+    Ownership and mutability of the Skill. `system` is built-in, `organization` is shared, and `project` is project-local.
     """
 
     system = 'system'
+    organization = 'organization'
     project = 'project'
 
 
@@ -4280,7 +4281,7 @@ class Skill(BaseModel):
     )
     source: Source6 = Field(
         ...,
-        description='Provenance of this skill. `system` is built-in; `project` is project-local.',
+        description='Ownership and mutability of the Skill. `system` is built-in, `organization` is shared, and `project` is project-local.',
     )
     instructions: str = Field(
         ..., description='Markdown instructions loaded when the skill is active.'
@@ -5949,6 +5950,16 @@ class SkillListResponse(BaseModel):
         extra='forbid',
     )
     items: list[Skill] = Field(..., description='The list of results for this page.')
+
+
+class OrganizationSkillProjectUsage(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    project_id: str = Field(..., description='Consuming project ID.')
+    agent_count: int = Field(
+        ..., description='Number of agents assigned the Skill in this project.', ge=1
+    )
 
 
 class BlueprintApplyMode(StrEnum):
@@ -7801,6 +7812,26 @@ class LoopRunListResponse(BaseModel):
     )
     has_more: bool | None = Field(
         None, description='True when more items exist after this page.'
+    )
+
+
+class OrganizationSkillUsage(BaseModel):
+    """
+    Assignment impact for one organization Skill.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    skill_id: str = Field(..., description='Organization Skill ID.')
+    assignment_count: int = Field(
+        ..., description='Number of agents assigned this Skill.', ge=0
+    )
+    project_count: int = Field(
+        ..., description='Number of projects containing an assignment.', ge=0
+    )
+    projects: list[OrganizationSkillProjectUsage] = Field(
+        ..., description='Assignment counts grouped by consuming project.'
     )
 
 
