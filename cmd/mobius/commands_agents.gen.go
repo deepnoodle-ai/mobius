@@ -25,7 +25,7 @@ func registerAgentsCommands(app *cli.App) {
 			cli.String("color", "").Help("Display color for this agent (Mantine palette key, e.g. `indigo`). Optional; empty falls back to a hash-derived color."),
 			cli.String("compaction-policy", "").Help("Controls how a session's transcript is automatically summarized as it grows. On create the supplied fields are merged over the owning… Accepts JSON, @file, or @-."),
 			cli.String("description", "").Help("Optional human-readable description."),
-			cli.String("memory-context", "").Help("memory-context Accepts JSON, @file, or @-."),
+			cli.String("memory-context", "").Help("Automatic memory delivery policy. The JSON object requires `mode` (`index`, `full`, or `off`) and optionally accepts `max_bytes`, for… Accepts JSON, @file, or @-."),
 			cli.String("model", "").Help("Model identifier for agents. Any id from `GET /v1/projects/{project_handle}/catalog/models`, including slash-bearing OpenRouter catalog…"),
 			cli.String("model-route", "").Help("Default model route used by built-in messaging and by loop agent steps that do not override the route. Accepts JSON, @file, or @-."),
 			cli.String("name", "").Help("[required] Unique name for this agent. Free-form human-readable label, 1-63 characters."),
@@ -294,7 +294,7 @@ func registerAgentsCommands(app *cli.App) {
 		Description("List agent memory changes").
 		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		Flags(
-			cli.String("after", "").Help("Opaque cursor returned by the previous response."),
+			cli.String("after", "").Help("Opaque cursor returned as `next_cursor` by the previous response. Omit on the first request to read retained changes oldest-first. When no…"),
 			cli.Int("limit", "").Help("Maximum number of items to return"),
 		).
 		Use(requireAuth()).
@@ -327,7 +327,7 @@ func registerAgentsCommands(app *cli.App) {
 		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		Flags(
 			cli.String("query", "").Help("Optional search over entry keys, kinds, summaries, and content. Omit to list."),
-			cli.String("search-mode", "").Help("Search ranking mode. Omit for backwards-compatible keyword search."),
+			cli.String("search-mode", "").Help("Search ranking mode for a non-blank `query`. Omit for backwards-compatible keyword search. Semantic and hybrid search can return `503…"),
 			cli.String("kind", "").Help("Optional filter to a single memory kind."),
 			cli.String("cursor", "").Help("Cursor for pagination (opaque string from previous response)"),
 			cli.Int("limit", "").Help("Maximum number of items to return"),
@@ -731,7 +731,7 @@ func registerAgentsCommands(app *cli.App) {
 			cli.String("color", "").Help("Replacement display color (Mantine palette key, e.g. `indigo`). Pass empty string to clear and fall back to a hash-derived color."),
 			cli.String("compaction-policy", "").Help("Controls how a session's transcript is automatically summarized as it grows. On create the supplied fields are merged over the owning… Accepts JSON, @file, or @-."),
 			cli.String("description", "").Help("Replacement description."),
-			cli.String("memory-context", "").Help("memory-context Accepts JSON, @file, or @-."),
+			cli.String("memory-context", "").Help("Replacement automatic memory delivery policy. Send an empty object to clear the stored override and restore the bounded index default… Accepts JSON, @file, or @-."),
 			cli.String("model", "").Help("Replacement model identifier for agents (any id from `GET /v1/projects/{project_handle}/catalog/models`, including slash-bearing OpenRouter…"),
 			cli.String("model-route", "").Help("Default model route used by built-in messaging and by loop agent steps that do not override the route. Accepts JSON, @file, or @-."),
 			cli.String("name", "").Help("Free-form human-readable label, 1-63 characters; must be unique within the project."),

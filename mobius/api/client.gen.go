@@ -4059,7 +4059,9 @@ type Agent struct {
 	EmailAddress *string `json:"email_address,omitempty"`
 
 	// Id Unique identifier for this agent.
-	Id            string               `json:"id"`
+	Id string `json:"id"`
+
+	// MemoryContext Automatic memory delivery policy. The JSON object requires `mode` (`index`, `full`, or `off`) and optionally accepts `max_bytes`, for example `{"mode":"full","max_bytes":131072}`.
 	MemoryContext *MemoryContextPolicy `json:"memory_context,omitempty"`
 
 	// Model Model identifier for agents. Accepts any id returned by `GET /v1/projects/{project_handle}/catalog/models` (including slash-bearing OpenRouter catalog ids), optionally `provider/`-prefixed (e.g. `xai/grok-4`); bare known ids (e.g. `claude-sonnet-4-6`) are auto-detected to their provider. Empty string falls back to the platform default.
@@ -4152,14 +4154,18 @@ type AgentMemoryChange struct {
 	Operation     AgentMemoryChangeOperation `json:"operation"`
 	Reason        AgentMemoryChangeReason    `json:"reason"`
 	SourceRunId   *string                    `json:"source_run_id,omitempty"`
-	Version       int                        `json:"version"`
+
+	// Version Entry version at the time of this mutation, matching `AgentMemoryEntry.version`.
+	Version int `json:"version"`
 }
 
 // AgentMemoryChangeListResponse defines model for AgentMemoryChangeListResponse.
 type AgentMemoryChangeListResponse struct {
-	HasMore    bool                `json:"has_more"`
-	Items      []AgentMemoryChange `json:"items"`
-	NextCursor *string             `json:"next_cursor,omitempty"`
+	HasMore bool                `json:"has_more"`
+	Items   []AgentMemoryChange `json:"items"`
+
+	// NextCursor Feed position after this page. Always present, including when `items` is empty; pass it back as `after` on the next request.
+	NextCursor string `json:"next_cursor"`
 }
 
 // AgentMemoryChangeOperation defines model for AgentMemoryChangeOperation.
@@ -5134,7 +5140,9 @@ type CreateAgentRequest struct {
 	CompactionPolicy *SessionCompactionPolicy `json:"compaction_policy,omitempty"`
 
 	// Description Optional human-readable description.
-	Description   *string              `json:"description,omitempty"`
+	Description *string `json:"description,omitempty"`
+
+	// MemoryContext Automatic memory delivery policy. The JSON object requires `mode` (`index`, `full`, or `off`) and optionally accepts `max_bytes`, for example `{"mode":"full","max_bytes":131072}`.
 	MemoryContext *MemoryContextPolicy `json:"memory_context,omitempty"`
 
 	// Model Model identifier for agents. Any id from `GET /v1/projects/{project_handle}/catalog/models`, including slash-bearing OpenRouter catalog ids, or an optionally `provider/`-prefixed id (e.g. `xai/grok-4`); bare known ids (e.g. `claude-sonnet-4-6`) are auto-detected. Empty falls back to the platform default.
@@ -5899,7 +5907,9 @@ type InlineAgentConfig struct {
 	Effort *ThinkingEffort `json:"effort,omitempty"`
 
 	// Instructions System-prompt instructions for the agent. Replaces the agent's configured system prompt for this session. Empty falls back to the generated default.
-	Instructions  *string              `json:"instructions,omitempty"`
+	Instructions *string `json:"instructions,omitempty"`
+
+	// MemoryContext Automatic memory delivery policy. The JSON object requires `mode` (`index`, `full`, or `off`) and optionally accepts `max_bytes`, for example `{"mode":"full","max_bytes":131072}`.
 	MemoryContext *MemoryContextPolicy `json:"memory_context,omitempty"`
 
 	// Model LLM model identifier. Resolves through the same model routing and allow rules as a stored agent's model.
@@ -7311,9 +7321,9 @@ type LoopWaitForEventStepSpecKind string
 // MemoryContextMode Automatic memory delivery mode for agent turns.
 type MemoryContextMode string
 
-// MemoryContextPolicy defines model for MemoryContextPolicy.
+// MemoryContextPolicy Automatic memory delivery policy. The JSON object requires `mode` (`index`, `full`, or `off`) and optionally accepts `max_bytes`, for example `{"mode":"full","max_bytes":131072}`.
 type MemoryContextPolicy struct {
-	// MaxBytes UTF-8 byte budget for the rendered memory reminder. Omit for the mode default (1536 bytes for index, 131072 bytes for full). Full mode fails the turn rather than truncating when the snapshot does not fit.
+	// MaxBytes UTF-8 byte budget for the rendered memory reminder. Omit for the mode default (1536 bytes for index, 131072 bytes for full); `0` also selects that default. Full mode fails the turn rather than truncating when the snapshot does not fit. Off mode ignores this field and injects no automatic memory context.
 	MaxBytes *int `json:"max_bytes,omitempty"`
 
 	// Mode Automatic memory delivery mode for agent turns.
@@ -7325,9 +7335,14 @@ type MemoryKind string
 
 // MemorySearchCoverage defines model for MemorySearchCoverage.
 type MemorySearchCoverage struct {
-	Complete       bool `json:"complete"`
-	IndexedEntries int  `json:"indexed_entries"`
-	TotalEntries   int  `json:"total_entries"`
+	// Complete Whether every current entry has a ready projection. When false, semantic and hybrid results rank only the indexed subset.
+	Complete bool `json:"complete"`
+
+	// IndexedEntries Number of this agent's current entries with a ready semantic search projection, before any `kind` filter.
+	IndexedEntries int `json:"indexed_entries"`
+
+	// TotalEntries Number of this agent's current entries, before any `kind` filter.
+	TotalEntries int `json:"total_entries"`
 }
 
 // MemorySearchMode Memory search ranking mode.
@@ -9273,8 +9288,10 @@ type UpdateAgentRequest struct {
 	CompactionPolicy *SessionCompactionPolicy `json:"compaction_policy,omitempty"`
 
 	// Description Replacement description.
-	Description   *string              `json:"description,omitempty"`
-	MemoryContext *MemoryContextPolicy `json:"memory_context,omitempty"`
+	Description *string `json:"description,omitempty"`
+
+	// MemoryContext Replacement automatic memory delivery policy. Send an empty object to clear the stored override and restore the bounded index default. Otherwise `mode` is required (`index`, `full`, or `off`) and `max_bytes` is optional.
+	MemoryContext *UpdateMemoryContextPolicy `json:"memory_context,omitempty"`
 
 	// Model Replacement model identifier for agents (any id from `GET /v1/projects/{project_handle}/catalog/models`, including slash-bearing OpenRouter catalog ids, or an optionally `provider/`-prefixed id).
 	Model *string `json:"model,omitempty"`
@@ -9384,6 +9401,15 @@ type UpdateLoopRequestConcurrency string
 
 // UpdateLoopRequestSchemaVersion Loop authoring schema version. Only schema version 1 is accepted.
 type UpdateLoopRequestSchemaVersion string
+
+// UpdateMemoryContextPolicy Replacement automatic memory delivery policy. Send an empty object to clear the stored override and restore the bounded index default. Otherwise `mode` is required (`index`, `full`, or `off`) and `max_bytes` is optional.
+type UpdateMemoryContextPolicy struct {
+	// MaxBytes UTF-8 byte budget. Omit or send `0` for the selected mode's default. Off mode ignores this field.
+	MaxBytes *int `json:"max_bytes,omitempty"`
+
+	// Mode Automatic memory delivery mode for agent turns.
+	Mode *MemoryContextMode `json:"mode,omitempty"`
+}
 
 // UpdatePrincipalRequest defines model for UpdatePrincipalRequest.
 type UpdatePrincipalRequest struct {
@@ -10177,7 +10203,7 @@ type ListAgentsParams struct {
 
 // ListAgentMemoryChangesParams defines parameters for ListAgentMemoryChanges.
 type ListAgentMemoryChangesParams struct {
-	// After Opaque cursor returned by the previous response.
+	// After Opaque cursor returned as `next_cursor` by the previous response. Omit on the first request to read retained changes oldest-first. When no retained changes exist, the empty response still returns a stable bootstrap cursor that observes future mutations.
 	After *string `form:"after,omitempty" json:"after,omitempty"`
 
 	// Limit Maximum number of items to return
@@ -10189,7 +10215,7 @@ type ListAgentMemoryEntriesParams struct {
 	// Query Optional search over entry keys, kinds, summaries, and content. Omit to list.
 	Query *string `form:"query,omitempty" json:"query,omitempty"`
 
-	// SearchMode Search ranking mode. Omit for backwards-compatible keyword search.
+	// SearchMode Search ranking mode for a non-blank `query`. Omit for backwards-compatible keyword search. Semantic and hybrid search can return `503 memory_semantic_search_unavailable` when the embedding or search-index service is unavailable; callers may retry or fall back to `keyword`.
 	SearchMode *MemorySearchMode `form:"search_mode,omitempty" json:"search_mode,omitempty"`
 
 	// Kind Optional filter to a single memory kind.
@@ -31800,6 +31826,7 @@ type ListAgentMemoryChangesResponse struct {
 	JSON401      *Unauthorized
 	JSON403      *Forbidden
 	JSON404      *NotFound
+	JSON410      *ErrorResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -39405,6 +39432,13 @@ func ParseListAgentMemoryChangesResponse(rsp *http.Response) (*ListAgentMemoryCh
 			return nil, err
 		}
 		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 410:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON410 = &dest
 
 	}
 

@@ -2544,7 +2544,9 @@ paths:
       description: Lists the entries in an agent's private memory, each a keyed, durable memory
         the agent remembered. Pass `query` to search over keys, kinds, summaries, and content;
         choose keyword, semantic, or hybrid ranking with `search_mode`; and use `kind` to
-        filter to one kind. Returns an empty page when the agent has no memory yet.
+        filter to one kind. With no non-blank `query`, this is always a normal browse/list
+        operation and `search_mode` is ignored. Returns an empty page when the agent has no
+        memory yet.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/IDParam'
@@ -2556,7 +2558,10 @@ paths:
           type: string
       - name: search_mode
         in: query
-        description: Search ranking mode. Omit for backwards-compatible keyword search.
+        description: Search ranking mode for a non-blank `query`. Omit for backwards-compatible
+          keyword search. Semantic and hybrid search can return `503 memory_semantic_search_unavailable`
+          when the embedding or search-index service is unavailable; callers may retry or
+          fall back to `keyword`.
         schema:
           $ref: '#/components/schemas/MemorySearchMode'
       - name: kind
@@ -2589,13 +2594,17 @@ paths:
       summary: List agent memory changes
       description: Returns the content-free, append-only change feed for this agent's memory.
         Consumers use the opaque cursor to resume after the last observed mutation. If the
-        cursor has expired, relist current entries and restart from the current feed head.
+        cursor has expired, relist current entries and start a new feed traversal without
+        `after`.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/IDParam'
       - name: after
         in: query
-        description: Opaque cursor returned by the previous response.
+        description: Opaque cursor returned as `next_cursor` by the previous response. Omit
+          on the first request to read retained changes oldest-first. When no retained changes
+          exist, the empty response still returns a stable bootstrap cursor that observes
+          future mutations.
         schema:
           type: string
       - $ref: '#/components/parameters/LimitParam'
@@ -2616,6 +2625,10 @@ paths:
           $ref: '#/components/responses/NotFound'
         '410':
           description: The supplied change cursor is older than retained history.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /v1/projects/{project_handle}/agents/{resource_id}/memory/entries/{memory_key}:
     put:
       operationId: saveAgentMemoryEntry
@@ -6444,6 +6457,8 @@ components:
     MemoryContextPolicy:
       type: object
       additionalProperties: false
+      description: Automatic memory delivery policy. The JSON object requires `mode` (`index`,
+        `full`, or `off`) and optionally accepts `max_bytes`, for example `{"mode":"full","max_bytes":131072}`.
       required:
       - mode
       properties:
@@ -6454,8 +6469,9 @@ components:
           minimum: 0
           maximum: 245760
           description: UTF-8 byte budget for the rendered memory reminder. Omit for the mode
-            default (1536 bytes for index, 131072 bytes for full). Full mode fails the turn
-            rather than truncating when the snapshot does not fit.
+            default (1536 bytes for index, 131072 bytes for full); `0` also selects that default.
+            Full mode fails the turn rather than truncating when the snapshot does not fit.
+            Off mode ignores this field and injects no automatic memory context.
     ThinkingEffort:
       type: string
       enum:
@@ -10770,6 +10786,21 @@ components:
         reason:
           type: string
           description: Free-text reason recorded on the interaction.
+    UpdateMemoryContextPolicy:
+      type: object
+      additionalProperties: false
+      description: Replacement automatic memory delivery policy. Send an empty object to clear
+        the stored override and restore the bounded index default. Otherwise `mode` is required
+        (`index`, `full`, or `off`) and `max_bytes` is optional.
+      properties:
+        mode:
+          $ref: '#/components/schemas/MemoryContextMode'
+        max_bytes:
+          type: integer
+          minimum: 0
+          maximum: 245760
+          description: UTF-8 byte budget. Omit or send `0` for the selected mode's default.
+            Off mode ignores this field.
     AgentMessagingDMPolicy:
       type: string
       enum:
@@ -11279,8 +11310,7 @@ components:
           description: Replacement default session-compaction policy. Send an empty object
             to clear the default and fall back to server defaults.
         memory_context:
-          $ref: '#/components/schemas/MemoryContextPolicy'
-          description: Replacement automatic memory delivery policy.
+          $ref: '#/components/schemas/UpdateMemoryContextPolicy'
         thinking_effort:
           $ref: '#/components/schemas/ThinkingEffort'
           description: Replacement default reasoning-effort level. Send `inherit` to clear
@@ -11316,11 +11346,16 @@ components:
         indexed_entries:
           type: integer
           minimum: 0
+          description: Number of this agent's current entries with a ready semantic search
+            projection, before any `kind` filter.
         total_entries:
           type: integer
           minimum: 0
+          description: Number of this agent's current entries, before any `kind` filter.
         complete:
           type: boolean
+          description: Whether every current entry has a ready projection. When false, semantic
+            and hybrid results rank only the indexed subset.
     AgentMemory:
       type: object
       additionalProperties: false
@@ -11460,6 +11495,8 @@ components:
           $ref: '#/components/schemas/AgentMemoryChangeOperation'
         version:
           type: integer
+          minimum: 1
+          description: Entry version at the time of this mutation, matching `AgentMemoryEntry.version`.
         reason:
           $ref: '#/components/schemas/AgentMemoryChangeReason'
         source_run_id:
@@ -11475,6 +11512,7 @@ components:
       required:
       - items
       - has_more
+      - next_cursor
       properties:
         items:
           type: array
@@ -11484,6 +11522,8 @@ components:
           type: boolean
         next_cursor:
           type: string
+          description: Feed position after this page. Always present, including when `items`
+            is empty; pass it back as `after` on the next request.
     SaveAgentMemoryEntryRequest:
       type: object
       additionalProperties: false

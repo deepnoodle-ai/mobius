@@ -354,6 +354,7 @@ export type UpdateActionRequest = components["schemas"]["UpdateActionRequest"];
 export type UpdateAgentRequest = components["schemas"]["UpdateAgentRequest"];
 export type UpdateEnvironmentRequest = components["schemas"]["UpdateEnvironmentRequest"];
 export type UpdateLoopRequest = components["schemas"]["UpdateLoopRequest"];
+export type UpdateMemoryContextPolicy = components["schemas"]["UpdateMemoryContextPolicy"];
 export type UpdatePrincipalRequest = components["schemas"]["UpdatePrincipalRequest"];
 export type UpdateProjectRequest = components["schemas"]["UpdateProjectRequest"];
 export type UpdateRoleRequest = components["schemas"]["UpdateRoleRequest"];

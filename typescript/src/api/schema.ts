@@ -1025,7 +1025,7 @@ export interface paths {
         };
         /**
          * List agent memory entries
-         * @description Lists the entries in an agent's private memory, each a keyed, durable memory the agent remembered. Pass `query` to search over keys, kinds, summaries, and content; choose keyword, semantic, or hybrid ranking with `search_mode`; and use `kind` to filter to one kind. Returns an empty page when the agent has no memory yet.
+         * @description Lists the entries in an agent's private memory, each a keyed, durable memory the agent remembered. Pass `query` to search over keys, kinds, summaries, and content; choose keyword, semantic, or hybrid ranking with `search_mode`; and use `kind` to filter to one kind. With no non-blank `query`, this is always a normal browse/list operation and `search_mode` is ignored. Returns an empty page when the agent has no memory yet.
          */
         get: operations["listAgentMemoryEntries"];
         put?: never;
@@ -1045,7 +1045,7 @@ export interface paths {
         };
         /**
          * List agent memory changes
-         * @description Returns the content-free, append-only change feed for this agent's memory. Consumers use the opaque cursor to resume after the last observed mutation. If the cursor has expired, relist current entries and restart from the current feed head.
+         * @description Returns the content-free, append-only change feed for this agent's memory. Consumers use the opaque cursor to resume after the last observed mutation. If the cursor has expired, relist current entries and start a new feed traversal without `after`.
          */
         get: operations["listAgentMemoryChanges"];
         put?: never;
@@ -2460,9 +2460,10 @@ export interface components {
          * @enum {string}
          */
         MemoryContextMode: "index" | "full" | "off";
+        /** @description Automatic memory delivery policy. The JSON object requires `mode` (`index`, `full`, or `off`) and optionally accepts `max_bytes`, for example `{"mode":"full","max_bytes":131072}`. */
         MemoryContextPolicy: {
             mode: components["schemas"]["MemoryContextMode"];
-            /** @description UTF-8 byte budget for the rendered memory reminder. Omit for the mode default (1536 bytes for index, 131072 bytes for full). Full mode fails the turn rather than truncating when the snapshot does not fit. */
+            /** @description UTF-8 byte budget for the rendered memory reminder. Omit for the mode default (1536 bytes for index, 131072 bytes for full); `0` also selects that default. Full mode fails the turn rather than truncating when the snapshot does not fit. Off mode ignores this field and injects no automatic memory context. */
             max_bytes?: number;
         };
         /**
@@ -4943,6 +4944,12 @@ export interface components {
             /** @description Free-text reason recorded on the interaction. */
             reason?: string;
         };
+        /** @description Replacement automatic memory delivery policy. Send an empty object to clear the stored override and restore the bounded index default. Otherwise `mode` is required (`index`, `full`, or `off`) and `max_bytes` is optional. */
+        UpdateMemoryContextPolicy: {
+            mode?: components["schemas"]["MemoryContextMode"];
+            /** @description UTF-8 byte budget. Omit or send `0` for the selected mode's default. Off mode ignores this field. */
+            max_bytes?: number;
+        };
         /**
          * @description Direct-message access policy: `open`, `allowlist`, or `disabled`.
          * @enum {string}
@@ -5219,8 +5226,7 @@ export interface components {
             status?: "active" | "inactive";
             /** @description Replacement default session-compaction policy. Send an empty object to clear the default and fall back to server defaults. */
             compaction_policy?: components["schemas"]["SessionCompactionPolicy"];
-            /** @description Replacement automatic memory delivery policy. */
-            memory_context?: components["schemas"]["MemoryContextPolicy"];
+            memory_context?: components["schemas"]["UpdateMemoryContextPolicy"];
             /** @description Replacement default reasoning-effort level. Send `inherit` to clear the default and leave the provider default in place. */
             thinking_effort?: components["schemas"]["ThinkingEffort"];
             /** @description Replacement labels; send an empty object to clear all tags. */
@@ -5237,8 +5243,11 @@ export interface components {
          */
         MemorySearchMode: "keyword" | "semantic" | "hybrid";
         MemorySearchCoverage: {
+            /** @description Number of this agent's current entries with a ready semantic search projection, before any `kind` filter. */
             indexed_entries: number;
+            /** @description Number of this agent's current entries, before any `kind` filter. */
             total_entries: number;
+            /** @description Whether every current entry has a ready projection. When false, semantic and hybrid results rank only the indexed subset. */
             complete: boolean;
         };
         /** @description Summary of an agent's private memory: how many entries it holds, a breakdown by kind, and when it last changed. */
@@ -5311,6 +5320,7 @@ export interface components {
             memory_entry_id: string;
             memory_key: string;
             operation: components["schemas"]["AgentMemoryChangeOperation"];
+            /** @description Entry version at the time of this mutation, matching `AgentMemoryEntry.version`. */
             version: number;
             reason: components["schemas"]["AgentMemoryChangeReason"];
             source_run_id?: string;
@@ -5321,7 +5331,8 @@ export interface components {
         AgentMemoryChangeListResponse: {
             items: components["schemas"]["AgentMemoryChange"][];
             has_more: boolean;
-            next_cursor?: string;
+            /** @description Feed position after this page. Always present, including when `items` is empty; pass it back as `after` on the next request. */
+            next_cursor: string;
         };
         /** @description Content for a memory entry. The key comes from the path. */
         SaveAgentMemoryEntryRequest: {
@@ -11163,7 +11174,7 @@ export interface operations {
             query?: {
                 /** @description Optional search over entry keys, kinds, summaries, and content. Omit to list. */
                 query?: string;
-                /** @description Search ranking mode. Omit for backwards-compatible keyword search. */
+                /** @description Search ranking mode for a non-blank `query`. Omit for backwards-compatible keyword search. Semantic and hybrid search can return `503 memory_semantic_search_unavailable` when the embedding or search-index service is unavailable; callers may retry or fall back to `keyword`. */
                 search_mode?: components["schemas"]["MemorySearchMode"];
                 /** @description Optional filter to a single memory kind. */
                 kind?: components["schemas"]["MemoryKind"];
@@ -11201,7 +11212,7 @@ export interface operations {
     listAgentMemoryChanges: {
         parameters: {
             query?: {
-                /** @description Opaque cursor returned by the previous response. */
+                /** @description Opaque cursor returned as `next_cursor` by the previous response. Omit on the first request to read retained changes oldest-first. When no retained changes exist, the empty response still returns a stable bootstrap cursor that observes future mutations. */
                 after?: string;
                 /** @description Maximum number of items to return */
                 limit?: components["parameters"]["LimitParam"];
@@ -11235,7 +11246,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
             };
         };
     };

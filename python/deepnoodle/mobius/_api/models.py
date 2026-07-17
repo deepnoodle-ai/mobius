@@ -307,13 +307,17 @@ class MemoryContextMode(StrEnum):
 
 
 class MemoryContextPolicy(BaseModel):
+    """
+    Automatic memory delivery policy. The JSON object requires `mode` (`index`, `full`, or `off`) and optionally accepts `max_bytes`, for example `{"mode":"full","max_bytes":131072}`.
+    """
+
     model_config = ConfigDict(
         extra='forbid',
     )
     mode: MemoryContextMode
     max_bytes: int | None = Field(
         None,
-        description='UTF-8 byte budget for the rendered memory reminder. Omit for the mode default (1536 bytes for index, 131072 bytes for full). Full mode fails the turn rather than truncating when the snapshot does not fit.',
+        description='UTF-8 byte budget for the rendered memory reminder. Omit for the mode default (1536 bytes for index, 131072 bytes for full); `0` also selects that default. Full mode fails the turn rather than truncating when the snapshot does not fit. Off mode ignores this field and injects no automatic memory context.',
         ge=0,
         le=245760,
     )
@@ -3461,6 +3465,23 @@ class CancelInteractionRequest(BaseModel):
     )
 
 
+class UpdateMemoryContextPolicy(BaseModel):
+    """
+    Replacement automatic memory delivery policy. Send an empty object to clear the stored override and restore the bounded index default. Otherwise `mode` is required (`index`, `full`, or `off`) and `max_bytes` is optional.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    mode: MemoryContextMode | None = None
+    max_bytes: int | None = Field(
+        None,
+        description="UTF-8 byte budget. Omit or send `0` for the selected mode's default. Off mode ignores this field.",
+        ge=0,
+        le=245760,
+    )
+
+
 class AgentMessagingDMPolicy(StrEnum):
     """
     Direct-message access policy: `open`, `allowlist`, or `disabled`.
@@ -3802,9 +3823,7 @@ class UpdateAgentRequest(BaseModel):
         None,
         description='Replacement default session-compaction policy. Send an empty object to clear the default and fall back to server defaults.',
     )
-    memory_context: MemoryContextPolicy | None = Field(
-        None, description='Replacement automatic memory delivery policy.'
-    )
+    memory_context: UpdateMemoryContextPolicy | None = None
     thinking_effort: ThinkingEffort | None = Field(
         None,
         description='Replacement default reasoning-effort level. Send `inherit` to clear the default and leave the provider default in place.',
@@ -3839,9 +3858,20 @@ class MemorySearchCoverage(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    indexed_entries: int = Field(..., ge=0)
-    total_entries: int = Field(..., ge=0)
-    complete: bool
+    indexed_entries: int = Field(
+        ...,
+        description="Number of this agent's current entries with a ready semantic search projection, before any `kind` filter.",
+        ge=0,
+    )
+    total_entries: int = Field(
+        ...,
+        description="Number of this agent's current entries, before any `kind` filter.",
+        ge=0,
+    )
+    complete: bool = Field(
+        ...,
+        description='Whether every current entry has a ready projection. When false, semantic and hybrid results rank only the indexed subset.',
+    )
 
 
 class AgentMemory(BaseModel):
@@ -3943,7 +3973,11 @@ class AgentMemoryChange(BaseModel):
     memory_entry_id: str
     memory_key: str
     operation: AgentMemoryChangeOperation
-    version: int
+    version: int = Field(
+        ...,
+        description='Entry version at the time of this mutation, matching `AgentMemoryEntry.version`.',
+        ge=1,
+    )
     reason: AgentMemoryChangeReason
     source_run_id: str | None = None
     actor_id: str | None = None
@@ -3956,7 +3990,10 @@ class AgentMemoryChangeListResponse(BaseModel):
     )
     items: list[AgentMemoryChange]
     has_more: bool
-    next_cursor: str | None = None
+    next_cursor: str = Field(
+        ...,
+        description='Feed position after this page. Always present, including when `items` is empty; pass it back as `after` on the next request.',
+    )
 
 
 class SaveAgentMemoryEntryRequest(BaseModel):
