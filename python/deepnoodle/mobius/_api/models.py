@@ -296,6 +296,33 @@ class SessionCompactionPolicy(BaseModel):
     )
 
 
+class MemoryContextMode(StrEnum):
+    """
+    Automatic memory delivery mode for agent turns.
+    """
+
+    index = 'index'
+    full = 'full'
+    off = 'off'
+
+
+class MemoryContextPolicy(BaseModel):
+    """
+    Automatic memory delivery policy. The JSON object requires `mode` (`index`, `full`, or `off`) and optionally accepts `max_bytes`, for example `{"mode":"full","max_bytes":131072}`.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    mode: MemoryContextMode
+    max_bytes: int | None = Field(
+        None,
+        description='UTF-8 byte budget for the rendered memory reminder. Omit for the mode default (1536 bytes for index, 131072 bytes for full); `0` also selects that default. Full mode fails the turn rather than truncating when the snapshot does not fit. Off mode ignores this field and injects no automatic memory context.',
+        ge=0,
+        le=245760,
+    )
+
+
 class ThinkingEffort(StrEnum):
     """
     Reasoning-effort level for a turn, lowest (`low`) to highest (`max`). Higher effort spends more tokens on reasoning, improving quality on hard tasks at the cost of latency and credits. Levels above what the resolved model supports are clamped down. Set on an agent it is the default; set on a session or loop step it overrides the agent default. `inherit` (or omitting the field) defers to the layer below — the agent default for a session/step, or the provider's own default when nothing sets a level.
@@ -359,6 +386,10 @@ class Agent(BaseModel):
     compaction_policy: SessionCompactionPolicy | None = Field(
         None,
         description='Default session-compaction policy. New sessions opened against this agent inherit it (below server defaults, above explicit per-session overrides). Absent when the agent has no default.',
+    )
+    memory_context: MemoryContextPolicy | None = Field(
+        None,
+        description='Automatic memory delivery policy. Absent means the bounded index default.',
     )
     thinking_effort: ThinkingEffort | None = Field(
         None,
@@ -3434,6 +3465,23 @@ class CancelInteractionRequest(BaseModel):
     )
 
 
+class UpdateMemoryContextPolicy(BaseModel):
+    """
+    Replacement automatic memory delivery policy. Send an empty object to clear the stored override and restore the bounded index default. Otherwise `mode` is required (`index`, `full`, or `off`) and `max_bytes` is optional.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    mode: MemoryContextMode | None = None
+    max_bytes: int | None = Field(
+        None,
+        description="UTF-8 byte budget. Omit or send `0` for the selected mode's default. Off mode ignores this field.",
+        ge=0,
+        le=245760,
+    )
+
+
 class AgentMessagingDMPolicy(StrEnum):
     """
     Direct-message access policy: `open`, `allowlist`, or `disabled`.
@@ -3703,6 +3751,10 @@ class CreateAgentRequest(BaseModel):
         None,
         description='Default session-compaction policy new sessions inherit from this agent.',
     )
+    memory_context: MemoryContextPolicy | None = Field(
+        None,
+        description='Automatic memory delivery policy. Omit for the bounded index default.',
+    )
     thinking_effort: ThinkingEffort | None = Field(
         None,
         description='Default reasoning-effort level new sessions and loop agent steps inherit from this agent.',
@@ -3771,6 +3823,7 @@ class UpdateAgentRequest(BaseModel):
         None,
         description='Replacement default session-compaction policy. Send an empty object to clear the default and fall back to server defaults.',
     )
+    memory_context: UpdateMemoryContextPolicy | None = None
     thinking_effort: ThinkingEffort | None = Field(
         None,
         description='Replacement default reasoning-effort level. Send `inherit` to clear the default and leave the provider default in place.',
@@ -3789,6 +3842,36 @@ class MemoryKind(StrEnum):
     preference = 'preference'
     episode = 'episode'
     summary = 'summary'
+
+
+class MemorySearchMode(StrEnum):
+    """
+    Memory search ranking mode.
+    """
+
+    keyword = 'keyword'
+    semantic = 'semantic'
+    hybrid = 'hybrid'
+
+
+class MemorySearchCoverage(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    indexed_entries: int = Field(
+        ...,
+        description="Number of this agent's current entries with a ready semantic search projection, before any `kind` filter.",
+        ge=0,
+    )
+    total_entries: int = Field(
+        ...,
+        description="Number of this agent's current entries, before any `kind` filter.",
+        ge=0,
+    )
+    complete: bool = Field(
+        ...,
+        description='Whether every current entry has a ready projection. When false, semantic and hybrid results rank only the indexed subset.',
+    )
 
 
 class AgentMemory(BaseModel):
@@ -3863,6 +3946,53 @@ class AgentMemoryEntryListResponse(BaseModel):
     has_more: bool = Field(..., description='Whether more entries follow this page.')
     next_cursor: str | None = Field(
         None, description='Cursor to fetch the next page, when has_more is true.'
+    )
+    search_coverage: MemorySearchCoverage | None = Field(
+        None, description='Present for semantic and hybrid search.'
+    )
+
+
+class AgentMemoryChangeOperation(StrEnum):
+    created = 'created'
+    updated = 'updated'
+    deleted = 'deleted'
+
+
+class AgentMemoryChangeReason(StrEnum):
+    remembered = 'remembered'
+    api = 'api'
+    soft_cap = 'soft_cap'
+
+
+class AgentMemoryChange(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str
+    agent_id: str
+    memory_entry_id: str
+    memory_key: str
+    operation: AgentMemoryChangeOperation
+    version: int = Field(
+        ...,
+        description='Entry version at the time of this mutation, matching `AgentMemoryEntry.version`.',
+        ge=1,
+    )
+    reason: AgentMemoryChangeReason
+    source_run_id: str | None = None
+    actor_id: str | None = None
+    created_at: AwareDatetime
+
+
+class AgentMemoryChangeListResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    items: list[AgentMemoryChange]
+    has_more: bool
+    next_cursor: str = Field(
+        ...,
+        description='Feed position after this page. Always present, including when `items` is empty; pass it back as `after` on the next request.',
     )
 
 
@@ -7255,6 +7385,10 @@ class InlineAgentConfig(BaseModel):
         None,
         description="Per-turn execution timeout in seconds. Zero uses the platform default. A loop step's own timeout still overrides this.",
         ge=0,
+    )
+    memory_context: MemoryContextPolicy | None = Field(
+        None,
+        description="Automatic memory delivery policy for this session's resolved agent definition. Replaces the stored or client-resolved policy.",
     )
     toolkits: list[InlineToolkit] | None = Field(
         None,

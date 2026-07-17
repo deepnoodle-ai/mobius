@@ -230,6 +230,48 @@ func (e ActionPermissionGroupSource) Valid() bool {
 	}
 }
 
+// Defines values for AgentMemoryChangeOperation.
+const (
+	AgentMemoryChangeOperationCreated AgentMemoryChangeOperation = "created"
+	AgentMemoryChangeOperationDeleted AgentMemoryChangeOperation = "deleted"
+	AgentMemoryChangeOperationUpdated AgentMemoryChangeOperation = "updated"
+)
+
+// Valid indicates whether the value is a known member of the AgentMemoryChangeOperation enum.
+func (e AgentMemoryChangeOperation) Valid() bool {
+	switch e {
+	case AgentMemoryChangeOperationCreated:
+		return true
+	case AgentMemoryChangeOperationDeleted:
+		return true
+	case AgentMemoryChangeOperationUpdated:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AgentMemoryChangeReason.
+const (
+	AgentMemoryChangeReasonApi        AgentMemoryChangeReason = "api"
+	AgentMemoryChangeReasonRemembered AgentMemoryChangeReason = "remembered"
+	AgentMemoryChangeReasonSoftCap    AgentMemoryChangeReason = "soft_cap"
+)
+
+// Valid indicates whether the value is a known member of the AgentMemoryChangeReason enum.
+func (e AgentMemoryChangeReason) Valid() bool {
+	switch e {
+	case AgentMemoryChangeReasonApi:
+		return true
+	case AgentMemoryChangeReasonRemembered:
+		return true
+	case AgentMemoryChangeReasonSoftCap:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for AgentMessagePayloadRole.
 const (
 	AgentMessagePayloadRoleAssistant AgentMessagePayloadRole = "assistant"
@@ -1880,6 +1922,27 @@ func (e LoopWaitForEventStepSpecKind) Valid() bool {
 	}
 }
 
+// Defines values for MemoryContextMode.
+const (
+	MemoryContextModeFull  MemoryContextMode = "full"
+	MemoryContextModeIndex MemoryContextMode = "index"
+	MemoryContextModeOff   MemoryContextMode = "off"
+)
+
+// Valid indicates whether the value is a known member of the MemoryContextMode enum.
+func (e MemoryContextMode) Valid() bool {
+	switch e {
+	case MemoryContextModeFull:
+		return true
+	case MemoryContextModeIndex:
+		return true
+	case MemoryContextModeOff:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for MemoryKind.
 const (
 	MemoryKindEpisode    MemoryKind = "episode"
@@ -1898,6 +1961,27 @@ func (e MemoryKind) Valid() bool {
 	case MemoryKindPreference:
 		return true
 	case MemoryKindSummary:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MemorySearchMode.
+const (
+	MemorySearchModeHybrid   MemorySearchMode = "hybrid"
+	MemorySearchModeKeyword  MemorySearchMode = "keyword"
+	MemorySearchModeSemantic MemorySearchMode = "semantic"
+)
+
+// Valid indicates whether the value is a known member of the MemorySearchMode enum.
+func (e MemorySearchMode) Valid() bool {
+	switch e {
+	case MemorySearchModeHybrid:
+		return true
+	case MemorySearchModeKeyword:
+		return true
+	case MemorySearchModeSemantic:
 		return true
 	default:
 		return false
@@ -3977,6 +4061,9 @@ type Agent struct {
 	// Id Unique identifier for this agent.
 	Id string `json:"id"`
 
+	// MemoryContext Automatic memory delivery policy. The JSON object requires `mode` (`index`, `full`, or `off`) and optionally accepts `max_bytes`, for example `{"mode":"full","max_bytes":131072}`.
+	MemoryContext *MemoryContextPolicy `json:"memory_context,omitempty"`
+
 	// Model Model identifier for agents. Accepts any id returned by `GET /v1/projects/{project_handle}/catalog/models` (including slash-bearing OpenRouter catalog ids), optionally `provider/`-prefixed (e.g. `xai/grok-4`); bare known ids (e.g. `claude-sonnet-4-6`) are auto-detected to their provider. Empty string falls back to the platform default.
 	Model *string `json:"model,omitempty"`
 
@@ -4056,6 +4143,37 @@ type AgentMemory struct {
 	UpdatedAt *time.Time `json:"updated_at,omitempty"`
 }
 
+// AgentMemoryChange defines model for AgentMemoryChange.
+type AgentMemoryChange struct {
+	ActorId       *string                    `json:"actor_id,omitempty"`
+	AgentId       string                     `json:"agent_id"`
+	CreatedAt     time.Time                  `json:"created_at"`
+	Id            string                     `json:"id"`
+	MemoryEntryId string                     `json:"memory_entry_id"`
+	MemoryKey     string                     `json:"memory_key"`
+	Operation     AgentMemoryChangeOperation `json:"operation"`
+	Reason        AgentMemoryChangeReason    `json:"reason"`
+	SourceRunId   *string                    `json:"source_run_id,omitempty"`
+
+	// Version Entry version at the time of this mutation, matching `AgentMemoryEntry.version`.
+	Version int `json:"version"`
+}
+
+// AgentMemoryChangeListResponse defines model for AgentMemoryChangeListResponse.
+type AgentMemoryChangeListResponse struct {
+	HasMore bool                `json:"has_more"`
+	Items   []AgentMemoryChange `json:"items"`
+
+	// NextCursor Feed position after this page. Always present, including when `items` is empty; pass it back as `after` on the next request.
+	NextCursor string `json:"next_cursor"`
+}
+
+// AgentMemoryChangeOperation defines model for AgentMemoryChangeOperation.
+type AgentMemoryChangeOperation string
+
+// AgentMemoryChangeReason defines model for AgentMemoryChangeReason.
+type AgentMemoryChangeReason string
+
 // AgentMemoryEntry A single durable memory in an agent's private memory, identified by a stable key the agent chose.
 type AgentMemoryEntry struct {
 	// Content The remembered content.
@@ -4104,7 +4222,8 @@ type AgentMemoryEntryListResponse struct {
 	Items []AgentMemoryEntry `json:"items"`
 
 	// NextCursor Cursor to fetch the next page, when has_more is true.
-	NextCursor *string `json:"next_cursor,omitempty"`
+	NextCursor     *string               `json:"next_cursor,omitempty"`
+	SearchCoverage *MemorySearchCoverage `json:"search_coverage,omitempty"`
 }
 
 // AgentMessagePayload Payload of an `agent.message` content event: the durable encoding of one assistant transcript message. Carries the message's full structured content (text, thinking, tool_use) plus the message identity (`message_id` + `sequence`). Replaying these events reconstructs the same view as reading the messages API.
@@ -5023,6 +5142,9 @@ type CreateAgentRequest struct {
 	// Description Optional human-readable description.
 	Description *string `json:"description,omitempty"`
 
+	// MemoryContext Automatic memory delivery policy. The JSON object requires `mode` (`index`, `full`, or `off`) and optionally accepts `max_bytes`, for example `{"mode":"full","max_bytes":131072}`.
+	MemoryContext *MemoryContextPolicy `json:"memory_context,omitempty"`
+
 	// Model Model identifier for agents. Any id from `GET /v1/projects/{project_handle}/catalog/models`, including slash-bearing OpenRouter catalog ids, or an optionally `provider/`-prefixed id (e.g. `xai/grok-4`); bare known ids (e.g. `claude-sonnet-4-6`) are auto-detected. Empty falls back to the platform default.
 	Model *string `json:"model,omitempty"`
 
@@ -5786,6 +5908,9 @@ type InlineAgentConfig struct {
 
 	// Instructions System-prompt instructions for the agent. Replaces the agent's configured system prompt for this session. Empty falls back to the generated default.
 	Instructions *string `json:"instructions,omitempty"`
+
+	// MemoryContext Automatic memory delivery policy. The JSON object requires `mode` (`index`, `full`, or `off`) and optionally accepts `max_bytes`, for example `{"mode":"full","max_bytes":131072}`.
+	MemoryContext *MemoryContextPolicy `json:"memory_context,omitempty"`
 
 	// Model LLM model identifier. Resolves through the same model routing and allow rules as a stored agent's model.
 	Model *string `json:"model,omitempty"`
@@ -7193,8 +7318,35 @@ type LoopWaitForEventStepSpec struct {
 // LoopWaitForEventStepSpecKind Step discriminator value; always `wait_for_event`.
 type LoopWaitForEventStepSpecKind string
 
+// MemoryContextMode Automatic memory delivery mode for agent turns.
+type MemoryContextMode string
+
+// MemoryContextPolicy Automatic memory delivery policy. The JSON object requires `mode` (`index`, `full`, or `off`) and optionally accepts `max_bytes`, for example `{"mode":"full","max_bytes":131072}`.
+type MemoryContextPolicy struct {
+	// MaxBytes UTF-8 byte budget for the rendered memory reminder. Omit for the mode default (1536 bytes for index, 131072 bytes for full); `0` also selects that default. Full mode fails the turn rather than truncating when the snapshot does not fit. Off mode ignores this field and injects no automatic memory context.
+	MaxBytes *int `json:"max_bytes,omitempty"`
+
+	// Mode Automatic memory delivery mode for agent turns.
+	Mode MemoryContextMode `json:"mode"`
+}
+
 // MemoryKind Classifies a memory entry. Kinds carry different retention and compaction semantics: facts and preferences are durable, episodes are the primary input to compaction, and a summary is the compacted product of other entries.
 type MemoryKind string
+
+// MemorySearchCoverage defines model for MemorySearchCoverage.
+type MemorySearchCoverage struct {
+	// Complete Whether every current entry has a ready projection. When false, semantic and hybrid results rank only the indexed subset.
+	Complete bool `json:"complete"`
+
+	// IndexedEntries Number of this agent's current entries with a ready semantic search projection, before any `kind` filter.
+	IndexedEntries int `json:"indexed_entries"`
+
+	// TotalEntries Number of this agent's current entries, before any `kind` filter.
+	TotalEntries int `json:"total_entries"`
+}
+
+// MemorySearchMode Memory search ranking mode.
+type MemorySearchMode string
 
 // MessageBlockFrame defines model for MessageBlockFrame.
 type MessageBlockFrame struct {
@@ -9138,6 +9290,9 @@ type UpdateAgentRequest struct {
 	// Description Replacement description.
 	Description *string `json:"description,omitempty"`
 
+	// MemoryContext Replacement automatic memory delivery policy. Send an empty object to clear the stored override and restore the bounded index default. Otherwise `mode` is required (`index`, `full`, or `off`) and `max_bytes` is optional.
+	MemoryContext *UpdateMemoryContextPolicy `json:"memory_context,omitempty"`
+
 	// Model Replacement model identifier for agents (any id from `GET /v1/projects/{project_handle}/catalog/models`, including slash-bearing OpenRouter catalog ids, or an optionally `provider/`-prefixed id).
 	Model *string `json:"model,omitempty"`
 
@@ -9246,6 +9401,15 @@ type UpdateLoopRequestConcurrency string
 
 // UpdateLoopRequestSchemaVersion Loop authoring schema version. Only schema version 1 is accepted.
 type UpdateLoopRequestSchemaVersion string
+
+// UpdateMemoryContextPolicy Replacement automatic memory delivery policy. Send an empty object to clear the stored override and restore the bounded index default. Otherwise `mode` is required (`index`, `full`, or `off`) and `max_bytes` is optional.
+type UpdateMemoryContextPolicy struct {
+	// MaxBytes UTF-8 byte budget. Omit or send `0` for the selected mode's default. Off mode ignores this field.
+	MaxBytes *int `json:"max_bytes,omitempty"`
+
+	// Mode Automatic memory delivery mode for agent turns.
+	Mode *MemoryContextMode `json:"mode,omitempty"`
+}
 
 // UpdatePrincipalRequest defines model for UpdatePrincipalRequest.
 type UpdatePrincipalRequest struct {
@@ -9962,6 +10126,9 @@ type Forbidden = ErrorResponse
 // NotFound Standard error envelope returned by API endpoints.
 type NotFound = ErrorResponse
 
+// ServiceUnavailable Standard error envelope returned by API endpoints.
+type ServiceUnavailable = ErrorResponse
+
 // TooManyRequests Standard error envelope returned by API endpoints.
 type TooManyRequests = ErrorResponse
 
@@ -10034,10 +10201,22 @@ type ListAgentsParams struct {
 	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
+// ListAgentMemoryChangesParams defines parameters for ListAgentMemoryChanges.
+type ListAgentMemoryChangesParams struct {
+	// After Opaque cursor returned as `next_cursor` by the previous response. Omit on the first request to read retained changes oldest-first. When no retained changes exist, the empty response still returns a stable bootstrap cursor that observes future mutations.
+	After *string `form:"after,omitempty" json:"after,omitempty"`
+
+	// Limit Maximum number of items to return
+	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
 // ListAgentMemoryEntriesParams defines parameters for ListAgentMemoryEntries.
 type ListAgentMemoryEntriesParams struct {
-	// Query Optional keyword search over entry keys and content. Omit to list.
+	// Query Optional search over entry keys, kinds, summaries, and content. Omit to list.
 	Query *string `form:"query,omitempty" json:"query,omitempty"`
+
+	// SearchMode Search ranking mode for a non-blank `query`. Omit for backwards-compatible keyword search. Semantic and hybrid search can return `503 memory_semantic_search_unavailable` when the embedding or search-index service is unavailable; callers may retry or fall back to `keyword`.
+	SearchMode *MemorySearchMode `form:"search_mode,omitempty" json:"search_mode,omitempty"`
 
 	// Kind Optional filter to a single memory kind.
 	Kind *MemoryKind `form:"kind,omitempty" json:"kind,omitempty"`
@@ -18459,6 +18638,9 @@ type ClientInterface interface {
 	// GetAgentMemory request
 	GetAgentMemory(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ListAgentMemoryChanges request
+	ListAgentMemoryChanges(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, params *ListAgentMemoryChangesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListAgentMemoryEntries request
 	ListAgentMemoryEntries(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, params *ListAgentMemoryEntriesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -19346,6 +19528,18 @@ func (c *Client) ProvisionAgentInbox(ctx context.Context, projectHandle ProjectH
 
 func (c *Client) GetAgentMemory(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetAgentMemoryRequest(c.Server, projectHandle, resourceId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListAgentMemoryChanges(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, params *ListAgentMemoryChangesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListAgentMemoryChangesRequest(c.Server, projectHandle, resourceId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -22709,6 +22903,86 @@ func NewGetAgentMemoryRequest(server string, projectHandle ProjectHandleParam, r
 	return req, nil
 }
 
+// NewListAgentMemoryChangesRequest generates requests for ListAgentMemoryChanges
+func NewListAgentMemoryChangesRequest(server string, projectHandle ProjectHandleParam, resourceId IDParam, params *ListAgentMemoryChangesParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project_handle", projectHandle, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "resource_id", resourceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/agents/%s/memory/changes", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.After != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "after", *params.After, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewListAgentMemoryEntriesRequest generates requests for ListAgentMemoryEntries
 func NewListAgentMemoryEntriesRequest(server string, projectHandle ProjectHandleParam, resourceId IDParam, params *ListAgentMemoryEntriesParams) (*http.Request, error) {
 	var err error
@@ -22754,6 +23028,18 @@ func NewListAgentMemoryEntriesRequest(server string, projectHandle ProjectHandle
 		if params.Query != nil {
 
 			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "query", *params.Query, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.SearchMode != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "search_mode", *params.SearchMode, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -30201,6 +30487,9 @@ type ClientWithResponsesInterface interface {
 	// GetAgentMemoryWithResponse request
 	GetAgentMemoryWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, reqEditors ...RequestEditorFn) (*GetAgentMemoryResponse, error)
 
+	// ListAgentMemoryChangesWithResponse request
+	ListAgentMemoryChangesWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, params *ListAgentMemoryChangesParams, reqEditors ...RequestEditorFn) (*ListAgentMemoryChangesResponse, error)
+
 	// ListAgentMemoryEntriesWithResponse request
 	ListAgentMemoryEntriesWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, params *ListAgentMemoryEntriesParams, reqEditors ...RequestEditorFn) (*ListAgentMemoryEntriesResponse, error)
 
@@ -31529,6 +31818,41 @@ func (r GetAgentMemoryResponse) ContentType() string {
 	return ""
 }
 
+type ListAgentMemoryChangesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *AgentMemoryChangeListResponse
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+	JSON410      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r ListAgentMemoryChangesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListAgentMemoryChangesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListAgentMemoryChangesResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type ListAgentMemoryEntriesResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -31536,6 +31860,7 @@ type ListAgentMemoryEntriesResponse struct {
 	JSON401      *Unauthorized
 	JSON403      *Forbidden
 	JSON404      *NotFound
+	JSON503      *ServiceUnavailable
 }
 
 // Status returns HTTPResponse.Status
@@ -36173,6 +36498,15 @@ func (c *ClientWithResponses) GetAgentMemoryWithResponse(ctx context.Context, pr
 	return ParseGetAgentMemoryResponse(rsp)
 }
 
+// ListAgentMemoryChangesWithResponse request returning *ListAgentMemoryChangesResponse
+func (c *ClientWithResponses) ListAgentMemoryChangesWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, params *ListAgentMemoryChangesParams, reqEditors ...RequestEditorFn) (*ListAgentMemoryChangesResponse, error) {
+	rsp, err := c.ListAgentMemoryChanges(ctx, projectHandle, resourceId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListAgentMemoryChangesResponse(rsp)
+}
+
 // ListAgentMemoryEntriesWithResponse request returning *ListAgentMemoryEntriesResponse
 func (c *ClientWithResponses) ListAgentMemoryEntriesWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, params *ListAgentMemoryEntriesParams, reqEditors ...RequestEditorFn) (*ListAgentMemoryEntriesResponse, error) {
 	rsp, err := c.ListAgentMemoryEntries(ctx, projectHandle, resourceId, params, reqEditors...)
@@ -39050,6 +39384,67 @@ func ParseGetAgentMemoryResponse(rsp *http.Response) (*GetAgentMemoryResponse, e
 	return response, nil
 }
 
+// ParseListAgentMemoryChangesResponse parses an HTTP response from a ListAgentMemoryChangesWithResponse call
+func ParseListAgentMemoryChangesResponse(rsp *http.Response) (*ListAgentMemoryChangesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListAgentMemoryChangesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest AgentMemoryChangeListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 410:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON410 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseListAgentMemoryEntriesResponse parses an HTTP response from a ListAgentMemoryEntriesWithResponse call
 func ParseListAgentMemoryEntriesResponse(rsp *http.Response) (*ListAgentMemoryEntriesResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -39091,6 +39486,13 @@ func ParseListAgentMemoryEntriesResponse(rsp *http.Response) (*ListAgentMemoryEn
 			return nil, err
 		}
 		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest ServiceUnavailable
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
 
 	}
 
