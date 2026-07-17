@@ -503,7 +503,11 @@ export interface paths {
         put?: never;
         /**
          * Create project
-         * @description Creates a project within the authenticated org. If `handle` is omitted it is auto-derived from `name` (lowercased, spaces replaced with hyphens). Returns 409 if the handle already exists in the org.
+         * @description Creates a project within the authenticated org. If `handle` is omitted it is auto-derived from `name` (lowercased, spaces replaced with hyphens).
+         *
+         *     By default (`if_exists: error`, the default), a duplicate `handle` or `external_ref` returns 409. Set `if_exists: adopt` together with `external_ref` to make the call safely retryable: when an active project already carries that `external_ref`, it is returned unchanged with `200` instead of erroring — `name`, `description`, `access_mode`, and `tags` are ignored on adopt, since no write happens. `external_ref` is required to use `adopt`; omitting it returns 400.
+         *
+         *     Adopt conflict responses carry stable codes: `external_identity_conflict` when the request supplies a `handle` that differs from the matched project's handle; `project_archived` when the matched project is archived (adopt never silently unarchives a project or mints a replacement identity). `429 project_capacity_reached` is returned when creating a new project would exceed the org's project limit; an existing `external_ref` match still adopts even at that limit.
          */
         post: operations["createProject"];
         delete?: never;
@@ -814,6 +818,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/organization/oauth-return-origins": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the org's OAuth return-origin allowlist
+         * @description Returns the active organization's allowlist of exact HTTPS origins that an embedded partner may name as a `return_url` when starting a provider connection. An empty list means embedded return is disabled for the organization. Requires `Admin` or `Owner` membership.
+         */
+        get: operations["getOAuthReturnOrigins"];
+        /**
+         * Replace the org's OAuth return-origin allowlist
+         * @description Full-replace of the active organization's OAuth return-origin allowlist. Each entry must be an exact HTTPS origin (scheme, host, and optional non-default port); it is normalized to lowercase host with default ports stripped, and duplicates are collapsed. At most 20 origins are accepted. Sending an empty list disables embedded return. Requires `Admin` or `Owner` membership.
+         */
+        put: operations["replaceOAuthReturnOrigins"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/projects/{project_handle}/interactions": {
         parameters: {
             query?: never;
@@ -920,6 +948,8 @@ export interface paths {
         /**
          * Create agent
          * @description Creates an agent. An agent IS a principal (principals.kind = agent): its backing identity row is created atomically with the agent — there is no separate machine-identity side record. The agent principal is for identity, ownership, and attribution; an agent's tools come from its assigned toolkits, not from roles.
+         *
+         *     By default (`if_exists: error`, the default), a duplicate `name` or `external_ref` returns 409. Set `if_exists: adopt` together with `external_ref` to make the call safely retryable: when a live agent already carries that `external_ref`, it is returned unchanged with `200` instead of erroring — mutable fields are ignored, since no write happens. `external_ref` is required to use `adopt`; omitting it returns 400. A soft-deleted agent still owns its `external_ref`: it is never resurrected and never replaced, so a match against a deleted agent returns 409 even with `adopt`.
          */
         post: operations["createAgent"];
         delete?: never;
@@ -2547,6 +2577,12 @@ export interface components {
             [key: string]: string;
         };
         /**
+         * @description Create-or-adopt behavior when a request's `external_ref` matches an existing resource. `error` (the default) rejects the request with 409. `adopt` returns the existing resource unchanged instead — mutable fields in the request are ignored, since no write happens — and requires `external_ref` to be set; omitting it returns 400.
+         * @default error
+         * @enum {string}
+         */
+        IfExists: "error" | "adopt";
+        /**
          * @description Administrative status. Inactive agents cannot claim new jobs. Deleted agents are excluded from normal reads.
          * @enum {string}
          */
@@ -2702,6 +2738,8 @@ export interface components {
             principal_id: string;
             /** @description Mutable unique name within the project. Free-form human-readable label; use `id` for stable references and job targeting. */
             name: string;
+            /** @description Client-owned durable identity key for this agent. Unique within the project when present, and assign-once: create requests may set it; update requests may set it only while the agent has no existing external_ref, or repeat the current value idempotently. When set, the organization definition resolver addresses this agent as `agent/<external_ref>` instead of `agent/<name>`, so the selector survives display-name changes. */
+            external_ref?: string;
             /** @description Optional human-readable description. */
             description?: string;
             /** @description Display color for this agent in UI surfaces. One of the Mantine color palette keys (e.g. `indigo`, `teal`, `grape`); empty string falls back to a hash-derived color. */
@@ -3529,7 +3567,7 @@ export interface components {
              */
             active_signing_version?: number;
             secret_versions: components["schemas"]["OrganizationActionSecretVersion"][];
-            /** @description Base64-encoded signing key returned only on create and rotate. It always belongs to the newest entry in `secret_versions` — the `active` version after create, the `pending` version after rotate. */
+            /** @description Base64-encoded signing key returned only on create and rotate. */
             signing_secret?: string;
             /** Format: date-time */
             created_at: string;
@@ -4501,8 +4539,9 @@ export interface components {
             handle?: string;
             /** @description Optional human-readable description. */
             description?: string;
-            /** @description Client-owned tenant/workspace correlation key. Unique within the org when present. Treat this as assign-once: create requests may set it; update requests may set it only while the project has no existing external_ref. */
+            /** @description Client-owned tenant/workspace correlation key. Unique within the org when present. Treat this as assign-once: create requests may set it; update requests may set it only while the project has no existing external_ref. Required when `if_exists` is `adopt`. */
             external_ref?: string;
+            if_exists?: components["schemas"]["IfExists"];
             /** @description Initial project access policy: `open` or `restricted`. */
             access_mode?: components["schemas"]["ProjectAccessMode"];
             /** @description Initial labels used for filtering, ownership, or automation. */
@@ -4906,6 +4945,16 @@ export interface components {
             mode?: "bearer";
             /** @description Bearer token Mobius sends to the resolver. Write-only; never returned. */
             token?: string;
+        };
+        /** @description The organization's allowlist of exact HTTPS origins an embedded partner may name as an OAuth connect `return_url`. Origins are stored normalized (lowercase host, default ports stripped). An empty list disables embedded return for the organization. */
+        OAuthReturnOrigins: {
+            /** @description Normalized exact HTTPS return origins (for example `https://app.partner.example`). */
+            origins: string[];
+        };
+        /** @description Full-replace body for the organization's OAuth return-origin allowlist. Each entry must be an exact HTTPS origin; entries are normalized and de-duplicated. At most 20 origins are accepted. */
+        PutOAuthReturnOriginsRequest: {
+            /** @description Exact HTTPS return origins to allow. An empty array disables embedded return. */
+            origins: string[];
         };
         /**
          * @description Declarative UI/input primitive for collecting the response. This is a portable rendering contract, not executable code. Values are `confirm`, `select`, `multi_select`, and `input`.
@@ -5493,6 +5542,9 @@ export interface components {
         CreateAgentRequest: {
             /** @description Unique name for this agent. Free-form human-readable label, 1-63 characters. */
             name: string;
+            /** @description Client-owned durable identity key. Unique within the project when present. Treat this as assign-once: create requests may set it; update requests may set it only while the agent has no existing external_ref, or repeat the current value idempotently. When set, the organization definition resolver addresses this agent as `agent/<external_ref>`. Required when `if_exists` is `adopt`. */
+            external_ref?: string;
+            if_exists?: components["schemas"]["IfExists"];
             /** @description Optional human-readable description. */
             description?: string;
             /** @description Display color for this agent (Mantine palette key, e.g. `indigo`). Optional; empty falls back to a hash-derived color. */
@@ -5523,6 +5575,8 @@ export interface components {
         UpdateAgentRequest: {
             /** @description Free-form human-readable label, 1-63 characters; must be unique within the project. */
             name?: string;
+            /** @description Assign-once client identity key, unique within the project. Accepted when the agent has no external_ref, or when it repeats the current value idempotently. Changing an already-set value returns 409. When set, the organization definition resolver addresses this agent as `agent/<external_ref>`. */
+            external_ref?: string;
             /** @description Replacement description. */
             description?: string;
             /** @description Replacement display color (Mantine palette key, e.g. `indigo`). Pass empty string to clear and fall back to a hash-derived color. */
@@ -10074,6 +10128,15 @@ export interface operations {
             };
         };
         responses: {
+            /** @description The existing project, adopted by `external_ref` (`if_exists: adopt`). No fields were written. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Project"];
+                };
+            };
             /** @description Created */
             201: {
                 headers: {
@@ -10870,6 +10933,57 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
+    getOAuthReturnOrigins: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OAuthReturnOrigins"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    replaceOAuthReturnOrigins: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PutOAuthReturnOriginsRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OAuthReturnOrigins"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
     listInteractions: {
         parameters: {
             query?: {
@@ -11225,6 +11339,15 @@ export interface operations {
             };
         };
         responses: {
+            /** @description The existing agent, adopted by `external_ref` (`if_exists: adopt`). No fields were written. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Agent"];
+                };
+            };
             /** @description Created */
             201: {
                 headers: {

@@ -134,6 +134,15 @@ class TagMap(RootModel[dict[str, str]]):
     root: dict[str, str] = Field(..., max_length=256)
 
 
+class IfExists(StrEnum):
+    """
+    Create-or-adopt behavior when a request's `external_ref` matches an existing resource. `error` (the default) rejects the request with 409. `adopt` returns the existing resource unchanged instead — mutable fields in the request are ignored, since no write happens — and requires `external_ref` to be set; omitting it returns 400.
+    """
+
+    error = 'error'
+    adopt = 'adopt'
+
+
 class AgentStatus(StrEnum):
     """
     Administrative status. Inactive agents cannot claim new jobs. Deleted agents are excluded from normal reads.
@@ -353,6 +362,12 @@ class Agent(BaseModel):
         ...,
         description='Mutable unique name within the project. Free-form human-readable label; use `id` for stable references and job targeting.',
         max_length=63,
+        min_length=1,
+    )
+    external_ref: str | None = Field(
+        None,
+        description='Client-owned durable identity key for this agent. Unique within the project when present, and assign-once: create requests may set it; update requests may set it only while the agent has no existing external_ref, or repeat the current value idempotently. When set, the organization definition resolver addresses this agent as `agent/<external_ref>` instead of `agent/<name>`, so the selector survives display-name changes.',
+        max_length=200,
         min_length=1,
     )
     description: str | None = Field(
@@ -2637,8 +2652,9 @@ class CreateProjectRequest(BaseModel):
     )
     external_ref: str | None = Field(
         None,
-        description='Client-owned tenant/workspace correlation key. Unique within the org when present. Treat this as assign-once: create requests may set it; update requests may set it only while the project has no existing external_ref.',
+        description='Client-owned tenant/workspace correlation key. Unique within the org when present. Treat this as assign-once: create requests may set it; update requests may set it only while the project has no existing external_ref. Required when `if_exists` is `adopt`.',
     )
+    if_exists: IfExists | None = 'error'
     access_mode: ProjectAccessMode | None = Field(
         None, description='Initial project access policy: `open` or `restricted`.'
     )
@@ -3207,6 +3223,36 @@ class DefinitionResolverAuth(BaseModel):
     token: str | None = Field(
         None,
         description='Bearer token Mobius sends to the resolver. Write-only; never returned.',
+    )
+
+
+class OAuthReturnOrigins(BaseModel):
+    """
+    The organization's allowlist of exact HTTPS origins an embedded partner may name as an OAuth connect `return_url`. Origins are stored normalized (lowercase host, default ports stripped). An empty list disables embedded return for the organization.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    origins: list[str] = Field(
+        ...,
+        description='Normalized exact HTTPS return origins (for example `https://app.partner.example`).',
+        max_length=20,
+    )
+
+
+class PutOAuthReturnOriginsRequest(BaseModel):
+    """
+    Full-replace body for the organization's OAuth return-origin allowlist. Each entry must be an exact HTTPS origin; entries are normalized and de-duplicated. At most 20 origins are accepted.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    origins: list[str] = Field(
+        ...,
+        description='Exact HTTPS return origins to allow. An empty array disables embedded return.',
+        max_length=20,
     )
 
 
@@ -3783,6 +3829,13 @@ class CreateAgentRequest(BaseModel):
         max_length=63,
         min_length=1,
     )
+    external_ref: str | None = Field(
+        None,
+        description='Client-owned durable identity key. Unique within the project when present. Treat this as assign-once: create requests may set it; update requests may set it only while the agent has no existing external_ref, or repeat the current value idempotently. When set, the organization definition resolver addresses this agent as `agent/<external_ref>`. Required when `if_exists` is `adopt`.',
+        max_length=200,
+        min_length=1,
+    )
+    if_exists: IfExists | None = 'error'
     description: str | None = Field(
         None, description='Optional human-readable description.', max_length=500
     )
@@ -3848,6 +3901,12 @@ class UpdateAgentRequest(BaseModel):
         None,
         description='Free-form human-readable label, 1-63 characters; must be unique within the project.',
         max_length=63,
+        min_length=1,
+    )
+    external_ref: str | None = Field(
+        None,
+        description='Assign-once client identity key, unique within the project. Accepted when the agent has no external_ref, or when it repeats the current value idempotently. Changing an already-set value returns 409. When set, the organization definition resolver addresses this agent as `agent/<external_ref>`.',
+        max_length=200,
         min_length=1,
     )
     description: str | None = Field(
@@ -7014,7 +7073,7 @@ class OrganizationAction(BaseModel):
     secret_versions: list[OrganizationActionSecretVersion]
     signing_secret: str | None = Field(
         None,
-        description='Base64-encoded signing key returned only on create and rotate. It always belongs to the newest entry in `secret_versions` — the `active` version after create, the `pending` version after rotate.',
+        description='Base64-encoded signing key returned only on create and rotate.',
     )
     created_at: AwareDatetime
     updated_at: AwareDatetime

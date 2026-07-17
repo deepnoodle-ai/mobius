@@ -22,6 +22,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
   now take a document path or `-` for stdin (#181 follow-up).
 - `ListActionInvocations` with every audit filter in all three SDKs, plus
   public exports of the catalog and invocation provenance types.
+- `if_exists: adopt` on agent and project creation makes retries safe: a
+  duplicate `external_ref` returns the existing resource (`200`) instead of
+  `409`, in all three SDKs and the CLI.
+- Agents gained an assign-once `external_ref` identity key, so the
+  organization definition resolver can address an agent as
+  `agent/<external_ref>` instead of by display name.
+- Organization OAuth return-origin allowlist (`organizations
+  get-oauth-return-origins` / `replace-oauth-return-origins`) in all three
+  SDKs and the CLI, gating embedded partner OAuth connect flows.
 
 ### Changed
 

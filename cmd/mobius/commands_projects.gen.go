@@ -26,6 +26,7 @@ func registerProjectsCommands(app *cli.App) {
 			cli.String("description", "").Help("Optional human-readable description."),
 			cli.String("external-ref", "").Help("Client-owned tenant/workspace correlation key. Unique within the org when present. Treat this as assign-once: create requests may set it…"),
 			cli.String("handle", "").Help("URL-safe slug for API routes. Auto-derived from name if omitted. Must be unique within the org. Cannot be changed after creation."),
+			cli.String("if-exists", "").Help("Create-or-adopt behavior when a request's `external_ref` matches an existing resource. `error` (the default) rejects the request with 409…"),
 			cli.String("name", "").Help("[required] Human-readable project name."),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
@@ -57,6 +58,10 @@ func registerProjectsCommands(app *cli.App) {
 			if ctx.IsSet("handle") {
 				v := ctx.String("handle")
 				body.Handle = &v
+			}
+			if ctx.IsSet("if-exists") {
+				v := api.IfExists(ctx.String("if-exists"))
+				body.IfExists = &v
 			}
 			if ctx.IsSet("name") {
 				body.Name = ctx.String("name")

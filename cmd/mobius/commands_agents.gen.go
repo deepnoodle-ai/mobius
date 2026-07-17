@@ -25,6 +25,8 @@ func registerAgentsCommands(app *cli.App) {
 			cli.String("color", "").Help("Display color for this agent (Mantine palette key, e.g. `indigo`). Optional; empty falls back to a hash-derived color."),
 			cli.String("compaction-policy", "").Help("Controls how a session's transcript is automatically summarized as it grows. On create the supplied fields are merged over the owning… Accepts JSON, @file, or @-."),
 			cli.String("description", "").Help("Optional human-readable description."),
+			cli.String("external-ref", "").Help("Client-owned durable identity key. Unique within the project when present. Treat this as assign-once: create requests may set it; update…"),
+			cli.String("if-exists", "").Help("Create-or-adopt behavior when a request's `external_ref` matches an existing resource. `error` (the default) rejects the request with 409…"),
 			cli.String("memory-context", "").Help("Automatic memory delivery policy. The JSON object requires `mode` (`index`, `full`, or `off`) and optionally accepts `max_bytes`, for… Accepts JSON, @file, or @-."),
 			cli.String("model", "").Help("Model identifier for agents. Any id from `GET /v1/projects/{project_handle}/catalog/models`, including slash-bearing OpenRouter catalog…"),
 			cli.String("model-route", "").Help("Default model route used by built-in messaging and by loop agent steps that do not override the route. Accepts JSON, @file, or @-."),
@@ -61,6 +63,14 @@ func registerAgentsCommands(app *cli.App) {
 			if ctx.IsSet("description") {
 				v := ctx.String("description")
 				body.Description = &v
+			}
+			if ctx.IsSet("external-ref") {
+				v := ctx.String("external-ref")
+				body.ExternalRef = &v
+			}
+			if ctx.IsSet("if-exists") {
+				v := api.IfExists(ctx.String("if-exists"))
+				body.IfExists = &v
 			}
 			if ctx.IsSet("memory-context") {
 				if err := decodeFlagJSON(ctx, "memory-context", ctx.String("memory-context"), &body.MemoryContext); err != nil {
@@ -731,6 +741,7 @@ func registerAgentsCommands(app *cli.App) {
 			cli.String("color", "").Help("Replacement display color (Mantine palette key, e.g. `indigo`). Pass empty string to clear and fall back to a hash-derived color."),
 			cli.String("compaction-policy", "").Help("Controls how a session's transcript is automatically summarized as it grows. On create the supplied fields are merged over the owning… Accepts JSON, @file, or @-."),
 			cli.String("description", "").Help("Replacement description."),
+			cli.String("external-ref", "").Help("Assign-once client identity key, unique within the project. Accepted when the agent has no external_ref, or when it repeats the current…"),
 			cli.String("memory-context", "").Help("Replacement automatic memory delivery policy. Send an empty object to clear the stored override and restore the bounded index default… Accepts JSON, @file, or @-."),
 			cli.String("model", "").Help("Replacement model identifier for agents (any id from `GET /v1/projects/{project_handle}/catalog/models`, including slash-bearing OpenRouter…"),
 			cli.String("model-route", "").Help("Default model route used by built-in messaging and by loop agent steps that do not override the route. Accepts JSON, @file, or @-."),
@@ -769,6 +780,10 @@ func registerAgentsCommands(app *cli.App) {
 			if ctx.IsSet("description") {
 				v := ctx.String("description")
 				body.Description = &v
+			}
+			if ctx.IsSet("external-ref") {
+				v := ctx.String("external-ref")
+				body.ExternalRef = &v
 			}
 			if ctx.IsSet("memory-context") {
 				if err := decodeFlagJSON(ctx, "memory-context", ctx.String("memory-context"), &body.MemoryContext); err != nil {
@@ -814,7 +829,7 @@ func registerAgentsCommands(app *cli.App) {
 				v := api.AgentToolPresentation(ctx.String("tool-presentation"))
 				body.ToolPresentation = &v
 			}
-			if ctx.String("file") == "" && !ctx.IsSet("color") && !ctx.IsSet("compaction-policy") && !ctx.IsSet("description") && !ctx.IsSet("memory-context") && !ctx.IsSet("model") && !ctx.IsSet("model-route") && !ctx.IsSet("name") && !ctx.IsSet("status") && !ctx.IsSet("system-prompt") && !ctx.IsSet("tag") && !ctx.IsSet("thinking-effort") && !ctx.IsSet("timeout-seconds") && !ctx.IsSet("tool-presentation") {
+			if ctx.String("file") == "" && !ctx.IsSet("color") && !ctx.IsSet("compaction-policy") && !ctx.IsSet("description") && !ctx.IsSet("external-ref") && !ctx.IsSet("memory-context") && !ctx.IsSet("model") && !ctx.IsSet("model-route") && !ctx.IsSet("name") && !ctx.IsSet("status") && !ctx.IsSet("system-prompt") && !ctx.IsSet("tag") && !ctx.IsSet("thinking-effort") && !ctx.IsSet("timeout-seconds") && !ctx.IsSet("tool-presentation") {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
 			if ctx.Bool("dry-run") {
