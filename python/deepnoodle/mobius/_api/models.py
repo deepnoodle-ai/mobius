@@ -7014,7 +7014,7 @@ class OrganizationAction(BaseModel):
     secret_versions: list[OrganizationActionSecretVersion]
     signing_secret: str | None = Field(
         None,
-        description='Base64-encoded signing key returned only on create and rotate.',
+        description='Base64-encoded signing key returned only on create and rotate. It always belongs to the newest entry in `secret_versions` — the `active` version after create, the `pending` version after rotate.',
     )
     created_at: AwareDatetime
     updated_at: AwareDatetime

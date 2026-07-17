@@ -3529,7 +3529,7 @@ export interface components {
              */
             active_signing_version?: number;
             secret_versions: components["schemas"]["OrganizationActionSecretVersion"][];
-            /** @description Base64-encoded signing key returned only on create and rotate. */
+            /** @description Base64-encoded signing key returned only on create and rotate. It always belongs to the newest entry in `secret_versions` — the `active` version after create, the `pending` version after rotate. */
             signing_secret?: string;
             /** Format: date-time */
             created_at: string;

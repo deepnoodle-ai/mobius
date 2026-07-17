@@ -31,13 +31,16 @@ var overrides = map[string]Override{
 	// --- actions ----------------------------------------------------------
 	// `invoke` isn't in the verb list, so the auto-derive keeps the redundant
 	// `-action` suffix; strip it.
-	"invokeAction":                            {Command: "invoke"},
-	"listOrganizationActions":                 {Group: "org-actions", Command: "list"},
-	"createOrganizationAction":                {Group: "org-actions", Command: "create"},
+	"invokeAction":            {Command: "invoke"},
+	"listOrganizationActions": {Group: "org-actions", Command: "list"},
+	// Hand-written: create and rotate reveal one-time secret material, so the
+	// commands require an explicit sink (--secret-file or --show-secret)
+	// instead of printing the signing secret by default.
+	"createOrganizationAction":                {Skip: true},
 	"getOrganizationAction":                   {Group: "org-actions", Command: "get"},
 	"updateOrganizationAction":                {Group: "org-actions", Command: "update"},
 	"deleteOrganizationAction":                {Group: "org-actions", Command: "delete"},
-	"rotateOrganizationActionSecret":          {Group: "org-actions", Command: "rotate-secret"},
+	"rotateOrganizationActionSecret":          {Skip: true},
 	"activateOrganizationActionSecretVersion": {Group: "org-actions", Command: "activate-secret-version"},
 	"revokeOrganizationActionSecretVersion":   {Group: "org-actions", Command: "revoke-secret-version"},
 

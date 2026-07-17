@@ -57,85 +57,6 @@ func registerOrgActionsCommands(app *cli.App) {
 			return printResponse(ctx, "activateOrganizationActionSecretVersion", resp.StatusCode(), resp.Body)
 		})
 
-	orgActionsGrp.Command("create").
-		Description("Create organization action").
-		Flags(
-			cli.String("annotations", "").Help("Request hints that describe the safe-use properties of the action. Used by the engine and tooling to decide retry behavior, dry-run… Accepts JSON, @file, or @-."),
-			cli.String("description", "").Help("description"),
-			cli.Bool("enabled", "").Help("enabled"),
-			cli.String("endpoint-url", "").Help("[required] Public HTTPS endpoint. Private, loopback, link-local, and redirect targets are rejected."),
-			cli.String("input-schema", "").Help("input-schema Accepts JSON, @file, or @-."),
-			cli.String("invocation-format", "").Help("invocation-format"),
-			cli.String("name", "").Help("[required] Canonical dotted name selected by project toolkits."),
-			cli.String("output-schema", "").Help("output-schema Accepts JSON, @file, or @-."),
-			cli.String("title", "").Help("title"),
-			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
-			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
-		).
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			var body api.CreateOrganizationActionJSONRequestBody
-			if err := readJSONBody(ctx, &body); err != nil {
-				return err
-			}
-			if ctx.IsSet("annotations") {
-				if err := decodeFlagJSON(ctx, "annotations", ctx.String("annotations"), &body.Annotations); err != nil {
-					return err
-				}
-			}
-			if ctx.IsSet("description") {
-				v := ctx.String("description")
-				body.Description = &v
-			}
-			if ctx.IsSet("enabled") {
-				v := ctx.Bool("enabled")
-				body.Enabled = &v
-			}
-			if ctx.IsSet("endpoint-url") {
-				body.EndpointUrl = ctx.String("endpoint-url")
-			}
-			if ctx.IsSet("input-schema") {
-				if err := decodeFlagJSON(ctx, "input-schema", ctx.String("input-schema"), &body.InputSchema); err != nil {
-					return err
-				}
-			}
-			if ctx.IsSet("invocation-format") {
-				v := api.CreateOrganizationActionRequestInvocationFormat(ctx.String("invocation-format"))
-				body.InvocationFormat = &v
-			}
-			if ctx.IsSet("name") {
-				body.Name = ctx.String("name")
-			}
-			if ctx.IsSet("output-schema") {
-				if err := decodeFlagJSON(ctx, "output-schema", ctx.String("output-schema"), &body.OutputSchema); err != nil {
-					return err
-				}
-			}
-			if ctx.IsSet("title") {
-				v := ctx.String("title")
-				body.Title = &v
-			}
-			if body.EndpointUrl == "" {
-				return fmt.Errorf("--endpoint-url is required (or supply it via --file)")
-			}
-			if body.Name == "" {
-				return fmt.Errorf("--name is required (or supply it via --file)")
-			}
-			if ctx.Bool("dry-run") {
-				return printDryRun(ctx, body)
-			}
-			resp, err := client.CreateOrganizationActionWithResponse(ctx.Context(), body)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "createOrganizationAction", resp.StatusCode(), resp.Body)
-		})
-
 	orgActionsGrp.Command("delete").
 		Description("Delete organization action").
 		AddArg(&cli.Arg{Name: "action-id", Description: "Organization action ID.", Required: true}).
@@ -221,24 +142,6 @@ func registerOrgActionsCommands(app *cli.App) {
 				return err
 			}
 			return printResponse(ctx, "revokeOrganizationActionSecretVersion", resp.StatusCode(), resp.Body)
-		})
-
-	orgActionsGrp.Command("rotate-secret").
-		Description("Rotate an organization action secret").
-		Args("action-id").
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := ctx.Arg(0)
-			resp, err := client.RotateOrganizationActionSecretWithResponse(ctx.Context(), p0)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "rotateOrganizationActionSecret", resp.StatusCode(), resp.Body)
 		})
 
 	orgActionsGrp.Command("update").

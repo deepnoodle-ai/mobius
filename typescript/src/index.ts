@@ -16,6 +16,7 @@ export {
   isTerminalRunStatus,
 } from "./client.js";
 export type {
+  ActivateOrganizationActionSecretVersionOptions,
   ClientOptions,
   ClientLogEvent,
   CreateArtifactOptions,
@@ -31,7 +32,9 @@ export type {
   ListAgentMemoryChangesOptions,
   ListAgentMemoryEntriesOptions,
   ListAgentsOptions,
+  ListOrganizationActionsOptions,
   MemorySyncResult,
+  OrganizationActionSecretMaterial,
   ListSessionNudgesOptions,
   ListSessionTurnsOptions,
   ListSessionsOptions,
@@ -73,6 +76,7 @@ export type {
   SessionChatUpdate,
 } from "./chat.js";
 export type {
+  ActivateOrganizationActionSecretRequest,
   AgentMemory,
   AgentMemoryChange,
   AgentMemoryChangeListResponse,
@@ -87,6 +91,7 @@ export type {
   BlueprintApplyResult,
   BlueprintBindingListResponse,
   BlueprintDeleteResult,
+  CreateOrganizationActionRequest,
   CreatePrincipalRequest,
   CreateRoleAssignmentRequest,
   CreateRoleRequest,
@@ -99,6 +104,9 @@ export type {
   Interaction,
   InteractionKind,
   InteractionListResponse,
+  OrganizationAction,
+  OrganizationActionListResponse,
+  OrganizationActionSecretVersion,
   PermissionCatalogResponse,
   Principal,
   PrincipalKind,
@@ -121,6 +129,7 @@ export type {
   StreamReadyFrame,
   TurnAck,
   TurnOutputSpec,
+  UpdateOrganizationActionRequest,
   UpdatePrincipalRequest,
   UpdateRoleRequest,
 } from "./api/index.js";

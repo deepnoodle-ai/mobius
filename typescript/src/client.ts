@@ -18,6 +18,7 @@ import type {
   BlueprintDeleteResult,
   CancelLoopRunRequest,
   ChannelContext,
+  CreateOrganizationActionRequest,
   CreatePrincipalRequest,
   CreateRoleAssignmentRequest,
   CreateRoleRequest,
@@ -39,6 +40,8 @@ import type {
   LoopStatus,
   MemoryKind,
   MemorySearchMode,
+  OrganizationAction,
+  OrganizationActionListResponse,
   PermissionCatalogResponse,
   Principal,
   PrincipalKind,
@@ -69,6 +72,7 @@ import type {
   TurnAck,
   TurnOutputSpec,
   UpdateLoopRequest,
+  UpdateOrganizationActionRequest,
   UpdatePrincipalRequest,
   UpdateRoleRequest,
 } from "./api/index.js";
@@ -599,6 +603,45 @@ export interface ListRolesOptions {
   limit?: number;
 }
 
+export interface ListOrganizationActionsOptions {
+  cursor?: string;
+  limit?: number;
+}
+
+export interface ActivateOrganizationActionSecretVersionOptions {
+  /**
+   * How long the previous active version keeps verifying after cutover, from
+   * 0 (immediate) to 86400 seconds. Omit for the server default (24 hours).
+   */
+  overlapSeconds?: number;
+}
+
+/**
+ * One-time signing secret revealed by {@link Client.createOrganizationAction}
+ * and {@link Client.rotateOrganizationActionSecret}. The server never returns
+ * this key again; store keyBytes before discarding the value, and never log
+ * it.
+ */
+export interface OrganizationActionSecretMaterial {
+  /**
+   * The created or updated action. Its signing_secret field is cleared; the
+   * revealed key lives only in keyBytes.
+   */
+  action: OrganizationAction;
+  /** Stable reference sent in X-Mobius-Secret-Ref on signed deliveries. */
+  secretRef: string;
+  /**
+   * Key version the revealed secret belongs to: the active version after
+   * create, the pending version after rotate.
+   */
+  version: number;
+  /**
+   * Base64-decoded signing key, ready for the signed-delivery verifiers'
+   * key resolver.
+   */
+  keyBytes: Uint8Array;
+}
+
 export class Client {
   private readonly baseURL: string;
   readonly project: string;
@@ -945,6 +988,129 @@ export class Client {
       `/v1/projects/:project/role-assignments/${encodeURIComponent(id)}`,
       { method: "DELETE" },
     );
+  }
+
+  /**
+   * Lists signed HTTP actions owned by the active organization. Requires
+   * Admin or Owner membership.
+   */
+  async listOrganizationActions(
+    opts: ListOrganizationActionsOptions = {},
+  ): Promise<OrganizationActionListResponse> {
+    const path = withQuery("/v1/organization/actions", opts);
+    const resp = await this.request(path, { method: "GET" });
+    return (await resp.json()) as OrganizationActionListResponse;
+  }
+
+  /**
+   * Creates an organization-owned signed HTTP action and returns its
+   * one-time secret material. The signing key is revealed only in this
+   * response; persist keyBytes before discarding the result.
+   */
+  async createOrganizationAction(
+    input: CreateOrganizationActionRequest,
+  ): Promise<OrganizationActionSecretMaterial> {
+    const resp = await this.request("/v1/organization/actions", {
+      method: "POST",
+      body: input,
+    });
+    const action = (await resp.json()) as OrganizationAction;
+    return organizationActionSecretMaterial(
+      "create organization action",
+      action,
+      "active",
+    );
+  }
+
+  /** Returns one organization action. Reads never include secret material. */
+  async getOrganizationAction(actionId: string): Promise<OrganizationAction> {
+    const resp = await this.request(
+      `/v1/organization/actions/${encodeURIComponent(actionId)}`,
+      { method: "GET" },
+    );
+    return (await resp.json()) as OrganizationAction;
+  }
+
+  /** Updates the shared definition or enables/disables invocation. */
+  async updateOrganizationAction(
+    actionId: string,
+    input: UpdateOrganizationActionRequest,
+  ): Promise<OrganizationAction> {
+    const resp = await this.request(
+      `/v1/organization/actions/${encodeURIComponent(actionId)}`,
+      { method: "PATCH", body: input },
+    );
+    return (await resp.json()) as OrganizationAction;
+  }
+
+  /** Deletes the shared definition from future project catalogs. */
+  async deleteOrganizationAction(actionId: string): Promise<void> {
+    await this.request(
+      `/v1/organization/actions/${encodeURIComponent(actionId)}`,
+      { method: "DELETE" },
+    );
+  }
+
+  /**
+   * Creates a pending key version and returns its one-time secret material.
+   * Mobius keeps signing with the current active version until
+   * {@link activateOrganizationActionSecretVersion} promotes the pending one
+   * — distribute the new key to verifiers first, then activate.
+   */
+  async rotateOrganizationActionSecret(
+    actionId: string,
+  ): Promise<OrganizationActionSecretMaterial> {
+    const resp = await this.request(
+      `/v1/organization/actions/${encodeURIComponent(actionId)}/secret/rotate`,
+      { method: "POST" },
+    );
+    const action = (await resp.json()) as OrganizationAction;
+    return organizationActionSecretMaterial(
+      "rotate organization action secret",
+      action,
+      "pending",
+    );
+  }
+
+  /**
+   * Atomically makes a pending version active and moves the previous active
+   * version, if any, into its bounded verification overlap.
+   */
+  async activateOrganizationActionSecretVersion(
+    actionId: string,
+    version: number,
+    opts: ActivateOrganizationActionSecretVersionOptions = {},
+  ): Promise<OrganizationAction> {
+    const body: Record<string, unknown> = {};
+    if (opts.overlapSeconds !== undefined) {
+      if (opts.overlapSeconds < 0 || opts.overlapSeconds > 86400) {
+        throw new Error(
+          `mobius: activate organization action secret version: overlapSeconds must be between 0 and 86400, got ${opts.overlapSeconds}`,
+        );
+      }
+      body.overlap_seconds = opts.overlapSeconds;
+    }
+    const resp = await this.request(
+      `/v1/organization/actions/${encodeURIComponent(actionId)}/secret/versions/${version}/activate`,
+      { method: "POST", body },
+    );
+    return (await resp.json()) as OrganizationAction;
+  }
+
+  /**
+   * Immediately revokes a non-active key version. The active signing version
+   * can be revoked only after another version is activated or the action is
+   * disabled.
+   */
+  async revokeOrganizationActionSecretVersion(
+    actionId: string,
+    version: number,
+  ): Promise<OrganizationAction> {
+    const resp = await this.request(
+      `/v1/organization/actions/${encodeURIComponent(actionId)}/secret/versions/${version}/revoke`,
+      { method: "POST" },
+    );
+    return (await resp.json()) as OrganizationAction;
   }
 
   async startRun(loopId: string, opts: StartRunOptions = {}): Promise<LoopRun> {
@@ -1997,6 +2163,51 @@ function anySignal(...signals: AbortSignal[]): AbortSignal {
     });
   }
   return controller.signal;
+}
+
+// organizationActionSecretMaterial extracts the one-time secret from a
+// create or rotate response. The revealed signing_secret always belongs to
+// the newest entry in secret_versions, whose status must match wantStatus;
+// any other shape means the response is internally inconsistent. Errors
+// never include the secret itself.
+function organizationActionSecretMaterial(
+  op: string,
+  action: OrganizationAction,
+  wantStatus: "active" | "pending",
+): OrganizationActionSecretMaterial {
+  if (!action.signing_secret) {
+    throw new Error(
+      `mobius: ${op}: response is missing the one-time signing_secret`,
+    );
+  }
+  let newest: OrganizationAction["secret_versions"][number] | undefined;
+  for (const v of action.secret_versions) {
+    if (!newest || v.version > newest.version) newest = v;
+  }
+  if (!newest) {
+    throw new Error(
+      `mobius: ${op}: response has no secret_versions for the revealed secret`,
+    );
+  }
+  if (newest.status !== wantStatus) {
+    throw new Error(
+      `mobius: ${op}: newest secret version ${newest.version} has status "${newest.status}", want "${wantStatus}"`,
+    );
+  }
+  let binary: string;
+  try {
+    binary = atob(action.signing_secret);
+  } catch {
+    throw new Error(`mobius: ${op}: signing_secret is not valid base64`);
+  }
+  const keyBytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) keyBytes[i] = binary.charCodeAt(i);
+  return {
+    action: { ...action, signing_secret: undefined },
+    secretRef: action.secret_ref,
+    version: newest.version,
+    keyBytes,
+  };
 }
 
 function withQuery(path: string, params: object): string {
