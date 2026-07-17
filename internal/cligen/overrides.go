@@ -111,6 +111,13 @@ var overrides = map[string]Override{
 	// `get` strips only the first PascalCase word, landing on `get-resolver`;
 	// spell it out so it matches its sibling `replace-definition-resolver`.
 	"getDefinitionResolver": {Command: "get-definition-resolver"},
+	// "OAuth" (capital O+A only, not a fully-uppercase initialism like "API")
+	// defeats the word-splitting heuristics: the auto-derive lands on
+	// `get-auth-return-origins` (drops the "o") and
+	// `replace-o-auth-return-origins` (splits "o" from "auth"). Spell both out
+	// lowercase to match the `oauth-return-origins` path segment.
+	"getOAuthReturnOrigins":     {Command: "get-oauth-return-origins"},
+	"replaceOAuthReturnOrigins": {Command: "replace-oauth-return-origins"},
 
 	// --- blueprints -------------------------------------------------------
 	// Drop the redundant `blueprint` token; the group name already carries it.

@@ -1247,6 +1247,24 @@ func (e HTTPTriggerDeliveryResultStatus) Valid() bool {
 	}
 }
 
+// Defines values for IfExists.
+const (
+	IfExistsAdopt IfExists = "adopt"
+	IfExistsError IfExists = "error"
+)
+
+// Valid indicates whether the value is a known member of the IfExists enum.
+func (e IfExists) Valid() bool {
+	switch e {
+	case IfExistsAdopt:
+		return true
+	case IfExistsError:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for InteractionStatus.
 const (
 	InteractionStatusCancelled InteractionStatus = "cancelled"
@@ -4202,6 +4220,9 @@ type Agent struct {
 	// EmailAddress Inbox address provisioned via POST /v1/projects/{project_handle}/agents/{resource_id}/inbox (opt-in; not created automatically at agent creation). The field is populated only after a successful provisioning call. Use this address to add the agent as a member on external platforms (Linear, GitHub, Slack, etc.) so the platform can deliver notifications to the agent.
 	EmailAddress *string `json:"email_address,omitempty"`
 
+	// ExternalRef Client-owned durable identity key for this agent. Unique within the project when present, and assign-once: create requests may set it; update requests may set it only while the agent has no existing external_ref, or repeat the current value idempotently. When set, the organization definition resolver addresses this agent as `agent/<external_ref>` instead of `agent/<name>`, so the selector survives display-name changes.
+	ExternalRef *string `json:"external_ref,omitempty"`
+
 	// Id Unique identifier for this agent.
 	Id string `json:"id"`
 
@@ -5286,6 +5307,12 @@ type CreateAgentRequest struct {
 	// Description Optional human-readable description.
 	Description *string `json:"description,omitempty"`
 
+	// ExternalRef Client-owned durable identity key. Unique within the project when present. Treat this as assign-once: create requests may set it; update requests may set it only while the agent has no existing external_ref, or repeat the current value idempotently. When set, the organization definition resolver addresses this agent as `agent/<external_ref>`. Required when `if_exists` is `adopt`.
+	ExternalRef *string `json:"external_ref,omitempty"`
+
+	// IfExists Create-or-adopt behavior when a request's `external_ref` matches an existing resource. `error` (the default) rejects the request with 409. `adopt` returns the existing resource unchanged instead — mutable fields in the request are ignored, since no write happens — and requires `external_ref` to be set; omitting it returns 400.
+	IfExists *IfExists `json:"if_exists,omitempty"`
+
 	// MemoryContext Automatic memory delivery policy. The JSON object requires `mode` (`index`, `full`, or `off`) and optionally accepts `max_bytes`, for example `{"mode":"full","max_bytes":131072}`.
 	MemoryContext *MemoryContextPolicy `json:"memory_context,omitempty"`
 
@@ -5492,11 +5519,14 @@ type CreateProjectRequest struct {
 	// Description Optional human-readable description.
 	Description *string `json:"description,omitempty"`
 
-	// ExternalRef Client-owned tenant/workspace correlation key. Unique within the org when present. Treat this as assign-once: create requests may set it; update requests may set it only while the project has no existing external_ref.
+	// ExternalRef Client-owned tenant/workspace correlation key. Unique within the org when present. Treat this as assign-once: create requests may set it; update requests may set it only while the project has no existing external_ref. Required when `if_exists` is `adopt`.
 	ExternalRef *string `json:"external_ref,omitempty"`
 
 	// Handle URL-safe slug for API routes. Auto-derived from name if omitted. Must be unique within the org. Cannot be changed after creation.
 	Handle *string `json:"handle,omitempty"`
+
+	// IfExists Create-or-adopt behavior when a request's `external_ref` matches an existing resource. `error` (the default) rejects the request with 409. `adopt` returns the existing resource unchanged instead — mutable fields in the request are ignored, since no write happens — and requires `external_ref` to be set; omitting it returns 400.
+	IfExists *IfExists `json:"if_exists,omitempty"`
 
 	// Name Human-readable project name.
 	Name string `json:"name"`
@@ -6043,6 +6073,9 @@ type HttpSubscriberConsumer struct {
 	// SecretRef Required reference to a project secret used to sign deliveries with HMAC-SHA256 over the canonical string `v1.{delivery_id}.{unix_timestamp}.{raw_body}`, where `delivery_id` is the value in `X-Mobius-Delivery-Id` and `raw_body` is the exact callback request body bytes. Accepts `<name>` for the latest enabled version or `<name>:<version>` to pin a specific positive-integer version. The plaintext signing bytes are taken from the secret's `signing_key_b64` key, which must base64-decode to exactly 32 bytes. The hex signature is forwarded as `X-Mobius-Signature: sha256=<hex>` alongside `X-Mobius-Secret-Ref`, `X-Mobius-Secret-Version`, `X-Mobius-Signature-Version: v1`, and a unix `X-Mobius-Timestamp`. Consumers should reject stale timestamps (for example, older than five minutes). When `secret_ref` resolution fails the dispatch is retried by the event processor rather than sent unsigned.
 	SecretRef string `json:"secret_ref"`
 }
+
+// IfExists Create-or-adopt behavior when a request's `external_ref` matches an existing resource. `error` (the default) rejects the request with 409. `adopt` returns the existing resource unchanged instead — mutable fields in the request are ignored, since no write happens — and requires `external_ref` to be set; omitting it returns 400.
+type IfExists string
 
 // ImportSkillRequest defines model for ImportSkillRequest.
 type ImportSkillRequest struct {
@@ -7665,6 +7698,12 @@ type NudgeSessionRequest struct {
 	Wake *bool `json:"wake,omitempty"`
 }
 
+// OAuthReturnOrigins The organization's allowlist of exact HTTPS origins an embedded partner may name as an OAuth connect `return_url`. Origins are stored normalized (lowercase host, default ports stripped). An empty list disables embedded return for the organization.
+type OAuthReturnOrigins struct {
+	// Origins Normalized exact HTTPS return origins (for example `https://app.partner.example`).
+	Origins []string `json:"origins"`
+}
+
 // OrganizationAction defines model for OrganizationAction.
 type OrganizationAction struct {
 	// ActiveSigningVersion Current signing-key version. Omitted when the disabled action has no active version.
@@ -7686,7 +7725,7 @@ type OrganizationAction struct {
 	SecretRef        string                             `json:"secret_ref"`
 	SecretVersions   []OrganizationActionSecretVersion  `json:"secret_versions"`
 
-	// SigningSecret Base64-encoded signing key returned only on create and rotate. It always belongs to the newest entry in `secret_versions` — the `active` version after create, the `pending` version after rotate.
+	// SigningSecret Base64-encoded signing key returned only on create and rotate.
 	SigningSecret *string   `json:"signing_secret,omitempty"`
 	Title         *string   `json:"title,omitempty"`
 	UpdatedAt     time.Time `json:"updated_at"`
@@ -7965,6 +8004,12 @@ type PutDefinitionResolverRequestOnUnavailable string
 
 // PutDefinitionResolverRequestSource Where the org's definitions resolve from by default.
 type PutDefinitionResolverRequestSource string
+
+// PutOAuthReturnOriginsRequest Full-replace body for the organization's OAuth return-origin allowlist. Each entry must be an exact HTTPS origin; entries are normalized and de-duplicated. At most 20 origins are accepted.
+type PutOAuthReturnOriginsRequest struct {
+	// Origins Exact HTTPS return origins to allow. An empty array disables embedded return.
+	Origins []string `json:"origins"`
+}
 
 // QueryRowsRequest defines model for QueryRowsRequest.
 type QueryRowsRequest struct {
@@ -9530,6 +9575,9 @@ type UpdateAgentRequest struct {
 	// Description Replacement description.
 	Description *string `json:"description,omitempty"`
 
+	// ExternalRef Assign-once client identity key, unique within the project. Accepted when the agent has no external_ref, or when it repeats the current value idempotently. Changing an already-set value returns 409. When set, the organization definition resolver addresses this agent as `agent/<external_ref>`.
+	ExternalRef *string `json:"external_ref,omitempty"`
+
 	// MemoryContext Replacement automatic memory delivery policy. Send an empty object to clear the stored override and restore the bounded index default. Otherwise `mode` is required (`index`, `full`, or `off`) and `max_bytes` is optional.
 	MemoryContext *UpdateMemoryContextPolicy `json:"memory_context,omitempty"`
 
@@ -10925,6 +10973,9 @@ type ActivateOrganizationActionSecretVersionJSONRequestBody = ActivateOrganizati
 
 // ReplaceDefinitionResolverJSONRequestBody defines body for ReplaceDefinitionResolver for application/json ContentType.
 type ReplaceDefinitionResolverJSONRequestBody = PutDefinitionResolverRequest
+
+// ReplaceOAuthReturnOriginsJSONRequestBody defines body for ReplaceOAuthReturnOrigins for application/json ContentType.
+type ReplaceOAuthReturnOriginsJSONRequestBody = PutOAuthReturnOriginsRequest
 
 // CreateOrganizationSkillJSONRequestBody defines body for CreateOrganizationSkill for application/json ContentType.
 type CreateOrganizationSkillJSONRequestBody = SkillRequest
@@ -18894,6 +18945,14 @@ type ClientInterface interface {
 
 	ReplaceDefinitionResolver(ctx context.Context, body ReplaceDefinitionResolverJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetOAuthReturnOrigins request
+	GetOAuthReturnOrigins(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ReplaceOAuthReturnOriginsWithBody request with any body
+	ReplaceOAuthReturnOriginsWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	ReplaceOAuthReturnOrigins(ctx context.Context, body ReplaceOAuthReturnOriginsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListOrganizationSkills request
 	ListOrganizationSkills(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -19692,6 +19751,42 @@ func (c *Client) ReplaceDefinitionResolverWithBody(ctx context.Context, contentT
 
 func (c *Client) ReplaceDefinitionResolver(ctx context.Context, body ReplaceDefinitionResolverJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewReplaceDefinitionResolverRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetOAuthReturnOrigins(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetOAuthReturnOriginsRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ReplaceOAuthReturnOriginsWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewReplaceOAuthReturnOriginsRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ReplaceOAuthReturnOrigins(ctx context.Context, body ReplaceOAuthReturnOriginsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewReplaceOAuthReturnOriginsRequest(c.Server, body)
 	if err != nil {
 		return nil, err
 	}
@@ -22818,6 +22913,73 @@ func NewReplaceDefinitionResolverRequestWithBody(server string, contentType stri
 	}
 
 	operationPath := fmt.Sprintf("/v1/organization/definition-resolver")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewGetOAuthReturnOriginsRequest generates requests for GetOAuthReturnOrigins
+func NewGetOAuthReturnOriginsRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/organization/oauth-return-origins")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewReplaceOAuthReturnOriginsRequest calls the generic ReplaceOAuthReturnOrigins builder with application/json body
+func NewReplaceOAuthReturnOriginsRequest(server string, body ReplaceOAuthReturnOriginsJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewReplaceOAuthReturnOriginsRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewReplaceOAuthReturnOriginsRequestWithBody generates requests for ReplaceOAuthReturnOrigins with any type of body
+func NewReplaceOAuthReturnOriginsRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/organization/oauth-return-origins")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -31718,6 +31880,14 @@ type ClientWithResponsesInterface interface {
 
 	ReplaceDefinitionResolverWithResponse(ctx context.Context, body ReplaceDefinitionResolverJSONRequestBody, reqEditors ...RequestEditorFn) (*ReplaceDefinitionResolverResponse, error)
 
+	// GetOAuthReturnOriginsWithResponse request
+	GetOAuthReturnOriginsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetOAuthReturnOriginsResponse, error)
+
+	// ReplaceOAuthReturnOriginsWithBodyWithResponse request with any body
+	ReplaceOAuthReturnOriginsWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ReplaceOAuthReturnOriginsResponse, error)
+
+	ReplaceOAuthReturnOriginsWithResponse(ctx context.Context, body ReplaceOAuthReturnOriginsJSONRequestBody, reqEditors ...RequestEditorFn) (*ReplaceOAuthReturnOriginsResponse, error)
+
 	// ListOrganizationSkillsWithResponse request
 	ListOrganizationSkillsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListOrganizationSkillsResponse, error)
 
@@ -32767,6 +32937,73 @@ func (r ReplaceDefinitionResolverResponse) ContentType() string {
 	return ""
 }
 
+type GetOAuthReturnOriginsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *OAuthReturnOrigins
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r GetOAuthReturnOriginsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetOAuthReturnOriginsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetOAuthReturnOriginsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ReplaceOAuthReturnOriginsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *OAuthReturnOrigins
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r ReplaceOAuthReturnOriginsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ReplaceOAuthReturnOriginsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ReplaceOAuthReturnOriginsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type ListOrganizationSkillsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -33040,6 +33277,7 @@ func (r ListProjectsResponse) ContentType() string {
 type CreateProjectResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *Project
 	JSON201      *Project
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
@@ -33418,6 +33656,7 @@ func (r ListAgentsResponse) ContentType() string {
 type CreateAgentResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *Agent
 	JSON201      *Agent
 	JSON400      *BadRequest
 	JSON401      *Unauthorized
@@ -38197,6 +38436,32 @@ func (c *ClientWithResponses) ReplaceDefinitionResolverWithResponse(ctx context.
 	return ParseReplaceDefinitionResolverResponse(rsp)
 }
 
+// GetOAuthReturnOriginsWithResponse request returning *GetOAuthReturnOriginsResponse
+func (c *ClientWithResponses) GetOAuthReturnOriginsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetOAuthReturnOriginsResponse, error) {
+	rsp, err := c.GetOAuthReturnOrigins(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetOAuthReturnOriginsResponse(rsp)
+}
+
+// ReplaceOAuthReturnOriginsWithBodyWithResponse request with arbitrary body returning *ReplaceOAuthReturnOriginsResponse
+func (c *ClientWithResponses) ReplaceOAuthReturnOriginsWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ReplaceOAuthReturnOriginsResponse, error) {
+	rsp, err := c.ReplaceOAuthReturnOriginsWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseReplaceOAuthReturnOriginsResponse(rsp)
+}
+
+func (c *ClientWithResponses) ReplaceOAuthReturnOriginsWithResponse(ctx context.Context, body ReplaceOAuthReturnOriginsJSONRequestBody, reqEditors ...RequestEditorFn) (*ReplaceOAuthReturnOriginsResponse, error) {
+	rsp, err := c.ReplaceOAuthReturnOrigins(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseReplaceOAuthReturnOriginsResponse(rsp)
+}
+
 // ListOrganizationSkillsWithResponse request returning *ListOrganizationSkillsResponse
 func (c *ClientWithResponses) ListOrganizationSkillsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ListOrganizationSkillsResponse, error) {
 	rsp, err := c.ListOrganizationSkills(ctx, reqEditors...)
@@ -40755,6 +41020,107 @@ func ParseReplaceDefinitionResolverResponse(rsp *http.Response) (*ReplaceDefinit
 	return response, nil
 }
 
+// ParseGetOAuthReturnOriginsResponse parses an HTTP response from a GetOAuthReturnOriginsWithResponse call
+func ParseGetOAuthReturnOriginsResponse(rsp *http.Response) (*GetOAuthReturnOriginsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetOAuthReturnOriginsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest OAuthReturnOrigins
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseReplaceOAuthReturnOriginsResponse parses an HTTP response from a ReplaceOAuthReturnOriginsWithResponse call
+func ParseReplaceOAuthReturnOriginsResponse(rsp *http.Response) (*ReplaceOAuthReturnOriginsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ReplaceOAuthReturnOriginsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest OAuthReturnOrigins
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseListOrganizationSkillsResponse parses an HTTP response from a ListOrganizationSkillsWithResponse call
 func ParseListOrganizationSkillsResponse(rsp *http.Response) (*ListOrganizationSkillsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -41187,6 +41553,13 @@ func ParseCreateProjectResponse(rsp *http.Response) (*CreateProjectResponse, err
 	}
 
 	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Project
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
 		var dest Project
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -41809,6 +42182,13 @@ func ParseCreateAgentResponse(rsp *http.Response) (*CreateAgentResponse, error) 
 	}
 
 	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Agent
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
 		var dest Agent
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
