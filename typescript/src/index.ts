@@ -18,6 +18,7 @@ export {
 export type {
   ActivateOrganizationActionSecretVersionOptions,
   ClientOptions,
+  ListActionInvocationsOptions,
   ClientLogEvent,
   CreateArtifactOptions,
   GetSessionTranscriptOptions,
@@ -78,6 +79,9 @@ export type {
   SessionChatUpdate,
 } from "./chat.js";
 export type {
+  ActionCatalogEntry,
+  ActionInvocationEntry,
+  ActionInvocationListResponse,
   ActivateOrganizationActionSecretRequest,
   AgentMemory,
   AgentMemoryChange,

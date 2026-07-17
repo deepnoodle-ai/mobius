@@ -1,4 +1,5 @@
 import type {
+  ActionInvocationListResponse,
   Agent,
   AgentListResponse,
   AgentMemory,
@@ -647,6 +648,34 @@ export interface OrganizationActionSecretMaterial {
    * key resolver.
    */
   keyBytes: Uint8Array;
+}
+
+export interface ListActionInvocationsOptions {
+  /** Filter to invocations from a specific loop run. */
+  runId?: string;
+  /** Filter to invocations from a specific job. */
+  jobId?: string;
+  /** Filter to invocations executed in a specific environment. */
+  environmentId?: string;
+  /** Filter to invocations of a specific action. */
+  actionName?: string;
+  /** Filter to an immutable project or organization Action ID. */
+  actionId?: string;
+  /**
+   * Filter by the scope that owned the selected definition: "platform",
+   * "project", or "organization".
+   */
+  definitionScope?: "platform" | "project" | "organization";
+  /** Filter to deliveries signed with a specific signing-secret version. */
+  secretVersion?: number;
+  /** Filter to a signed delivery identity. */
+  deliveryId?: string;
+  /** Filter to the request or dispatch correlation identity. */
+  correlationId?: string;
+  /** Filter by terminal status (e.g. "success", "failed"). */
+  status?: string;
+  cursor?: string;
+  limit?: number;
 }
 
 export interface ListSkillsOptions {
@@ -1331,6 +1360,34 @@ export class Client {
       { method: "PUT", body },
     );
     return (await resp.json()) as SkillAssignmentListResponse;
+  }
+
+  /**
+   * Lists recent action invocation audit records from loops, agents, direct
+   * invocations, and job-backed execution. Each entry carries definition
+   * provenance (action_id, definition_scope) and, for signed HTTP
+   * deliveries, the delivery identity (delivery_id, correlation_id,
+   * secret_version).
+   */
+  async listActionInvocations(
+    opts: ListActionInvocationsOptions = {},
+  ): Promise<ActionInvocationListResponse> {
+    const path = withQuery("/v1/projects/:project/action-invocations", {
+      run_id: opts.runId,
+      job_id: opts.jobId,
+      environment_id: opts.environmentId,
+      action_name: opts.actionName,
+      action_id: opts.actionId,
+      definition_scope: opts.definitionScope,
+      secret_version: opts.secretVersion,
+      delivery_id: opts.deliveryId,
+      correlation_id: opts.correlationId,
+      status: opts.status,
+      cursor: opts.cursor,
+      limit: opts.limit,
+    });
+    const resp = await this.request(path, { method: "GET" });
+    return (await resp.json()) as ActionInvocationListResponse;
   }
 
   async startRun(loopId: string, opts: StartRunOptions = {}): Promise<LoopRun> {

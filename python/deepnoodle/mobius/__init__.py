@@ -3,6 +3,9 @@
 from .action import action
 from .action_response import ActionResponseEnvelope, MOBIUS_ACTION_CONTENT_TYPE
 from ._api.models import (
+    ActionCatalogEntry,
+    ActionInvocationEntry,
+    ActionInvocationListResponse,
     ActivateOrganizationActionSecretRequest,
     AgentMemory,
     AgentMemoryChange,
@@ -54,6 +57,7 @@ from .client import (
     Client,
     ClientOptions,
     DeleteBlueprintOptions,
+    ListActionInvocationsOptions,
     InvokeAgentOptions,
     LeaseLostError,
     ListAgentMemoryEntriesOptions,
@@ -150,7 +154,10 @@ from .worker import (
 )
 
 __all__ = [
+    "ActionCatalogEntry",
     "ActionContext",
+    "ActionInvocationEntry",
+    "ActionInvocationListResponse",
     "ActivateOrganizationActionSecretRequest",
     "AgentMemory",
     "AgentMemoryChange",
@@ -186,6 +193,7 @@ __all__ = [
     "InteractionListResponse",
     "InvokeAgentOptions",
     "LeaseLostError",
+    "ListActionInvocationsOptions",
     "ListAgentMemoryEntriesOptions",
     "ListBlueprintBindingsOptions",
     "ListInteractionsOptions",

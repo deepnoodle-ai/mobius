@@ -14,6 +14,7 @@ from urllib.parse import quote, urlencode, urlparse, urlunparse
 import httpx
 
 from ._api.models import (
+    ActionInvocationListResponse,
     AgentMemory,
     AgentMemoryChange,
     AgentMemoryChangeListResponse,
@@ -297,6 +298,28 @@ class MemorySyncResult:
 
 @dataclass
 class ListOrganizationActionsOptions:
+    cursor: str | None = None
+    limit: int | None = None
+
+
+@dataclass
+class ListActionInvocationsOptions:
+    """Filters for the project's action invocation audit records."""
+
+    run_id: str | None = None
+    job_id: str | None = None
+    environment_id: str | None = None
+    action_name: str | None = None
+    action_id: str | None = None
+    # Scope that owned the selected definition: "platform", "project", or
+    # "organization".
+    definition_scope: str | None = None
+    # Signing-secret version used for the HTTP delivery.
+    secret_version: int | None = None
+    delivery_id: str | None = None
+    correlation_id: str | None = None
+    # Terminal status (e.g. "success", "failed").
+    status: str | None = None
     cursor: str | None = None
     limit: int | None = None
 
@@ -964,6 +987,23 @@ class Client:
             f"/v1/organization/actions/{quote(action_id, safe='')}/secret/versions/{version}/revoke",
         )
         return OrganizationAction.model_validate(resp.json())
+
+    def list_action_invocations(
+        self, opts: ListActionInvocationsOptions | None = None
+    ) -> ActionInvocationListResponse:
+        """List recent action invocation audit records.
+
+        Covers loops, agents, direct invocations, and job-backed execution.
+        Each entry carries definition provenance (``action_id``,
+        ``definition_scope``) and, for signed HTTP deliveries, the delivery
+        identity (``delivery_id``, ``correlation_id``, ``secret_version``).
+        """
+        resp = self._request(
+            "GET",
+            "/v1/projects/{project}/action-invocations",
+            params=_params(opts),
+        )
+        return ActionInvocationListResponse.model_validate(resp.json())
 
     def list_skills(self, *, include_system: bool | None = None) -> SkillListResponse:
         """List project-local, organization-shared, and system skills.
