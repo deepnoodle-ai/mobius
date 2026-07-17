@@ -113,45 +113,6 @@ func registerOrgSkillsCommands(app *cli.App) {
 			return printResponse(ctx, "getOrganizationSkill", resp.StatusCode(), resp.Body)
 		})
 
-	orgSkillsGrp.Command("import").
-		Description("Import organization skill").
-		Flags(
-			cli.String("content", "").Help("[required] Full skill document, optionally with YAML frontmatter."),
-			cli.String("name", "").Help("Optional name override."),
-			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
-			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
-		).
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			var body api.ImportOrganizationSkillJSONRequestBody
-			if err := readJSONBody(ctx, &body); err != nil {
-				return err
-			}
-			if ctx.IsSet("content") {
-				body.Content = ctx.String("content")
-			}
-			if ctx.IsSet("name") {
-				v := ctx.String("name")
-				body.Name = &v
-			}
-			if body.Content == "" {
-				return fmt.Errorf("--content is required (or supply it via --file)")
-			}
-			if ctx.Bool("dry-run") {
-				return printDryRun(ctx, body)
-			}
-			resp, err := client.ImportOrganizationSkillWithResponse(ctx.Context(), body)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "importOrganizationSkill", resp.StatusCode(), resp.Body)
-		})
-
 	orgSkillsGrp.Command("list").
 		Description("List organization skills").
 		Use(requireAuth()).

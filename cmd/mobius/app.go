@@ -61,6 +61,9 @@ func newApp() *cli.App {
 	registerAuthCommands(app)
 	registerGeneratedCommands(app)
 	registerPrincipalCreateCommand(app)
+	registerArtifactUploadCommand(app)
+	registerOrgActionSecretCommands(app)
+	registerSkillImportCommands(app)
 
 	return app
 }

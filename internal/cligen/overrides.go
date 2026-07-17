@@ -31,13 +31,16 @@ var overrides = map[string]Override{
 	// --- actions ----------------------------------------------------------
 	// `invoke` isn't in the verb list, so the auto-derive keeps the redundant
 	// `-action` suffix; strip it.
-	"invokeAction":                            {Command: "invoke"},
-	"listOrganizationActions":                 {Group: "org-actions", Command: "list"},
-	"createOrganizationAction":                {Group: "org-actions", Command: "create"},
+	"invokeAction":            {Command: "invoke"},
+	"listOrganizationActions": {Group: "org-actions", Command: "list"},
+	// Hand-written: create and rotate reveal one-time secret material, so the
+	// commands require an explicit sink (--secret-file or --show-secret)
+	// instead of printing the signing secret by default.
+	"createOrganizationAction":                {Skip: true},
 	"getOrganizationAction":                   {Group: "org-actions", Command: "get"},
 	"updateOrganizationAction":                {Group: "org-actions", Command: "update"},
 	"deleteOrganizationAction":                {Group: "org-actions", Command: "delete"},
-	"rotateOrganizationActionSecret":          {Group: "org-actions", Command: "rotate-secret"},
+	"rotateOrganizationActionSecret":          {Skip: true},
 	"activateOrganizationActionSecretVersion": {Group: "org-actions", Command: "activate-secret-version"},
 	"revokeOrganizationActionSecretVersion":   {Group: "org-actions", Command: "revoke-secret-version"},
 
@@ -63,17 +66,19 @@ var overrides = map[string]Override{
 	"createPrincipal": {Skip: true},
 
 	// --- skills -----------------------------------------------------------
-	// `import` isn't in the verb list, so the auto-derive keeps the
-	// redundant `-skill` suffix; strip it.
-	"importSkill": {Command: "import"},
+	// Hand-written so `skills import PATH|-` takes the skill document itself
+	// (a Claude Code / Dive-style markdown file) instead of a JSON request
+	// body wrapping it.
+	"importSkill": {Skip: true},
 
 	// --- org-skills -------------------------------------------------------
 	// Organization Skills have org-wide authority and do not require a
 	// project profile. Keep them in a distinct group so their CRUD verbs do
 	// not collide with the existing project-scoped `skills` commands.
-	"listOrganizationSkills":    {Group: "org-skills", Command: "list"},
-	"createOrganizationSkill":   {Group: "org-skills", Command: "create"},
-	"importOrganizationSkill":   {Group: "org-skills", Command: "import"},
+	"listOrganizationSkills":  {Group: "org-skills", Command: "list"},
+	"createOrganizationSkill": {Group: "org-skills", Command: "create"},
+	// Hand-written for the same reason as `importSkill`.
+	"importOrganizationSkill":   {Skip: true},
 	"getOrganizationSkill":      {Group: "org-skills", Command: "get"},
 	"replaceOrganizationSkill":  {Group: "org-skills", Command: "update"},
 	"deleteOrganizationSkill":   {Group: "org-skills", Command: "delete"},

@@ -7686,7 +7686,7 @@ type OrganizationAction struct {
 	SecretRef        string                             `json:"secret_ref"`
 	SecretVersions   []OrganizationActionSecretVersion  `json:"secret_versions"`
 
-	// SigningSecret Base64-encoded signing key returned only on create and rotate.
+	// SigningSecret Base64-encoded signing key returned only on create and rotate. It always belongs to the newest entry in `secret_versions` — the `active` version after create, the `pending` version after rotate.
 	SigningSecret *string   `json:"signing_secret,omitempty"`
 	Title         *string   `json:"title,omitempty"`
 	UpdatedAt     time.Time `json:"updated_at"`

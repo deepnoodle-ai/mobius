@@ -7,7 +7,11 @@ common integration tasks:
 - delivering Mobius-shaped synthetic webhooks for local/test bridges
 - managing loops and loop runs from code
 - managing project blueprints, principals, roles, and role assignments
+- managing organization Actions and their signing-secret lifecycle
 - publishing project artifacts with metadata and safe retry keys
+- reading, searching, and synchronizing agent memory
+- managing project and organization skills and agent skill assignments
+- listing action invocation audit records with provenance filters
 - listing interactions with run, session, target, inbox, and status filters
 - invoking agents and following a session's live transcript (message rows,
   turns, and human-input interactions) as it streams
@@ -101,11 +105,101 @@ signs the consuming project's `project_id`, even though the Action definition
 and signing key belong to the organization. The Action ID is stable across
 renames and should be the primary endpoint-side identity check.
 
+## Organization Actions
+
+Organization admins manage shared signed HTTP Actions from the curated
+clients. Create and rotate are the only operations that reveal the signing
+key, and they return it exactly once as decoded secret material — the action
+in the response has its `signing_secret` cleared, and the key lives only in
+the material's byte field:
+
+```go
+material, err := client.CreateOrganizationAction(ctx, api.CreateOrganizationActionRequest{
+	Name:        "crm.sync",
+	EndpointUrl: "https://example.com/hooks/mobius",
+})
+// material.KeyBytes is the decoded signing key — store it now; the server
+// never returns it again. material.Version is the newly active version.
+```
+
+```python
+material = client.rotate_organization_action_secret(action_id)
+# material.key_bytes belongs to the new *pending* version. Distribute it to
+# endpoints first, then promote it:
+client.activate_organization_action_secret_version(
+    action_id, material.version, overlap_seconds=3600
+)
+```
+
+```ts
+const material = await client.createOrganizationAction({
+  name: "crm.sync",
+  endpoint_url: "https://example.com/hooks/mobius",
+});
+// material.keyBytes plugs directly into the signed-delivery verifiers'
+// key resolver.
+```
+
+Rotation is two explicit steps. `RotateOrganizationActionSecret` mints a
+pending version and reveals its key; Mobius keeps signing with the current
+active version until `ActivateOrganizationActionSecretVersion` promotes the
+pending one, after which the previous version keeps verifying for a bounded
+overlap (server default 24 hours; pass `0` for immediate cutover).
+`RevokeOrganizationActionSecretVersion` immediately revokes a non-active
+version. The SDKs never activate implicitly after rotate.
+
+The CLI's `org-actions create` and `org-actions rotate-secret` refuse to run
+without an explicit secret sink, so the one-time reveal is never burned by
+accident: `--secret-file PATH` writes the key to a `0600` file and masks it
+in the printed response; `--show-secret` prints the full response for
+existing scripts.
+
+## Action Invocation Audit
+
+`ListActionInvocations` / `list_action_invocations` / `listActionInvocations`
+lists the project's invocation audit records with every contract filter:
+run, job, environment, action name, immutable action ID, definition scope,
+signing-secret version, delivery ID, correlation ID, terminal status, and
+pagination.
+
+```go
+page, err := client.ListActionInvocations(ctx, &mobius.ListActionInvocationsOptions{
+	ActionID:        "act_2m7x9q5v8p3n4r6t",
+	DefinitionScope: api.ListActionInvocationsParamsDefinitionScopeOrganization,
+	SecretVersion:   2,
+})
+```
+
+Each entry preserves definition provenance (`action_id`,
+`definition_scope`) and, for signed HTTP deliveries, the delivery identity
+(`delivery_id`, `correlation_id`, `secret_version`), so an audit can answer
+"which definition ran, and which key signed it" without a raw transport. The
+catalog entry and invocation entry types are exported publicly in all three
+SDKs.
+
 ## Artifact Uploads
 
 An action handler or other project service that produces deterministic bytes
 can publish them directly to Mobius with a project API key holding
 `mobius.project.edit`:
+
+```go
+artifact, err := client.CreateArtifact(ctx, mobius.CreateArtifactOptions{
+	Name:           "renders/report.html",
+	Path:           renderedPath, // or Reader for in-memory bytes
+	Metadata:       map[string]any{"renderer": "omni"},
+	IdempotencyKey: deliveryID + ":report",
+})
+```
+
+```python
+artifact = client.create_artifact(
+    rendered_bytes,
+    name="renders/report.html",
+    metadata={"renderer": "omni"},
+    idempotency_key=f"{delivery_id}:report",
+)
+```
 
 ```ts
 const artifact = await client.createArtifact({
@@ -220,6 +314,73 @@ cover query filters and pagination.
 contract filter, including `session_id` (`SessionID` in Go and `sessionId` in
 TypeScript), so a chat surface can fetch pending human-input interactions for
 one session without using a raw transport.
+
+## Agent Memory
+
+Agent memory has three surfaces: a summary (`GetAgentMemory`), the entries
+themselves, and a content-free change feed for synchronization. Listing
+doubles as search:
+
+```go
+page, err := client.ListAgentMemoryEntries(ctx, agentID, &mobius.ListAgentMemoryEntriesOptions{
+	Query:      "deploy preferences",
+	SearchMode: api.MemorySearchModeHybrid,
+})
+```
+
+Semantic and hybrid searches surface a 503
+`memory_semantic_search_unavailable` API error when the index is unavailable
+— the SDKs never silently downgrade to keyword search, because that would
+change result semantics. The response preserves `search_coverage` so callers
+can see when rankings covered only a partially indexed subset.
+
+`SyncAgentMemory` / `sync_agent_memory` / `syncAgentMemory` advances a
+change-feed consumer by one bounded step: it drains every change page after
+the supplied cursor and returns the new position to persist. When the cursor
+predates retained history (HTTP 410), it recovers explicitly by returning a
+full entry snapshot with `reset` set instead of failing or silently
+replaying:
+
+```ts
+const result = await client.syncAgentMemory(agentId, savedCursor);
+if (result.reset) {
+  replaceLocalState(result.entries);
+} else {
+  applyChanges(result.changes);
+}
+savedCursor = result.nextCursor;
+```
+
+Polling cadence and retry policy stay with the caller; the SDK makes no
+timing decisions. Entry versions make replayed changes detectable.
+
+## Skills
+
+Skills are reusable instruction bundles assignable to agents. The curated
+clients expose the project lifecycle, the organization lifecycle (shared
+across projects, Admin/Owner only), usage reporting, and ordered agent
+assignments. Import takes the Claude Code or Dive-style document as a plain
+string — reading files stays a CLI concern:
+
+```python
+skill = client.import_skill(Path("SKILL.md").read_text(), name="PR review")
+client.replace_agent_skill_assignments(agent_id, [skill.id])
+```
+
+```ts
+const shared = await client.importOrganizationSkill(content);
+const usage = await client.getOrganizationSkillUsage(shared.id);
+// usage.projects lists per-project agent counts before a replace or delete.
+```
+
+Updates (`UpdateSkill`, `ReplaceOrganizationSkill`) are explicit full-body
+replacements — the SDKs do not fetch-and-merge, which would race concurrent
+edits. Deleting an assigned organization skill fails with a 409
+`skill_in_use` error by design; the SDKs never detach agents implicitly.
+
+The CLI imports documents directly: `mobius skills import ./SKILL.md`, or
+`mobius org-skills import - --name "PR review"` to read stdin with a name
+override.
 
 ## Session Transcripts
 

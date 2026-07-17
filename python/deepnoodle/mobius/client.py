@@ -1,27 +1,38 @@
 from __future__ import annotations
 
+import base64
 import json
 import logging
+import os
 import re
 import time
-from dataclasses import dataclass
-from collections.abc import Iterator
-from typing import Any
+from dataclasses import dataclass, field
+from collections.abc import Iterator, Sequence
+from typing import Any, BinaryIO
 from urllib.parse import quote, urlencode, urlparse, urlunparse
 
 import httpx
 
 from ._api.models import (
+    ActionInvocationListResponse,
+    AgentMemory,
+    AgentMemoryChange,
+    AgentMemoryChangeListResponse,
+    AgentMemoryEntry,
+    AgentMemoryEntryListResponse,
     AgentTurn,
     AgentTurnListResponse,
     AgentTurnOperationPolicy,
     AgentRef,
     ApplyBlueprintRequest,
+    Artifact,
     BlueprintApplyResult,
     BlueprintBindingListResponse,
     BlueprintDeleteResult,
+    ActivateOrganizationActionSecretRequest,
     CancelLoopRunRequest,
     ChannelContext,
+    CreateOrganizationActionRequest,
     CreatePrincipalRequest,
     CreateRoleAssignmentRequest,
     CreateRoleRequest,
@@ -40,13 +51,25 @@ from ._api.models import (
     LoopRunSource,
     LoopRunStatus,
     LoopStatus,
+    MemoryKind,
+    MemorySearchMode,
     NudgeSessionRequest,
+    OrganizationAction,
+    OrganizationActionListResponse,
     PermissionCatalogResponse,
     Principal,
     PrincipalKind,
     PrincipalListResponse,
     RuntimeContext,
     RuntimeContextItem,
+    SaveAgentMemoryEntryRequest,
+    ImportSkillRequest,
+    OrganizationSkillUsage,
+    ReplaceSkillsRequest,
+    Skill,
+    SkillAssignmentListResponse,
+    SkillListResponse,
+    SkillRequest,
     Role1 as ProjectRole,
     RoleAssignment,
     RoleAssignmentListResponse,
@@ -66,6 +89,7 @@ from ._api.models import (
     TurnAck,
     TurnOutputSpec,
     UpdateLoopRequest,
+    UpdateOrganizationActionRequest,
     UpdatePrincipalRequest,
     UpdateRoleRequest,
 )
@@ -237,6 +261,87 @@ class StartTurnOptions:
     output: TurnOutputSpec | None = None
     # Free-form caller metadata attached to the input message.
     metadata: dict[str, Any] | None = None
+
+
+@dataclass
+class ListAgentMemoryEntriesOptions:
+    # Optional search over entry keys, kinds, summaries, and content; omit to
+    # list.
+    query: str | None = None
+    # Search ranking mode for a non-blank query: keyword (the server
+    # default), semantic, or hybrid. Semantic and hybrid raise a 503
+    # memory_semantic_search_unavailable MobiusAPIError when the index is
+    # unavailable; the SDK never downgrades to keyword silently because that
+    # would change result semantics — retry or fall back explicitly.
+    search_mode: MemorySearchMode | str | None = None
+    # Optional filter to a single memory kind.
+    kind: MemoryKind | str | None = None
+    cursor: str | None = None
+    limit: int | None = None
+
+
+@dataclass
+class MemorySyncResult:
+    """One bounded synchronization step of an agent memory change feed."""
+
+    # True when the supplied cursor predated retained history (HTTP 410).
+    # entries then carries a full current snapshot to replace local state,
+    # and changes is empty.
+    reset: bool
+    # New feed position to persist for the next call.
+    next_cursor: str
+    # All feed items after the supplied cursor, drained across pages.
+    changes: list[AgentMemoryChange] = field(default_factory=list)
+    # Full current entry snapshot, present only when reset is True.
+    entries: list[AgentMemoryEntry] = field(default_factory=list)
+
+
+@dataclass
+class ListOrganizationActionsOptions:
+    cursor: str | None = None
+    limit: int | None = None
+
+
+@dataclass
+class ListActionInvocationsOptions:
+    """Filters for the project's action invocation audit records."""
+
+    run_id: str | None = None
+    job_id: str | None = None
+    environment_id: str | None = None
+    action_name: str | None = None
+    action_id: str | None = None
+    # Scope that owned the selected definition: "platform", "project", or
+    # "organization".
+    definition_scope: str | None = None
+    # Signing-secret version used for the HTTP delivery.
+    secret_version: int | None = None
+    delivery_id: str | None = None
+    correlation_id: str | None = None
+    # Terminal status (e.g. "success", "failed").
+    status: str | None = None
+    cursor: str | None = None
+    limit: int | None = None
+
+
+@dataclass
+class OrganizationActionSecretMaterial:
+    """One-time signing secret revealed by create/rotate of an org action.
+
+    The server never returns this key again; store ``key_bytes`` before
+    discarding the value, and never log it.
+    """
+
+    # The created or updated action. Its signing_secret field is cleared;
+    # the revealed key lives only in key_bytes.
+    action: OrganizationAction
+    # Stable reference sent in X-Mobius-Secret-Ref on signed deliveries.
+    secret_ref: str
+    # Key version the revealed secret belongs to: the active version after
+    # create, the pending version after rotate.
+    version: int
+    # Base64-decoded signing key.
+    key_bytes: bytes
 
 
 @dataclass
@@ -424,14 +529,14 @@ class Client:
         self.api_key = opts.api_key
         self._logger = opts.logger or logging.getLogger("deepnoodle.mobius")
         base_transport = transport or httpx.HTTPTransport()
+        # Content-Type is set per request by httpx (application/json for
+        # json= bodies, multipart boundaries for files=). A client-level
+        # default would override the multipart boundary and break uploads.
         self._client = httpx.Client(
             base_url=self.base_url,
             timeout=opts.timeout,
             transport=RetryingTransport(base_transport, max_retries=opts.retry),
-            headers={
-                "Authorization": f"Bearer {opts.api_key}",
-                "Content-Type": "application/json",
-            },
+            headers={"Authorization": f"Bearer {opts.api_key}"},
         )
 
     def close(self) -> None:
@@ -449,6 +554,64 @@ class Client:
         base_path = parsed.path.rstrip("/")
         path = f"{base_path}/v1/projects/{quote(self.project, safe='')}/workers/socket"
         return urlunparse((scheme, parsed.netloc, path, "", "", ""))
+
+    def create_artifact(
+        self,
+        file: bytes | BinaryIO | str | os.PathLike[str],
+        *,
+        name: str | None = None,
+        mime: str | None = None,
+        metadata: dict[str, Any] | None = None,
+        idempotency_key: str | None = None,
+    ) -> Artifact:
+        """Publish a private artifact using the client's project authorization.
+
+        ``file`` may be raw bytes, a binary file object, or a filesystem
+        path. Path sources stream from disk and default ``name`` to the
+        file's base name; bytes and file-object sources require ``name``.
+        Ownership and visibility are derived from the authenticated
+        principal; run/step lineage can only be attached by the server from
+        a worker lease.
+        """
+        if idempotency_key is not None and len(idempotency_key) > 255:
+            raise ValueError("artifact idempotency_key must be at most 255 characters")
+        opened: BinaryIO | None = None
+        try:
+            source: bytes | BinaryIO
+            size: int | None = None
+            if isinstance(file, (str, os.PathLike)):
+                opened = open(file, "rb")
+                source = opened
+                size = os.fstat(opened.fileno()).st_size
+                if name is None:
+                    name = os.path.basename(os.fspath(file))
+            elif isinstance(file, (bytes, bytearray, memoryview)):
+                source = bytes(file)
+                size = len(source)
+            else:
+                source = file
+            clean_name = (name or "").strip()
+            if not clean_name:
+                raise ValueError("artifact name is required")
+            fields: dict[str, Any] = {"name": clean_name}
+            if mime:
+                fields["mime"] = mime
+            if size is not None:
+                fields["size_bytes"] = str(size)
+            if metadata is not None:
+                fields["metadata"] = json.dumps(metadata)
+            filename = clean_name.rsplit("/", 1)[-1] or "artifact"
+            resp = self._request(
+                "POST",
+                "/v1/projects/{project}/artifacts",
+                files={"file": (filename, source, mime or "application/octet-stream")},
+                data=fields,
+                idempotency_key=idempotency_key,
+            )
+            return Artifact.model_validate(resp.json())
+        finally:
+            if opened is not None:
+                opened.close()
 
     def list_loops(self, opts: ListLoopsOptions | None = None) -> LoopListResponse:
         resp = self._request("GET", "/v1/projects/{project}/loops", params=_params(opts))
@@ -610,6 +773,402 @@ class Client:
             "DELETE",
             f"/v1/projects/{{project}}/role-assignments/{quote(assignment_id, safe='')}",
         )
+
+    def get_agent_memory(self, agent_id: str) -> AgentMemory:
+        """Return a summary of an agent's private memory."""
+        resp = self._request(
+            "GET", f"/v1/projects/{{project}}/agents/{quote(agent_id, safe='')}/memory"
+        )
+        return AgentMemory.model_validate(resp.json())
+
+    def list_agent_memory_entries(
+        self, agent_id: str, opts: ListAgentMemoryEntriesOptions | None = None
+    ) -> AgentMemoryEntryListResponse:
+        """List or search an agent's memory entries.
+
+        The response preserves ``search_coverage`` so callers can see when
+        semantic or hybrid results ranked only a partially indexed subset.
+        """
+        resp = self._request(
+            "GET",
+            f"/v1/projects/{{project}}/agents/{quote(agent_id, safe='')}/memory/entries",
+            params=_params(opts),
+        )
+        return AgentMemoryEntryListResponse.model_validate(resp.json())
+
+    def save_agent_memory_entry(
+        self, agent_id: str, key: str, request: SaveAgentMemoryEntryRequest
+    ) -> AgentMemoryEntry:
+        """Create or update the memory entry stored under ``key``."""
+        resp = self._request(
+            "PUT",
+            f"/v1/projects/{{project}}/agents/{quote(agent_id, safe='')}/memory/entries/{quote(key, safe='')}",
+            json=request,
+        )
+        return AgentMemoryEntry.model_validate(resp.json())
+
+    def delete_agent_memory_entry(self, agent_id: str, key: str) -> None:
+        """Delete the memory entry stored under ``key``."""
+        self._request(
+            "DELETE",
+            f"/v1/projects/{{project}}/agents/{quote(agent_id, safe='')}/memory/entries/{quote(key, safe='')}",
+        )
+
+    def list_agent_memory_changes(
+        self, agent_id: str, *, after: str | None = None, limit: int | None = None
+    ) -> AgentMemoryChangeListResponse:
+        """Return one page of the append-only memory change feed.
+
+        A 410 :class:`MobiusAPIError` means ``after`` predates retained
+        history; recover with :meth:`sync_agent_memory` or by relisting
+        entries.
+        """
+        params: dict[str, Any] = {}
+        if after:
+            params["after"] = after
+        if limit:
+            params["limit"] = limit
+        resp = self._request(
+            "GET",
+            f"/v1/projects/{{project}}/agents/{quote(agent_id, safe='')}/memory/changes",
+            params=params or None,
+        )
+        return AgentMemoryChangeListResponse.model_validate(resp.json())
+
+    def sync_agent_memory(
+        self, agent_id: str, cursor: str | None = None
+    ) -> MemorySyncResult:
+        """Advance a memory change-feed consumer by one bounded step.
+
+        Drains every change page after ``cursor`` and returns the new feed
+        position to persist. When the cursor has expired (HTTP 410) it
+        recovers explicitly — establishing a fresh feed position and
+        returning a full entry snapshot with ``reset=True`` — instead of
+        failing or silently replaying. Pass ``None`` on first use. Polling
+        cadence and retry policy stay with the caller; this makes no timing
+        decisions.
+        """
+        try:
+            changes, next_cursor = self._drain_agent_memory_changes(agent_id, cursor)
+            return MemorySyncResult(reset=False, next_cursor=next_cursor, changes=changes)
+        except MobiusAPIError as err:
+            if err.status != 410:
+                raise
+        # The cursor predates retained history. Take the fresh feed position
+        # BEFORE the snapshot: a mutation racing the snapshot then replays
+        # after the new cursor (versions make replays detectable) instead of
+        # being lost.
+        _, next_cursor = self._drain_agent_memory_changes(agent_id, None)
+        entries: list[AgentMemoryEntry] = []
+        entries_cursor: str | None = None
+        while True:
+            page = self.list_agent_memory_entries(
+                agent_id, ListAgentMemoryEntriesOptions(cursor=entries_cursor)
+            )
+            entries.extend(page.items)
+            if not page.has_more or not page.next_cursor:
+                break
+            entries_cursor = page.next_cursor
+        return MemorySyncResult(reset=True, next_cursor=next_cursor, entries=entries)
+
+    def _drain_agent_memory_changes(
+        self, agent_id: str, after: str | None
+    ) -> tuple[list[AgentMemoryChange], str]:
+        changes: list[AgentMemoryChange] = []
+        cursor = after
+        while True:
+            page = self.list_agent_memory_changes(agent_id, after=cursor)
+            changes.extend(page.items)
+            cursor = page.next_cursor
+            if not page.has_more:
+                return changes, cursor
+
+    def list_organization_actions(
+        self, opts: ListOrganizationActionsOptions | None = None
+    ) -> OrganizationActionListResponse:
+        """List signed HTTP actions owned by the active organization.
+
+        Requires Admin or Owner membership.
+        """
+        resp = self._request(
+            "GET", "/v1/organization/actions", params=_params(opts)
+        )
+        return OrganizationActionListResponse.model_validate(resp.json())
+
+    def create_organization_action(
+        self, request: CreateOrganizationActionRequest
+    ) -> OrganizationActionSecretMaterial:
+        """Create an organization-owned signed HTTP action.
+
+        Returns the action's one-time secret material. The signing key is
+        revealed only in this response; persist ``key_bytes`` before
+        discarding the result.
+        """
+        resp = self._request("POST", "/v1/organization/actions", json=request)
+        action = OrganizationAction.model_validate(resp.json())
+        return _organization_action_secret_material(
+            "create organization action", action, "active"
+        )
+
+    def get_organization_action(self, action_id: str) -> OrganizationAction:
+        """Return one organization action. Reads never include secret material."""
+        resp = self._request(
+            "GET", f"/v1/organization/actions/{quote(action_id, safe='')}"
+        )
+        return OrganizationAction.model_validate(resp.json())
+
+    def update_organization_action(
+        self, action_id: str, request: UpdateOrganizationActionRequest
+    ) -> OrganizationAction:
+        """Update the shared definition or enable/disable invocation."""
+        resp = self._request(
+            "PATCH",
+            f"/v1/organization/actions/{quote(action_id, safe='')}",
+            json=request,
+        )
+        return OrganizationAction.model_validate(resp.json())
+
+    def delete_organization_action(self, action_id: str) -> None:
+        """Delete the shared definition from future project catalogs."""
+        self._request(
+            "DELETE", f"/v1/organization/actions/{quote(action_id, safe='')}"
+        )
+
+    def rotate_organization_action_secret(
+        self, action_id: str
+    ) -> OrganizationActionSecretMaterial:
+        """Create a pending key version and return its one-time material.
+
+        Mobius keeps signing with the current active version until
+        :meth:`activate_organization_action_secret_version` promotes the
+        pending one — distribute the new key to verifiers first, then
+        activate.
+        """
+        resp = self._request(
+            "POST",
+            f"/v1/organization/actions/{quote(action_id, safe='')}/secret/rotate",
+        )
+        action = OrganizationAction.model_validate(resp.json())
+        return _organization_action_secret_material(
+            "rotate organization action secret", action, "pending"
+        )
+
+    def activate_organization_action_secret_version(
+        self, action_id: str, version: int, *, overlap_seconds: int | None = None
+    ) -> OrganizationAction:
+        """Atomically make a pending version active.
+
+        The previous active version, if any, keeps verifying for
+        ``overlap_seconds`` (server default 24 hours; pass 0 to cut over
+        immediately).
+        """
+        body = (
+            ActivateOrganizationActionSecretRequest(overlap_seconds=overlap_seconds)
+            if overlap_seconds is not None
+            else ActivateOrganizationActionSecretRequest()
+        )
+        resp = self._request(
+            "POST",
+            f"/v1/organization/actions/{quote(action_id, safe='')}/secret/versions/{version}/activate",
+            json=body,
+        )
+        return OrganizationAction.model_validate(resp.json())
+
+    def revoke_organization_action_secret_version(
+        self, action_id: str, version: int
+    ) -> OrganizationAction:
+        """Immediately revoke a non-active key version.
+
+        The active signing version can be revoked only after another version
+        is activated or the action is disabled.
+        """
+        resp = self._request(
+            "POST",
+            f"/v1/organization/actions/{quote(action_id, safe='')}/secret/versions/{version}/revoke",
+        )
+        return OrganizationAction.model_validate(resp.json())
+
+    def list_action_invocations(
+        self, opts: ListActionInvocationsOptions | None = None
+    ) -> ActionInvocationListResponse:
+        """List recent action invocation audit records.
+
+        Covers loops, agents, direct invocations, and job-backed execution.
+        Each entry carries definition provenance (``action_id``,
+        ``definition_scope``) and, for signed HTTP deliveries, the delivery
+        identity (``delivery_id``, ``correlation_id``, ``secret_version``).
+        """
+        resp = self._request(
+            "GET",
+            "/v1/projects/{project}/action-invocations",
+            params=_params(opts),
+        )
+        return ActionInvocationListResponse.model_validate(resp.json())
+
+    def list_skills(self, *, include_system: bool | None = None) -> SkillListResponse:
+        """List project-local, organization-shared, and system skills.
+
+        System skill templates are included by default; pass
+        ``include_system=False`` to omit them. Organization skills are
+        read-only through project mutation routes.
+        """
+        params: dict[str, Any] = {}
+        if include_system is not None:
+            params["include_system"] = "true" if include_system else "false"
+        resp = self._request(
+            "GET", "/v1/projects/{project}/skills", params=params or None
+        )
+        return SkillListResponse.model_validate(resp.json())
+
+    def create_skill(self, request: SkillRequest) -> Skill:
+        """Create a project-local skill."""
+        resp = self._request("POST", "/v1/projects/{project}/skills", json=request)
+        return Skill.model_validate(resp.json())
+
+    def import_skill(self, content: str, *, name: str | None = None) -> Skill:
+        """Import a Claude Code or Dive-style skill document.
+
+        ``content`` is sent verbatim, including any YAML frontmatter; pass
+        ``name`` to override the document's own.
+        """
+        resp = self._request(
+            "POST",
+            "/v1/projects/{project}/skills/import",
+            json=ImportSkillRequest(content=content, name=name),
+        )
+        return Skill.model_validate(resp.json())
+
+    def get_skill(self, skill_id: str) -> Skill:
+        """Return a single project-local, organization-shared, or system skill."""
+        resp = self._request(
+            "GET", f"/v1/projects/{{project}}/skills/{quote(skill_id, safe='')}"
+        )
+        return Skill.model_validate(resp.json())
+
+    def update_skill(self, skill_id: str, request: SkillRequest) -> Skill:
+        """Replace a project-local skill.
+
+        The server requires the full body — including ``name`` and
+        ``instructions`` — on every update; there is no partial patch, so
+        read-modify-write is the caller's responsibility.
+        """
+        resp = self._request(
+            "PUT",
+            f"/v1/projects/{{project}}/skills/{quote(skill_id, safe='')}",
+            json=request,
+        )
+        return Skill.model_validate(resp.json())
+
+    def delete_skill(self, skill_id: str) -> None:
+        """Delete a project-local skill.
+
+        The skill is automatically detached from any agents that reference it.
+        """
+        self._request(
+            "DELETE", f"/v1/projects/{{project}}/skills/{quote(skill_id, safe='')}"
+        )
+
+    def list_organization_skills(self) -> SkillListResponse:
+        """List skills owned by the active organization.
+
+        Any organization member may read this catalog.
+        """
+        resp = self._request("GET", "/v1/organization/skills")
+        return SkillListResponse.model_validate(resp.json())
+
+    def create_organization_skill(self, request: SkillRequest) -> Skill:
+        """Create a skill shared across the active organization.
+
+        Requires Admin or Owner membership.
+        """
+        resp = self._request("POST", "/v1/organization/skills", json=request)
+        return Skill.model_validate(resp.json())
+
+    def import_organization_skill(
+        self, content: str, *, name: str | None = None
+    ) -> Skill:
+        """Import a Claude Code or Dive-style document as an organization skill.
+
+        ``content`` is sent verbatim, including any YAML frontmatter; pass
+        ``name`` to override the document's own. Requires Admin or Owner
+        membership.
+        """
+        resp = self._request(
+            "POST",
+            "/v1/organization/skills/import",
+            json=ImportSkillRequest(content=content, name=name),
+        )
+        return Skill.model_validate(resp.json())
+
+    def get_organization_skill(self, skill_id: str) -> Skill:
+        """Return one skill owned by the active organization."""
+        resp = self._request(
+            "GET", f"/v1/organization/skills/{quote(skill_id, safe='')}"
+        )
+        return Skill.model_validate(resp.json())
+
+    def replace_organization_skill(self, skill_id: str, request: SkillRequest) -> Skill:
+        """Replace the shared skill for subsequent agent turns.
+
+        The server requires the full body — including ``name`` and
+        ``instructions`` — on every update; there is no partial patch, so
+        read-modify-write is the caller's responsibility. Requires Admin or
+        Owner membership.
+        """
+        resp = self._request(
+            "PUT",
+            f"/v1/organization/skills/{quote(skill_id, safe='')}",
+            json=request,
+        )
+        return Skill.model_validate(resp.json())
+
+    def delete_organization_skill(self, skill_id: str) -> None:
+        """Delete an unused organization skill.
+
+        A skill that is still assigned raises a 409 ``skill_in_use``
+        :class:`MobiusAPIError`; inspect
+        :meth:`get_organization_skill_usage` and remove the assignments
+        first — the SDK never detaches agents implicitly.
+        """
+        self._request(
+            "DELETE", f"/v1/organization/skills/{quote(skill_id, safe='')}"
+        )
+
+    def get_organization_skill_usage(self, skill_id: str) -> OrganizationSkillUsage:
+        """Report an organization skill's assignment impact across projects.
+
+        Lets callers see what a replace or delete would touch. Requires
+        Admin or Owner membership.
+        """
+        resp = self._request(
+            "GET", f"/v1/organization/skills/{quote(skill_id, safe='')}/usage"
+        )
+        return OrganizationSkillUsage.model_validate(resp.json())
+
+    def list_agent_skill_assignments(
+        self, agent_id: str
+    ) -> SkillAssignmentListResponse:
+        """Return the skills assigned to an agent in assignment order."""
+        resp = self._request(
+            "GET",
+            f"/v1/projects/{{project}}/agents/{quote(agent_id, safe='')}/skill-assignments",
+        )
+        return SkillAssignmentListResponse.model_validate(resp.json())
+
+    def replace_agent_skill_assignments(
+        self, agent_id: str, skill_ids: Sequence[str]
+    ) -> SkillAssignmentListResponse:
+        """Replace the agent's skill assignment set as a whole.
+
+        ``skill_ids`` is the full replace-set in desired order; pass an
+        empty sequence to remove every assignment.
+        """
+        resp = self._request(
+            "PUT",
+            f"/v1/projects/{{project}}/agents/{quote(agent_id, safe='')}/skill-assignments",
+            json=ReplaceSkillsRequest(skill_ids=list(skill_ids)),
+        )
+        return SkillAssignmentListResponse.model_validate(resp.json())
 
     def start_run(self, loop_id: str, opts: StartRunOptions | None = None) -> LoopRun:
         opts = opts or StartRunOptions()
@@ -1080,6 +1639,8 @@ class Client:
         json: Any | None = None,
         params: dict[str, Any] | None = None,
         idempotency_key: str | None = None,
+        files: Any | None = None,
+        data: dict[str, Any] | None = None,
     ) -> httpx.Response:
         payload = _model_dump(json) if json is not None else None
         request_path = self._path(path, params=params)
@@ -1088,6 +1649,8 @@ class Client:
             method,
             request_path,
             json=payload,
+            files=files,
+            data=data,
             headers=_idempotency_headers(idempotency_key),
         )
         self._logger.debug(
@@ -1513,6 +2076,44 @@ def _model_dump(value: Any) -> Any:
 
 def _drop_none(values: dict[str, Any]) -> dict[str, Any]:
     return {k: v for k, v in values.items() if v is not None}
+
+
+def _organization_action_secret_material(
+    op: str, action: OrganizationAction, want_status: str
+) -> OrganizationActionSecretMaterial:
+    """Extract the one-time secret from a create or rotate response.
+
+    The revealed signing_secret always belongs to the newest entry in
+    secret_versions, whose status must match ``want_status``; any other
+    shape means the response is internally inconsistent. Errors never
+    include the secret itself.
+    """
+    if not action.signing_secret:
+        raise ValueError(
+            f"mobius: {op}: response is missing the one-time signing_secret"
+        )
+    if not action.secret_versions:
+        raise ValueError(
+            f"mobius: {op}: response has no secret_versions for the revealed secret"
+        )
+    newest = max(action.secret_versions, key=lambda v: v.version)
+    if newest.status != want_status:
+        raise ValueError(
+            f"mobius: {op}: newest secret version {newest.version} has status"
+            f" {newest.status.value!r}, want {want_status!r}"
+        )
+    try:
+        key_bytes = base64.b64decode(action.signing_secret, validate=True)
+    except (ValueError, TypeError):
+        raise ValueError(
+            f"mobius: {op}: signing_secret is not valid base64"
+        ) from None
+    return OrganizationActionSecretMaterial(
+        action=action.model_copy(update={"signing_secret": None}),
+        secret_ref=action.secret_ref,
+        version=newest.version,
+        key_bytes=key_bytes,
+    )
 
 
 def _invoke_agent_request(opts: InvokeAgentOptions) -> InvokeAgentRequest:

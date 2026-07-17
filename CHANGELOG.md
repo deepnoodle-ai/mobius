@@ -6,6 +6,29 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 
 ## [Unreleased]
 
+### Added
+
+- Go `CreateArtifact` and Python `create_artifact` project-authorized upload
+  helpers matching the v0.0.53 multipart contract, plus a hand-written
+  `mobius artifacts upload` command. See `docs/sdk-helpers.md`.
+- Curated agent memory clients in Go, Python, and TypeScript: entry CRUD,
+  keyword/semantic/hybrid search with preserved coverage, and bounded
+  change-feed sync with explicit cursor-expiry recovery (#178 follow-up).
+- Organization Action admin and signing-secret lifecycle in all three SDKs;
+  create/rotate return one-time decoded secret material, and the CLI
+  requires an explicit sink (`--secret-file` or `--show-secret`) (#179).
+- Project and organization Skill lifecycle, usage, and ordered agent skill
+  assignments in all three SDKs; `skills import` and `org-skills import`
+  now take a document path or `-` for stdin (#181 follow-up).
+- `ListActionInvocations` with every audit filter in all three SDKs, plus
+  public exports of the catalog and invocation provenance types.
+
+### Changed
+
+- **Breaking (Go):** deprecated `CreateArtifactFromFile` now returns a
+  migration error directing callers to `CreateArtifact`; its lineage and
+  visibility fields were already rejected by the v0.0.53 contract.
+
 ## [0.0.54] - 2026-07-17
 
 ### Added

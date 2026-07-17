@@ -1,8 +1,11 @@
 package mobius
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
 	"regexp"
@@ -228,6 +231,62 @@ func hasCredentialSuffix(key string) bool {
 // to all generated API methods.
 func (c *Client) RawClient() *api.ClientWithResponses {
 	return c.ac
+}
+
+func (c *Client) doJSON(ctx context.Context, method, path string, body any, out any) error {
+	raw, err := json.Marshal(body)
+	if err != nil {
+		return err
+	}
+	return c.do(ctx, method, path, "application/json", bytes.NewReader(raw), out)
+}
+
+func (c *Client) do(ctx context.Context, method, path, contentType string, body io.Reader, out any) error {
+	return c.doWithHeaders(ctx, c.httpClient, method, path, contentType, body, nil, out)
+}
+
+// doMultipartWithHeaders rides the transfer client: multipart bodies are file
+// uploads whose transfer time is unbounded by design (see transferClient).
+func (c *Client) doMultipartWithHeaders(ctx context.Context, method, path, contentType string, body io.Reader, headers map[string]string, out any) error {
+	return c.doWithHeaders(ctx, c.transferClient, method, path, contentType, body, headers, out)
+}
+
+func (c *Client) doWithHeaders(ctx context.Context, hc *http.Client, method, path, contentType string, body io.Reader, headers map[string]string, out any) error {
+	if c.projectHandle == "" {
+		return fmt.Errorf("mobius: no project configured - set MOBIUS_PROJECT or pass --project")
+	}
+	req, err := http.NewRequestWithContext(ctx, method, strings.TrimRight(c.baseURL, "/")+path, body)
+	if err != nil {
+		return err
+	}
+	if c.apiKey != "" {
+		req.Header.Set("Authorization", "Bearer "+c.apiKey)
+	}
+	if contentType != "" {
+		req.Header.Set("Content-Type", contentType)
+	}
+	for key, value := range headers {
+		req.Header.Set(key, value)
+	}
+	resp, err := hc.Do(req)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = resp.Body.Close() }()
+	payload, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return unexpectedAPIStatus(method+" "+path, resp.StatusCode, resp.Status, resp.Header, payload)
+	}
+	if out == nil || len(payload) == 0 {
+		return nil
+	}
+	if err := json.Unmarshal(payload, out); err != nil {
+		return fmt.Errorf("mobius: decode response: %w", err)
+	}
+	return nil
 }
 
 // ProjectHandle returns the project handle this client is bound to,

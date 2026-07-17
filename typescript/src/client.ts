@@ -1,6 +1,12 @@
 import type {
+  ActionInvocationListResponse,
   Agent,
   AgentListResponse,
+  AgentMemory,
+  AgentMemoryChange,
+  AgentMemoryChangeListResponse,
+  AgentMemoryEntry,
+  AgentMemoryEntryListResponse,
   AgentTurn,
   AgentTurnListResponse,
   AgentTurnOperationPolicy,
@@ -13,10 +19,12 @@ import type {
   BlueprintDeleteResult,
   CancelLoopRunRequest,
   ChannelContext,
+  CreateOrganizationActionRequest,
   CreatePrincipalRequest,
   CreateRoleAssignmentRequest,
   CreateRoleRequest,
   CreateLoopRequest,
+  ImportSkillRequest,
   InlineAgentConfig,
   Interaction,
   InteractionKind,
@@ -32,11 +40,18 @@ import type {
   LoopRunSource,
   LoopRunStatus,
   LoopStatus,
+  MemoryKind,
+  MemorySearchMode,
+  OrganizationAction,
+  OrganizationActionListResponse,
+  OrganizationSkillUsage,
   PermissionCatalogResponse,
   Principal,
   PrincipalKind,
   PrincipalListResponse,
   RuntimeContextItem,
+  ReplaceSkillsRequest,
+  SaveAgentMemoryEntryRequest,
   Session,
   SessionListResponse,
   SessionMessageListResponse,
@@ -54,6 +69,10 @@ import type {
   RoleAssignmentListResponse,
   RoleListResponse,
   SignalLoopRunRequest,
+  Skill,
+  SkillAssignmentListResponse,
+  SkillListResponse,
+  SkillRequest,
   StartTurnRequest,
   StartLoopRunRequest,
   StreamEndFrame,
@@ -61,6 +80,7 @@ import type {
   TurnAck,
   TurnOutputSpec,
   UpdateLoopRequest,
+  UpdateOrganizationActionRequest,
   UpdatePrincipalRequest,
   UpdateRoleRequest,
 } from "./api/index.js";
@@ -447,6 +467,43 @@ export interface ListAgentsOptions {
   limit?: number;
 }
 
+export interface ListAgentMemoryEntriesOptions {
+  /** Searches entry keys, kinds, summaries, and content. Omit to list. */
+  query?: string;
+  /**
+   * Ranks a non-blank query: keyword (the server default), semantic, or
+   * hybrid. Semantic and hybrid surface a 503
+   * memory_semantic_search_unavailable {@link MobiusAPIError} when the index
+   * is unavailable; the SDK never downgrades to keyword silently because that
+   * would change result semantics — retry or fall back explicitly.
+   */
+  searchMode?: MemorySearchMode;
+  /** Filters to a single memory kind. */
+  kind?: MemoryKind;
+  cursor?: string;
+  limit?: number;
+}
+
+export interface ListAgentMemoryChangesOptions {
+  /**
+   * Opaque cursor returned as next_cursor by the previous page. Omit on the
+   * first request to read retained changes oldest-first.
+   */
+  after?: string;
+  limit?: number;
+}
+
+/**
+ * One bounded synchronization step of an agent's memory change feed, returned
+ * by {@link Client.syncAgentMemory}. When reset is true the supplied cursor
+ * predated retained history (HTTP 410) and entries carries a full current
+ * snapshot to replace local state; otherwise changes carries every feed item
+ * after the cursor. nextCursor is the new feed position to persist.
+ */
+export type MemorySyncResult =
+  | { reset: false; changes: AgentMemoryChange[]; nextCursor: string }
+  | { reset: true; entries: AgentMemoryEntry[]; nextCursor: string };
+
 export type TranscriptConnectionState = "open" | "reconnecting" | "ended";
 
 export interface TranscriptUpdate {
@@ -552,6 +609,86 @@ export interface ListRoleAssignmentsOptions {
 export interface ListRolesOptions {
   cursor?: string;
   limit?: number;
+}
+
+export interface ListOrganizationActionsOptions {
+  cursor?: string;
+  limit?: number;
+}
+
+export interface ActivateOrganizationActionSecretVersionOptions {
+  /**
+   * How long the previous active version keeps verifying after cutover, from
+   * 0 (immediate) to 86400 seconds. Omit for the server default (24 hours).
+   */
+  overlapSeconds?: number;
+}
+
+/**
+ * One-time signing secret revealed by {@link Client.createOrganizationAction}
+ * and {@link Client.rotateOrganizationActionSecret}. The server never returns
+ * this key again; store keyBytes before discarding the value, and never log
+ * it.
+ */
+export interface OrganizationActionSecretMaterial {
+  /**
+   * The created or updated action. Its signing_secret field is cleared; the
+   * revealed key lives only in keyBytes.
+   */
+  action: OrganizationAction;
+  /** Stable reference sent in X-Mobius-Secret-Ref on signed deliveries. */
+  secretRef: string;
+  /**
+   * Key version the revealed secret belongs to: the active version after
+   * create, the pending version after rotate.
+   */
+  version: number;
+  /**
+   * Base64-decoded signing key, ready for the signed-delivery verifiers'
+   * key resolver.
+   */
+  keyBytes: Uint8Array;
+}
+
+export interface ListActionInvocationsOptions {
+  /** Filter to invocations from a specific loop run. */
+  runId?: string;
+  /** Filter to invocations from a specific job. */
+  jobId?: string;
+  /** Filter to invocations executed in a specific environment. */
+  environmentId?: string;
+  /** Filter to invocations of a specific action. */
+  actionName?: string;
+  /** Filter to an immutable project or organization Action ID. */
+  actionId?: string;
+  /**
+   * Filter by the scope that owned the selected definition: "platform",
+   * "project", or "organization".
+   */
+  definitionScope?: "platform" | "project" | "organization";
+  /** Filter to deliveries signed with a specific signing-secret version. */
+  secretVersion?: number;
+  /** Filter to a signed delivery identity. */
+  deliveryId?: string;
+  /** Filter to the request or dispatch correlation identity. */
+  correlationId?: string;
+  /** Filter by terminal status (e.g. "success", "failed"). */
+  status?: string;
+  cursor?: string;
+  limit?: number;
+}
+
+export interface ListSkillsOptions {
+  /**
+   * Include read-only system skill templates. The server includes them by
+   * default; pass false to omit them.
+   */
+  includeSystem?: boolean;
+}
+
+export interface ImportSkillOptions {
+  /** Override the skill name derived from the document. */
+  name?: string;
 }
 
 export class Client {
@@ -902,6 +1039,357 @@ export class Client {
     );
   }
 
+  /**
+   * Lists signed HTTP actions owned by the active organization. Requires
+   * Admin or Owner membership.
+   */
+  async listOrganizationActions(
+    opts: ListOrganizationActionsOptions = {},
+  ): Promise<OrganizationActionListResponse> {
+    const path = withQuery("/v1/organization/actions", opts);
+    const resp = await this.request(path, { method: "GET" });
+    return (await resp.json()) as OrganizationActionListResponse;
+  }
+
+  /**
+   * Creates an organization-owned signed HTTP action and returns its
+   * one-time secret material. The signing key is revealed only in this
+   * response; persist keyBytes before discarding the result.
+   */
+  async createOrganizationAction(
+    input: CreateOrganizationActionRequest,
+  ): Promise<OrganizationActionSecretMaterial> {
+    const resp = await this.request("/v1/organization/actions", {
+      method: "POST",
+      body: input,
+    });
+    const action = (await resp.json()) as OrganizationAction;
+    return organizationActionSecretMaterial(
+      "create organization action",
+      action,
+      "active",
+    );
+  }
+
+  /** Returns one organization action. Reads never include secret material. */
+  async getOrganizationAction(actionId: string): Promise<OrganizationAction> {
+    const resp = await this.request(
+      `/v1/organization/actions/${encodeURIComponent(actionId)}`,
+      { method: "GET" },
+    );
+    return (await resp.json()) as OrganizationAction;
+  }
+
+  /** Updates the shared definition or enables/disables invocation. */
+  async updateOrganizationAction(
+    actionId: string,
+    input: UpdateOrganizationActionRequest,
+  ): Promise<OrganizationAction> {
+    const resp = await this.request(
+      `/v1/organization/actions/${encodeURIComponent(actionId)}`,
+      { method: "PATCH", body: input },
+    );
+    return (await resp.json()) as OrganizationAction;
+  }
+
+  /** Deletes the shared definition from future project catalogs. */
+  async deleteOrganizationAction(actionId: string): Promise<void> {
+    await this.request(
+      `/v1/organization/actions/${encodeURIComponent(actionId)}`,
+      { method: "DELETE" },
+    );
+  }
+
+  /**
+   * Creates a pending key version and returns its one-time secret material.
+   * Mobius keeps signing with the current active version until
+   * {@link activateOrganizationActionSecretVersion} promotes the pending one
+   * — distribute the new key to verifiers first, then activate.
+   */
+  async rotateOrganizationActionSecret(
+    actionId: string,
+  ): Promise<OrganizationActionSecretMaterial> {
+    const resp = await this.request(
+      `/v1/organization/actions/${encodeURIComponent(actionId)}/secret/rotate`,
+      { method: "POST" },
+    );
+    const action = (await resp.json()) as OrganizationAction;
+    return organizationActionSecretMaterial(
+      "rotate organization action secret",
+      action,
+      "pending",
+    );
+  }
+
+  /**
+   * Atomically makes a pending version active and moves the previous active
+   * version, if any, into its bounded verification overlap.
+   */
+  async activateOrganizationActionSecretVersion(
+    actionId: string,
+    version: number,
+    opts: ActivateOrganizationActionSecretVersionOptions = {},
+  ): Promise<OrganizationAction> {
+    const body: Record<string, unknown> = {};
+    if (opts.overlapSeconds !== undefined) {
+      if (opts.overlapSeconds < 0 || opts.overlapSeconds > 86400) {
+        throw new Error(
+          `mobius: activate organization action secret version: overlapSeconds must be between 0 and 86400, got ${opts.overlapSeconds}`,
+        );
+      }
+      body.overlap_seconds = opts.overlapSeconds;
+    }
+    const resp = await this.request(
+      `/v1/organization/actions/${encodeURIComponent(actionId)}/secret/versions/${version}/activate`,
+      { method: "POST", body },
+    );
+    return (await resp.json()) as OrganizationAction;
+  }
+
+  /**
+   * Immediately revokes a non-active key version. The active signing version
+   * can be revoked only after another version is activated or the action is
+   * disabled.
+   */
+  async revokeOrganizationActionSecretVersion(
+    actionId: string,
+    version: number,
+  ): Promise<OrganizationAction> {
+    const resp = await this.request(
+      `/v1/organization/actions/${encodeURIComponent(actionId)}/secret/versions/${version}/revoke`,
+      { method: "POST" },
+    );
+    return (await resp.json()) as OrganizationAction;
+  }
+
+  /**
+   * Lists project-local, organization-shared, and system skills. System
+   * skill templates are included by default; pass includeSystem: false to
+   * omit them. Organization skills are read-only through project mutation
+   * routes.
+   */
+  async listSkills(opts: ListSkillsOptions = {}): Promise<SkillListResponse> {
+    const path = withQuery("/v1/projects/:project/skills", {
+      include_system: opts.includeSystem,
+    });
+    const resp = await this.request(path, { method: "GET" });
+    return (await resp.json()) as SkillListResponse;
+  }
+
+  /** Creates a project-local skill. */
+  async createSkill(input: SkillRequest): Promise<Skill> {
+    const resp = await this.request("/v1/projects/:project/skills", {
+      method: "POST",
+      body: input,
+    });
+    return (await resp.json()) as Skill;
+  }
+
+  /**
+   * Imports a Claude Code or Dive-style skill document into a project-local
+   * skill. The content string is sent verbatim, including any YAML
+   * frontmatter; pass opts.name to override the document's own.
+   */
+  async importSkill(
+    content: string,
+    opts: ImportSkillOptions = {},
+  ): Promise<Skill> {
+    const body: ImportSkillRequest = { content };
+    if (opts.name != null) body.name = opts.name;
+    const resp = await this.request("/v1/projects/:project/skills/import", {
+      method: "POST",
+      body,
+    });
+    return (await resp.json()) as Skill;
+  }
+
+  /**
+   * Returns a single project-local, organization-shared, or system skill by
+   * ID.
+   */
+  async getSkill(skillId: string): Promise<Skill> {
+    const resp = await this.request(
+      `/v1/projects/:project/skills/${encodeURIComponent(skillId)}`,
+      { method: "GET" },
+    );
+    return (await resp.json()) as Skill;
+  }
+
+  /**
+   * Replaces a project-local skill. The server requires the full body —
+   * including name and instructions — on every update; there is no partial
+   * patch, so read-modify-write is the caller's responsibility.
+   */
+  async updateSkill(skillId: string, input: SkillRequest): Promise<Skill> {
+    const resp = await this.request(
+      `/v1/projects/:project/skills/${encodeURIComponent(skillId)}`,
+      { method: "PUT", body: input },
+    );
+    return (await resp.json()) as Skill;
+  }
+
+  /**
+   * Deletes a project-local skill. The skill is automatically detached from
+   * any agents that reference it.
+   */
+  async deleteSkill(skillId: string): Promise<void> {
+    await this.request(
+      `/v1/projects/:project/skills/${encodeURIComponent(skillId)}`,
+      { method: "DELETE" },
+    );
+  }
+
+  /**
+   * Lists skills owned by the active organization. Any organization member
+   * may read this catalog.
+   */
+  async listOrganizationSkills(): Promise<SkillListResponse> {
+    const resp = await this.request("/v1/organization/skills", {
+      method: "GET",
+    });
+    return (await resp.json()) as SkillListResponse;
+  }
+
+  /**
+   * Creates a skill shared across the active organization. Requires Admin
+   * or Owner membership.
+   */
+  async createOrganizationSkill(input: SkillRequest): Promise<Skill> {
+    const resp = await this.request("/v1/organization/skills", {
+      method: "POST",
+      body: input,
+    });
+    return (await resp.json()) as Skill;
+  }
+
+  /**
+   * Imports a Claude Code or Dive-style skill document as an organization
+   * skill. The content string is sent verbatim, including any YAML
+   * frontmatter; pass opts.name to override the document's own. Requires
+   * Admin or Owner membership.
+   */
+  async importOrganizationSkill(
+    content: string,
+    opts: ImportSkillOptions = {},
+  ): Promise<Skill> {
+    const body: ImportSkillRequest = { content };
+    if (opts.name != null) body.name = opts.name;
+    const resp = await this.request("/v1/organization/skills/import", {
+      method: "POST",
+      body,
+    });
+    return (await resp.json()) as Skill;
+  }
+
+  /** Returns one skill owned by the active organization. */
+  async getOrganizationSkill(skillId: string): Promise<Skill> {
+    const resp = await this.request(
+      `/v1/organization/skills/${encodeURIComponent(skillId)}`,
+      { method: "GET" },
+    );
+    return (await resp.json()) as Skill;
+  }
+
+  /**
+   * Replaces the shared skill for subsequent agent turns. The server
+   * requires the full body — including name and instructions — on every
+   * update; there is no partial patch, so read-modify-write is the caller's
+   * responsibility. Requires Admin or Owner membership.
+   */
+  async replaceOrganizationSkill(
+    skillId: string,
+    input: SkillRequest,
+  ): Promise<Skill> {
+    const resp = await this.request(
+      `/v1/organization/skills/${encodeURIComponent(skillId)}`,
+      { method: "PUT", body: input },
+    );
+    return (await resp.json()) as Skill;
+  }
+
+  /**
+   * Deletes an unused organization skill. A skill that is still assigned
+   * fails with a 409 skill_in_use {@link MobiusAPIError}; inspect
+   * {@link getOrganizationSkillUsage} and remove the assignments first —
+   * the SDK never detaches agents implicitly.
+   */
+  async deleteOrganizationSkill(skillId: string): Promise<void> {
+    await this.request(
+      `/v1/organization/skills/${encodeURIComponent(skillId)}`,
+      { method: "DELETE" },
+    );
+  }
+
+  /**
+   * Reports an organization skill's assignment impact across projects, so
+   * callers can see what a replace or delete would touch. Requires Admin or
+   * Owner membership.
+   */
+  async getOrganizationSkillUsage(
+    skillId: string,
+  ): Promise<OrganizationSkillUsage> {
+    const resp = await this.request(
+      `/v1/organization/skills/${encodeURIComponent(skillId)}/usage`,
+      { method: "GET" },
+    );
+    return (await resp.json()) as OrganizationSkillUsage;
+  }
+
+  /** Returns the skills assigned to an agent in assignment order. */
+  async listAgentSkillAssignments(
+    agentId: string,
+  ): Promise<SkillAssignmentListResponse> {
+    const resp = await this.request(
+      `/v1/projects/:project/agents/${encodeURIComponent(agentId)}/skill-assignments`,
+      { method: "GET" },
+    );
+    return (await resp.json()) as SkillAssignmentListResponse;
+  }
+
+  /**
+   * Replaces the agent's skill assignment set as a whole with skillIds, in
+   * the given order. Pass an empty array to remove every assignment.
+   */
+  async replaceAgentSkillAssignments(
+    agentId: string,
+    skillIds: string[],
+  ): Promise<SkillAssignmentListResponse> {
+    const body: ReplaceSkillsRequest = { skill_ids: skillIds };
+    const resp = await this.request(
+      `/v1/projects/:project/agents/${encodeURIComponent(agentId)}/skill-assignments`,
+      { method: "PUT", body },
+    );
+    return (await resp.json()) as SkillAssignmentListResponse;
+  }
+
+  /**
+   * Lists recent action invocation audit records from loops, agents, direct
+   * invocations, and job-backed execution. Each entry carries definition
+   * provenance (action_id, definition_scope) and, for signed HTTP
+   * deliveries, the delivery identity (delivery_id, correlation_id,
+   * secret_version).
+   */
+  async listActionInvocations(
+    opts: ListActionInvocationsOptions = {},
+  ): Promise<ActionInvocationListResponse> {
+    const path = withQuery("/v1/projects/:project/action-invocations", {
+      run_id: opts.runId,
+      job_id: opts.jobId,
+      environment_id: opts.environmentId,
+      action_name: opts.actionName,
+      action_id: opts.actionId,
+      definition_scope: opts.definitionScope,
+      secret_version: opts.secretVersion,
+      delivery_id: opts.deliveryId,
+      correlation_id: opts.correlationId,
+      status: opts.status,
+      cursor: opts.cursor,
+      limit: opts.limit,
+    });
+    const resp = await this.request(path, { method: "GET" });
+    return (await resp.json()) as ActionInvocationListResponse;
+  }
+
   async startRun(loopId: string, opts: StartRunOptions = {}): Promise<LoopRun> {
     const idempotencyKey = normalizeIdempotencyKey(opts.idempotencyKey);
     const legacyKey = normalizeIdempotencyKey(opts.external_id);
@@ -1042,6 +1530,138 @@ export class Client {
       });
     }
     return agent;
+  }
+
+  /** Returns a summary of an agent's private memory. */
+  async getAgentMemory(agentId: string): Promise<AgentMemory> {
+    const resp = await this.request(
+      `/v1/projects/:project/agents/${encodeURIComponent(agentId)}/memory`,
+      { method: "GET" },
+    );
+    return (await resp.json()) as AgentMemory;
+  }
+
+  /**
+   * Lists or searches an agent's memory entries. The response preserves
+   * search_coverage so callers can see when semantic or hybrid results ranked
+   * only a partially indexed subset.
+   */
+  async listAgentMemoryEntries(
+    agentId: string,
+    opts: ListAgentMemoryEntriesOptions = {},
+  ): Promise<AgentMemoryEntryListResponse> {
+    const path = withQuery(
+      `/v1/projects/:project/agents/${encodeURIComponent(agentId)}/memory/entries`,
+      {
+        query: opts.query,
+        search_mode: opts.searchMode,
+        kind: opts.kind,
+        cursor: opts.cursor,
+        limit: opts.limit,
+      },
+    );
+    const resp = await this.request(path, { method: "GET" });
+    return (await resp.json()) as AgentMemoryEntryListResponse;
+  }
+
+  /** Creates or updates the memory entry stored under key. */
+  async saveAgentMemoryEntry(
+    agentId: string,
+    key: string,
+    input: SaveAgentMemoryEntryRequest,
+  ): Promise<AgentMemoryEntry> {
+    const resp = await this.request(
+      `/v1/projects/:project/agents/${encodeURIComponent(agentId)}/memory/entries/${encodeURIComponent(key)}`,
+      { method: "PUT", body: input },
+    );
+    return (await resp.json()) as AgentMemoryEntry;
+  }
+
+  /** Deletes the memory entry stored under key. */
+  async deleteAgentMemoryEntry(agentId: string, key: string): Promise<void> {
+    await this.request(
+      `/v1/projects/:project/agents/${encodeURIComponent(agentId)}/memory/entries/${encodeURIComponent(key)}`,
+      { method: "DELETE" },
+    );
+  }
+
+  /**
+   * Returns one page of the content-free, append-only memory change feed. A
+   * 410 {@link MobiusAPIError} means the cursor predates retained history;
+   * recover with {@link syncAgentMemory} or by relisting entries.
+   */
+  async listAgentMemoryChanges(
+    agentId: string,
+    opts: ListAgentMemoryChangesOptions = {},
+  ): Promise<AgentMemoryChangeListResponse> {
+    const path = withQuery(
+      `/v1/projects/:project/agents/${encodeURIComponent(agentId)}/memory/changes`,
+      { after: opts.after, limit: opts.limit },
+    );
+    const resp = await this.request(path, { method: "GET" });
+    return (await resp.json()) as AgentMemoryChangeListResponse;
+  }
+
+  /**
+   * Advances a memory change-feed consumer by one bounded synchronization
+   * step: drains every change page after cursor and returns the new feed
+   * position to persist. When the cursor has expired (HTTP 410) it recovers
+   * explicitly — establishing a fresh feed position and returning a full
+   * entry snapshot with reset set — instead of failing or silently replaying.
+   * Omit cursor on first use. Polling cadence and retry policy stay with the
+   * caller; this makes no timing decisions.
+   */
+  async syncAgentMemory(
+    agentId: string,
+    cursor?: string,
+  ): Promise<MemorySyncResult> {
+    try {
+      const { changes, nextCursor } = await this.drainAgentMemoryChanges(
+        agentId,
+        cursor,
+      );
+      return { reset: false, changes, nextCursor };
+    } catch (err) {
+      if (!(err instanceof MobiusAPIError) || err.status !== 410) throw err;
+    }
+    // The cursor predates retained history. Take the fresh feed position
+    // BEFORE the snapshot: a mutation racing the snapshot then replays after
+    // the new cursor (versions make replays detectable) instead of being lost.
+    const { nextCursor } = await this.drainAgentMemoryChanges(
+      agentId,
+      undefined,
+    );
+    const entries = await this.drainAgentMemoryEntries(agentId);
+    return { reset: true, entries, nextCursor };
+  }
+
+  private async drainAgentMemoryChanges(
+    agentId: string,
+    after: string | undefined,
+  ): Promise<{ changes: AgentMemoryChange[]; nextCursor: string }> {
+    const changes: AgentMemoryChange[] = [];
+    let cursor = after;
+    for (;;) {
+      const page = await this.listAgentMemoryChanges(agentId, {
+        after: cursor,
+      });
+      changes.push(...page.items);
+      cursor = page.next_cursor;
+      if (!page.has_more) return { changes, nextCursor: cursor };
+    }
+  }
+
+  private async drainAgentMemoryEntries(
+    agentId: string,
+  ): Promise<AgentMemoryEntry[]> {
+    const entries: AgentMemoryEntry[] = [];
+    let cursor: string | undefined;
+    for (;;) {
+      const page = await this.listAgentMemoryEntries(agentId, { cursor });
+      entries.push(...page.items);
+      if (!page.has_more || !page.next_cursor) return entries;
+      cursor = page.next_cursor;
+    }
   }
 
   async getSession(sessionId: string): Promise<Session> {
@@ -1820,6 +2440,51 @@ function anySignal(...signals: AbortSignal[]): AbortSignal {
     });
   }
   return controller.signal;
+}
+
+// organizationActionSecretMaterial extracts the one-time secret from a
+// create or rotate response. The revealed signing_secret always belongs to
+// the newest entry in secret_versions, whose status must match wantStatus;
+// any other shape means the response is internally inconsistent. Errors
+// never include the secret itself.
+function organizationActionSecretMaterial(
+  op: string,
+  action: OrganizationAction,
+  wantStatus: "active" | "pending",
+): OrganizationActionSecretMaterial {
+  if (!action.signing_secret) {
+    throw new Error(
+      `mobius: ${op}: response is missing the one-time signing_secret`,
+    );
+  }
+  let newest: OrganizationAction["secret_versions"][number] | undefined;
+  for (const v of action.secret_versions) {
+    if (!newest || v.version > newest.version) newest = v;
+  }
+  if (!newest) {
+    throw new Error(
+      `mobius: ${op}: response has no secret_versions for the revealed secret`,
+    );
+  }
+  if (newest.status !== wantStatus) {
+    throw new Error(
+      `mobius: ${op}: newest secret version ${newest.version} has status "${newest.status}", want "${wantStatus}"`,
+    );
+  }
+  let binary: string;
+  try {
+    binary = atob(action.signing_secret);
+  } catch {
+    throw new Error(`mobius: ${op}: signing_secret is not valid base64`);
+  }
+  const keyBytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) keyBytes[i] = binary.charCodeAt(i);
+  return {
+    action: { ...action, signing_secret: undefined },
+    secretRef: action.secret_ref,
+    version: newest.version,
+    keyBytes,
+  };
 }
 
 function withQuery(path: string, params: object): string {
