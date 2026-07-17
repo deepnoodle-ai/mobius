@@ -895,7 +895,16 @@ func NewEnvironmentArtifactPublishAction() mobius.Action {
 				return ref, nil
 			}
 		}
-		artifact, err := ec.MobiusClient().CreateArtifactFromFile(ctx, path, in.Name, in.Mime, ec.RunID(), ec.StepName(), in.Tags)
+		// Without a lease the API cannot attach run/step lineage; fall back to
+		// a project-authorized private upload with the tags kept as metadata.
+		opts := mobius.CreateArtifactOptions{Path: path, Name: in.Name, Mime: in.Mime}
+		if len(in.Tags) > 0 {
+			opts.Metadata = make(map[string]any, len(in.Tags))
+			for k, v := range in.Tags {
+				opts.Metadata[k] = v
+			}
+		}
+		artifact, err := ec.MobiusClient().CreateArtifact(ctx, opts)
 		if err != nil {
 			return nil, err
 		}

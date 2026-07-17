@@ -5,6 +5,7 @@ from .action_response import ActionResponseEnvelope, MOBIUS_ACTION_CONTENT_TYPE
 from ._api.models import (
     AgentTurnOperationPolicy,
     ApplyBlueprintRequest,
+    Artifact,
     BlueprintApplyResult,
     BlueprintBindingListResponse,
     BlueprintDeleteResult,
@@ -135,6 +136,7 @@ __all__ = [
     "ActionResponseEnvelope",
     "AgentTurnOperationPolicy",
     "ApplyBlueprintRequest",
+    "Artifact",
     "AuthRevokedError",
     "Client",
     "ClientOptions",

@@ -2,11 +2,12 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import re
 import time
 from dataclasses import dataclass
 from collections.abc import Iterator
-from typing import Any
+from typing import Any, BinaryIO
 from urllib.parse import quote, urlencode, urlparse, urlunparse
 
 import httpx
@@ -17,6 +18,7 @@ from ._api.models import (
     AgentTurnOperationPolicy,
     AgentRef,
     ApplyBlueprintRequest,
+    Artifact,
     BlueprintApplyResult,
     BlueprintBindingListResponse,
     BlueprintDeleteResult,
@@ -424,14 +426,14 @@ class Client:
         self.api_key = opts.api_key
         self._logger = opts.logger or logging.getLogger("deepnoodle.mobius")
         base_transport = transport or httpx.HTTPTransport()
+        # Content-Type is set per request by httpx (application/json for
+        # json= bodies, multipart boundaries for files=). A client-level
+        # default would override the multipart boundary and break uploads.
         self._client = httpx.Client(
             base_url=self.base_url,
             timeout=opts.timeout,
             transport=RetryingTransport(base_transport, max_retries=opts.retry),
-            headers={
-                "Authorization": f"Bearer {opts.api_key}",
-                "Content-Type": "application/json",
-            },
+            headers={"Authorization": f"Bearer {opts.api_key}"},
         )
 
     def close(self) -> None:
@@ -449,6 +451,64 @@ class Client:
         base_path = parsed.path.rstrip("/")
         path = f"{base_path}/v1/projects/{quote(self.project, safe='')}/workers/socket"
         return urlunparse((scheme, parsed.netloc, path, "", "", ""))
+
+    def create_artifact(
+        self,
+        file: bytes | BinaryIO | str | os.PathLike[str],
+        *,
+        name: str | None = None,
+        mime: str | None = None,
+        metadata: dict[str, Any] | None = None,
+        idempotency_key: str | None = None,
+    ) -> Artifact:
+        """Publish a private artifact using the client's project authorization.
+
+        ``file`` may be raw bytes, a binary file object, or a filesystem
+        path. Path sources stream from disk and default ``name`` to the
+        file's base name; bytes and file-object sources require ``name``.
+        Ownership and visibility are derived from the authenticated
+        principal; run/step lineage can only be attached by the server from
+        a worker lease.
+        """
+        if idempotency_key is not None and len(idempotency_key) > 255:
+            raise ValueError("artifact idempotency_key must be at most 255 characters")
+        opened: BinaryIO | None = None
+        try:
+            source: bytes | BinaryIO
+            size: int | None = None
+            if isinstance(file, (str, os.PathLike)):
+                opened = open(file, "rb")
+                source = opened
+                size = os.fstat(opened.fileno()).st_size
+                if name is None:
+                    name = os.path.basename(os.fspath(file))
+            elif isinstance(file, (bytes, bytearray, memoryview)):
+                source = bytes(file)
+                size = len(source)
+            else:
+                source = file
+            clean_name = (name or "").strip()
+            if not clean_name:
+                raise ValueError("artifact name is required")
+            fields: dict[str, Any] = {"name": clean_name}
+            if mime:
+                fields["mime"] = mime
+            if size is not None:
+                fields["size_bytes"] = str(size)
+            if metadata is not None:
+                fields["metadata"] = json.dumps(metadata)
+            filename = clean_name.rsplit("/", 1)[-1] or "artifact"
+            resp = self._request(
+                "POST",
+                "/v1/projects/{project}/artifacts",
+                files={"file": (filename, source, mime or "application/octet-stream")},
+                data=fields,
+                idempotency_key=idempotency_key,
+            )
+            return Artifact.model_validate(resp.json())
+        finally:
+            if opened is not None:
+                opened.close()
 
     def list_loops(self, opts: ListLoopsOptions | None = None) -> LoopListResponse:
         resp = self._request("GET", "/v1/projects/{project}/loops", params=_params(opts))
@@ -1080,6 +1140,8 @@ class Client:
         json: Any | None = None,
         params: dict[str, Any] | None = None,
         idempotency_key: str | None = None,
+        files: Any | None = None,
+        data: dict[str, Any] | None = None,
     ) -> httpx.Response:
         payload = _model_dump(json) if json is not None else None
         request_path = self._path(path, params=params)
@@ -1088,6 +1150,8 @@ class Client:
             method,
             request_path,
             json=payload,
+            files=files,
+            data=data,
             headers=_idempotency_headers(idempotency_key),
         )
         self._logger.debug(

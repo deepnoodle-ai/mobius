@@ -73,6 +73,7 @@ export type {
   AgentTurnOperationPolicy,
   AgentTurnOutputSource,
   ApplyBlueprintRequest,
+  Artifact,
   BlueprintApplyResult,
   BlueprintBindingListResponse,
   BlueprintDeleteResult,
