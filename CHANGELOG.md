@@ -6,10 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 
 ## [Unreleased]
 
+## [0.0.53] - 2026-07-17
+
 ### Added
 
 - Project-authorized artifact uploads plus a TypeScript `createArtifact`
   helper for multipart bytes, metadata, and optional durable idempotency keys.
+- Agent memory configuration now supports `index`, `full`, or `off` automatic
+  context; keyword, semantic, and hybrid search with coverage; and a
+  cursor-based, content-free mutation feed.
 
 ### Changed
 
@@ -17,6 +22,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
   generated CLI commands no longer accept or expose the freeform `kind` field.
   Remove it from hand-written clients and stored Blueprint JSON before
   upgrading. Landed in the #175 spec sync.
+- Session-scoped interaction filters now include every interaction opened by
+  agent tool calls, rather than only `request_human_input` interactions.
 
 ## [0.0.52] - 2026-07-15
 
