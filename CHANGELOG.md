@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 
 ## [Unreleased]
 
+## [0.0.56] - 2026-07-17
+
 ### Added
 
 - Curated create-or-adopt in all three SDKs: Go `CreateAgent`/`CreateProject`
