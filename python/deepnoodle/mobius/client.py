@@ -8,13 +8,14 @@ import re
 import time
 from dataclasses import dataclass, field
 from collections.abc import Iterator, Sequence
-from typing import Any, BinaryIO
+from typing import Any, BinaryIO, TypeVar
 from urllib.parse import quote, urlencode, urlparse, urlunparse
 
 import httpx
 
 from ._api.models import (
     ActionInvocationListResponse,
+    Agent,
     AgentMemory,
     AgentMemoryChange,
     AgentMemoryChangeListResponse,
@@ -32,11 +33,14 @@ from ._api.models import (
     ActivateOrganizationActionSecretRequest,
     CancelLoopRunRequest,
     ChannelContext,
+    CreateAgentRequest,
     CreateOrganizationActionRequest,
     CreatePrincipalRequest,
+    CreateProjectRequest,
     CreateRoleAssignmentRequest,
     CreateRoleRequest,
     CreateLoopRequest,
+    IfExists,
     InlineAgentConfig,
     InteractionKind,
     InteractionListResponse,
@@ -54,12 +58,15 @@ from ._api.models import (
     MemoryKind,
     MemorySearchMode,
     NudgeSessionRequest,
+    OAuthReturnOrigins,
     OrganizationAction,
     OrganizationActionListResponse,
     PermissionCatalogResponse,
     Principal,
     PrincipalKind,
     PrincipalListResponse,
+    Project,
+    PutOAuthReturnOriginsRequest,
     RuntimeContext,
     RuntimeContextItem,
     SaveAgentMemoryEntryRequest,
@@ -774,6 +781,68 @@ class Client:
             f"/v1/projects/{{project}}/role-assignments/{quote(assignment_id, safe='')}",
         )
 
+    def create_agent(
+        self,
+        request: CreateAgentRequest,
+        *,
+        adopt_existing: bool = False,
+        external_ref: str | None = None,
+    ) -> Agent:
+        """Create an agent, or adopt the one already carrying ``external_ref``.
+
+        With ``adopt_existing`` the call is safely retryable: when a live
+        agent already carries ``external_ref``, it is returned unchanged
+        (HTTP 200) instead of failing with 409, and mutable fields in
+        ``request`` are ignored since no write happens. ``external_ref`` is
+        required with ``adopt_existing``; the SDK also retries adopt-mode
+        creates on transient failures like idempotent requests. Conflicts
+        that cannot be adopted raise :class:`MobiusAPIError` with
+        ``code == MobiusAPIError.EXTERNAL_IDENTITY_CONFLICT``.
+        """
+        request = _with_adopt_fields(
+            request, "create_agent", adopt_existing, external_ref
+        )
+        resp = self._request(
+            "POST",
+            "/v1/projects/{project}/agents",
+            json=request,
+            replay_safe=adopt_existing,
+        )
+        return Agent.model_validate(resp.json())
+
+    def create_project(
+        self,
+        request: CreateProjectRequest,
+        *,
+        adopt_existing: bool = False,
+        external_ref: str | None = None,
+    ) -> Project:
+        """Create a project, or adopt the one already carrying ``external_ref``.
+
+        With ``adopt_existing`` the call is safely retryable: when an active
+        project already carries ``external_ref``, it is returned unchanged
+        (HTTP 200) instead of failing with 409, and mutable fields in
+        ``request`` are ignored. ``external_ref`` is required with
+        ``adopt_existing``; adopt-mode creates are also retried on transient
+        failures like idempotent requests. Conflicts that cannot be adopted
+        raise :class:`MobiusAPIError` with
+        ``code == MobiusAPIError.EXTERNAL_IDENTITY_CONFLICT`` (handle
+        mismatch or deleted match) or ``MobiusAPIError.PROJECT_ARCHIVED``.
+        A new project can be rejected at the org's project limit
+        (``project_capacity_reached``, 429); an existing ``external_ref``
+        match still adopts even at that limit.
+        """
+        request = _with_adopt_fields(
+            request, "create_project", adopt_existing, external_ref
+        )
+        resp = self._request(
+            "POST",
+            "/v1/projects",
+            json=request,
+            replay_safe=adopt_existing,
+        )
+        return Project.model_validate(resp.json())
+
     def get_agent_memory(self, agent_id: str) -> AgentMemory:
         """Return a summary of an agent's private memory."""
         resp = self._request(
@@ -987,6 +1056,33 @@ class Client:
             f"/v1/organization/actions/{quote(action_id, safe='')}/secret/versions/{version}/revoke",
         )
         return OrganizationAction.model_validate(resp.json())
+
+    def get_oauth_return_origins(self) -> OAuthReturnOrigins:
+        """Return the org's OAuth return-origin allowlist.
+
+        Exact HTTPS origins an embedded partner may name as an OAuth connect
+        ``return_url``. An empty list means embedded return is disabled.
+        Requires Admin or Owner membership.
+        """
+        resp = self._request("GET", "/v1/organization/oauth-return-origins")
+        return OAuthReturnOrigins.model_validate(resp.json())
+
+    def replace_oauth_return_origins(
+        self, origins: Sequence[str]
+    ) -> OAuthReturnOrigins:
+        """Full-replace the org's OAuth return-origin allowlist.
+
+        The server normalizes each entry (lowercase host, default ports
+        stripped) and rejects invalid origins; no validation happens
+        client-side. Pass an empty sequence to disable embedded return.
+        Requires Admin or Owner membership.
+        """
+        resp = self._request(
+            "PUT",
+            "/v1/organization/oauth-return-origins",
+            json=PutOAuthReturnOriginsRequest(origins=list(origins)),
+        )
+        return OAuthReturnOrigins.model_validate(resp.json())
 
     def list_action_invocations(
         self, opts: ListActionInvocationsOptions | None = None
@@ -1641,10 +1737,14 @@ class Client:
         idempotency_key: str | None = None,
         files: Any | None = None,
         data: dict[str, Any] | None = None,
+        replay_safe: bool = False,
     ) -> httpx.Response:
         payload = _model_dump(json) if json is not None else None
         request_path = self._path(path, params=params)
         started = time.monotonic()
+        # replay_safe marks a POST whose idempotency is guaranteed without an
+        # Idempotency-Key header (adopt-mode creates, deduped on
+        # external_ref); the retrying transport honors it via extensions.
         resp = self._client.request(
             method,
             request_path,
@@ -1652,6 +1752,7 @@ class Client:
             files=files,
             data=data,
             headers=_idempotency_headers(idempotency_key),
+            extensions={"replay_safe": True} if replay_safe else None,
         )
         self._logger.debug(
             "mobius request complete",
@@ -2059,6 +2160,34 @@ def _extract_handle_from_api_key(api_key: str) -> str | None:
     if not _HANDLE_RE.match(handle):
         raise ValueError(f"invalid project handle suffix in API key: {handle!r}")
     return handle
+
+
+_CreateRequestT = TypeVar("_CreateRequestT", CreateAgentRequest, CreateProjectRequest)
+
+
+def _with_adopt_fields(
+    request: _CreateRequestT,
+    op: str,
+    adopt_existing: bool,
+    external_ref: str | None,
+) -> _CreateRequestT:
+    """Apply the curated adopt options onto a create request.
+
+    The generated models default ``if_exists`` to the wire default
+    ``"error"``; it is normalized away so plain creates omit the field, and
+    set to ``adopt`` — after the fail-fast external_ref check — in adopt
+    mode.
+    """
+
+    if external_ref is not None:
+        request = request.model_copy(update={"external_ref": external_ref})
+    if request.if_exists in (None, IfExists.error):
+        request = request.model_copy(update={"if_exists": None})
+    if adopt_existing:
+        if not request.external_ref:
+            raise ValueError(f"{op}: adopt_existing requires external_ref to be set")
+        request = request.model_copy(update={"if_exists": IfExists.adopt})
+    return request
 
 
 def _model_dump(value: Any) -> Any:

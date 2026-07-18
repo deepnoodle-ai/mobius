@@ -113,11 +113,13 @@ var overrides = map[string]Override{
 	"getDefinitionResolver": {Command: "get-definition-resolver"},
 	// "OAuth" (capital O+A only, not a fully-uppercase initialism like "API")
 	// defeats the word-splitting heuristics: the auto-derive lands on
-	// `get-auth-return-origins` (drops the "o") and
-	// `replace-o-auth-return-origins` (splits "o" from "auth"). Spell both out
-	// lowercase to match the `oauth-return-origins` path segment.
-	"getOAuthReturnOrigins":     {Command: "get-oauth-return-origins"},
-	"replaceOAuthReturnOrigins": {Command: "replace-oauth-return-origins"},
+	// `get-auth-return-origins` (drops the "o"). Spell it out lowercase to
+	// match the `oauth-return-origins` path segment.
+	"getOAuthReturnOrigins": {Command: "get-oauth-return-origins"},
+	// Hand-written (organizations.go): the generated body assembly rejects an
+	// empty origins list, but an empty list is the documented way to disable
+	// embedded return — the hand-written command adds --clear for it.
+	"replaceOAuthReturnOrigins": {Skip: true},
 
 	// --- blueprints -------------------------------------------------------
 	// Drop the redundant `blueprint` token; the group name already carries it.
