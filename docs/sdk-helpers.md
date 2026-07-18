@@ -6,7 +6,10 @@ common integration tasks:
 - verifying and parsing Mobius outgoing webhook deliveries
 - delivering Mobius-shaped synthetic webhooks for local/test bridges
 - managing loops and loop runs from code
+- creating (or safely re-creating) projects and agents with
+  create-or-adopt semantics keyed on `external_ref`
 - managing project blueprints, principals, roles, and role assignments
+- managing the organization OAuth return-origin allowlist
 - managing organization Actions and their signing-secret lifecycle
 - publishing project artifacts with metadata and safe retry keys
 - reading, searching, and synchronizing agent memory
@@ -153,6 +156,35 @@ without an explicit secret sink, so the one-time reveal is never burned by
 accident: `--secret-file PATH` writes the key to a `0600` file and masks it
 in the printed response; `--show-secret` prints the full response for
 existing scripts.
+
+## Organization OAuth Return Origins
+
+`GetOAuthReturnOrigins` / `get_oauth_return_origins` /
+`getOAuthReturnOrigins` and the matching `Replace…` methods manage the
+organization's allowlist of exact HTTPS origins an embedded partner may name
+as an OAuth connect `return_url`. Both require Admin or Owner membership:
+
+```go
+origins, err := client.ReplaceOAuthReturnOrigins(ctx, []string{"https://app.partner.example"})
+```
+
+```python
+origins = client.replace_oauth_return_origins(["https://app.partner.example"])
+```
+
+```ts
+const origins = await client.replaceOAuthReturnOrigins([
+  "https://app.partner.example",
+]);
+```
+
+The wrappers are deliberately dumb: the server normalizes each entry
+(lowercase host, default ports stripped, duplicates collapsed) and rejects
+invalid origins — nothing is validated client-side. Replace is a full
+replacement over PUT, so it is already idempotent and retried like any other
+idempotent request. Passing an empty list disables embedded return for the
+organization; from the CLI that state is explicit:
+`mobius organizations replace-oauth-return-origins --clear`.
 
 ## Action Invocation Audit
 
@@ -301,6 +333,72 @@ const run = await client.startRun(loop.id, {
 Use `WaitRun` / `wait_run` / `waitRun` when callers need the fresh terminal run
 record, or `WatchRun` / `watch_run` / `watchRun` when they need the live event
 stream.
+
+## Create-or-Adopt Provisioning
+
+`CreateProject`/`CreateAgent` (Go), `create_project`/`create_agent`
+(Python), and `createProject`/`createAgent` (TypeScript) create a resource —
+or, in adopt mode, return the one that already carries the same
+`external_ref`. Adopt mode is how provision-per-tenant code becomes safely
+retryable: run the same call again after a crash or timeout and it converges
+on the same resource instead of failing with 409.
+
+```go
+project, err := client.CreateProject(ctx, mobius.CreateProjectOptions{
+	Project:       api.CreateProjectRequest{Name: "Tenant 42"},
+	AdoptExisting: true,
+	ExternalRef:   "workspace-42",
+})
+```
+
+```python
+agent = client.create_agent(
+    CreateAgentRequest(name="PR reviewer"),
+    adopt_existing=True,
+    external_ref="tenant-42/pr-reviewer",
+)
+```
+
+```ts
+const project = await client.createProject(
+  { name: "Tenant 42" },
+  { adoptExisting: true, externalRef: "workspace-42" },
+);
+```
+
+Adopt mode requires the external ref: all three SDKs fail fast client-side —
+before any HTTP request — when it is missing. A `201` response is a fresh
+create; `200` is the existing resource, returned unchanged (mutable fields in
+the request are ignored, since no write happens). Go also exposes the thin
+agent lifecycle (`GetAgent`, `ListAgents`, `UpdateAgent`, `DeleteAgent`) so
+adopted agent IDs never need to come from the raw client.
+
+**Retry semantics — the part to get right.** This endpoint's idempotency
+comes from `external_ref`, not an `Idempotency-Key` header. The SDK retry
+layers therefore treat *adopt-mode* creates as replay-safe and retry them on
+transient failures (429/5xx, connection resets) on the standard backoff
+schedule. Plain creates still get exactly one attempt — replaying a
+non-adopt create could double-create or spuriously 409. If you need a
+retryable create, pass the adopt options; don't wrap a plain create in your
+own retry loop.
+
+**Conflict codes.** Adopt refuses to paper over identity conflicts. The
+stable codes — exported as constants on each SDK's API error type
+(`mobius.ErrCodeExternalIdentityConflict` in Go,
+`MobiusAPIError.EXTERNAL_IDENTITY_CONFLICT` in Python and TypeScript, and
+likewise for the others):
+
+- `external_identity_conflict` (409): the request names an identity (project
+  handle, agent name) that differs from the resource owning the matched
+  `external_ref`, or the match is soft-deleted — adopt never resurrects or
+  replaces a deleted resource.
+- `project_archived` (409): the matched project is archived. Adopt never
+  silently unarchives; unarchive explicitly, then retry.
+- `project_capacity_reached` (429): creating a *new* project would exceed
+  the org's project limit; an existing `external_ref` match still adopts
+  even at the limit. Because it rides a 429, the built-in retry layer
+  surfaces it as the rate-limit error type once retries are exhausted — the
+  code itself is visible only when reading the response envelope directly.
 
 ## Project Administration
 

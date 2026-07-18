@@ -121,39 +121,4 @@ func registerOrganizationsCommands(app *cli.App) {
 			return printResponse(ctx, "replaceDefinitionResolver", resp.StatusCode(), resp.Body)
 		})
 
-	organizationsGrp.Command("replace-oauth-return-origins").
-		Description("Replace the org's OAuth return-origin allowlist").
-		Flags(
-			cli.Strings("origins", "").Help("[required] Exact HTTPS return origins to allow. An empty array disables embedded return."),
-			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
-			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
-		).
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			var body api.ReplaceOAuthReturnOriginsJSONRequestBody
-			if err := readJSONBody(ctx, &body); err != nil {
-				return err
-			}
-			if ctx.IsSet("origins") {
-				v := ctx.Strings("origins")
-				body.Origins = v
-			}
-			if len(body.Origins) == 0 {
-				return fmt.Errorf("--origins is required (or supply it via --file)")
-			}
-			if ctx.Bool("dry-run") {
-				return printDryRun(ctx, body)
-			}
-			resp, err := client.ReplaceOAuthReturnOriginsWithResponse(ctx.Context(), body)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "replaceOAuthReturnOrigins", resp.StatusCode(), resp.Body)
-		})
-
 }

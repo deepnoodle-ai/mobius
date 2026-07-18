@@ -46,6 +46,17 @@ const RETRYABLE_STATUS_CODES = new Set([429, 500, 502, 503, 504]);
 
 type FetchFn = typeof globalThis.fetch;
 
+/**
+ * @internal RequestInit extension honored by {@link wrapFetchWithRetry}.
+ * `replaySafe` marks a POST/PATCH whose idempotency is guaranteed by
+ * something other than an Idempotency-Key header — today the adopt-mode
+ * create-or-adopt calls, where the server dedupes on `external_ref`. Set
+ * only by the curated client; never a public knob.
+ */
+export interface ReplaySafeRequestInit extends RequestInit {
+  replaySafe?: boolean;
+}
+
 export interface WrapRetryOptions {
   /** Number of retries for transient responses. 0 disables retries. */
   maxRetries?: number;
@@ -86,11 +97,11 @@ export function wrapFetchWithRetry(
   return (async (input: RequestInfo | URL, init?: RequestInit) => {
     let attempt = 0;
     // Capture method / idempotency bits once — retries re-send the same request.
-    const { method, hasIdempotencyKey, acceptsEventStream } = describeRequest(
+    const { method, replaySafe, acceptsEventStream } = describeRequest(
       input,
       init,
     );
-    const idempotent = isIdempotent(method, hasIdempotencyKey);
+    const idempotent = isIdempotent(method, replaySafe);
 
     while (true) {
       let response: Response | undefined;
@@ -104,7 +115,7 @@ export function wrapFetchWithRetry(
           shouldValidateReplayableJSONResponse(
             response,
             method,
-            hasIdempotencyKey,
+            replaySafe,
             acceptsEventStream,
           )
         ) {
@@ -180,7 +191,7 @@ function describeRequest(
   init?: RequestInit,
 ): {
   method: string;
-  hasIdempotencyKey: boolean;
+  replaySafe: boolean;
   acceptsEventStream: boolean;
 } {
   let method = (init?.method ?? "GET").toUpperCase();
@@ -195,11 +206,14 @@ function describeRequest(
   const hasIdempotencyKey = headers
     ? (headers.get("Idempotency-Key") ?? "").trim() !== ""
     : false;
+  const replaySafe =
+    hasIdempotencyKey ||
+    (init as ReplaySafeRequestInit | undefined)?.replaySafe === true;
   const acceptsEventStream = acceptsMediaType(
     headers?.get("Accept"),
     "text/event-stream",
   );
-  return { method, hasIdempotencyKey, acceptsEventStream };
+  return { method, replaySafe, acceptsEventStream };
 }
 
 function acceptsMediaType(
@@ -216,20 +230,20 @@ function acceptsMediaType(
   );
 }
 
-function isIdempotent(method: string, hasIdempotencyKey: boolean): boolean {
+function isIdempotent(method: string, replaySafe: boolean): boolean {
   if (IDEMPOTENT_METHODS.has(method)) return true;
-  if (method === "POST" || method === "PATCH") return hasIdempotencyKey;
+  if (method === "POST" || method === "PATCH") return replaySafe;
   return false;
 }
 
 function shouldValidateReplayableJSONResponse(
   response: Response,
   method: string,
-  hasIdempotencyKey: boolean,
+  replaySafe: boolean,
   acceptsEventStream: boolean,
 ): boolean {
   if (method !== "POST" && method !== "PATCH") return false;
-  if (!hasIdempotencyKey || acceptsEventStream) return false;
+  if (!replaySafe || acceptsEventStream) return false;
   if (!response.ok || response.status === 204) return false;
   return (response.headers.get("Content-Type") ?? "")
     .toLowerCase()

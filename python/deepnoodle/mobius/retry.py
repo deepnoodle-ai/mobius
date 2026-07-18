@@ -29,10 +29,12 @@ _RETRYABLE_STATUS_CODES = frozenset({429, 500, 502, 503, 504})
 class RetryingTransport(httpx.BaseTransport):
     """Retries transient responses and transport errors per the shared spec.
 
-    Only GET/HEAD/PUT/DELETE/OPTIONS and POST/PATCH requests carrying an
-    ``Idempotency-Key`` header are retried; other POST/PATCH requests
-    surface ``RateLimitError`` immediately on 429 and re-raise transport
-    errors immediately.
+    Only GET/HEAD/PUT/DELETE/OPTIONS and replay-safe POST/PATCH requests —
+    those carrying an ``Idempotency-Key`` header, or marked internally via
+    ``request.extensions["replay_safe"]`` by the curated adopt-mode creates
+    (whose idempotency comes from ``external_ref``) — are retried; other
+    POST/PATCH requests surface ``RateLimitError`` immediately on 429 and
+    re-raise transport errors immediately.
     """
 
     def __init__(
@@ -99,8 +101,21 @@ def _is_idempotent(request: httpx.Request) -> bool:
     if method in _IDEMPOTENT_METHODS:
         return True
     if method in {"POST", "PATCH"}:
-        return request.headers.get("Idempotency-Key") not in (None, "")
+        return _is_replay_safe_write(request)
     return False
+
+
+def _is_replay_safe_write(request: httpx.Request) -> bool:
+    """A POST/PATCH that opted into the replay-safe path.
+
+    Either an ``Idempotency-Key`` header, or the internal per-request
+    adopt-mode marker set by the curated create-or-adopt methods — never a
+    public knob.
+    """
+
+    if request.headers.get("Idempotency-Key") not in (None, ""):
+        return True
+    return bool(request.extensions.get("replay_safe"))
 
 
 def _prepare_replayable_json_response(
@@ -117,7 +132,7 @@ def _prepare_replayable_json_response(
     content_type = response.headers.get("Content-Type", "").lower()
     if (
         request.method.upper() not in {"POST", "PATCH"}
-        or not request.headers.get("Idempotency-Key")
+        or not _is_replay_safe_write(request)
         or _accepts_event_stream(request.headers.get("Accept", ""))
         or not 200 <= response.status_code < 300
         or response.status_code == 204

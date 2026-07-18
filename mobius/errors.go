@@ -66,6 +66,30 @@ func unexpectedAPIStatus(op string, statusCode int, status string, header http.H
 	return fmt.Errorf("mobius: %s: unexpected status %s", op, status)
 }
 
+// Stable [APIError].Code values returned by the create-or-adopt endpoints
+// ([Client.CreateAgent], [Client.CreateProject]) when if_exists=adopt
+// matches a resource it cannot adopt. Branch on these instead of matching
+// message text.
+const (
+	// ErrCodeExternalIdentityConflict (409): the request names an identity
+	// (project handle, agent name) that differs from the resource that owns
+	// the matched external_ref, or the match is soft-deleted — adopt never
+	// resurrects or replaces a deleted resource.
+	ErrCodeExternalIdentityConflict = "external_identity_conflict"
+	// ErrCodeProjectArchived (409): the matched project is archived. Adopt
+	// never silently unarchives a project or mints a replacement identity;
+	// unarchive it explicitly, then retry.
+	ErrCodeProjectArchived = "project_archived"
+	// ErrCodeProjectCapacityReached (429): creating a new project would
+	// exceed the org's project limit. An existing external_ref match still
+	// adopts even at the limit, so this surfaces only for genuinely new
+	// projects. Because it rides a 429, the built-in transport reports it as
+	// [*RateLimitError] once retries are exhausted; the code appears on
+	// [APIError] only when reading the response envelope directly (custom
+	// HTTP clients, raw responses).
+	ErrCodeProjectCapacityReached = "project_capacity_reached"
+)
+
 // ErrPayloadTooLarge is returned when the server rejects a custom event
 // payload for exceeding the size limit (HTTP 413).
 var ErrPayloadTooLarge = errors.New("mobius: custom event payload too large")

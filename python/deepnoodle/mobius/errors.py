@@ -25,6 +25,24 @@ class MobiusAPIError(Exception):
     ``session_turn_active``, ``details`` includes the blocking turn id/status.
     """
 
+    #: Adopt-mode create conflict code (409): the request names an identity
+    #: (project handle, agent name) that differs from the resource owning the
+    #: matched ``external_ref``, or the match is soft-deleted — adopt never
+    #: resurrects or replaces a deleted resource.
+    EXTERNAL_IDENTITY_CONFLICT = "external_identity_conflict"
+
+    #: Adopt-mode create conflict code (409): the matched project is
+    #: archived. Adopt never silently unarchives a project or mints a
+    #: replacement identity; unarchive it explicitly, then retry.
+    PROJECT_ARCHIVED = "project_archived"
+
+    #: Create conflict code (429): creating a new project would exceed the
+    #: org's project limit; an existing ``external_ref`` match still adopts
+    #: even at the limit. Because it rides a 429, the retry layer raises
+    #: :class:`RateLimitError` once retries are exhausted; the code appears
+    #: on this error type only when reading the response envelope directly.
+    PROJECT_CAPACITY_REACHED = "project_capacity_reached"
+
     def __init__(
         self,
         *,

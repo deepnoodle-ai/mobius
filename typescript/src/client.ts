@@ -19,8 +19,10 @@ import type {
   BlueprintDeleteResult,
   CancelLoopRunRequest,
   ChannelContext,
+  CreateAgentRequest,
   CreateOrganizationActionRequest,
   CreatePrincipalRequest,
+  CreateProjectRequest,
   CreateRoleAssignmentRequest,
   CreateRoleRequest,
   CreateLoopRequest,
@@ -42,6 +44,7 @@ import type {
   LoopStatus,
   MemoryKind,
   MemorySearchMode,
+  OAuthReturnOrigins,
   OrganizationAction,
   OrganizationActionListResponse,
   OrganizationSkillUsage,
@@ -49,6 +52,8 @@ import type {
   Principal,
   PrincipalKind,
   PrincipalListResponse,
+  Project,
+  PutOAuthReturnOriginsRequest,
   RuntimeContextItem,
   ReplaceSkillsRequest,
   SaveAgentMemoryEntryRequest,
@@ -88,6 +93,7 @@ import {
   DEFAULT_MAX_RETRIES,
   RateLimitError,
   wrapFetchWithRetry,
+  type ReplaySafeRequestInit,
 } from "./retry.js";
 import {
   SessionTranscript,
@@ -149,6 +155,28 @@ export class AuthRevokedError extends Error {
 }
 
 export class MobiusAPIError extends Error {
+  /**
+   * Adopt-mode create conflict code (409): the request names an identity
+   * (project handle, agent name) that differs from the resource owning the
+   * matched `external_ref`, or the match is soft-deleted — adopt never
+   * resurrects or replaces a deleted resource.
+   */
+  static readonly EXTERNAL_IDENTITY_CONFLICT = "external_identity_conflict";
+  /**
+   * Adopt-mode create conflict code (409): the matched project is archived.
+   * Adopt never silently unarchives a project or mints a replacement
+   * identity; unarchive it explicitly, then retry.
+   */
+  static readonly PROJECT_ARCHIVED = "project_archived";
+  /**
+   * Create conflict code (429): creating a new project would exceed the
+   * org's project limit; an existing `external_ref` match still adopts even
+   * at the limit. Because it rides a 429, the retry layer reports it as a
+   * {@link RateLimitError} once retries are exhausted; the code appears on
+   * this error type only when reading the response envelope directly.
+   */
+  static readonly PROJECT_CAPACITY_REACHED = "project_capacity_reached";
+
   readonly status: number;
   readonly code: string;
   readonly details?: Record<string, unknown>;
@@ -465,6 +493,43 @@ export interface ListAgentsOptions {
   principalId?: string;
   status?: string;
   limit?: number;
+}
+
+export interface CreateAgentOptions {
+  /**
+   * Makes the create safely retryable: when a live agent already carries
+   * `externalRef`, it is returned unchanged (HTTP 200) instead of failing
+   * with 409, and no fields are written. Requires `externalRef`. Adopt-mode
+   * creates are retried on transient failures like idempotent requests,
+   * because `external_ref` makes the create replay-safe server-side.
+   * Conflicts that cannot be adopted fail with a {@link MobiusAPIError}
+   * whose code is {@link MobiusAPIError.EXTERNAL_IDENTITY_CONFLICT}.
+   */
+  adoptExisting?: boolean;
+  /**
+   * Client-owned durable identity key, unique within the project and
+   * assign-once. Required with `adoptExisting`; optional otherwise.
+   */
+  externalRef?: string;
+}
+
+export interface CreateProjectOptions {
+  /**
+   * Makes the create safely retryable: when an active project already
+   * carries `externalRef`, it is returned unchanged (HTTP 200) instead of
+   * failing with 409, and no fields are written. Requires `externalRef`.
+   * Adopt-mode creates are retried on transient failures like idempotent
+   * requests. Conflicts that cannot be adopted fail with a
+   * {@link MobiusAPIError} whose code is
+   * {@link MobiusAPIError.EXTERNAL_IDENTITY_CONFLICT} (handle mismatch or
+   * deleted match) or {@link MobiusAPIError.PROJECT_ARCHIVED}.
+   */
+  adoptExisting?: boolean;
+  /**
+   * Client-owned tenant/workspace correlation key, unique within the org
+   * and assign-once. Required with `adoptExisting`; optional otherwise.
+   */
+  externalRef?: string;
 }
 
 export interface ListAgentMemoryEntriesOptions {
@@ -1517,6 +1582,97 @@ export class Client {
     return agent;
   }
 
+  /**
+   * Creates an agent, or — with `adoptExisting` — adopts the live agent
+   * that already carries the same `externalRef`. On adopt the existing
+   * agent is returned unchanged (HTTP 200) and mutable fields in `input`
+   * are ignored, since no write happens.
+   */
+  async createAgent(
+    input: CreateAgentRequest,
+    opts: CreateAgentOptions = {},
+  ): Promise<Agent> {
+    const body: CreateAgentRequest = { ...input };
+    if (opts.externalRef != null) body.external_ref = opts.externalRef;
+    if (opts.adoptExisting) {
+      if (!body.external_ref) {
+        throw new ConfigError(
+          "createAgent: adoptExisting requires externalRef to be set",
+        );
+      }
+      body.if_exists = "adopt";
+    }
+    const resp = await this.request("/v1/projects/:project/agents", {
+      method: "POST",
+      body,
+      replaySafe: opts.adoptExisting === true,
+    });
+    const agent = (await resp.json()) as Agent;
+    this.agentNameCache.set(agent.name, agent);
+    return agent;
+  }
+
+  /**
+   * Creates a project within the authenticated org, or — with
+   * `adoptExisting` — adopts the active project that already carries the
+   * same `externalRef`. On adopt the existing project is returned unchanged
+   * (HTTP 200) and mutable fields in `input` are ignored. A new project can
+   * be rejected at the org's project limit
+   * ({@link MobiusAPIError.PROJECT_CAPACITY_REACHED}, 429); an existing
+   * `externalRef` match still adopts even at that limit.
+   */
+  async createProject(
+    input: CreateProjectRequest,
+    opts: CreateProjectOptions = {},
+  ): Promise<Project> {
+    const body: CreateProjectRequest = { ...input };
+    if (opts.externalRef != null) body.external_ref = opts.externalRef;
+    if (opts.adoptExisting) {
+      if (!body.external_ref) {
+        throw new ConfigError(
+          "createProject: adoptExisting requires externalRef to be set",
+        );
+      }
+      body.if_exists = "adopt";
+    }
+    const resp = await this.request("/v1/projects", {
+      method: "POST",
+      body,
+      replaySafe: opts.adoptExisting === true,
+    });
+    return (await resp.json()) as Project;
+  }
+
+  /**
+   * Returns the organization's allowlist of exact HTTPS origins an embedded
+   * partner may name as an OAuth connect `return_url`. An empty list means
+   * embedded return is disabled. Requires Admin or Owner membership.
+   */
+  async getOAuthReturnOrigins(): Promise<OAuthReturnOrigins> {
+    const resp = await this.request("/v1/organization/oauth-return-origins", {
+      method: "GET",
+    });
+    return (await resp.json()) as OAuthReturnOrigins;
+  }
+
+  /**
+   * Full-replaces the organization's OAuth return-origin allowlist. The
+   * server normalizes each entry (lowercase host, default ports stripped)
+   * and rejects invalid origins; no validation happens client-side. Pass an
+   * empty array to disable embedded return. Requires Admin or Owner
+   * membership.
+   */
+  async replaceOAuthReturnOrigins(
+    origins: string[],
+  ): Promise<OAuthReturnOrigins> {
+    const body: PutOAuthReturnOriginsRequest = { origins };
+    const resp = await this.request("/v1/organization/oauth-return-origins", {
+      method: "PUT",
+      body,
+    });
+    return (await resp.json()) as OAuthReturnOrigins;
+  }
+
   async resolveAgent(name: string): Promise<Agent> {
     const cached = this.agentNameCache.get(name);
     if (cached) return cached;
@@ -2136,6 +2292,12 @@ export class Client {
       body?: unknown;
       formData?: FormData;
       idempotencyKey?: string | undefined;
+      /**
+       * Marks a POST/PATCH as safe to replay without an Idempotency-Key
+       * header (adopt-mode creates, whose idempotency comes from
+       * external_ref). Internal — set only by curated methods.
+       */
+      replaySafe?: boolean | undefined;
       signal?: AbortSignal | undefined;
     },
   ): Promise<Response> {
@@ -2144,11 +2306,12 @@ export class Client {
     const signal = opts.signal ? anySignal(opts.signal, timeout) : timeout;
     const headers = this.requestHeaders(opts.idempotencyKey);
     if (opts.formData != null) headers.delete("Content-Type");
-    const init: RequestInit = {
+    const init: ReplaySafeRequestInit = {
       method: opts.method,
       headers,
       signal,
     };
+    if (opts.replaySafe) init.replaySafe = true;
     if (opts.formData != null) init.body = opts.formData;
     else if (opts.body != null) init.body = JSON.stringify(opts.body);
     let resp: Response;

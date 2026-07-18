@@ -6,6 +6,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 
 ## [Unreleased]
 
+### Added
+
+- Curated create-or-adopt in all three SDKs: Go `CreateAgent`/`CreateProject`
+  (plus thin agent Get/List/Update/Delete), Python `create_agent`/
+  `create_project`, TS `createAgent`/`createProject`, with adopt exposed as
+  `AdoptExisting`/`ExternalRef` and a client-side fail-fast. See `docs/sdk-helpers.md`.
+- Adopt-mode creates now ride the replay-safe retry path in every SDK —
+  transient failures are retried because `external_ref` makes the create
+  idempotent; plain creates still get exactly one attempt.
+- Adopt conflict codes (`external_identity_conflict`, `project_archived`,
+  `project_capacity_reached`) as documented constants on the existing API
+  error types in Go, Python, and TypeScript.
+- Curated OAuth return-origin allowlist methods in all three SDKs
+  (`GetOAuthReturnOrigins`/`ReplaceOAuthReturnOrigins` and equivalents);
+  thin wrappers, server-side validation only.
+
+### Fixed
+
+- `mobius organizations replace-oauth-return-origins` gains `--clear` to send
+  an empty list — the documented way to disable embedded return, previously
+  unreachable from the CLI.
+
 ## [0.0.55] - 2026-07-17
 
 ### Added

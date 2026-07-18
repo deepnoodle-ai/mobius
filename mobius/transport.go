@@ -29,8 +29,10 @@ const baseRetryBackoff = 1 * time.Second
 //     transport-level errors (connection reset, unexpected EOF, dial failure)
 //     that never yield an HTTP response.
 //   - GET/HEAD/PUT/DELETE are always replayable; POST/PATCH are replayed
-//     only when an Idempotency-Key header is set. Non-replayable requests
-//     surface the error without a retry.
+//     only when the request is a replay-safe write — an Idempotency-Key
+//     header is set, or a curated adopt-mode create marked the request
+//     internally (its idempotency comes from external_ref). Non-replayable
+//     requests surface the error without a retry.
 //   - Sleep duration is taken from Retry-After (int seconds or HTTP-date)
 //     or, absent that header, from exponential backoff (1s, 2s, 4s, ...)
 //     capped at [MaxRetryBackoff]. Transport errors always use backoff.
@@ -178,7 +180,7 @@ func prepareReplayableJSONResponse(req *http.Request, resp *http.Response) error
 		return nil
 	}
 	method := strings.ToUpper(req.Method)
-	if (method != http.MethodPost && method != http.MethodPatch) || req.Header.Get("Idempotency-Key") == "" {
+	if (method != http.MethodPost && method != http.MethodPatch) || !isReplaySafeWrite(req) {
 		return nil
 	}
 	if acceptsEventStream(req.Header.Get("Accept")) {
@@ -227,6 +229,27 @@ func isRetryableStatus(code int) bool {
 	}
 }
 
+// replaySafeContextKey marks a request whose idempotency is guaranteed by
+// something other than an Idempotency-Key header — today the adopt-mode
+// create-or-adopt calls, where the server dedupes on external_ref. Set only
+// by curated methods via contextWithReplaySafe; never a public knob.
+type replaySafeContextKey struct{}
+
+func contextWithReplaySafe(ctx context.Context) context.Context {
+	return context.WithValue(ctx, replaySafeContextKey{}, true)
+}
+
+// isReplaySafeWrite reports whether a POST/PATCH request opted into the
+// replay-safe path: an Idempotency-Key header, or the internal per-request
+// adopt-mode marker.
+func isReplaySafeWrite(req *http.Request) bool {
+	if req.Header.Get("Idempotency-Key") != "" {
+		return true
+	}
+	marked, _ := req.Context().Value(replaySafeContextKey{}).(bool)
+	return marked
+}
+
 // isIdempotent reports whether the method-plus-headers combination makes
 // the request safe to retry on a transient HTTP response.
 func isIdempotent(req *http.Request) bool {
@@ -234,7 +257,7 @@ func isIdempotent(req *http.Request) bool {
 	case http.MethodGet, http.MethodHead, http.MethodPut, http.MethodDelete, http.MethodOptions:
 		return true
 	case http.MethodPost, http.MethodPatch:
-		return req.Header.Get("Idempotency-Key") != ""
+		return isReplaySafeWrite(req)
 	default:
 		return false
 	}
