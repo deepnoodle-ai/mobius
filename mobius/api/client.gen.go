@@ -6814,7 +6814,7 @@ type LoopAgentSessionPolicy struct {
 	// CompactionPolicy Controls how a session's transcript is automatically summarized as it grows. On create the supplied fields are merged over the owning agent's default policy and the server defaults; on update they patch the session's current policy. Omitted fields keep their resolved values.
 	CompactionPolicy *SessionCompactionPolicy `json:"compaction_policy,omitempty"`
 
-	// Name Optional Go-template string rendered against `event`, `meta`, `config`, `context`, `agent`, `loop`, `run`, `source`, and `step`. When omitted, Mobius derives a stable name from the event payload, falling back to the trigger or `default`.
+	// Name Optional expression template rendered against `event`, `meta`, `config`, `steps`, `agent`, `loop`, `run`, `source`, and `step`. When omitted, Mobius derives a stable name from the event payload, falling back to the trigger or `default`.
 	Name *string `json:"name,omitempty"`
 
 	// Scope Named-session boundary. `auto` and omitted use `loop`. `agent` intentionally shares the named session across loops using the same agent.
@@ -6823,7 +6823,7 @@ type LoopAgentSessionPolicy struct {
 	// ThinkingEffort Reasoning-effort level for a turn, lowest (`low`) to highest (`max`). Higher effort spends more tokens on reasoning, improving quality on hard tasks at the cost of latency and credits. Levels above what the resolved model supports are clamped down. Set on an agent it is the default; set on a session or loop step it overrides the agent default. `inherit` (or omitting the field) defers to the layer below — the agent default for a session/step, or the provider's own default when nothing sets a level.
 	ThinkingEffort *ThinkingEffort `json:"thinking_effort,omitempty"`
 
-	// Title Optional Go-template string for the session display title.
+	// Title Optional expression template for the session display title using the same roots as `name`.
 	Title *string `json:"title,omitempty"`
 
 	// Visibility Visibility of the session in project surfaces: `project` or `private`.

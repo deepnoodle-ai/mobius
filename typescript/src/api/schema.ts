@@ -7410,9 +7410,9 @@ export interface components {
              * @enum {string}
              */
             scope?: "auto" | "loop" | "agent";
-            /** @description Optional Go-template string rendered against `event`, `meta`, `config`, `context`, `agent`, `loop`, `run`, `source`, and `step`. When omitted, Mobius derives a stable name from the event payload, falling back to the trigger or `default`. */
+            /** @description Optional expression template rendered against `event`, `meta`, `config`, `steps`, `agent`, `loop`, `run`, `source`, and `step`. When omitted, Mobius derives a stable name from the event payload, falling back to the trigger or `default`. */
             name?: string;
-            /** @description Optional Go-template string for the session display title. */
+            /** @description Optional expression template for the session display title using the same roots as `name`. */
             title?: string;
             /** @description Visibility for durable sessions created from this policy. */
             visibility?: components["schemas"]["SessionVisibility"];
