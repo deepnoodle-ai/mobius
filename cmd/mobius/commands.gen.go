@@ -102,7 +102,7 @@ func decodeFlagJSON(ctx *cli.Context, flag, raw string, v any) error {
 		}
 		return nil
 	}
-	if err := json.Unmarshal([]byte(raw), v); err != nil {
+	if err := decodeStrictJSON([]byte(raw), v); err != nil {
 		switch target := v.(type) {
 		case **time.Time:
 			parsed, parseErr := time.Parse(time.RFC3339, raw)
@@ -120,6 +120,42 @@ func decodeFlagJSON(ctx *cli.Context, flag, raw string, v any) error {
 		return cli.Errorf("--%s: invalid JSON: %v", flag, jsonErrLocation(err, []byte(raw)))
 	}
 	return nil
+}
+
+// decodeFlagText decodes a free-text flag value. Plain values pass through;
+// @path and @- read the text from a file or stdin. @@ escapes a literal @.
+func decodeFlagText(ctx *cli.Context, flag, raw string) (string, error) {
+	if !strings.HasPrefix(raw, "@") {
+		return raw, nil
+	}
+	if strings.HasPrefix(raw, "@@") {
+		return raw[1:], nil
+	}
+	path := raw[1:]
+	if path == "" {
+		return "", cli.Errorf("--%s: expected @<path> or @-, got bare @", flag)
+	}
+	data, _, err := readBodyBytes(ctx, path)
+	if err != nil {
+		return "", cli.Errorf("--%s: %v", flag, err)
+	}
+	data, err = applyVars(ctx, data)
+	if err != nil {
+		return "", cli.Errorf("--%s: %v", flag, err)
+	}
+	return string(data), nil
+}
+
+func splitCommaSeparated(values []string) []string {
+	out := make([]string, 0, len(values))
+	for _, value := range values {
+		for _, part := range strings.Split(value, ",") {
+			if part = strings.TrimSpace(part); part != "" {
+				out = append(out, part)
+			}
+		}
+	}
+	return out
 }
 
 // readBodyBytes reads from a path or "-" (stdin). The returned label is
@@ -153,7 +189,7 @@ func decodeJSONOrYAML(data []byte, label, path string, v any) error {
 	disp := displayPath(path)
 	switch label {
 	case "json":
-		if err := json.Unmarshal(data, v); err != nil {
+		if err := decodeStrictJSON(data, v); err != nil {
 			return fmt.Errorf("parse %s: %w", disp, jsonErrLocation(err, data))
 		}
 		return nil
@@ -161,7 +197,7 @@ func decodeJSONOrYAML(data []byte, label, path string, v any) error {
 		return decodeYAMLViaJSON(data, disp, v)
 	}
 	if looksLikeJSON(data) {
-		if err := json.Unmarshal(data, v); err != nil {
+		if err := decodeStrictJSON(data, v); err != nil {
 			return fmt.Errorf("parse %s: %w", disp, jsonErrLocation(err, data))
 		}
 		return nil
@@ -182,8 +218,24 @@ func decodeYAMLViaJSON(data []byte, disp string, v any) error {
 	if err != nil {
 		return fmt.Errorf("convert %s yaml to json: %w", disp, err)
 	}
-	if err := json.Unmarshal(jsonBytes, v); err != nil {
+	if err := decodeStrictJSON(jsonBytes, v); err != nil {
 		return fmt.Errorf("parse %s: %w", disp, err)
+	}
+	return nil
+}
+
+func decodeStrictJSON(data []byte, v any) error {
+	dec := json.NewDecoder(bytes.NewReader(data))
+	dec.DisallowUnknownFields()
+	if err := dec.Decode(v); err != nil {
+		return err
+	}
+	var trailing any
+	if err := dec.Decode(&trailing); !errors.Is(err, io.EOF) {
+		if err != nil {
+			return err
+		}
+		return errors.New("multiple JSON values are not allowed")
 	}
 	return nil
 }

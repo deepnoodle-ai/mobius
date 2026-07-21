@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 
 ## [Unreleased]
 
+### Fixed
+
+- CLI request files now reject unknown fields, `--instructions` accepts
+  `@file`/`@-`, and agent toolkit assignment IDs accept repeated or
+  comma-separated values.
+
 ## [0.0.56] - 2026-07-17
 
 ### Added

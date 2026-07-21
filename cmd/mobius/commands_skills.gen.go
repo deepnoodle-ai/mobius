@@ -24,7 +24,7 @@ func registerSkillsCommands(app *cli.App) {
 		Flags(
 			cli.Strings("allowed-tools", "").Help("Tool selectors that narrow the agent's effective tool set while this skill is active."),
 			cli.String("description", "").Help("Markdown description of the skill's purpose."),
-			cli.String("instructions", "").Help("[required] Markdown instructions loaded when the skill is active."),
+			cli.String("instructions", "").Help("[required] Markdown instructions loaded when the skill is active. Accepts text, @file, or @-."),
 			cli.String("name", "").Help("[required] Human-readable skill name."),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
@@ -51,7 +51,11 @@ func registerSkillsCommands(app *cli.App) {
 				body.Description = &v
 			}
 			if ctx.IsSet("instructions") {
-				body.Instructions = ctx.String("instructions")
+				v, err := decodeFlagText(ctx, "instructions", ctx.String("instructions"))
+				if err != nil {
+					return err
+				}
+				body.Instructions = v
 			}
 			if ctx.IsSet("name") {
 				body.Name = ctx.String("name")
@@ -147,7 +151,7 @@ func registerSkillsCommands(app *cli.App) {
 		Flags(
 			cli.Strings("allowed-tools", "").Help("Tool selectors that narrow the agent's effective tool set while this skill is active."),
 			cli.String("description", "").Help("Markdown description of the skill's purpose."),
-			cli.String("instructions", "").Help("[required] Markdown instructions loaded when the skill is active."),
+			cli.String("instructions", "").Help("[required] Markdown instructions loaded when the skill is active. Accepts text, @file, or @-."),
 			cli.String("name", "").Help("[required] Human-readable skill name."),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
@@ -175,7 +179,11 @@ func registerSkillsCommands(app *cli.App) {
 				body.Description = &v
 			}
 			if ctx.IsSet("instructions") {
-				body.Instructions = ctx.String("instructions")
+				v, err := decodeFlagText(ctx, "instructions", ctx.String("instructions"))
+				if err != nil {
+					return err
+				}
+				body.Instructions = v
 			}
 			if ctx.IsSet("name") {
 				body.Name = ctx.String("name")
