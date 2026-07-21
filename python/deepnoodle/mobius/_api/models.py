@@ -633,6 +633,40 @@ class AgentListResponse(BaseModel):
     items: list[Agent] = Field(..., description='The list of results for this page.')
 
 
+class AgentTurnStatus(StrEnum):
+    """
+    Agent turn lifecycle status: `queued`, `running`, `waiting`, `completed`, `failed`, or `cancelled`.
+    """
+
+    queued = 'queued'
+    running = 'running'
+    waiting = 'waiting'
+    completed = 'completed'
+    failed = 'failed'
+    cancelled = 'cancelled'
+
+
+class SessionMessageRole(StrEnum):
+    """
+    Message role: `system`, `user`, `assistant`, `tool`, or `compaction`.
+    """
+
+    system = 'system'
+    user = 'user'
+    assistant = 'assistant'
+    tool = 'tool'
+    compaction = 'compaction'
+
+
+class SessionMessageEntryType(StrEnum):
+    """
+    Transcript entry type: `message` or `compaction`.
+    """
+
+    message = 'message'
+    compaction = 'compaction'
+
+
 class LoopRunStepKind(StrEnum):
     """
     Step type: `agent`, `action`, `sleep`, `wait_for_event`, `interaction`, `loop`, `check`, or system-materialized `cleanup`. `cleanup` appears in run step listings for terminal cleanup work but cannot be authored in a `LoopSpec`.
@@ -4153,18 +4187,6 @@ class ContextIncludeParam(StrEnum):
     context = 'context'
 
 
-class SessionMessageRole(StrEnum):
-    """
-    Message role: `system`, `user`, `assistant`, `tool`, or `compaction`.
-    """
-
-    system = 'system'
-    user = 'user'
-    assistant = 'assistant'
-    tool = 'tool'
-    compaction = 'compaction'
-
-
 class Type19(StrEnum):
     text = 'text'
 
@@ -4177,7 +4199,7 @@ class SessionTextBlock(BaseModel):
     model_config = ConfigDict(
         extra='allow',
     )
-    type: Type19
+    type: Literal['text']
     text: str = Field(..., description='The text content.')
 
 
@@ -4193,7 +4215,7 @@ class SessionThinkingBlock(BaseModel):
     model_config = ConfigDict(
         extra='allow',
     )
-    type: Type20
+    type: Literal['thinking']
     thinking: str = Field(..., description='The reasoning text.')
     signature: str | None = Field(
         None, description='Provider signature for the reasoning block, when present.'
@@ -4230,7 +4252,7 @@ class SessionToolUseBlock(BaseModel):
     model_config = ConfigDict(
         extra='allow',
     )
-    type: Type21
+    type: Literal['tool_use']
     id: str = Field(
         ..., description='Tool-call id; the matching tool_result references it.'
     )
@@ -4263,7 +4285,7 @@ class SessionImageBlock(BaseModel):
     model_config = ConfigDict(
         extra='allow',
     )
-    type: Type23
+    type: Literal['image']
     source: dict[str, Any] | None = Field(
         None, description='Provider-specific image source descriptor.'
     )
@@ -4290,21 +4312,12 @@ class SessionReminderBlock(BaseModel):
     model_config = ConfigDict(
         extra='allow',
     )
-    type: Type24
+    type: Literal['reminder']
     name: str = Field(
         ..., description='Model-visible reminder name, including the `app-` namespace.'
     )
     tier: Tier = Field(..., description='Reminder authority tier.')
     content: str = Field(..., description='Reminder content rendered to the model.')
-
-
-class SessionMessageEntryType(StrEnum):
-    """
-    Transcript entry type: `message` or `compaction`.
-    """
-
-    message = 'message'
-    compaction = 'compaction'
 
 
 class SelectorType(StrEnum):
@@ -4421,19 +4434,6 @@ class Skill(BaseModel):
     )
     created_at: AwareDatetime = Field(..., description='Record creation timestamp.')
     updated_at: AwareDatetime = Field(..., description='Last update timestamp.')
-
-
-class AgentTurnStatus(StrEnum):
-    """
-    Agent turn lifecycle status: `queued`, `running`, `waiting`, `completed`, `failed`, or `cancelled`.
-    """
-
-    queued = 'queued'
-    running = 'running'
-    waiting = 'waiting'
-    completed = 'completed'
-    failed = 'failed'
-    cancelled = 'cancelled'
 
 
 class AgentTurnErrorScope(StrEnum):
@@ -5414,13 +5414,21 @@ class Kind12(StrEnum):
 
 class Kind13(StrEnum):
     """
+    Step discriminator value; always `interaction`.
+    """
+
+    interaction = 'interaction'
+
+
+class Kind14(StrEnum):
+    """
     Step discriminator value; always `loop`.
     """
 
     loop = 'loop'
 
 
-class Kind14(StrEnum):
+class Kind15(StrEnum):
     """
     Step discriminator value; always `check`.
     """
@@ -5610,7 +5618,8 @@ class LoopActionStep(BaseModel):
         description='Managed environment to route this worker-backed action to. When omitted for `execution_location: environment`, Mobius resolves one from `spec.defaults.environment`.',
     )
     parameters: dict[str, Any] | None = Field(
-        None, description='Action parameters, after template rendering.'
+        None,
+        description='Input object passed to the named action. Static nested objects and arrays keep their types; every string leaf supports `${{ ... }}` interpolation over `event`, `meta`, `config`, and prior `steps.<id>.output`. An interpolation that returns an object or array renders compact JSON text; rendered JSON text is not automatically parsed back into a structured value.',
     )
 
 
@@ -5652,6 +5661,53 @@ class LoopWaitForEventStep(BaseModel):
     )
 
 
+class Protocol(StrEnum):
+    """
+    Type of response requested from the targets.
+    """
+
+    request_information = 'request_information'
+    request_approval = 'request_approval'
+    request_review = 'request_review'
+
+
+class ResolutionPolicy1(StrEnum):
+    """
+    Whether the first eligible response or every target response resolves the interaction. Omit for `any_of`.
+    """
+
+    any_of = 'any_of'
+    all_of = 'all_of'
+
+
+class LoopInteractionStep(BaseModel):
+    """
+    Interaction step configuration recognised inside `LoopSpec.steps[].config`.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    protocol: Protocol = Field(
+        ..., description='Type of response requested from the targets.'
+    )
+    targets: list[str] = Field(
+        ..., description='User or agent IDs eligible to respond.', min_length=1
+    )
+    prompt: str | None = Field(
+        None,
+        description='Prompt shown to responders. String content supports `${{ ... }}` interpolation.',
+    )
+    resolution_policy: ResolutionPolicy1 | None = Field(
+        None,
+        description='Whether the first eligible response or every target response resolves the interaction. Omit for `any_of`.',
+    )
+    spec: dict[str, Any] | None = Field(
+        None,
+        description='Optional interaction presentation details. String leaves support `${{ ... }}` interpolation.',
+    )
+
+
 class LoopSubLoopStep(BaseModel):
     """
     Loop-trigger step configuration recognised inside `LoopSpec.steps[].config`. Triggers another loop in the same project as an independent child run (fire-and-forget). The child run records `parent_run_id`, `parent_loop_id`, and `parent_step_key` so the lineage is visible from the child.
@@ -5687,7 +5743,7 @@ class OnFail(StrEnum):
     gate = 'gate'
 
 
-class Kind15(StrEnum):
+class Kind16(StrEnum):
     """
     `expr` evaluates a deterministic predicate with the same language as step conditions and event waits. `agent` runs a bounded judge turn returning a strict `{pass, reason}` verdict; its spend counts against the run budget and it consumes one run agent turn.
     """
@@ -5707,7 +5763,7 @@ class LoopCheckAssertion(BaseModel):
     name: str = Field(
         ..., description='Unique assertion name shown on the timeline proof row.'
     )
-    kind: Kind15 = Field(
+    kind: Kind16 = Field(
         ...,
         description='`expr` evaluates a deterministic predicate with the same language as step conditions and event waits. `agent` runs a bounded judge turn returning a strict `{pass, reason}` verdict; its spend counts against the run budget and it consumes one run agent turn.',
     )
@@ -7073,7 +7129,7 @@ class OrganizationAction(BaseModel):
     secret_versions: list[OrganizationActionSecretVersion]
     signing_secret: str | None = Field(
         None,
-        description='Base64-encoded signing key returned only on create and rotate.',
+        description='Base64-encoded signing key returned only on create and rotate. It always belongs to the newest entry in `secret_versions` — the `active` version after create, the `pending` version after rotate.',
     )
     created_at: AwareDatetime
     updated_at: AwareDatetime
@@ -7667,7 +7723,7 @@ class LoopActionStepSpec(BaseModel):
     if_: str | None = Field(
         None,
         alias='if',
-        description='Bare expr predicate evaluated before the step runs; false skips the step.',
+        description='Bare expr predicate over `event`, `meta`, `config`, and prior `steps.<id>.output`; false skips the step. A `${{ ... }}` wrapper is accepted but unnecessary.',
     )
     kind: Literal['action'] = Field(
         ..., description='Step discriminator value; always `action`.'
@@ -7697,7 +7753,7 @@ class LoopSleepStepSpec(BaseModel):
     if_: str | None = Field(
         None,
         alias='if',
-        description='Bare expr predicate evaluated before the step runs; false skips the step.',
+        description='Bare expr predicate over `event`, `meta`, `config`, and prior `steps.<id>.output`; false skips the step. A `${{ ... }}` wrapper is accepted but unnecessary.',
     )
     kind: Literal['sleep'] = Field(
         ..., description='Step discriminator value; always `sleep`.'
@@ -7727,13 +7783,45 @@ class LoopWaitForEventStepSpec(BaseModel):
     if_: str | None = Field(
         None,
         alias='if',
-        description='Bare expr predicate evaluated before the step runs; false skips the step.',
+        description='Bare expr predicate over `event`, `meta`, `config`, and prior `steps.<id>.output`; false skips the step. A `${{ ... }}` wrapper is accepted but unnecessary.',
     )
     kind: Literal['wait_for_event'] = Field(
         ..., description='Step discriminator value; always `wait_for_event`.'
     )
     config: LoopWaitForEventStep = Field(
         ..., description='Wait-for-event step configuration.'
+    )
+    retry: LoopRetryPolicy | None = Field(
+        None, description='Retry policy for this step.'
+    )
+    timeout: LoopTimeoutPolicy | None = Field(
+        None, description='Timeout policy for this step.'
+    )
+
+
+class LoopInteractionStepSpec(BaseModel):
+    """
+    Interaction step entry inside `LoopSpec.steps`.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str | None = Field(
+        None,
+        description='Optional stable step id within the spec. If omitted, the compiler uses the step index as a string, such as `"0"`.',
+    )
+    name: str | None = Field(None, description='Human-readable step name.')
+    if_: str | None = Field(
+        None,
+        alias='if',
+        description='Bare expr predicate over `event`, `meta`, `config`, and prior `steps.<id>.output`; false skips the step. A `${{ ... }}` wrapper is accepted but unnecessary.',
+    )
+    kind: Literal['interaction'] = Field(
+        ..., description='Step discriminator value; always `interaction`.'
+    )
+    config: LoopInteractionStep = Field(
+        ..., description='Interaction-step configuration.'
     )
     retry: LoopRetryPolicy | None = Field(
         None, description='Retry policy for this step.'
@@ -7759,7 +7847,7 @@ class LoopSubLoopStepSpec(BaseModel):
     if_: str | None = Field(
         None,
         alias='if',
-        description='Bare expr predicate evaluated before the step runs; false skips the step.',
+        description='Bare expr predicate over `event`, `meta`, `config`, and prior `steps.<id>.output`; false skips the step. A `${{ ... }}` wrapper is accepted but unnecessary.',
     )
     kind: Literal['loop'] = Field(
         ..., description='Step discriminator value; always `loop`.'
@@ -8582,7 +8670,7 @@ class LoopAgentStepSpec(BaseModel):
     if_: str | None = Field(
         None,
         alias='if',
-        description='Bare expr predicate evaluated before the step runs; false skips the step.',
+        description='Bare expr predicate over `event`, `meta`, `config`, and prior `steps.<id>.output`; false skips the step. A `${{ ... }}` wrapper is accepted but unnecessary.',
     )
     kind: Literal['agent'] = Field(
         ..., description='Step discriminator value; always `agent`.'
@@ -8612,7 +8700,7 @@ class LoopCheckStepSpec(BaseModel):
     if_: str | None = Field(
         None,
         alias='if',
-        description='Bare expr predicate evaluated before the step runs; false skips the step.',
+        description='Bare expr predicate over `event`, `meta`, `config`, and prior `steps.<id>.output`; false skips the step. A `${{ ... }}` wrapper is accepted but unnecessary.',
     )
     kind: Literal['check'] = Field(
         ..., description='Step discriminator value; always `check`.'
@@ -8659,6 +8747,7 @@ class LoopStep(
         | LoopActionStepSpec
         | LoopSleepStepSpec
         | LoopWaitForEventStepSpec
+        | LoopInteractionStepSpec
         | LoopSubLoopStepSpec
         | LoopCheckStepSpec
     ]
@@ -8668,6 +8757,7 @@ class LoopStep(
         | LoopActionStepSpec
         | LoopSleepStepSpec
         | LoopWaitForEventStepSpec
+        | LoopInteractionStepSpec
         | LoopSubLoopStepSpec
         | LoopCheckStepSpec
     ) = Field(
@@ -8749,7 +8839,8 @@ class Loop(BaseModel):
         None, description='Source repositories the loop targets.'
     )
     steps: list[LoopStep] | None = Field(
-        None, description='Ordered user-authored steps to execute for each run.'
+        None,
+        description='Steps use kind agent, action, sleep, wait_for_event, interaction, loop, or check; action inputs use config.parameters; if is a predicate.\n\nEach item has `kind`, `config`, and optional `id`, `name`, `if`, `retry`, and `timeout`. Valid kinds are `agent`, `action`, `sleep`, `wait_for_event`, `interaction`, `loop`, and `check`. Required config: `agent.instructions`; `action.action_name`; `sleep.duration` or `sleep.until`; `wait_for_event.event_type`; `interaction.protocol` plus `interaction.targets`; `loop.loop_id`; or `check.checks`. Action inputs belong in `config.parameters`; `config.execution_location` is `managed`, `worker`, or `environment`. `if` is a bare expr predicate over `event`, `meta`, `config`, and prior `steps.<id>.output`. String leaves interpolate expr values with `${{ ... }}`.',
     )
     output: dict[str, Any] | None = Field(
         None, description='Declared run result contract.'
@@ -8835,7 +8926,7 @@ class CreateLoopRequest(BaseModel):
     )
     steps: list[LoopStep] | None = Field(
         None,
-        description='Ordered user-authored steps to execute for each run. When present, the definition is runnable immediately.',
+        description='Steps use kind agent, action, sleep, wait_for_event, interaction, loop, or check; action inputs use config.parameters; if is a predicate.\n\nEach item has `kind`, `config`, and optional `id`, `name`, `if`, `retry`, and `timeout`. Valid kinds are `agent`, `action`, `sleep`, `wait_for_event`, `interaction`, `loop`, and `check`. Required config: `agent.instructions`; `action.action_name`; `sleep.duration` or `sleep.until`; `wait_for_event.event_type`; `interaction.protocol` plus `interaction.targets`; `loop.loop_id`; or `check.checks`. Action inputs belong in `config.parameters`; `config.execution_location` is `managed`, `worker`, or `environment`. `if` is a bare expr predicate over `event`, `meta`, `config`, and prior `steps.<id>.output`. String leaves interpolate expr values with `${{ ... }}`.',
     )
     output: dict[str, Any] | None = Field(
         None, description='Declared run result contract.'
@@ -8908,7 +8999,8 @@ class UpdateLoopRequest(BaseModel):
         None, description='Replacement source repositories the loop targets.'
     )
     steps: list[LoopStep] | None = Field(
-        None, description='Replacement ordered user-authored steps.'
+        None,
+        description='Steps use kind agent, action, sleep, wait_for_event, interaction, loop, or check; action inputs use config.parameters; if is a predicate.\n\nEach item has `kind`, `config`, and optional `id`, `name`, `if`, `retry`, and `timeout`. Valid kinds are `agent`, `action`, `sleep`, `wait_for_event`, `interaction`, `loop`, and `check`. Required config: `agent.instructions`; `action.action_name`; `sleep.duration` or `sleep.until`; `wait_for_event.event_type`; `interaction.protocol` plus `interaction.targets`; `loop.loop_id`; or `check.checks`. Action inputs belong in `config.parameters`; `config.execution_location` is `managed`, `worker`, or `environment`. `if` is a bare expr predicate over `event`, `meta`, `config`, and prior `steps.<id>.output`. String leaves interpolate expr values with `${{ ... }}`.',
     )
     output: dict[str, Any] | None = Field(
         None, description='Replacement run result contract.'
@@ -8947,7 +9039,7 @@ class SessionToolResultBlock(BaseModel):
     model_config = ConfigDict(
         extra='allow',
     )
-    type: Type22
+    type: Literal['tool_result']
     tool_use_id: str = Field(..., description='The tool_use id this result answers.')
     content: str | list[SessionContentBlock] | None = Field(
         None,
@@ -9268,6 +9360,7 @@ class SessionContentBlock(
     ) = Field(
         ...,
         description='One content block in a session transcript message — the canonical, frozen JSON shape Mobius persists and replays, discriminated by `type`. The variants are `text`, `thinking`, `tool_use`, `tool_result`, and `image`, plus host-managed `reminder` blocks when caller runtime context is explicitly included. Each variant permits provider-specific extra fields (citations, signatures, cache hints, and the like), and unknown fields are preserved rather than rejected, so the transcript round-trips losslessly across providers.',
+        discriminator='type',
     )
 
 

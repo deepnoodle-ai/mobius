@@ -7419,6 +7419,32 @@ components:
           description: The list of results for this page.
           items:
             $ref: '#/components/schemas/Agent'
+    AgentTurnStatus:
+      type: string
+      enum:
+      - queued
+      - running
+      - waiting
+      - completed
+      - failed
+      - cancelled
+      description: 'Agent turn lifecycle status: `queued`, `running`, `waiting`, `completed`,
+        `failed`, or `cancelled`.'
+    SessionMessageRole:
+      type: string
+      enum:
+      - system
+      - user
+      - assistant
+      - tool
+      - compaction
+      description: 'Message role: `system`, `user`, `assistant`, `tool`, or `compaction`.'
+    SessionMessageEntryType:
+      type: string
+      enum:
+      - message
+      - compaction
+      description: 'Transcript entry type: `message` or `compaction`.'
     LoopRunStepKind:
       type: string
       enum:
@@ -8356,7 +8382,9 @@ components:
             $ref: '#/components/schemas/OrganizationActionSecretVersion'
         signing_secret:
           type: string
-          description: Base64-encoded signing key returned only on create and rotate.
+          description: Base64-encoded signing key returned only on create and rotate. It always
+            belongs to the newest entry in `secret_versions` — the `active` version after
+            create, the `pending` version after rotate.
         created_at:
           type: string
           format: date-time
@@ -12401,15 +12429,6 @@ components:
       type: string
       enum:
       - context
-    SessionMessageRole:
-      type: string
-      enum:
-      - system
-      - user
-      - assistant
-      - tool
-      - compaction
-      description: 'Message role: `system`, `user`, `assistant`, `tool`, or `compaction`.'
     SessionTextBlock:
       type: object
       additionalProperties: true
@@ -12500,6 +12519,15 @@ components:
       - $ref: '#/components/schemas/SessionToolResultBlock'
       - $ref: '#/components/schemas/SessionImageBlock'
       - $ref: '#/components/schemas/SessionReminderBlock'
+      discriminator:
+        propertyName: type
+        mapping:
+          text: '#/components/schemas/SessionTextBlock'
+          thinking: '#/components/schemas/SessionThinkingBlock'
+          tool_use: '#/components/schemas/SessionToolUseBlock'
+          tool_result: '#/components/schemas/SessionToolResultBlock'
+          image: '#/components/schemas/SessionImageBlock'
+          reminder: '#/components/schemas/SessionReminderBlock'
       description: One content block in a session transcript message — the canonical, frozen
         JSON shape Mobius persists and replays, discriminated by `type`. The variants are
         `text`, `thinking`, `tool_use`, `tool_result`, and `image`, plus host-managed `reminder`
@@ -12575,12 +12603,6 @@ components:
         content:
           type: string
           description: Reminder content rendered to the model.
-    SessionMessageEntryType:
-      type: string
-      enum:
-      - message
-      - compaction
-      description: 'Transcript entry type: `message` or `compaction`.'
     SessionMessage:
       type: object
       additionalProperties: false
@@ -12822,17 +12844,6 @@ components:
         updated_by: user_2f9s3k4m5n6p7q8r
         created_at: '2026-06-15T14:30:00Z'
         updated_at: '2026-06-15T14:30:00Z'
-    AgentTurnStatus:
-      type: string
-      enum:
-      - queued
-      - running
-      - waiting
-      - completed
-      - failed
-      - cancelled
-      description: 'Agent turn lifecycle status: `queued`, `running`, `waiting`, `completed`,
-        `failed`, or `cancelled`.'
     AgentTurnErrorScope:
       type: string
       enum:
@@ -14318,7 +14329,10 @@ components:
             $ref: '#/components/schemas/LoopSpecRepository'
         steps:
           type: array
-          description: Ordered user-authored steps to execute for each run.
+          description: |-
+            Steps use kind agent, action, sleep, wait_for_event, interaction, loop, or check; action inputs use config.parameters; if is a predicate.
+
+            Each item has `kind`, `config`, and optional `id`, `name`, `if`, `retry`, and `timeout`. Valid kinds are `agent`, `action`, `sleep`, `wait_for_event`, `interaction`, `loop`, and `check`. Required config: `agent.instructions`; `action.action_name`; `sleep.duration` or `sleep.until`; `wait_for_event.event_type`; `interaction.protocol` plus `interaction.targets`; `loop.loop_id`; or `check.checks`. Action inputs belong in `config.parameters`; `config.execution_location` is `managed`, `worker`, or `environment`. `if` is a bare expr predicate over `event`, `meta`, `config`, and prior `steps.<id>.output`. String leaves interpolate expr values with `${{ ... }}`.
           items:
             $ref: '#/components/schemas/LoopStep'
         output:
@@ -14477,8 +14491,10 @@ components:
             $ref: '#/components/schemas/LoopSpecRepository'
         steps:
           type: array
-          description: Ordered user-authored steps to execute for each run. When present,
-            the definition is runnable immediately.
+          description: |-
+            Steps use kind agent, action, sleep, wait_for_event, interaction, loop, or check; action inputs use config.parameters; if is a predicate.
+
+            Each item has `kind`, `config`, and optional `id`, `name`, `if`, `retry`, and `timeout`. Valid kinds are `agent`, `action`, `sleep`, `wait_for_event`, `interaction`, `loop`, and `check`. Required config: `agent.instructions`; `action.action_name`; `sleep.duration` or `sleep.until`; `wait_for_event.event_type`; `interaction.protocol` plus `interaction.targets`; `loop.loop_id`; or `check.checks`. Action inputs belong in `config.parameters`; `config.execution_location` is `managed`, `worker`, or `environment`. `if` is a bare expr predicate over `event`, `meta`, `config`, and prior `steps.<id>.output`. String leaves interpolate expr values with `${{ ... }}`.
           items:
             $ref: '#/components/schemas/LoopStep'
         output:
@@ -14586,7 +14602,10 @@ components:
             $ref: '#/components/schemas/LoopSpecRepository'
         steps:
           type: array
-          description: Replacement ordered user-authored steps.
+          description: |-
+            Steps use kind agent, action, sleep, wait_for_event, interaction, loop, or check; action inputs use config.parameters; if is a predicate.
+
+            Each item has `kind`, `config`, and optional `id`, `name`, `if`, `retry`, and `timeout`. Valid kinds are `agent`, `action`, `sleep`, `wait_for_event`, `interaction`, `loop`, and `check`. Required config: `agent.instructions`; `action.action_name`; `sleep.duration` or `sleep.until`; `wait_for_event.event_type`; `interaction.protocol` plus `interaction.targets`; `loop.loop_id`; or `check.checks`. Action inputs belong in `config.parameters`; `config.execution_location` is `managed`, `worker`, or `environment`. `if` is a bare expr predicate over `event`, `meta`, `config`, and prior `steps.<id>.output`. String leaves interpolate expr values with `${{ ... }}`.
           items:
             $ref: '#/components/schemas/LoopStep'
         output:
@@ -14799,6 +14818,7 @@ components:
       - $ref: '#/components/schemas/LoopActionStepSpec'
       - $ref: '#/components/schemas/LoopSleepStepSpec'
       - $ref: '#/components/schemas/LoopWaitForEventStepSpec'
+      - $ref: '#/components/schemas/LoopInteractionStepSpec'
       - $ref: '#/components/schemas/LoopSubLoopStepSpec'
       - $ref: '#/components/schemas/LoopCheckStepSpec'
       discriminator:
@@ -14808,6 +14828,7 @@ components:
           action: '#/components/schemas/LoopActionStepSpec'
           sleep: '#/components/schemas/LoopSleepStepSpec'
           wait_for_event: '#/components/schemas/LoopWaitForEventStepSpec'
+          interaction: '#/components/schemas/LoopInteractionStepSpec'
           loop: '#/components/schemas/LoopSubLoopStepSpec'
           check: '#/components/schemas/LoopCheckStepSpec'
       description: User-authored loop step, discriminated by `kind`.
@@ -14828,8 +14849,8 @@ components:
           description: Human-readable step name.
         if:
           type: string
-          description: Bare expr predicate evaluated before the step runs; false skips the
-            step.
+          description: Bare expr predicate over `event`, `meta`, `config`, and prior `steps.<id>.output`;
+            false skips the step. A `${{ ... }}` wrapper is accepted but unnecessary.
         kind:
           type: string
           enum:
@@ -14861,8 +14882,8 @@ components:
           description: Human-readable step name.
         if:
           type: string
-          description: Bare expr predicate evaluated before the step runs; false skips the
-            step.
+          description: Bare expr predicate over `event`, `meta`, `config`, and prior `steps.<id>.output`;
+            false skips the step. A `${{ ... }}` wrapper is accepted but unnecessary.
         kind:
           type: string
           enum:
@@ -14894,8 +14915,8 @@ components:
           description: Human-readable step name.
         if:
           type: string
-          description: Bare expr predicate evaluated before the step runs; false skips the
-            step.
+          description: Bare expr predicate over `event`, `meta`, `config`, and prior `steps.<id>.output`;
+            false skips the step. A `${{ ... }}` wrapper is accepted but unnecessary.
         kind:
           type: string
           enum:
@@ -14927,8 +14948,8 @@ components:
           description: Human-readable step name.
         if:
           type: string
-          description: Bare expr predicate evaluated before the step runs; false skips the
-            step.
+          description: Bare expr predicate over `event`, `meta`, `config`, and prior `steps.<id>.output`;
+            false skips the step. A `${{ ... }}` wrapper is accepted but unnecessary.
         kind:
           type: string
           enum:
@@ -14937,6 +14958,39 @@ components:
         config:
           $ref: '#/components/schemas/LoopWaitForEventStep'
           description: Wait-for-event step configuration.
+        retry:
+          $ref: '#/components/schemas/LoopRetryPolicy'
+          description: Retry policy for this step.
+        timeout:
+          $ref: '#/components/schemas/LoopTimeoutPolicy'
+          description: Timeout policy for this step.
+    LoopInteractionStepSpec:
+      type: object
+      additionalProperties: false
+      description: Interaction step entry inside `LoopSpec.steps`.
+      required:
+      - kind
+      - config
+      properties:
+        id:
+          type: string
+          description: Optional stable step id within the spec. If omitted, the compiler uses
+            the step index as a string, such as `"0"`.
+        name:
+          type: string
+          description: Human-readable step name.
+        if:
+          type: string
+          description: Bare expr predicate over `event`, `meta`, `config`, and prior `steps.<id>.output`;
+            false skips the step. A `${{ ... }}` wrapper is accepted but unnecessary.
+        kind:
+          type: string
+          enum:
+          - interaction
+          description: Step discriminator value; always `interaction`.
+        config:
+          $ref: '#/components/schemas/LoopInteractionStep'
+          description: Interaction-step configuration.
         retry:
           $ref: '#/components/schemas/LoopRetryPolicy'
           description: Retry policy for this step.
@@ -14960,8 +15014,8 @@ components:
           description: Human-readable step name.
         if:
           type: string
-          description: Bare expr predicate evaluated before the step runs; false skips the
-            step.
+          description: Bare expr predicate over `event`, `meta`, `config`, and prior `steps.<id>.output`;
+            false skips the step. A `${{ ... }}` wrapper is accepted but unnecessary.
         kind:
           type: string
           enum:
@@ -14993,8 +15047,8 @@ components:
           description: Human-readable step name.
         if:
           type: string
-          description: Bare expr predicate evaluated before the step runs; false skips the
-            step.
+          description: Bare expr predicate over `event`, `meta`, `config`, and prior `steps.<id>.output`;
+            false skips the step. A `${{ ... }}` wrapper is accepted but unnecessary.
         kind:
           type: string
           enum:
@@ -15241,7 +15295,11 @@ components:
         parameters:
           type: object
           additionalProperties: true
-          description: Action parameters, after template rendering.
+          description: Input object passed to the named action. Static nested objects and
+            arrays keep their types; every string leaf supports `${{ ... }}` interpolation
+            over `event`, `meta`, `config`, and prior `steps.<id>.output`. An interpolation
+            that returns an object or array renders compact JSON text; rendered JSON text
+            is not automatically parsed back into a structured value.
     LoopSleepStep:
       type: object
       additionalProperties: false
@@ -15276,6 +15334,42 @@ components:
           additionalProperties:
             type: string
           description: Optional output mapping evaluated against `{ event, meta }`.
+    LoopInteractionStep:
+      type: object
+      additionalProperties: false
+      description: Interaction step configuration recognised inside `LoopSpec.steps[].config`.
+      required:
+      - protocol
+      - targets
+      properties:
+        protocol:
+          type: string
+          enum:
+          - request_information
+          - request_approval
+          - request_review
+          description: Type of response requested from the targets.
+        targets:
+          type: array
+          minItems: 1
+          items:
+            type: string
+          description: User or agent IDs eligible to respond.
+        prompt:
+          type: string
+          description: Prompt shown to responders. String content supports `${{ ... }}` interpolation.
+        resolution_policy:
+          type: string
+          enum:
+          - any_of
+          - all_of
+          description: Whether the first eligible response or every target response resolves
+            the interaction. Omit for `any_of`.
+        spec:
+          type: object
+          additionalProperties: true
+          description: Optional interaction presentation details. String leaves support `${{
+            ... }}` interpolation.
     LoopSubLoopStep:
       type: object
       additionalProperties: false

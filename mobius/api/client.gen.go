@@ -1607,6 +1607,60 @@ func (e LoopCheckStepSpecKind) Valid() bool {
 	}
 }
 
+// Defines values for LoopInteractionStepProtocol.
+const (
+	LoopInteractionStepProtocolRequestApproval    LoopInteractionStepProtocol = "request_approval"
+	LoopInteractionStepProtocolRequestInformation LoopInteractionStepProtocol = "request_information"
+	LoopInteractionStepProtocolRequestReview      LoopInteractionStepProtocol = "request_review"
+)
+
+// Valid indicates whether the value is a known member of the LoopInteractionStepProtocol enum.
+func (e LoopInteractionStepProtocol) Valid() bool {
+	switch e {
+	case LoopInteractionStepProtocolRequestApproval:
+		return true
+	case LoopInteractionStepProtocolRequestInformation:
+		return true
+	case LoopInteractionStepProtocolRequestReview:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LoopInteractionStepResolutionPolicy.
+const (
+	LoopInteractionStepResolutionPolicyAllOf LoopInteractionStepResolutionPolicy = "all_of"
+	LoopInteractionStepResolutionPolicyAnyOf LoopInteractionStepResolutionPolicy = "any_of"
+)
+
+// Valid indicates whether the value is a known member of the LoopInteractionStepResolutionPolicy enum.
+func (e LoopInteractionStepResolutionPolicy) Valid() bool {
+	switch e {
+	case LoopInteractionStepResolutionPolicyAllOf:
+		return true
+	case LoopInteractionStepResolutionPolicyAnyOf:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LoopInteractionStepSpecKind.
+const (
+	LoopInteractionStepSpecKindInteraction LoopInteractionStepSpecKind = "interaction"
+)
+
+// Valid indicates whether the value is a known member of the LoopInteractionStepSpecKind enum.
+func (e LoopInteractionStepSpecKind) Valid() bool {
+	switch e {
+	case LoopInteractionStepSpecKindInteraction:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for LoopModelRouteMode.
 const (
 	LoopModelRouteModeManaged LoopModelRouteMode = "managed"
@@ -5435,7 +5489,9 @@ type CreateLoopRequest struct {
 	// Settings Free-form loop-level settings consumed by the engine.
 	Settings *map[string]interface{} `json:"settings,omitempty"`
 
-	// Steps Ordered user-authored steps to execute for each run. When present, the definition is runnable immediately.
+	// Steps Steps use kind agent, action, sleep, wait_for_event, interaction, loop, or check; action inputs use config.parameters; if is a predicate.
+	//
+	// Each item has `kind`, `config`, and optional `id`, `name`, `if`, `retry`, and `timeout`. Valid kinds are `agent`, `action`, `sleep`, `wait_for_event`, `interaction`, `loop`, and `check`. Required config: `agent.instructions`; `action.action_name`; `sleep.duration` or `sleep.until`; `wait_for_event.event_type`; `interaction.protocol` plus `interaction.targets`; `loop.loop_id`; or `check.checks`. Action inputs belong in `config.parameters`; `config.execution_location` is `managed`, `worker`, or `environment`. `if` is a bare expr predicate over `event`, `meta`, `config`, and prior `steps.<id>.output`. String leaves interpolate expr values with `${{ ... }}`.
 	Steps *[]LoopStep `json:"steps,omitempty"`
 
 	// Tags Key/value tags for organizing and filtering resources. Up to 8 per resource; keys 1–128 characters, values up to 256. Keys prefixed `mobius:` are system-managed and cannot be set by callers.
@@ -6687,7 +6743,9 @@ type Loop struct {
 	// Status Loop lifecycle status: `draft`, `active`, `paused`, or `deleted`.
 	Status LoopStatus `json:"status"`
 
-	// Steps Ordered user-authored steps to execute for each run.
+	// Steps Steps use kind agent, action, sleep, wait_for_event, interaction, loop, or check; action inputs use config.parameters; if is a predicate.
+	//
+	// Each item has `kind`, `config`, and optional `id`, `name`, `if`, `retry`, and `timeout`. Valid kinds are `agent`, `action`, `sleep`, `wait_for_event`, `interaction`, `loop`, and `check`. Required config: `agent.instructions`; `action.action_name`; `sleep.duration` or `sleep.until`; `wait_for_event.event_type`; `interaction.protocol` plus `interaction.targets`; `loop.loop_id`; or `check.checks`. Action inputs belong in `config.parameters`; `config.execution_location` is `managed`, `worker`, or `environment`. `if` is a bare expr predicate over `event`, `meta`, `config`, and prior `steps.<id>.output`. String leaves interpolate expr values with `${{ ... }}`.
 	Steps *[]LoopStep `json:"steps,omitempty"`
 
 	// Tags Key/value tags for organizing and filtering resources. Up to 8 per resource; keys 1–128 characters, values up to 256. Keys prefixed `mobius:` are system-managed and cannot be set by callers.
@@ -6717,7 +6775,7 @@ type LoopActionStep struct {
 	// ExecutionLocation Execution location: `managed`, `worker`, or `environment`.
 	ExecutionLocation *LoopActionStepExecutionLocation `json:"execution_location,omitempty"`
 
-	// Parameters Action parameters, after template rendering.
+	// Parameters Input object passed to the named action. Static nested objects and arrays keep their types; every string leaf supports `${{ ... }}` interpolation over `event`, `meta`, `config`, and prior `steps.<id>.output`. An interpolation that returns an object or array renders compact JSON text; rendered JSON text is not automatically parsed back into a structured value.
 	Parameters *map[string]interface{} `json:"parameters,omitempty"`
 }
 
@@ -6732,7 +6790,7 @@ type LoopActionStepSpec struct {
 	// Id Optional stable step id within the spec. If omitted, the compiler uses the step index as a string, such as `"0"`.
 	Id *string `json:"id,omitempty"`
 
-	// If Bare expr predicate evaluated before the step runs; false skips the step.
+	// If Bare expr predicate over `event`, `meta`, `config`, and prior `steps.<id>.output`; false skips the step. A `${{ ... }}` wrapper is accepted but unnecessary.
 	If *string `json:"if,omitempty"`
 
 	// Kind Step discriminator value; always `action`.
@@ -6810,7 +6868,7 @@ type LoopAgentStepSpec struct {
 	// Id Optional stable step id within the spec. If omitted, the compiler uses the step index as a string, such as `"0"`.
 	Id *string `json:"id,omitempty"`
 
-	// If Bare expr predicate evaluated before the step runs; false skips the step.
+	// If Bare expr predicate over `event`, `meta`, `config`, and prior `steps.<id>.output`; false skips the step. A `${{ ... }}` wrapper is accepted but unnecessary.
 	If *string `json:"if,omitempty"`
 
 	// Kind Step discriminator value; always `agent`.
@@ -6885,7 +6943,7 @@ type LoopCheckStepSpec struct {
 	// Id Optional stable step id within the spec. If omitted, the compiler uses the step index as a string, such as `"0"`.
 	Id *string `json:"id,omitempty"`
 
-	// If Bare expr predicate evaluated before the step runs; false skips the step.
+	// If Bare expr predicate over `event`, `meta`, `config`, and prior `steps.<id>.output`; false skips the step. A `${{ ... }}` wrapper is accepted but unnecessary.
 	If *string `json:"if,omitempty"`
 
 	// Kind Step discriminator value; always `check`.
@@ -6930,6 +6988,57 @@ type LoopEnvironmentPolicy struct {
 	// TemplateId Environment template to use when Mobius creates one.
 	TemplateId *string `json:"template_id,omitempty"`
 }
+
+// LoopInteractionStep Interaction step configuration recognised inside `LoopSpec.steps[].config`.
+type LoopInteractionStep struct {
+	// Prompt Prompt shown to responders. String content supports `${{ ... }}` interpolation.
+	Prompt *string `json:"prompt,omitempty"`
+
+	// Protocol Type of response requested from the targets.
+	Protocol LoopInteractionStepProtocol `json:"protocol"`
+
+	// ResolutionPolicy Whether the first eligible response or every target response resolves the interaction. Omit for `any_of`.
+	ResolutionPolicy *LoopInteractionStepResolutionPolicy `json:"resolution_policy,omitempty"`
+
+	// Spec Optional interaction presentation details. String leaves support `${{ ... }}` interpolation.
+	Spec *map[string]interface{} `json:"spec,omitempty"`
+
+	// Targets User or agent IDs eligible to respond.
+	Targets []string `json:"targets"`
+}
+
+// LoopInteractionStepProtocol Type of response requested from the targets.
+type LoopInteractionStepProtocol string
+
+// LoopInteractionStepResolutionPolicy Whether the first eligible response or every target response resolves the interaction. Omit for `any_of`.
+type LoopInteractionStepResolutionPolicy string
+
+// LoopInteractionStepSpec Interaction step entry inside `LoopSpec.steps`.
+type LoopInteractionStepSpec struct {
+	// Config Interaction step configuration recognised inside `LoopSpec.steps[].config`.
+	Config LoopInteractionStep `json:"config"`
+
+	// Id Optional stable step id within the spec. If omitted, the compiler uses the step index as a string, such as `"0"`.
+	Id *string `json:"id,omitempty"`
+
+	// If Bare expr predicate over `event`, `meta`, `config`, and prior `steps.<id>.output`; false skips the step. A `${{ ... }}` wrapper is accepted but unnecessary.
+	If *string `json:"if,omitempty"`
+
+	// Kind Step discriminator value; always `interaction`.
+	Kind LoopInteractionStepSpecKind `json:"kind"`
+
+	// Name Human-readable step name.
+	Name *string `json:"name,omitempty"`
+
+	// Retry Retry policy for a step. `max_attempts` is the total number of attempts (1 = no retry); it bounds both worker-reported failures and lease-loss recovery for worker-executed action steps. A worker that reports a failure with attempts remaining re-queues for another attempt rather than failing the run; the run fails once attempts are exhausted. The attempt count is visible on the run timeline (`action.retried`, `action.failed`) and on the executing job (`claim_attempt` / `max_attempts`). Cancellation is always terminal. Capped server-side at 10 attempts.
+	Retry *LoopRetryPolicy `json:"retry,omitempty"`
+
+	// Timeout Timeout behavior for one loop step.
+	Timeout *LoopTimeoutPolicy `json:"timeout,omitempty"`
+}
+
+// LoopInteractionStepSpecKind Step discriminator value; always `interaction`.
+type LoopInteractionStepSpecKind string
 
 // LoopListResponse defines model for LoopListResponse.
 type LoopListResponse struct {
@@ -7266,7 +7375,7 @@ type LoopSleepStepSpec struct {
 	// Id Optional stable step id within the spec. If omitted, the compiler uses the step index as a string, such as `"0"`.
 	Id *string `json:"id,omitempty"`
 
-	// If Bare expr predicate evaluated before the step runs; false skips the step.
+	// If Bare expr predicate over `event`, `meta`, `config`, and prior `steps.<id>.output`; false skips the step. A `${{ ... }}` wrapper is accepted but unnecessary.
 	If *string `json:"if,omitempty"`
 
 	// Kind Step discriminator value; always `sleep`.
@@ -7443,7 +7552,7 @@ type LoopSubLoopStepSpec struct {
 	// Id Optional stable step id within the spec. If omitted, the compiler uses the step index as a string, such as `"0"`.
 	Id *string `json:"id,omitempty"`
 
-	// If Bare expr predicate evaluated before the step runs; false skips the step.
+	// If Bare expr predicate over `event`, `meta`, `config`, and prior `steps.<id>.output`; false skips the step. A `${{ ... }}` wrapper is accepted but unnecessary.
 	If *string `json:"if,omitempty"`
 
 	// Kind Step discriminator value; always `loop`.
@@ -7497,7 +7606,7 @@ type LoopWaitForEventStepSpec struct {
 	// Id Optional stable step id within the spec. If omitted, the compiler uses the step index as a string, such as `"0"`.
 	Id *string `json:"id,omitempty"`
 
-	// If Bare expr predicate evaluated before the step runs; false skips the step.
+	// If Bare expr predicate over `event`, `meta`, `config`, and prior `steps.<id>.output`; false skips the step. A `${{ ... }}` wrapper is accepted but unnecessary.
 	If *string `json:"if,omitempty"`
 
 	// Kind Step discriminator value; always `wait_for_event`.
@@ -7725,7 +7834,7 @@ type OrganizationAction struct {
 	SecretRef        string                             `json:"secret_ref"`
 	SecretVersions   []OrganizationActionSecretVersion  `json:"secret_versions"`
 
-	// SigningSecret Base64-encoded signing key returned only on create and rotate.
+	// SigningSecret Base64-encoded signing key returned only on create and rotate. It always belongs to the newest entry in `secret_versions` — the `active` version after create, the `pending` version after rotate.
 	SigningSecret *string   `json:"signing_secret,omitempty"`
 	Title         *string   `json:"title,omitempty"`
 	UpdatedAt     time.Time `json:"updated_at"`
@@ -9674,7 +9783,9 @@ type UpdateLoopRequest struct {
 	// Status Loop lifecycle status: `draft`, `active`, `paused`, or `deleted`.
 	Status *LoopStatus `json:"status,omitempty"`
 
-	// Steps Replacement ordered user-authored steps.
+	// Steps Steps use kind agent, action, sleep, wait_for_event, interaction, loop, or check; action inputs use config.parameters; if is a predicate.
+	//
+	// Each item has `kind`, `config`, and optional `id`, `name`, `if`, `retry`, and `timeout`. Valid kinds are `agent`, `action`, `sleep`, `wait_for_event`, `interaction`, `loop`, and `check`. Required config: `agent.instructions`; `action.action_name`; `sleep.duration` or `sleep.until`; `wait_for_event.event_type`; `interaction.protocol` plus `interaction.targets`; `loop.loop_id`; or `check.checks`. Action inputs belong in `config.parameters`; `config.execution_location` is `managed`, `worker`, or `environment`. `if` is a bare expr predicate over `event`, `meta`, `config`, and prior `steps.<id>.output`. String leaves interpolate expr values with `${{ ... }}`.
 	Steps *[]LoopStep `json:"steps,omitempty"`
 
 	// Tags Key/value tags for organizing and filtering resources. Up to 8 per resource; keys 1–128 characters, values up to 256. Keys prefixed `mobius:` are system-managed and cannot be set by callers.
@@ -16662,6 +16773,34 @@ func (t *LoopStep) MergeLoopWaitForEventStepSpec(v LoopWaitForEventStepSpec) err
 	return err
 }
 
+// AsLoopInteractionStepSpec returns the union data inside the LoopStep as a LoopInteractionStepSpec
+func (t LoopStep) AsLoopInteractionStepSpec() (LoopInteractionStepSpec, error) {
+	var body LoopInteractionStepSpec
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromLoopInteractionStepSpec overwrites any union data inside the LoopStep as the provided LoopInteractionStepSpec
+func (t *LoopStep) FromLoopInteractionStepSpec(v LoopInteractionStepSpec) error {
+	v.Kind = "interaction"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeLoopInteractionStepSpec performs a merge with any union data inside the LoopStep, using the provided LoopInteractionStepSpec
+func (t *LoopStep) MergeLoopInteractionStepSpec(v LoopInteractionStepSpec) error {
+	v.Kind = "interaction"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
 // AsLoopSubLoopStepSpec returns the union data inside the LoopStep as a LoopSubLoopStepSpec
 func (t LoopStep) AsLoopSubLoopStepSpec() (LoopSubLoopStepSpec, error) {
 	var body LoopSubLoopStepSpec
@@ -16738,6 +16877,8 @@ func (t LoopStep) ValueByDiscriminator() (interface{}, error) {
 		return t.AsLoopAgentStepSpec()
 	case "check":
 		return t.AsLoopCheckStepSpec()
+	case "interaction":
+		return t.AsLoopInteractionStepSpec()
 	case "loop":
 		return t.AsLoopSubLoopStepSpec()
 	case "sleep":
@@ -17454,6 +17595,7 @@ func (t SessionContentBlock) AsSessionTextBlock() (SessionTextBlock, error) {
 
 // FromSessionTextBlock overwrites any union data inside the SessionContentBlock as the provided SessionTextBlock
 func (t *SessionContentBlock) FromSessionTextBlock(v SessionTextBlock) error {
+	v.Type = "text"
 	b, err := json.Marshal(v)
 	t.union = b
 	return err
@@ -17461,6 +17603,7 @@ func (t *SessionContentBlock) FromSessionTextBlock(v SessionTextBlock) error {
 
 // MergeSessionTextBlock performs a merge with any union data inside the SessionContentBlock, using the provided SessionTextBlock
 func (t *SessionContentBlock) MergeSessionTextBlock(v SessionTextBlock) error {
+	v.Type = "text"
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -17480,6 +17623,7 @@ func (t SessionContentBlock) AsSessionThinkingBlock() (SessionThinkingBlock, err
 
 // FromSessionThinkingBlock overwrites any union data inside the SessionContentBlock as the provided SessionThinkingBlock
 func (t *SessionContentBlock) FromSessionThinkingBlock(v SessionThinkingBlock) error {
+	v.Type = "thinking"
 	b, err := json.Marshal(v)
 	t.union = b
 	return err
@@ -17487,6 +17631,7 @@ func (t *SessionContentBlock) FromSessionThinkingBlock(v SessionThinkingBlock) e
 
 // MergeSessionThinkingBlock performs a merge with any union data inside the SessionContentBlock, using the provided SessionThinkingBlock
 func (t *SessionContentBlock) MergeSessionThinkingBlock(v SessionThinkingBlock) error {
+	v.Type = "thinking"
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -17506,6 +17651,7 @@ func (t SessionContentBlock) AsSessionToolUseBlock() (SessionToolUseBlock, error
 
 // FromSessionToolUseBlock overwrites any union data inside the SessionContentBlock as the provided SessionToolUseBlock
 func (t *SessionContentBlock) FromSessionToolUseBlock(v SessionToolUseBlock) error {
+	v.Type = "tool_use"
 	b, err := json.Marshal(v)
 	t.union = b
 	return err
@@ -17513,6 +17659,7 @@ func (t *SessionContentBlock) FromSessionToolUseBlock(v SessionToolUseBlock) err
 
 // MergeSessionToolUseBlock performs a merge with any union data inside the SessionContentBlock, using the provided SessionToolUseBlock
 func (t *SessionContentBlock) MergeSessionToolUseBlock(v SessionToolUseBlock) error {
+	v.Type = "tool_use"
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -17532,6 +17679,7 @@ func (t SessionContentBlock) AsSessionToolResultBlock() (SessionToolResultBlock,
 
 // FromSessionToolResultBlock overwrites any union data inside the SessionContentBlock as the provided SessionToolResultBlock
 func (t *SessionContentBlock) FromSessionToolResultBlock(v SessionToolResultBlock) error {
+	v.Type = "tool_result"
 	b, err := json.Marshal(v)
 	t.union = b
 	return err
@@ -17539,6 +17687,7 @@ func (t *SessionContentBlock) FromSessionToolResultBlock(v SessionToolResultBloc
 
 // MergeSessionToolResultBlock performs a merge with any union data inside the SessionContentBlock, using the provided SessionToolResultBlock
 func (t *SessionContentBlock) MergeSessionToolResultBlock(v SessionToolResultBlock) error {
+	v.Type = "tool_result"
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -17558,6 +17707,7 @@ func (t SessionContentBlock) AsSessionImageBlock() (SessionImageBlock, error) {
 
 // FromSessionImageBlock overwrites any union data inside the SessionContentBlock as the provided SessionImageBlock
 func (t *SessionContentBlock) FromSessionImageBlock(v SessionImageBlock) error {
+	v.Type = "image"
 	b, err := json.Marshal(v)
 	t.union = b
 	return err
@@ -17565,6 +17715,7 @@ func (t *SessionContentBlock) FromSessionImageBlock(v SessionImageBlock) error {
 
 // MergeSessionImageBlock performs a merge with any union data inside the SessionContentBlock, using the provided SessionImageBlock
 func (t *SessionContentBlock) MergeSessionImageBlock(v SessionImageBlock) error {
+	v.Type = "image"
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -17584,6 +17735,7 @@ func (t SessionContentBlock) AsSessionReminderBlock() (SessionReminderBlock, err
 
 // FromSessionReminderBlock overwrites any union data inside the SessionContentBlock as the provided SessionReminderBlock
 func (t *SessionContentBlock) FromSessionReminderBlock(v SessionReminderBlock) error {
+	v.Type = "reminder"
 	b, err := json.Marshal(v)
 	t.union = b
 	return err
@@ -17591,6 +17743,7 @@ func (t *SessionContentBlock) FromSessionReminderBlock(v SessionReminderBlock) e
 
 // MergeSessionReminderBlock performs a merge with any union data inside the SessionContentBlock, using the provided SessionReminderBlock
 func (t *SessionContentBlock) MergeSessionReminderBlock(v SessionReminderBlock) error {
+	v.Type = "reminder"
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -17599,6 +17752,37 @@ func (t *SessionContentBlock) MergeSessionReminderBlock(v SessionReminderBlock) 
 	merged, err := runtime.JSONMerge(t.union, b)
 	t.union = merged
 	return err
+}
+
+func (t SessionContentBlock) Discriminator() (string, error) {
+	var discriminator struct {
+		Discriminator string `json:"type"`
+	}
+	err := json.Unmarshal(t.union, &discriminator)
+	return discriminator.Discriminator, err
+}
+
+func (t SessionContentBlock) ValueByDiscriminator() (interface{}, error) {
+	discriminator, err := t.Discriminator()
+	if err != nil {
+		return nil, err
+	}
+	switch discriminator {
+	case "image":
+		return t.AsSessionImageBlock()
+	case "reminder":
+		return t.AsSessionReminderBlock()
+	case "text":
+		return t.AsSessionTextBlock()
+	case "thinking":
+		return t.AsSessionThinkingBlock()
+	case "tool_result":
+		return t.AsSessionToolResultBlock()
+	case "tool_use":
+		return t.AsSessionToolUseBlock()
+	default:
+		return nil, errors.New("unknown discriminator value: " + discriminator)
+	}
 }
 
 func (t SessionContentBlock) MarshalJSON() ([]byte, error) {
