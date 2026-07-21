@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 
 ## [Unreleased]
 
+## [0.0.57] - 2026-07-21
+
 ### Fixed
 
 - CLI request files now reject unknown fields, `--instructions` accepts
