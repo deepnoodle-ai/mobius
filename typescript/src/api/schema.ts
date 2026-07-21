@@ -2919,6 +2919,21 @@ export interface components {
             items: components["schemas"]["Agent"][];
         };
         /**
+         * @description Agent turn lifecycle status: `queued`, `running`, `waiting`, `completed`, `failed`, or `cancelled`.
+         * @enum {string}
+         */
+        AgentTurnStatus: "queued" | "running" | "waiting" | "completed" | "failed" | "cancelled";
+        /**
+         * @description Message role: `system`, `user`, `assistant`, `tool`, or `compaction`.
+         * @enum {string}
+         */
+        SessionMessageRole: "system" | "user" | "assistant" | "tool" | "compaction";
+        /**
+         * @description Transcript entry type: `message` or `compaction`.
+         * @enum {string}
+         */
+        SessionMessageEntryType: "message" | "compaction";
+        /**
          * @description Step type: `agent`, `action`, `sleep`, `wait_for_event`, `interaction`, `loop`, `check`, or system-materialized `cleanup`. `cleanup` appears in run step listings for terminal cleanup work but cannot be authored in a `LoopSpec`.
          * @enum {string}
          */
@@ -3567,7 +3582,7 @@ export interface components {
              */
             active_signing_version?: number;
             secret_versions: components["schemas"]["OrganizationActionSecretVersion"][];
-            /** @description Base64-encoded signing key returned only on create and rotate. */
+            /** @description Base64-encoded signing key returned only on create and rotate. It always belongs to the newest entry in `secret_versions` — the `active` version after create, the `pending` version after rotate. */
             signing_secret?: string;
             /** Format: date-time */
             created_at: string;
@@ -5727,14 +5742,12 @@ export interface components {
         };
         /** @enum {string} */
         ContextIncludeParam: "context";
-        /**
-         * @description Message role: `system`, `user`, `assistant`, `tool`, or `compaction`.
-         * @enum {string}
-         */
-        SessionMessageRole: "system" | "user" | "assistant" | "tool" | "compaction";
         /** @description Assistant or caller text. */
         SessionTextBlock: {
-            /** @enum {string} */
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
             type: "text";
             /** @description The text content. */
             text: string;
@@ -5743,7 +5756,10 @@ export interface components {
         };
         /** @description An extended-reasoning block produced by a reasoning model. */
         SessionThinkingBlock: {
-            /** @enum {string} */
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
             type: "thinking";
             /** @description The reasoning text. */
             thinking: string;
@@ -5763,7 +5779,10 @@ export interface components {
         };
         /** @description A tool call the agent issued. */
         SessionToolUseBlock: {
-            /** @enum {string} */
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
             type: "tool_use";
             /** @description Tool-call id; the matching tool_result references it. */
             id: string;
@@ -5787,7 +5806,10 @@ export interface components {
         SessionContentBlock: components["schemas"]["SessionTextBlock"] | components["schemas"]["SessionThinkingBlock"] | components["schemas"]["SessionToolUseBlock"] | components["schemas"]["SessionToolResultBlock"] | components["schemas"]["SessionImageBlock"] | components["schemas"]["SessionReminderBlock"];
         /** @description The result of a tool call. */
         SessionToolResultBlock: {
-            /** @enum {string} */
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
             type: "tool_result";
             /** @description The tool_use id this result answers. */
             tool_use_id: string;
@@ -5800,7 +5822,10 @@ export interface components {
         };
         /** @description An image block, e.g. multimodal caller input. */
         SessionImageBlock: {
-            /** @enum {string} */
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
             type: "image";
             /** @description Provider-specific image source descriptor. */
             source?: {
@@ -5811,7 +5836,10 @@ export interface components {
         };
         /** @description Host-managed runtime context returned only when the request explicitly includes caller-supplied context. */
         SessionReminderBlock: {
-            /** @enum {string} */
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
             type: "reminder";
             /** @description Model-visible reminder name, including the `app-` namespace. */
             name: string;
@@ -5825,11 +5853,6 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
-        /**
-         * @description Transcript entry type: `message` or `compaction`.
-         * @enum {string}
-         */
-        SessionMessageEntryType: "message" | "compaction";
         /** @description One persisted message or compaction entry in a session transcript. */
         SessionMessage: {
             /** @description Stable message identifier. */
@@ -5998,11 +6021,6 @@ export interface components {
              */
             updated_at: string;
         };
-        /**
-         * @description Agent turn lifecycle status: `queued`, `running`, `waiting`, `completed`, `failed`, or `cancelled`.
-         * @enum {string}
-         */
-        AgentTurnStatus: "queued" | "running" | "waiting" | "completed" | "failed" | "cancelled";
         /**
          * @description Present when the overall agent-turn budget was exhausted.
          * @enum {string}
@@ -6842,7 +6860,11 @@ export interface components {
             triggers?: components["schemas"]["LoopSpecTrigger"][];
             /** @description Source repositories the loop targets. */
             repositories?: components["schemas"]["LoopSpecRepository"][];
-            /** @description Ordered user-authored steps to execute for each run. */
+            /**
+             * @description Steps use kind agent, action, sleep, wait_for_event, interaction, loop, or check; action inputs use config.parameters; if is a predicate.
+             *
+             *     Each item has `kind`, `config`, and optional `id`, `name`, `if`, `retry`, and `timeout`. Valid kinds are `agent`, `action`, `sleep`, `wait_for_event`, `interaction`, `loop`, and `check`. Required config: `agent.instructions`; `action.action_name`; `sleep.duration` or `sleep.until`; `wait_for_event.event_type`; `interaction.protocol` plus `interaction.targets`; `loop.loop_id`; or `check.checks`. Action inputs belong in `config.parameters`; `config.execution_location` is `managed`, `worker`, or `environment`. `if` is a bare expr predicate over `event`, `meta`, `config`, and prior `steps.<id>.output`. String leaves interpolate expr values with `${{ ... }}`.
+             */
             steps?: components["schemas"]["LoopStep"][];
             /** @description Declared run result contract. */
             output?: {
@@ -6975,7 +6997,11 @@ export interface components {
             triggers?: components["schemas"]["LoopSpecTrigger"][];
             /** @description Source repositories the loop targets. */
             repositories?: components["schemas"]["LoopSpecRepository"][];
-            /** @description Ordered user-authored steps to execute for each run. When present, the definition is runnable immediately. */
+            /**
+             * @description Steps use kind agent, action, sleep, wait_for_event, interaction, loop, or check; action inputs use config.parameters; if is a predicate.
+             *
+             *     Each item has `kind`, `config`, and optional `id`, `name`, `if`, `retry`, and `timeout`. Valid kinds are `agent`, `action`, `sleep`, `wait_for_event`, `interaction`, `loop`, and `check`. Required config: `agent.instructions`; `action.action_name`; `sleep.duration` or `sleep.until`; `wait_for_event.event_type`; `interaction.protocol` plus `interaction.targets`; `loop.loop_id`; or `check.checks`. Action inputs belong in `config.parameters`; `config.execution_location` is `managed`, `worker`, or `environment`. `if` is a bare expr predicate over `event`, `meta`, `config`, and prior `steps.<id>.output`. String leaves interpolate expr values with `${{ ... }}`.
+             */
             steps?: components["schemas"]["LoopStep"][];
             /** @description Declared run result contract. */
             output?: {
@@ -7034,7 +7060,11 @@ export interface components {
             triggers?: components["schemas"]["LoopSpecTrigger"][];
             /** @description Replacement source repositories the loop targets. */
             repositories?: components["schemas"]["LoopSpecRepository"][];
-            /** @description Replacement ordered user-authored steps. */
+            /**
+             * @description Steps use kind agent, action, sleep, wait_for_event, interaction, loop, or check; action inputs use config.parameters; if is a predicate.
+             *
+             *     Each item has `kind`, `config`, and optional `id`, `name`, `if`, `retry`, and `timeout`. Valid kinds are `agent`, `action`, `sleep`, `wait_for_event`, `interaction`, `loop`, and `check`. Required config: `agent.instructions`; `action.action_name`; `sleep.duration` or `sleep.until`; `wait_for_event.event_type`; `interaction.protocol` plus `interaction.targets`; `loop.loop_id`; or `check.checks`. Action inputs belong in `config.parameters`; `config.execution_location` is `managed`, `worker`, or `environment`. `if` is a bare expr predicate over `event`, `meta`, `config`, and prior `steps.<id>.output`. String leaves interpolate expr values with `${{ ... }}`.
+             */
             steps?: components["schemas"]["LoopStep"][];
             /** @description Replacement run result contract. */
             output?: {
@@ -7154,14 +7184,14 @@ export interface components {
             condition?: string;
         };
         /** @description User-authored loop step, discriminated by `kind`. */
-        LoopStep: components["schemas"]["LoopAgentStepSpec"] | components["schemas"]["LoopActionStepSpec"] | components["schemas"]["LoopSleepStepSpec"] | components["schemas"]["LoopWaitForEventStepSpec"] | components["schemas"]["LoopSubLoopStepSpec"] | components["schemas"]["LoopCheckStepSpec"];
+        LoopStep: components["schemas"]["LoopAgentStepSpec"] | components["schemas"]["LoopActionStepSpec"] | components["schemas"]["LoopSleepStepSpec"] | components["schemas"]["LoopWaitForEventStepSpec"] | components["schemas"]["LoopInteractionStepSpec"] | components["schemas"]["LoopSubLoopStepSpec"] | components["schemas"]["LoopCheckStepSpec"];
         /** @description Agent step entry inside `LoopSpec.steps`. */
         LoopAgentStepSpec: {
             /** @description Optional stable step id within the spec. If omitted, the compiler uses the step index as a string, such as `"0"`. */
             id?: string;
             /** @description Human-readable step name. */
             name?: string;
-            /** @description Bare expr predicate evaluated before the step runs; false skips the step. */
+            /** @description Bare expr predicate over `event`, `meta`, `config`, and prior `steps.<id>.output`; false skips the step. A `${{ ... }}` wrapper is accepted but unnecessary. */
             if?: string;
             /**
              * @description Step discriminator value; always `agent`. (enum property replaced by openapi-typescript)
@@ -7181,7 +7211,7 @@ export interface components {
             id?: string;
             /** @description Human-readable step name. */
             name?: string;
-            /** @description Bare expr predicate evaluated before the step runs; false skips the step. */
+            /** @description Bare expr predicate over `event`, `meta`, `config`, and prior `steps.<id>.output`; false skips the step. A `${{ ... }}` wrapper is accepted but unnecessary. */
             if?: string;
             /**
              * @description Step discriminator value; always `action`. (enum property replaced by openapi-typescript)
@@ -7201,7 +7231,7 @@ export interface components {
             id?: string;
             /** @description Human-readable step name. */
             name?: string;
-            /** @description Bare expr predicate evaluated before the step runs; false skips the step. */
+            /** @description Bare expr predicate over `event`, `meta`, `config`, and prior `steps.<id>.output`; false skips the step. A `${{ ... }}` wrapper is accepted but unnecessary. */
             if?: string;
             /**
              * @description Step discriminator value; always `sleep`. (enum property replaced by openapi-typescript)
@@ -7221,7 +7251,7 @@ export interface components {
             id?: string;
             /** @description Human-readable step name. */
             name?: string;
-            /** @description Bare expr predicate evaluated before the step runs; false skips the step. */
+            /** @description Bare expr predicate over `event`, `meta`, `config`, and prior `steps.<id>.output`; false skips the step. A `${{ ... }}` wrapper is accepted but unnecessary. */
             if?: string;
             /**
              * @description Step discriminator value; always `wait_for_event`. (enum property replaced by openapi-typescript)
@@ -7235,13 +7265,33 @@ export interface components {
             /** @description Timeout policy for this step. */
             timeout?: components["schemas"]["LoopTimeoutPolicy"];
         };
+        /** @description Interaction step entry inside `LoopSpec.steps`. */
+        LoopInteractionStepSpec: {
+            /** @description Optional stable step id within the spec. If omitted, the compiler uses the step index as a string, such as `"0"`. */
+            id?: string;
+            /** @description Human-readable step name. */
+            name?: string;
+            /** @description Bare expr predicate over `event`, `meta`, `config`, and prior `steps.<id>.output`; false skips the step. A `${{ ... }}` wrapper is accepted but unnecessary. */
+            if?: string;
+            /**
+             * @description Step discriminator value; always `interaction`. (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            kind: "interaction";
+            /** @description Interaction-step configuration. */
+            config: components["schemas"]["LoopInteractionStep"];
+            /** @description Retry policy for this step. */
+            retry?: components["schemas"]["LoopRetryPolicy"];
+            /** @description Timeout policy for this step. */
+            timeout?: components["schemas"]["LoopTimeoutPolicy"];
+        };
         /** @description Child-loop step entry inside `LoopSpec.steps`. */
         LoopSubLoopStepSpec: {
             /** @description Optional stable step id within the spec. If omitted, the compiler uses the step index as a string, such as `"0"`. */
             id?: string;
             /** @description Human-readable step name. */
             name?: string;
-            /** @description Bare expr predicate evaluated before the step runs; false skips the step. */
+            /** @description Bare expr predicate over `event`, `meta`, `config`, and prior `steps.<id>.output`; false skips the step. A `${{ ... }}` wrapper is accepted but unnecessary. */
             if?: string;
             /**
              * @description Step discriminator value; always `loop`. (enum property replaced by openapi-typescript)
@@ -7261,7 +7311,7 @@ export interface components {
             id?: string;
             /** @description Human-readable step name. */
             name?: string;
-            /** @description Bare expr predicate evaluated before the step runs; false skips the step. */
+            /** @description Bare expr predicate over `event`, `meta`, `config`, and prior `steps.<id>.output`; false skips the step. A `${{ ... }}` wrapper is accepted but unnecessary. */
             if?: string;
             /**
              * @description Step discriminator value; always `check`. (enum property replaced by openapi-typescript)
@@ -7360,9 +7410,9 @@ export interface components {
              * @enum {string}
              */
             scope?: "auto" | "loop" | "agent";
-            /** @description Optional Go-template string rendered against `event`, `meta`, `config`, `context`, `agent`, `loop`, `run`, `source`, and `step`. When omitted, Mobius derives a stable name from the event payload, falling back to the trigger or `default`. */
+            /** @description Optional expression template rendered against `event`, `meta`, `config`, `steps`, `agent`, `loop`, `run`, `source`, and `step`. When omitted, Mobius derives a stable name from the event payload, falling back to the trigger or `default`. */
             name?: string;
-            /** @description Optional Go-template string for the session display title. */
+            /** @description Optional expression template for the session display title using the same roots as `name`. */
             title?: string;
             /** @description Visibility for durable sessions created from this policy. */
             visibility?: components["schemas"]["SessionVisibility"];
@@ -7396,7 +7446,7 @@ export interface components {
             execution_location?: "managed" | "worker" | "environment";
             /** @description Managed environment to route this worker-backed action to. When omitted for `execution_location: environment`, Mobius resolves one from `spec.defaults.environment`. */
             environment_id?: string;
-            /** @description Action parameters, after template rendering. */
+            /** @description Input object passed to the named action. Static nested objects and arrays keep their types; every string leaf supports `${{ ... }}` interpolation over `event`, `meta`, `config`, and prior `steps.<id>.output`. An interpolation that returns an object or array renders compact JSON text; rendered JSON text is not automatically parsed back into a structured value. */
             parameters?: {
                 [key: string]: unknown;
             };
@@ -7424,6 +7474,27 @@ export interface components {
             /** @description Optional output mapping evaluated against `{ event, meta }`. */
             payload_mapping?: {
                 [key: string]: string;
+            };
+        };
+        /** @description Interaction step configuration recognised inside `LoopSpec.steps[].config`. */
+        LoopInteractionStep: {
+            /**
+             * @description Type of response requested from the targets.
+             * @enum {string}
+             */
+            protocol: "request_information" | "request_approval" | "request_review";
+            /** @description User or agent IDs eligible to respond. */
+            targets: string[];
+            /** @description Prompt shown to responders. String content supports `${{ ... }}` interpolation. */
+            prompt?: string;
+            /**
+             * @description Whether the first eligible response or every target response resolves the interaction. Omit for `any_of`.
+             * @enum {string}
+             */
+            resolution_policy?: "any_of" | "all_of";
+            /** @description Optional interaction presentation details. String leaves support `${{ ... }}` interpolation. */
+            spec?: {
+                [key: string]: unknown;
             };
         };
         /** @description Loop-trigger step configuration recognised inside `LoopSpec.steps[].config`. Triggers another loop in the same project as an independent child run (fire-and-forget). The child run records `parent_run_id`, `parent_loop_id`, and `parent_step_key` so the lineage is visible from the child. */

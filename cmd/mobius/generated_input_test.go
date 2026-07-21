@@ -89,3 +89,62 @@ func TestGeneratedToolkitAssignmentsAcceptCommaSeparatedIDs(t *testing.T) {
 	assert.NoError(t, json.Unmarshal([]byte(result.Stdout), &body))
 	assert.Equal(t, []string{"kit_AAA", "kit_BBB"}, body.ToolkitIDs)
 }
+
+func TestLoopCreateHelpDocumentsStepAuthoring(t *testing.T) {
+	result := newApp().Test(t, cli.TestArgs("loops", "create", "--help"))
+	assert.True(t, result.Success(), "loops create help failed: %v\nstderr: %s", result.Err, result.Stderr)
+	for _, want := range []string{
+		"agent, action, sleep, wait_for_event, interaction, loop, or check",
+		"config.parameters",
+		"if is a predicate",
+	} {
+		assert.Contains(t, result.Stdout, want)
+	}
+}
+
+func TestLoopUpdateHelpDocumentsStepAuthoring(t *testing.T) {
+	result := newApp().Test(t, cli.TestArgs("loops", "update", "loop_test", "--help"))
+	assert.True(t, result.Success(), "loops update help failed: %v\nstderr: %s", result.Err, result.Stderr)
+	for _, want := range []string{
+		"agent, action, sleep, wait_for_event, interaction, loop, or check",
+		"config.parameters",
+		"if is a predicate",
+	} {
+		assert.Contains(t, result.Stdout, want)
+	}
+}
+
+func TestLoopCreateRequestAcceptsInteractionStep(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "approval.yaml")
+	assert.NoError(t, os.WriteFile(path, []byte(`name: approval
+steps:
+  - id: review
+    kind: interaction
+    config:
+      protocol: request_approval
+      targets: [usr_reviewer]
+`), 0o644))
+
+	result := newApp().Test(t, cli.TestArgs(
+		"loops", "create",
+		"--file", path,
+		"--dry-run",
+		"--output", "json",
+		"--api-key", "mbx_test",
+		"--project", "default",
+	))
+	assert.True(t, result.Success(), "interaction dry-run failed: %v\nstderr: %s", result.Err, result.Stderr)
+	var body struct {
+		Steps []struct {
+			Kind   string `json:"kind"`
+			Config struct {
+				Protocol string   `json:"protocol"`
+				Targets  []string `json:"targets"`
+			} `json:"config"`
+		} `json:"steps"`
+	}
+	assert.NoError(t, json.Unmarshal([]byte(result.Stdout), &body))
+	assert.Equal(t, "interaction", body.Steps[0].Kind)
+	assert.Equal(t, "request_approval", body.Steps[0].Config.Protocol)
+	assert.Equal(t, []string{"usr_reviewer"}, body.Steps[0].Config.Targets)
+}

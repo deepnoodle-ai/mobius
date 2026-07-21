@@ -11,6 +11,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 - CLI request files now reject unknown fields, `--instructions` accepts
   `@file`/`@-`, and agent toolkit assignment IDs accept repeated or
   comma-separated values ([#188](https://github.com/deepnoodle-ai/mobius/pull/188)).
+- Loop create/update help now lists every step kind and points authors to
+  action `config.parameters` and the step-level `if` predicate
+  ([#189](https://github.com/deepnoodle-ai/mobius/pull/189)).
 
 ## [0.0.56] - 2026-07-17
 
