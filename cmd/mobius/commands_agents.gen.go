@@ -534,7 +534,7 @@ func registerAgentsCommands(app *cli.App) {
 		Description("Replace agent toolkit assignments").
 		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		Flags(
-			cli.Strings("toolkit-ids", "").Help("[required] Full replace-set of toolkit IDs to assign to the agent, in desired order."),
+			cli.Strings("toolkit-ids", "").Help("[required] Full replace-set of toolkit IDs to assign to the agent, in desired order. Repeat the flag or separate IDs with commas."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -552,7 +552,7 @@ func registerAgentsCommands(app *cli.App) {
 				return err
 			}
 			if ctx.IsSet("toolkit-ids") {
-				v := ctx.Strings("toolkit-ids")
+				v := splitCommaSeparated(ctx.Strings("toolkit-ids"))
 				body.ToolkitIds = v
 			}
 			if len(body.ToolkitIds) == 0 {

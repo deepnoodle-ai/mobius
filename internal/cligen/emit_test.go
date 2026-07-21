@@ -56,3 +56,29 @@ func TestGeneratedIntegerParsersUseStrictParsing(t *testing.T) {
 		t.Fatal("generated runtime still accepts numeric prefixes with fmt.Sscanf")
 	}
 }
+
+func TestGeneratedRuntimeHardensRequestInputs(t *testing.T) {
+	src, err := renderMasterFile(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	generated := string(src)
+	for _, want := range []string{
+		`dec.DisallowUnknownFields()`,
+		`func decodeFlagText(`,
+		`func splitCommaSeparated(`,
+	} {
+		if !strings.Contains(generated, want) {
+			t.Fatalf("generated runtime does not contain %q", want)
+		}
+	}
+}
+
+func TestGeneratedCommandsOptIntoTextFilesAndCommaSeparatedIDs(t *testing.T) {
+	if !acceptsTextFileInput(BodyField{Kind: "string", ElemType: "string", FlagName: "instructions"}) {
+		t.Fatal("instructions should accept @file text input")
+	}
+	if !acceptsCommaSeparatedInput(BodyField{Kind: "strings", ElemType: "[]string", FlagName: "toolkit-ids"}) {
+		t.Fatal("toolkit IDs should accept comma-separated input")
+	}
+}

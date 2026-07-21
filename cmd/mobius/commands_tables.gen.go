@@ -62,7 +62,7 @@ func registerTablesCommands(app *cli.App) {
 		Description("Create table").
 		Flags(
 			cli.String("description", "").Help("Optional human-readable description of the table."),
-			cli.String("instructions", "").Help("Optional author guidance for how this table should be used (e.g. surfaced to agents)."),
+			cli.String("instructions", "").Help("Optional author guidance for how this table should be used (e.g. surfaced to agents). Accepts text, @file, or @-. Use @@ to escape a literal leading @."),
 			cli.String("name", "").Help("[required] Table name (lowercase, snake_case); unique within the project."),
 			cli.String("schema", "").Help("[required] Column definition for a virtual table. Each table has exactly one required string identity column and may nominate one optional string… Accepts JSON, @file, or @-."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
@@ -85,7 +85,10 @@ func registerTablesCommands(app *cli.App) {
 				body.Description = &v
 			}
 			if ctx.IsSet("instructions") {
-				v := ctx.String("instructions")
+				v, err := decodeFlagText(ctx, "instructions", ctx.String("instructions"))
+				if err != nil {
+					return err
+				}
 				body.Instructions = &v
 			}
 			if ctx.IsSet("name") {
@@ -400,7 +403,7 @@ func registerTablesCommands(app *cli.App) {
 		AddArg(&cli.Arg{Name: "table-id", Description: "Table ID.", Required: true}).
 		Flags(
 			cli.String("description", "").Help("Optional human-readable description of the table."),
-			cli.String("instructions", "").Help("Optional author guidance for how this table should be used (e.g. surfaced to agents)."),
+			cli.String("instructions", "").Help("Optional author guidance for how this table should be used (e.g. surfaced to agents). Accepts text, @file, or @-. Use @@ to escape a literal leading @."),
 			cli.String("name", "").Help("Table name (lowercase, snake_case); unique within the project."),
 			cli.String("schema", "").Help("Column definition for a virtual table. Each table has exactly one required string identity column and may nominate one optional string… Accepts JSON, @file, or @-."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
@@ -424,7 +427,10 @@ func registerTablesCommands(app *cli.App) {
 				body.Description = &v
 			}
 			if ctx.IsSet("instructions") {
-				v := ctx.String("instructions")
+				v, err := decodeFlagText(ctx, "instructions", ctx.String("instructions"))
+				if err != nil {
+					return err
+				}
 				body.Instructions = &v
 			}
 			if ctx.IsSet("name") {
