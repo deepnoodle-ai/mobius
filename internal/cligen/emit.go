@@ -741,7 +741,7 @@ func renderCommand(b *bytes.Buffer, group string, c PlannedCommand) error {
 			}
 			help := summarizeHelp(firstNonEmpty(f.Description, f.FlagName))
 			if acceptsTextFileInput(f) {
-				help += " Accepts text, @file, or @-."
+				help += " Accepts text, @file, or @-. Use @@ to escape a literal leading @."
 			}
 			if acceptsCommaSeparatedInput(f) {
 				help += " Repeat the flag or separate IDs with commas."

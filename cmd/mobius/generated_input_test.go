@@ -49,6 +49,29 @@ func TestGeneratedSkillInstructionsReadTextFile(t *testing.T) {
 	assert.Equal(t, instructions, body["instructions"])
 }
 
+func TestGeneratedSkillInstructionsEscapeLeadingAt(t *testing.T) {
+	result := newApp().Test(t, cli.TestArgs(
+		"skills", "create",
+		"--name", "Pull request review",
+		"--instructions", "@@mention this in the body",
+		"--dry-run",
+		"--output", "json",
+		"--api-key", "mbx_test",
+		"--project", "default",
+	))
+
+	assert.True(t, result.Success(), "dry-run failed: %v\nstderr: %s", result.Err, result.Stderr)
+	var body map[string]any
+	assert.NoError(t, json.Unmarshal([]byte(result.Stdout), &body))
+	assert.Equal(t, "@mention this in the body", body["instructions"])
+}
+
+func TestGeneratedSkillInstructionsHelpDocumentsLeadingAtEscape(t *testing.T) {
+	result := newApp().Test(t, cli.TestArgs("skills", "create", "--help"))
+	assert.True(t, result.Success(), "skills create help failed: %v\nstderr: %s", result.Err, result.Stderr)
+	assert.Contains(t, result.Stdout, "Use @@ to escape a literal leading @")
+}
+
 func TestGeneratedToolkitAssignmentsAcceptCommaSeparatedIDs(t *testing.T) {
 	result := newApp().Test(t, cli.TestArgs(
 		"agents", "replace-toolkit-assignments", "agent_test",

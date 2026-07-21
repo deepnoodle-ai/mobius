@@ -24,7 +24,7 @@ func registerOrgSkillsCommands(app *cli.App) {
 		Flags(
 			cli.Strings("allowed-tools", "").Help("Tool selectors that narrow the agent's effective tool set while this skill is active."),
 			cli.String("description", "").Help("Markdown description of the skill's purpose."),
-			cli.String("instructions", "").Help("[required] Markdown instructions loaded when the skill is active. Accepts text, @file, or @-."),
+			cli.String("instructions", "").Help("[required] Markdown instructions loaded when the skill is active. Accepts text, @file, or @-. Use @@ to escape a literal leading @."),
 			cli.String("name", "").Help("[required] Human-readable skill name."),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
@@ -139,7 +139,7 @@ func registerOrgSkillsCommands(app *cli.App) {
 		Flags(
 			cli.Strings("allowed-tools", "").Help("Tool selectors that narrow the agent's effective tool set while this skill is active."),
 			cli.String("description", "").Help("Markdown description of the skill's purpose."),
-			cli.String("instructions", "").Help("[required] Markdown instructions loaded when the skill is active. Accepts text, @file, or @-."),
+			cli.String("instructions", "").Help("[required] Markdown instructions loaded when the skill is active. Accepts text, @file, or @-. Use @@ to escape a literal leading @."),
 			cli.String("name", "").Help("[required] Human-readable skill name."),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
