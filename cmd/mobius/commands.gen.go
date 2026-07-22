@@ -32,6 +32,7 @@ func registerGeneratedCommands(app *cli.App) {
 	registerAgentsCommands(app)
 	registerApiKeysCommands(app)
 	registerArtifactsCommands(app)
+	registerBillingCommands(app)
 	registerBlueprintsCommands(app)
 	registerCatalogCommands(app)
 	registerEnvironmentsCommands(app)
@@ -854,4 +855,14 @@ func parseInt64Arg(s, name string) (int64, error) {
 		return 0, fmt.Errorf("invalid %s: %q must be a positive integer", name, s)
 	}
 	return n, nil
+}
+
+// parseTimeFlag parses an RFC3339 timestamp flag value, returning a friendly
+// error when the value is not a valid timestamp.
+func parseTimeFlag(name, s string) (time.Time, error) {
+	t, err := time.Parse(time.RFC3339, s)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("invalid %s: %q is not an RFC3339 timestamp", name, s)
+	}
+	return t, nil
 }

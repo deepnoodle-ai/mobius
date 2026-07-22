@@ -2915,6 +2915,90 @@ class PingWebhookResult(BaseModel):
     )
 
 
+class BillingUsageEvent(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str
+    project_id: str = Field(
+        ...,
+        description='Project the usage was attributed to. Empty when the event was recorded without project attribution.',
+    )
+    api_key_id: str
+    period_start: AwareDatetime
+    counter: str
+    raw_quantity: int
+    credit_cost: float = Field(
+        ..., description='Credits charged for this event (up to 3 decimal places).'
+    )
+    credit_cost_milli: int = Field(
+        ...,
+        description='Exact credits charged in milli-credits; authoritative for accounting.',
+    )
+    credit_weight_version: int
+    zero_credits: bool
+    source_type: str
+    source_id: str
+    idempotency_key: str
+    run_id: str = Field(
+        ...,
+        description='Run the usage was attributed to. Empty string when the event has no run attribution.',
+    )
+    step_id: str = Field(
+        ...,
+        description='Loop step the usage was attributed to. Empty string when the event has no step attribution.',
+    )
+    step_key: str
+    job_id: str = Field(
+        ...,
+        description='Job the usage was attributed to. Empty string when the event has no job attribution.',
+    )
+    agent_turn_id: str = Field(
+        ...,
+        description='Agent turn the usage was attributed to. Empty string when the event has no agent-turn attribution.',
+    )
+    provider: str = Field(
+        ...,
+        description='Model provider that produced the usage. Empty string when not applicable.',
+    )
+    model: str = Field(
+        ...,
+        description='Model that produced the usage. Empty string when not applicable.',
+    )
+    model_class: str = Field(
+        ...,
+        description='Model class that produced the usage. Empty string when not applicable.',
+    )
+    metadata: dict[str, Any]
+    occurred_at: AwareDatetime
+    recorded_at: AwareDatetime
+    created_at: AwareDatetime
+
+
+class BillingUsageEventListResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    items: list[BillingUsageEvent]
+    has_more: bool = Field(..., description='Whether additional pages are available.')
+    next_cursor: str | None = Field(
+        None,
+        description='Opaque cursor to pass as `cursor` on the next request with the same ordering mode. Absent when `has_more` is false.',
+    )
+    total_raw_quantity: int = Field(
+        ...,
+        description='Total raw quantity for the complete filtered result set before cursor pagination; not a page-local sum.',
+    )
+    total_credit_cost: float = Field(
+        ...,
+        description='Rounded credit total for the complete filtered result set before cursor pagination; not a page-local sum.',
+    )
+    total_credit_cost_milli: int = Field(
+        ...,
+        description='Exact milli-credit total for the complete filtered result set before cursor pagination; not a page-local sum.',
+    )
+
+
 class Scope(StrEnum):
     project = 'project'
     org = 'org'

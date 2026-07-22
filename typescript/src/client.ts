@@ -17,6 +17,8 @@ import type {
   BlueprintApplyResult,
   BlueprintBindingListResponse,
   BlueprintDeleteResult,
+  BillingUsageEvent,
+  BillingUsageEventListResponse,
   CancelLoopRunRequest,
   ChannelContext,
   CreateAgentRequest,
@@ -325,6 +327,23 @@ export interface UpdateLoopOptions {
 
 export interface ListLoopsOptions {
   status?: LoopStatus;
+  cursor?: string;
+  limit?: number;
+}
+
+/** Filters for the project-scoped billing usage evidence reader. */
+export interface ListBillingUsageEventsOptions {
+  /** Mobius project ID. Required so application billing cannot widen to the organization by accident. */
+  projectId: string;
+  /** Inclusive ISO-8601 lower bound. Selects chronological `(recorded_at, id)` ordering. */
+  recordedAfter?: string;
+  periodStart?: string;
+  counter?: string;
+  sourceType?: string;
+  sourceId?: string;
+  runId?: string;
+  jobId?: string;
+  apiKeyId?: string;
   cursor?: string;
   limit?: number;
 }
@@ -857,6 +876,57 @@ export class Client {
       signal: opts.signal,
     });
     return (await resp.json()) as Artifact;
+  }
+
+  /** Read one page of exact, project-scoped billing usage evidence. */
+  async listBillingUsageEvents(
+    opts: ListBillingUsageEventsOptions,
+  ): Promise<BillingUsageEventListResponse> {
+    const projectId = opts.projectId.trim();
+    if (!projectId) {
+      throw new ConfigError("billing usage projectId is required");
+    }
+    const path = withQuery("/v1/billing/usage-events", {
+      project_id: projectId,
+      recorded_after: opts.recordedAfter,
+      period_start: opts.periodStart,
+      counter: opts.counter,
+      source_type: opts.sourceType,
+      source_id: opts.sourceId,
+      run_id: opts.runId,
+      job_id: opts.jobId,
+      api_key_id: opts.apiKeyId,
+      cursor: opts.cursor,
+      limit: opts.limit,
+    });
+    const resp = await this.request(path, { method: "GET" });
+    return (await resp.json()) as BillingUsageEventListResponse;
+  }
+
+  /**
+   * Drain every usage page for these filters in server order, yielding one
+   * event at a time. Pass `recordedAfter` to select the durable oldest-first
+   * incremental contract; a single call yields each matching event exactly
+   * once. Deduplication is the caller's job only *across* calls: when you
+   * advance `recordedAfter` and replay a bounded overlap, skip events whose
+   * `id` you have already seen — this iterator does not remember events from
+   * earlier calls.
+   */
+  async *iterateBillingUsageEvents(
+    opts: Omit<ListBillingUsageEventsOptions, "cursor">,
+  ): AsyncGenerator<BillingUsageEvent> {
+    let cursor: string | undefined;
+    do {
+      const page = await this.listBillingUsageEvents({ ...opts, cursor });
+      for (const item of page.items) yield item;
+      if (!page.has_more) return;
+      if (!page.next_cursor) {
+        throw new ConfigError(
+          "billing usage response has_more without next_cursor",
+        );
+      }
+      cursor = page.next_cursor;
+    } while (cursor);
   }
 
   async listLoops(opts: ListLoopsOptions = {}): Promise<LoopListResponse> {

@@ -43,6 +43,9 @@ tags:
 - name: webhooks
   x-displayName: Webhooks
   description: Outgoing webhook subscriptions, tests, and delivery history.
+- name: billing
+  x-displayName: Billing
+  description: Organization subscription, invoice, and billing portal endpoints.
 - name: permissions
   x-displayName: Permissions
   description: Permission definitions and presets used to build project roles.
@@ -1729,6 +1732,100 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /v1/billing/usage-events:
+    get:
+      operationId: listBillingUsageEvents
+      tags:
+      - billing
+      x-public: true
+      summary: List usage events
+      description: 'Returns org-scoped usage evidence rows for credit attribution and burndown
+        investigation. By default rows are ordered newest first. Supplying `recorded_after`
+        selects the durable incremental contract: the lower bound is inclusive and rows are
+        ordered oldest first by `(recorded_at, id)`. Consumers should replay a bounded overlap
+        and deduplicate by stable event ID. Aggregate totals cover the complete filtered result
+        set before cursor pagination, repeat on every page, and may grow as matching rows
+        arrive; incremental mirrors should sum the exact per-event `credit_cost_milli` values
+        instead. Cursors are bound to their ordering mode, so every incremental page must
+        resend `recorded_after`. Filters never broaden beyond the authenticated organization.'
+      parameters:
+      - name: period_start
+        in: query
+        required: false
+        description: Filter to usage events in this billing period.
+        schema:
+          type: string
+          format: date-time
+      - name: project_id
+        in: query
+        required: false
+        description: Filter to rows attributed to one or more projects. Repeat the parameter
+          for multiple projects.
+        schema:
+          type: array
+          items:
+            type: string
+        style: form
+        explode: true
+      - name: recorded_after
+        in: query
+        required: false
+        description: Inclusive lower bound on `recorded_at`. When present, results and cursors
+          use chronological `(recorded_at, id)` order for durable incremental mirroring.
+        schema:
+          type: string
+          format: date-time
+      - name: counter
+        in: query
+        required: false
+        description: Filter to one usage counter.
+        schema:
+          type: string
+      - name: source_type
+        in: query
+        required: false
+        description: Filter to one usage source type.
+        schema:
+          type: string
+      - name: source_id
+        in: query
+        required: false
+        description: Filter to one source identifier.
+        schema:
+          type: string
+      - name: run_id
+        in: query
+        required: false
+        description: Filter to usage attributed to one run.
+        schema:
+          type: string
+      - name: job_id
+        in: query
+        required: false
+        description: Filter to usage attributed to one job.
+        schema:
+          type: string
+      - name: api_key_id
+        in: query
+        required: false
+        description: Filter to usage recorded for one API key.
+        schema:
+          type: string
+      - $ref: '#/components/parameters/LimitParam'
+      - $ref: '#/components/parameters/CursorParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BillingUsageEventListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /v1/projects/{project_handle}/permissions:
     get:
       operationId: listProjectPermissions
@@ -10465,6 +10562,145 @@ components:
         latency_ms:
           type: integer
           description: Round-trip latency in milliseconds.
+    BillingUsageEvent:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - project_id
+      - api_key_id
+      - period_start
+      - counter
+      - raw_quantity
+      - credit_cost
+      - credit_cost_milli
+      - credit_weight_version
+      - zero_credits
+      - source_type
+      - source_id
+      - idempotency_key
+      - run_id
+      - step_id
+      - step_key
+      - job_id
+      - agent_turn_id
+      - provider
+      - model
+      - model_class
+      - metadata
+      - occurred_at
+      - recorded_at
+      - created_at
+      properties:
+        id:
+          type: string
+        project_id:
+          type: string
+          description: Project the usage was attributed to. Empty when the event was recorded
+            without project attribution.
+        api_key_id:
+          type: string
+        period_start:
+          type: string
+          format: date-time
+        counter:
+          type: string
+        raw_quantity:
+          type: integer
+          format: int64
+        credit_cost:
+          type: number
+          format: double
+          description: Credits charged for this event (up to 3 decimal places).
+        credit_cost_milli:
+          type: integer
+          format: int64
+          description: Exact credits charged in milli-credits; authoritative for accounting.
+        credit_weight_version:
+          type: integer
+        zero_credits:
+          type: boolean
+        source_type:
+          type: string
+        source_id:
+          type: string
+        idempotency_key:
+          type: string
+        run_id:
+          type: string
+          description: Run the usage was attributed to. Empty string when the event has no
+            run attribution.
+        step_id:
+          type: string
+          description: Loop step the usage was attributed to. Empty string when the event
+            has no step attribution.
+        step_key:
+          type: string
+        job_id:
+          type: string
+          description: Job the usage was attributed to. Empty string when the event has no
+            job attribution.
+        agent_turn_id:
+          type: string
+          description: Agent turn the usage was attributed to. Empty string when the event
+            has no agent-turn attribution.
+        provider:
+          type: string
+          description: Model provider that produced the usage. Empty string when not applicable.
+        model:
+          type: string
+          description: Model that produced the usage. Empty string when not applicable.
+        model_class:
+          type: string
+          description: Model class that produced the usage. Empty string when not applicable.
+        metadata:
+          type: object
+          additionalProperties: true
+        occurred_at:
+          type: string
+          format: date-time
+        recorded_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+    BillingUsageEventListResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - has_more
+      - total_raw_quantity
+      - total_credit_cost
+      - total_credit_cost_milli
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/BillingUsageEvent'
+        has_more:
+          type: boolean
+          description: Whether additional pages are available.
+        next_cursor:
+          type: string
+          description: Opaque cursor to pass as `cursor` on the next request with the same
+            ordering mode. Absent when `has_more` is false.
+        total_raw_quantity:
+          type: integer
+          format: int64
+          description: Total raw quantity for the complete filtered result set before cursor
+            pagination; not a page-local sum.
+        total_credit_cost:
+          type: number
+          format: double
+          description: Rounded credit total for the complete filtered result set before cursor
+            pagination; not a page-local sum.
+        total_credit_cost_milli:
+          type: integer
+          format: int64
+          description: Exact milli-credit total for the complete filtered result set before
+            cursor pagination; not a page-local sum.
     PermissionDefinition:
       type: object
       additionalProperties: false
@@ -17554,6 +17790,9 @@ x-tagGroups:
 - name: Webhooks
   tags:
   - webhooks
+- name: Billing Endpoints
+  tags:
+  - billing
 - name: Permissions
   tags:
   - permissions

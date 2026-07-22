@@ -477,6 +477,7 @@ func registerSessionsCommands(app *cli.App) {
 			cli.String("scope", "").Help("Filter by session scope."),
 			cli.String("provider", "").Help("Filter messaging sessions by provider metadata, e.g. `slack` or `telegram`."),
 			cli.String("integration-id", "").Help("Filter to sessions created by this integration, e.g. agent sessions started from a connected provider."),
+			cli.String("since", "").Help("Only include sessions with activity after this timestamp. Accepts an RFC3339 timestamp (for example: 2026-07-22T12:00:00Z)."),
 			cli.String("cursor", "").Help("Cursor for pagination (opaque string from previous response)"),
 			cli.Int("limit", "").Help("Maximum number of items to return"),
 		).
@@ -516,6 +517,13 @@ func registerSessionsCommands(app *cli.App) {
 			if ctx.IsSet("integration-id") {
 				v := ctx.String("integration-id")
 				params.IntegrationId = &v
+			}
+			if ctx.IsSet("since") {
+				v, err := parseTimeFlag("since", ctx.String("since"))
+				if err != nil {
+					return err
+				}
+				params.Since = &v
 			}
 			if ctx.IsSet("cursor") {
 				v := api.CursorParam(ctx.String("cursor"))
