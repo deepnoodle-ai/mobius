@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 
 ## [Unreleased]
 
+### Added
+
+- Exact project-scoped billing usage events in the public contract, including
+  milli-credit totals and chronological incremental reads; the TypeScript SDK
+  adds typed page and cursor-draining helpers.
+
 ## [0.0.57] - 2026-07-21
 
 ### Fixed

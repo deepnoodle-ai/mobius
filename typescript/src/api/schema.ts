@@ -678,6 +678,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/billing/usage-events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List usage events
+         * @description Returns org-scoped usage evidence rows for credit attribution and burndown investigation. By default rows are ordered newest first. Supplying `recorded_after` selects the durable incremental contract: the lower bound is inclusive and rows are ordered oldest first by `(recorded_at, id)`. Consumers should replay a bounded overlap and deduplicate by stable event ID. Filters never broaden beyond the authenticated organization.
+         */
+        get: operations["listBillingUsageEvents"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/projects/{project_handle}/permissions": {
         parameters: {
             query?: never;
@@ -4764,6 +4784,65 @@ export interface components {
             error?: string;
             /** @description Round-trip latency in milliseconds. */
             latency_ms?: number;
+        };
+        BillingUsageEvent: {
+            id: string;
+            /** @description Project the usage was attributed to. Empty when the event was recorded without project attribution. */
+            project_id: string;
+            api_key_id: string;
+            /** Format: date-time */
+            period_start: string;
+            counter: string;
+            /** Format: int64 */
+            raw_quantity: number;
+            /**
+             * Format: double
+             * @description Credits charged for this event (up to 3 decimal places).
+             */
+            credit_cost: number;
+            /**
+             * Format: int64
+             * @description Exact credits charged in milli-credits; authoritative for accounting.
+             */
+            credit_cost_milli: number;
+            credit_weight_version: number;
+            zero_credits: boolean;
+            source_type: string;
+            source_id: string;
+            idempotency_key: string;
+            run_id: string;
+            step_id: string;
+            step_key: string;
+            job_id: string;
+            agent_turn_id: string;
+            provider: string;
+            model: string;
+            model_class: string;
+            metadata: {
+                [key: string]: unknown;
+            };
+            /** Format: date-time */
+            occurred_at: string;
+            /** Format: date-time */
+            recorded_at: string;
+            /** Format: date-time */
+            created_at: string;
+        };
+        BillingUsageEventListResponse: {
+            items: components["schemas"]["BillingUsageEvent"][];
+            /** @description Whether additional pages are available. */
+            has_more: boolean;
+            /** @description Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false. */
+            next_cursor?: string;
+            /** Format: int64 */
+            total_raw_quantity: number;
+            /** Format: double */
+            total_credit_cost: number;
+            /**
+             * Format: int64
+             * @description Exact total for the filtered result set in milli-credits.
+             */
+            total_credit_cost_milli: number;
         };
         PermissionDefinition: {
             /** @description Stable permission ID stored on roles. */
@@ -10688,6 +10767,42 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+        };
+    };
+    listBillingUsageEvents: {
+        parameters: {
+            query?: {
+                period_start?: string;
+                /** @description Filter to rows attributed to one or more projects. Repeat the parameter for multiple projects. */
+                project_id?: string[];
+                /** @description Inclusive lower bound on `recorded_at`. When present, results and cursors use chronological `(recorded_at, id)` order for durable incremental mirroring. */
+                recorded_after?: string;
+                counter?: string;
+                source_type?: string;
+                source_id?: string;
+                run_id?: string;
+                job_id?: string;
+                api_key_id?: string;
+                limit?: number;
+                cursor?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BillingUsageEventListResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
         };
     };
     listProjectPermissions: {

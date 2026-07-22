@@ -2915,6 +2915,62 @@ class PingWebhookResult(BaseModel):
     )
 
 
+class BillingUsageEvent(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str
+    project_id: str = Field(
+        ...,
+        description='Project the usage was attributed to. Empty when the event was recorded without project attribution.',
+    )
+    api_key_id: str
+    period_start: AwareDatetime
+    counter: str
+    raw_quantity: int
+    credit_cost: float = Field(
+        ..., description='Credits charged for this event (up to 3 decimal places).'
+    )
+    credit_cost_milli: int = Field(
+        ...,
+        description='Exact credits charged in milli-credits; authoritative for accounting.',
+    )
+    credit_weight_version: int
+    zero_credits: bool
+    source_type: str
+    source_id: str
+    idempotency_key: str
+    run_id: str
+    step_id: str
+    step_key: str
+    job_id: str
+    agent_turn_id: str
+    provider: str
+    model: str
+    model_class: str
+    metadata: dict[str, Any]
+    occurred_at: AwareDatetime
+    recorded_at: AwareDatetime
+    created_at: AwareDatetime
+
+
+class BillingUsageEventListResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    items: list[BillingUsageEvent]
+    has_more: bool = Field(..., description='Whether additional pages are available.')
+    next_cursor: str | None = Field(
+        None,
+        description='Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.',
+    )
+    total_raw_quantity: int
+    total_credit_cost: float
+    total_credit_cost_milli: int = Field(
+        ..., description='Exact total for the filtered result set in milli-credits.'
+    )
+
+
 class Scope(StrEnum):
     project = 'project'
     org = 'org'

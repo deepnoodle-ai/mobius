@@ -4884,6 +4884,56 @@ type ArtifactSignedUrlMethod string
 // ArtifactVisibility Private artifacts are visible only to their owner user. Shared artifacts are visible to the project.
 type ArtifactVisibility string
 
+// BillingUsageEvent defines model for BillingUsageEvent.
+type BillingUsageEvent struct {
+	AgentTurnId string    `json:"agent_turn_id"`
+	ApiKeyId    string    `json:"api_key_id"`
+	Counter     string    `json:"counter"`
+	CreatedAt   time.Time `json:"created_at"`
+
+	// CreditCost Credits charged for this event (up to 3 decimal places).
+	CreditCost float64 `json:"credit_cost"`
+
+	// CreditCostMilli Exact credits charged in milli-credits; authoritative for accounting.
+	CreditCostMilli     int64                  `json:"credit_cost_milli"`
+	CreditWeightVersion int                    `json:"credit_weight_version"`
+	Id                  string                 `json:"id"`
+	IdempotencyKey      string                 `json:"idempotency_key"`
+	JobId               string                 `json:"job_id"`
+	Metadata            map[string]interface{} `json:"metadata"`
+	Model               string                 `json:"model"`
+	ModelClass          string                 `json:"model_class"`
+	OccurredAt          time.Time              `json:"occurred_at"`
+	PeriodStart         time.Time              `json:"period_start"`
+
+	// ProjectId Project the usage was attributed to. Empty when the event was recorded without project attribution.
+	ProjectId   string    `json:"project_id"`
+	Provider    string    `json:"provider"`
+	RawQuantity int64     `json:"raw_quantity"`
+	RecordedAt  time.Time `json:"recorded_at"`
+	RunId       string    `json:"run_id"`
+	SourceId    string    `json:"source_id"`
+	SourceType  string    `json:"source_type"`
+	StepId      string    `json:"step_id"`
+	StepKey     string    `json:"step_key"`
+	ZeroCredits bool      `json:"zero_credits"`
+}
+
+// BillingUsageEventListResponse defines model for BillingUsageEventListResponse.
+type BillingUsageEventListResponse struct {
+	// HasMore Whether additional pages are available.
+	HasMore bool                `json:"has_more"`
+	Items   []BillingUsageEvent `json:"items"`
+
+	// NextCursor Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.
+	NextCursor      *string `json:"next_cursor,omitempty"`
+	TotalCreditCost float64 `json:"total_credit_cost"`
+
+	// TotalCreditCostMilli Exact total for the filtered result set in milli-credits.
+	TotalCreditCostMilli int64 `json:"total_credit_cost_milli"`
+	TotalRawQuantity     int64 `json:"total_raw_quantity"`
+}
+
 // BlueprintActionAnnotations Behavioral annotations describing how an action may be used.
 type BlueprintActionAnnotations struct {
 	Destructive *bool `json:"destructive,omitempty"`
@@ -10558,6 +10608,25 @@ type ListOrgAPIKeysParams struct {
 
 	// Cursor Cursor for pagination (opaque string from previous response)
 	Cursor *CursorParam `form:"cursor,omitempty" json:"cursor,omitempty"`
+}
+
+// ListBillingUsageEventsParams defines parameters for ListBillingUsageEvents.
+type ListBillingUsageEventsParams struct {
+	PeriodStart *time.Time `form:"period_start,omitempty" json:"period_start,omitempty"`
+
+	// ProjectId Filter to rows attributed to one or more projects. Repeat the parameter for multiple projects.
+	ProjectId *[]string `form:"project_id,omitempty" json:"project_id,omitempty"`
+
+	// RecordedAfter Inclusive lower bound on `recorded_at`. When present, results and cursors use chronological `(recorded_at, id)` order for durable incremental mirroring.
+	RecordedAfter *time.Time `form:"recorded_after,omitempty" json:"recorded_after,omitempty"`
+	Counter       *string    `form:"counter,omitempty" json:"counter,omitempty"`
+	SourceType    *string    `form:"source_type,omitempty" json:"source_type,omitempty"`
+	SourceId      *string    `form:"source_id,omitempty" json:"source_id,omitempty"`
+	RunId         *string    `form:"run_id,omitempty" json:"run_id,omitempty"`
+	JobId         *string    `form:"job_id,omitempty" json:"job_id,omitempty"`
+	ApiKeyId      *string    `form:"api_key_id,omitempty" json:"api_key_id,omitempty"`
+	Limit         *int       `form:"limit,omitempty" json:"limit,omitempty"`
+	Cursor        *string    `form:"cursor,omitempty" json:"cursor,omitempty"`
 }
 
 // ListOrganizationActionsParams defines parameters for ListOrganizationActions.
@@ -19091,6 +19160,9 @@ type ClientInterface interface {
 	// GetOrgAPIKey request
 	GetOrgAPIKey(ctx context.Context, resourceId IDParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ListBillingUsageEvents request
+	ListBillingUsageEvents(ctx context.Context, params *ListBillingUsageEventsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListOrganizationActions request
 	ListOrganizationActions(ctx context.Context, params *ListOrganizationActionsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -19767,6 +19839,18 @@ func (c *Client) DeleteOrgAPIKey(ctx context.Context, resourceId IDParam, reqEdi
 
 func (c *Client) GetOrgAPIKey(ctx context.Context, resourceId IDParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetOrgAPIKeyRequest(c.Server, resourceId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListBillingUsageEvents(ctx context.Context, params *ListBillingUsageEventsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListBillingUsageEventsRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
@@ -22689,6 +22773,180 @@ func NewGetOrgAPIKeyRequest(server string, resourceId IDParam) (*http.Request, e
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewListBillingUsageEventsRequest generates requests for ListBillingUsageEvents
+func NewListBillingUsageEventsRequest(server string, params *ListBillingUsageEventsParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/billing/usage-events")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.PeriodStart != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "period_start", *params.PeriodStart, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.ProjectId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "project_id", *params.ProjectId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "array", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.RecordedAfter != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "recorded_after", *params.RecordedAfter, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: "date-time"}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Counter != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "counter", *params.Counter, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.SourceType != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "source_type", *params.SourceType, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.SourceId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "source_id", *params.SourceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.RunId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "run_id", *params.RunId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.JobId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "job_id", *params.JobId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.ApiKeyId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "api_key_id", *params.ApiKeyId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "limit", *params.Limit, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Cursor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "cursor", *params.Cursor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
 	}
 
 	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
@@ -32026,6 +32284,9 @@ type ClientWithResponsesInterface interface {
 	// GetOrgAPIKeyWithResponse request
 	GetOrgAPIKeyWithResponse(ctx context.Context, resourceId IDParam, reqEditors ...RequestEditorFn) (*GetOrgAPIKeyResponse, error)
 
+	// ListBillingUsageEventsWithResponse request
+	ListBillingUsageEventsWithResponse(ctx context.Context, params *ListBillingUsageEventsParams, reqEditors ...RequestEditorFn) (*ListBillingUsageEventsResponse, error)
+
 	// ListOrganizationActionsWithResponse request
 	ListOrganizationActionsWithResponse(ctx context.Context, params *ListOrganizationActionsParams, reqEditors ...RequestEditorFn) (*ListOrganizationActionsResponse, error)
 
@@ -32779,6 +33040,38 @@ func (r GetOrgAPIKeyResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r GetOrgAPIKeyResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ListBillingUsageEventsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *BillingUsageEventListResponse
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+}
+
+// Status returns HTTPResponse.Status
+func (r ListBillingUsageEventsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListBillingUsageEventsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListBillingUsageEventsResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -38498,6 +38791,15 @@ func (c *ClientWithResponses) GetOrgAPIKeyWithResponse(ctx context.Context, reso
 	return ParseGetOrgAPIKeyResponse(rsp)
 }
 
+// ListBillingUsageEventsWithResponse request returning *ListBillingUsageEventsResponse
+func (c *ClientWithResponses) ListBillingUsageEventsWithResponse(ctx context.Context, params *ListBillingUsageEventsParams, reqEditors ...RequestEditorFn) (*ListBillingUsageEventsResponse, error) {
+	rsp, err := c.ListBillingUsageEvents(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListBillingUsageEventsResponse(rsp)
+}
+
 // ListOrganizationActionsWithResponse request returning *ListOrganizationActionsResponse
 func (c *ClientWithResponses) ListOrganizationActionsWithResponse(ctx context.Context, params *ListOrganizationActionsParams, reqEditors ...RequestEditorFn) (*ListOrganizationActionsResponse, error) {
 	rsp, err := c.ListOrganizationActions(ctx, params, reqEditors...)
@@ -40686,6 +40988,46 @@ func ParseGetOrgAPIKeyResponse(rsp *http.Response) (*GetOrgAPIKeyResponse, error
 			return nil, err
 		}
 		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListBillingUsageEventsResponse parses an HTTP response from a ListBillingUsageEventsWithResponse call
+func ParseListBillingUsageEventsResponse(rsp *http.Response) (*ListBillingUsageEventsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListBillingUsageEventsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest BillingUsageEventListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
 
 	}
 
