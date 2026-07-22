@@ -276,6 +276,12 @@ func resolveQueryField(f FieldInfo, client *ClientInfo) QueryField {
 		return qf
 	}
 	qf.ElemType = elem
+	// time.Time query params (date-time schemas) surface as string flags and
+	// are parsed as RFC3339 when the request is built.
+	if elem == "time.Time" {
+		qf.Kind = "time"
+		return qf
+	}
 	switch underlyingKind(elem, client) {
 	case "string":
 		qf.Kind = "string"
@@ -731,6 +737,9 @@ func renderCommand(b *bytes.Buffer, group string, c PlannedCommand) error {
 				flags = append(flags, fmt.Sprintf(`cli.Bool(%q, "").Help(%q)`, f.FlagName, help))
 			case "strings":
 				flags = append(flags, fmt.Sprintf(`cli.Strings(%q, "").Help(%q)`, f.FlagName, help))
+			case "time":
+				flags = append(flags, fmt.Sprintf(`cli.String(%q, "").Help(%q)`, f.FlagName,
+					help+" Accepts an RFC3339 timestamp (for example: 2026-07-22T12:00:00Z)."))
 			}
 		}
 	}
@@ -841,6 +850,11 @@ func renderCommand(b *bytes.Buffer, group string, c PlannedCommand) error {
 			case "strings":
 				fmt.Fprintf(b, "\t\t\tif ctx.IsSet(%q) {\n", f.FlagName)
 				emitStringSliceValue(b, "\t\t\t\t", "v", f.ElemType, fmt.Sprintf("ctx.Strings(%q)", f.FlagName))
+				fmt.Fprintf(b, "\t\t\t\tparams.%s = &v\n\t\t\t}\n", f.GoField)
+			case "time":
+				fmt.Fprintf(b, "\t\t\tif ctx.IsSet(%q) {\n", f.FlagName)
+				fmt.Fprintf(b, "\t\t\t\tv, err := parseTimeFlag(%q, ctx.String(%q))\n", f.FlagName, f.FlagName)
+				fmt.Fprintf(b, "\t\t\t\tif err != nil { return err }\n")
 				fmt.Fprintf(b, "\t\t\t\tparams.%s = &v\n\t\t\t}\n", f.GoField)
 			}
 		}
@@ -1858,6 +1872,16 @@ func parseInt64Arg(s, name string) (int64, error) {
 		return 0, fmt.Errorf("invalid %s: %q must be a positive integer", name, s)
 	}
 	return n, nil
+}
+
+// parseTimeFlag parses an RFC3339 timestamp flag value, returning a friendly
+// error when the value is not a valid timestamp.
+func parseTimeFlag(name, s string) (time.Time, error) {
+	t, err := time.Parse(time.RFC3339, s)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("invalid %s: %q is not an RFC3339 timestamp", name, s)
+	}
+	return t, nil
 }
 `)
 }

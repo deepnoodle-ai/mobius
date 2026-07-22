@@ -1743,12 +1743,16 @@ paths:
         investigation. By default rows are ordered newest first. Supplying `recorded_after`
         selects the durable incremental contract: the lower bound is inclusive and rows are
         ordered oldest first by `(recorded_at, id)`. Consumers should replay a bounded overlap
-        and deduplicate by stable event ID. Filters never broaden beyond the authenticated
-        organization.'
+        and deduplicate by stable event ID. Aggregate totals cover the complete filtered result
+        set before cursor pagination, repeat on every page, and may grow as matching rows
+        arrive; incremental mirrors should sum the exact per-event `credit_cost_milli` values
+        instead. Cursors are bound to their ordering mode, so every incremental page must
+        resend `recorded_after`. Filters never broaden beyond the authenticated organization.'
       parameters:
       - name: period_start
         in: query
         required: false
+        description: Filter to usage events in this billing period.
         schema:
           type: string
           format: date-time
@@ -1774,45 +1778,41 @@ paths:
       - name: counter
         in: query
         required: false
+        description: Filter to one usage counter.
         schema:
           type: string
       - name: source_type
         in: query
         required: false
+        description: Filter to one usage source type.
         schema:
           type: string
       - name: source_id
         in: query
         required: false
+        description: Filter to one source identifier.
         schema:
           type: string
       - name: run_id
         in: query
         required: false
+        description: Filter to usage attributed to one run.
         schema:
           type: string
       - name: job_id
         in: query
         required: false
+        description: Filter to usage attributed to one job.
         schema:
           type: string
       - name: api_key_id
         in: query
         required: false
+        description: Filter to usage recorded for one API key.
         schema:
           type: string
-      - name: limit
-        in: query
-        required: false
-        schema:
-          type: integer
-          minimum: 1
-          maximum: 100
-      - name: cursor
-        in: query
-        required: false
-        schema:
-          type: string
+      - $ref: '#/components/parameters/LimitParam'
+      - $ref: '#/components/parameters/CursorParam'
       responses:
         '200':
           description: OK
@@ -1820,6 +1820,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BillingUsageEventListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -10626,20 +10628,31 @@ components:
           type: string
         run_id:
           type: string
+          description: Run the usage was attributed to. Empty string when the event has no
+            run attribution.
         step_id:
           type: string
+          description: Loop step the usage was attributed to. Empty string when the event
+            has no step attribution.
         step_key:
           type: string
         job_id:
           type: string
+          description: Job the usage was attributed to. Empty string when the event has no
+            job attribution.
         agent_turn_id:
           type: string
+          description: Agent turn the usage was attributed to. Empty string when the event
+            has no agent-turn attribution.
         provider:
           type: string
+          description: Model provider that produced the usage. Empty string when not applicable.
         model:
           type: string
+          description: Model that produced the usage. Empty string when not applicable.
         model_class:
           type: string
+          description: Model class that produced the usage. Empty string when not applicable.
         metadata:
           type: object
           additionalProperties: true
@@ -10671,18 +10684,23 @@ components:
           description: Whether additional pages are available.
         next_cursor:
           type: string
-          description: Opaque cursor to pass as `cursor` on the next request. Absent when
-            `has_more` is false.
+          description: Opaque cursor to pass as `cursor` on the next request with the same
+            ordering mode. Absent when `has_more` is false.
         total_raw_quantity:
           type: integer
           format: int64
+          description: Total raw quantity for the complete filtered result set before cursor
+            pagination; not a page-local sum.
         total_credit_cost:
           type: number
           format: double
+          description: Rounded credit total for the complete filtered result set before cursor
+            pagination; not a page-local sum.
         total_credit_cost_milli:
           type: integer
           format: int64
-          description: Exact total for the filtered result set in milli-credits.
+          description: Exact milli-credit total for the complete filtered result set before
+            cursor pagination; not a page-local sum.
     PermissionDefinition:
       type: object
       additionalProperties: false

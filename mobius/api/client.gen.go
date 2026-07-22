@@ -4886,6 +4886,7 @@ type ArtifactVisibility string
 
 // BillingUsageEvent defines model for BillingUsageEvent.
 type BillingUsageEvent struct {
+	// AgentTurnId Agent turn the usage was attributed to. Empty string when the event has no agent-turn attribution.
 	AgentTurnId string    `json:"agent_turn_id"`
 	ApiKeyId    string    `json:"api_key_id"`
 	Counter     string    `json:"counter"`
@@ -4895,28 +4896,40 @@ type BillingUsageEvent struct {
 	CreditCost float64 `json:"credit_cost"`
 
 	// CreditCostMilli Exact credits charged in milli-credits; authoritative for accounting.
-	CreditCostMilli     int64                  `json:"credit_cost_milli"`
-	CreditWeightVersion int                    `json:"credit_weight_version"`
-	Id                  string                 `json:"id"`
-	IdempotencyKey      string                 `json:"idempotency_key"`
-	JobId               string                 `json:"job_id"`
-	Metadata            map[string]interface{} `json:"metadata"`
-	Model               string                 `json:"model"`
-	ModelClass          string                 `json:"model_class"`
-	OccurredAt          time.Time              `json:"occurred_at"`
-	PeriodStart         time.Time              `json:"period_start"`
+	CreditCostMilli     int64  `json:"credit_cost_milli"`
+	CreditWeightVersion int    `json:"credit_weight_version"`
+	Id                  string `json:"id"`
+	IdempotencyKey      string `json:"idempotency_key"`
+
+	// JobId Job the usage was attributed to. Empty string when the event has no job attribution.
+	JobId    string                 `json:"job_id"`
+	Metadata map[string]interface{} `json:"metadata"`
+
+	// Model Model that produced the usage. Empty string when not applicable.
+	Model string `json:"model"`
+
+	// ModelClass Model class that produced the usage. Empty string when not applicable.
+	ModelClass  string    `json:"model_class"`
+	OccurredAt  time.Time `json:"occurred_at"`
+	PeriodStart time.Time `json:"period_start"`
 
 	// ProjectId Project the usage was attributed to. Empty when the event was recorded without project attribution.
-	ProjectId   string    `json:"project_id"`
+	ProjectId string `json:"project_id"`
+
+	// Provider Model provider that produced the usage. Empty string when not applicable.
 	Provider    string    `json:"provider"`
 	RawQuantity int64     `json:"raw_quantity"`
 	RecordedAt  time.Time `json:"recorded_at"`
-	RunId       string    `json:"run_id"`
-	SourceId    string    `json:"source_id"`
-	SourceType  string    `json:"source_type"`
-	StepId      string    `json:"step_id"`
-	StepKey     string    `json:"step_key"`
-	ZeroCredits bool      `json:"zero_credits"`
+
+	// RunId Run the usage was attributed to. Empty string when the event has no run attribution.
+	RunId      string `json:"run_id"`
+	SourceId   string `json:"source_id"`
+	SourceType string `json:"source_type"`
+
+	// StepId Loop step the usage was attributed to. Empty string when the event has no step attribution.
+	StepId      string `json:"step_id"`
+	StepKey     string `json:"step_key"`
+	ZeroCredits bool   `json:"zero_credits"`
 }
 
 // BillingUsageEventListResponse defines model for BillingUsageEventListResponse.
@@ -4925,13 +4938,17 @@ type BillingUsageEventListResponse struct {
 	HasMore bool                `json:"has_more"`
 	Items   []BillingUsageEvent `json:"items"`
 
-	// NextCursor Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.
-	NextCursor      *string `json:"next_cursor,omitempty"`
+	// NextCursor Opaque cursor to pass as `cursor` on the next request with the same ordering mode. Absent when `has_more` is false.
+	NextCursor *string `json:"next_cursor,omitempty"`
+
+	// TotalCreditCost Rounded credit total for the complete filtered result set before cursor pagination; not a page-local sum.
 	TotalCreditCost float64 `json:"total_credit_cost"`
 
-	// TotalCreditCostMilli Exact total for the filtered result set in milli-credits.
+	// TotalCreditCostMilli Exact milli-credit total for the complete filtered result set before cursor pagination; not a page-local sum.
 	TotalCreditCostMilli int64 `json:"total_credit_cost_milli"`
-	TotalRawQuantity     int64 `json:"total_raw_quantity"`
+
+	// TotalRawQuantity Total raw quantity for the complete filtered result set before cursor pagination; not a page-local sum.
+	TotalRawQuantity int64 `json:"total_raw_quantity"`
 }
 
 // BlueprintActionAnnotations Behavioral annotations describing how an action may be used.
@@ -10612,6 +10629,7 @@ type ListOrgAPIKeysParams struct {
 
 // ListBillingUsageEventsParams defines parameters for ListBillingUsageEvents.
 type ListBillingUsageEventsParams struct {
+	// PeriodStart Filter to usage events in this billing period.
 	PeriodStart *time.Time `form:"period_start,omitempty" json:"period_start,omitempty"`
 
 	// ProjectId Filter to rows attributed to one or more projects. Repeat the parameter for multiple projects.
@@ -10619,14 +10637,30 @@ type ListBillingUsageEventsParams struct {
 
 	// RecordedAfter Inclusive lower bound on `recorded_at`. When present, results and cursors use chronological `(recorded_at, id)` order for durable incremental mirroring.
 	RecordedAfter *time.Time `form:"recorded_after,omitempty" json:"recorded_after,omitempty"`
-	Counter       *string    `form:"counter,omitempty" json:"counter,omitempty"`
-	SourceType    *string    `form:"source_type,omitempty" json:"source_type,omitempty"`
-	SourceId      *string    `form:"source_id,omitempty" json:"source_id,omitempty"`
-	RunId         *string    `form:"run_id,omitempty" json:"run_id,omitempty"`
-	JobId         *string    `form:"job_id,omitempty" json:"job_id,omitempty"`
-	ApiKeyId      *string    `form:"api_key_id,omitempty" json:"api_key_id,omitempty"`
-	Limit         *int       `form:"limit,omitempty" json:"limit,omitempty"`
-	Cursor        *string    `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Counter Filter to one usage counter.
+	Counter *string `form:"counter,omitempty" json:"counter,omitempty"`
+
+	// SourceType Filter to one usage source type.
+	SourceType *string `form:"source_type,omitempty" json:"source_type,omitempty"`
+
+	// SourceId Filter to one source identifier.
+	SourceId *string `form:"source_id,omitempty" json:"source_id,omitempty"`
+
+	// RunId Filter to usage attributed to one run.
+	RunId *string `form:"run_id,omitempty" json:"run_id,omitempty"`
+
+	// JobId Filter to usage attributed to one job.
+	JobId *string `form:"job_id,omitempty" json:"job_id,omitempty"`
+
+	// ApiKeyId Filter to usage recorded for one API key.
+	ApiKeyId *string `form:"api_key_id,omitempty" json:"api_key_id,omitempty"`
+
+	// Limit Maximum number of items to return
+	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Cursor Cursor for pagination (opaque string from previous response)
+	Cursor *CursorParam `form:"cursor,omitempty" json:"cursor,omitempty"`
 }
 
 // ListOrganizationActionsParams defines parameters for ListOrganizationActions.
@@ -33050,6 +33084,7 @@ type ListBillingUsageEventsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *BillingUsageEventListResponse
+	JSON400      *BadRequest
 	JSON401      *Unauthorized
 	JSON403      *Forbidden
 }
@@ -41014,6 +41049,13 @@ func ParseListBillingUsageEventsResponse(rsp *http.Response) (*ListBillingUsageE
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
 		var dest Unauthorized

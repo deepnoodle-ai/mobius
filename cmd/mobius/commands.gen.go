@@ -856,3 +856,13 @@ func parseInt64Arg(s, name string) (int64, error) {
 	}
 	return n, nil
 }
+
+// parseTimeFlag parses an RFC3339 timestamp flag value, returning a friendly
+// error when the value is not a valid timestamp.
+func parseTimeFlag(name, s string) (time.Time, error) {
+	t, err := time.Parse(time.RFC3339, s)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("invalid %s: %q is not an RFC3339 timestamp", name, s)
+	}
+	return t, nil
+}

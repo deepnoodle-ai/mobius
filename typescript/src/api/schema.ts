@@ -687,7 +687,7 @@ export interface paths {
         };
         /**
          * List usage events
-         * @description Returns org-scoped usage evidence rows for credit attribution and burndown investigation. By default rows are ordered newest first. Supplying `recorded_after` selects the durable incremental contract: the lower bound is inclusive and rows are ordered oldest first by `(recorded_at, id)`. Consumers should replay a bounded overlap and deduplicate by stable event ID. Filters never broaden beyond the authenticated organization.
+         * @description Returns org-scoped usage evidence rows for credit attribution and burndown investigation. By default rows are ordered newest first. Supplying `recorded_after` selects the durable incremental contract: the lower bound is inclusive and rows are ordered oldest first by `(recorded_at, id)`. Consumers should replay a bounded overlap and deduplicate by stable event ID. Aggregate totals cover the complete filtered result set before cursor pagination, repeat on every page, and may grow as matching rows arrive; incremental mirrors should sum the exact per-event `credit_cost_milli` values instead. Cursors are bound to their ordering mode, so every incremental page must resend `recorded_after`. Filters never broaden beyond the authenticated organization.
          */
         get: operations["listBillingUsageEvents"];
         put?: never;
@@ -4810,13 +4810,20 @@ export interface components {
             source_type: string;
             source_id: string;
             idempotency_key: string;
+            /** @description Run the usage was attributed to. Empty string when the event has no run attribution. */
             run_id: string;
+            /** @description Loop step the usage was attributed to. Empty string when the event has no step attribution. */
             step_id: string;
             step_key: string;
+            /** @description Job the usage was attributed to. Empty string when the event has no job attribution. */
             job_id: string;
+            /** @description Agent turn the usage was attributed to. Empty string when the event has no agent-turn attribution. */
             agent_turn_id: string;
+            /** @description Model provider that produced the usage. Empty string when not applicable. */
             provider: string;
+            /** @description Model that produced the usage. Empty string when not applicable. */
             model: string;
+            /** @description Model class that produced the usage. Empty string when not applicable. */
             model_class: string;
             metadata: {
                 [key: string]: unknown;
@@ -4832,15 +4839,21 @@ export interface components {
             items: components["schemas"]["BillingUsageEvent"][];
             /** @description Whether additional pages are available. */
             has_more: boolean;
-            /** @description Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false. */
+            /** @description Opaque cursor to pass as `cursor` on the next request with the same ordering mode. Absent when `has_more` is false. */
             next_cursor?: string;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Total raw quantity for the complete filtered result set before cursor pagination; not a page-local sum.
+             */
             total_raw_quantity: number;
-            /** Format: double */
+            /**
+             * Format: double
+             * @description Rounded credit total for the complete filtered result set before cursor pagination; not a page-local sum.
+             */
             total_credit_cost: number;
             /**
              * Format: int64
-             * @description Exact total for the filtered result set in milli-credits.
+             * @description Exact milli-credit total for the complete filtered result set before cursor pagination; not a page-local sum.
              */
             total_credit_cost_milli: number;
         };
@@ -10772,19 +10785,28 @@ export interface operations {
     listBillingUsageEvents: {
         parameters: {
             query?: {
+                /** @description Filter to usage events in this billing period. */
                 period_start?: string;
                 /** @description Filter to rows attributed to one or more projects. Repeat the parameter for multiple projects. */
                 project_id?: string[];
                 /** @description Inclusive lower bound on `recorded_at`. When present, results and cursors use chronological `(recorded_at, id)` order for durable incremental mirroring. */
                 recorded_after?: string;
+                /** @description Filter to one usage counter. */
                 counter?: string;
+                /** @description Filter to one usage source type. */
                 source_type?: string;
+                /** @description Filter to one source identifier. */
                 source_id?: string;
+                /** @description Filter to usage attributed to one run. */
                 run_id?: string;
+                /** @description Filter to usage attributed to one job. */
                 job_id?: string;
+                /** @description Filter to usage recorded for one API key. */
                 api_key_id?: string;
-                limit?: number;
-                cursor?: string;
+                /** @description Maximum number of items to return */
+                limit?: components["parameters"]["LimitParam"];
+                /** @description Cursor for pagination (opaque string from previous response) */
+                cursor?: components["parameters"]["CursorParam"];
             };
             header?: never;
             path?: never;
@@ -10801,6 +10823,7 @@ export interface operations {
                     "application/json": components["schemas"]["BillingUsageEventListResponse"];
                 };
             };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
         };

@@ -11,6 +11,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 - Exact project-scoped billing usage events in the public contract, including
   milli-credit totals and chronological incremental reads; the TypeScript SDK
   adds typed page and cursor-draining helpers.
+- `mobius billing list-usage-events` now exposes the `--period-start` and
+  `--recorded-after` time filters (RFC3339), so the CLI can drive the
+  chronological incremental read contract.
 
 ## [0.0.57] - 2026-07-21
 

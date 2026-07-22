@@ -19,15 +19,17 @@ func registerBillingCommands(app *cli.App) {
 	billingGrp.Command("list-usage-events").
 		Description("List usage events").
 		Flags(
+			cli.String("period-start", "").Help("Filter to usage events in this billing period. Accepts an RFC3339 timestamp (for example: 2026-07-22T12:00:00Z)."),
 			cli.Strings("project-id", "").Help("Filter to rows attributed to one or more projects. Repeat the parameter for multiple projects."),
-			cli.String("counter", "").Help("counter"),
-			cli.String("source-type", "").Help("source-type"),
-			cli.String("source-id", "").Help("source-id"),
-			cli.String("run-id", "").Help("run-id"),
-			cli.String("job-id", "").Help("job-id"),
-			cli.String("api-key-id", "").Help("api-key-id"),
-			cli.Int("limit", "").Help("limit"),
-			cli.String("cursor", "").Help("cursor"),
+			cli.String("recorded-after", "").Help("Inclusive lower bound on `recorded_at`. When present, results and cursors use chronological `(recorded_at, id)` order for durable… Accepts an RFC3339 timestamp (for example: 2026-07-22T12:00:00Z)."),
+			cli.String("counter", "").Help("Filter to one usage counter."),
+			cli.String("source-type", "").Help("Filter to one usage source type."),
+			cli.String("source-id", "").Help("Filter to one source identifier."),
+			cli.String("run-id", "").Help("Filter to usage attributed to one run."),
+			cli.String("job-id", "").Help("Filter to usage attributed to one job."),
+			cli.String("api-key-id", "").Help("Filter to usage recorded for one API key."),
+			cli.Int("limit", "").Help("Maximum number of items to return"),
+			cli.String("cursor", "").Help("Cursor for pagination (opaque string from previous response)"),
 		).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -37,9 +39,23 @@ func registerBillingCommands(app *cli.App) {
 			}
 			client := mc.RawClient()
 			params := &api.ListBillingUsageEventsParams{}
+			if ctx.IsSet("period-start") {
+				v, err := parseTimeFlag("period-start", ctx.String("period-start"))
+				if err != nil {
+					return err
+				}
+				params.PeriodStart = &v
+			}
 			if ctx.IsSet("project-id") {
 				v := ctx.Strings("project-id")
 				params.ProjectId = &v
+			}
+			if ctx.IsSet("recorded-after") {
+				v, err := parseTimeFlag("recorded-after", ctx.String("recorded-after"))
+				if err != nil {
+					return err
+				}
+				params.RecordedAfter = &v
 			}
 			if ctx.IsSet("counter") {
 				v := ctx.String("counter")
@@ -66,11 +82,11 @@ func registerBillingCommands(app *cli.App) {
 				params.ApiKeyId = &v
 			}
 			if ctx.IsSet("limit") {
-				v := ctx.Int("limit")
+				v := api.LimitParam(ctx.Int("limit"))
 				params.Limit = &v
 			}
 			if ctx.IsSet("cursor") {
-				v := ctx.String("cursor")
+				v := api.CursorParam(ctx.String("cursor"))
 				params.Cursor = &v
 			}
 			resp, err := client.ListBillingUsageEventsWithResponse(ctx.Context(), params)

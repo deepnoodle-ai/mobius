@@ -2940,14 +2940,35 @@ class BillingUsageEvent(BaseModel):
     source_type: str
     source_id: str
     idempotency_key: str
-    run_id: str
-    step_id: str
+    run_id: str = Field(
+        ...,
+        description='Run the usage was attributed to. Empty string when the event has no run attribution.',
+    )
+    step_id: str = Field(
+        ...,
+        description='Loop step the usage was attributed to. Empty string when the event has no step attribution.',
+    )
     step_key: str
-    job_id: str
-    agent_turn_id: str
-    provider: str
-    model: str
-    model_class: str
+    job_id: str = Field(
+        ...,
+        description='Job the usage was attributed to. Empty string when the event has no job attribution.',
+    )
+    agent_turn_id: str = Field(
+        ...,
+        description='Agent turn the usage was attributed to. Empty string when the event has no agent-turn attribution.',
+    )
+    provider: str = Field(
+        ...,
+        description='Model provider that produced the usage. Empty string when not applicable.',
+    )
+    model: str = Field(
+        ...,
+        description='Model that produced the usage. Empty string when not applicable.',
+    )
+    model_class: str = Field(
+        ...,
+        description='Model class that produced the usage. Empty string when not applicable.',
+    )
     metadata: dict[str, Any]
     occurred_at: AwareDatetime
     recorded_at: AwareDatetime
@@ -2962,12 +2983,19 @@ class BillingUsageEventListResponse(BaseModel):
     has_more: bool = Field(..., description='Whether additional pages are available.')
     next_cursor: str | None = Field(
         None,
-        description='Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.',
+        description='Opaque cursor to pass as `cursor` on the next request with the same ordering mode. Absent when `has_more` is false.',
     )
-    total_raw_quantity: int
-    total_credit_cost: float
+    total_raw_quantity: int = Field(
+        ...,
+        description='Total raw quantity for the complete filtered result set before cursor pagination; not a page-local sum.',
+    )
+    total_credit_cost: float = Field(
+        ...,
+        description='Rounded credit total for the complete filtered result set before cursor pagination; not a page-local sum.',
+    )
     total_credit_cost_milli: int = Field(
-        ..., description='Exact total for the filtered result set in milli-credits.'
+        ...,
+        description='Exact milli-credit total for the complete filtered result set before cursor pagination; not a page-local sum.',
     )
 
 

@@ -904,8 +904,13 @@ export class Client {
   }
 
   /**
-   * Drain project usage pages in server order. Pass `recordedAfter` for the
-   * durable oldest-first incremental contract and deduplicate overlap by ID.
+   * Drain every usage page for these filters in server order, yielding one
+   * event at a time. Pass `recordedAfter` to select the durable oldest-first
+   * incremental contract; a single call yields each matching event exactly
+   * once. Deduplication is the caller's job only *across* calls: when you
+   * advance `recordedAfter` and replay a bounded overlap, skip events whose
+   * `id` you have already seen — this iterator does not remember events from
+   * earlier calls.
    */
   async *iterateBillingUsageEvents(
     opts: Omit<ListBillingUsageEventsOptions, "cursor">,

@@ -128,6 +128,7 @@ func registerEnvironmentsCommands(app *cli.App) {
 			cli.String("status", "").Help("Filter by environment lifecycle status."),
 			cli.String("run-id", "").Help("Filter to environments created for the given run."),
 			cli.Bool("include-destroyed", "").Help("Include destroyed environments in the result. By default destroyed rows are excluded; set this to true (or pass status=destroyed) to see…"),
+			cli.String("destroyed-since", "").Help("Narrow destroyed rows to those torn down at or after this timestamp. Composes with `status=destroyed` to fetch a \"recently destroyed\"… Accepts an RFC3339 timestamp (for example: 2026-07-22T12:00:00Z)."),
 		).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -157,6 +158,13 @@ func registerEnvironmentsCommands(app *cli.App) {
 			if ctx.IsSet("include-destroyed") {
 				v := ctx.Bool("include-destroyed")
 				params.IncludeDestroyed = &v
+			}
+			if ctx.IsSet("destroyed-since") {
+				v, err := parseTimeFlag("destroyed-since", ctx.String("destroyed-since"))
+				if err != nil {
+					return err
+				}
+				params.DestroyedSince = &v
 			}
 			resp, err := client.ListEnvironmentsWithResponse(ctx.Context(), p0, params)
 			if err != nil {

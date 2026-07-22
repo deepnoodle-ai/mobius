@@ -106,3 +106,31 @@ test("client: iterateBillingUsageEvents drains chronological cursor pages", asyn
   );
   assert.deepEqual(seenCursors, [null, "cur_2"]);
 });
+
+test("client: iterateBillingUsageEvents fails fast on has_more without next_cursor", async () => {
+  await withMockFetch(
+    () =>
+      Response.json({
+        items: [{ id: "bue_1", credit_cost_milli: 10 }],
+        has_more: true,
+        total_raw_quantity: 1,
+        total_credit_cost: 0.01,
+        total_credit_cost_milli: 10,
+      }),
+    async (client) => {
+      const drained: string[] = [];
+      await assert.rejects(
+        (async () => {
+          for await (const item of client.iterateBillingUsageEvents({
+            projectId: "prj_1",
+          })) {
+            drained.push(item.id);
+          }
+        })(),
+        /has_more without next_cursor/,
+      );
+      // The first page's item is still yielded before the guard trips.
+      assert.deepEqual(drained, ["bue_1"]);
+    },
+  );
+});
