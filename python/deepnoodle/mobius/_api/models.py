@@ -3449,19 +3449,45 @@ class InteractionSpec(BaseModel):
 
 class InteractionKind(StrEnum):
     """
-    Protocol kind of the interaction. Launch keeps this intentionally
-    small:
+    Protocol kind of the interaction:
     * `request_information` — a data-collection protocol with structured
     or free-form input
     * `request_approval` — a decision protocol (yes/no, optionally
     yes/no/defer)
     * `request_review` — a judgment protocol that evaluates supplied
     material
+    * `assign_work` — assigned work performed by a user or agent, which
+    submits the result. Pair it with `resolution_policy.review` when the
+    result must be accepted before the interaction resolves.
+
+    The first three are *answered*; `assign_work` is *worked*. Kind does not by itself decide when an interaction closes — the resolution policy does.
     """
 
     request_information = 'request_information'
     request_approval = 'request_approval'
     request_review = 'request_review'
+    assign_work = 'assign_work'
+
+
+class InteractionStatus(StrEnum):
+    """
+    Lifecycle state of the interaction.
+    * `pending` — open; the assigned users still need to act.
+    * `in_review` — a result was submitted and an acceptance reviewer must
+    accept it or send it back. Only interactions whose resolution policy
+    carries a `review` block enter this state.
+    * `completed` — resolved; the outcome is final.
+    * `expired` — the deadline passed before resolution.
+    * `cancelled` — deliberately stopped.
+
+    `pending` and `in_review` are the *open* states: some actor still owes an action and any waiting consumer has not been resumed.
+    """
+
+    pending = 'pending'
+    in_review = 'in_review'
+    completed = 'completed'
+    expired = 'expired'
+    cancelled = 'cancelled'
 
 
 class InteractionValue(RootModel[dict[str, Any] | list[Any] | str | float | bool]):
@@ -3608,10 +3634,26 @@ class InteractionResponse(BaseModel):
     )
     attempt: int | None = Field(
         None,
-        description='Reserved for future retry-aware response flows; null until attempts are tracked.',
+        description="Review round this response was submitted under, matching the interaction's `review_round` at submission time. Null or absent for the first round. Only responses whose `attempt` equals the interaction's current `review_round` count toward resolution; earlier rounds are retained as audit history.",
     )
     created_at: AwareDatetime
     updated_at: AwareDatetime
+
+
+class ReviewPolicy(BaseModel):
+    """
+    Optional acceptance gate on a resolution policy. Its presence — not the interaction's kind — is what makes an interaction reviewable, so the gate stays opt-in and ordinary approvals and input requests are unaffected.
+
+    With a review block, satisfying the resolution rule moves the interaction to `in_review` instead of resolving it, and any waiting consumer stays suspended. A reviewer then calls the review endpoint to accept (resolve and resume) or request changes (return to `pending` under a new review round, consumer still waiting).
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    reviewer_user_ids: list[str] | None = Field(
+        None,
+        description="Principals who may accept or send back submitted work. When omitted or empty, the interaction's creator is the reviewer. Assignees are never implied reviewers — self-acceptance would make the gate decorative. Required when the interaction has no creator.",
+    )
 
 
 class Type18(StrEnum):
@@ -3626,7 +3668,7 @@ class Type18(StrEnum):
 
 class ResolutionPolicy(BaseModel):
     """
-    Declarative resolution rule attached to an Interaction. Determines how participant responses become a final outcome.
+    Declarative resolution rule attached to an Interaction. Determines how participant responses become a final outcome, and whether that outcome needs acceptance before it is final.
     """
 
     model_config = ConfigDict(
@@ -3641,20 +3683,54 @@ class ResolutionPolicy(BaseModel):
         description='Required when `type` is `quorum`. Number of distinct eligible participants that must respond before the interaction resolves. Must be `>= 1` and `<=` the participant count.',
         ge=1,
     )
-
-
-class Status3(StrEnum):
-    """
-    Current status of the interaction: pending, completed, expired, or cancelled.
-    """
-
-    pending = 'pending'
-    completed = 'completed'
-    expired = 'expired'
-    cancelled = 'cancelled'
+    review: ReviewPolicy | None = Field(
+        None,
+        description='Optional acceptance gate. Null (the default) means responses resolve the interaction directly.',
+    )
 
 
 class Action1(StrEnum):
+    """
+    What happened.
+    """
+
+    created = 'created'
+    submitted_for_review = 'submitted_for_review'
+    accepted = 'accepted'
+    changes_requested = 'changes_requested'
+    resolved = 'resolved'
+    cancelled = 'cancelled'
+    expired = 'expired'
+
+
+class InteractionLifecycleEvent(BaseModel):
+    """
+    One entry in an interaction's status history. Entries are append-only and written in the same transaction as the transition they describe, so the timeline can never disagree with the interaction's `status`.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    at: AwareDatetime = Field(..., description='When the transition happened.')
+    status: InteractionStatus = Field(
+        ..., description="The interaction's status *after* the transition."
+    )
+    action: Action1 = Field(..., description='What happened.')
+    actor_id: str | None = Field(
+        None,
+        description='Principal that caused the transition. Null for system-driven transitions such as expiry.',
+    )
+    comment: str | None = Field(
+        None,
+        description='Reviewer feedback, cancel reason, or responder comment, depending on `action`.',
+    )
+    round: int | None = Field(
+        None,
+        description='Review round the transition belongs to. Zero for the first pass.',
+    )
+
+
+class Action2(StrEnum):
     """
     Operation to perform through the canonical response endpoint. `submit` answers the interaction.
     """
@@ -3666,7 +3742,7 @@ class RespondToInteractionRequest(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    action: Action1 | None = Field(
+    action: Action2 | None = Field(
         None,
         description='Operation to perform through the canonical response endpoint. `submit` answers the interaction.',
     )
@@ -3676,6 +3752,33 @@ class RespondToInteractionRequest(BaseModel):
     comment: str | None = Field(
         None,
         description='Optional free-text comment accompanying the action. Available on every interaction kind and never gated by the spec; the responder may always attach reasoning, caveats, or follow-up notes alongside `value`.',
+    )
+
+
+class Action3(StrEnum):
+    """
+    `accept` resolves the interaction and resumes any waiting consumer. `request_changes` returns it to `pending` for another round.
+    """
+
+    accept = 'accept'
+    request_changes = 'request_changes'
+
+
+class ReviewInteractionRequest(BaseModel):
+    """
+    Acceptance decision on submitted work.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    action: Action3 = Field(
+        ...,
+        description='`accept` resolves the interaction and resumes any waiting consumer. `request_changes` returns it to `pending` for another round.',
+    )
+    comment: str | None = Field(
+        None,
+        description="The reviewer's reasoning. Required for `request_changes` — work sent back without a reason gives the assignee nothing to act on. Optional for `accept`, where it is recorded as an acceptance note.",
     )
 
 
@@ -3998,7 +4101,7 @@ class CreateAgentRequest(BaseModel):
     )
 
 
-class Status4(StrEnum):
+class Status3(StrEnum):
     """
     Replacement agent status: `active` or `inactive`. Use DELETE to delete the agent.
     """
@@ -4055,7 +4158,7 @@ class UpdateAgentRequest(BaseModel):
         description="Replacement per-turn execution timeout in seconds for this agent. `0` resets to the platform default (600s / 10 minutes); a loop step's own timeout overrides it for that step.",
         ge=0,
     )
-    status: Status4 | None = Field(
+    status: Status3 | None = Field(
         None,
         description='Replacement agent status: `active` or `inactive`. Use DELETE to delete the agent.',
     )
@@ -5195,7 +5298,7 @@ class SessionNudgeStatus(StrEnum):
 
 class SessionNudgeDelivery(StrEnum):
     """
-    `current_turn` means the input targets an in-flight turn; `new_turn` means Mobius queued a direct-session turn because none was nudgeable.
+    `current_turn` means the input targets an existing turn and will reach the agent as contextual runtime input at that turn's next safe boundary. `new_turn` means the input was converted to a regular user message carried by a fresh direct-session turn (the same shape as a send); the nudge is `delivered` the moment that conversion commits. A nudge accepted as `current_turn` converts to `new_turn` if its target turn ends before absorbing it, so the durable record reflects how the input was ultimately routed — the acknowledgement reflects routing at admission time.
     """
 
     current_turn = 'current_turn'
@@ -5247,6 +5350,7 @@ class SessionNudgeAck(BaseModel):
     nudge_id: str = Field(
         ..., description='Stable id of the durable nudge mailbox row.'
     )
+    status: SessionNudgeStatus
     delivery: SessionNudgeDelivery
     session: Session
     turn: AgentTurn
@@ -5943,7 +6047,7 @@ class HTTPTriggerDeliveryRequest(BaseModel):
     )
 
 
-class Status5(StrEnum):
+class Status4(StrEnum):
     """
     Acceptance status of the source-event row. The only synchronous success value is `accepted`; processing happens asynchronously after the source event is durable.
     """
@@ -5963,7 +6067,7 @@ class HTTPTriggerDeliveryResult(BaseModel):
         ...,
         description='Durable source-event id (also the `dedup_key` seed). Stable across retries with the same `Idempotency-Key`.',
     )
-    status: Status5 = Field(
+    status: Status4 = Field(
         ...,
         description='Acceptance status of the source-event row. The only synchronous success value is `accepted`; processing happens asynchronously after the source event is durable.',
     )
@@ -6346,7 +6450,7 @@ class BlueprintSkillInput(BaseModel):
     tags: TagMap | None = None
 
 
-class Status6(StrEnum):
+class Status5(StrEnum):
     draft = 'draft'
     active = 'active'
     paused = 'paused'
@@ -6360,7 +6464,7 @@ class SchemaVersion4(StrEnum):
     field_1 = '1'
 
 
-class Status7(StrEnum):
+class Status6(StrEnum):
     """
     `applied` for a mutating apply, `previewed` for a preview.
     """
@@ -6415,7 +6519,7 @@ class SetBlueprintProtectionRequest(BaseModel):
     protected: bool
 
 
-class Status8(StrEnum):
+class Status7(StrEnum):
     deleted = 'deleted'
 
 
@@ -6423,7 +6527,7 @@ class BlueprintDeleteResult(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    status: Status8
+    status: Status7
     namespace: str | None = None
     blueprint_key: str
     deleted: list[BlueprintBinding] = Field(
@@ -8320,7 +8424,7 @@ class BlueprintLoopInput(BaseModel):
     name: str
     description: str | None = None
     agent: BlueprintResourceRef | None = None
-    status: Status6 | None = None
+    status: Status5 | None = None
     schema_version: SchemaVersion4 = Field(
         '1', description='Loop authoring schema version. Only version 1 is accepted.'
     )
@@ -8382,7 +8486,7 @@ class BlueprintApplyResult(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    status: Status7 = Field(
+    status: Status6 = Field(
         ..., description='`applied` for a mutating apply, `previewed` for a preview.'
     )
     namespace: str | None = None
@@ -8488,9 +8592,8 @@ class Interaction(BaseModel):
         description='Canonical principal ID of the human or agent that created the interaction; null for legacy/system-created rows.',
     )
     kind: InteractionKind = Field(..., description='Protocol kind of the interaction.')
-    status: Status3 = Field(
-        ...,
-        description='Current status of the interaction: pending, completed, expired, or cancelled.',
+    status: InteractionStatus = Field(
+        ..., description='Current lifecycle state of the interaction.'
     )
     title: str = Field(
         ..., description='Short non-empty title shown to the responder.', min_length=1
@@ -8570,6 +8673,26 @@ class Interaction(BaseModel):
     )
     cancel_reason: str | None = Field(
         None, description='Reason recorded when the interaction was cancelled.'
+    )
+    review_round: int | None = Field(
+        None,
+        description="Number of completed send-backs. Zero on the first pass. Responses record the round they answered in their `attempt` field, and only the current round's responses count toward resolution.",
+    )
+    submitted_at: AwareDatetime | None = Field(
+        None,
+        description='When the interaction most recently entered `in_review`. Null for interactions that have never been submitted for acceptance.',
+    )
+    review_feedback: str | None = Field(
+        None,
+        description="The reviewer's most recent send-back note. Survives the return to `pending` so the assignee can see why the work came back.",
+    )
+    reviewer: InteractionResponder | None = Field(
+        None,
+        description='Principal whose accept or send-back was recorded last; null until a review decision is made. Distinct from `responder`, which names whoever submitted the work.',
+    )
+    lifecycle: list[InteractionLifecycleEvent] | None = Field(
+        None,
+        description="Append-only status history, oldest first. Rendered as the detail view's timeline.",
     )
 
 

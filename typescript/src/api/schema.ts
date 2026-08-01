@@ -932,6 +932,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/projects/{project_handle}/interactions/{resource_id}/review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Accept or send back submitted work
+         * @description Records an acceptance decision on an interaction in `in_review`.
+         *
+         *     `accept` resolves the interaction with the outcome that was submitted and resumes any waiting consumer — for a reviewed interaction, this is the moment the workflow moves on. `request_changes` returns the interaction to `pending` under a new review round with the reviewer's feedback attached, and the consumer keeps waiting; a send-back is not a workflow outcome. The retracted submission stays in `responses` for audit, tagged with the round it belonged to.
+         *
+         *     Only a principal named by `resolution_policy.review.reviewer_user_ids` may call this, or the interaction's creator when that list is empty. Assignees cannot accept their own work.
+         */
+        post: operations["reviewInteraction"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/projects/{project_handle}/interactions/{resource_id}/cancel": {
         parameters: {
             query?: never;
@@ -943,7 +967,7 @@ export interface paths {
         put?: never;
         /**
          * Cancel open interaction
-         * @description Cancels an open interaction, recording who cancelled and an optional reason. Run-backed interactions resume the waiting loop step with a `{status: cancelled, reason}` signal payload so loops can route to a fallback. Only humans may cancel by default — agents must request cancellation through an interaction.
+         * @description Cancels an open interaction — `pending` or `in_review` — recording who cancelled and an optional reason. Work awaiting acceptance is cancellable too: a requester who no longer needs the result should not have to accept it first. Run-backed interactions resume the waiting loop step with a `{status: cancelled, reason}` signal payload so loops can route to a fallback. Only humans may cancel by default — agents must request cancellation through an interaction.
          */
         post: operations["cancelInteraction"];
         delete?: never;
@@ -1407,7 +1431,7 @@ export interface paths {
         put?: never;
         /**
          * Nudge a session
-         * @description Adds user direction to the newest running or waiting turn. The agent receives it as contextual runtime input at the next safe iteration boundary, after any in-flight provider request or tool call finishes. If no turn remains nudgeable, Mobius creates a queued direct-session turn so accepted input is not lost. Reusing an `idempotency_key` with identical content returns the original acknowledgement; reusing it with different content returns `409 Conflict`. Requires the `mobius.agent.invoke` permission (or the agent's own backing principal).
+         * @description Adds user direction to the newest turn that can still absorb it. The agent receives it as contextual runtime input at the turn's next safe boundary, after any in-flight provider request or tool call finishes — including one final boundary as the turn is about to complete. When no such turn exists (the session is idle), the input converts to a regular user message carried by a fresh direct-session turn, exactly as if it had been sent to the session; the acknowledgement then reports `delivery: new_turn` and `status: delivered`. The same conversion re-homes input whose target turn ends without absorbing it, so accepted input is never lost. Reusing an `idempotency_key` with identical content returns the original acknowledgement; reusing it with different content returns `409 Conflict`. Requires the `mobius.agent.invoke` permission (or the agent's own backing principal).
          */
         post: operations["nudgeSession"];
         delete?: never;
@@ -5104,17 +5128,35 @@ export interface components {
             multiline?: boolean;
         };
         /**
-         * @description Protocol kind of the interaction. Launch keeps this intentionally
-         *     small:
+         * @description Protocol kind of the interaction:
          *     * `request_information` — a data-collection protocol with structured
          *     or free-form input
          *     * `request_approval` — a decision protocol (yes/no, optionally
          *     yes/no/defer)
          *     * `request_review` — a judgment protocol that evaluates supplied
          *     material
+         *     * `assign_work` — assigned work performed by a user or agent, which
+         *     submits the result. Pair it with `resolution_policy.review` when the
+         *     result must be accepted before the interaction resolves.
+         *
+         *     The first three are *answered*; `assign_work` is *worked*. Kind does not by itself decide when an interaction closes — the resolution policy does.
          * @enum {string}
          */
-        InteractionKind: "request_information" | "request_approval" | "request_review";
+        InteractionKind: "request_information" | "request_approval" | "request_review" | "assign_work";
+        /**
+         * @description Lifecycle state of the interaction.
+         *     * `pending` — open; the assigned users still need to act.
+         *     * `in_review` — a result was submitted and an acceptance reviewer must
+         *     accept it or send it back. Only interactions whose resolution policy
+         *     carries a `review` block enter this state.
+         *     * `completed` — resolved; the outcome is final.
+         *     * `expired` — the deadline passed before resolution.
+         *     * `cancelled` — deliberately stopped.
+         *
+         *     `pending` and `in_review` are the *open* states: some actor still owes an action and any waiting consumer has not been resumed.
+         * @enum {string}
+         */
+        InteractionStatus: "pending" | "in_review" | "completed" | "expired" | "cancelled";
         /** @description Free-form JSON payload. Used both for responder-supplied values and for policy-derived values (e.g. `Interaction.outcome`, `ResolutionPolicy.proposal`); each consumer documents which. */
         InteractionValue: ({
             [key: string]: unknown;
@@ -5213,14 +5255,23 @@ export interface components {
              * @description Timestamp when this response was submitted.
              */
             responded_at: string;
-            /** @description Reserved for future retry-aware response flows; null until attempts are tracked. */
+            /** @description Review round this response was submitted under, matching the interaction's `review_round` at submission time. Null or absent for the first round. Only responses whose `attempt` equals the interaction's current `review_round` count toward resolution; earlier rounds are retained as audit history. */
             attempt?: number | null;
             /** Format: date-time */
             created_at: string;
             /** Format: date-time */
             updated_at: string;
         };
-        /** @description Declarative resolution rule attached to an Interaction. Determines how participant responses become a final outcome. */
+        /**
+         * @description Optional acceptance gate on a resolution policy. Its presence — not the interaction's kind — is what makes an interaction reviewable, so the gate stays opt-in and ordinary approvals and input requests are unaffected.
+         *
+         *     With a review block, satisfying the resolution rule moves the interaction to `in_review` instead of resolving it, and any waiting consumer stays suspended. A reviewer then calls the review endpoint to accept (resolve and resume) or request changes (return to `pending` under a new review round, consumer still waiting).
+         */
+        ReviewPolicy: {
+            /** @description Principals who may accept or send back submitted work. When omitted or empty, the interaction's creator is the reviewer. Assignees are never implied reviewers — self-acceptance would make the gate decorative. Required when the interaction has no creator. */
+            reviewer_user_ids?: string[];
+        };
+        /** @description Declarative resolution rule attached to an Interaction. Determines how participant responses become a final outcome, and whether that outcome needs acceptance before it is final. */
         ResolutionPolicy: {
             /**
              * @description Resolution rule. `any_of` resolves on the first acceptable response. `all_of` waits for every assigned participant. `quorum` resolves once `threshold` distinct participants respond.
@@ -5229,6 +5280,29 @@ export interface components {
             type: "any_of" | "all_of" | "quorum";
             /** @description Required when `type` is `quorum`. Number of distinct eligible participants that must respond before the interaction resolves. Must be `>= 1` and `<=` the participant count. */
             threshold?: number;
+            /** @description Optional acceptance gate. Null (the default) means responses resolve the interaction directly. */
+            review?: components["schemas"]["ReviewPolicy"] | null;
+        };
+        /** @description One entry in an interaction's status history. Entries are append-only and written in the same transaction as the transition they describe, so the timeline can never disagree with the interaction's `status`. */
+        InteractionLifecycleEvent: {
+            /**
+             * Format: date-time
+             * @description When the transition happened.
+             */
+            at: string;
+            /** @description The interaction's status *after* the transition. */
+            status: components["schemas"]["InteractionStatus"];
+            /**
+             * @description What happened.
+             * @enum {string}
+             */
+            action: "created" | "submitted_for_review" | "accepted" | "changes_requested" | "resolved" | "cancelled" | "expired";
+            /** @description Principal that caused the transition. Null for system-driven transitions such as expiry. */
+            actor_id?: string | null;
+            /** @description Reviewer feedback, cancel reason, or responder comment, depending on `action`. */
+            comment?: string | null;
+            /** @description Review round the transition belongs to. Zero for the first pass. */
+            round?: number | null;
         };
         /** @description Human or agent interaction request and its current response state. */
         Interaction: {
@@ -5242,11 +5316,8 @@ export interface components {
             created_by?: string | null;
             /** @description Protocol kind of the interaction. */
             kind: components["schemas"]["InteractionKind"];
-            /**
-             * @description Current status of the interaction: pending, completed, expired, or cancelled.
-             * @enum {string}
-             */
-            status: "pending" | "completed" | "expired" | "cancelled";
+            /** @description Current lifecycle state of the interaction. */
+            status: components["schemas"]["InteractionStatus"];
             /** @description Short non-empty title shown to the responder. */
             title: string;
             /** @description Optional longer responder-facing detail or instructions. */
@@ -5308,6 +5379,19 @@ export interface components {
             resolved_by?: string | null;
             /** @description Reason recorded when the interaction was cancelled. */
             cancel_reason?: string | null;
+            /** @description Number of completed send-backs. Zero on the first pass. Responses record the round they answered in their `attempt` field, and only the current round's responses count toward resolution. */
+            review_round?: number | null;
+            /**
+             * Format: date-time
+             * @description When the interaction most recently entered `in_review`. Null for interactions that have never been submitted for acceptance.
+             */
+            submitted_at?: string | null;
+            /** @description The reviewer's most recent send-back note. Survives the return to `pending` so the assignee can see why the work came back. */
+            review_feedback?: string | null;
+            /** @description Principal whose accept or send-back was recorded last; null until a review decision is made. Distinct from `responder`, which names whoever submitted the work. */
+            reviewer?: components["schemas"]["InteractionResponder"] | null;
+            /** @description Append-only status history, oldest first. Rendered as the detail view's timeline. */
+            lifecycle?: components["schemas"]["InteractionLifecycleEvent"][];
         };
         InteractionListResponse: {
             /** @description The list of results for this page. */
@@ -5414,6 +5498,16 @@ export interface components {
             /** @description JSON value supplied by the responder. Required for `submit`. */
             value?: components["schemas"]["InteractionValue"];
             /** @description Optional free-text comment accompanying the action. Available on every interaction kind and never gated by the spec; the responder may always attach reasoning, caveats, or follow-up notes alongside `value`. */
+            comment?: string;
+        };
+        /** @description Acceptance decision on submitted work. */
+        ReviewInteractionRequest: {
+            /**
+             * @description `accept` resolves the interaction and resumes any waiting consumer. `request_changes` returns it to `pending` for another round.
+             * @enum {string}
+             */
+            action: "accept" | "request_changes";
+            /** @description The reviewer's reasoning. Required for `request_changes` — work sent back without a reason gives the assignee nothing to act on. Optional for `accept`, where it is recorded as an acceptance note. */
             comment?: string;
         };
         /** @description Optional payload accompanying a cancel request. The reason is recorded on the interaction and forwarded in the cancellation signal so loops can route to a fallback. */
@@ -6828,7 +6922,7 @@ export interface components {
          */
         SessionNudgeStatus: "pending" | "delivered" | "cancelled";
         /**
-         * @description `current_turn` means the input targets an in-flight turn; `new_turn` means Mobius queued a direct-session turn because none was nudgeable.
+         * @description `current_turn` means the input targets an existing turn and will reach the agent as contextual runtime input at that turn's next safe boundary. `new_turn` means the input was converted to a regular user message carried by a fresh direct-session turn (the same shape as a send); the nudge is `delivered` the moment that conversion commits. A nudge accepted as `current_turn` converts to `new_turn` if its target turn ends before absorbing it, so the durable record reflects how the input was ultimately routed — the acknowledgement reflects routing at admission time.
          * @enum {string}
          */
         SessionNudgeDelivery: "current_turn" | "new_turn";
@@ -6862,6 +6956,7 @@ export interface components {
         SessionNudgeAck: {
             /** @description Stable id of the durable nudge mailbox row. */
             nudge_id: string;
+            status: components["schemas"]["SessionNudgeStatus"];
             delivery: components["schemas"]["SessionNudgeDelivery"];
             session: components["schemas"]["Session"];
             turn: components["schemas"]["AgentTurn"];
@@ -11197,7 +11292,7 @@ export interface operations {
         parameters: {
             query?: {
                 /** @description Filter by status */
-                status?: "pending" | "completed" | "expired" | "cancelled";
+                status?: components["schemas"]["InteractionStatus"];
                 /** @description Filter by interaction protocol kind */
                 kind?: components["schemas"]["InteractionKind"];
                 /** @description Filter by originating run ID */
@@ -11437,6 +11532,40 @@ export interface operations {
                      *       "require_all": false
                      *     }
                      */
+                    "application/json": components["schemas"]["Interaction"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    reviewInteraction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
+                /** @description Resource ID. */
+                resource_id: components["parameters"]["IDParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReviewInteractionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
                     "application/json": components["schemas"]["Interaction"];
                 };
             };

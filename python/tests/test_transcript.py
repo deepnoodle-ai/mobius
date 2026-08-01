@@ -417,6 +417,7 @@ def test_nudge_session_is_a_thin_typed_wrapper() -> None:
             json={
                 "nudge_id": "nudge_1",
                 "delivery": "current_turn",
+                "status": "pending",
                 "session": _ack_body()["session"],
                 "turn": _ack_body()["turn"],
                 "after_sequence": 2,

@@ -27,7 +27,7 @@ type SetBlueprintProtectionOptions struct {
 
 // ListInteractionsOptions filters and paginates project interactions.
 type ListInteractionsOptions struct {
-	Status       api.ListInteractionsParamsStatus
+	Status       api.InteractionStatus
 	Kind         api.InteractionKind
 	RunID        string
 	SessionID    string

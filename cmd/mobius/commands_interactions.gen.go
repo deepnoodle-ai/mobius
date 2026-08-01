@@ -145,7 +145,7 @@ func registerInteractionsCommands(app *cli.App) {
 			p0 := authFor(ctx).Project
 			params := &api.ListInteractionsParams{}
 			if ctx.IsSet("status") {
-				v := api.ListInteractionsParamsStatus(ctx.String("status"))
+				v := api.InteractionStatus(ctx.String("status"))
 				params.Status = &v
 			}
 			if ctx.IsSet("kind") {
@@ -230,6 +230,48 @@ func registerInteractionsCommands(app *cli.App) {
 				return err
 			}
 			return printResponse(ctx, "respondToInteraction", resp.StatusCode(), resp.Body)
+		})
+
+	interactionsGrp.Command("review-interaction").
+		Description("Accept or send back submitted work").
+		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
+		Flags(
+			cli.String("action", "").Help("[required] `accept` resolves the interaction and resumes any waiting consumer. `request_changes` returns it to `pending` for another round."),
+			cli.String("comment", "").Help("The reviewer's reasoning. Required for `request_changes` — work sent back without a reason gives the assignee nothing to act on. Optional…"),
+			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
+			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
+		).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			p1 := ctx.Arg(0)
+			var body api.ReviewInteractionJSONRequestBody
+			if err := readJSONBody(ctx, &body); err != nil {
+				return err
+			}
+			if ctx.IsSet("action") {
+				body.Action = api.ReviewInteractionRequestAction(ctx.String("action"))
+			}
+			if ctx.IsSet("comment") {
+				v := ctx.String("comment")
+				body.Comment = &v
+			}
+			if body.Action == "" {
+				return fmt.Errorf("--action is required (or supply it via --file)")
+			}
+			if ctx.Bool("dry-run") {
+				return printDryRun(ctx, body)
+			}
+			resp, err := client.ReviewInteractionWithResponse(ctx.Context(), p0, p1, body)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "reviewInteraction", resp.StatusCode(), resp.Body)
 		})
 
 }

@@ -48,7 +48,7 @@ func TestProjectResourceListHelpers(t *testing.T) {
 	assert.Equal(t, len(bindings.Items), 0)
 
 	interactions, err := c.ListInteractions(ctx, &ListInteractionsOptions{
-		Status:    api.ListInteractionsParamsStatus("pending"),
+		Status:    api.InteractionStatus("pending"),
 		SessionID: "sess_1",
 		Inbox:     true,
 	})
