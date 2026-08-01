@@ -1265,32 +1265,9 @@ func (e IfExists) Valid() bool {
 	}
 }
 
-// Defines values for InteractionStatus.
-const (
-	InteractionStatusCancelled InteractionStatus = "cancelled"
-	InteractionStatusCompleted InteractionStatus = "completed"
-	InteractionStatusExpired   InteractionStatus = "expired"
-	InteractionStatusPending   InteractionStatus = "pending"
-)
-
-// Valid indicates whether the value is a known member of the InteractionStatus enum.
-func (e InteractionStatus) Valid() bool {
-	switch e {
-	case InteractionStatusCancelled:
-		return true
-	case InteractionStatusCompleted:
-		return true
-	case InteractionStatusExpired:
-		return true
-	case InteractionStatusPending:
-		return true
-	default:
-		return false
-	}
-}
-
 // Defines values for InteractionKind.
 const (
+	InteractionKindAssignWork         InteractionKind = "assign_work"
 	InteractionKindRequestApproval    InteractionKind = "request_approval"
 	InteractionKindRequestInformation InteractionKind = "request_information"
 	InteractionKindRequestReview      InteractionKind = "request_review"
@@ -1299,11 +1276,46 @@ const (
 // Valid indicates whether the value is a known member of the InteractionKind enum.
 func (e InteractionKind) Valid() bool {
 	switch e {
+	case InteractionKindAssignWork:
+		return true
 	case InteractionKindRequestApproval:
 		return true
 	case InteractionKindRequestInformation:
 		return true
 	case InteractionKindRequestReview:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for InteractionLifecycleEventAction.
+const (
+	InteractionLifecycleEventActionAccepted           InteractionLifecycleEventAction = "accepted"
+	InteractionLifecycleEventActionCancelled          InteractionLifecycleEventAction = "cancelled"
+	InteractionLifecycleEventActionChangesRequested   InteractionLifecycleEventAction = "changes_requested"
+	InteractionLifecycleEventActionCreated            InteractionLifecycleEventAction = "created"
+	InteractionLifecycleEventActionExpired            InteractionLifecycleEventAction = "expired"
+	InteractionLifecycleEventActionResolved           InteractionLifecycleEventAction = "resolved"
+	InteractionLifecycleEventActionSubmittedForReview InteractionLifecycleEventAction = "submitted_for_review"
+)
+
+// Valid indicates whether the value is a known member of the InteractionLifecycleEventAction enum.
+func (e InteractionLifecycleEventAction) Valid() bool {
+	switch e {
+	case InteractionLifecycleEventActionAccepted:
+		return true
+	case InteractionLifecycleEventActionCancelled:
+		return true
+	case InteractionLifecycleEventActionChangesRequested:
+		return true
+	case InteractionLifecycleEventActionCreated:
+		return true
+	case InteractionLifecycleEventActionExpired:
+		return true
+	case InteractionLifecycleEventActionResolved:
+		return true
+	case InteractionLifecycleEventActionSubmittedForReview:
 		return true
 	default:
 		return false
@@ -1382,6 +1394,33 @@ func (e InteractionResponseState) Valid() bool {
 	}
 }
 
+// Defines values for InteractionStatus.
+const (
+	InteractionStatusCancelled InteractionStatus = "cancelled"
+	InteractionStatusCompleted InteractionStatus = "completed"
+	InteractionStatusExpired   InteractionStatus = "expired"
+	InteractionStatusInReview  InteractionStatus = "in_review"
+	InteractionStatusPending   InteractionStatus = "pending"
+)
+
+// Valid indicates whether the value is a known member of the InteractionStatus enum.
+func (e InteractionStatus) Valid() bool {
+	switch e {
+	case InteractionStatusCancelled:
+		return true
+	case InteractionStatusCompleted:
+		return true
+	case InteractionStatusExpired:
+		return true
+	case InteractionStatusInReview:
+		return true
+	case InteractionStatusPending:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for InteractionUpsertFrameEventType.
 const (
 	InteractionUpsertFrameEventTypeInteractionUpsert InteractionUpsertFrameEventType = "interaction.upsert"
@@ -1391,30 +1430,6 @@ const (
 func (e InteractionUpsertFrameEventType) Valid() bool {
 	switch e {
 	case InteractionUpsertFrameEventTypeInteractionUpsert:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for InteractionUpsertFrameStatus.
-const (
-	InteractionUpsertFrameStatusCancelled InteractionUpsertFrameStatus = "cancelled"
-	InteractionUpsertFrameStatusCompleted InteractionUpsertFrameStatus = "completed"
-	InteractionUpsertFrameStatusExpired   InteractionUpsertFrameStatus = "expired"
-	InteractionUpsertFrameStatusPending   InteractionUpsertFrameStatus = "pending"
-)
-
-// Valid indicates whether the value is a known member of the InteractionUpsertFrameStatus enum.
-func (e InteractionUpsertFrameStatus) Valid() bool {
-	switch e {
-	case InteractionUpsertFrameStatusCancelled:
-		return true
-	case InteractionUpsertFrameStatusCompleted:
-		return true
-	case InteractionUpsertFrameStatusExpired:
-		return true
-	case InteractionUpsertFrameStatusPending:
 		return true
 	default:
 		return false
@@ -2573,6 +2588,24 @@ func (e RespondToInteractionRequestAction) Valid() bool {
 	}
 }
 
+// Defines values for ReviewInteractionRequestAction.
+const (
+	ReviewInteractionRequestActionAccept         ReviewInteractionRequestAction = "accept"
+	ReviewInteractionRequestActionRequestChanges ReviewInteractionRequestAction = "request_changes"
+)
+
+// Valid indicates whether the value is a known member of the ReviewInteractionRequestAction enum.
+func (e ReviewInteractionRequestAction) Valid() bool {
+	switch e {
+	case ReviewInteractionRequestActionAccept:
+		return true
+	case ReviewInteractionRequestActionRequestChanges:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for RunResumedPayloadRecoveryAction.
 const (
 	RunResumedPayloadRecoveryActionResume RunResumedPayloadRecoveryAction = "resume"
@@ -3701,30 +3734,6 @@ func (e ListActionInvocationsParamsDefinitionScope) Valid() bool {
 	case ListActionInvocationsParamsDefinitionScopePlatform:
 		return true
 	case ListActionInvocationsParamsDefinitionScopeProject:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for ListInteractionsParamsStatus.
-const (
-	ListInteractionsParamsStatusCancelled ListInteractionsParamsStatus = "cancelled"
-	ListInteractionsParamsStatusCompleted ListInteractionsParamsStatus = "completed"
-	ListInteractionsParamsStatusExpired   ListInteractionsParamsStatus = "expired"
-	ListInteractionsParamsStatusPending   ListInteractionsParamsStatus = "pending"
-)
-
-// Valid indicates whether the value is a known member of the ListInteractionsParamsStatus enum.
-func (e ListInteractionsParamsStatus) Valid() bool {
-	switch e {
-	case ListInteractionsParamsStatusCancelled:
-		return true
-	case ListInteractionsParamsStatusCompleted:
-		return true
-	case ListInteractionsParamsStatusExpired:
-		return true
-	case ListInteractionsParamsStatusPending:
 		return true
 	default:
 		return false
@@ -5711,14 +5720,18 @@ type CreateRunBackedInteractionRequest struct {
 	// ExpiresAt Timestamp after which this interaction expires if not responded to.
 	ExpiresAt *time.Time `json:"expires_at,omitempty"`
 
-	// Kind Protocol kind of the interaction. Launch keeps this intentionally
-	// small:
+	// Kind Protocol kind of the interaction:
 	// * `request_information` — a data-collection protocol with structured
 	// or free-form input
 	// * `request_approval` — a decision protocol (yes/no, optionally
 	// yes/no/defer)
 	// * `request_review` — a judgment protocol that evaluates supplied
 	// material
+	// * `assign_work` — assigned work performed by a user or agent, which
+	// submits the result. Pair it with `resolution_policy.review` when the
+	// result must be accepted before the interaction resolves.
+	//
+	// The first three are *answered*; `assign_work` is *worked*. Kind does not by itself decide when an interaction closes — the resolution policy does.
 	Kind InteractionKind `json:"kind"`
 
 	// Properties Free-form structured metadata to attach to the interaction.
@@ -5730,7 +5743,7 @@ type CreateRunBackedInteractionRequest struct {
 	// RequireAll When true, all target users must respond before the interaction is considered complete. Defaults to false when omitted. Mutually exclusive with `resolution_policy`; prefer the policy form for new code.
 	RequireAll *bool `json:"require_all,omitempty"`
 
-	// ResolutionPolicy Declarative resolution rule attached to an Interaction. Determines how participant responses become a final outcome.
+	// ResolutionPolicy Declarative resolution rule attached to an Interaction. Determines how participant responses become a final outcome, and whether that outcome needs acceptance before it is final.
 	ResolutionPolicy *ResolutionPolicy `json:"resolution_policy,omitempty"`
 
 	// RunId ID of the loop run associated with this interaction.
@@ -5815,14 +5828,18 @@ type CreateStandaloneInteractionRequest struct {
 	// ExpiresAt Timestamp after which this interaction expires if not responded to.
 	ExpiresAt *time.Time `json:"expires_at,omitempty"`
 
-	// Kind Protocol kind of the interaction. Launch keeps this intentionally
-	// small:
+	// Kind Protocol kind of the interaction:
 	// * `request_information` — a data-collection protocol with structured
 	// or free-form input
 	// * `request_approval` — a decision protocol (yes/no, optionally
 	// yes/no/defer)
 	// * `request_review` — a judgment protocol that evaluates supplied
 	// material
+	// * `assign_work` — assigned work performed by a user or agent, which
+	// submits the result. Pair it with `resolution_policy.review` when the
+	// result must be accepted before the interaction resolves.
+	//
+	// The first three are *answered*; `assign_work` is *worked*. Kind does not by itself decide when an interaction closes — the resolution policy does.
 	Kind InteractionKind `json:"kind"`
 
 	// Properties Free-form structured metadata to attach to the interaction.
@@ -5834,7 +5851,7 @@ type CreateStandaloneInteractionRequest struct {
 	// RequireAll When true, all target users must respond before the interaction is considered complete. Defaults to false when omitted. Mutually exclusive with `resolution_policy`; prefer the policy form for new code.
 	RequireAll *bool `json:"require_all,omitempty"`
 
-	// ResolutionPolicy Declarative resolution rule attached to an Interaction. Determines how participant responses become a final outcome.
+	// ResolutionPolicy Declarative resolution rule attached to an Interaction. Determines how participant responses become a final outcome, and whether that outcome needs acceptance before it is final.
 	ResolutionPolicy *ResolutionPolicy `json:"resolution_policy,omitempty"`
 
 	// Spec Declarative dialog contract for rendering and validating an interaction. Used at both authoring time (inside a loop definition) and runtime (persisted on an interaction). Protocol kind is decoupled from input shape: each kind declares which spec modes are *allowed*, not which is *implied*. An approval may now legitimately use `select` mode (approve/deny/defer), for example.
@@ -6305,15 +6322,22 @@ type Interaction struct {
 	// Id Unique identifier for this interaction.
 	Id string `json:"id"`
 
-	// Kind Protocol kind of the interaction. Launch keeps this intentionally
-	// small:
+	// Kind Protocol kind of the interaction:
 	// * `request_information` — a data-collection protocol with structured
 	// or free-form input
 	// * `request_approval` — a decision protocol (yes/no, optionally
 	// yes/no/defer)
 	// * `request_review` — a judgment protocol that evaluates supplied
 	// material
+	// * `assign_work` — assigned work performed by a user or agent, which
+	// submits the result. Pair it with `resolution_policy.review` when the
+	// result must be accepted before the interaction resolves.
+	//
+	// The first three are *answered*; `assign_work` is *worked*. Kind does not by itself decide when an interaction closes — the resolution policy does.
 	Kind InteractionKind `json:"kind"`
+
+	// Lifecycle Append-only status history, oldest first. Rendered as the detail view's timeline.
+	Lifecycle *[]InteractionLifecycleEvent `json:"lifecycle,omitempty"`
 
 	// Outcome Free-form JSON payload. Used both for responder-supplied values and for policy-derived values (e.g. `Interaction.outcome`, `ResolutionPolicy.proposal`); each consumer documents which.
 	Outcome *InteractionValue `json:"outcome,omitempty"`
@@ -6342,6 +6366,15 @@ type Interaction struct {
 	// Responses All response artifacts recorded against this interaction in arrival order.
 	Responses *[]InteractionResponse `json:"responses,omitempty"`
 
+	// ReviewFeedback The reviewer's most recent send-back note. Survives the return to `pending` so the assignee can see why the work came back.
+	ReviewFeedback *string `json:"review_feedback,omitempty"`
+
+	// ReviewRound Number of completed send-backs. Zero on the first pass. Responses record the round they answered in their `attempt` field, and only the current round's responses count toward resolution.
+	ReviewRound *int `json:"review_round,omitempty"`
+
+	// Reviewer Principal whose accept or send-back was recorded last; null until a review decision is made. Distinct from `responder`, which names whoever submitted the work.
+	Reviewer *InteractionResponder `json:"reviewer,omitempty"`
+
 	// RunId Originating loop run when the interaction is run-backed.
 	RunId *string `json:"run_id,omitempty"`
 
@@ -6356,11 +6389,23 @@ type Interaction struct {
 	// * `request_information` → `select`, `multi_select`, `input`
 	Spec *InteractionSpec `json:"spec,omitempty"`
 
-	// Status Current status of the interaction: pending, completed, expired, or cancelled.
+	// Status Lifecycle state of the interaction.
+	// * `pending` — open; the assigned users still need to act.
+	// * `in_review` — a result was submitted and an acceptance reviewer must
+	// accept it or send it back. Only interactions whose resolution policy
+	// carries a `review` block enter this state.
+	// * `completed` — resolved; the outcome is final.
+	// * `expired` — the deadline passed before resolution.
+	// * `cancelled` — deliberately stopped.
+	//
+	// `pending` and `in_review` are the *open* states: some actor still owes an action and any waiting consumer has not been resumed.
 	Status InteractionStatus `json:"status"`
 
 	// Subject Primary work item or artifact the interaction is about; null when no subject was supplied.
 	Subject *InteractionReference `json:"subject,omitempty"`
+
+	// SubmittedAt When the interaction most recently entered `in_review`. Null for interactions that have never been submitted for acceptance.
+	SubmittedAt *time.Time `json:"submitted_at,omitempty"`
 
 	// Tags Key/value tags for organizing and filtering resources. Up to 8 per resource; keys 1–128 characters, values up to 256. Keys prefixed `mobius:` are system-managed and cannot be set by callers.
 	Tags *TagMap `json:"tags,omitempty"`
@@ -6375,18 +6420,52 @@ type Interaction struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-// InteractionStatus Current status of the interaction: pending, completed, expired, or cancelled.
-type InteractionStatus string
-
-// InteractionKind Protocol kind of the interaction. Launch keeps this intentionally
-// small:
+// InteractionKind Protocol kind of the interaction:
 // * `request_information` — a data-collection protocol with structured
 // or free-form input
 // * `request_approval` — a decision protocol (yes/no, optionally
 // yes/no/defer)
 // * `request_review` — a judgment protocol that evaluates supplied
 // material
+// * `assign_work` — assigned work performed by a user or agent, which
+// submits the result. Pair it with `resolution_policy.review` when the
+// result must be accepted before the interaction resolves.
+//
+// The first three are *answered*; `assign_work` is *worked*. Kind does not by itself decide when an interaction closes — the resolution policy does.
 type InteractionKind string
+
+// InteractionLifecycleEvent One entry in an interaction's status history. Entries are append-only and written in the same transaction as the transition they describe, so the timeline can never disagree with the interaction's `status`.
+type InteractionLifecycleEvent struct {
+	// Action What happened.
+	Action InteractionLifecycleEventAction `json:"action"`
+
+	// ActorId Principal that caused the transition. Null for system-driven transitions such as expiry.
+	ActorId *string `json:"actor_id,omitempty"`
+
+	// At When the transition happened.
+	At time.Time `json:"at"`
+
+	// Comment Reviewer feedback, cancel reason, or responder comment, depending on `action`.
+	Comment *string `json:"comment,omitempty"`
+
+	// Round Review round the transition belongs to. Zero for the first pass.
+	Round *int `json:"round,omitempty"`
+
+	// Status Lifecycle state of the interaction.
+	// * `pending` — open; the assigned users still need to act.
+	// * `in_review` — a result was submitted and an acceptance reviewer must
+	// accept it or send it back. Only interactions whose resolution policy
+	// carries a `review` block enter this state.
+	// * `completed` — resolved; the outcome is final.
+	// * `expired` — the deadline passed before resolution.
+	// * `cancelled` — deliberately stopped.
+	//
+	// `pending` and `in_review` are the *open* states: some actor still owes an action and any waiting consumer has not been resumed.
+	Status InteractionStatus `json:"status"`
+}
+
+// InteractionLifecycleEventAction What happened.
+type InteractionLifecycleEventAction string
 
 // InteractionListResponse defines model for InteractionListResponse.
 type InteractionListResponse struct {
@@ -6453,7 +6532,7 @@ type InteractionResponder struct {
 
 // InteractionResponse One persisted answer artifact for an interaction. The response that triggered resolution is referenced from `Interaction.resolving_response_id`.
 type InteractionResponse struct {
-	// Attempt Reserved for future retry-aware response flows; null until attempts are tracked.
+	// Attempt Review round this response was submitted under, matching the interaction's `review_round` at submission time. Null or absent for the first round. Only responses whose `attempt` equals the interaction's current `review_round` count toward resolution; earlier rounds are retained as audit history.
 	Attempt *int `json:"attempt,omitempty"`
 
 	// Comment Optional free-text comment from this responder.
@@ -6521,6 +6600,18 @@ type InteractionSpec struct {
 	Placeholder *string `json:"placeholder,omitempty"`
 }
 
+// InteractionStatus Lifecycle state of the interaction.
+// * `pending` — open; the assigned users still need to act.
+// * `in_review` — a result was submitted and an acceptance reviewer must
+// accept it or send it back. Only interactions whose resolution policy
+// carries a `review` block enter this state.
+// * `completed` — resolved; the outcome is final.
+// * `expired` — the deadline passed before resolution.
+// * `cancelled` — deliberately stopped.
+//
+// `pending` and `in_review` are the *open* states: some actor still owes an action and any waiting consumer has not been resumed.
+type InteractionStatus string
+
 // InteractionUpsertFrame defines model for InteractionUpsertFrame.
 type InteractionUpsertFrame struct {
 	// CancelReason Reason recorded when the interaction was cancelled.
@@ -6554,15 +6645,22 @@ type InteractionUpsertFrame struct {
 	// Id Unique identifier for this interaction.
 	Id string `json:"id"`
 
-	// Kind Protocol kind of the interaction. Launch keeps this intentionally
-	// small:
+	// Kind Protocol kind of the interaction:
 	// * `request_information` — a data-collection protocol with structured
 	// or free-form input
 	// * `request_approval` — a decision protocol (yes/no, optionally
 	// yes/no/defer)
 	// * `request_review` — a judgment protocol that evaluates supplied
 	// material
+	// * `assign_work` — assigned work performed by a user or agent, which
+	// submits the result. Pair it with `resolution_policy.review` when the
+	// result must be accepted before the interaction resolves.
+	//
+	// The first three are *answered*; `assign_work` is *worked*. Kind does not by itself decide when an interaction closes — the resolution policy does.
 	Kind InteractionKind `json:"kind"`
+
+	// Lifecycle Append-only status history, oldest first. Rendered as the detail view's timeline.
+	Lifecycle *[]InteractionLifecycleEvent `json:"lifecycle,omitempty"`
 
 	// Outcome Free-form JSON payload. Used both for responder-supplied values and for policy-derived values (e.g. `Interaction.outcome`, `ResolutionPolicy.proposal`); each consumer documents which.
 	Outcome *InteractionValue `json:"outcome,omitempty"`
@@ -6591,6 +6689,15 @@ type InteractionUpsertFrame struct {
 	// Responses All response artifacts recorded against this interaction in arrival order.
 	Responses *[]InteractionResponse `json:"responses,omitempty"`
 
+	// ReviewFeedback The reviewer's most recent send-back note. Survives the return to `pending` so the assignee can see why the work came back.
+	ReviewFeedback *string `json:"review_feedback,omitempty"`
+
+	// ReviewRound Number of completed send-backs. Zero on the first pass. Responses record the round they answered in their `attempt` field, and only the current round's responses count toward resolution.
+	ReviewRound *int `json:"review_round,omitempty"`
+
+	// Reviewer Principal whose accept or send-back was recorded last; null until a review decision is made. Distinct from `responder`, which names whoever submitted the work.
+	Reviewer *InteractionResponder `json:"reviewer,omitempty"`
+
 	// RunId Originating loop run when the interaction is run-backed.
 	RunId *string `json:"run_id,omitempty"`
 
@@ -6605,11 +6712,23 @@ type InteractionUpsertFrame struct {
 	// * `request_information` → `select`, `multi_select`, `input`
 	Spec *InteractionSpec `json:"spec,omitempty"`
 
-	// Status Current status of the interaction: pending, completed, expired, or cancelled.
-	Status InteractionUpsertFrameStatus `json:"status"`
+	// Status Lifecycle state of the interaction.
+	// * `pending` — open; the assigned users still need to act.
+	// * `in_review` — a result was submitted and an acceptance reviewer must
+	// accept it or send it back. Only interactions whose resolution policy
+	// carries a `review` block enter this state.
+	// * `completed` — resolved; the outcome is final.
+	// * `expired` — the deadline passed before resolution.
+	// * `cancelled` — deliberately stopped.
+	//
+	// `pending` and `in_review` are the *open* states: some actor still owes an action and any waiting consumer has not been resumed.
+	Status InteractionStatus `json:"status"`
 
 	// Subject Primary work item or artifact the interaction is about; null when no subject was supplied.
 	Subject *InteractionReference `json:"subject,omitempty"`
+
+	// SubmittedAt When the interaction most recently entered `in_review`. Null for interactions that have never been submitted for acceptance.
+	SubmittedAt *time.Time `json:"submitted_at,omitempty"`
 
 	// Tags Key/value tags for organizing and filtering resources. Up to 8 per resource; keys 1–128 characters, values up to 256. Keys prefixed `mobius:` are system-managed and cannot be set by callers.
 	Tags *TagMap `json:"tags,omitempty"`
@@ -6626,9 +6745,6 @@ type InteractionUpsertFrame struct {
 
 // InteractionUpsertFrameEventType defines model for InteractionUpsertFrame.EventType.
 type InteractionUpsertFrameEventType string
-
-// InteractionUpsertFrameStatus Current status of the interaction: pending, completed, expired, or cancelled.
-type InteractionUpsertFrameStatus string
 
 // InteractionValue Free-form JSON payload. Used both for responder-supplied values and for policy-derived values (e.g. `Interaction.outcome`, `ResolutionPolicy.proposal`); each consumer documents which.
 type InteractionValue struct {
@@ -7849,7 +7965,7 @@ type ModelProviderGroupSource string
 
 // NudgeEventPayload Live reconciliation hint emitted for `nudge.queued`, `nudge.delivered`, and `nudge.cancelled`. Re-read the queue resource after receiving it; this pulse is not durable replay state.
 type NudgeEventPayload struct {
-	// Delivery `current_turn` means the input targets an in-flight turn; `new_turn` means Mobius queued a direct-session turn because none was nudgeable.
+	// Delivery `current_turn` means the input targets an existing turn and will reach the agent as contextual runtime input at that turn's next safe boundary. `new_turn` means the input was converted to a regular user message carried by a fresh direct-session turn (the same shape as a send); the nudge is `delivered` the moment that conversion commits. A nudge accepted as `current_turn` converts to `new_turn` if its target turn ends before absorbing it, so the durable record reflects how the input was ultimately routed — the acknowledgement reflects routing at admission time.
 	Delivery SessionNudgeDelivery `json:"delivery"`
 	NudgeId  string               `json:"nudge_id"`
 
@@ -8241,8 +8357,11 @@ type ReplaceToolkitsRequest struct {
 	ToolkitIds []string `json:"toolkit_ids"`
 }
 
-// ResolutionPolicy Declarative resolution rule attached to an Interaction. Determines how participant responses become a final outcome.
+// ResolutionPolicy Declarative resolution rule attached to an Interaction. Determines how participant responses become a final outcome, and whether that outcome needs acceptance before it is final.
 type ResolutionPolicy struct {
+	// Review Optional acceptance gate. Null (the default) means responses resolve the interaction directly.
+	Review *ReviewPolicy `json:"review,omitempty"`
+
 	// Threshold Required when `type` is `quorum`. Number of distinct eligible participants that must respond before the interaction resolves. Must be `>= 1` and `<=` the participant count.
 	Threshold *int `json:"threshold,omitempty"`
 
@@ -8279,6 +8398,26 @@ type RespondToInteractionRequest struct {
 
 // RespondToInteractionRequestAction Operation to perform through the canonical response endpoint. `submit` answers the interaction.
 type RespondToInteractionRequestAction string
+
+// ReviewInteractionRequest Acceptance decision on submitted work.
+type ReviewInteractionRequest struct {
+	// Action `accept` resolves the interaction and resumes any waiting consumer. `request_changes` returns it to `pending` for another round.
+	Action ReviewInteractionRequestAction `json:"action"`
+
+	// Comment The reviewer's reasoning. Required for `request_changes` — work sent back without a reason gives the assignee nothing to act on. Optional for `accept`, where it is recorded as an acceptance note.
+	Comment *string `json:"comment,omitempty"`
+}
+
+// ReviewInteractionRequestAction `accept` resolves the interaction and resumes any waiting consumer. `request_changes` returns it to `pending` for another round.
+type ReviewInteractionRequestAction string
+
+// ReviewPolicy Optional acceptance gate on a resolution policy. Its presence — not the interaction's kind — is what makes an interaction reviewable, so the gate stays opt-in and ordinary approvals and input requests are unaffected.
+//
+// With a review block, satisfying the resolution rule moves the interaction to `in_review` instead of resolving it, and any waiting consumer stays suspended. A reviewer then calls the review endpoint to accept (resolve and resume) or request changes (return to `pending` under a new review round, consumer still waiting).
+type ReviewPolicy struct {
+	// ReviewerUserIds Principals who may accept or send back submitted work. When omitted or empty, the interaction's creator is the reviewer. Assignees are never implied reviewers — self-acceptance would make the gate decorative. Required when the interaction has no creator.
+	ReviewerUserIds *[]string `json:"reviewer_user_ids,omitempty"`
+}
 
 // Role Named bundle of permissions assignable to human or machine principals. Roles let admins grant loop, project, and integration capabilities consistently without editing every user individually.
 type Role struct {
@@ -8768,7 +8907,7 @@ type SessionNudge struct {
 	CreatedAt   time.Time  `json:"created_at"`
 	DeliveredAt *time.Time `json:"delivered_at,omitempty"`
 
-	// Delivery `current_turn` means the input targets an in-flight turn; `new_turn` means Mobius queued a direct-session turn because none was nudgeable.
+	// Delivery `current_turn` means the input targets an existing turn and will reach the agent as contextual runtime input at that turn's next safe boundary. `new_turn` means the input was converted to a regular user message carried by a fresh direct-session turn (the same shape as a send); the nudge is `delivered` the moment that conversion commits. A nudge accepted as `current_turn` converts to `new_turn` if its target turn ends before absorbing it, so the durable record reflects how the input was ultimately routed — the acknowledgement reflects routing at admission time.
 	Delivery SessionNudgeDelivery `json:"delivery"`
 
 	// Id Stable nudge identifier.
@@ -8790,7 +8929,7 @@ type SessionNudgeAck struct {
 	// Deduped True when an existing idempotent nudge request was returned.
 	Deduped bool `json:"deduped"`
 
-	// Delivery `current_turn` means the input targets an in-flight turn; `new_turn` means Mobius queued a direct-session turn because none was nudgeable.
+	// Delivery `current_turn` means the input targets an existing turn and will reach the agent as contextual runtime input at that turn's next safe boundary. `new_turn` means the input was converted to a regular user message carried by a fresh direct-session turn (the same shape as a send); the nudge is `delivered` the moment that conversion commits. A nudge accepted as `current_turn` converts to `new_turn` if its target turn ends before absorbing it, so the durable record reflects how the input was ultimately routed — the acknowledgement reflects routing at admission time.
 	Delivery SessionNudgeDelivery `json:"delivery"`
 
 	// NudgeId Stable id of the durable nudge mailbox row.
@@ -8799,6 +8938,9 @@ type SessionNudgeAck struct {
 	// Session Durable conversation transcript owned by an agent.
 	Session Session `json:"session"`
 
+	// Status Durable nudge queue lifecycle status.
+	Status SessionNudgeStatus `json:"status"`
+
 	// Turn One attempt of an agent running the agent loop — the unit that produces a transcript. A turn is triggered by a direct send to the session, a loop step (run_id + step_key), or an inbound channel message (channel_exchange_id). Its messages are read via the turn's transcript endpoint.
 	Turn AgentTurn `json:"turn"`
 
@@ -8806,7 +8948,7 @@ type SessionNudgeAck struct {
 	WokeTurn bool `json:"woke_turn"`
 }
 
-// SessionNudgeDelivery `current_turn` means the input targets an in-flight turn; `new_turn` means Mobius queued a direct-session turn because none was nudgeable.
+// SessionNudgeDelivery `current_turn` means the input targets an existing turn and will reach the agent as contextual runtime input at that turn's next safe boundary. `new_turn` means the input was converted to a regular user message carried by a fresh direct-session turn (the same shape as a send); the nudge is `delivered` the moment that conversion commits. A nudge accepted as `current_turn` converts to `new_turn` if its target turn ends before absorbing it, so the durable record reflects how the input was ultimately routed — the acknowledgement reflects routing at admission time.
 type SessionNudgeDelivery string
 
 // SessionNudgeListResponse defines model for SessionNudgeListResponse.
@@ -10873,7 +11015,7 @@ type ListEnvironmentsParams struct {
 // ListInteractionsParams defines parameters for ListInteractions.
 type ListInteractionsParams struct {
 	// Status Filter by status
-	Status *ListInteractionsParamsStatus `form:"status,omitempty" json:"status,omitempty"`
+	Status *InteractionStatus `form:"status,omitempty" json:"status,omitempty"`
 
 	// Kind Filter by interaction protocol kind
 	Kind *InteractionKind `form:"kind,omitempty" json:"kind,omitempty"`
@@ -10896,9 +11038,6 @@ type ListInteractionsParams struct {
 	// Limit Maximum number of items to return
 	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
 }
-
-// ListInteractionsParamsStatus defines parameters for ListInteractions.
-type ListInteractionsParamsStatus string
 
 // ListLoopsParams defines parameters for ListLoops.
 type ListLoopsParams struct {
@@ -11262,6 +11401,9 @@ type CancelInteractionJSONRequestBody = CancelInteractionRequest
 
 // RespondToInteractionJSONRequestBody defines body for RespondToInteraction for application/json ContentType.
 type RespondToInteractionJSONRequestBody = RespondToInteractionRequest
+
+// ReviewInteractionJSONRequestBody defines body for ReviewInteraction for application/json ContentType.
+type ReviewInteractionJSONRequestBody = ReviewInteractionRequest
 
 // CreateLoopJSONRequestBody defines body for CreateLoop for application/json ContentType.
 type CreateLoopJSONRequestBody = CreateLoopRequest
@@ -19496,6 +19638,11 @@ type ClientInterface interface {
 
 	RespondToInteraction(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, body RespondToInteractionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ReviewInteractionWithBody request with any body
+	ReviewInteractionWithBody(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	ReviewInteraction(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, body ReviewInteractionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListLoops request
 	ListLoops(ctx context.Context, projectHandle ProjectHandleParam, params *ListLoopsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -21193,6 +21340,30 @@ func (c *Client) RespondToInteractionWithBody(ctx context.Context, projectHandle
 
 func (c *Client) RespondToInteraction(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, body RespondToInteractionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewRespondToInteractionRequest(c.Server, projectHandle, resourceId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ReviewInteractionWithBody(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewReviewInteractionRequestWithBody(c.Server, projectHandle, resourceId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ReviewInteraction(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, body ReviewInteractionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewReviewInteractionRequest(c.Server, projectHandle, resourceId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -27287,6 +27458,60 @@ func NewRespondToInteractionRequestWithBody(server string, projectHandle Project
 	return req, nil
 }
 
+// NewReviewInteractionRequest calls the generic ReviewInteraction builder with application/json body
+func NewReviewInteractionRequest(server string, projectHandle ProjectHandleParam, resourceId IDParam, body ReviewInteractionJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewReviewInteractionRequestWithBody(server, projectHandle, resourceId, "application/json", bodyReader)
+}
+
+// NewReviewInteractionRequestWithBody generates requests for ReviewInteraction with any type of body
+func NewReviewInteractionRequestWithBody(server string, projectHandle ProjectHandleParam, resourceId IDParam, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project_handle", projectHandle, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "resource_id", resourceId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/interactions/%s/review", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewListLoopsRequest generates requests for ListLoops
 func NewListLoopsRequest(server string, projectHandle ProjectHandleParam, params *ListLoopsParams) (*http.Request, error) {
 	var err error
@@ -32620,6 +32845,11 @@ type ClientWithResponsesInterface interface {
 
 	RespondToInteractionWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, body RespondToInteractionJSONRequestBody, reqEditors ...RequestEditorFn) (*RespondToInteractionResponse, error)
 
+	// ReviewInteractionWithBodyWithResponse request with any body
+	ReviewInteractionWithBodyWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ReviewInteractionResponse, error)
+
+	ReviewInteractionWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, body ReviewInteractionJSONRequestBody, reqEditors ...RequestEditorFn) (*ReviewInteractionResponse, error)
+
 	// ListLoopsWithResponse request
 	ListLoopsWithResponse(ctx context.Context, projectHandle ProjectHandleParam, params *ListLoopsParams, reqEditors ...RequestEditorFn) (*ListLoopsResponse, error)
 
@@ -35856,6 +36086,41 @@ func (r RespondToInteractionResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r RespondToInteractionResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ReviewInteractionResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Interaction
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+	JSON409      *Conflict
+}
+
+// Status returns HTTPResponse.Status
+func (r ReviewInteractionResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ReviewInteractionResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ReviewInteractionResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -39786,6 +40051,23 @@ func (c *ClientWithResponses) RespondToInteractionWithResponse(ctx context.Conte
 		return nil, err
 	}
 	return ParseRespondToInteractionResponse(rsp)
+}
+
+// ReviewInteractionWithBodyWithResponse request with arbitrary body returning *ReviewInteractionResponse
+func (c *ClientWithResponses) ReviewInteractionWithBodyWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ReviewInteractionResponse, error) {
+	rsp, err := c.ReviewInteractionWithBody(ctx, projectHandle, resourceId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseReviewInteractionResponse(rsp)
+}
+
+func (c *ClientWithResponses) ReviewInteractionWithResponse(ctx context.Context, projectHandle ProjectHandleParam, resourceId IDParam, body ReviewInteractionJSONRequestBody, reqEditors ...RequestEditorFn) (*ReviewInteractionResponse, error) {
+	rsp, err := c.ReviewInteraction(ctx, projectHandle, resourceId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseReviewInteractionResponse(rsp)
 }
 
 // ListLoopsWithResponse request returning *ListLoopsResponse
@@ -45363,6 +45645,67 @@ func ParseRespondToInteractionResponse(rsp *http.Response) (*RespondToInteractio
 	}
 
 	response := &RespondToInteractionResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Interaction
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseReviewInteractionResponse parses an HTTP response from a ReviewInteractionWithResponse call
+func ParseReviewInteractionResponse(rsp *http.Response) (*ReviewInteractionResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ReviewInteractionResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
