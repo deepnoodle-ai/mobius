@@ -6,6 +6,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 
 ## [Unreleased]
 
+## [0.0.59] - 2026-08-01
+
+### Added
+
+- `assign_work` interaction kind for assigned work a user or agent performs
+  and submits; pair with `resolution_policy.review` to require an acceptance
+  reviewer to accept or send back the submission before the interaction
+  resolves ([#193](https://github.com/deepnoodle-ai/mobius/pull/193)).
+
+### Changed
+
+- `nudge_session` acks now carry a required `status` field. Nudges with no
+  live turn to ride convert to a regular user message on a fresh turn instead
+  of being queued with no input, so the ack reports `delivered` immediately
+  rather than `pending` ([#193](https://github.com/deepnoodle-ai/mobius/pull/193)).
+
 ## [0.0.58] - 2026-07-22
 
 ### Added
