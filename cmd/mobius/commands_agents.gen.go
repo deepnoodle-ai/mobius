@@ -228,7 +228,7 @@ func registerAgentsCommands(app *cli.App) {
 		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		Flags(
 			cli.String("toolkit-ids", "").Help("Optional comma-separated toolkit subset to apply."),
-			cli.String("skill-name", "").Help("Optional assigned skill name to preselect as active."),
+			cli.String("skill-name", "").Help("Optional assigned skill name to simulate as invoked, so the response shows the tool scope a turn would run under once that skill is loaded…"),
 			cli.String("allowed-tools", "").Help("Optional comma-separated canonical action names, wildcard selectors, or group references to apply as a per-invocation filter against the…"),
 		).
 		Use(requireAuth()).

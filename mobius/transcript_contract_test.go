@@ -39,6 +39,11 @@ type transcriptFrameContract struct {
 		FailedTurnID            string   `json:"failed_turn_id"`
 		FailedTurnErrorType     string   `json:"failed_turn_error_type"`
 		FailedTurnErrorMessage  string   `json:"failed_turn_error_message"`
+		UsageTurnID             string   `json:"usage_turn_id"`
+		UsageInputTokens        int      `json:"usage_input_tokens"`
+		UsageOutputTokens       int      `json:"usage_output_tokens"`
+		UsageCacheReadTokens    int      `json:"usage_cache_read_input_tokens"`
+		UsageCalls              int      `json:"usage_calls"`
 	} `json:"expected"`
 }
 
@@ -100,6 +105,15 @@ func TestTranscriptFrameContract(t *testing.T) {
 	assert.True(t, ok)
 	assert.Equal(t, *failed.ErrorType, fixture.Expected.FailedTurnErrorType)
 	assert.Equal(t, *failed.ErrorMessage, fixture.Expected.FailedTurnErrorMessage)
+
+	completed, ok := view.Turn(fixture.Expected.UsageTurnID)
+	assert.True(t, ok)
+	assert.NotNil(t, completed.Usage)
+	assert.Equal(t, *completed.Usage.InputTokens, fixture.Expected.UsageInputTokens)
+	assert.Equal(t, *completed.Usage.OutputTokens, fixture.Expected.UsageOutputTokens)
+	assert.Equal(t, *completed.Usage.CacheReadInputTokens, fixture.Expected.UsageCacheReadTokens)
+	assert.Equal(t, *completed.Usage.Calls, fixture.Expected.UsageCalls)
+	assert.Nil(t, completed.Usage.ReasoningTokens)
 }
 
 type transcriptSnapshotContract struct {
