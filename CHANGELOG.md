@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 
 ## [Unreleased]
 
+## [0.0.60] - 2026-08-07
+
 ### Added
 
 - Typed turn token usage (`AgentTurnUsage`): input/output, cache read and
