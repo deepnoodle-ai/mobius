@@ -1128,7 +1128,7 @@ export interface paths {
         get: operations["listAgentToolkitAssignments"];
         /**
          * Replace agent toolkit assignments
-         * @description Replaces the agent's toolkit assignment set as a whole. The effective tool surface is the union of the assigned toolkits' actions, narrowed by any active skills and per-invocation filters.
+         * @description Replaces the agent's toolkit assignment set as a whole. The effective tool surface is the union of the assigned toolkits' actions, narrowed by any per-invocation filters. Assigned skills do not narrow it: a skill's `allowed_tools` grant applies only once the agent invokes that skill.
          */
         put: operations["replaceAgentToolkitAssignments"];
         post?: never;
@@ -1152,7 +1152,7 @@ export interface paths {
         get: operations["listAgentSkillAssignments"];
         /**
          * Replace agent skill assignments
-         * @description Replaces the agent's skill assignment set as a whole. A skill can narrow the agent's tools while active via its `allowed_tools` filter; it never widens the set beyond the assigned toolkits' actions.
+         * @description Replaces the agent's skill assignment set as a whole. Assigning a skill does not change the agent's tools: a skill's `allowed_tools` grant takes effect only once the agent invokes that skill, and never widens the set beyond the assigned toolkits' actions.
          */
         put: operations["replaceAgentSkillAssignments"];
         post?: never;
@@ -1171,7 +1171,9 @@ export interface paths {
         };
         /**
          * Get agent tools
-         * @description Resolves the effective set of tools an agent can invoke: the flat union of the assigned toolkits' actions, optionally restricted by a toolkit subset, per-invocation tool filters, and active skill narrowing.
+         * @description Resolves the effective set of tools an agent can invoke: the flat union of the assigned toolkits' actions, optionally restricted by a toolkit subset and tool filters.
+         *
+         *     Assigned skills do not narrow this set — a skill's `allowed_tools` grant applies only once the agent invokes that skill at runtime. Pass `skill_name` to preview the tools the agent would be left with while that one skill is loaded.
          */
         get: operations["getAgentTools"];
         put?: never;
@@ -2707,6 +2709,8 @@ export interface components {
         };
         /**
          * @description Controls how granted actions are surfaced to the model in Mobius-hosted agent turns. `meta` (the default) groups related actions behind compact command routers, while `flat` exposes one tool per action.
+         *
+         *     The two modes pay the same cost in different places. `meta` keeps the tool definitions small no matter how many actions are granted, but the router advertises command names only, so the model spends extra calls on `help` to discover arguments — every turn. `flat` puts every action's schema in the tool definitions, which are sent once and cached, and removes the discovery calls entirely. Prefer `meta` when the action count is large enough that the schemas would crowd the context window; prefer `flat` otherwise.
          * @enum {string}
          */
         AgentToolPresentation: "flat" | "meta";
@@ -2878,6 +2882,44 @@ export interface components {
             /** @description Highest message sequence this summary covers — the before/after boundary. */
             covers_through_sequence: number;
         };
+        /**
+         * @description Whether a compaction pass is running on this session right now, and the threshold that will trigger the next one.
+         *
+         *     This is the poll-side counterpart to the `compaction.started` / `compaction.created` / `compaction.failed` stream events: those events are live-only, so a client that connects mid-pass reads this instead. On the single-session read the object is always present, so a client binds one shape — an idle session reports `in_progress: false` and nothing else but the threshold. List entries omit it entirely.
+         *
+         *     Paired with `token_input_total` (or a client-side estimate over the transcript it already renders), `threshold_tokens` supports a context-capacity gauge rather than a spinner that appears without warning.
+         * @example {
+         *       "in_progress": true,
+         *       "started_at": "2026-08-02T15:04:05Z",
+         *       "deadline": "2026-08-02T15:04:35Z",
+         *       "from_sequence": 412,
+         *       "through_sequence": 987,
+         *       "message_count": 63,
+         *       "threshold_tokens": 150000
+         *     }
+         */
+        SessionCompactionProgress: {
+            /** @description True while a summarization pass is running. Derived: a pass that dies without clearing its marker reads false once its `deadline` passes. */
+            in_progress: boolean;
+            /**
+             * Format: date-time
+             * @description When the running pass started. Absent when no pass is running.
+             */
+            started_at?: string;
+            /**
+             * Format: date-time
+             * @description When the running pass gives up. Absent when no pass is running. A pass still marked in progress past this point has died.
+             */
+            deadline?: string;
+            /** @description Lowest transcript sequence the running pass is summarizing. */
+            from_sequence?: number;
+            /** @description Highest transcript sequence the running pass is summarizing. */
+            through_sequence?: number;
+            /** @description Number of transcript messages the running pass is folding into its summary. */
+            message_count?: number;
+            /** @description Estimated-token size at which this session compacts automatically, resolved from its policy and model. Absent when the session does not compact automatically (`manual`, `disabled`). */
+            threshold_tokens?: number;
+        };
         /** @description Durable conversation transcript owned by an agent. */
         Session: {
             /** @description Stable session identifier. */
@@ -2920,6 +2962,8 @@ export interface components {
             thinking_effort?: components["schemas"]["ThinkingEffort"];
             /** @description The most recent compaction marker in the transcript, or null when the session has never been compacted. Delineates summarized history (sequences at or below `covers_through_sequence`) from the live tail. Returned on the single-session read; absent from list entries. */
             latest_compaction?: components["schemas"]["SessionCompactionBoundary"];
+            /** @description Live compaction progress plus the threshold that triggers the next pass. Returned on the single-session read; absent from list entries. */
+            compaction?: components["schemas"]["SessionCompactionProgress"];
             /** @description Total messages currently in the session, including compaction summaries. */
             message_count: number;
             /** @description Lifetime fresh (uncached) input-token total for this session. Prompt-cache tokens are reported separately in `cache_read_input_total` and `cache_creation_input_total`. */
@@ -5682,7 +5726,7 @@ export interface components {
             name: string;
             /** @description Markdown description of the skill's purpose. */
             description?: string;
-            /** @description Whether this skill is currently active in the resolved manifest. */
+            /** @description Whether this skill is the one being simulated as invoked, i.e. it matched the `skill_name` parameter and its `allowed_tools` grant was applied to this manifest. False for every assigned skill when `skill_name` is omitted. */
             active: boolean;
             /** @description Tool selectors the skill requires but that are not available to the agent. */
             missing_required?: string[];
@@ -5723,7 +5767,7 @@ export interface components {
             tools: components["schemas"]["ActionCatalogEntry"][];
             /** @description Audit trail of group selectors that contributed to the resolved tool set. Operators see groups; the LLM only sees the flat `tools` list. */
             groups_resolved?: components["schemas"]["ResolvedActionGroup"][];
-            /** @description Skills active for this agent in the resolved manifest. */
+            /** @description Skills assigned to this agent, as resolved for this manifest. See each entry's `active` property for which one's grant was applied. */
             skills: components["schemas"]["SkillManifestEntry"][];
             /** @description Non-fatal issues encountered while resolving the manifest. */
             warnings: components["schemas"]["AgentManifestWarning"][];
@@ -5754,7 +5798,7 @@ export interface components {
             model?: string;
             /** @description Default route for model calls made by this agent. */
             model_route?: components["schemas"]["AgentModelRoute"];
-            /** @description Omit to use the create-time default, `flat`. */
+            /** @description Omit to use the create-time default, `meta`. */
             tool_presentation?: components["schemas"]["AgentToolPresentation"];
             /** @description Custom system prompt for agents. Empty uses the generated default. */
             system_prompt?: string;
@@ -6188,7 +6232,11 @@ export interface components {
             source: "system" | "organization" | "project";
             /** @description Markdown instructions loaded when the skill is active. */
             instructions: string;
-            /** @description Canonical action names, wildcard selectors, or group references that narrow the agent's effective tool set while this skill is active. Uses the same selector vocabulary as toolkit grants. */
+            /**
+             * @description Canonical action names, wildcard selectors, or group references naming the actions this skill needs. Uses the same selector vocabulary as toolkit grants.
+             *
+             *     The grant takes effect when an agent invokes the skill, and lasts for the rest of that turn: calls to actions outside it are refused with an error naming the skill. Assigning a skill narrows nothing on its own, and an empty list declares nothing and narrows nothing. Skills invoked in the same turn compose as a union, so this keeps a skill on task rather than sandboxing it. Mobius memory and self-awareness tools are always exempt, and a skill can never widen an agent beyond its assigned toolkits.
+             */
             allowed_tools?: string[];
             /** @description Labels to apply to the skill. */
             tags?: components["schemas"]["TagMap"];
@@ -6248,6 +6296,8 @@ export interface components {
             };
             /** @description Where `output` came from: a `mobius_submit_output` submission (`tool`) or the schema-valid final-text fallback (`text`). */
             output_source?: components["schemas"]["AgentTurnOutputSource"];
+            /** @description Token usage recorded when the turn completed. Absent on turns that never reached the model and on turns that failed. */
+            usage?: components["schemas"]["AgentTurnUsage"];
             /**
              * Format: int64
              * @description Authoritative active-execution budget selected for the turn.
@@ -6268,6 +6318,31 @@ export interface components {
              * @description When the turn reached a terminal status.
              */
             completed_at?: string;
+        };
+        /**
+         * @description Aggregate token accounting for one completed turn, summed over every LLM call the turn made. It is a usage report, not a bill — see the billing usage events for charged amounts.
+         * @example {
+         *       "input_tokens": 1840,
+         *       "output_tokens": 412,
+         *       "cache_read_input_tokens": 20480,
+         *       "calls": 3
+         *     }
+         */
+        AgentTurnUsage: {
+            /** @description Fresh (uncached) prompt tokens. Cache traffic is reported separately and is never folded in here. */
+            input_tokens?: number;
+            /** @description Tokens the model generated, including reasoning tokens. */
+            output_tokens?: number;
+            /** @description Prompt tokens served from the provider's prompt cache. Omitted when zero. */
+            cache_read_input_tokens?: number;
+            /** @description Prompt tokens written into the provider's prompt cache. Omitted when zero. */
+            cache_creation_input_tokens?: number;
+            /** @description Hidden reasoning tokens billed as output but absent from the visible reply. Omitted when zero or unreported by the provider. */
+            reasoning_tokens?: number;
+            /** @description LLM calls folded into this turn's totals. Omitted when zero. */
+            calls?: number;
+        } & {
+            [key: string]: unknown;
         };
         AgentTurnListResponse: {
             /** @description Turns in this session, ordered by creation time. */
@@ -6329,10 +6404,8 @@ export interface components {
             seq?: number;
             error_type?: string;
             error_message?: string;
-            /** @description Token usage recorded when the turn terminalized, when available. */
-            usage?: {
-                [key: string]: unknown;
-            };
+            /** @description Token usage recorded when the turn completed. Identical to the `usage` on the turn resource, and identical on the bootstrap and cursored reads of this snapshot. */
+            usage?: components["schemas"]["AgentTurnUsage"];
             /** @description The validated structured output, delivered on the terminal `turn.upsert` frame. Present only on a `completed` turn that declared an output schema. */
             output?: {
                 [key: string]: unknown;
@@ -6440,9 +6513,9 @@ export interface components {
          *
          *     The `event:` line is the authoritative frame selector. This union is reference-only: several payloads are structurally identical (e.g. `user.message` and `agent.message`) or permissive open objects, so the `data:` body alone cannot be shape-matched to a single variant. Consumers MUST dispatch on the `event:` name and decode the body as the corresponding payload — never validate the bare body against the union.
          *
-         *     Durable message frames (`user.message`, `agent.message`, `compaction.created`) are replayed from the transcript and carry an SSE `id: <sequence>` — that `sequence` is the only cursor a client persists for `after_sequence` / `Last-Event-ID` resume. Terminal `turn.*` frames mark the active turn settling. `session.message.preview`, `session.resync`, `nudge.queued`, `nudge.delivered`, `nudge.cancelled`, `tool.call`, `tool.result`, and `generation.delta` frames are live-only and carry no `id:`. `stream.end` is the final envelope on every deliberate server-side close and also carries no `id:`.
+         *     Durable message frames (`user.message`, `agent.message`, `compaction.created`) are replayed from the transcript and carry an SSE `id: <sequence>` — that `sequence` is the only cursor a client persists for `after_sequence` / `Last-Event-ID` resume. Terminal `turn.*` frames mark the active turn settling. `session.message.preview`, `session.resync`, `nudge.queued`, `nudge.delivered`, `nudge.cancelled`, `tool.call`, `tool.result`, `compaction.started`, `compaction.failed`, and `generation.delta` frames are live-only and carry no `id:`. `stream.end` is the final envelope on every deliberate server-side close and also carries no `id:`.
          */
-        SessionStreamFrame: components["schemas"]["SessionUserMessagePayload"] | components["schemas"]["AgentMessagePayload"] | components["schemas"]["CompactionCreatedPayload"] | components["schemas"]["TurnStartedPayload"] | components["schemas"]["TurnWaitingPayload"] | components["schemas"]["TurnCompletedPayload"] | components["schemas"]["TurnFailedPayload"] | components["schemas"]["TurnCancelledPayload"] | components["schemas"]["NudgeEventPayload"] | components["schemas"]["SessionMessagePreviewFrame"] | components["schemas"]["SessionResyncFrame"] | components["schemas"]["StreamEndFrame"] | components["schemas"]["ToolCallPayload"] | components["schemas"]["ToolResultPayload"] | components["schemas"]["GenerationDeltaFrame"];
+        SessionStreamFrame: components["schemas"]["SessionUserMessagePayload"] | components["schemas"]["AgentMessagePayload"] | components["schemas"]["CompactionStartedPayload"] | components["schemas"]["CompactionCreatedPayload"] | components["schemas"]["CompactionFailedPayload"] | components["schemas"]["TurnStartedPayload"] | components["schemas"]["TurnWaitingPayload"] | components["schemas"]["TurnCompletedPayload"] | components["schemas"]["TurnFailedPayload"] | components["schemas"]["TurnCancelledPayload"] | components["schemas"]["NudgeEventPayload"] | components["schemas"]["SessionMessagePreviewFrame"] | components["schemas"]["SessionResyncFrame"] | components["schemas"]["StreamEndFrame"] | components["schemas"]["ToolCallPayload"] | components["schemas"]["ToolResultPayload"] | components["schemas"]["GenerationDeltaFrame"];
         /** @description Live-only, SessionMessage-compatible transcript preview for an in-flight agent response segment. It carries no durable `seq`, transcript `sequence`, or stable `message_id`; the committed row later replaces it by `turn_id` plus `metadata.response_message_index`. */
         SessionMessagePreviewFrame: {
             /** @enum {string} */
@@ -6616,11 +6689,9 @@ export interface components {
             /** Format: date-time */
             expires_at?: string;
         };
-        /** @description Payload of a `turn.completed` event — the terminal idle marker carrying token usage. The assistant output is not duplicated here; it is delivered as `agent.message` content events when the transcript commits. */
+        /** @description Payload of a `turn.completed` event — the terminal idle marker carrying token usage. The assistant output is not duplicated here; it is delivered as `agent.message` content events when the transcript commits. The same usage is readable after the fact on the turn resource, so a consumer that missed the pulse never has to replay the stream for it. */
         TurnCompletedPayload: {
-            usage?: {
-                [key: string]: unknown;
-            };
+            usage?: components["schemas"]["AgentTurnUsage"];
         } & {
             [key: string]: unknown;
         };
@@ -6644,8 +6715,44 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /**
+         * @description What started a compaction pass. `auto` is the threshold-gated pass that runs after a turn commits; `append` is the threshold-gated pass that runs inline on a message append; `manual` is an explicit compact request.
+         * @enum {string}
+         */
+        CompactionTrigger: "auto" | "manual" | "append";
+        /** @description Payload of a `compaction.started` event, emitted immediately before the summarizer call and only once every gate has passed — so receiving it means a pass is really running. Live-only: it is not replayed on reconnect, so a client that connects mid-pass reads the session's `compaction` field instead. Every started pass is followed by exactly one `compaction.created` or `compaction.failed`. */
+        CompactionStartedPayload: {
+            trigger?: components["schemas"]["CompactionTrigger"];
+            /** @description Lowest transcript sequence this pass is summarizing. */
+            from_sequence?: number;
+            /** @description Highest transcript sequence this pass is summarizing. */
+            through_sequence?: number;
+            /** @description Number of transcript messages this pass is folding into the summary. */
+            message_count?: number;
+            /** @description Estimated token size of the window being summarized. */
+            estimated_tokens?: number;
+            /** @description Model that will produce the summary. */
+            summary_model?: string;
+        } & {
+            [key: string]: unknown;
+        };
+        /** @description Payload of a `compaction.failed` event — the other terminal outcome of a started pass. It guarantees an indicator opened on `compaction.started` always comes down, instead of hanging on a pass that produced no summary. Live-only, like `compaction.started`: a failed pass appends nothing to the transcript, so there is no durable row to replay. The transcript is unchanged; the next pass recomputes from the same boundary. */
+        CompactionFailedPayload: {
+            trigger?: components["schemas"]["CompactionTrigger"];
+            /** @description Lowest transcript sequence the failed pass was summarizing. */
+            from_sequence?: number;
+            /** @description Highest transcript sequence the failed pass was summarizing. */
+            through_sequence?: number;
+            /** @description Machine-readable failure category. Currently `summarizer_error`, `timeout`, `empty_summary`, or `storage_error`. Treat it as an open string: new categories may be added, and a client that switches on it should fall through to a generic "compaction failed". */
+            error_type?: string;
+            /** @description Truncated failure detail. Diagnostics live in the server logs, not here. */
+            error_message?: string;
+        } & {
+            [key: string]: unknown;
+        };
         /** @description Payload of a `compaction.created` event, emitted when the session transcript is summarized. The event is non-terminal: it never closes the session stream, so a live consumer observes a compaction landing inline. */
         CompactionCreatedPayload: {
+            trigger?: components["schemas"]["CompactionTrigger"];
             /** @description Id of the compaction summary message appended to the transcript. */
             message_id?: string;
             /**
@@ -8119,7 +8226,7 @@ export interface components {
             /** @description Markdown instructions loaded when the skill is active. */
             instructions: string;
             /**
-             * @description Tool selectors that narrow the agent's effective tool set while this skill is active.
+             * @description Tool selectors naming the actions this skill needs. The grant applies once an agent invokes the skill and lasts for the rest of that turn. Empty declares nothing and narrows nothing.
              * @default []
              */
             allowed_tools?: string[];
@@ -8268,7 +8375,7 @@ export interface components {
             title?: string;
             description?: string;
             instructions?: string;
-            /** @description Tool selectors that narrow the agent's effective tool set while this skill is active. */
+            /** @description Tool selectors naming the actions this skill needs. The grant applies once an agent invokes the skill and lasts for the rest of that turn. Empty declares nothing and narrows nothing. */
             allowed_tools?: string[];
             tags?: components["schemas"]["TagMap"];
         };
@@ -12135,7 +12242,7 @@ export interface operations {
             query?: {
                 /** @description Optional comma-separated toolkit subset to apply. */
                 toolkit_ids?: string;
-                /** @description Optional assigned skill name to preselect as active. */
+                /** @description Optional assigned skill name to simulate as invoked, so the response shows the tool scope a turn would run under once that skill is loaded. Omitted means no skill grant is applied; the resolved set still reflects the other filters on this request (`toolkit_ids`, `allowed_tools`). */
                 skill_name?: string;
                 /** @description Optional comma-separated canonical action names, wildcard selectors, or group references to apply as a per-invocation filter against the resolved tool set. */
                 allowed_tools?: string;

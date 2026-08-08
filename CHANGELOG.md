@@ -6,6 +6,30 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 
 ## [Unreleased]
 
+### Added
+
+- Typed turn token usage (`AgentTurnUsage`): input/output, cache read and
+  create, reasoning, and LLM call count. It replaces the untyped `usage` object
+  on the turn resource, the transcript turn, and the `turn.completed` stream
+  frame, and is now covered by the cross-language contract fixtures.
+- `compaction.started` and `compaction.failed` session stream frames, both
+  carrying the new `trigger` (`auto`/`manual`/`append`) that `compaction.created`
+  now reports too. Every started pass ends in exactly one of created or failed.
+- `compaction` on the single-session read: whether a pass is running now, the
+  range it covers, and `threshold_tokens` for the next automatic pass. Both are
+  live-only, so a client that connects mid-pass polls this instead.
+
+### Changed
+
+- Skill `allowed_tools` is an invoke-time grant, not an assignment-time
+  narrowing: assigning a skill changes nothing until the agent invokes it, and
+  the grant then lasts the rest of the turn. `GET agent tools` `skill_name`
+  simulates an invoked skill rather than preselecting an active one.
+- The documented `tool_presentation` create-time default is `meta`, matching
+  actual behavior since 0.0.25; the spec still said `flat`. Its description now
+  explains the tradeoff — `meta` costs discovery calls every turn, `flat` costs
+  one-time cached tool definitions.
+
 ## [0.0.59] - 2026-08-01
 
 ### Added

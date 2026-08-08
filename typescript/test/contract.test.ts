@@ -101,6 +101,11 @@ test("contract: transcript frame sequence folds identically", () => {
       failed_turn_id: string;
       failed_turn_error_type: string;
       failed_turn_error_message: string;
+      usage_turn_id: string;
+      usage_input_tokens: number;
+      usage_output_tokens: number;
+      usage_cache_read_input_tokens: number;
+      usage_calls: number;
     };
   };
   const transcript = new SessionTranscript();
@@ -172,6 +177,21 @@ test("contract: transcript frame sequence folds identically", () => {
   const failed = transcript.turn(fixture.expected.failed_turn_id)!;
   assert.equal(failed.error_type, fixture.expected.failed_turn_error_type);
   assert.equal(failed.error_message, fixture.expected.failed_turn_error_message);
+  const completed = transcript.turn(fixture.expected.usage_turn_id)!;
+  assert.equal(
+    completed.usage?.input_tokens,
+    fixture.expected.usage_input_tokens,
+  );
+  assert.equal(
+    completed.usage?.output_tokens,
+    fixture.expected.usage_output_tokens,
+  );
+  assert.equal(
+    completed.usage?.cache_read_input_tokens,
+    fixture.expected.usage_cache_read_input_tokens,
+  );
+  assert.equal(completed.usage?.calls, fixture.expected.usage_calls);
+  assert.equal(completed.usage?.reasoning_tokens, undefined);
 });
 
 test("contract: transcript snapshot pages converge", () => {

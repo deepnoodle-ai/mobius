@@ -2881,9 +2881,10 @@ paths:
       tags:
       - agents
       summary: Replace agent toolkit assignments
-      description: Replaces the agent's toolkit assignment set as a whole. The effective tool
-        surface is the union of the assigned toolkits' actions, narrowed by any active skills
-        and per-invocation filters.
+      description: 'Replaces the agent''s toolkit assignment set as a whole. The effective
+        tool surface is the union of the assigned toolkits'' actions, narrowed by any per-invocation
+        filters. Assigned skills do not narrow it: a skill''s `allowed_tools` grant applies
+        only once the agent invokes that skill.'
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/IDParam'
@@ -2941,9 +2942,10 @@ paths:
       tags:
       - agents
       summary: Replace agent skill assignments
-      description: Replaces the agent's skill assignment set as a whole. A skill can narrow
-        the agent's tools while active via its `allowed_tools` filter; it never widens the
-        set beyond the assigned toolkits' actions.
+      description: 'Replaces the agent''s skill assignment set as a whole. Assigning a skill
+        does not change the agent''s tools: a skill''s `allowed_tools` grant takes effect
+        only once the agent invokes that skill, and never widens the set beyond the assigned
+        toolkits'' actions.'
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/IDParam'
@@ -2979,9 +2981,10 @@ paths:
       tags:
       - agents
       summary: Get agent tools
-      description: 'Resolves the effective set of tools an agent can invoke: the flat union
-        of the assigned toolkits'' actions, optionally restricted by a toolkit subset, per-invocation
-        tool filters, and active skill narrowing.'
+      description: |-
+        Resolves the effective set of tools an agent can invoke: the flat union of the assigned toolkits' actions, optionally restricted by a toolkit subset and tool filters.
+
+        Assigned skills do not narrow this set — a skill's `allowed_tools` grant applies only once the agent invokes that skill at runtime. Pass `skill_name` to preview the tools the agent would be left with while that one skill is loaded.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/IDParam'
@@ -2992,7 +2995,10 @@ paths:
           type: string
       - name: skill_name
         in: query
-        description: Optional assigned skill name to preselect as active.
+        description: Optional assigned skill name to simulate as invoked, so the response
+          shows the tool scope a turn would run under once that skill is loaded. Omitted means
+          no skill grant is applied; the resolved set still reflects the other filters on
+          this request (`toolkit_ids`, `allowed_tools`).
         schema:
           type: string
       - name: allowed_tools
@@ -7119,9 +7125,10 @@ components:
       enum:
       - flat
       - meta
-      description: Controls how granted actions are surfaced to the model in Mobius-hosted
-        agent turns. `meta` (the default) groups related actions behind compact command routers,
-        while `flat` exposes one tool per action.
+      description: |-
+        Controls how granted actions are surfaced to the model in Mobius-hosted agent turns. `meta` (the default) groups related actions behind compact command routers, while `flat` exposes one tool per action.
+
+        The two modes pay the same cost in different places. `meta` keeps the tool definitions small no matter how many actions are granted, but the router advertises command names only, so the model spends extra calls on `help` to discover arguments — every turn. `flat` puts every action's schema in the tool definitions, which are sent once and cached, and removes the discovery calls entirely. Prefer `meta` when the action count is large enough that the schemas would crowd the context window; prefer `flat` otherwise.
     SessionCompactionThreshold:
       type: string
       enum:
@@ -7418,6 +7425,54 @@ components:
         covers_through_sequence:
           type: integer
           description: Highest message sequence this summary covers — the before/after boundary.
+    SessionCompactionProgress:
+      type: object
+      additionalProperties: false
+      description: |-
+        Whether a compaction pass is running on this session right now, and the threshold that will trigger the next one.
+
+        This is the poll-side counterpart to the `compaction.started` / `compaction.created` / `compaction.failed` stream events: those events are live-only, so a client that connects mid-pass reads this instead. On the single-session read the object is always present, so a client binds one shape — an idle session reports `in_progress: false` and nothing else but the threshold. List entries omit it entirely.
+
+        Paired with `token_input_total` (or a client-side estimate over the transcript it already renders), `threshold_tokens` supports a context-capacity gauge rather than a spinner that appears without warning.
+      required:
+      - in_progress
+      properties:
+        in_progress:
+          type: boolean
+          description: 'True while a summarization pass is running. Derived: a pass that dies
+            without clearing its marker reads false once its `deadline` passes.'
+        started_at:
+          type: string
+          format: date-time
+          description: When the running pass started. Absent when no pass is running.
+        deadline:
+          type: string
+          format: date-time
+          description: When the running pass gives up. Absent when no pass is running. A pass
+            still marked in progress past this point has died.
+        from_sequence:
+          type: integer
+          description: Lowest transcript sequence the running pass is summarizing.
+        through_sequence:
+          type: integer
+          description: Highest transcript sequence the running pass is summarizing.
+        message_count:
+          type: integer
+          description: Number of transcript messages the running pass is folding into its
+            summary.
+        threshold_tokens:
+          type: integer
+          description: Estimated-token size at which this session compacts automatically,
+            resolved from its policy and model. Absent when the session does not compact automatically
+            (`manual`, `disabled`).
+      example:
+        in_progress: true
+        started_at: '2026-08-02T15:04:05Z'
+        deadline: '2026-08-02T15:04:35Z'
+        from_sequence: 412
+        through_sequence: 987
+        message_count: 63
+        threshold_tokens: 150000
     Session:
       type: object
       additionalProperties: false
@@ -7508,6 +7563,10 @@ components:
             session has never been compacted. Delineates summarized history (sequences at
             or below `covers_through_sequence`) from the live tail. Returned on the single-session
             read; absent from list entries.
+        compaction:
+          $ref: '#/components/schemas/SessionCompactionProgress'
+          description: Live compaction progress plus the threshold that triggers the next
+            pass. Returned on the single-session read; absent from list entries.
         message_count:
           type: integer
           description: Total messages currently in the session, including compaction summaries.
@@ -12362,7 +12421,9 @@ components:
           description: Markdown description of the skill's purpose.
         active:
           type: boolean
-          description: Whether this skill is currently active in the resolved manifest.
+          description: Whether this skill is the one being simulated as invoked, i.e. it matched
+            the `skill_name` parameter and its `allowed_tools` grant was applied to this manifest.
+            False for every assigned skill when `skill_name` is omitted.
         missing_required:
           type: array
           description: Tool selectors the skill requires but that are not available to the
@@ -12458,7 +12519,8 @@ components:
             $ref: '#/components/schemas/ResolvedActionGroup'
         skills:
           type: array
-          description: Skills active for this agent in the resolved manifest.
+          description: Skills assigned to this agent, as resolved for this manifest. See each
+            entry's `active` property for which one's grant was applied.
           items:
             $ref: '#/components/schemas/SkillManifestEntry'
         warnings:
@@ -12508,7 +12570,7 @@ components:
           description: Default route for model calls made by this agent.
         tool_presentation:
           $ref: '#/components/schemas/AgentToolPresentation'
-          description: Omit to use the create-time default, `flat`.
+          description: Omit to use the create-time default, `meta`.
         system_prompt:
           type: string
           description: Custom system prompt for agents. Empty uses the generated default.
@@ -13231,9 +13293,10 @@ components:
           description: Markdown instructions loaded when the skill is active.
         allowed_tools:
           type: array
-          description: Canonical action names, wildcard selectors, or group references that
-            narrow the agent's effective tool set while this skill is active. Uses the same
-            selector vocabulary as toolkit grants.
+          description: |-
+            Canonical action names, wildcard selectors, or group references naming the actions this skill needs. Uses the same selector vocabulary as toolkit grants.
+
+            The grant takes effect when an agent invokes the skill, and lasts for the rest of that turn: calls to actions outside it are refused with an error naming the skill. Assigning a skill narrows nothing on its own, and an empty list declares nothing and narrows nothing. Skills invoked in the same turn compose as a union, so this keeps a skill on task rather than sandboxing it. Mobius memory and self-awareness tools are always exempt, and a skill can never widen an agent beyond its assigned toolkits.
           items:
             type: string
         tags:
@@ -13343,6 +13406,10 @@ components:
           $ref: '#/components/schemas/AgentTurnOutputSource'
           description: 'Where `output` came from: a `mobius_submit_output` submission (`tool`)
             or the schema-valid final-text fallback (`text`).'
+        usage:
+          $ref: '#/components/schemas/AgentTurnUsage'
+          description: Token usage recorded when the turn completed. Absent on turns that
+            never reached the model and on turns that failed.
         effective_timeout_seconds:
           type: integer
           format: int64
@@ -13359,6 +13426,40 @@ components:
           type: string
           format: date-time
           description: When the turn reached a terminal status.
+    AgentTurnUsage:
+      type: object
+      additionalProperties: true
+      description: Aggregate token accounting for one completed turn, summed over every LLM
+        call the turn made. It is a usage report, not a bill — see the billing usage events
+        for charged amounts.
+      properties:
+        input_tokens:
+          type: integer
+          description: Fresh (uncached) prompt tokens. Cache traffic is reported separately
+            and is never folded in here.
+        output_tokens:
+          type: integer
+          description: Tokens the model generated, including reasoning tokens.
+        cache_read_input_tokens:
+          type: integer
+          description: Prompt tokens served from the provider's prompt cache. Omitted when
+            zero.
+        cache_creation_input_tokens:
+          type: integer
+          description: Prompt tokens written into the provider's prompt cache. Omitted when
+            zero.
+        reasoning_tokens:
+          type: integer
+          description: Hidden reasoning tokens billed as output but absent from the visible
+            reply. Omitted when zero or unreported by the provider.
+        calls:
+          type: integer
+          description: LLM calls folded into this turn's totals. Omitted when zero.
+      example:
+        input_tokens: 1840
+        output_tokens: 412
+        cache_read_input_tokens: 20480
+        calls: 3
     AgentTurnListResponse:
       type: object
       additionalProperties: false
@@ -13506,9 +13607,10 @@ components:
         error_message:
           type: string
         usage:
-          type: object
-          additionalProperties: true
-          description: Token usage recorded when the turn terminalized, when available.
+          $ref: '#/components/schemas/AgentTurnUsage'
+          description: Token usage recorded when the turn completed. Identical to the `usage`
+            on the turn resource, and identical on the bootstrap and cursored reads of this
+            snapshot.
         output:
           type: object
           additionalProperties: true
@@ -13707,7 +13809,9 @@ components:
       anyOf:
       - $ref: '#/components/schemas/SessionUserMessagePayload'
       - $ref: '#/components/schemas/AgentMessagePayload'
+      - $ref: '#/components/schemas/CompactionStartedPayload'
       - $ref: '#/components/schemas/CompactionCreatedPayload'
+      - $ref: '#/components/schemas/CompactionFailedPayload'
       - $ref: '#/components/schemas/TurnStartedPayload'
       - $ref: '#/components/schemas/TurnWaitingPayload'
       - $ref: '#/components/schemas/TurnCompletedPayload'
@@ -13725,7 +13829,7 @@ components:
 
         The `event:` line is the authoritative frame selector. This union is reference-only: several payloads are structurally identical (e.g. `user.message` and `agent.message`) or permissive open objects, so the `data:` body alone cannot be shape-matched to a single variant. Consumers MUST dispatch on the `event:` name and decode the body as the corresponding payload — never validate the bare body against the union.
 
-        Durable message frames (`user.message`, `agent.message`, `compaction.created`) are replayed from the transcript and carry an SSE `id: <sequence>` — that `sequence` is the only cursor a client persists for `after_sequence` / `Last-Event-ID` resume. Terminal `turn.*` frames mark the active turn settling. `session.message.preview`, `session.resync`, `nudge.queued`, `nudge.delivered`, `nudge.cancelled`, `tool.call`, `tool.result`, and `generation.delta` frames are live-only and carry no `id:`. `stream.end` is the final envelope on every deliberate server-side close and also carries no `id:`.
+        Durable message frames (`user.message`, `agent.message`, `compaction.created`) are replayed from the transcript and carry an SSE `id: <sequence>` — that `sequence` is the only cursor a client persists for `after_sequence` / `Last-Event-ID` resume. Terminal `turn.*` frames mark the active turn settling. `session.message.preview`, `session.resync`, `nudge.queued`, `nudge.delivered`, `nudge.cancelled`, `tool.call`, `tool.result`, `compaction.started`, `compaction.failed`, and `generation.delta` frames are live-only and carry no `id:`. `stream.end` is the final envelope on every deliberate server-side close and also carries no `id:`.
     SessionMessagePreviewFrame:
       type: object
       additionalProperties: true
@@ -14023,11 +14127,12 @@ components:
       additionalProperties: true
       description: Payload of a `turn.completed` event — the terminal idle marker carrying
         token usage. The assistant output is not duplicated here; it is delivered as `agent.message`
-        content events when the transcript commits.
+        content events when the transcript commits. The same usage is readable after the fact
+        on the turn resource, so a consumer that missed the pulse never has to replay the
+        stream for it.
       properties:
         usage:
-          type: object
-          additionalProperties: true
+          $ref: '#/components/schemas/AgentTurnUsage'
     TurnFailedPayload:
       type: object
       additionalProperties: true
@@ -14062,6 +14167,68 @@ components:
           $ref: '#/components/schemas/SessionNudgeDelivery'
         status:
           $ref: '#/components/schemas/SessionNudgeStatus'
+    CompactionTrigger:
+      type: string
+      enum:
+      - auto
+      - manual
+      - append
+      description: What started a compaction pass. `auto` is the threshold-gated pass that
+        runs after a turn commits; `append` is the threshold-gated pass that runs inline on
+        a message append; `manual` is an explicit compact request.
+    CompactionStartedPayload:
+      type: object
+      additionalProperties: true
+      description: 'Payload of a `compaction.started` event, emitted immediately before the
+        summarizer call and only once every gate has passed — so receiving it means a pass
+        is really running. Live-only: it is not replayed on reconnect, so a client that connects
+        mid-pass reads the session''s `compaction` field instead. Every started pass is followed
+        by exactly one `compaction.created` or `compaction.failed`.'
+      properties:
+        trigger:
+          $ref: '#/components/schemas/CompactionTrigger'
+        from_sequence:
+          type: integer
+          description: Lowest transcript sequence this pass is summarizing.
+        through_sequence:
+          type: integer
+          description: Highest transcript sequence this pass is summarizing.
+        message_count:
+          type: integer
+          description: Number of transcript messages this pass is folding into the summary.
+        estimated_tokens:
+          type: integer
+          description: Estimated token size of the window being summarized.
+        summary_model:
+          type: string
+          description: Model that will produce the summary.
+    CompactionFailedPayload:
+      type: object
+      additionalProperties: true
+      description: 'Payload of a `compaction.failed` event — the other terminal outcome of
+        a started pass. It guarantees an indicator opened on `compaction.started` always comes
+        down, instead of hanging on a pass that produced no summary. Live-only, like `compaction.started`:
+        a failed pass appends nothing to the transcript, so there is no durable row to replay.
+        The transcript is unchanged; the next pass recomputes from the same boundary.'
+      properties:
+        trigger:
+          $ref: '#/components/schemas/CompactionTrigger'
+        from_sequence:
+          type: integer
+          description: Lowest transcript sequence the failed pass was summarizing.
+        through_sequence:
+          type: integer
+          description: Highest transcript sequence the failed pass was summarizing.
+        error_type:
+          type: string
+          description: 'Machine-readable failure category. Currently `summarizer_error`, `timeout`,
+            `empty_summary`, or `storage_error`. Treat it as an open string: new categories
+            may be added, and a client that switches on it should fall through to a generic
+            "compaction failed".'
+        error_message:
+          type: string
+          description: Truncated failure detail. Diagnostics live in the server logs, not
+            here.
     CompactionCreatedPayload:
       type: object
       additionalProperties: true
@@ -14069,6 +14236,8 @@ components:
         is summarized. The event is non-terminal: it never closes the session stream, so a
         live consumer observes a compaction landing inline.'
       properties:
+        trigger:
+          $ref: '#/components/schemas/CompactionTrigger'
         message_id:
           type: string
           description: Id of the compaction summary message appended to the transcript.
@@ -16477,8 +16646,9 @@ components:
         allowed_tools:
           type: array
           default: []
-          description: Tool selectors that narrow the agent's effective tool set while this
-            skill is active.
+          description: Tool selectors naming the actions this skill needs. The grant applies
+            once an agent invokes the skill and lasts for the rest of that turn. Empty declares
+            nothing and narrows nothing.
           items:
             type: string
         tags:
@@ -16783,8 +16953,9 @@ components:
           type: string
         allowed_tools:
           type: array
-          description: Tool selectors that narrow the agent's effective tool set while this
-            skill is active.
+          description: Tool selectors naming the actions this skill needs. The grant applies
+            once an agent invokes the skill and lasts for the rest of that turn. Empty declares
+            nothing and narrows nothing.
           items:
             type: string
         tags:

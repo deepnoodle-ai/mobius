@@ -803,6 +803,27 @@ func (e ColumnType) Valid() bool {
 	}
 }
 
+// Defines values for CompactionTrigger.
+const (
+	CompactionTriggerAppend CompactionTrigger = "append"
+	CompactionTriggerAuto   CompactionTrigger = "auto"
+	CompactionTriggerManual CompactionTrigger = "manual"
+)
+
+// Valid indicates whether the value is a known member of the CompactionTrigger enum.
+func (e CompactionTrigger) Valid() bool {
+	switch e {
+	case CompactionTriggerAppend:
+		return true
+	case CompactionTriggerAuto:
+		return true
+	case CompactionTriggerManual:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ConsumerKind.
 const (
 	ConsumerKindAgentTool      ConsumerKind = "agent_tool"
@@ -4320,6 +4341,8 @@ type Agent struct {
 	TimeoutSeconds *int64 `json:"timeout_seconds,omitempty"`
 
 	// ToolPresentation Controls how granted actions are surfaced to the model in Mobius-hosted agent turns. `meta` (the default) groups related actions behind compact command routers, while `flat` exposes one tool per action.
+	//
+	// The two modes pay the same cost in different places. `meta` keeps the tool definitions small no matter how many actions are granted, but the router advertises command names only, so the model spends extra calls on `help` to discover arguments — every turn. `flat` puts every action's schema in the tool definitions, which are sent once and cached, and removes the discovery calls entirely. Prefer `meta` when the action count is large enough that the schemas would crowd the context window; prefer `flat` otherwise.
 	ToolPresentation *AgentToolPresentation `json:"tool_presentation,omitempty"`
 
 	// UpdatedAt Timestamp when this agent was last updated.
@@ -4634,7 +4657,7 @@ type AgentToolManifest struct {
 	// PolicyHash Stable hash over the resolved tool + skill set; bumps when assigned toolkits or skills change.
 	PolicyHash string `json:"policy_hash"`
 
-	// Skills Skills active for this agent in the resolved manifest.
+	// Skills Skills assigned to this agent, as resolved for this manifest. See each entry's `active` property for which one's grant was applied.
 	Skills []SkillManifestEntry `json:"skills"`
 
 	// ToolkitIds Toolkit IDs that contributed to the resolved manifest.
@@ -4648,6 +4671,8 @@ type AgentToolManifest struct {
 }
 
 // AgentToolPresentation Controls how granted actions are surfaced to the model in Mobius-hosted agent turns. `meta` (the default) groups related actions behind compact command routers, while `flat` exposes one tool per action.
+//
+// The two modes pay the same cost in different places. `meta` keeps the tool definitions small no matter how many actions are granted, but the router advertises command names only, so the model spends extra calls on `help` to discover arguments — every turn. `flat` puts every action's schema in the tool definitions, which are sent once and cached, and removes the discovery calls entirely. Prefer `meta` when the action count is large enough that the schemas would crowd the context window; prefer `flat` otherwise.
 type AgentToolPresentation string
 
 // AgentTurn One attempt of an agent running the agent loop — the unit that produces a transcript. A turn is triggered by a direct send to the session, a loop step (run_id + step_key), or an inbound channel message (channel_exchange_id). Its messages are read via the turn's transcript endpoint.
@@ -4705,6 +4730,9 @@ type AgentTurn struct {
 
 	// UpdatedAt Time the turn was last updated.
 	UpdatedAt time.Time `json:"updated_at"`
+
+	// Usage Aggregate token accounting for one completed turn, summed over every LLM call the turn made. It is a usage report, not a bill — see the billing usage events for charged amounts.
+	Usage *AgentTurnUsage `json:"usage,omitempty"`
 }
 
 // AgentTurnErrorScope Present when the overall agent-turn budget was exhausted.
@@ -4733,6 +4761,28 @@ type AgentTurnOutputSource string
 
 // AgentTurnStatus Agent turn lifecycle status: `queued`, `running`, `waiting`, `completed`, `failed`, or `cancelled`.
 type AgentTurnStatus string
+
+// AgentTurnUsage Aggregate token accounting for one completed turn, summed over every LLM call the turn made. It is a usage report, not a bill — see the billing usage events for charged amounts.
+type AgentTurnUsage struct {
+	// CacheCreationInputTokens Prompt tokens written into the provider's prompt cache. Omitted when zero.
+	CacheCreationInputTokens *int `json:"cache_creation_input_tokens,omitempty"`
+
+	// CacheReadInputTokens Prompt tokens served from the provider's prompt cache. Omitted when zero.
+	CacheReadInputTokens *int `json:"cache_read_input_tokens,omitempty"`
+
+	// Calls LLM calls folded into this turn's totals. Omitted when zero.
+	Calls *int `json:"calls,omitempty"`
+
+	// InputTokens Fresh (uncached) prompt tokens. Cache traffic is reported separately and is never folded in here.
+	InputTokens *int `json:"input_tokens,omitempty"`
+
+	// OutputTokens Tokens the model generated, including reasoning tokens.
+	OutputTokens *int `json:"output_tokens,omitempty"`
+
+	// ReasoningTokens Hidden reasoning tokens billed as output but absent from the visible reply. Omitted when zero or unreported by the provider.
+	ReasoningTokens      *int                   `json:"reasoning_tokens,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
 
 // AppendSessionMessage Message payload to append to an existing durable session.
 type AppendSessionMessage struct {
@@ -5023,6 +5073,8 @@ type BlueprintAgentInput struct {
 	TimeoutSeconds *int64 `json:"timeout_seconds,omitempty"`
 
 	// ToolPresentation Controls how granted actions are surfaced to the model in Mobius-hosted agent turns. `meta` (the default) groups related actions behind compact command routers, while `flat` exposes one tool per action.
+	//
+	// The two modes pay the same cost in different places. `meta` keeps the tool definitions small no matter how many actions are granted, but the router advertises command names only, so the model spends extra calls on `help` to discover arguments — every turn. `flat` puts every action's schema in the tool definitions, which are sent once and cached, and removes the discovery calls entirely. Prefer `meta` when the action count is large enough that the schemas would crowd the context window; prefer `flat` otherwise.
 	ToolPresentation *AgentToolPresentation  `json:"tool_presentation,omitempty"`
 	Toolkits         *[]BlueprintResourceRef `json:"toolkits,omitempty"`
 }
@@ -5178,7 +5230,7 @@ type BlueprintResources struct {
 
 // BlueprintSkillInput A desired skill.
 type BlueprintSkillInput struct {
-	// AllowedTools Tool selectors that narrow the agent's effective tool set while this skill is active.
+	// AllowedTools Tool selectors naming the actions this skill needs. The grant applies once an agent invokes the skill and lasts for the rest of that turn. Empty declares nothing and narrows nothing.
 	AllowedTools *[]string `json:"allowed_tools,omitempty"`
 	Description  *string   `json:"description,omitempty"`
 	Instructions *string   `json:"instructions,omitempty"`
@@ -5349,9 +5401,56 @@ type CompactionCreatedPayload struct {
 	Sequence *int64 `json:"sequence,omitempty"`
 
 	// SummaryModel Model that produced the summary.
-	SummaryModel         *string                `json:"summary_model,omitempty"`
+	SummaryModel *string `json:"summary_model,omitempty"`
+
+	// Trigger What started a compaction pass. `auto` is the threshold-gated pass that runs after a turn commits; `append` is the threshold-gated pass that runs inline on a message append; `manual` is an explicit compact request.
+	Trigger              *CompactionTrigger     `json:"trigger,omitempty"`
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
+
+// CompactionFailedPayload Payload of a `compaction.failed` event — the other terminal outcome of a started pass. It guarantees an indicator opened on `compaction.started` always comes down, instead of hanging on a pass that produced no summary. Live-only, like `compaction.started`: a failed pass appends nothing to the transcript, so there is no durable row to replay. The transcript is unchanged; the next pass recomputes from the same boundary.
+type CompactionFailedPayload struct {
+	// ErrorMessage Truncated failure detail. Diagnostics live in the server logs, not here.
+	ErrorMessage *string `json:"error_message,omitempty"`
+
+	// ErrorType Machine-readable failure category. Currently `summarizer_error`, `timeout`, `empty_summary`, or `storage_error`. Treat it as an open string: new categories may be added, and a client that switches on it should fall through to a generic "compaction failed".
+	ErrorType *string `json:"error_type,omitempty"`
+
+	// FromSequence Lowest transcript sequence the failed pass was summarizing.
+	FromSequence *int `json:"from_sequence,omitempty"`
+
+	// ThroughSequence Highest transcript sequence the failed pass was summarizing.
+	ThroughSequence *int `json:"through_sequence,omitempty"`
+
+	// Trigger What started a compaction pass. `auto` is the threshold-gated pass that runs after a turn commits; `append` is the threshold-gated pass that runs inline on a message append; `manual` is an explicit compact request.
+	Trigger              *CompactionTrigger     `json:"trigger,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// CompactionStartedPayload Payload of a `compaction.started` event, emitted immediately before the summarizer call and only once every gate has passed — so receiving it means a pass is really running. Live-only: it is not replayed on reconnect, so a client that connects mid-pass reads the session's `compaction` field instead. Every started pass is followed by exactly one `compaction.created` or `compaction.failed`.
+type CompactionStartedPayload struct {
+	// EstimatedTokens Estimated token size of the window being summarized.
+	EstimatedTokens *int `json:"estimated_tokens,omitempty"`
+
+	// FromSequence Lowest transcript sequence this pass is summarizing.
+	FromSequence *int `json:"from_sequence,omitempty"`
+
+	// MessageCount Number of transcript messages this pass is folding into the summary.
+	MessageCount *int `json:"message_count,omitempty"`
+
+	// SummaryModel Model that will produce the summary.
+	SummaryModel *string `json:"summary_model,omitempty"`
+
+	// ThroughSequence Highest transcript sequence this pass is summarizing.
+	ThroughSequence *int `json:"through_sequence,omitempty"`
+
+	// Trigger What started a compaction pass. `auto` is the threshold-gated pass that runs after a turn commits; `append` is the threshold-gated pass that runs inline on a message append; `manual` is an explicit compact request.
+	Trigger              *CompactionTrigger     `json:"trigger,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// CompactionTrigger What started a compaction pass. `auto` is the threshold-gated pass that runs after a turn commits; `append` is the threshold-gated pass that runs inline on a message append; `manual` is an explicit compact request.
+type CompactionTrigger string
 
 // Consumer Polymorphic identifier of what is waiting on this interaction's resolution. Replaces the previously special-cased `run_id` + `signal_name` pair. When `kind=run`, the legacy fields are also populated for compatibility. `http_subscriber` requires `secret_ref` and enqueues a durable callback dispatch to `callback_url` when the interaction resolves; the canonical string `v1.{delivery_id}.{unix_timestamp}.{raw_body}` is signed with HMAC-SHA256 against the resolved project signing key and the signed dispatch carries `X-Mobius-Signature`, `X-Mobius-Secret-Ref`, `X-Mobius-Secret-Version`, and `X-Mobius-Timestamp`. Signed dispatches also carry `X-Mobius-Signature-Version: v1`. Every durable dispatch also carries the stable outbox row id in `X-Mobius-Delivery-Id` and `Idempotency-Key`; retries reuse the same value. Verifiers should recompute the signature over the exact raw body, reject stale timestamps (for example, older than five minutes), deduplicate by delivery id, and check the signing headers.
 type Consumer struct {
@@ -5468,6 +5567,8 @@ type CreateAgentRequest struct {
 	TimeoutSeconds *int64 `json:"timeout_seconds,omitempty"`
 
 	// ToolPresentation Controls how granted actions are surfaced to the model in Mobius-hosted agent turns. `meta` (the default) groups related actions behind compact command routers, while `flat` exposes one tool per action.
+	//
+	// The two modes pay the same cost in different places. `meta` keeps the tool definitions small no matter how many actions are granted, but the router advertises command names only, so the model spends extra calls on `help` to discover arguments — every turn. `flat` puts every action's schema in the tool definitions, which are sent once and cached, and removes the discovery calls entirely. Prefer `meta` when the action count is large enough that the schemas would crowd the context window; prefer `flat` otherwise.
 	ToolPresentation *AgentToolPresentation `json:"tool_presentation,omitempty"`
 }
 
@@ -8640,6 +8741,13 @@ type Session struct {
 	// CacheReadInputTotal Lifetime prompt-cache-read input-token total for this session.
 	CacheReadInputTotal int `json:"cache_read_input_total"`
 
+	// Compaction Whether a compaction pass is running on this session right now, and the threshold that will trigger the next one.
+	//
+	// This is the poll-side counterpart to the `compaction.started` / `compaction.created` / `compaction.failed` stream events: those events are live-only, so a client that connects mid-pass reads this instead. On the single-session read the object is always present, so a client binds one shape — an idle session reports `in_progress: false` and nothing else but the threshold. List entries omit it entirely.
+	//
+	// Paired with `token_input_total` (or a client-side estimate over the transcript it already renders), `threshold_tokens` supports a context-capacity gauge rather than a spinner that appears without warning.
+	Compaction *SessionCompactionProgress `json:"compaction,omitempty"`
+
 	// CompactionPolicy Controls how a session's transcript is automatically summarized as it grows. On create the supplied fields are merged over the owning agent's default policy and the server defaults; on update they patch the session's current policy. Omitted fields keep their resolved values.
 	CompactionPolicy *SessionCompactionPolicy `json:"compaction_policy,omitempty"`
 
@@ -8754,6 +8862,34 @@ type SessionCompactionPolicy struct {
 
 // SessionCompactionPolicyStrategy `auto` (default) compacts automatically when the transcript crosses the model-relative `threshold` or exact `threshold_tokens` trigger. `manual` only compacts on an explicit compact request. `disabled` (alias `none`) never compacts.
 type SessionCompactionPolicyStrategy string
+
+// SessionCompactionProgress Whether a compaction pass is running on this session right now, and the threshold that will trigger the next one.
+//
+// This is the poll-side counterpart to the `compaction.started` / `compaction.created` / `compaction.failed` stream events: those events are live-only, so a client that connects mid-pass reads this instead. On the single-session read the object is always present, so a client binds one shape — an idle session reports `in_progress: false` and nothing else but the threshold. List entries omit it entirely.
+//
+// Paired with `token_input_total` (or a client-side estimate over the transcript it already renders), `threshold_tokens` supports a context-capacity gauge rather than a spinner that appears without warning.
+type SessionCompactionProgress struct {
+	// Deadline When the running pass gives up. Absent when no pass is running. A pass still marked in progress past this point has died.
+	Deadline *time.Time `json:"deadline,omitempty"`
+
+	// FromSequence Lowest transcript sequence the running pass is summarizing.
+	FromSequence *int `json:"from_sequence,omitempty"`
+
+	// InProgress True while a summarization pass is running. Derived: a pass that dies without clearing its marker reads false once its `deadline` passes.
+	InProgress bool `json:"in_progress"`
+
+	// MessageCount Number of transcript messages the running pass is folding into its summary.
+	MessageCount *int `json:"message_count,omitempty"`
+
+	// StartedAt When the running pass started. Absent when no pass is running.
+	StartedAt *time.Time `json:"started_at,omitempty"`
+
+	// ThresholdTokens Estimated-token size at which this session compacts automatically, resolved from its policy and model. Absent when the session does not compact automatically (`manual`, `disabled`).
+	ThresholdTokens *int `json:"threshold_tokens,omitempty"`
+
+	// ThroughSequence Highest transcript sequence the running pass is summarizing.
+	ThroughSequence *int `json:"through_sequence,omitempty"`
+}
 
 // SessionCompactionThreshold T-shirt size selecting when `auto` compaction triggers as a percentage of the session model's input context window: `xs` 10%, `sm` 20%, `md` 40%, `lg` 60%, and `xl` 80%. Unknown/custom models use a conservative 200k-token context window. `sm` is the default.
 type SessionCompactionThreshold string
@@ -9039,7 +9175,7 @@ type SessionStatus string
 //
 // The `event:` line is the authoritative frame selector. This union is reference-only: several payloads are structurally identical (e.g. `user.message` and `agent.message`) or permissive open objects, so the `data:` body alone cannot be shape-matched to a single variant. Consumers MUST dispatch on the `event:` name and decode the body as the corresponding payload — never validate the bare body against the union.
 //
-// Durable message frames (`user.message`, `agent.message`, `compaction.created`) are replayed from the transcript and carry an SSE `id: <sequence>` — that `sequence` is the only cursor a client persists for `after_sequence` / `Last-Event-ID` resume. Terminal `turn.*` frames mark the active turn settling. `session.message.preview`, `session.resync`, `nudge.queued`, `nudge.delivered`, `nudge.cancelled`, `tool.call`, `tool.result`, and `generation.delta` frames are live-only and carry no `id:`. `stream.end` is the final envelope on every deliberate server-side close and also carries no `id:`.
+// Durable message frames (`user.message`, `agent.message`, `compaction.created`) are replayed from the transcript and carry an SSE `id: <sequence>` — that `sequence` is the only cursor a client persists for `after_sequence` / `Last-Event-ID` resume. Terminal `turn.*` frames mark the active turn settling. `session.message.preview`, `session.resync`, `nudge.queued`, `nudge.delivered`, `nudge.cancelled`, `tool.call`, `tool.result`, `compaction.started`, `compaction.failed`, and `generation.delta` frames are live-only and carry no `id:`. `stream.end` is the final envelope on every deliberate server-side close and also carries no `id:`.
 type SessionStreamFrame struct {
 	union json.RawMessage
 }
@@ -9188,9 +9324,9 @@ type SessionTranscriptTurn struct {
 	StepKey   *string   `json:"step_key,omitempty"`
 	UpdatedAt time.Time `json:"updated_at"`
 
-	// Usage Token usage recorded when the turn terminalized, when available.
-	Usage *map[string]interface{} `json:"usage,omitempty"`
-	Wait  *SessionTranscriptWait  `json:"wait,omitempty"`
+	// Usage Aggregate token accounting for one completed turn, summed over every LLM call the turn made. It is a usage report, not a bill — see the billing usage events for charged amounts.
+	Usage *AgentTurnUsage        `json:"usage,omitempty"`
+	Wait  *SessionTranscriptWait `json:"wait,omitempty"`
 }
 
 // SessionTranscriptWait defines model for SessionTranscriptWait.
@@ -9242,7 +9378,9 @@ type SignalLoopRunRequest struct {
 
 // Skill Reusable instruction bundle assignable to agents.
 type Skill struct {
-	// AllowedTools Canonical action names, wildcard selectors, or group references that narrow the agent's effective tool set while this skill is active. Uses the same selector vocabulary as toolkit grants.
+	// AllowedTools Canonical action names, wildcard selectors, or group references naming the actions this skill needs. Uses the same selector vocabulary as toolkit grants.
+	//
+	// The grant takes effect when an agent invokes the skill, and lasts for the rest of that turn: calls to actions outside it are refused with an error naming the skill. Assigning a skill narrows nothing on its own, and an empty list declares nothing and narrows nothing. Skills invoked in the same turn compose as a union, so this keeps a skill on task rather than sandboxing it. Mobius memory and self-awareness tools are always exempt, and a skill can never widen an agent beyond its assigned toolkits.
 	AllowedTools *[]string `json:"allowed_tools,omitempty"`
 
 	// CreatedAt Record creation timestamp.
@@ -9314,7 +9452,7 @@ type SkillListResponse struct {
 
 // SkillManifestEntry Skill metadata included in a resolved agent tool manifest. Full instructions are loaded at runtime through the invoke_skill tool.
 type SkillManifestEntry struct {
-	// Active Whether this skill is currently active in the resolved manifest.
+	// Active Whether this skill is the one being simulated as invoked, i.e. it matched the `skill_name` parameter and its `allowed_tools` grant was applied to this manifest. False for every assigned skill when `skill_name` is omitted.
 	Active bool `json:"active"`
 
 	// Description Markdown description of the skill's purpose.
@@ -9335,7 +9473,7 @@ type SkillManifestEntry struct {
 
 // SkillRequest defines model for SkillRequest.
 type SkillRequest struct {
-	// AllowedTools Tool selectors that narrow the agent's effective tool set while this skill is active.
+	// AllowedTools Tool selectors naming the actions this skill needs. The grant applies once an agent invokes the skill and lasts for the rest of that turn. Empty declares nothing and narrows nothing.
 	AllowedTools *[]string `json:"allowed_tools,omitempty"`
 
 	// Description Markdown description of the skill's purpose.
@@ -9791,10 +9929,11 @@ type TurnCancelledPayload struct {
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
-// TurnCompletedPayload Payload of a `turn.completed` event — the terminal idle marker carrying token usage. The assistant output is not duplicated here; it is delivered as `agent.message` content events when the transcript commits.
+// TurnCompletedPayload Payload of a `turn.completed` event — the terminal idle marker carrying token usage. The assistant output is not duplicated here; it is delivered as `agent.message` content events when the transcript commits. The same usage is readable after the fact on the turn resource, so a consumer that missed the pulse never has to replay the stream for it.
 type TurnCompletedPayload struct {
-	Usage                *map[string]interface{} `json:"usage,omitempty"`
-	AdditionalProperties map[string]interface{}  `json:"-"`
+	// Usage Aggregate token accounting for one completed turn, summed over every LLM call the turn made. It is a usage report, not a bill — see the billing usage events for charged amounts.
+	Usage                *AgentTurnUsage        `json:"usage,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
 // TurnFailedPayload defines model for TurnFailedPayload.
@@ -9839,9 +9978,9 @@ type TurnUpsertFrame struct {
 	StepKey   *string   `json:"step_key,omitempty"`
 	UpdatedAt time.Time `json:"updated_at"`
 
-	// Usage Token usage recorded when the turn terminalized, when available.
-	Usage *map[string]interface{} `json:"usage,omitempty"`
-	Wait  *SessionTranscriptWait  `json:"wait,omitempty"`
+	// Usage Aggregate token accounting for one completed turn, summed over every LLM call the turn made. It is a usage report, not a bill — see the billing usage events for charged amounts.
+	Usage *AgentTurnUsage        `json:"usage,omitempty"`
+	Wait  *SessionTranscriptWait `json:"wait,omitempty"`
 }
 
 // TurnUpsertFrameEventType defines model for TurnUpsertFrame.EventType.
@@ -9924,6 +10063,8 @@ type UpdateAgentRequest struct {
 	TimeoutSeconds *int64 `json:"timeout_seconds,omitempty"`
 
 	// ToolPresentation Controls how granted actions are surfaced to the model in Mobius-hosted agent turns. `meta` (the default) groups related actions behind compact command routers, while `flat` exposes one tool per action.
+	//
+	// The two modes pay the same cost in different places. `meta` keeps the tool definitions small no matter how many actions are granted, but the router advertises command names only, so the model spends extra calls on `help` to discover arguments — every turn. `flat` puts every action's schema in the tool definitions, which are sent once and cached, and removes the discovery calls entirely. Prefer `meta` when the action count is large enough that the schemas would crowd the context window; prefer `flat` otherwise.
 	ToolPresentation *AgentToolPresentation `json:"tool_presentation,omitempty"`
 }
 
@@ -10918,7 +11059,7 @@ type GetAgentToolsParams struct {
 	// ToolkitIds Optional comma-separated toolkit subset to apply.
 	ToolkitIds *string `form:"toolkit_ids,omitempty" json:"toolkit_ids,omitempty"`
 
-	// SkillName Optional assigned skill name to preselect as active.
+	// SkillName Optional assigned skill name to simulate as invoked, so the response shows the tool scope a turn would run under once that skill is loaded. Omitted means no skill grant is applied; the resolved set still reflects the other filters on this request (`toolkit_ids`, `allowed_tools`).
 	SkillName *string `form:"skill_name,omitempty" json:"skill_name,omitempty"`
 
 	// AllowedTools Optional comma-separated canonical action names, wildcard selectors, or group references to apply as a per-invocation filter against the resolved tool set.
@@ -12217,6 +12358,149 @@ func (a AgentMessagePayload) MarshalJSON() ([]byte, error) {
 	return json.Marshal(object)
 }
 
+// Getter for additional properties for AgentTurnUsage. Returns the specified
+// element and whether it was found
+func (a AgentTurnUsage) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for AgentTurnUsage
+func (a *AgentTurnUsage) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for AgentTurnUsage to handle AdditionalProperties
+func (a *AgentTurnUsage) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["cache_creation_input_tokens"]; found {
+		err = json.Unmarshal(raw, &a.CacheCreationInputTokens)
+		if err != nil {
+			return fmt.Errorf("error reading 'cache_creation_input_tokens': %w", err)
+		}
+		delete(object, "cache_creation_input_tokens")
+	}
+
+	if raw, found := object["cache_read_input_tokens"]; found {
+		err = json.Unmarshal(raw, &a.CacheReadInputTokens)
+		if err != nil {
+			return fmt.Errorf("error reading 'cache_read_input_tokens': %w", err)
+		}
+		delete(object, "cache_read_input_tokens")
+	}
+
+	if raw, found := object["calls"]; found {
+		err = json.Unmarshal(raw, &a.Calls)
+		if err != nil {
+			return fmt.Errorf("error reading 'calls': %w", err)
+		}
+		delete(object, "calls")
+	}
+
+	if raw, found := object["input_tokens"]; found {
+		err = json.Unmarshal(raw, &a.InputTokens)
+		if err != nil {
+			return fmt.Errorf("error reading 'input_tokens': %w", err)
+		}
+		delete(object, "input_tokens")
+	}
+
+	if raw, found := object["output_tokens"]; found {
+		err = json.Unmarshal(raw, &a.OutputTokens)
+		if err != nil {
+			return fmt.Errorf("error reading 'output_tokens': %w", err)
+		}
+		delete(object, "output_tokens")
+	}
+
+	if raw, found := object["reasoning_tokens"]; found {
+		err = json.Unmarshal(raw, &a.ReasoningTokens)
+		if err != nil {
+			return fmt.Errorf("error reading 'reasoning_tokens': %w", err)
+		}
+		delete(object, "reasoning_tokens")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for AgentTurnUsage to handle AdditionalProperties
+func (a AgentTurnUsage) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.CacheCreationInputTokens != nil {
+		object["cache_creation_input_tokens"], err = json.Marshal(a.CacheCreationInputTokens)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'cache_creation_input_tokens': %w", err)
+		}
+	}
+
+	if a.CacheReadInputTokens != nil {
+		object["cache_read_input_tokens"], err = json.Marshal(a.CacheReadInputTokens)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'cache_read_input_tokens': %w", err)
+		}
+	}
+
+	if a.Calls != nil {
+		object["calls"], err = json.Marshal(a.Calls)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'calls': %w", err)
+		}
+	}
+
+	if a.InputTokens != nil {
+		object["input_tokens"], err = json.Marshal(a.InputTokens)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'input_tokens': %w", err)
+		}
+	}
+
+	if a.OutputTokens != nil {
+		object["output_tokens"], err = json.Marshal(a.OutputTokens)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'output_tokens': %w", err)
+		}
+	}
+
+	if a.ReasoningTokens != nil {
+		object["reasoning_tokens"], err = json.Marshal(a.ReasoningTokens)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'reasoning_tokens': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
 // Getter for additional properties for ArtifactCreatedPayload. Returns the specified
 // element and whether it was found
 func (a ArtifactCreatedPayload) Get(fieldName string) (value interface{}, found bool) {
@@ -12637,6 +12921,14 @@ func (a *CompactionCreatedPayload) UnmarshalJSON(b []byte) error {
 		delete(object, "summary_model")
 	}
 
+	if raw, found := object["trigger"]; found {
+		err = json.Unmarshal(raw, &a.Trigger)
+		if err != nil {
+			return fmt.Errorf("error reading 'trigger': %w", err)
+		}
+		delete(object, "trigger")
+	}
+
 	if len(object) != 0 {
 		a.AdditionalProperties = make(map[string]interface{})
 		for fieldName, fieldBuf := range object {
@@ -12702,6 +12994,284 @@ func (a CompactionCreatedPayload) MarshalJSON() ([]byte, error) {
 		object["summary_model"], err = json.Marshal(a.SummaryModel)
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'summary_model': %w", err)
+		}
+	}
+
+	if a.Trigger != nil {
+		object["trigger"], err = json.Marshal(a.Trigger)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'trigger': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for CompactionFailedPayload. Returns the specified
+// element and whether it was found
+func (a CompactionFailedPayload) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for CompactionFailedPayload
+func (a *CompactionFailedPayload) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for CompactionFailedPayload to handle AdditionalProperties
+func (a *CompactionFailedPayload) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["error_message"]; found {
+		err = json.Unmarshal(raw, &a.ErrorMessage)
+		if err != nil {
+			return fmt.Errorf("error reading 'error_message': %w", err)
+		}
+		delete(object, "error_message")
+	}
+
+	if raw, found := object["error_type"]; found {
+		err = json.Unmarshal(raw, &a.ErrorType)
+		if err != nil {
+			return fmt.Errorf("error reading 'error_type': %w", err)
+		}
+		delete(object, "error_type")
+	}
+
+	if raw, found := object["from_sequence"]; found {
+		err = json.Unmarshal(raw, &a.FromSequence)
+		if err != nil {
+			return fmt.Errorf("error reading 'from_sequence': %w", err)
+		}
+		delete(object, "from_sequence")
+	}
+
+	if raw, found := object["through_sequence"]; found {
+		err = json.Unmarshal(raw, &a.ThroughSequence)
+		if err != nil {
+			return fmt.Errorf("error reading 'through_sequence': %w", err)
+		}
+		delete(object, "through_sequence")
+	}
+
+	if raw, found := object["trigger"]; found {
+		err = json.Unmarshal(raw, &a.Trigger)
+		if err != nil {
+			return fmt.Errorf("error reading 'trigger': %w", err)
+		}
+		delete(object, "trigger")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for CompactionFailedPayload to handle AdditionalProperties
+func (a CompactionFailedPayload) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.ErrorMessage != nil {
+		object["error_message"], err = json.Marshal(a.ErrorMessage)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'error_message': %w", err)
+		}
+	}
+
+	if a.ErrorType != nil {
+		object["error_type"], err = json.Marshal(a.ErrorType)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'error_type': %w", err)
+		}
+	}
+
+	if a.FromSequence != nil {
+		object["from_sequence"], err = json.Marshal(a.FromSequence)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'from_sequence': %w", err)
+		}
+	}
+
+	if a.ThroughSequence != nil {
+		object["through_sequence"], err = json.Marshal(a.ThroughSequence)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'through_sequence': %w", err)
+		}
+	}
+
+	if a.Trigger != nil {
+		object["trigger"], err = json.Marshal(a.Trigger)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'trigger': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for CompactionStartedPayload. Returns the specified
+// element and whether it was found
+func (a CompactionStartedPayload) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for CompactionStartedPayload
+func (a *CompactionStartedPayload) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for CompactionStartedPayload to handle AdditionalProperties
+func (a *CompactionStartedPayload) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["estimated_tokens"]; found {
+		err = json.Unmarshal(raw, &a.EstimatedTokens)
+		if err != nil {
+			return fmt.Errorf("error reading 'estimated_tokens': %w", err)
+		}
+		delete(object, "estimated_tokens")
+	}
+
+	if raw, found := object["from_sequence"]; found {
+		err = json.Unmarshal(raw, &a.FromSequence)
+		if err != nil {
+			return fmt.Errorf("error reading 'from_sequence': %w", err)
+		}
+		delete(object, "from_sequence")
+	}
+
+	if raw, found := object["message_count"]; found {
+		err = json.Unmarshal(raw, &a.MessageCount)
+		if err != nil {
+			return fmt.Errorf("error reading 'message_count': %w", err)
+		}
+		delete(object, "message_count")
+	}
+
+	if raw, found := object["summary_model"]; found {
+		err = json.Unmarshal(raw, &a.SummaryModel)
+		if err != nil {
+			return fmt.Errorf("error reading 'summary_model': %w", err)
+		}
+		delete(object, "summary_model")
+	}
+
+	if raw, found := object["through_sequence"]; found {
+		err = json.Unmarshal(raw, &a.ThroughSequence)
+		if err != nil {
+			return fmt.Errorf("error reading 'through_sequence': %w", err)
+		}
+		delete(object, "through_sequence")
+	}
+
+	if raw, found := object["trigger"]; found {
+		err = json.Unmarshal(raw, &a.Trigger)
+		if err != nil {
+			return fmt.Errorf("error reading 'trigger': %w", err)
+		}
+		delete(object, "trigger")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for CompactionStartedPayload to handle AdditionalProperties
+func (a CompactionStartedPayload) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.EstimatedTokens != nil {
+		object["estimated_tokens"], err = json.Marshal(a.EstimatedTokens)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'estimated_tokens': %w", err)
+		}
+	}
+
+	if a.FromSequence != nil {
+		object["from_sequence"], err = json.Marshal(a.FromSequence)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'from_sequence': %w", err)
+		}
+	}
+
+	if a.MessageCount != nil {
+		object["message_count"], err = json.Marshal(a.MessageCount)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'message_count': %w", err)
+		}
+	}
+
+	if a.SummaryModel != nil {
+		object["summary_model"], err = json.Marshal(a.SummaryModel)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'summary_model': %w", err)
+		}
+	}
+
+	if a.ThroughSequence != nil {
+		object["through_sequence"], err = json.Marshal(a.ThroughSequence)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'through_sequence': %w", err)
+		}
+	}
+
+	if a.Trigger != nil {
+		object["trigger"], err = json.Marshal(a.Trigger)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'trigger': %w", err)
 		}
 	}
 
@@ -18092,6 +18662,32 @@ func (t *SessionStreamFrame) MergeAgentMessagePayload(v AgentMessagePayload) err
 	return err
 }
 
+// AsCompactionStartedPayload returns the union data inside the SessionStreamFrame as a CompactionStartedPayload
+func (t SessionStreamFrame) AsCompactionStartedPayload() (CompactionStartedPayload, error) {
+	var body CompactionStartedPayload
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromCompactionStartedPayload overwrites any union data inside the SessionStreamFrame as the provided CompactionStartedPayload
+func (t *SessionStreamFrame) FromCompactionStartedPayload(v CompactionStartedPayload) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeCompactionStartedPayload performs a merge with any union data inside the SessionStreamFrame, using the provided CompactionStartedPayload
+func (t *SessionStreamFrame) MergeCompactionStartedPayload(v CompactionStartedPayload) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
 // AsCompactionCreatedPayload returns the union data inside the SessionStreamFrame as a CompactionCreatedPayload
 func (t SessionStreamFrame) AsCompactionCreatedPayload() (CompactionCreatedPayload, error) {
 	var body CompactionCreatedPayload
@@ -18108,6 +18704,32 @@ func (t *SessionStreamFrame) FromCompactionCreatedPayload(v CompactionCreatedPay
 
 // MergeCompactionCreatedPayload performs a merge with any union data inside the SessionStreamFrame, using the provided CompactionCreatedPayload
 func (t *SessionStreamFrame) MergeCompactionCreatedPayload(v CompactionCreatedPayload) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsCompactionFailedPayload returns the union data inside the SessionStreamFrame as a CompactionFailedPayload
+func (t SessionStreamFrame) AsCompactionFailedPayload() (CompactionFailedPayload, error) {
+	var body CompactionFailedPayload
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromCompactionFailedPayload overwrites any union data inside the SessionStreamFrame as the provided CompactionFailedPayload
+func (t *SessionStreamFrame) FromCompactionFailedPayload(v CompactionFailedPayload) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeCompactionFailedPayload performs a merge with any union data inside the SessionStreamFrame, using the provided CompactionFailedPayload
+func (t *SessionStreamFrame) MergeCompactionFailedPayload(v CompactionFailedPayload) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err

@@ -249,6 +249,8 @@ class AgentModelRoute(BaseModel):
 class AgentToolPresentation(StrEnum):
     """
     Controls how granted actions are surfaced to the model in Mobius-hosted agent turns. `meta` (the default) groups related actions behind compact command routers, while `flat` exposes one tool per action.
+
+    The two modes pay the same cost in different places. `meta` keeps the tool definitions small no matter how many actions are granted, but the router advertises command names only, so the model spends extra calls on `help` to discover arguments — every turn. `flat` puts every action's schema in the tool definitions, which are sent once and cached, and removes the discovery calls entirely. Prefer `meta` when the action count is large enough that the schemas would crowd the context window; prefer `flat` otherwise.
     """
 
     flat = 'flat'
@@ -525,6 +527,46 @@ class SessionCompactionBoundary(BaseModel):
     )
 
 
+class SessionCompactionProgress(BaseModel):
+    """
+    Whether a compaction pass is running on this session right now, and the threshold that will trigger the next one.
+
+    This is the poll-side counterpart to the `compaction.started` / `compaction.created` / `compaction.failed` stream events: those events are live-only, so a client that connects mid-pass reads this instead. On the single-session read the object is always present, so a client binds one shape — an idle session reports `in_progress: false` and nothing else but the threshold. List entries omit it entirely.
+
+    Paired with `token_input_total` (or a client-side estimate over the transcript it already renders), `threshold_tokens` supports a context-capacity gauge rather than a spinner that appears without warning.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    in_progress: bool = Field(
+        ...,
+        description='True while a summarization pass is running. Derived: a pass that dies without clearing its marker reads false once its `deadline` passes.',
+    )
+    started_at: AwareDatetime | None = Field(
+        None,
+        description='When the running pass started. Absent when no pass is running.',
+    )
+    deadline: AwareDatetime | None = Field(
+        None,
+        description='When the running pass gives up. Absent when no pass is running. A pass still marked in progress past this point has died.',
+    )
+    from_sequence: int | None = Field(
+        None, description='Lowest transcript sequence the running pass is summarizing.'
+    )
+    through_sequence: int | None = Field(
+        None, description='Highest transcript sequence the running pass is summarizing.'
+    )
+    message_count: int | None = Field(
+        None,
+        description='Number of transcript messages the running pass is folding into its summary.',
+    )
+    threshold_tokens: int | None = Field(
+        None,
+        description='Estimated-token size at which this session compacts automatically, resolved from its policy and model. Absent when the session does not compact automatically (`manual`, `disabled`).',
+    )
+
+
 class Session(BaseModel):
     """
     Durable conversation transcript owned by an agent.
@@ -582,6 +624,10 @@ class Session(BaseModel):
     latest_compaction: SessionCompactionBoundary | None = Field(
         None,
         description='The most recent compaction marker in the transcript, or null when the session has never been compacted. Delineates summarized history (sequences at or below `covers_through_sequence`) from the live tail. Returned on the single-session read; absent from list entries.',
+    )
+    compaction: SessionCompactionProgress | None = Field(
+        None,
+        description='Live compaction progress plus the threshold that triggers the next pass. Returned on the single-session read; absent from list entries.',
     )
     message_count: int = Field(
         ...,
@@ -3988,7 +4034,7 @@ class SkillManifestEntry(BaseModel):
     )
     active: bool = Field(
         ...,
-        description='Whether this skill is currently active in the resolved manifest.',
+        description='Whether this skill is the one being simulated as invoked, i.e. it matched the `skill_name` parameter and its `allowed_tools` grant was applied to this manifest. False for every assigned skill when `skill_name` is omitted.',
     )
     missing_required: list[str] | None = Field(
         None,
@@ -4073,7 +4119,7 @@ class CreateAgentRequest(BaseModel):
         None, description='Default route for model calls made by this agent.'
     )
     tool_presentation: AgentToolPresentation | None = Field(
-        None, description='Omit to use the create-time default, `flat`.'
+        None, description='Omit to use the create-time default, `meta`.'
     )
     system_prompt: str | None = Field(
         None,
@@ -4610,7 +4656,7 @@ class Skill(BaseModel):
     )
     allowed_tools: list[str] | None = Field(
         None,
-        description="Canonical action names, wildcard selectors, or group references that narrow the agent's effective tool set while this skill is active. Uses the same selector vocabulary as toolkit grants.",
+        description='Canonical action names, wildcard selectors, or group references naming the actions this skill needs. Uses the same selector vocabulary as toolkit grants.\n\nThe grant takes effect when an agent invokes the skill, and lasts for the rest of that turn: calls to actions outside it are refused with an error naming the skill. Assigning a skill narrows nothing on its own, and an empty list declares nothing and narrows nothing. Skills invoked in the same turn compose as a union, so this keeps a skill on task rather than sandboxing it. Mobius memory and self-awareness tools are always exempt, and a skill can never widen an agent beyond its assigned toolkits.',
     )
     tags: TagMap | None = Field(None, description='Labels to apply to the skill.')
     created_by: str | None = Field(
@@ -4640,82 +4686,35 @@ class AgentTurnOutputSource(StrEnum):
     text = 'text'
 
 
-class AgentTurn(BaseModel):
+class AgentTurnUsage(BaseModel):
     """
-    One attempt of an agent running the agent loop — the unit that produces a transcript. A turn is triggered by a direct send to the session, a loop step (run_id + step_key), or an inbound channel message (channel_exchange_id). Its messages are read via the turn's transcript endpoint.
+    Aggregate token accounting for one completed turn, summed over every LLM call the turn made. It is a usage report, not a bill — see the billing usage events for charged amounts.
     """
 
     model_config = ConfigDict(
-        extra='forbid',
+        extra='allow',
     )
-    id: str = Field(..., description='Stable turn identifier.')
-    agent_id: str = Field(..., description='Agent that ran this turn.')
-    session_id: str = Field(
-        ..., description="Session this turn's transcript was appended to."
-    )
-    run_id: str | None = Field(
+    input_tokens: int | None = Field(
         None,
-        description='Loop run that triggered this turn. Absent for messaging turns.',
+        description='Fresh (uncached) prompt tokens. Cache traffic is reported separately and is never folded in here.',
     )
-    step_key: str | None = Field(
+    output_tokens: int | None = Field(
+        None, description='Tokens the model generated, including reasoning tokens.'
+    )
+    cache_read_input_tokens: int | None = Field(
         None,
-        description='Step key (matches LoopRunStep.step_key, not its id) of the loop step that triggered this turn. Absent for messaging turns.',
+        description="Prompt tokens served from the provider's prompt cache. Omitted when zero.",
     )
-    channel_exchange_id: str | None = Field(
+    cache_creation_input_tokens: int | None = Field(
         None,
-        description='Inbound channel exchange that triggered this turn. Absent for loop turns.',
+        description="Prompt tokens written into the provider's prompt cache. Omitted when zero.",
     )
-    attempt: int = Field(
-        ...,
-        description='1-based attempt number for this run-step; retries create new turns.',
-    )
-    status: AgentTurnStatus = Field(
-        ..., description='Current lifecycle status of the agent turn.'
-    )
-    seq: int | None = Field(
+    reasoning_tokens: int | None = Field(
         None,
-        description='Per-session ordering hint (cosmetic; turns are ordered by creation time).',
+        description='Hidden reasoning tokens billed as output but absent from the visible reply. Omitted when zero or unreported by the provider.',
     )
-    error_type: str | None = Field(
-        None, description='Machine-readable failure category when the turn failed.'
-    )
-    error_message: str | None = Field(
-        None, description='Human-readable failure detail when the turn failed.'
-    )
-    error_scope: AgentTurnErrorScope | None = None
-    output: dict[str, Any] | None = Field(
-        None,
-        description='The validated structured output. Present only on a `completed` turn that declared an output schema. Read this instead of parsing the transcript.',
-    )
-    output_source: AgentTurnOutputSource | None = Field(
-        None,
-        description='Where `output` came from: a `mobius_submit_output` submission (`tool`) or the schema-valid final-text fallback (`text`).',
-    )
-    effective_timeout_seconds: int | None = Field(
-        None, description='Authoritative active-execution budget selected for the turn.'
-    )
-    created_at: AwareDatetime = Field(..., description='Time the turn was created.')
-    updated_at: AwareDatetime = Field(
-        ..., description='Time the turn was last updated.'
-    )
-    completed_at: AwareDatetime | None = Field(
-        None, description='When the turn reached a terminal status.'
-    )
-
-
-class AgentTurnListResponse(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    items: list[AgentTurn] = Field(
-        ..., description='Turns in this session, ordered by creation time.'
-    )
-    has_more: bool | None = Field(
-        None, description='True when more turns exist past this page.'
-    )
-    next_cursor: str | None = Field(
-        None,
-        description='Opaque cursor to pass as `cursor` on the next request. Null when `has_more` is false.',
+    calls: int | None = Field(
+        None, description="LLM calls folded into this turn's totals. Omitted when zero."
     )
 
 
@@ -4942,13 +4941,13 @@ class SessionTranscriptWait(BaseModel):
 
 class TurnCompletedPayload(BaseModel):
     """
-    Payload of a `turn.completed` event — the terminal idle marker carrying token usage. The assistant output is not duplicated here; it is delivered as `agent.message` content events when the transcript commits.
+    Payload of a `turn.completed` event — the terminal idle marker carrying token usage. The assistant output is not duplicated here; it is delivered as `agent.message` content events when the transcript commits. The same usage is readable after the fact on the turn resource, so a consumer that missed the pulse never has to replay the stream for it.
     """
 
     model_config = ConfigDict(
         extra='allow',
     )
-    usage: dict[str, Any] | None = None
+    usage: AgentTurnUsage | None = None
 
 
 class TurnFailedPayload(BaseModel):
@@ -4964,6 +4963,68 @@ class TurnCancelledPayload(BaseModel):
         extra='allow',
     )
     reason: str | None = None
+
+
+class CompactionTrigger(StrEnum):
+    """
+    What started a compaction pass. `auto` is the threshold-gated pass that runs after a turn commits; `append` is the threshold-gated pass that runs inline on a message append; `manual` is an explicit compact request.
+    """
+
+    auto = 'auto'
+    manual = 'manual'
+    append = 'append'
+
+
+class CompactionStartedPayload(BaseModel):
+    """
+    Payload of a `compaction.started` event, emitted immediately before the summarizer call and only once every gate has passed — so receiving it means a pass is really running. Live-only: it is not replayed on reconnect, so a client that connects mid-pass reads the session's `compaction` field instead. Every started pass is followed by exactly one `compaction.created` or `compaction.failed`.
+    """
+
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    trigger: CompactionTrigger | None = None
+    from_sequence: int | None = Field(
+        None, description='Lowest transcript sequence this pass is summarizing.'
+    )
+    through_sequence: int | None = Field(
+        None, description='Highest transcript sequence this pass is summarizing.'
+    )
+    message_count: int | None = Field(
+        None,
+        description='Number of transcript messages this pass is folding into the summary.',
+    )
+    estimated_tokens: int | None = Field(
+        None, description='Estimated token size of the window being summarized.'
+    )
+    summary_model: str | None = Field(
+        None, description='Model that will produce the summary.'
+    )
+
+
+class CompactionFailedPayload(BaseModel):
+    """
+    Payload of a `compaction.failed` event — the other terminal outcome of a started pass. It guarantees an indicator opened on `compaction.started` always comes down, instead of hanging on a pass that produced no summary. Live-only, like `compaction.started`: a failed pass appends nothing to the transcript, so there is no durable row to replay. The transcript is unchanged; the next pass recomputes from the same boundary.
+    """
+
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    trigger: CompactionTrigger | None = None
+    from_sequence: int | None = Field(
+        None, description='Lowest transcript sequence the failed pass was summarizing.'
+    )
+    through_sequence: int | None = Field(
+        None, description='Highest transcript sequence the failed pass was summarizing.'
+    )
+    error_type: str | None = Field(
+        None,
+        description='Machine-readable failure category. Currently `summarizer_error`, `timeout`, `empty_summary`, or `storage_error`. Treat it as an open string: new categories may be added, and a client that switches on it should fall through to a generic "compaction failed".',
+    )
+    error_message: str | None = Field(
+        None,
+        description='Truncated failure detail. Diagnostics live in the server logs, not here.',
+    )
 
 
 class AppendSessionMessage(BaseModel):
@@ -5340,30 +5401,6 @@ class SessionNudgeListResponse(BaseModel):
     has_more: bool
     next_cursor: str | None = Field(
         None, description='Opaque continuation cursor, or null at the end.'
-    )
-
-
-class SessionNudgeAck(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    nudge_id: str = Field(
-        ..., description='Stable id of the durable nudge mailbox row.'
-    )
-    status: SessionNudgeStatus
-    delivery: SessionNudgeDelivery
-    session: Session
-    turn: AgentTurn
-    after_sequence: int = Field(
-        ...,
-        description='Current transcript sequence cursor for following the target turn.',
-    )
-    deduped: bool = Field(
-        ..., description='True when an existing idempotent nudge request was returned.'
-    )
-    woke_turn: bool = Field(
-        ...,
-        description='True when wake interrupted a waiting tool and requeued this turn.',
     )
 
 
@@ -6297,7 +6334,7 @@ class SkillRequest(BaseModel):
     )
     allowed_tools: list[str] = Field(
         [],
-        description="Tool selectors that narrow the agent's effective tool set while this skill is active.",
+        description='Tool selectors naming the actions this skill needs. The grant applies once an agent invokes the skill and lasts for the rest of that turn. Empty declares nothing and narrows nothing.',
     )
     tags: TagMap | None = Field(None, description='Labels to apply to the skill.')
 
@@ -6445,7 +6482,7 @@ class BlueprintSkillInput(BaseModel):
     instructions: str | None = None
     allowed_tools: list[str] | None = Field(
         None,
-        description="Tool selectors that narrow the agent's effective tool set while this skill is active.",
+        description='Tool selectors naming the actions this skill needs. The grant applies once an agent invokes the skill and lasts for the rest of that turn. Empty declares nothing and narrows nothing.',
     )
     tags: TagMap | None = None
 
@@ -7719,10 +7756,94 @@ class AgentToolManifest(BaseModel):
         description='Audit trail of group selectors that contributed to the resolved tool set. Operators see groups; the LLM only sees the flat `tools` list.',
     )
     skills: list[SkillManifestEntry] = Field(
-        ..., description='Skills active for this agent in the resolved manifest.'
+        ...,
+        description="Skills assigned to this agent, as resolved for this manifest. See each entry's `active` property for which one's grant was applied.",
     )
     warnings: list[AgentManifestWarning] = Field(
         ..., description='Non-fatal issues encountered while resolving the manifest.'
+    )
+
+
+class AgentTurn(BaseModel):
+    """
+    One attempt of an agent running the agent loop — the unit that produces a transcript. A turn is triggered by a direct send to the session, a loop step (run_id + step_key), or an inbound channel message (channel_exchange_id). Its messages are read via the turn's transcript endpoint.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str = Field(..., description='Stable turn identifier.')
+    agent_id: str = Field(..., description='Agent that ran this turn.')
+    session_id: str = Field(
+        ..., description="Session this turn's transcript was appended to."
+    )
+    run_id: str | None = Field(
+        None,
+        description='Loop run that triggered this turn. Absent for messaging turns.',
+    )
+    step_key: str | None = Field(
+        None,
+        description='Step key (matches LoopRunStep.step_key, not its id) of the loop step that triggered this turn. Absent for messaging turns.',
+    )
+    channel_exchange_id: str | None = Field(
+        None,
+        description='Inbound channel exchange that triggered this turn. Absent for loop turns.',
+    )
+    attempt: int = Field(
+        ...,
+        description='1-based attempt number for this run-step; retries create new turns.',
+    )
+    status: AgentTurnStatus = Field(
+        ..., description='Current lifecycle status of the agent turn.'
+    )
+    seq: int | None = Field(
+        None,
+        description='Per-session ordering hint (cosmetic; turns are ordered by creation time).',
+    )
+    error_type: str | None = Field(
+        None, description='Machine-readable failure category when the turn failed.'
+    )
+    error_message: str | None = Field(
+        None, description='Human-readable failure detail when the turn failed.'
+    )
+    error_scope: AgentTurnErrorScope | None = None
+    output: dict[str, Any] | None = Field(
+        None,
+        description='The validated structured output. Present only on a `completed` turn that declared an output schema. Read this instead of parsing the transcript.',
+    )
+    output_source: AgentTurnOutputSource | None = Field(
+        None,
+        description='Where `output` came from: a `mobius_submit_output` submission (`tool`) or the schema-valid final-text fallback (`text`).',
+    )
+    usage: AgentTurnUsage | None = Field(
+        None,
+        description='Token usage recorded when the turn completed. Absent on turns that never reached the model and on turns that failed.',
+    )
+    effective_timeout_seconds: int | None = Field(
+        None, description='Authoritative active-execution budget selected for the turn.'
+    )
+    created_at: AwareDatetime = Field(..., description='Time the turn was created.')
+    updated_at: AwareDatetime = Field(
+        ..., description='Time the turn was last updated.'
+    )
+    completed_at: AwareDatetime | None = Field(
+        None, description='When the turn reached a terminal status.'
+    )
+
+
+class AgentTurnListResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    items: list[AgentTurn] = Field(
+        ..., description='Turns in this session, ordered by creation time.'
+    )
+    has_more: bool | None = Field(
+        None, description='True when more turns exist past this page.'
+    )
+    next_cursor: str | None = Field(
+        None,
+        description='Opaque cursor to pass as `cursor` on the next request. Null when `has_more` is false.',
     )
 
 
@@ -7743,9 +7864,9 @@ class SessionTranscriptTurn(BaseModel):
     seq: int | None = None
     error_type: str | None = None
     error_message: str | None = None
-    usage: dict[str, Any] | None = Field(
+    usage: AgentTurnUsage | None = Field(
         None,
-        description='Token usage recorded when the turn terminalized, when available.',
+        description='Token usage recorded when the turn completed. Identical to the `usage` on the turn resource, and identical on the bootstrap and cursored reads of this snapshot.',
     )
     output: dict[str, Any] | None = Field(
         None,
@@ -7857,6 +7978,30 @@ class InlineAgentConfig(BaseModel):
     skills: list[InlineSkill] | None = Field(
         None,
         description="Skills that replace the agent's skill assignments for this session. Each carries its full instruction body, lazy-loaded via the invoke_skill tool. Replaces wholesale.",
+    )
+
+
+class SessionNudgeAck(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    nudge_id: str = Field(
+        ..., description='Stable id of the durable nudge mailbox row.'
+    )
+    status: SessionNudgeStatus
+    delivery: SessionNudgeDelivery
+    session: Session
+    turn: AgentTurn
+    after_sequence: int = Field(
+        ...,
+        description='Current transcript sequence cursor for following the target turn.',
+    )
+    deduped: bool = Field(
+        ..., description='True when an existing idempotent nudge request was returned.'
+    )
+    woke_turn: bool = Field(
+        ...,
+        description='True when wake interrupted a waiting tool and requeued this turn.',
     )
 
 
@@ -9496,6 +9641,7 @@ class CompactionCreatedPayload(BaseModel):
     model_config = ConfigDict(
         extra='allow',
     )
+    trigger: CompactionTrigger | None = None
     message_id: str | None = Field(
         None,
         description='Id of the compaction summary message appended to the transcript.',
@@ -9580,7 +9726,9 @@ class SessionStreamFrame(
     RootModel[
         SessionUserMessagePayload
         | AgentMessagePayload
+        | CompactionStartedPayload
         | CompactionCreatedPayload
+        | CompactionFailedPayload
         | TurnStartedPayload
         | TurnWaitingPayload
         | TurnCompletedPayload
@@ -9598,7 +9746,9 @@ class SessionStreamFrame(
     root: (
         SessionUserMessagePayload
         | AgentMessagePayload
+        | CompactionStartedPayload
         | CompactionCreatedPayload
+        | CompactionFailedPayload
         | TurnStartedPayload
         | TurnWaitingPayload
         | TurnCompletedPayload
@@ -9613,7 +9763,7 @@ class SessionStreamFrame(
         | GenerationDeltaFrame
     ) = Field(
         ...,
-        description='JSON payload of a single `data:` line on the session SSE stream, paired with an `event: <event type>` line.\n\nThe `event:` line is the authoritative frame selector. This union is reference-only: several payloads are structurally identical (e.g. `user.message` and `agent.message`) or permissive open objects, so the `data:` body alone cannot be shape-matched to a single variant. Consumers MUST dispatch on the `event:` name and decode the body as the corresponding payload — never validate the bare body against the union.\n\nDurable message frames (`user.message`, `agent.message`, `compaction.created`) are replayed from the transcript and carry an SSE `id: <sequence>` — that `sequence` is the only cursor a client persists for `after_sequence` / `Last-Event-ID` resume. Terminal `turn.*` frames mark the active turn settling. `session.message.preview`, `session.resync`, `nudge.queued`, `nudge.delivered`, `nudge.cancelled`, `tool.call`, `tool.result`, and `generation.delta` frames are live-only and carry no `id:`. `stream.end` is the final envelope on every deliberate server-side close and also carries no `id:`.',
+        description='JSON payload of a single `data:` line on the session SSE stream, paired with an `event: <event type>` line.\n\nThe `event:` line is the authoritative frame selector. This union is reference-only: several payloads are structurally identical (e.g. `user.message` and `agent.message`) or permissive open objects, so the `data:` body alone cannot be shape-matched to a single variant. Consumers MUST dispatch on the `event:` name and decode the body as the corresponding payload — never validate the bare body against the union.\n\nDurable message frames (`user.message`, `agent.message`, `compaction.created`) are replayed from the transcript and carry an SSE `id: <sequence>` — that `sequence` is the only cursor a client persists for `after_sequence` / `Last-Event-ID` resume. Terminal `turn.*` frames mark the active turn settling. `session.message.preview`, `session.resync`, `nudge.queued`, `nudge.delivered`, `nudge.cancelled`, `tool.call`, `tool.result`, `compaction.started`, `compaction.failed`, and `generation.delta` frames are live-only and carry no `id:`. `stream.end` is the final envelope on every deliberate server-side close and also carries no `id:`.',
     )
 
 

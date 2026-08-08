@@ -14,6 +14,7 @@ import pytest
 from pydantic import BaseModel
 
 from deepnoodle.mobius._api.models import (
+    AgentTurnUsage,
     WorkerSocketGenerationDeltaFrame,
     WorkerSocketJobCancelFrame,
     WorkerSocketJobHeartbeatAckFrame,
@@ -127,6 +128,14 @@ def test_transcript_frame_contract() -> None:
     failed = transcript.turn(expected["failed_turn_id"])
     assert failed["error_type"] == expected["failed_turn_error_type"]
     assert failed["error_message"] == expected["failed_turn_error_message"]
+
+    completed = transcript.turn(expected["usage_turn_id"])
+    usage = AgentTurnUsage.model_validate(completed["usage"])
+    assert usage.input_tokens == expected["usage_input_tokens"]
+    assert usage.output_tokens == expected["usage_output_tokens"]
+    assert usage.cache_read_input_tokens == expected["usage_cache_read_input_tokens"]
+    assert usage.calls == expected["usage_calls"]
+    assert usage.reasoning_tokens is None
 
 
 def test_transcript_snapshot_contract() -> None:

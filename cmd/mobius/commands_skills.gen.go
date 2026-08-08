@@ -22,7 +22,7 @@ func registerSkillsCommands(app *cli.App) {
 	skillsGrp.Command("create").
 		Description("Create skill").
 		Flags(
-			cli.Strings("allowed-tools", "").Help("Tool selectors that narrow the agent's effective tool set while this skill is active."),
+			cli.Strings("allowed-tools", "").Help("Tool selectors naming the actions this skill needs. The grant applies once an agent invokes the skill and lasts for the rest of that turn…"),
 			cli.String("description", "").Help("Markdown description of the skill's purpose."),
 			cli.String("instructions", "").Help("[required] Markdown instructions loaded when the skill is active. Accepts text, @file, or @-. Use @@ to escape a literal leading @."),
 			cli.String("name", "").Help("[required] Human-readable skill name."),
@@ -149,7 +149,7 @@ func registerSkillsCommands(app *cli.App) {
 		Description("Update skill").
 		AddArg(&cli.Arg{Name: "skill-id", Description: "Skill ID.", Required: true}).
 		Flags(
-			cli.Strings("allowed-tools", "").Help("Tool selectors that narrow the agent's effective tool set while this skill is active."),
+			cli.Strings("allowed-tools", "").Help("Tool selectors naming the actions this skill needs. The grant applies once an agent invokes the skill and lasts for the rest of that turn…"),
 			cli.String("description", "").Help("Markdown description of the skill's purpose."),
 			cli.String("instructions", "").Help("[required] Markdown instructions loaded when the skill is active. Accepts text, @file, or @-. Use @@ to escape a literal leading @."),
 			cli.String("name", "").Help("[required] Human-readable skill name."),

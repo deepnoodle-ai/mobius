@@ -357,7 +357,7 @@ func TestInvokeAgentStream_HighLevelClient(t *testing.T) {
 	assert.Equal(t, ev.EventType, "turn.completed")
 	payload, err := ev.Frame.AsTurnCompletedPayload()
 	assert.NoError(t, err)
-	assert.Equal(t, (*payload.Usage)["input_tokens"], float64(42))
+	assert.Equal(t, *payload.Usage.InputTokens, 42)
 
 	_, ok = <-events
 	assert.False(t, ok)
