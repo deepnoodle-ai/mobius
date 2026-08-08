@@ -16,8 +16,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
   carrying the new `trigger` (`auto`/`manual`/`append`) that `compaction.created`
   now reports too. Every started pass ends in exactly one of created or failed.
 - `compaction` on the single-session read: whether a pass is running now, the
-  range it covers, and `threshold_tokens` for the next automatic pass. Both are
-  live-only, so a client that connects mid-pass polls this instead.
+  range it covers, and `threshold_tokens` for the next automatic pass. The
+  frames above are live-only, so a client that connects mid-pass polls this
+  instead ([#195](https://github.com/deepnoodle-ai/mobius/pull/195)).
 
 ### Changed
 
