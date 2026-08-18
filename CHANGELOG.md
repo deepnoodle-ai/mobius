@@ -6,6 +6,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 
 ## [Unreleased]
 
+## [0.0.61] - 2026-08-17
+
+### Added
+
+- Session attachments: upload one document or image to a session and get back
+  the artifact plus the `content_block` to append in a message or turn input.
+  Accepts PDF (5 MiB, 50 pages), Office files and images (5 MiB), and text
+  (100 KiB), detecting the type from the bytes; `Idempotency-Key` makes retries
+  safe. Office uploads can request async Markdown extraction, reported by
+  `conversion` on the artifact. Must be enabled for the org or project
+  ([#197](https://github.com/deepnoodle-ai/mobius/pull/197)).
+- A `document` content block for session messages and turn input, and
+  `mobius sessions delete-attachment` in the CLI.
+
+### Changed
+
+- Image and document sources are typed descriptors: `base64`, `url`, or
+  `artifact` for images, plus `text` and `file` for documents. Inline payloads
+  are capped at 256 KiB, so larger documents must go through an attachment.
+
 ## [0.0.60] - 2026-08-07
 
 ### Added
