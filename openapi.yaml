@@ -3483,6 +3483,100 @@ paths:
           $ref: '#/components/responses/Conflict'
         '429':
           $ref: '#/components/responses/TooManyRequests'
+  /v1/projects/{project_handle}/sessions/{session_id}/attachments:
+    post:
+      operationId: createSessionAttachment
+      tags:
+      - sessions
+      summary: Create session attachment
+      description: |-
+        Uploads one document or image into server-managed artifact storage and binds it immutably to this session. DOCX, XLSX, and PPTX uploads start asynchronous Markdown conversion through the document service. The returned `content_block` is the canonical block callers append in a session message or turn input.
+
+        Phase 1 accepts PDF (up to 5 MiB and 50 pages), DOCX, XLSX, or PPTX (up to 5 MiB), Markdown or plain text (up to 100 KiB), and PNG, JPEG, WebP, or GIF images (up to 5 MiB). Mobius detects the media type from the bytes and does not trust the multipart MIME declaration. The feature must be enabled for the organization or project.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/SessionIdParam'
+      - name: Idempotency-Key
+        in: header
+        required: false
+        schema:
+          type: string
+          maxLength: 255
+        description: Optional retry key, scoped to this session and caller. An identical retry
+          returns the original attachment. Reusing the key with different file bytes, filename,
+          or MIME hint is rejected with a conflict.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CreateSessionAttachmentRequest'
+      responses:
+        '200':
+          description: Existing attachment returned for an idempotent retry.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionAttachmentResponse'
+        '201':
+          description: Attachment uploaded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionAttachmentResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: The idempotency key was reused with different file bytes, filename,
+            or MIME hint.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '413':
+          description: Attachment exceeds its per-type size, Office safety, or PDF page limit.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: Artifact storage is unavailable (`artifact_storage_unavailable`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /v1/projects/{project_handle}/sessions/{session_id}/attachments/{artifact_id}:
+    delete:
+      operationId: deleteSessionAttachment
+      tags:
+      - sessions
+      summary: Delete session attachment
+      description: Deletes one artifact created through this session's attachment endpoint.
+        The server re-checks the session binding and append permission before deleting bytes
+        and releasing artifact quota. Retrying an artifact this session already deleted returns
+        204. A 404 means the artifact was never bound to this session, or the session or project
+        does not exist.
+      parameters:
+      - $ref: '#/components/parameters/ProjectHandleParam'
+      - $ref: '#/components/parameters/SessionIdParam'
+      - $ref: '#/components/parameters/ArtifactIdParam'
+      responses:
+        '204':
+          description: No Content
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
   /v1/projects/{project_handle}/sessions/{session_id}/messages:
     get:
       operationId: listSessionMessages
@@ -6340,12 +6434,10 @@ paths:
       tags:
       - artifacts
       summary: Create artifact
-      description: Accepts a project-authorized multipart file upload. Without a worker lease,
-        the caller needs `mobius.project.edit`; the artifact is private to the authenticated
-        principal and has no run or step lineage. A worker may instead supply `X-Mobius-Lease-Token`
-        with `mobius.work.execute`; Mobius then derives run, step, job, worker session, attempt,
-        and shared visibility from the active claim. Caller-supplied lineage, ownership, and
-        visibility fields are rejected in both modes.
+      description: |-
+        Accepts a project-authorized multipart file upload. Without a worker lease, the caller needs `mobius.project.edit`; the artifact is private to the authenticated principal and has no run or step lineage. A worker may instead supply `X-Mobius-Lease-Token` with `mobius.work.execute`; Mobius then derives run, step, job, worker session, attempt, and shared visibility from the active claim. Caller-supplied lineage, ownership, and visibility fields are rejected in both modes.
+
+        DOCX, XLSX, and PPTX uploads may pass `convert=true` to start asynchronous Markdown extraction for later model delivery.
       parameters:
       - $ref: '#/components/parameters/ProjectHandleParam'
       - name: X-Mobius-Lease-Token
@@ -6389,6 +6481,16 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '409':
           $ref: '#/components/responses/Conflict'
+        '413':
+          description: Payload too large
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error:
+                  code: payload_too_large
+                  message: artifact upload exceeds the maximum allowed size
   /v1/projects/{project_handle}/artifacts/{artifact_id}:
     get:
       operationId: getArtifact
@@ -6739,6 +6841,14 @@ components:
       description: Session nudge identifier.
       schema:
         type: string
+    ArtifactIdParam:
+      name: artifact_id
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: ^art_[A-Za-z0-9]+$
+      description: ID of the artifact
     TableIDParam:
       name: table_id
       in: path
@@ -6756,14 +6866,6 @@ components:
         maxLength: 64
       description: Filter tables by name. Table names are unique within a project; use this
         as a discovery filter and use the returned table `id` for follow-up operations.
-    ArtifactIdParam:
-      name: artifact_id
-      in: path
-      required: true
-      schema:
-        type: string
-        pattern: ^art_[A-Za-z0-9]+$
-      description: ID of the artifact
   responses:
     BadRequest:
       description: Bad Request
@@ -13003,6 +13105,7 @@ components:
       - $ref: '#/components/schemas/SessionToolUseBlock'
       - $ref: '#/components/schemas/SessionToolResultBlock'
       - $ref: '#/components/schemas/SessionImageBlock'
+      - $ref: '#/components/schemas/SessionDocumentBlock'
       - $ref: '#/components/schemas/SessionReminderBlock'
       discriminator:
         propertyName: type
@@ -13012,14 +13115,15 @@ components:
           tool_use: '#/components/schemas/SessionToolUseBlock'
           tool_result: '#/components/schemas/SessionToolResultBlock'
           image: '#/components/schemas/SessionImageBlock'
+          document: '#/components/schemas/SessionDocumentBlock'
           reminder: '#/components/schemas/SessionReminderBlock'
       description: One content block in a session transcript message — the canonical, frozen
         JSON shape Mobius persists and replays, discriminated by `type`. The variants are
-        `text`, `thinking`, `tool_use`, `tool_result`, and `image`, plus host-managed `reminder`
-        blocks when caller runtime context is explicitly included. Each variant permits provider-specific
-        extra fields (citations, signatures, cache hints, and the like), and unknown fields
-        are preserved rather than rejected, so the transcript round-trips losslessly across
-        providers.
+        `text`, `thinking`, `tool_use`, `tool_result`, `image`, and `document`, plus host-managed
+        `reminder` blocks when caller runtime context is explicitly included. Each variant
+        permits provider-specific extra fields (citations, signatures, cache hints, and the
+        like), and unknown fields are preserved rather than rejected, so the transcript round-trips
+        losslessly across providers.
     SessionToolResultBlock:
       type: object
       additionalProperties: true
@@ -13046,6 +13150,34 @@ components:
         is_error:
           type: boolean
           description: True when the tool reported a failure.
+    SessionImageSource:
+      type: object
+      additionalProperties: true
+      required:
+      - type
+      description: Canonical image source descriptor. Known source types are `base64` (`media_type`
+        plus `data`), `url` (`url`), and Mobius-managed `artifact` (`artifact_id`). Provider-specific
+        extensions are preserved.
+      properties:
+        type:
+          type: string
+          enum:
+          - base64
+          - url
+          - artifact
+        media_type:
+          type: string
+          description: MIME type for base64 content.
+        data:
+          type: string
+          description: Base64 image payload.
+        url:
+          type: string
+          format: uri
+          description: Fetchable image URL for a URL source.
+        artifact_id:
+          type: string
+          description: Mobius artifact id returned by the session attachment endpoint.
     SessionImageBlock:
       type: object
       additionalProperties: true
@@ -13058,9 +13190,94 @@ components:
           enum:
           - image
         source:
+          $ref: '#/components/schemas/SessionImageSource'
+        media_type:
+          type: string
+          description: Server-detected MIME type for an artifact-backed image.
+        title:
+          type: string
+          description: Original filename for an artifact-backed image.
+        size_bytes:
+          type: integer
+          format: int64
+          description: Server-observed byte size for an artifact-backed image.
+    SessionDocumentSource:
+      type: object
+      additionalProperties: true
+      required:
+      - type
+      description: Canonical document source descriptor. Known source types are `base64` (`media_type`
+        plus `data`), `url` (`url`), `text` (`media_type` plus `data`), provider-managed `file`
+        (`file_id`), and Mobius-managed `artifact` (`artifact_id`). Provider-managed file
+        references are not portable across model providers; artifact sources are resolved
+        only after re-checking their session binding.
+      properties:
+        type:
+          type: string
+          enum:
+          - base64
+          - url
+          - text
+          - file
+          - artifact
+          description: Source discriminator; known values are base64, url, text, file, and
+            artifact.
+        media_type:
+          type: string
+          description: MIME type for base64 or text content.
+        data:
+          type: string
+          description: Base64 payload or literal text, depending on source type. Inline payloads
+            are limited to 256 KiB after base64 decoding or as UTF-8 text; larger documents
+            must use an artifact source created by the session attachment endpoint.
+        url:
+          type: string
+          format: uri
+          description: Fetchable document URL for a URL source.
+        file_id:
+          type: string
+          description: Provider-managed file identifier for a file source.
+        artifact_id:
+          type: string
+          description: Mobius artifact id returned by the session attachment endpoint.
+    SessionDocumentBlock:
+      type: object
+      additionalProperties: true
+      required:
+      - type
+      - source
+      description: A canonical document block. Mobius persists this provider-neutral block
+        after translating supported caller dialects such as OpenAI `input_file` and Chat Completions
+        `file` blocks. Base64 data stays in `source.data`; clients must not render or log
+        that field.
+      properties:
+        type:
+          type: string
+          enum:
+          - document
+        source:
+          $ref: '#/components/schemas/SessionDocumentSource'
+        title:
+          type: string
+          description: Human-readable filename or document title, when supplied.
+        media_type:
+          type: string
+          description: Server-detected MIME type for an artifact-backed document.
+        size_bytes:
+          type: integer
+          format: int64
+          description: Server-observed byte size for an artifact-backed document.
+        page_count:
+          type: integer
+          minimum: 1
+          description: Parsed page count for an artifact-backed PDF.
+        context:
+          type: string
+          description: Optional model-facing context for the document.
+        citations:
           type: object
           additionalProperties: true
-          description: Provider-specific image source descriptor.
+          description: Provider citation options, when supported.
     SessionReminderBlock:
       type: object
       additionalProperties: true
@@ -13117,7 +13334,7 @@ components:
         content:
           type: array
           description: Ordered canonical content blocks (text, thinking, tool_use, tool_result,
-            image).
+            image, document).
           items:
             $ref: '#/components/schemas/SessionContentBlock'
         entry_type:
@@ -14264,6 +14481,41 @@ components:
         summary_model:
           type: string
           description: Model that produced the summary.
+    CreateSessionAttachmentRequest:
+      type: object
+      required:
+      - file
+      additionalProperties: false
+      properties:
+        file:
+          type: string
+          format: binary
+          description: The document or image bytes. Multipart parts may arrive in any order.
+        name:
+          type: string
+          maxLength: 256
+          description: Optional display filename. Defaults to the multipart filename.
+        mime:
+          type: string
+          description: Optional hint only; Mobius detects and validates PDF, DOCX, XLSX, PPTX,
+            text, Markdown, and supported image types from the bytes.
+        size_bytes:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Optional declared byte size; when supplied it must match the uploaded
+            bytes.
+    SessionAttachmentResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - artifact
+      - content_block
+      properties:
+        artifact:
+          $ref: '#/components/schemas/Artifact'
+        content_block:
+          $ref: '#/components/schemas/SessionContentBlock'
     AppendSessionMessagesRequest:
       type: object
       additionalProperties: false
@@ -14561,7 +14813,10 @@ components:
         content:
           type: array
           minItems: 1
-          description: Ordered content blocks (text, images) for the input message.
+          description: 'Ordered content blocks for the input message. Canonical documents
+            use `{ "type": "document", "source": { "type": "base64", "media_type": "application/pdf",
+            "data": "..." }, "title": "report.pdf" }` or a URL source. Mobius also translates
+            supported OpenAI `input_file` and Chat Completions `file` blocks at ingestion.'
           items:
             type: object
             additionalProperties: true
@@ -14663,7 +14918,10 @@ components:
         content:
           type: array
           minItems: 1
-          description: Ordered content blocks (text, images) for the input message.
+          description: 'Ordered content blocks for the input message. Canonical documents
+            use `{ "type": "document", "source": { "type": "base64", "media_type": "application/pdf",
+            "data": "..." }, "title": "report.pdf" }` or a URL source. Mobius also translates
+            supported OpenAI `input_file` and Chat Completions `file` blocks at ingestion.'
           items:
             type: object
             additionalProperties: true
@@ -14862,6 +15120,105 @@ components:
         woke_turn:
           type: boolean
           description: True when wake interrupted a waiting tool and requeued this turn.
+    ArtifactVisibility:
+      type: string
+      enum:
+      - private
+      - shared
+      description: Private artifacts are visible only to their owner user. Shared artifacts
+        are visible to the project.
+    ArtifactConversionSummary:
+      type: object
+      description: Markdown-extraction state for an Office upload that requested conversion.
+      required:
+      - state
+      additionalProperties: false
+      properties:
+        state:
+          type: string
+          enum:
+          - converting
+          - ready
+          - failed
+        error:
+          type: string
+          description: Failure reason when state is failed.
+    Artifact:
+      type: object
+      description: Stored file or generated artifact metadata.
+      required:
+      - id
+      - visibility
+      - name
+      - mime_type
+      - size_bytes
+      - created_at
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          description: Unique artifact identifier.
+        visibility:
+          $ref: '#/components/schemas/ArtifactVisibility'
+          description: Visibility policy for the artifact.
+        run_id:
+          type: string
+          description: Loop run that produced this artifact, derived from the trusted worker
+            lease when present.
+        step_id:
+          type: string
+          description: Loop step that produced this artifact, derived from the trusted worker
+            lease when present.
+        name:
+          type: string
+          description: Display name or relative virtual path. Forward slash may be used to
+            organize artifacts inside private or shared project space.
+        mime_type:
+          type: string
+          description: MIME type recorded for the artifact content.
+        size_bytes:
+          type: integer
+          format: int64
+          description: Artifact content size in bytes.
+        sha256:
+          type: string
+          description: SHA-256 digest of the artifact content, when available.
+        created_at:
+          type: string
+          format: date-time
+          description: Time the artifact metadata was created.
+        created_by:
+          type: string
+          description: Principal ID of the actor who created this artifact. Empty for system-initiated
+            writes.
+        updated_at:
+          type: string
+          format: date-time
+          description: Time the artifact metadata was last updated.
+        updated_by:
+          type: string
+          description: Principal ID of the actor who last updated this artifact. Empty for
+            system-initiated writes.
+        metadata:
+          type: object
+          additionalProperties: true
+          description: Caller-supplied artifact metadata. Mobius-owned storage metadata is
+            not exposed.
+        conversion:
+          $ref: '#/components/schemas/ArtifactConversionSummary'
+          description: Conversion summary for an Office artifact that requested conversion.
+            Absent for artifacts with no conversion.
+      example:
+        id: art_2m7q9x5v3p8n4r6t
+        visibility: shared
+        run_id: run_8q5m2x9v7p3n4r6t
+        step_id: run_8q5m2x9v7p3n4r6t:review
+        name: reports/review-findings.md
+        mime_type: text/markdown
+        size_bytes: 1842
+        sha256: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+        created_at: '2026-06-15T14:30:00Z'
+        created_by: agent_5n8p2q7m4x9r3v6t
     Loop:
       type: object
       additionalProperties: false
@@ -17935,85 +18292,6 @@ components:
         created:
           type: boolean
           description: True when a new row was inserted; false when an existing row was updated.
-    ArtifactVisibility:
-      type: string
-      enum:
-      - private
-      - shared
-      description: Private artifacts are visible only to their owner user. Shared artifacts
-        are visible to the project.
-    Artifact:
-      type: object
-      description: Stored file or generated artifact metadata.
-      required:
-      - id
-      - visibility
-      - name
-      - mime_type
-      - size_bytes
-      - created_at
-      additionalProperties: false
-      properties:
-        id:
-          type: string
-          description: Unique artifact identifier.
-        visibility:
-          $ref: '#/components/schemas/ArtifactVisibility'
-          description: Visibility policy for the artifact.
-        run_id:
-          type: string
-          description: Loop run that produced this artifact, derived from the trusted worker
-            lease when present.
-        step_id:
-          type: string
-          description: Loop step that produced this artifact, derived from the trusted worker
-            lease when present.
-        name:
-          type: string
-          description: Display name or relative virtual path. Forward slash may be used to
-            organize artifacts inside private or shared project space.
-        mime_type:
-          type: string
-          description: MIME type recorded for the artifact content.
-        size_bytes:
-          type: integer
-          format: int64
-          description: Artifact content size in bytes.
-        sha256:
-          type: string
-          description: SHA-256 digest of the artifact content, when available.
-        created_at:
-          type: string
-          format: date-time
-          description: Time the artifact metadata was created.
-        created_by:
-          type: string
-          description: Principal ID of the actor who created this artifact. Empty for system-initiated
-            writes.
-        updated_at:
-          type: string
-          format: date-time
-          description: Time the artifact metadata was last updated.
-        updated_by:
-          type: string
-          description: Principal ID of the actor who last updated this artifact. Empty for
-            system-initiated writes.
-        metadata:
-          type: object
-          additionalProperties: true
-          description: Caller-supplied artifact metadata. Mobius-owned storage metadata is
-            not exposed.
-      example:
-        id: art_2m7q9x5v3p8n4r6t
-        visibility: shared
-        run_id: run_8q5m2x9v7p3n4r6t
-        step_id: run_8q5m2x9v7p3n4r6t:review
-        name: reports/review-findings.md
-        mime_type: text/markdown
-        size_bytes: 1842
-        sha256: 8f4c2b9d0e6a1f3c5b7d9e0a2c4f6b8d9e1a3c5f7b9d0e2a4c6f8b0d2e4a6c8
-        created_at: '2026-06-15T14:30:00Z'
-        created_by: agent_5n8p2q7m4x9r3v6t
     ArtifactListResponse:
       type: object
       required:
@@ -18074,6 +18352,13 @@ components:
           additionalProperties: true
           description: Optional caller metadata JSON object. Encoded as JSON in the multipart
             field and limited to 64 KiB.
+        convert:
+          type: string
+          enum:
+          - 'true'
+          - 'false'
+          description: When "true" and the uploaded file is DOCX, XLSX, or PPTX, extract a
+            Markdown rendition asynchronously for model delivery. Ignored for other file types.
     ArtifactSignedUrl:
       type: object
       description: Short-lived URL for downloading artifact content.

@@ -278,6 +278,27 @@ func registerSessionsCommands(app *cli.App) {
 			return printResponse(ctx, "deleteSession", resp.StatusCode(), resp.Body)
 		})
 
+	sessionsGrp.Command("delete-attachment").
+		Description("Delete session attachment").
+		AddArg(&cli.Arg{Name: "session-id", Description: "Identifier of the conversation session.", Required: true}).
+		AddArg(&cli.Arg{Name: "artifact-id", Description: "ID of the artifact", Required: true}).
+		Use(requireAuth()).
+		Run(func(ctx *cli.Context) error {
+			mc, err := clientFromContext(ctx)
+			if err != nil {
+				return err
+			}
+			client := mc.RawClient()
+			p0 := authFor(ctx).Project
+			p1 := ctx.Arg(0)
+			p2 := ctx.Arg(1)
+			resp, err := client.DeleteSessionAttachmentWithResponse(ctx.Context(), p0, p1, p2)
+			if err != nil {
+				return err
+			}
+			return printResponse(ctx, "deleteSessionAttachment", resp.StatusCode(), resp.Body)
+		})
+
 	sessionsGrp.Command("get").
 		Description("Get session").
 		AddArg(&cli.Arg{Name: "session-id", Description: "Identifier of the conversation session.", Required: true}).
@@ -732,7 +753,7 @@ func registerSessionsCommands(app *cli.App) {
 		Description("Start an agent turn").
 		AddArg(&cli.Arg{Name: "session-id", Description: "Identifier of the conversation session.", Required: true}).
 		Flags(
-			cli.String("content", "").Help("[required] Ordered content blocks (text, images) for the input message. Accepts JSON, @file, or @-."),
+			cli.String("content", "").Help("[required] Ordered content blocks for the input message. Canonical documents use `{ \"type\": \"document\", \"source\": { \"type\": \"base64\", \"media_type\"… Accepts JSON, @file, or @-."),
 			cli.String("context", "").Help("Ordered application-owned runtime context for this turn. Send the full current value for each named item. Mobius records an item only on… Accepts JSON, @file, or @-."),
 			cli.String("idempotency-key", "").Help("Dedup key scoped to the session. A repeat call with the same key returns the existing invocation and writes nothing new; it never restarts…"),
 			cli.String("metadata", "").Help("Free-form caller metadata attached to the input message. Accepts JSON, @file, or @-."),
