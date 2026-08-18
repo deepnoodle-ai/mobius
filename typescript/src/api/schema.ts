@@ -1348,6 +1348,48 @@ export interface paths {
         patch: operations["updateSession"];
         trace?: never;
     };
+    "/v1/projects/{project_handle}/sessions/{session_id}/attachments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create session attachment
+         * @description Uploads one document or image into server-managed artifact storage and binds it immutably to this session. DOCX, XLSX, and PPTX uploads start asynchronous Markdown conversion through the document service. The returned `content_block` is the canonical block callers append in a session message or turn input.
+         *
+         *     Phase 1 accepts PDF (up to 5 MiB and 50 pages), DOCX, XLSX, or PPTX (up to 5 MiB), Markdown or plain text (up to 100 KiB), and PNG, JPEG, WebP, or GIF images (up to 5 MiB). Mobius detects the media type from the bytes and does not trust the multipart MIME declaration. The feature must be enabled for the organization or project.
+         */
+        post: operations["createSessionAttachment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{project_handle}/sessions/{session_id}/attachments/{artifact_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete session attachment
+         * @description Deletes one artifact created through this session's attachment endpoint. The server re-checks the session binding and append permission before deleting bytes and releasing artifact quota. Retrying an artifact this session already deleted returns 204. A 404 means the artifact was never bound to this session, or the session or project does not exist.
+         */
+        delete: operations["deleteSessionAttachment"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/projects/{project_handle}/sessions/{session_id}/messages": {
         parameters: {
             query?: never;
@@ -2450,6 +2492,8 @@ export interface paths {
         /**
          * Create artifact
          * @description Accepts a project-authorized multipart file upload. Without a worker lease, the caller needs `mobius.project.edit`; the artifact is private to the authenticated principal and has no run or step lineage. A worker may instead supply `X-Mobius-Lease-Token` with `mobius.work.execute`; Mobius then derives run, step, job, worker session, attempt, and shared visibility from the active claim. Caller-supplied lineage, ownership, and visibility fields are rejected in both modes.
+         *
+         *     DOCX, XLSX, and PPTX uploads may pass `convert=true` to start asynchronous Markdown extraction for later model delivery.
          */
         post: operations["createArtifact"];
         delete?: never;
@@ -6032,8 +6076,8 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
-        /** @description One content block in a session transcript message — the canonical, frozen JSON shape Mobius persists and replays, discriminated by `type`. The variants are `text`, `thinking`, `tool_use`, `tool_result`, and `image`, plus host-managed `reminder` blocks when caller runtime context is explicitly included. Each variant permits provider-specific extra fields (citations, signatures, cache hints, and the like), and unknown fields are preserved rather than rejected, so the transcript round-trips losslessly across providers. */
-        SessionContentBlock: components["schemas"]["SessionTextBlock"] | components["schemas"]["SessionThinkingBlock"] | components["schemas"]["SessionToolUseBlock"] | components["schemas"]["SessionToolResultBlock"] | components["schemas"]["SessionImageBlock"] | components["schemas"]["SessionReminderBlock"];
+        /** @description One content block in a session transcript message — the canonical, frozen JSON shape Mobius persists and replays, discriminated by `type`. The variants are `text`, `thinking`, `tool_use`, `tool_result`, `image`, and `document`, plus host-managed `reminder` blocks when caller runtime context is explicitly included. Each variant permits provider-specific extra fields (citations, signatures, cache hints, and the like), and unknown fields are preserved rather than rejected, so the transcript round-trips losslessly across providers. */
+        SessionContentBlock: components["schemas"]["SessionTextBlock"] | components["schemas"]["SessionThinkingBlock"] | components["schemas"]["SessionToolUseBlock"] | components["schemas"]["SessionToolResultBlock"] | components["schemas"]["SessionImageBlock"] | components["schemas"]["SessionDocumentBlock"] | components["schemas"]["SessionReminderBlock"];
         /** @description The result of a tool call. */
         SessionToolResultBlock: {
             /**
@@ -6050,6 +6094,24 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /** @description Canonical image source descriptor. Known source types are `base64` (`media_type` plus `data`), `url` (`url`), and Mobius-managed `artifact` (`artifact_id`). Provider-specific extensions are preserved. */
+        SessionImageSource: {
+            /** @enum {string} */
+            type: "base64" | "url" | "artifact";
+            /** @description MIME type for base64 content. */
+            media_type?: string;
+            /** @description Base64 image payload. */
+            data?: string;
+            /**
+             * Format: uri
+             * @description Fetchable image URL for a URL source.
+             */
+            url?: string;
+            /** @description Mobius artifact id returned by the session attachment endpoint. */
+            artifact_id?: string;
+        } & {
+            [key: string]: unknown;
+        };
         /** @description An image block, e.g. multimodal caller input. */
         SessionImageBlock: {
             /**
@@ -6057,8 +6119,65 @@ export interface components {
              * @enum {string}
              */
             type: "image";
-            /** @description Provider-specific image source descriptor. */
-            source?: {
+            source?: components["schemas"]["SessionImageSource"];
+            /** @description Server-detected MIME type for an artifact-backed image. */
+            media_type?: string;
+            /** @description Original filename for an artifact-backed image. */
+            title?: string;
+            /**
+             * Format: int64
+             * @description Server-observed byte size for an artifact-backed image.
+             */
+            size_bytes?: number;
+        } & {
+            [key: string]: unknown;
+        };
+        /** @description Canonical document source descriptor. Known source types are `base64` (`media_type` plus `data`), `url` (`url`), `text` (`media_type` plus `data`), provider-managed `file` (`file_id`), and Mobius-managed `artifact` (`artifact_id`). Provider-managed file references are not portable across model providers; artifact sources are resolved only after re-checking their session binding. */
+        SessionDocumentSource: {
+            /**
+             * @description Source discriminator; known values are base64, url, text, file, and artifact.
+             * @enum {string}
+             */
+            type: "base64" | "url" | "text" | "file" | "artifact";
+            /** @description MIME type for base64 or text content. */
+            media_type?: string;
+            /** @description Base64 payload or literal text, depending on source type. Inline payloads are limited to 256 KiB after base64 decoding or as UTF-8 text; larger documents must use an artifact source created by the session attachment endpoint. */
+            data?: string;
+            /**
+             * Format: uri
+             * @description Fetchable document URL for a URL source.
+             */
+            url?: string;
+            /** @description Provider-managed file identifier for a file source. */
+            file_id?: string;
+            /** @description Mobius artifact id returned by the session attachment endpoint. */
+            artifact_id?: string;
+        } & {
+            [key: string]: unknown;
+        };
+        /** @description A canonical document block. Mobius persists this provider-neutral block after translating supported caller dialects such as OpenAI `input_file` and Chat Completions `file` blocks. Base64 data stays in `source.data`; clients must not render or log that field. */
+        SessionDocumentBlock: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "document";
+            source: components["schemas"]["SessionDocumentSource"];
+            /** @description Human-readable filename or document title, when supplied. */
+            title?: string;
+            /** @description Server-detected MIME type for an artifact-backed document. */
+            media_type?: string;
+            /**
+             * Format: int64
+             * @description Server-observed byte size for an artifact-backed document.
+             */
+            size_bytes?: number;
+            /** @description Parsed page count for an artifact-backed PDF. */
+            page_count?: number;
+            /** @description Optional model-facing context for the document. */
+            context?: string;
+            /** @description Provider citation options, when supported. */
+            citations?: {
                 [key: string]: unknown;
             };
         } & {
@@ -6093,7 +6212,7 @@ export interface components {
             agent_id: string;
             /** @description Role of this message in the transcript. */
             role: components["schemas"]["SessionMessageRole"];
-            /** @description Ordered canonical content blocks (text, thinking, tool_use, tool_result, image). */
+            /** @description Ordered canonical content blocks (text, thinking, tool_use, tool_result, image, document). */
             content: components["schemas"]["SessionContentBlock"][];
             /** @description Whether this row is a normal message or a compaction summary. */
             entry_type: components["schemas"]["SessionMessageEntryType"];
@@ -6773,6 +6892,26 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        CreateSessionAttachmentRequest: {
+            /**
+             * Format: binary
+             * @description The document or image bytes. Multipart parts may arrive in any order.
+             */
+            file: string;
+            /** @description Optional display filename. Defaults to the multipart filename. */
+            name?: string;
+            /** @description Optional hint only; Mobius detects and validates PDF, DOCX, XLSX, PPTX, text, Markdown, and supported image types from the bytes. */
+            mime?: string;
+            /**
+             * Format: int64
+             * @description Optional declared byte size; when supplied it must match the uploaded bytes.
+             */
+            size_bytes?: number;
+        };
+        SessionAttachmentResponse: {
+            artifact: components["schemas"]["Artifact"];
+            content_block: components["schemas"]["SessionContentBlock"];
+        };
         AppendSessionMessagesRequest: {
             /** @description Messages to append to the session, in order. */
             messages: components["schemas"]["AppendSessionMessage"][];
@@ -6919,7 +7058,7 @@ export interface components {
         };
         /** @description The caller input message that starts the agent turn. */
         InvokeInput: {
-            /** @description Ordered content blocks (text, images) for the input message. */
+            /** @description Ordered content blocks for the input message. Canonical documents use `{ "type": "document", "source": { "type": "base64", "media_type": "application/pdf", "data": "..." }, "title": "report.pdf" }` or a URL source. Mobius also translates supported OpenAI `input_file` and Chat Completions `file` blocks at ingestion. */
             content: {
                 [key: string]: unknown;
             }[];
@@ -6977,7 +7116,7 @@ export interface components {
              * @enum {string}
              */
             role?: "user";
-            /** @description Ordered content blocks (text, images) for the input message. */
+            /** @description Ordered content blocks for the input message. Canonical documents use `{ "type": "document", "source": { "type": "base64", "media_type": "application/pdf", "data": "..." }, "title": "report.pdf" }` or a URL source. Mobius also translates supported OpenAI `input_file` and Chat Completions `file` blocks at ingestion. */
             content: {
                 [key: string]: unknown;
             }[];
@@ -7076,6 +7215,74 @@ export interface components {
             deduped: boolean;
             /** @description True when wake interrupted a waiting tool and requeued this turn. */
             woke_turn: boolean;
+        };
+        /**
+         * @description Private artifacts are visible only to their owner user. Shared artifacts are visible to the project.
+         * @enum {string}
+         */
+        ArtifactVisibility: "private" | "shared";
+        /** @description Markdown-extraction state for an Office upload that requested conversion. */
+        ArtifactConversionSummary: {
+            /** @enum {string} */
+            state: "converting" | "ready" | "failed";
+            /** @description Failure reason when state is failed. */
+            error?: string;
+        };
+        /**
+         * @description Stored file or generated artifact metadata.
+         * @example {
+         *       "id": "art_2m7q9x5v3p8n4r6t",
+         *       "visibility": "shared",
+         *       "run_id": "run_8q5m2x9v7p3n4r6t",
+         *       "step_id": "run_8q5m2x9v7p3n4r6t:review",
+         *       "name": "reports/review-findings.md",
+         *       "mime_type": "text/markdown",
+         *       "size_bytes": 1842,
+         *       "sha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+         *       "created_at": "2026-06-15T14:30:00Z",
+         *       "created_by": "agent_5n8p2q7m4x9r3v6t"
+         *     }
+         */
+        Artifact: {
+            /** @description Unique artifact identifier. */
+            id: string;
+            /** @description Visibility policy for the artifact. */
+            visibility: components["schemas"]["ArtifactVisibility"];
+            /** @description Loop run that produced this artifact, derived from the trusted worker lease when present. */
+            run_id?: string;
+            /** @description Loop step that produced this artifact, derived from the trusted worker lease when present. */
+            step_id?: string;
+            /** @description Display name or relative virtual path. Forward slash may be used to organize artifacts inside private or shared project space. */
+            name: string;
+            /** @description MIME type recorded for the artifact content. */
+            mime_type: string;
+            /**
+             * Format: int64
+             * @description Artifact content size in bytes.
+             */
+            size_bytes: number;
+            /** @description SHA-256 digest of the artifact content, when available. */
+            sha256?: string;
+            /**
+             * Format: date-time
+             * @description Time the artifact metadata was created.
+             */
+            created_at: string;
+            /** @description Principal ID of the actor who created this artifact. Empty for system-initiated writes. */
+            created_by?: string;
+            /**
+             * Format: date-time
+             * @description Time the artifact metadata was last updated.
+             */
+            updated_at?: string;
+            /** @description Principal ID of the actor who last updated this artifact. Empty for system-initiated writes. */
+            updated_by?: string;
+            /** @description Caller-supplied artifact metadata. Mobius-owned storage metadata is not exposed. */
+            metadata?: {
+                [key: string]: unknown;
+            };
+            /** @description Conversion summary for an Office artifact that requested conversion. Absent for artifacts with no conversion. */
+            conversion?: components["schemas"]["ArtifactConversionSummary"];
         };
         /**
          * @description A loop and its current authored definition. Updating any authoring field creates an internal revision and makes it runnable immediately.
@@ -8988,65 +9195,6 @@ export interface components {
             created: boolean;
         };
         /**
-         * @description Private artifacts are visible only to their owner user. Shared artifacts are visible to the project.
-         * @enum {string}
-         */
-        ArtifactVisibility: "private" | "shared";
-        /**
-         * @description Stored file or generated artifact metadata.
-         * @example {
-         *       "id": "art_2m7q9x5v3p8n4r6t",
-         *       "visibility": "shared",
-         *       "run_id": "run_8q5m2x9v7p3n4r6t",
-         *       "step_id": "run_8q5m2x9v7p3n4r6t:review",
-         *       "name": "reports/review-findings.md",
-         *       "mime_type": "text/markdown",
-         *       "size_bytes": 1842,
-         *       "sha256": "8f4c2b9d0e6a1f3c5b7d9e0a2c4f6b8d9e1a3c5f7b9d0e2a4c6f8b0d2e4a6c8",
-         *       "created_at": "2026-06-15T14:30:00Z",
-         *       "created_by": "agent_5n8p2q7m4x9r3v6t"
-         *     }
-         */
-        Artifact: {
-            /** @description Unique artifact identifier. */
-            id: string;
-            /** @description Visibility policy for the artifact. */
-            visibility: components["schemas"]["ArtifactVisibility"];
-            /** @description Loop run that produced this artifact, derived from the trusted worker lease when present. */
-            run_id?: string;
-            /** @description Loop step that produced this artifact, derived from the trusted worker lease when present. */
-            step_id?: string;
-            /** @description Display name or relative virtual path. Forward slash may be used to organize artifacts inside private or shared project space. */
-            name: string;
-            /** @description MIME type recorded for the artifact content. */
-            mime_type: string;
-            /**
-             * Format: int64
-             * @description Artifact content size in bytes.
-             */
-            size_bytes: number;
-            /** @description SHA-256 digest of the artifact content, when available. */
-            sha256?: string;
-            /**
-             * Format: date-time
-             * @description Time the artifact metadata was created.
-             */
-            created_at: string;
-            /** @description Principal ID of the actor who created this artifact. Empty for system-initiated writes. */
-            created_by?: string;
-            /**
-             * Format: date-time
-             * @description Time the artifact metadata was last updated.
-             */
-            updated_at?: string;
-            /** @description Principal ID of the actor who last updated this artifact. Empty for system-initiated writes. */
-            updated_by?: string;
-            /** @description Caller-supplied artifact metadata. Mobius-owned storage metadata is not exposed. */
-            metadata?: {
-                [key: string]: unknown;
-            };
-        };
-        /**
          * @example {
          *       "items": [
          *         {
@@ -9088,6 +9236,11 @@ export interface components {
             metadata?: {
                 [key: string]: unknown;
             };
+            /**
+             * @description When "true" and the uploaded file is DOCX, XLSX, or PPTX, extract a Markdown rendition asynchronously for model delivery. Ignored for other file types.
+             * @enum {string}
+             */
+            convert?: "true" | "false";
         };
         /** @description Short-lived URL for downloading artifact content. */
         ArtifactSignedUrl: {
@@ -9275,12 +9428,12 @@ export interface components {
         ContextIncludeParam: components["schemas"]["ContextIncludeParam"];
         /** @description Session nudge identifier. */
         NudgeIdParam: string;
+        /** @description ID of the artifact */
+        ArtifactIdParam: string;
         /** @description Table ID. */
         TableIDParam: string;
         /** @description Filter tables by name. Table names are unique within a project; use this as a discovery filter and use the returned table `id` for follow-up operations. */
         TableNameQueryParam: string;
-        /** @description ID of the artifact */
-        ArtifactIdParam: string;
     };
     requestBodies: {
         /** @description Outbound signed-context HTTP action request. */
@@ -12730,6 +12883,107 @@ export interface operations {
             429: components["responses"]["TooManyRequests"];
         };
     };
+    createSessionAttachment: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Optional retry key, scoped to this session and caller. An identical retry returns the original attachment. Reusing the key with different file bytes, filename, or MIME hint is rejected with a conflict. */
+                "Idempotency-Key"?: string;
+            };
+            path: {
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
+                /** @description Identifier of the conversation session. */
+                session_id: components["parameters"]["SessionIdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["CreateSessionAttachmentRequest"];
+            };
+        };
+        responses: {
+            /** @description Existing attachment returned for an idempotent retry. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionAttachmentResponse"];
+                };
+            };
+            /** @description Attachment uploaded. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionAttachmentResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description The idempotency key was reused with different file bytes, filename, or MIME hint. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Attachment exceeds its per-type size, Office safety, or PDF page limit. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Artifact storage is unavailable (`artifact_storage_unavailable`). */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    deleteSessionAttachment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Project handle */
+                project_handle: components["parameters"]["ProjectHandleParam"];
+                /** @description Identifier of the conversation session. */
+                session_id: components["parameters"]["SessionIdParam"];
+                /** @description ID of the artifact */
+                artifact_id: components["parameters"]["ArtifactIdParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
     listSessionMessages: {
         parameters: {
             query?: {
@@ -15781,6 +16035,23 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             409: components["responses"]["Conflict"];
+            /** @description Payload too large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "error": {
+                     *         "code": "payload_too_large",
+                     *         "message": "artifact upload exceeds the maximum allowed size"
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
         };
     };
     getArtifact: {

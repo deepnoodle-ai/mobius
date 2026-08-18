@@ -4507,6 +4507,32 @@ class Type22(StrEnum):
 
 
 class Type23(StrEnum):
+    base64 = 'base64'
+    url = 'url'
+    artifact = 'artifact'
+
+
+class SessionImageSource(BaseModel):
+    """
+    Canonical image source descriptor. Known source types are `base64` (`media_type` plus `data`), `url` (`url`), and Mobius-managed `artifact` (`artifact_id`). Provider-specific extensions are preserved.
+    """
+
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    type: Type23
+    media_type: str | None = Field(None, description='MIME type for base64 content.')
+    data: str | None = Field(None, description='Base64 image payload.')
+    url: AnyUrl | None = Field(
+        None, description='Fetchable image URL for a URL source.'
+    )
+    artifact_id: str | None = Field(
+        None,
+        description='Mobius artifact id returned by the session attachment endpoint.',
+    )
+
+
+class Type24(StrEnum):
     image = 'image'
 
 
@@ -4519,12 +4545,96 @@ class SessionImageBlock(BaseModel):
         extra='allow',
     )
     type: Literal['image']
-    source: dict[str, Any] | None = Field(
-        None, description='Provider-specific image source descriptor.'
+    source: SessionImageSource | None = None
+    media_type: str | None = Field(
+        None, description='Server-detected MIME type for an artifact-backed image.'
+    )
+    title: str | None = Field(
+        None, description='Original filename for an artifact-backed image.'
+    )
+    size_bytes: int | None = Field(
+        None, description='Server-observed byte size for an artifact-backed image.'
     )
 
 
-class Type24(StrEnum):
+class Type25(StrEnum):
+    """
+    Source discriminator; known values are base64, url, text, file, and artifact.
+    """
+
+    base64 = 'base64'
+    url = 'url'
+    text = 'text'
+    file = 'file'
+    artifact = 'artifact'
+
+
+class SessionDocumentSource(BaseModel):
+    """
+    Canonical document source descriptor. Known source types are `base64` (`media_type` plus `data`), `url` (`url`), `text` (`media_type` plus `data`), provider-managed `file` (`file_id`), and Mobius-managed `artifact` (`artifact_id`). Provider-managed file references are not portable across model providers; artifact sources are resolved only after re-checking their session binding.
+    """
+
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    type: Type25 = Field(
+        ...,
+        description='Source discriminator; known values are base64, url, text, file, and artifact.',
+    )
+    media_type: str | None = Field(
+        None, description='MIME type for base64 or text content.'
+    )
+    data: str | None = Field(
+        None,
+        description='Base64 payload or literal text, depending on source type. Inline payloads are limited to 256 KiB after base64 decoding or as UTF-8 text; larger documents must use an artifact source created by the session attachment endpoint.',
+    )
+    url: AnyUrl | None = Field(
+        None, description='Fetchable document URL for a URL source.'
+    )
+    file_id: str | None = Field(
+        None, description='Provider-managed file identifier for a file source.'
+    )
+    artifact_id: str | None = Field(
+        None,
+        description='Mobius artifact id returned by the session attachment endpoint.',
+    )
+
+
+class Type26(StrEnum):
+    document = 'document'
+
+
+class SessionDocumentBlock(BaseModel):
+    """
+    A canonical document block. Mobius persists this provider-neutral block after translating supported caller dialects such as OpenAI `input_file` and Chat Completions `file` blocks. Base64 data stays in `source.data`; clients must not render or log that field.
+    """
+
+    model_config = ConfigDict(
+        extra='allow',
+    )
+    type: Literal['document']
+    source: SessionDocumentSource
+    title: str | None = Field(
+        None, description='Human-readable filename or document title, when supplied.'
+    )
+    media_type: str | None = Field(
+        None, description='Server-detected MIME type for an artifact-backed document.'
+    )
+    size_bytes: int | None = Field(
+        None, description='Server-observed byte size for an artifact-backed document.'
+    )
+    page_count: int | None = Field(
+        None, description='Parsed page count for an artifact-backed PDF.', ge=1
+    )
+    context: str | None = Field(
+        None, description='Optional model-facing context for the document.'
+    )
+    citations: dict[str, Any] | None = Field(
+        None, description='Provider citation options, when supported.'
+    )
+
+
+class Type27(StrEnum):
     reminder = 'reminder'
 
 
@@ -5027,6 +5137,30 @@ class CompactionFailedPayload(BaseModel):
     )
 
 
+class CreateSessionAttachmentRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    file: bytes = Field(
+        ...,
+        description='The document or image bytes. Multipart parts may arrive in any order.',
+    )
+    name: str | None = Field(
+        None,
+        description='Optional display filename. Defaults to the multipart filename.',
+        max_length=256,
+    )
+    mime: str | None = Field(
+        None,
+        description='Optional hint only; Mobius detects and validates PDF, DOCX, XLSX, PPTX, text, Markdown, and supported image types from the bytes.',
+    )
+    size_bytes: int | None = Field(
+        None,
+        description='Optional declared byte size; when supplied it must match the uploaded bytes.',
+        ge=0,
+    )
+
+
 class AppendSessionMessage(BaseModel):
     """
     Message payload to append to an existing durable session.
@@ -5212,7 +5346,7 @@ class InvokeInput(BaseModel):
     )
     content: list[dict[str, Any]] = Field(
         ...,
-        description='Ordered content blocks (text, images) for the input message.',
+        description='Ordered content blocks for the input message. Canonical documents use `{ "type": "document", "source": { "type": "base64", "media_type": "application/pdf", "data": "..." }, "title": "report.pdf" }` or a URL source. Mobius also translates supported OpenAI `input_file` and Chat Completions `file` blocks at ingestion.',
         min_length=1,
     )
     idempotency_key: str | None = Field(
@@ -5305,7 +5439,7 @@ class StartTurnRequest(BaseModel):
     )
     content: list[dict[str, Any]] = Field(
         ...,
-        description='Ordered content blocks (text, images) for the input message.',
+        description='Ordered content blocks for the input message. Canonical documents use `{ "type": "document", "source": { "type": "base64", "media_type": "application/pdf", "data": "..." }, "title": "report.pdf" }` or a URL source. Mobius also translates supported OpenAI `input_file` and Chat Completions `file` blocks at ingestion.',
         min_length=1,
     )
     idempotency_key: str | None = Field(
@@ -5401,6 +5535,88 @@ class SessionNudgeListResponse(BaseModel):
     has_more: bool
     next_cursor: str | None = Field(
         None, description='Opaque continuation cursor, or null at the end.'
+    )
+
+
+class ArtifactVisibility(StrEnum):
+    """
+    Private artifacts are visible only to their owner user. Shared artifacts are visible to the project.
+    """
+
+    private = 'private'
+    shared = 'shared'
+
+
+class State1(StrEnum):
+    converting = 'converting'
+    ready = 'ready'
+    failed = 'failed'
+
+
+class ArtifactConversionSummary(BaseModel):
+    """
+    Markdown-extraction state for an Office upload that requested conversion.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    state: State1
+    error: str | None = Field(None, description='Failure reason when state is failed.')
+
+
+class Artifact(BaseModel):
+    """
+    Stored file or generated artifact metadata.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str = Field(..., description='Unique artifact identifier.')
+    visibility: ArtifactVisibility = Field(
+        ..., description='Visibility policy for the artifact.'
+    )
+    run_id: str | None = Field(
+        None,
+        description='Loop run that produced this artifact, derived from the trusted worker lease when present.',
+    )
+    step_id: str | None = Field(
+        None,
+        description='Loop step that produced this artifact, derived from the trusted worker lease when present.',
+    )
+    name: str = Field(
+        ...,
+        description='Display name or relative virtual path. Forward slash may be used to organize artifacts inside private or shared project space.',
+    )
+    mime_type: str = Field(
+        ..., description='MIME type recorded for the artifact content.'
+    )
+    size_bytes: int = Field(..., description='Artifact content size in bytes.')
+    sha256: str | None = Field(
+        None, description='SHA-256 digest of the artifact content, when available.'
+    )
+    created_at: AwareDatetime = Field(
+        ..., description='Time the artifact metadata was created.'
+    )
+    created_by: str | None = Field(
+        None,
+        description='Principal ID of the actor who created this artifact. Empty for system-initiated writes.',
+    )
+    updated_at: AwareDatetime | None = Field(
+        None, description='Time the artifact metadata was last updated.'
+    )
+    updated_by: str | None = Field(
+        None,
+        description='Principal ID of the actor who last updated this artifact. Empty for system-initiated writes.',
+    )
+    metadata: dict[str, Any] | None = Field(
+        None,
+        description='Caller-supplied artifact metadata. Mobius-owned storage metadata is not exposed.',
+    )
+    conversion: ArtifactConversionSummary | None = Field(
+        None,
+        description='Conversion summary for an Office artifact that requested conversion. Absent for artifacts with no conversion.',
     )
 
 
@@ -6178,7 +6394,7 @@ class SignalLoopRunRequest(BaseModel):
     )
 
 
-class Type25(StrEnum):
+class Type28(StrEnum):
     """
     Source category for the run start: `api`, `trigger`, `manual`, or `signal`.
     """
@@ -6197,7 +6413,7 @@ class LoopRunSource(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    type: Type25 | None = Field(
+    type: Type28 | None = Field(
         None,
         description='Source category for the run start: `api`, `trigger`, `manual`, or `signal`.',
     )
@@ -6411,7 +6627,7 @@ class BlueprintRef(BaseModel):
     key: str
 
 
-class Type26(StrEnum):
+class Type29(StrEnum):
     """
     Endpoint kind. Defaults to `http`. Immutable after create.
     """
@@ -7145,66 +7361,6 @@ class UpsertRowResult(BaseModel):
     )
 
 
-class ArtifactVisibility(StrEnum):
-    """
-    Private artifacts are visible only to their owner user. Shared artifacts are visible to the project.
-    """
-
-    private = 'private'
-    shared = 'shared'
-
-
-class Artifact(BaseModel):
-    """
-    Stored file or generated artifact metadata.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    id: str = Field(..., description='Unique artifact identifier.')
-    visibility: ArtifactVisibility = Field(
-        ..., description='Visibility policy for the artifact.'
-    )
-    run_id: str | None = Field(
-        None,
-        description='Loop run that produced this artifact, derived from the trusted worker lease when present.',
-    )
-    step_id: str | None = Field(
-        None,
-        description='Loop step that produced this artifact, derived from the trusted worker lease when present.',
-    )
-    name: str = Field(
-        ...,
-        description='Display name or relative virtual path. Forward slash may be used to organize artifacts inside private or shared project space.',
-    )
-    mime_type: str = Field(
-        ..., description='MIME type recorded for the artifact content.'
-    )
-    size_bytes: int = Field(..., description='Artifact content size in bytes.')
-    sha256: str | None = Field(
-        None, description='SHA-256 digest of the artifact content, when available.'
-    )
-    created_at: AwareDatetime = Field(
-        ..., description='Time the artifact metadata was created.'
-    )
-    created_by: str | None = Field(
-        None,
-        description='Principal ID of the actor who created this artifact. Empty for system-initiated writes.',
-    )
-    updated_at: AwareDatetime | None = Field(
-        None, description='Time the artifact metadata was last updated.'
-    )
-    updated_by: str | None = Field(
-        None,
-        description='Principal ID of the actor who last updated this artifact. Empty for system-initiated writes.',
-    )
-    metadata: dict[str, Any] | None = Field(
-        None,
-        description='Caller-supplied artifact metadata. Mobius-owned storage metadata is not exposed.',
-    )
-
-
 class ArtifactListResponse(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
@@ -7214,6 +7370,15 @@ class ArtifactListResponse(BaseModel):
     next_cursor: str | None = Field(
         None, description='Cursor to pass on the next request when `has_more` is true.'
     )
+
+
+class Convert(StrEnum):
+    """
+    When "true" and the uploaded file is DOCX, XLSX, or PPTX, extract a Markdown rendition asynchronously for model delivery. Ignored for other file types.
+    """
+
+    true = 'true'
+    false = 'false'
 
 
 class CreateArtifactRequest(BaseModel):
@@ -7241,6 +7406,10 @@ class CreateArtifactRequest(BaseModel):
     metadata: dict[str, Any] | None = Field(
         None,
         description='Optional caller metadata JSON object. Encoded as JSON in the multipart field and limited to 64 KiB.',
+    )
+    convert: Convert | None = Field(
+        None,
+        description='When "true" and the uploaded file is DOCX, XLSX, or PPTX, extract a Markdown rendition asynchronously for model delivery. Ignored for other file types.',
     )
 
 
@@ -8486,7 +8655,7 @@ class BlueprintActionInput(BaseModel):
         ..., description='Blueprint-defined handle other resources use to reference it.'
     )
     name: str
-    type: Type26 | None = Field(
+    type: Type29 | None = Field(
         None, description='Endpoint kind. Defaults to `http`. Immutable after create.'
     )
     endpoint: str | None = Field(None, description='Endpoint URL for http actions.')
@@ -9419,7 +9588,7 @@ class SessionMessage(BaseModel):
     )
     content: list[SessionContentBlock] = Field(
         ...,
-        description='Ordered canonical content blocks (text, thinking, tool_use, tool_result, image).',
+        description='Ordered canonical content blocks (text, thinking, tool_use, tool_result, image, document).',
     )
     entry_type: SessionMessageEntryType = Field(
         ..., description='Whether this row is a normal message or a compaction summary.'
@@ -9666,6 +9835,14 @@ class CompactionCreatedPayload(BaseModel):
     )
 
 
+class SessionAttachmentResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    artifact: Artifact
+    content_block: SessionContentBlock
+
+
 class TurnAck(BaseModel):
     """
     Acknowledgement that a turn started, with a stream cursor.
@@ -9701,6 +9878,7 @@ class SessionContentBlock(
         | SessionToolUseBlock
         | SessionToolResultBlock
         | SessionImageBlock
+        | SessionDocumentBlock
         | SessionReminderBlock
     ]
 ):
@@ -9710,10 +9888,11 @@ class SessionContentBlock(
         | SessionToolUseBlock
         | SessionToolResultBlock
         | SessionImageBlock
+        | SessionDocumentBlock
         | SessionReminderBlock
     ) = Field(
         ...,
-        description='One content block in a session transcript message — the canonical, frozen JSON shape Mobius persists and replays, discriminated by `type`. The variants are `text`, `thinking`, `tool_use`, `tool_result`, and `image`, plus host-managed `reminder` blocks when caller runtime context is explicitly included. Each variant permits provider-specific extra fields (citations, signatures, cache hints, and the like), and unknown fields are preserved rather than rejected, so the transcript round-trips losslessly across providers.',
+        description='One content block in a session transcript message — the canonical, frozen JSON shape Mobius persists and replays, discriminated by `type`. The variants are `text`, `thinking`, `tool_use`, `tool_result`, `image`, and `document`, plus host-managed `reminder` blocks when caller runtime context is explicitly included. Each variant permits provider-specific extra fields (citations, signatures, cache hints, and the like), and unknown fields are preserved rather than rejected, so the transcript round-trips losslessly across providers.',
         discriminator='type',
     )
 
@@ -9800,4 +9979,5 @@ SessionUserMessagePayload.model_rebuild()
 AgentMessagePayload.model_rebuild()
 ToolResultPayload.model_rebuild()
 CompactionCreatedPayload.model_rebuild()
+SessionAttachmentResponse.model_rebuild()
 MessageUpsertFrame.model_rebuild()

@@ -503,6 +503,27 @@ func (e AgentTurnStatus) Valid() bool {
 	}
 }
 
+// Defines values for ArtifactConversionSummaryState.
+const (
+	ArtifactConversionSummaryStateConverting ArtifactConversionSummaryState = "converting"
+	ArtifactConversionSummaryStateFailed     ArtifactConversionSummaryState = "failed"
+	ArtifactConversionSummaryStateReady      ArtifactConversionSummaryState = "ready"
+)
+
+// Valid indicates whether the value is a known member of the ArtifactConversionSummaryState enum.
+func (e ArtifactConversionSummaryState) Valid() bool {
+	switch e {
+	case ArtifactConversionSummaryStateConverting:
+		return true
+	case ArtifactConversionSummaryStateFailed:
+		return true
+	case ArtifactConversionSummaryStateReady:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ArtifactSignedUrlMethod.
 const (
 	ArtifactSignedUrlMethodGET ArtifactSignedUrlMethod = "GET"
@@ -857,6 +878,24 @@ const (
 func (e ContextIncludeParam) Valid() bool {
 	switch e {
 	case ContextIncludeParamContext:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CreateArtifactRequestConvert.
+const (
+	CreateArtifactRequestConvertFalse CreateArtifactRequestConvert = "false"
+	CreateArtifactRequestConvertTrue  CreateArtifactRequestConvert = "true"
+)
+
+// Valid indicates whether the value is a known member of the CreateArtifactRequestConvert enum.
+func (e CreateArtifactRequestConvert) Valid() bool {
+	switch e {
+	case CreateArtifactRequestConvertFalse:
+		return true
+	case CreateArtifactRequestConvertTrue:
 		return true
 	default:
 		return false
@@ -2717,6 +2756,48 @@ func (e SessionCompactionThreshold) Valid() bool {
 	}
 }
 
+// Defines values for SessionDocumentBlockType.
+const (
+	SessionDocumentBlockTypeDocument SessionDocumentBlockType = "document"
+)
+
+// Valid indicates whether the value is a known member of the SessionDocumentBlockType enum.
+func (e SessionDocumentBlockType) Valid() bool {
+	switch e {
+	case SessionDocumentBlockTypeDocument:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SessionDocumentSourceType.
+const (
+	SessionDocumentSourceTypeArtifact SessionDocumentSourceType = "artifact"
+	SessionDocumentSourceTypeBase64   SessionDocumentSourceType = "base64"
+	SessionDocumentSourceTypeFile     SessionDocumentSourceType = "file"
+	SessionDocumentSourceTypeText     SessionDocumentSourceType = "text"
+	SessionDocumentSourceTypeUrl      SessionDocumentSourceType = "url"
+)
+
+// Valid indicates whether the value is a known member of the SessionDocumentSourceType enum.
+func (e SessionDocumentSourceType) Valid() bool {
+	switch e {
+	case SessionDocumentSourceTypeArtifact:
+		return true
+	case SessionDocumentSourceTypeBase64:
+		return true
+	case SessionDocumentSourceTypeFile:
+		return true
+	case SessionDocumentSourceTypeText:
+		return true
+	case SessionDocumentSourceTypeUrl:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for SessionImageBlockType.
 const (
 	SessionImageBlockTypeImage SessionImageBlockType = "image"
@@ -2726,6 +2807,27 @@ const (
 func (e SessionImageBlockType) Valid() bool {
 	switch e {
 	case SessionImageBlockTypeImage:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SessionImageSourceType.
+const (
+	SessionImageSourceTypeArtifact SessionImageSourceType = "artifact"
+	SessionImageSourceTypeBase64   SessionImageSourceType = "base64"
+	SessionImageSourceTypeUrl      SessionImageSourceType = "url"
+)
+
+// Valid indicates whether the value is a known member of the SessionImageSourceType enum.
+func (e SessionImageSourceType) Valid() bool {
+	switch e {
+	case SessionImageSourceTypeArtifact:
+		return true
+	case SessionImageSourceTypeBase64:
+		return true
+	case SessionImageSourceTypeUrl:
 		return true
 	default:
 		return false
@@ -4846,6 +4948,9 @@ type ApplyBlueprintRequest struct {
 
 // Artifact Stored file or generated artifact metadata.
 type Artifact struct {
+	// Conversion Markdown-extraction state for an Office upload that requested conversion.
+	Conversion *ArtifactConversionSummary `json:"conversion,omitempty"`
+
 	// CreatedAt Time the artifact metadata was created.
 	CreatedAt time.Time `json:"created_at"`
 
@@ -4885,6 +4990,16 @@ type Artifact struct {
 	// Visibility Private artifacts are visible only to their owner user. Shared artifacts are visible to the project.
 	Visibility ArtifactVisibility `json:"visibility"`
 }
+
+// ArtifactConversionSummary Markdown-extraction state for an Office upload that requested conversion.
+type ArtifactConversionSummary struct {
+	// Error Failure reason when state is failed.
+	Error *string                        `json:"error,omitempty"`
+	State ArtifactConversionSummaryState `json:"state"`
+}
+
+// ArtifactConversionSummaryState defines model for ArtifactConversionSummary.State.
+type ArtifactConversionSummaryState string
 
 // ArtifactCreatedPayload defines model for ArtifactCreatedPayload.
 type ArtifactCreatedPayload struct {
@@ -5574,6 +5689,9 @@ type CreateAgentRequest struct {
 
 // CreateArtifactRequest defines model for CreateArtifactRequest.
 type CreateArtifactRequest struct {
+	// Convert When "true" and the uploaded file is DOCX, XLSX, or PPTX, extract a Markdown rendition asynchronously for model delivery. Ignored for other file types.
+	Convert *CreateArtifactRequestConvert `json:"convert,omitempty"`
+
 	// File File bytes to upload into artifact storage. Multipart parts may be sent in any order; Mobius reads metadata fields and temporarily spools the file part when needed before streaming bytes to artifact storage.
 	File openapi_types.File `json:"file"`
 
@@ -5589,6 +5707,9 @@ type CreateArtifactRequest struct {
 	// SizeBytes Optional declared file size. When supplied, Mobius verifies the streamed byte count exactly matches this value.
 	SizeBytes *int64 `json:"size_bytes,omitempty"`
 }
+
+// CreateArtifactRequestConvert When "true" and the uploaded file is DOCX, XLSX, or PPTX, extract a Markdown rendition asynchronously for model delivery. Ignored for other file types.
+type CreateArtifactRequestConvert string
 
 // CreateEnvironmentRequest Request body for creating a managed environment.
 type CreateEnvironmentRequest struct {
@@ -5872,6 +5993,21 @@ type CreateRunBackedInteractionRequest struct {
 
 	// Title Short non-empty title shown to the responder.
 	Title string `json:"title"`
+}
+
+// CreateSessionAttachmentRequest defines model for CreateSessionAttachmentRequest.
+type CreateSessionAttachmentRequest struct {
+	// File The document or image bytes. Multipart parts may arrive in any order.
+	File openapi_types.File `json:"file"`
+
+	// Mime Optional hint only; Mobius detects and validates PDF, DOCX, XLSX, PPTX, text, Markdown, and supported image types from the bytes.
+	Mime *string `json:"mime,omitempty"`
+
+	// Name Optional display filename. Defaults to the multipart filename.
+	Name *string `json:"name,omitempty"`
+
+	// SizeBytes Optional declared byte size; when supplied it must match the uploaded bytes.
+	SizeBytes *int64 `json:"size_bytes,omitempty"`
 }
 
 // CreateSessionRequest Resolve-or-create policy for a session.
@@ -6909,7 +7045,7 @@ type InvokeAgentRequest struct {
 
 // InvokeInput The caller input message that starts the agent turn.
 type InvokeInput struct {
-	// Content Ordered content blocks (text, images) for the input message.
+	// Content Ordered content blocks for the input message. Canonical documents use `{ "type": "document", "source": { "type": "base64", "media_type": "application/pdf", "data": "..." }, "title": "report.pdf" }` or a URL source. Mobius also translates supported OpenAI `input_file` and Chat Completions `file` blocks at ingestion.
 	Content []map[string]interface{} `json:"content"`
 
 	// Context Ordered application-owned runtime context for this turn. Send the full current value for each named item. Mobius records an item only on first use, material change, or after compaction removes its prior value from the active model window. Omitting a name leaves its last value standing; send an explicit value such as `none` to clear application state. Names must be unique within the request. Content is limited to 8,192 UTF-8 bytes per item and 16,384 bytes total.
@@ -7941,7 +8077,7 @@ type MemorySearchMode string
 
 // MessageBlockFrame defines model for MessageBlockFrame.
 type MessageBlockFrame struct {
-	// Block One content block in a session transcript message — the canonical, frozen JSON shape Mobius persists and replays, discriminated by `type`. The variants are `text`, `thinking`, `tool_use`, `tool_result`, and `image`, plus host-managed `reminder` blocks when caller runtime context is explicitly included. Each variant permits provider-specific extra fields (citations, signatures, cache hints, and the like), and unknown fields are preserved rather than rejected, so the transcript round-trips losslessly across providers.
+	// Block One content block in a session transcript message — the canonical, frozen JSON shape Mobius persists and replays, discriminated by `type`. The variants are `text`, `thinking`, `tool_use`, `tool_result`, `image`, and `document`, plus host-managed `reminder` blocks when caller runtime context is explicitly included. Each variant permits provider-specific extra fields (citations, signatures, cache hints, and the like), and unknown fields are preserved rather than rejected, so the transcript round-trips losslessly across providers.
 	Block        SessionContentBlock        `json:"block"`
 	ContentIndex int                        `json:"content_index"`
 	EventType    MessageBlockFrameEventType `json:"event_type"`
@@ -8833,6 +8969,15 @@ type Session struct {
 	Visibility SessionVisibility `json:"visibility"`
 }
 
+// SessionAttachmentResponse defines model for SessionAttachmentResponse.
+type SessionAttachmentResponse struct {
+	// Artifact Stored file or generated artifact metadata.
+	Artifact Artifact `json:"artifact"`
+
+	// ContentBlock One content block in a session transcript message — the canonical, frozen JSON shape Mobius persists and replays, discriminated by `type`. The variants are `text`, `thinking`, `tool_use`, `tool_result`, `image`, and `document`, plus host-managed `reminder` blocks when caller runtime context is explicitly included. Each variant permits provider-specific extra fields (citations, signatures, cache hints, and the like), and unknown fields are preserved rather than rejected, so the transcript round-trips losslessly across providers.
+	ContentBlock SessionContentBlock `json:"content_block"`
+}
+
 // SessionCompactionBoundary Pointer to the latest compaction marker in a session's transcript. The marker is itself a transcript message (role `compaction`); everything at or below `covers_through_sequence` is summarized history.
 type SessionCompactionBoundary struct {
 	// CoversThroughSequence Highest message sequence this summary covers — the before/after boundary.
@@ -8894,21 +9039,104 @@ type SessionCompactionProgress struct {
 // SessionCompactionThreshold T-shirt size selecting when `auto` compaction triggers as a percentage of the session model's input context window: `xs` 10%, `sm` 20%, `md` 40%, `lg` 60%, and `xl` 80%. Unknown/custom models use a conservative 200k-token context window. `sm` is the default.
 type SessionCompactionThreshold string
 
-// SessionContentBlock One content block in a session transcript message — the canonical, frozen JSON shape Mobius persists and replays, discriminated by `type`. The variants are `text`, `thinking`, `tool_use`, `tool_result`, and `image`, plus host-managed `reminder` blocks when caller runtime context is explicitly included. Each variant permits provider-specific extra fields (citations, signatures, cache hints, and the like), and unknown fields are preserved rather than rejected, so the transcript round-trips losslessly across providers.
+// SessionContentBlock One content block in a session transcript message — the canonical, frozen JSON shape Mobius persists and replays, discriminated by `type`. The variants are `text`, `thinking`, `tool_use`, `tool_result`, `image`, and `document`, plus host-managed `reminder` blocks when caller runtime context is explicitly included. Each variant permits provider-specific extra fields (citations, signatures, cache hints, and the like), and unknown fields are preserved rather than rejected, so the transcript round-trips losslessly across providers.
 type SessionContentBlock struct {
 	union json.RawMessage
 }
 
+// SessionDocumentBlock A canonical document block. Mobius persists this provider-neutral block after translating supported caller dialects such as OpenAI `input_file` and Chat Completions `file` blocks. Base64 data stays in `source.data`; clients must not render or log that field.
+type SessionDocumentBlock struct {
+	// Citations Provider citation options, when supported.
+	Citations *map[string]interface{} `json:"citations,omitempty"`
+
+	// Context Optional model-facing context for the document.
+	Context *string `json:"context,omitempty"`
+
+	// MediaType Server-detected MIME type for an artifact-backed document.
+	MediaType *string `json:"media_type,omitempty"`
+
+	// PageCount Parsed page count for an artifact-backed PDF.
+	PageCount *int `json:"page_count,omitempty"`
+
+	// SizeBytes Server-observed byte size for an artifact-backed document.
+	SizeBytes *int64 `json:"size_bytes,omitempty"`
+
+	// Source Canonical document source descriptor. Known source types are `base64` (`media_type` plus `data`), `url` (`url`), `text` (`media_type` plus `data`), provider-managed `file` (`file_id`), and Mobius-managed `artifact` (`artifact_id`). Provider-managed file references are not portable across model providers; artifact sources are resolved only after re-checking their session binding.
+	Source SessionDocumentSource `json:"source"`
+
+	// Title Human-readable filename or document title, when supplied.
+	Title                *string                  `json:"title,omitempty"`
+	Type                 SessionDocumentBlockType `json:"type"`
+	AdditionalProperties map[string]interface{}   `json:"-"`
+}
+
+// SessionDocumentBlockType defines model for SessionDocumentBlock.Type.
+type SessionDocumentBlockType string
+
+// SessionDocumentSource Canonical document source descriptor. Known source types are `base64` (`media_type` plus `data`), `url` (`url`), `text` (`media_type` plus `data`), provider-managed `file` (`file_id`), and Mobius-managed `artifact` (`artifact_id`). Provider-managed file references are not portable across model providers; artifact sources are resolved only after re-checking their session binding.
+type SessionDocumentSource struct {
+	// ArtifactId Mobius artifact id returned by the session attachment endpoint.
+	ArtifactId *string `json:"artifact_id,omitempty"`
+
+	// Data Base64 payload or literal text, depending on source type. Inline payloads are limited to 256 KiB after base64 decoding or as UTF-8 text; larger documents must use an artifact source created by the session attachment endpoint.
+	Data *string `json:"data,omitempty"`
+
+	// FileId Provider-managed file identifier for a file source.
+	FileId *string `json:"file_id,omitempty"`
+
+	// MediaType MIME type for base64 or text content.
+	MediaType *string `json:"media_type,omitempty"`
+
+	// Type Source discriminator; known values are base64, url, text, file, and artifact.
+	Type SessionDocumentSourceType `json:"type"`
+
+	// Url Fetchable document URL for a URL source.
+	Url                  *string                `json:"url,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// SessionDocumentSourceType Source discriminator; known values are base64, url, text, file, and artifact.
+type SessionDocumentSourceType string
+
 // SessionImageBlock An image block, e.g. multimodal caller input.
 type SessionImageBlock struct {
-	// Source Provider-specific image source descriptor.
-	Source               *map[string]interface{} `json:"source,omitempty"`
-	Type                 SessionImageBlockType   `json:"type"`
-	AdditionalProperties map[string]interface{}  `json:"-"`
+	// MediaType Server-detected MIME type for an artifact-backed image.
+	MediaType *string `json:"media_type,omitempty"`
+
+	// SizeBytes Server-observed byte size for an artifact-backed image.
+	SizeBytes *int64 `json:"size_bytes,omitempty"`
+
+	// Source Canonical image source descriptor. Known source types are `base64` (`media_type` plus `data`), `url` (`url`), and Mobius-managed `artifact` (`artifact_id`). Provider-specific extensions are preserved.
+	Source *SessionImageSource `json:"source,omitempty"`
+
+	// Title Original filename for an artifact-backed image.
+	Title                *string                `json:"title,omitempty"`
+	Type                 SessionImageBlockType  `json:"type"`
+	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
 // SessionImageBlockType defines model for SessionImageBlock.Type.
 type SessionImageBlockType string
+
+// SessionImageSource Canonical image source descriptor. Known source types are `base64` (`media_type` plus `data`), `url` (`url`), and Mobius-managed `artifact` (`artifact_id`). Provider-specific extensions are preserved.
+type SessionImageSource struct {
+	// ArtifactId Mobius artifact id returned by the session attachment endpoint.
+	ArtifactId *string `json:"artifact_id,omitempty"`
+
+	// Data Base64 image payload.
+	Data *string `json:"data,omitempty"`
+
+	// MediaType MIME type for base64 content.
+	MediaType *string                `json:"media_type,omitempty"`
+	Type      SessionImageSourceType `json:"type"`
+
+	// Url Fetchable image URL for a URL source.
+	Url                  *string                `json:"url,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// SessionImageSourceType defines model for SessionImageSource.Type.
+type SessionImageSourceType string
 
 // SessionListResponse defines model for SessionListResponse.
 type SessionListResponse struct {
@@ -8941,7 +9169,7 @@ type SessionMessage struct {
 	// AgentId Agent that owns the parent session.
 	AgentId string `json:"agent_id"`
 
-	// Content Ordered canonical content blocks (text, thinking, tool_use, tool_result, image).
+	// Content Ordered canonical content blocks (text, thinking, tool_use, tool_result, image, document).
 	Content []SessionContentBlock `json:"content"`
 
 	// CoversThroughSequence For `compaction` messages, the highest sequence number this summary covers.
@@ -9515,7 +9743,7 @@ type StartLoopRunRequest struct {
 
 // StartTurnRequest Caller input that starts an agent turn in a session. The session definition's `config.timeout_seconds` may be zero to use the platform default; `operation.timeout_seconds` must be at least one and takes precedence for this admitted turn.
 type StartTurnRequest struct {
-	// Content Ordered content blocks (text, images) for the input message.
+	// Content Ordered content blocks for the input message. Canonical documents use `{ "type": "document", "source": { "type": "base64", "media_type": "application/pdf", "data": "..." }, "title": "report.pdf" }` or a URL source. Mobius also translates supported OpenAI `input_file` and Chat Completions `file` blocks at ingestion.
 	Content []map[string]interface{} `json:"content"`
 
 	// Context Ordered application-owned runtime context for this turn. Send the full current value for each named item. Mobius records an item only on first use, material change, or after compaction removes its prior value from the active model window. Omitting a name leaves its last value standing; send an explicit value such as `none` to clear application state. Names must be unique within the request. Content is limited to 8,192 UTF-8 bytes per item and 16,384 bytes total.
@@ -11291,6 +11519,12 @@ type ListSessionsParams struct {
 	Limit *LimitParam `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
+// CreateSessionAttachmentParams defines parameters for CreateSessionAttachment.
+type CreateSessionAttachmentParams struct {
+	// IdempotencyKey Optional retry key, scoped to this session and caller. An identical retry returns the original attachment. Reusing the key with different file bytes, filename, or MIME hint is rejected with a conflict.
+	IdempotencyKey *string `json:"Idempotency-Key,omitempty"`
+}
+
 // CancelSessionParams defines parameters for CancelSession.
 type CancelSessionParams struct {
 	// Force When true, also cancel loop-owned turns to unlock a wedged session. Use only for recovery; the owning run may be left inconsistent.
@@ -11587,6 +11821,9 @@ type CreateSessionJSONRequestBody = CreateSessionRequest
 
 // UpdateSessionJSONRequestBody defines body for UpdateSession for application/json ContentType.
 type UpdateSessionJSONRequestBody = UpdateSessionRequest
+
+// CreateSessionAttachmentMultipartRequestBody defines body for CreateSessionAttachment for multipart/form-data ContentType.
+type CreateSessionAttachmentMultipartRequestBody = CreateSessionAttachmentRequest
 
 // AppendSessionMessagesJSONRequestBody defines body for AppendSessionMessages for application/json ContentType.
 type AppendSessionMessagesJSONRequestBody = AppendSessionMessagesRequest
@@ -14404,6 +14641,316 @@ func (a RunStartedPayload) MarshalJSON() ([]byte, error) {
 	return json.Marshal(object)
 }
 
+// Getter for additional properties for SessionDocumentBlock. Returns the specified
+// element and whether it was found
+func (a SessionDocumentBlock) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for SessionDocumentBlock
+func (a *SessionDocumentBlock) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for SessionDocumentBlock to handle AdditionalProperties
+func (a *SessionDocumentBlock) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["citations"]; found {
+		err = json.Unmarshal(raw, &a.Citations)
+		if err != nil {
+			return fmt.Errorf("error reading 'citations': %w", err)
+		}
+		delete(object, "citations")
+	}
+
+	if raw, found := object["context"]; found {
+		err = json.Unmarshal(raw, &a.Context)
+		if err != nil {
+			return fmt.Errorf("error reading 'context': %w", err)
+		}
+		delete(object, "context")
+	}
+
+	if raw, found := object["media_type"]; found {
+		err = json.Unmarshal(raw, &a.MediaType)
+		if err != nil {
+			return fmt.Errorf("error reading 'media_type': %w", err)
+		}
+		delete(object, "media_type")
+	}
+
+	if raw, found := object["page_count"]; found {
+		err = json.Unmarshal(raw, &a.PageCount)
+		if err != nil {
+			return fmt.Errorf("error reading 'page_count': %w", err)
+		}
+		delete(object, "page_count")
+	}
+
+	if raw, found := object["size_bytes"]; found {
+		err = json.Unmarshal(raw, &a.SizeBytes)
+		if err != nil {
+			return fmt.Errorf("error reading 'size_bytes': %w", err)
+		}
+		delete(object, "size_bytes")
+	}
+
+	if raw, found := object["source"]; found {
+		err = json.Unmarshal(raw, &a.Source)
+		if err != nil {
+			return fmt.Errorf("error reading 'source': %w", err)
+		}
+		delete(object, "source")
+	}
+
+	if raw, found := object["title"]; found {
+		err = json.Unmarshal(raw, &a.Title)
+		if err != nil {
+			return fmt.Errorf("error reading 'title': %w", err)
+		}
+		delete(object, "title")
+	}
+
+	if raw, found := object["type"]; found {
+		err = json.Unmarshal(raw, &a.Type)
+		if err != nil {
+			return fmt.Errorf("error reading 'type': %w", err)
+		}
+		delete(object, "type")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for SessionDocumentBlock to handle AdditionalProperties
+func (a SessionDocumentBlock) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Citations != nil {
+		object["citations"], err = json.Marshal(a.Citations)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'citations': %w", err)
+		}
+	}
+
+	if a.Context != nil {
+		object["context"], err = json.Marshal(a.Context)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'context': %w", err)
+		}
+	}
+
+	if a.MediaType != nil {
+		object["media_type"], err = json.Marshal(a.MediaType)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'media_type': %w", err)
+		}
+	}
+
+	if a.PageCount != nil {
+		object["page_count"], err = json.Marshal(a.PageCount)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'page_count': %w", err)
+		}
+	}
+
+	if a.SizeBytes != nil {
+		object["size_bytes"], err = json.Marshal(a.SizeBytes)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'size_bytes': %w", err)
+		}
+	}
+
+	object["source"], err = json.Marshal(a.Source)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'source': %w", err)
+	}
+
+	if a.Title != nil {
+		object["title"], err = json.Marshal(a.Title)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'title': %w", err)
+		}
+	}
+
+	object["type"], err = json.Marshal(a.Type)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'type': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for SessionDocumentSource. Returns the specified
+// element and whether it was found
+func (a SessionDocumentSource) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for SessionDocumentSource
+func (a *SessionDocumentSource) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for SessionDocumentSource to handle AdditionalProperties
+func (a *SessionDocumentSource) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["artifact_id"]; found {
+		err = json.Unmarshal(raw, &a.ArtifactId)
+		if err != nil {
+			return fmt.Errorf("error reading 'artifact_id': %w", err)
+		}
+		delete(object, "artifact_id")
+	}
+
+	if raw, found := object["data"]; found {
+		err = json.Unmarshal(raw, &a.Data)
+		if err != nil {
+			return fmt.Errorf("error reading 'data': %w", err)
+		}
+		delete(object, "data")
+	}
+
+	if raw, found := object["file_id"]; found {
+		err = json.Unmarshal(raw, &a.FileId)
+		if err != nil {
+			return fmt.Errorf("error reading 'file_id': %w", err)
+		}
+		delete(object, "file_id")
+	}
+
+	if raw, found := object["media_type"]; found {
+		err = json.Unmarshal(raw, &a.MediaType)
+		if err != nil {
+			return fmt.Errorf("error reading 'media_type': %w", err)
+		}
+		delete(object, "media_type")
+	}
+
+	if raw, found := object["type"]; found {
+		err = json.Unmarshal(raw, &a.Type)
+		if err != nil {
+			return fmt.Errorf("error reading 'type': %w", err)
+		}
+		delete(object, "type")
+	}
+
+	if raw, found := object["url"]; found {
+		err = json.Unmarshal(raw, &a.Url)
+		if err != nil {
+			return fmt.Errorf("error reading 'url': %w", err)
+		}
+		delete(object, "url")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for SessionDocumentSource to handle AdditionalProperties
+func (a SessionDocumentSource) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.ArtifactId != nil {
+		object["artifact_id"], err = json.Marshal(a.ArtifactId)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'artifact_id': %w", err)
+		}
+	}
+
+	if a.Data != nil {
+		object["data"], err = json.Marshal(a.Data)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'data': %w", err)
+		}
+	}
+
+	if a.FileId != nil {
+		object["file_id"], err = json.Marshal(a.FileId)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'file_id': %w", err)
+		}
+	}
+
+	if a.MediaType != nil {
+		object["media_type"], err = json.Marshal(a.MediaType)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'media_type': %w", err)
+		}
+	}
+
+	object["type"], err = json.Marshal(a.Type)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'type': %w", err)
+	}
+
+	if a.Url != nil {
+		object["url"], err = json.Marshal(a.Url)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'url': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
 // Getter for additional properties for SessionImageBlock. Returns the specified
 // element and whether it was found
 func (a SessionImageBlock) Get(fieldName string) (value interface{}, found bool) {
@@ -14429,12 +14976,36 @@ func (a *SessionImageBlock) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
+	if raw, found := object["media_type"]; found {
+		err = json.Unmarshal(raw, &a.MediaType)
+		if err != nil {
+			return fmt.Errorf("error reading 'media_type': %w", err)
+		}
+		delete(object, "media_type")
+	}
+
+	if raw, found := object["size_bytes"]; found {
+		err = json.Unmarshal(raw, &a.SizeBytes)
+		if err != nil {
+			return fmt.Errorf("error reading 'size_bytes': %w", err)
+		}
+		delete(object, "size_bytes")
+	}
+
 	if raw, found := object["source"]; found {
 		err = json.Unmarshal(raw, &a.Source)
 		if err != nil {
 			return fmt.Errorf("error reading 'source': %w", err)
 		}
 		delete(object, "source")
+	}
+
+	if raw, found := object["title"]; found {
+		err = json.Unmarshal(raw, &a.Title)
+		if err != nil {
+			return fmt.Errorf("error reading 'title': %w", err)
+		}
+		delete(object, "title")
 	}
 
 	if raw, found := object["type"]; found {
@@ -14464,6 +15035,20 @@ func (a SessionImageBlock) MarshalJSON() ([]byte, error) {
 	var err error
 	object := make(map[string]json.RawMessage)
 
+	if a.MediaType != nil {
+		object["media_type"], err = json.Marshal(a.MediaType)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'media_type': %w", err)
+		}
+	}
+
+	if a.SizeBytes != nil {
+		object["size_bytes"], err = json.Marshal(a.SizeBytes)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'size_bytes': %w", err)
+		}
+	}
+
 	if a.Source != nil {
 		object["source"], err = json.Marshal(a.Source)
 		if err != nil {
@@ -14471,9 +15056,142 @@ func (a SessionImageBlock) MarshalJSON() ([]byte, error) {
 		}
 	}
 
+	if a.Title != nil {
+		object["title"], err = json.Marshal(a.Title)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'title': %w", err)
+		}
+	}
+
 	object["type"], err = json.Marshal(a.Type)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling 'type': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for SessionImageSource. Returns the specified
+// element and whether it was found
+func (a SessionImageSource) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for SessionImageSource
+func (a *SessionImageSource) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for SessionImageSource to handle AdditionalProperties
+func (a *SessionImageSource) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["artifact_id"]; found {
+		err = json.Unmarshal(raw, &a.ArtifactId)
+		if err != nil {
+			return fmt.Errorf("error reading 'artifact_id': %w", err)
+		}
+		delete(object, "artifact_id")
+	}
+
+	if raw, found := object["data"]; found {
+		err = json.Unmarshal(raw, &a.Data)
+		if err != nil {
+			return fmt.Errorf("error reading 'data': %w", err)
+		}
+		delete(object, "data")
+	}
+
+	if raw, found := object["media_type"]; found {
+		err = json.Unmarshal(raw, &a.MediaType)
+		if err != nil {
+			return fmt.Errorf("error reading 'media_type': %w", err)
+		}
+		delete(object, "media_type")
+	}
+
+	if raw, found := object["type"]; found {
+		err = json.Unmarshal(raw, &a.Type)
+		if err != nil {
+			return fmt.Errorf("error reading 'type': %w", err)
+		}
+		delete(object, "type")
+	}
+
+	if raw, found := object["url"]; found {
+		err = json.Unmarshal(raw, &a.Url)
+		if err != nil {
+			return fmt.Errorf("error reading 'url': %w", err)
+		}
+		delete(object, "url")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for SessionImageSource to handle AdditionalProperties
+func (a SessionImageSource) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.ArtifactId != nil {
+		object["artifact_id"], err = json.Marshal(a.ArtifactId)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'artifact_id': %w", err)
+		}
+	}
+
+	if a.Data != nil {
+		object["data"], err = json.Marshal(a.Data)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'data': %w", err)
+		}
+	}
+
+	if a.MediaType != nil {
+		object["media_type"], err = json.Marshal(a.MediaType)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'media_type': %w", err)
+		}
+	}
+
+	object["type"], err = json.Marshal(a.Type)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'type': %w", err)
+	}
+
+	if a.Url != nil {
+		object["url"], err = json.Marshal(a.Url)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'url': %w", err)
+		}
 	}
 
 	for fieldName, field := range a.AdditionalProperties {
@@ -18541,6 +19259,34 @@ func (t *SessionContentBlock) MergeSessionImageBlock(v SessionImageBlock) error 
 	return err
 }
 
+// AsSessionDocumentBlock returns the union data inside the SessionContentBlock as a SessionDocumentBlock
+func (t SessionContentBlock) AsSessionDocumentBlock() (SessionDocumentBlock, error) {
+	var body SessionDocumentBlock
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSessionDocumentBlock overwrites any union data inside the SessionContentBlock as the provided SessionDocumentBlock
+func (t *SessionContentBlock) FromSessionDocumentBlock(v SessionDocumentBlock) error {
+	v.Type = "document"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSessionDocumentBlock performs a merge with any union data inside the SessionContentBlock, using the provided SessionDocumentBlock
+func (t *SessionContentBlock) MergeSessionDocumentBlock(v SessionDocumentBlock) error {
+	v.Type = "document"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
 // AsSessionReminderBlock returns the union data inside the SessionContentBlock as a SessionReminderBlock
 func (t SessionContentBlock) AsSessionReminderBlock() (SessionReminderBlock, error) {
 	var body SessionReminderBlock
@@ -18583,6 +19329,8 @@ func (t SessionContentBlock) ValueByDiscriminator() (interface{}, error) {
 		return nil, err
 	}
 	switch discriminator {
+	case "document":
+		return t.AsSessionDocumentBlock()
 	case "image":
 		return t.AsSessionImageBlock()
 	case "reminder":
@@ -20391,6 +21139,12 @@ type ClientInterface interface {
 	UpdateSessionWithBody(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	UpdateSession(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, body UpdateSessionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateSessionAttachmentWithBody request with any body
+	CreateSessionAttachmentWithBody(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, params *CreateSessionAttachmentParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DeleteSessionAttachment request
+	DeleteSessionAttachment(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, artifactId ArtifactIdParam, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// CancelSession request
 	CancelSession(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, params *CancelSessionParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -22550,6 +23304,30 @@ func (c *Client) UpdateSessionWithBody(ctx context.Context, projectHandle Projec
 
 func (c *Client) UpdateSession(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, body UpdateSessionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewUpdateSessionRequest(c.Server, projectHandle, sessionId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateSessionAttachmentWithBody(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, params *CreateSessionAttachmentParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateSessionAttachmentRequestWithBody(c.Server, projectHandle, sessionId, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) DeleteSessionAttachment(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, artifactId ArtifactIdParam, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteSessionAttachmentRequest(c.Server, projectHandle, sessionId, artifactId)
 	if err != nil {
 		return nil, err
 	}
@@ -30041,6 +30819,112 @@ func NewUpdateSessionRequestWithBody(server string, projectHandle ProjectHandleP
 	return req, nil
 }
 
+// NewCreateSessionAttachmentRequestWithBody generates requests for CreateSessionAttachment with any type of body
+func NewCreateSessionAttachmentRequestWithBody(server string, projectHandle ProjectHandleParam, sessionId SessionIdParam, params *CreateSessionAttachmentParams, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project_handle", projectHandle, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "session_id", sessionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/sessions/%s/attachments", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	if params != nil {
+
+		if params.IdempotencyKey != nil {
+			var headerParam0 string
+
+			headerParam0, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", *params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("Idempotency-Key", headerParam0)
+		}
+
+	}
+
+	return req, nil
+}
+
+// NewDeleteSessionAttachmentRequest generates requests for DeleteSessionAttachment
+func NewDeleteSessionAttachmentRequest(server string, projectHandle ProjectHandleParam, sessionId SessionIdParam, artifactId ArtifactIdParam) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "project_handle", projectHandle, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "session_id", sessionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam2 string
+
+	pathParam2, err = runtime.StyleParamWithOptions("simple", false, "artifact_id", artifactId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/projects/%s/sessions/%s/attachments/%s", pathParam0, pathParam1, pathParam2)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewCancelSessionRequest generates requests for CancelSession
 func NewCancelSessionRequest(server string, projectHandle ProjectHandleParam, sessionId SessionIdParam, params *CancelSessionParams) (*http.Request, error) {
 	var err error
@@ -33599,6 +34483,12 @@ type ClientWithResponsesInterface interface {
 
 	UpdateSessionWithResponse(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, body UpdateSessionJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateSessionResponse, error)
 
+	// CreateSessionAttachmentWithBodyWithResponse request with any body
+	CreateSessionAttachmentWithBodyWithResponse(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, params *CreateSessionAttachmentParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateSessionAttachmentResponse, error)
+
+	// DeleteSessionAttachmentWithResponse request
+	DeleteSessionAttachmentWithResponse(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, artifactId ArtifactIdParam, reqEditors ...RequestEditorFn) (*DeleteSessionAttachmentResponse, error)
+
 	// CancelSessionWithResponse request
 	CancelSessionWithResponse(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, params *CancelSessionParams, reqEditors ...RequestEditorFn) (*CancelSessionResponse, error)
 
@@ -35845,6 +36735,7 @@ type CreateArtifactResponse struct {
 	JSON401      *Unauthorized
 	JSON403      *Forbidden
 	JSON409      *Conflict
+	JSON413      *ErrorResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -37857,6 +38748,77 @@ func (r UpdateSessionResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r UpdateSessionResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type CreateSessionAttachmentResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *SessionAttachmentResponse
+	JSON201      *SessionAttachmentResponse
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+	JSON409      *ErrorResponse
+	JSON413      *ErrorResponse
+	JSON503      *ErrorResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateSessionAttachmentResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateSessionAttachmentResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CreateSessionAttachmentResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type DeleteSessionAttachmentResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON404      *NotFound
+	JSON409      *Conflict
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteSessionAttachmentResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteSessionAttachmentResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r DeleteSessionAttachmentResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -41099,6 +42061,24 @@ func (c *ClientWithResponses) UpdateSessionWithResponse(ctx context.Context, pro
 		return nil, err
 	}
 	return ParseUpdateSessionResponse(rsp)
+}
+
+// CreateSessionAttachmentWithBodyWithResponse request with arbitrary body returning *CreateSessionAttachmentResponse
+func (c *ClientWithResponses) CreateSessionAttachmentWithBodyWithResponse(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, params *CreateSessionAttachmentParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateSessionAttachmentResponse, error) {
+	rsp, err := c.CreateSessionAttachmentWithBody(ctx, projectHandle, sessionId, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateSessionAttachmentResponse(rsp)
+}
+
+// DeleteSessionAttachmentWithResponse request returning *DeleteSessionAttachmentResponse
+func (c *ClientWithResponses) DeleteSessionAttachmentWithResponse(ctx context.Context, projectHandle ProjectHandleParam, sessionId SessionIdParam, artifactId ArtifactIdParam, reqEditors ...RequestEditorFn) (*DeleteSessionAttachmentResponse, error) {
+	rsp, err := c.DeleteSessionAttachment(ctx, projectHandle, sessionId, artifactId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteSessionAttachmentResponse(rsp)
 }
 
 // CancelSessionWithResponse request returning *CancelSessionResponse
@@ -45013,6 +45993,13 @@ func ParseCreateArtifactResponse(rsp *http.Response) (*CreateArtifactResponse, e
 		}
 		response.JSON409 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 413:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON413 = &dest
+
 	}
 
 	return response, nil
@@ -48103,6 +49090,135 @@ func ParseUpdateSessionResponse(rsp *http.Response) (*UpdateSessionResponse, err
 			return nil, err
 		}
 		response.JSON429 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateSessionAttachmentResponse parses an HTTP response from a CreateSessionAttachmentWithResponse call
+func ParseCreateSessionAttachmentResponse(rsp *http.Response) (*CreateSessionAttachmentResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateSessionAttachmentResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest SessionAttachmentResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest SessionAttachmentResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 413:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON413 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON503 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDeleteSessionAttachmentResponse parses an HTTP response from a DeleteSessionAttachmentWithResponse call
+func ParseDeleteSessionAttachmentResponse(rsp *http.Response) (*DeleteSessionAttachmentResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteSessionAttachmentResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
 
 	}
 
