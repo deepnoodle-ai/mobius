@@ -19,7 +19,7 @@ func TestInteractionsCancelAllowsNoReason(t *testing.T) {
 	var gotBody string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, http.MethodPost, r.Method)
-		assert.Equal(t, "/v1/projects/default/interactions/int_1/cancel", r.URL.Path)
+		assert.Equal(t, "/v1/interactions/int_1/cancel", r.URL.Path)
 		b, _ := io.ReadAll(r.Body)
 		gotBody = string(b)
 		w.Header().Set("Content-Type", "application/json")

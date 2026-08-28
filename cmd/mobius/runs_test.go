@@ -14,7 +14,7 @@ func TestRunsStartUsesPolishedCommandName(t *testing.T) {
 	var got map[string]any
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, http.MethodPost, r.Method)
-		assert.Equal(t, "/v1/projects/default/loops/smoke/runs", r.URL.Path)
+		assert.Equal(t, "/v1/loops/smoke/runs", r.URL.Path)
 		assert.Equal(t, "Bearer mbx_test", r.Header.Get("Authorization"))
 		assert.NoError(t, json.NewDecoder(r.Body).Decode(&got))
 		w.WriteHeader(http.StatusAccepted)

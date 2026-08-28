@@ -10,7 +10,6 @@ import deepnoodle.mobius as mobius
 
 client = mobius.Client(mobius.ClientOptions(
     api_key=os.environ["MOBIUS_API_KEY"],
-    project=os.environ["MOBIUS_PROJECT"],
 ))
 
 try:

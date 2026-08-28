@@ -17,10 +17,10 @@ import (
 
 // registerBlueprintsCommands registers every generated subcommand in the "blueprints" group.
 func registerBlueprintsCommands(app *cli.App) {
-	blueprintsGrp := app.Group("blueprints").Description("Project blueprint application and bindings")
+	blueprintsGrp := app.Group("blueprints").Description("Org blueprint application and bindings")
 	blueprintsGrp.Alias("blueprint")
 	blueprintsGrp.Command("apply").
-		Description("Apply a blueprint to a project").
+		Description("Apply a blueprint to an org").
 		Flags(
 			cli.String("blueprint-key", "").Help("Optional blueprint identifier that forms part of the blueprint identity."),
 			cli.String("blueprint-version", "").Help("Optional blueprint version recorded as provenance."),
@@ -38,7 +38,6 @@ func registerBlueprintsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
 			var body api.ApplyBlueprintJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -74,7 +73,7 @@ func registerBlueprintsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.ApplyBlueprintWithResponse(ctx.Context(), p0, body)
+			resp, err := client.ApplyBlueprintWithResponse(ctx.Context(), body)
 			if err != nil {
 				return err
 			}
@@ -95,8 +94,7 @@ func registerBlueprintsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
+			p0 := ctx.Arg(0)
 			params := &api.DeleteBlueprintParams{}
 			if ctx.IsSet("namespace") {
 				v := ctx.String("namespace")
@@ -106,7 +104,7 @@ func registerBlueprintsCommands(app *cli.App) {
 				v := ctx.Bool("delete-retained")
 				params.DeleteRetained = &v
 			}
-			resp, err := client.DeleteBlueprintWithResponse(ctx.Context(), p0, p1, params)
+			resp, err := client.DeleteBlueprintWithResponse(ctx.Context(), p0, params)
 			if err != nil {
 				return err
 			}
@@ -126,7 +124,6 @@ func registerBlueprintsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
 			params := &api.ListBlueprintBindingsParams{}
 			if ctx.IsSet("namespace") {
 				v := ctx.String("namespace")
@@ -136,7 +133,7 @@ func registerBlueprintsCommands(app *cli.App) {
 				v := ctx.String("blueprint-key")
 				params.BlueprintKey = &v
 			}
-			resp, err := client.ListBlueprintBindingsWithResponse(ctx.Context(), p0, params)
+			resp, err := client.ListBlueprintBindingsWithResponse(ctx.Context(), params)
 			if err != nil {
 				return err
 			}
@@ -159,8 +156,7 @@ func registerBlueprintsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
+			p0 := ctx.Arg(0)
 			params := &api.SetBlueprintProtectionParams{}
 			if ctx.IsSet("namespace") {
 				v := ctx.String("namespace")
@@ -176,7 +172,7 @@ func registerBlueprintsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.SetBlueprintProtectionWithResponse(ctx.Context(), p0, p1, params, body)
+			resp, err := client.SetBlueprintProtectionWithResponse(ctx.Context(), p0, params, body)
 			if err != nil {
 				return err
 			}

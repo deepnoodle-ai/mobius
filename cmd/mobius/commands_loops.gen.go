@@ -49,7 +49,6 @@ func registerLoopsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
 			var body api.CreateLoopJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -140,7 +139,7 @@ func registerLoopsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.CreateLoopWithResponse(ctx.Context(), p0, body)
+			resp, err := client.CreateLoopWithResponse(ctx.Context(), body)
 			if err != nil {
 				return err
 			}
@@ -157,9 +156,8 @@ func registerLoopsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			resp, err := client.DeleteLoopWithResponse(ctx.Context(), p0, p1)
+			p0 := ctx.Arg(0)
+			resp, err := client.DeleteLoopWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
 			}
@@ -168,7 +166,7 @@ func registerLoopsCommands(app *cli.App) {
 
 	loopsGrp.Command("deliver-http-trigger").
 		Description("Deliver trigger").
-		AddArg(&cli.Arg{Name: "http-handle", Description: "Globally unique identifier for the trigger. The endpoint carries no project context, so the handle is resolved on its own; it defaults to…", Required: true}).
+		AddArg(&cli.Arg{Name: "http-handle", Description: "Globally unique identifier for the trigger. The endpoint carries no org context, so the handle is resolved on its own; it defaults to the…", Required: true}).
 		Flags(
 			cli.String("idempotency-key", "").Help("Optional idempotency key (also accepted via the X-Idempotency-Key header)."),
 			cli.String("x-idempotency-key", "").Help("Alternative to the `idempotency_key` query parameter. When both are present the query parameter wins. Repeats with the same key return the…"),
@@ -221,9 +219,8 @@ func registerLoopsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			resp, err := client.GetLoopWithResponse(ctx.Context(), p0, p1)
+			p0 := ctx.Arg(0)
+			resp, err := client.GetLoopWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
 			}
@@ -245,7 +242,6 @@ func registerLoopsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
 			params := &api.ListLoopsParams{}
 			if ctx.IsSet("status") {
 				v := api.ListLoopsParamsStatus(ctx.String("status"))
@@ -263,7 +259,7 @@ func registerLoopsCommands(app *cli.App) {
 				v := ctx.Int("limit")
 				params.Limit = &v
 			}
-			resp, err := client.ListLoopsWithResponse(ctx.Context(), p0, params)
+			resp, err := client.ListLoopsWithResponse(ctx.Context(), params)
 			if err != nil {
 				return err
 			}
@@ -302,8 +298,7 @@ func registerLoopsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
+			p0 := ctx.Arg(0)
 			var body api.UpdateLoopJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -399,7 +394,7 @@ func registerLoopsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.UpdateLoopWithResponse(ctx.Context(), p0, p1, body)
+			resp, err := client.UpdateLoopWithResponse(ctx.Context(), p0, body)
 			if err != nil {
 				return err
 			}

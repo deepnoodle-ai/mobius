@@ -54,7 +54,6 @@ class VerifiedDelivery(DeliveryMeta):
 @dataclass(frozen=True)
 class ActionInvocationScopeV1:
     org_id: str
-    project_id: str
 
 
 @dataclass(frozen=True)
@@ -278,7 +277,6 @@ def parse_action_invocation_v1(v: VerifiedDelivery) -> ActionInvocationV1:
             schema_version=1,
             scope=ActionInvocationScopeV1(
                 org_id=_required_string(scope, "org_id", "mobius.scope"),
-                project_id=_required_string(scope, "project_id", "mobius.scope"),
             ),
             action=ActionInvocationActionV1(
                 id=_required_string(action, "id", "mobius.action"),

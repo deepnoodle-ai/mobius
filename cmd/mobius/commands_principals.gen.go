@@ -29,9 +29,8 @@ func registerPrincipalsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			resp, err := client.DeletePrincipalWithResponse(ctx.Context(), p0, p1)
+			p0 := ctx.Arg(0)
+			resp, err := client.DeletePrincipalWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
 			}
@@ -48,9 +47,8 @@ func registerPrincipalsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			resp, err := client.GetPrincipalWithResponse(ctx.Context(), p0, p1)
+			p0 := ctx.Arg(0)
+			resp, err := client.GetPrincipalWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
 			}
@@ -71,7 +69,6 @@ func registerPrincipalsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
 			params := &api.ListPrincipalsParams{}
 			if ctx.IsSet("kind") {
 				v := api.PrincipalKind(ctx.String("kind"))
@@ -85,7 +82,7 @@ func registerPrincipalsCommands(app *cli.App) {
 				v := api.LimitParam(ctx.Int("limit"))
 				params.Limit = &v
 			}
-			resp, err := client.ListPrincipalsWithResponse(ctx.Context(), p0, params)
+			resp, err := client.ListPrincipalsWithResponse(ctx.Context(), params)
 			if err != nil {
 				return err
 			}
@@ -99,7 +96,7 @@ func registerPrincipalsCommands(app *cli.App) {
 			cli.String("description", "").Help("Replacement description."),
 			cli.String("metadata", "").Help("Replacement metadata. Accepts JSON, @file, or @-."),
 			cli.String("owner-id", "").Help("Human principal accountable for this principal."),
-			cli.Strings("role-ids", "").Help("Replacement role IDs for this principal in the project. Send an empty array to remove all project role assignments. Requires…"),
+			cli.Strings("role-ids", "").Help("Replacement role IDs for this principal in the org. Send an empty array to remove all org role assignments. Requires `mobius.org.admin`."),
 			cli.String("state", "").Help("Canonical business-lifecycle state. `active` allows authentication and job claims; `disabled` is a reversible kill switch that blocks them…"),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
@@ -112,8 +109,7 @@ func registerPrincipalsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
+			p0 := ctx.Arg(0)
 			var body api.UpdatePrincipalJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -151,7 +147,7 @@ func registerPrincipalsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.UpdatePrincipalWithResponse(ctx.Context(), p0, p1, body)
+			resp, err := client.UpdatePrincipalWithResponse(ctx.Context(), p0, body)
 			if err != nil {
 				return err
 			}

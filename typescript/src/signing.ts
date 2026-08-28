@@ -33,7 +33,6 @@ export type ActionInvocationOriginKind =
 
 export interface ActionInvocationScopeV1 {
   orgId: string;
-  projectId: string;
 }
 
 export interface ActionInvocationActionV1 {
@@ -272,7 +271,6 @@ export function parseActionInvocationV1(
       schemaVersion: 1,
       scope: {
         orgId: requiredString(scope.org_id, "mobius.scope.org_id"),
-        projectId: requiredString(scope.project_id, "mobius.scope.project_id"),
       },
       action: {
         id: requiredString(action.id, "mobius.action.id"),

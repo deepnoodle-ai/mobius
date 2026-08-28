@@ -24,7 +24,6 @@ import type {
   CreateAgentRequest,
   CreateOrganizationActionRequest,
   CreatePrincipalRequest,
-  CreateProjectRequest,
   CreateRoleAssignmentRequest,
   CreateRoleRequest,
   CreateLoopRequest,
@@ -53,7 +52,6 @@ import type {
   Principal,
   PrincipalKind,
   PrincipalListResponse,
-  Project,
   PutOAuthReturnOriginsRequest,
   RuntimeContextItem,
   ReplaceSkillsRequest,
@@ -107,10 +105,6 @@ export { RateLimitError } from "./retry.js";
 export interface ClientOptions {
   apiKey: string;
   baseURL?: string;
-  /** Project handle used for all project-scoped operations. */
-  project?: string;
-  /** Compatibility alias for older callers. */
-  namespace?: string;
   /** Fetch timeout in milliseconds. Defaults to 60_000. */
   timeoutMs?: number;
   /** Number of retries for 429/503 responses. */
@@ -145,8 +139,6 @@ export interface CreateArtifactOptions {
 }
 
 export const DEFAULT_BASE_URL = "https://api.mobiusops.ai";
-export const DEFAULT_PROJECT = "default";
-export const DEFAULT_NAMESPACE = DEFAULT_PROJECT;
 
 export class AuthRevokedError extends Error {
   constructor() {
@@ -158,25 +150,11 @@ export class AuthRevokedError extends Error {
 export class MobiusAPIError extends Error {
   /**
    * Adopt-mode create conflict code (409): the request names an identity
-   * (project handle, agent name) that differs from the resource owning the
+   * (agent name) that differs from the resource owning the
    * matched `external_ref`, or the match is soft-deleted — adopt never
    * resurrects or replaces a deleted resource.
    */
   static readonly EXTERNAL_IDENTITY_CONFLICT = "external_identity_conflict";
-  /**
-   * Adopt-mode create conflict code (409): the matched project is archived.
-   * Adopt never silently unarchives a project or mints a replacement
-   * identity; unarchive it explicitly, then retry.
-   */
-  static readonly PROJECT_ARCHIVED = "project_archived";
-  /**
-   * Create conflict code (429): creating a new project would exceed the
-   * org's project limit; an existing `external_ref` match still adopts even
-   * at the limit. Because it rides a 429, the retry layer reports it as a
-   * {@link RateLimitError} once retries are exhausted; the code appears on
-   * this error type only when reading the response envelope directly.
-   */
-  static readonly PROJECT_CAPACITY_REACHED = "project_capacity_reached";
 
   readonly status: number;
   readonly code: string;
@@ -269,32 +247,16 @@ export class RateLimitedError extends RateLimitError {
 export class WorkerInstanceConflictError extends Error {
   constructor(
     public readonly workerInstanceId: string | undefined,
-    public readonly projectHandle: string,
     message?: string,
   ) {
     super(
       message ??
         (workerInstanceId
-          ? `mobius: worker_instance_id ${JSON.stringify(workerInstanceId)} is already registered in project ${JSON.stringify(projectHandle)} by another live process`
+          ? `mobius: worker_instance_id ${JSON.stringify(workerInstanceId)} is already registered by another live process`
           : "mobius: worker instance conflict"),
     );
     this.name = "WorkerInstanceConflictError";
   }
-}
-
-const HANDLE_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
-
-function extractHandleFromApiKey(apiKey: string): string | null {
-  if (!apiKey.startsWith("mbx_") && !apiKey.startsWith("mbc_")) return null;
-  const dot = apiKey.lastIndexOf(".");
-  if (dot < 0 || dot === apiKey.length - 1) return null;
-  const handle = apiKey.slice(dot + 1);
-  if (!HANDLE_RE.test(handle)) {
-    throw new ConfigError(
-      `invalid project handle suffix in API key: ${JSON.stringify(handle)}`,
-    );
-  }
-  return handle;
 }
 
 export interface LoopOptions {
@@ -330,10 +292,8 @@ export interface ListLoopsOptions {
   limit?: number;
 }
 
-/** Filters for the project-scoped billing usage evidence reader. */
+/** Filters for the org-scoped billing usage evidence reader. */
 export interface ListBillingUsageEventsOptions {
-  /** Mobius project ID. Required so application billing cannot widen to the organization by accident. */
-  projectId: string;
   /** Inclusive ISO-8601 lower bound. Selects chronological `(recorded_at, id)` ordering. */
   recordedAfter?: string;
   periodStart?: string;
@@ -355,7 +315,7 @@ export interface StartRunOptions {
   /** Optional caller-supplied event metadata; Mobius adds its own provenance. */
   meta?: Record<string, unknown>;
   source?: LoopRunSource;
-  /** Dedup key scoped to the project for this loop run. */
+  /** Dedup key scoped to the org for this loop run. */
   idempotencyKey?: string;
   /** @deprecated Use `idempotencyKey`. */
   external_id?: string;
@@ -382,7 +342,7 @@ export type RunEvent = LoopRunEvent;
 export interface InvokeAgentOptions {
   /** Agent identifier. Mutually exclusive with agentName. */
   agentId?: string;
-  /** Project-unique agent name. Mutually exclusive with agentId. */
+  /** Org-unique agent name. Mutually exclusive with agentId. */
   agentName?: string;
   /** Ordered content blocks (text, images, …) for the caller's input message. Required. */
   content: Record<string, unknown>[];
@@ -498,7 +458,7 @@ export interface WatchSessionTranscriptOptions {
 }
 
 export interface ListAgentsOptions {
-  /** Exact project-unique agent name. */
+  /** Exact org-unique agent name. */
   name?: string;
   principalId?: string;
   status?: string;
@@ -517,27 +477,8 @@ export interface CreateAgentOptions {
    */
   adoptExisting?: boolean;
   /**
-   * Client-owned durable identity key, unique within the project and
+   * Client-owned durable identity key, unique within the org and
    * assign-once. Required with `adoptExisting`; optional otherwise.
-   */
-  externalRef?: string;
-}
-
-export interface CreateProjectOptions {
-  /**
-   * Makes the create safely retryable: when an active project already
-   * carries `externalRef`, it is returned unchanged (HTTP 200) instead of
-   * failing with 409, and no fields are written. Requires `externalRef`.
-   * Adopt-mode creates are retried on transient failures like idempotent
-   * requests. Conflicts that cannot be adopted fail with a
-   * {@link MobiusAPIError} whose code is
-   * {@link MobiusAPIError.EXTERNAL_IDENTITY_CONFLICT} (handle mismatch or
-   * deleted match) or {@link MobiusAPIError.PROJECT_ARCHIVED}.
-   */
-  adoptExisting?: boolean;
-  /**
-   * Client-owned tenant/workspace correlation key, unique within the org
-   * and assign-once. Required with `adoptExisting`; optional otherwise.
    */
   externalRef?: string;
 }
@@ -734,13 +675,13 @@ export interface ListActionInvocationsOptions {
   environmentId?: string;
   /** Filter to invocations of a specific action. */
   actionName?: string;
-  /** Filter to an immutable project or organization Action ID. */
+  /** Filter to an immutable custom or organization Action ID. */
   actionId?: string;
   /**
    * Filter by the scope that owned the selected definition: "platform",
-   * "project", or "organization".
+   * "custom", or "organization".
    */
-  definitionScope?: "platform" | "project" | "organization";
+  definitionScope?: "platform" | "custom" | "organization";
   /** Filter to deliveries signed with a specific signing-secret version. */
   secretVersion?: number;
   /** Filter to a signed delivery identity. */
@@ -768,7 +709,6 @@ export interface ImportSkillOptions {
 
 export class Client {
   private readonly baseURL: string;
-  readonly project: string;
   private readonly headers: Record<string, string>;
   private readonly timeoutMs: number;
   private readonly fetchFn: typeof globalThis.fetch;
@@ -777,22 +717,6 @@ export class Client {
 
   constructor(opts: ClientOptions) {
     this.baseURL = (opts.baseURL ?? DEFAULT_BASE_URL).replace(/\/$/, "");
-    const explicitProject = opts.project ?? opts.namespace;
-    const handleInKey = extractHandleFromApiKey(opts.apiKey);
-    if (handleInKey != null) {
-      if (
-        explicitProject != null &&
-        explicitProject !== DEFAULT_PROJECT &&
-        explicitProject !== handleInKey
-      ) {
-        throw new ConfigError(
-          `project=${JSON.stringify(explicitProject)} conflicts with the handle embedded in the API key (${JSON.stringify(handleInKey)})`,
-        );
-      }
-      this.project = handleInKey;
-    } else {
-      this.project = explicitProject ?? DEFAULT_PROJECT;
-    }
     this.headers = {
       Authorization: `Bearer ${opts.apiKey}`,
       "Content-Type": "application/json",
@@ -820,12 +744,12 @@ export class Client {
     const url = new URL(this.baseURL);
     if (url.protocol === "http:") url.protocol = "ws:";
     if (url.protocol === "https:") url.protocol = "wss:";
-    url.pathname = `${url.pathname.replace(/\/$/, "")}/v1/projects/${encodeURIComponent(this.project)}/workers/socket`;
+    url.pathname = `${url.pathname.replace(/\/$/, "")}/v1/workers/socket`;
     url.search = "";
     return url.toString();
   }
 
-  /** Publish a private artifact using the client's project authorization. */
+  /** Publish a private artifact using the client's org authorization. */
   async createArtifact(opts: CreateArtifactOptions): Promise<Artifact> {
     const idempotencyKey = normalizeIdempotencyKey(opts.idempotencyKey);
     if (idempotencyKey != null && idempotencyKey.length > 255) {
@@ -860,7 +784,7 @@ export class Client {
     const filename = name.split("/").pop() || "artifact";
     form.append("file", file, filename);
 
-    const resp = await this.request("/v1/projects/:project/artifacts", {
+    const resp = await this.request("/v1/artifacts", {
       method: "POST",
       formData: form,
       idempotencyKey,
@@ -869,16 +793,11 @@ export class Client {
     return (await resp.json()) as Artifact;
   }
 
-  /** Read one page of exact, project-scoped billing usage evidence. */
+  /** Read one page of exact, org-scoped billing usage evidence. */
   async listBillingUsageEvents(
-    opts: ListBillingUsageEventsOptions,
+    opts: ListBillingUsageEventsOptions = {},
   ): Promise<BillingUsageEventListResponse> {
-    const projectId = opts.projectId.trim();
-    if (!projectId) {
-      throw new ConfigError("billing usage projectId is required");
-    }
     const path = withQuery("/v1/billing/usage-events", {
-      project_id: projectId,
       recorded_after: opts.recordedAfter,
       period_start: opts.periodStart,
       counter: opts.counter,
@@ -922,7 +841,7 @@ export class Client {
 
   async listLoops(opts: ListLoopsOptions = {}): Promise<LoopListResponse> {
     const resp = await this.request(
-      withQuery("/v1/projects/:project/loops", opts),
+      withQuery("/v1/loops", opts),
       {
         method: "GET",
       },
@@ -932,7 +851,7 @@ export class Client {
 
   async getLoop(id: string): Promise<Loop> {
     const resp = await this.request(
-      `/v1/projects/:project/loops/${encodeURIComponent(id)}`,
+      `/v1/loops/${encodeURIComponent(id)}`,
       { method: "GET" },
     );
     return (await resp.json()) as Loop;
@@ -951,7 +870,7 @@ export class Client {
         tags: opts.tags,
       }),
     } as CreateLoopRequest;
-    const resp = await this.request("/v1/projects/:project/loops", {
+    const resp = await this.request("/v1/loops", {
       method: "POST",
       body,
     });
@@ -965,7 +884,7 @@ export class Client {
       ...removeUndefined(meta),
     } as UpdateLoopRequest;
     const resp = await this.request(
-      `/v1/projects/:project/loops/${encodeURIComponent(id)}`,
+      `/v1/loops/${encodeURIComponent(id)}`,
       { method: "PATCH", body },
     );
     return (await resp.json()) as Loop;
@@ -973,7 +892,7 @@ export class Client {
 
   async deleteLoop(id: string): Promise<void> {
     await this.request(
-      `/v1/projects/:project/loops/${encodeURIComponent(id)}`,
+      `/v1/loops/${encodeURIComponent(id)}`,
       { method: "DELETE" },
     );
   }
@@ -981,7 +900,7 @@ export class Client {
   async applyBlueprint(
     input: ApplyBlueprintRequest,
   ): Promise<BlueprintApplyResult> {
-    const resp = await this.request("/v1/projects/:project/blueprints/apply", {
+    const resp = await this.request("/v1/blueprints/apply", {
       method: "POST",
       body: input,
     });
@@ -991,7 +910,7 @@ export class Client {
   async listBlueprintBindings(
     opts: ListBlueprintBindingsOptions = {},
   ): Promise<BlueprintBindingListResponse> {
-    const path = withQuery("/v1/projects/:project/blueprints/bindings", {
+    const path = withQuery("/v1/blueprints/bindings", {
       namespace: opts.namespace,
       blueprint_key: opts.blueprintKey,
     });
@@ -1005,7 +924,7 @@ export class Client {
     opts: SetBlueprintProtectionOptions = {},
   ): Promise<BlueprintBindingListResponse> {
     const path = withQuery(
-      `/v1/projects/:project/blueprints/${encodeURIComponent(blueprintKey)}/protection`,
+      `/v1/blueprints/${encodeURIComponent(blueprintKey)}/protection`,
       { namespace: opts.namespace },
     );
     const resp = await this.request(path, {
@@ -1020,7 +939,7 @@ export class Client {
     opts: DeleteBlueprintOptions = {},
   ): Promise<BlueprintDeleteResult> {
     const path = withQuery(
-      `/v1/projects/:project/blueprints/${encodeURIComponent(blueprintKey)}`,
+      `/v1/blueprints/${encodeURIComponent(blueprintKey)}`,
       {
         namespace: opts.namespace,
         delete_retained: opts.deleteRetained,
@@ -1033,7 +952,7 @@ export class Client {
   async listInteractions(
     opts: ListInteractionsOptions = {},
   ): Promise<InteractionListResponse> {
-    const path = withQuery("/v1/projects/:project/interactions", {
+    const path = withQuery("/v1/interactions", {
       status: opts.status,
       kind: opts.kind,
       run_id: opts.runId,
@@ -1047,8 +966,8 @@ export class Client {
     return (await resp.json()) as InteractionListResponse;
   }
 
-  async listProjectPermissions(): Promise<PermissionCatalogResponse> {
-    const resp = await this.request("/v1/projects/:project/permissions", {
+  async listOrgPermissions(): Promise<PermissionCatalogResponse> {
+    const resp = await this.request("/v1/permissions", {
       method: "GET",
     });
     return (await resp.json()) as PermissionCatalogResponse;
@@ -1057,7 +976,7 @@ export class Client {
   async listPrincipals(
     opts: ListPrincipalsOptions = {},
   ): Promise<PrincipalListResponse> {
-    const path = withQuery("/v1/projects/:project/principals", {
+    const path = withQuery("/v1/principals", {
       kind: opts.kind,
       include_disabled: opts.includeDisabled,
       limit: opts.limit,
@@ -1067,7 +986,7 @@ export class Client {
   }
 
   async createPrincipal(input: CreatePrincipalRequest): Promise<Principal> {
-    const resp = await this.request("/v1/projects/:project/principals", {
+    const resp = await this.request("/v1/principals", {
       method: "POST",
       body: input,
     });
@@ -1076,7 +995,7 @@ export class Client {
 
   async getPrincipal(id: string): Promise<Principal> {
     const resp = await this.request(
-      `/v1/projects/:project/principals/${encodeURIComponent(id)}`,
+      `/v1/principals/${encodeURIComponent(id)}`,
       { method: "GET" },
     );
     return (await resp.json()) as Principal;
@@ -1087,7 +1006,7 @@ export class Client {
     input: UpdatePrincipalRequest,
   ): Promise<Principal> {
     const resp = await this.request(
-      `/v1/projects/:project/principals/${encodeURIComponent(id)}`,
+      `/v1/principals/${encodeURIComponent(id)}`,
       { method: "PATCH", body: input },
     );
     return (await resp.json()) as Principal;
@@ -1095,19 +1014,19 @@ export class Client {
 
   async deletePrincipal(id: string): Promise<void> {
     await this.request(
-      `/v1/projects/:project/principals/${encodeURIComponent(id)}`,
+      `/v1/principals/${encodeURIComponent(id)}`,
       { method: "DELETE" },
     );
   }
 
   async listRoles(opts: ListRolesOptions = {}): Promise<RoleListResponse> {
-    const path = withQuery("/v1/projects/:project/roles", opts);
+    const path = withQuery("/v1/roles", opts);
     const resp = await this.request(path, { method: "GET" });
     return (await resp.json()) as RoleListResponse;
   }
 
   async createRole(input: CreateRoleRequest): Promise<Role> {
-    const resp = await this.request("/v1/projects/:project/roles", {
+    const resp = await this.request("/v1/roles", {
       method: "POST",
       body: input,
     });
@@ -1116,7 +1035,7 @@ export class Client {
 
   async getRole(id: string): Promise<Role> {
     const resp = await this.request(
-      `/v1/projects/:project/roles/${encodeURIComponent(id)}`,
+      `/v1/roles/${encodeURIComponent(id)}`,
       { method: "GET" },
     );
     return (await resp.json()) as Role;
@@ -1124,7 +1043,7 @@ export class Client {
 
   async updateRole(id: string, input: UpdateRoleRequest): Promise<Role> {
     const resp = await this.request(
-      `/v1/projects/:project/roles/${encodeURIComponent(id)}`,
+      `/v1/roles/${encodeURIComponent(id)}`,
       { method: "PATCH", body: input },
     );
     return (await resp.json()) as Role;
@@ -1132,7 +1051,7 @@ export class Client {
 
   async deleteRole(id: string): Promise<void> {
     await this.request(
-      `/v1/projects/:project/roles/${encodeURIComponent(id)}`,
+      `/v1/roles/${encodeURIComponent(id)}`,
       { method: "DELETE" },
     );
   }
@@ -1140,7 +1059,7 @@ export class Client {
   async listRoleAssignments(
     opts: ListRoleAssignmentsOptions = {},
   ): Promise<RoleAssignmentListResponse> {
-    const path = withQuery("/v1/projects/:project/role-assignments", {
+    const path = withQuery("/v1/role-assignments", {
       principal_id: opts.principalId,
       role_id: opts.roleId,
     });
@@ -1152,7 +1071,7 @@ export class Client {
     input: CreateRoleAssignmentRequest,
   ): Promise<RoleAssignment> {
     const resp = await this.request(
-      "/v1/projects/:project/role-assignments",
+      "/v1/role-assignments",
       { method: "POST", body: input },
     );
     return (await resp.json()) as RoleAssignment;
@@ -1160,7 +1079,7 @@ export class Client {
 
   async deleteRoleAssignment(id: string): Promise<void> {
     await this.request(
-      `/v1/projects/:project/role-assignments/${encodeURIComponent(id)}`,
+      `/v1/role-assignments/${encodeURIComponent(id)}`,
       { method: "DELETE" },
     );
   }
@@ -1218,7 +1137,7 @@ export class Client {
     return (await resp.json()) as OrganizationAction;
   }
 
-  /** Deletes the shared definition from future project catalogs. */
+  /** Deletes the shared definition from future catalogs. */
   async deleteOrganizationAction(actionId: string): Promise<void> {
     await this.request(
       `/v1/organization/actions/${encodeURIComponent(actionId)}`,
@@ -1289,22 +1208,22 @@ export class Client {
   }
 
   /**
-   * Lists project-local, organization-shared, and system skills. System
+   * Lists org-owned, organization-shared, and system skills. System
    * skill templates are included by default; pass includeSystem: false to
-   * omit them. Organization skills are read-only through project mutation
+   * omit them. Organization skills are read-only through these mutation
    * routes.
    */
   async listSkills(opts: ListSkillsOptions = {}): Promise<SkillListResponse> {
-    const path = withQuery("/v1/projects/:project/skills", {
+    const path = withQuery("/v1/skills", {
       include_system: opts.includeSystem,
     });
     const resp = await this.request(path, { method: "GET" });
     return (await resp.json()) as SkillListResponse;
   }
 
-  /** Creates a project-local skill. */
+  /** Creates an org-owned skill. */
   async createSkill(input: SkillRequest): Promise<Skill> {
-    const resp = await this.request("/v1/projects/:project/skills", {
+    const resp = await this.request("/v1/skills", {
       method: "POST",
       body: input,
     });
@@ -1312,7 +1231,7 @@ export class Client {
   }
 
   /**
-   * Imports a Claude Code or Dive-style skill document into a project-local
+   * Imports a Claude Code or Dive-style skill document into an org-owned
    * skill. The content string is sent verbatim, including any YAML
    * frontmatter; pass opts.name to override the document's own.
    */
@@ -1322,7 +1241,7 @@ export class Client {
   ): Promise<Skill> {
     const body: ImportSkillRequest = { content };
     if (opts.name != null) body.name = opts.name;
-    const resp = await this.request("/v1/projects/:project/skills/import", {
+    const resp = await this.request("/v1/skills/import", {
       method: "POST",
       body,
     });
@@ -1330,37 +1249,37 @@ export class Client {
   }
 
   /**
-   * Returns a single project-local, organization-shared, or system skill by
+   * Returns a single org-owned, organization-shared, or system skill by
    * ID.
    */
   async getSkill(skillId: string): Promise<Skill> {
     const resp = await this.request(
-      `/v1/projects/:project/skills/${encodeURIComponent(skillId)}`,
+      `/v1/skills/${encodeURIComponent(skillId)}`,
       { method: "GET" },
     );
     return (await resp.json()) as Skill;
   }
 
   /**
-   * Replaces a project-local skill. The server requires the full body —
+   * Replaces an org-owned skill. The server requires the full body —
    * including name and instructions — on every update; there is no partial
    * patch, so read-modify-write is the caller's responsibility.
    */
   async updateSkill(skillId: string, input: SkillRequest): Promise<Skill> {
     const resp = await this.request(
-      `/v1/projects/:project/skills/${encodeURIComponent(skillId)}`,
+      `/v1/skills/${encodeURIComponent(skillId)}`,
       { method: "PUT", body: input },
     );
     return (await resp.json()) as Skill;
   }
 
   /**
-   * Deletes a project-local skill. The skill is automatically detached from
+   * Deletes an org-owned skill. The skill is automatically detached from
    * any agents that reference it.
    */
   async deleteSkill(skillId: string): Promise<void> {
     await this.request(
-      `/v1/projects/:project/skills/${encodeURIComponent(skillId)}`,
+      `/v1/skills/${encodeURIComponent(skillId)}`,
       { method: "DELETE" },
     );
   }
@@ -1447,7 +1366,7 @@ export class Client {
   }
 
   /**
-   * Reports an organization skill's assignment impact across projects, so
+   * Reports an organization skill's assignment impact across agents, so
    * callers can see what a replace or delete would touch. Requires Admin or
    * Owner membership.
    */
@@ -1466,7 +1385,7 @@ export class Client {
     agentId: string,
   ): Promise<SkillAssignmentListResponse> {
     const resp = await this.request(
-      `/v1/projects/:project/agents/${encodeURIComponent(agentId)}/skill-assignments`,
+      `/v1/agents/${encodeURIComponent(agentId)}/skill-assignments`,
       { method: "GET" },
     );
     return (await resp.json()) as SkillAssignmentListResponse;
@@ -1482,7 +1401,7 @@ export class Client {
   ): Promise<SkillAssignmentListResponse> {
     const body: ReplaceSkillsRequest = { skill_ids: skillIds };
     const resp = await this.request(
-      `/v1/projects/:project/agents/${encodeURIComponent(agentId)}/skill-assignments`,
+      `/v1/agents/${encodeURIComponent(agentId)}/skill-assignments`,
       { method: "PUT", body },
     );
     return (await resp.json()) as SkillAssignmentListResponse;
@@ -1498,7 +1417,7 @@ export class Client {
   async listActionInvocations(
     opts: ListActionInvocationsOptions = {},
   ): Promise<ActionInvocationListResponse> {
-    const path = withQuery("/v1/projects/:project/action-invocations", {
+    const path = withQuery("/v1/action-invocations", {
       run_id: opts.runId,
       job_id: opts.jobId,
       environment_id: opts.environmentId,
@@ -1537,7 +1456,7 @@ export class Client {
       idempotency_key: requestKey,
     });
     const resp = await this.request(
-      `/v1/projects/:project/loops/${encodeURIComponent(loopId)}/runs`,
+      `/v1/loops/${encodeURIComponent(loopId)}/runs`,
       { method: "POST", body, idempotencyKey: body.idempotency_key },
     );
     return (await resp.json()) as LoopRun;
@@ -1545,7 +1464,7 @@ export class Client {
 
   async listRuns(opts: ListRunsOptions = {}): Promise<LoopRunListResponse> {
     const resp = await this.request(
-      withQuery("/v1/projects/:project/runs", opts),
+      withQuery("/v1/runs", opts),
       { method: "GET" },
     );
     return (await resp.json()) as LoopRunListResponse;
@@ -1553,7 +1472,7 @@ export class Client {
 
   async getRun(runId: string): Promise<LoopRun> {
     const resp = await this.request(
-      `/v1/projects/:project/runs/${encodeURIComponent(runId)}`,
+      `/v1/runs/${encodeURIComponent(runId)}`,
       { method: "GET" },
     );
     return (await resp.json()) as LoopRun;
@@ -1562,7 +1481,7 @@ export class Client {
   async cancelRun(runId: string, reason?: string): Promise<LoopRun> {
     const body: CancelLoopRunRequest = removeUndefined({ reason });
     const resp = await this.request(
-      `/v1/projects/:project/runs/${encodeURIComponent(runId)}/cancel`,
+      `/v1/runs/${encodeURIComponent(runId)}/cancel`,
       { method: "POST", body },
     );
     return (await resp.json()) as LoopRun;
@@ -1578,7 +1497,7 @@ export class Client {
       result,
     });
     const resp = await this.request(
-      `/v1/projects/:project/runs/${encodeURIComponent(runId)}/signals`,
+      `/v1/runs/${encodeURIComponent(runId)}/signals`,
       { method: "POST", body },
     );
     return (await resp.json()) as LoopRun;
@@ -1587,7 +1506,7 @@ export class Client {
   async listSessions(
     opts: ListSessionsOptions = {},
   ): Promise<SessionListResponse> {
-    const path = withQuery("/v1/projects/:project/sessions", {
+    const path = withQuery("/v1/sessions", {
       agent_id: opts.agentId,
       agent_name: opts.agentName,
       session_key: opts.sessionKey,
@@ -1621,7 +1540,7 @@ export class Client {
   }
 
   async listAgents(opts: ListAgentsOptions = {}): Promise<AgentListResponse> {
-    const path = withQuery("/v1/projects/:project/agents", {
+    const path = withQuery("/v1/agents", {
       name: opts.name,
       principal_id: opts.principalId,
       status: opts.status,
@@ -1635,7 +1554,7 @@ export class Client {
 
   async getAgent(agentId: string): Promise<Agent> {
     const resp = await this.request(
-      `/v1/projects/:project/agents/${encodeURIComponent(agentId)}`,
+      `/v1/agents/${encodeURIComponent(agentId)}`,
       { method: "GET" },
     );
     const agent = (await resp.json()) as Agent;
@@ -1663,7 +1582,7 @@ export class Client {
       }
       body.if_exists = "adopt";
     }
-    const resp = await this.request("/v1/projects/:project/agents", {
+    const resp = await this.request("/v1/agents", {
       method: "POST",
       body,
       replaySafe: opts.adoptExisting === true,
@@ -1671,37 +1590,6 @@ export class Client {
     const agent = (await resp.json()) as Agent;
     this.agentNameCache.set(agent.name, agent);
     return agent;
-  }
-
-  /**
-   * Creates a project within the authenticated org, or — with
-   * `adoptExisting` — adopts the active project that already carries the
-   * same `externalRef`. On adopt the existing project is returned unchanged
-   * (HTTP 200) and mutable fields in `input` are ignored. A new project can
-   * be rejected at the org's project limit
-   * ({@link MobiusAPIError.PROJECT_CAPACITY_REACHED}, 429); an existing
-   * `externalRef` match still adopts even at that limit.
-   */
-  async createProject(
-    input: CreateProjectRequest,
-    opts: CreateProjectOptions = {},
-  ): Promise<Project> {
-    const body: CreateProjectRequest = { ...input };
-    if (opts.externalRef != null) body.external_ref = opts.externalRef;
-    if (opts.adoptExisting) {
-      if (!body.external_ref) {
-        throw new ConfigError(
-          "createProject: adoptExisting requires externalRef to be set",
-        );
-      }
-      body.if_exists = "adopt";
-    }
-    const resp = await this.request("/v1/projects", {
-      method: "POST",
-      body,
-      replaySafe: opts.adoptExisting === true,
-    });
-    return (await resp.json()) as Project;
   }
 
   /**
@@ -1752,7 +1640,7 @@ export class Client {
   /** Returns a summary of an agent's private memory. */
   async getAgentMemory(agentId: string): Promise<AgentMemory> {
     const resp = await this.request(
-      `/v1/projects/:project/agents/${encodeURIComponent(agentId)}/memory`,
+      `/v1/agents/${encodeURIComponent(agentId)}/memory`,
       { method: "GET" },
     );
     return (await resp.json()) as AgentMemory;
@@ -1768,7 +1656,7 @@ export class Client {
     opts: ListAgentMemoryEntriesOptions = {},
   ): Promise<AgentMemoryEntryListResponse> {
     const path = withQuery(
-      `/v1/projects/:project/agents/${encodeURIComponent(agentId)}/memory/entries`,
+      `/v1/agents/${encodeURIComponent(agentId)}/memory/entries`,
       {
         query: opts.query,
         search_mode: opts.searchMode,
@@ -1788,7 +1676,7 @@ export class Client {
     input: SaveAgentMemoryEntryRequest,
   ): Promise<AgentMemoryEntry> {
     const resp = await this.request(
-      `/v1/projects/:project/agents/${encodeURIComponent(agentId)}/memory/entries/${encodeURIComponent(key)}`,
+      `/v1/agents/${encodeURIComponent(agentId)}/memory/entries/${encodeURIComponent(key)}`,
       { method: "PUT", body: input },
     );
     return (await resp.json()) as AgentMemoryEntry;
@@ -1797,7 +1685,7 @@ export class Client {
   /** Deletes the memory entry stored under key. */
   async deleteAgentMemoryEntry(agentId: string, key: string): Promise<void> {
     await this.request(
-      `/v1/projects/:project/agents/${encodeURIComponent(agentId)}/memory/entries/${encodeURIComponent(key)}`,
+      `/v1/agents/${encodeURIComponent(agentId)}/memory/entries/${encodeURIComponent(key)}`,
       { method: "DELETE" },
     );
   }
@@ -1812,7 +1700,7 @@ export class Client {
     opts: ListAgentMemoryChangesOptions = {},
   ): Promise<AgentMemoryChangeListResponse> {
     const path = withQuery(
-      `/v1/projects/:project/agents/${encodeURIComponent(agentId)}/memory/changes`,
+      `/v1/agents/${encodeURIComponent(agentId)}/memory/changes`,
       { after: opts.after, limit: opts.limit },
     );
     const resp = await this.request(path, { method: "GET" });
@@ -1883,7 +1771,7 @@ export class Client {
 
   async getSession(sessionId: string): Promise<Session> {
     const resp = await this.request(
-      `/v1/projects/:project/sessions/${encodeURIComponent(sessionId)}`,
+      `/v1/sessions/${encodeURIComponent(sessionId)}`,
       { method: "GET" },
     );
     return (await resp.json()) as Session;
@@ -1894,7 +1782,7 @@ export class Client {
     opts: { force?: boolean } = {},
   ): Promise<Session> {
     const path = withQuery(
-      `/v1/projects/:project/sessions/${encodeURIComponent(sessionId)}/cancel`,
+      `/v1/sessions/${encodeURIComponent(sessionId)}/cancel`,
       { force: opts.force },
     );
     const resp = await this.request(path, { method: "POST" });
@@ -1903,7 +1791,7 @@ export class Client {
 
   async compactSession(sessionId: string): Promise<Session> {
     const resp = await this.request(
-      `/v1/projects/:project/sessions/${encodeURIComponent(sessionId)}/compact`,
+      `/v1/sessions/${encodeURIComponent(sessionId)}/compact`,
       { method: "POST" },
     );
     return (await resp.json()) as Session;
@@ -1914,7 +1802,7 @@ export class Client {
     opts: ListSessionMessagesOptions = {},
   ): Promise<SessionMessageListResponse> {
     const path = withQuery(
-      `/v1/projects/:project/sessions/${encodeURIComponent(sessionId)}/messages`,
+      `/v1/sessions/${encodeURIComponent(sessionId)}/messages`,
       {
         after_sequence: opts.afterSequence,
         before_sequence: opts.beforeSequence,
@@ -1938,7 +1826,7 @@ export class Client {
       wake: opts.wake,
     });
     const resp = await this.request(
-      `/v1/projects/:project/sessions/${encodeURIComponent(sessionId)}/nudges`,
+      `/v1/sessions/${encodeURIComponent(sessionId)}/nudges`,
       {
         method: "POST",
         body,
@@ -1953,7 +1841,7 @@ export class Client {
     opts: ListSessionNudgesOptions = {},
   ): Promise<SessionNudgeListResponse> {
     const path = withQuery(
-      `/v1/projects/:project/sessions/${encodeURIComponent(sessionId)}/nudges`,
+      `/v1/sessions/${encodeURIComponent(sessionId)}/nudges`,
       {
         status: opts.status,
         order: opts.order,
@@ -1967,7 +1855,7 @@ export class Client {
 
   async getNudge(sessionId: string, nudgeId: string): Promise<SessionNudge> {
     const resp = await this.request(
-      `/v1/projects/:project/sessions/${encodeURIComponent(sessionId)}/nudges/${encodeURIComponent(nudgeId)}`,
+      `/v1/sessions/${encodeURIComponent(sessionId)}/nudges/${encodeURIComponent(nudgeId)}`,
       { method: "GET" },
     );
     return (await resp.json()) as SessionNudge;
@@ -1975,7 +1863,7 @@ export class Client {
 
   async cancelNudge(sessionId: string, nudgeId: string): Promise<SessionNudge> {
     const resp = await this.request(
-      `/v1/projects/:project/sessions/${encodeURIComponent(sessionId)}/nudges/${encodeURIComponent(nudgeId)}/cancel`,
+      `/v1/sessions/${encodeURIComponent(sessionId)}/nudges/${encodeURIComponent(nudgeId)}/cancel`,
       { method: "POST" },
     );
     return (await resp.json()) as SessionNudge;
@@ -1987,7 +1875,7 @@ export class Client {
     input: RespondToInteractionRequest,
   ): Promise<Interaction> {
     const resp = await this.request(
-      `/v1/projects/:project/interactions/${encodeURIComponent(interactionId)}/respond`,
+      `/v1/interactions/${encodeURIComponent(interactionId)}/respond`,
       { method: "POST", body: input },
     );
     return (await resp.json()) as Interaction;
@@ -1998,7 +1886,7 @@ export class Client {
     opts: ListSessionTurnsOptions = {},
   ): Promise<AgentTurnListResponse> {
     const path = withQuery(
-      `/v1/projects/:project/sessions/${encodeURIComponent(sessionId)}/turns`,
+      `/v1/sessions/${encodeURIComponent(sessionId)}/turns`,
       {
         ids: opts.ids,
         order: opts.order,
@@ -2012,7 +1900,7 @@ export class Client {
 
   async getTurn(sessionId: string, turnId: string): Promise<AgentTurn> {
     const resp = await this.request(
-      `/v1/projects/:project/sessions/${encodeURIComponent(sessionId)}/turns/${encodeURIComponent(turnId)}`,
+      `/v1/sessions/${encodeURIComponent(sessionId)}/turns/${encodeURIComponent(turnId)}`,
       { method: "GET" },
     );
     return (await resp.json()) as AgentTurn;
@@ -2020,7 +1908,7 @@ export class Client {
 
   async cancelTurn(sessionId: string, turnId: string): Promise<AgentTurn> {
     const resp = await this.request(
-      `/v1/projects/:project/sessions/${encodeURIComponent(sessionId)}/turns/${encodeURIComponent(turnId)}/cancel`,
+      `/v1/sessions/${encodeURIComponent(sessionId)}/turns/${encodeURIComponent(turnId)}/cancel`,
       { method: "POST" },
     );
     return (await resp.json()) as AgentTurn;
@@ -2045,7 +1933,7 @@ export class Client {
       metadata: opts.metadata,
     });
     const resp = await this.request(
-      `/v1/projects/:project/sessions/${encodeURIComponent(sessionId)}/turns`,
+      `/v1/sessions/${encodeURIComponent(sessionId)}/turns`,
       {
         method: "POST",
         body,
@@ -2079,7 +1967,7 @@ export class Client {
     streamOpts: { signal?: AbortSignal } = {},
   ): Promise<TurnTranscript> {
     const body = invokeAgentRequest(opts);
-    const resp = await this.request("/v1/projects/:project/agents/invoke", {
+    const resp = await this.request("/v1/agents/invoke", {
       method: "POST",
       body,
       idempotencyKey: invokeAgentReplayKey(body),
@@ -2103,7 +1991,7 @@ export class Client {
     opts: InvokeAgentOptions,
     streamOpts: { signal?: AbortSignal } = {},
   ): AsyncGenerator<SessionStreamEvent> {
-    const path = "/v1/projects/:project/agents/invoke";
+    const path = "/v1/agents/invoke";
     const body = invokeAgentRequest(opts);
     const resp = await this.fetchFn(this.url(path), {
       method: "POST",
@@ -2145,7 +2033,7 @@ export class Client {
     opts: GetSessionTranscriptOptions = {},
   ): Promise<SessionTranscriptSnapshot> {
     const path = withQuery(
-      `/v1/projects/:project/sessions/${encodeURIComponent(sessionId)}/transcript`,
+      `/v1/sessions/${encodeURIComponent(sessionId)}/transcript`,
       { cursor: opts.cursor, page_token: opts.pageToken, limit: opts.limit },
     );
     const resp = await this.request(path, {
@@ -2171,7 +2059,7 @@ export class Client {
     opts: StreamSessionTranscriptOptions = {},
   ): AsyncGenerator<TranscriptStreamEvent> {
     const path = withQuery(
-      `/v1/projects/:project/sessions/${encodeURIComponent(sessionId)}/transcript/stream`,
+      `/v1/sessions/${encodeURIComponent(sessionId)}/transcript/stream`,
       { cursor: opts.cursor },
     );
     const resp = await this.fetchFn(this.url(path), {
@@ -2302,7 +2190,7 @@ export class Client {
     opts: WatchRunOptions = {},
   ): AsyncGenerator<LoopRunEvent> {
     const path = withQuery(
-      `/v1/projects/:project/runs/${encodeURIComponent(runId)}/events.stream`,
+      `/v1/runs/${encodeURIComponent(runId)}/events.stream`,
       opts.since && opts.since > 0 ? { after_sequence: opts.since } : {},
     );
     const resp = await this.fetchFn(this.url(path), {
@@ -2424,9 +2312,7 @@ export class Client {
   }
 
   private url(path: string): string {
-    return (
-      this.baseURL + path.replace(":project", encodeURIComponent(this.project))
-    );
+    return this.baseURL + path;
   }
 }
 

@@ -6,14 +6,14 @@ common integration tasks:
 - verifying and parsing Mobius outgoing webhook deliveries
 - delivering Mobius-shaped synthetic webhooks for local/test bridges
 - managing loops and loop runs from code
-- creating (or safely re-creating) projects and agents with
-  create-or-adopt semantics keyed on `external_ref`
-- managing project blueprints, principals, roles, and role assignments
+- creating (or safely re-creating) agents with create-or-adopt semantics
+  keyed on `external_ref`
+- managing org blueprints, principals, roles, and role assignments
 - managing the organization OAuth return-origin allowlist
 - managing organization Actions and their signing-secret lifecycle
-- publishing project artifacts with metadata and safe retry keys
+- publishing org artifacts with metadata and safe retry keys
 - reading, searching, and synchronizing agent memory
-- managing project and organization skills and agent skill assignments
+- managing org and organization-shared skills and agent skill assignments
 - listing action invocation audit records with provenance filters
 - listing interactions with run, session, target, inbox, and status filters
 - invoking agents and following a session's live transcript (message rows,
@@ -94,18 +94,17 @@ Python and TypeScript expose the corresponding `InvalidSignatureError`,
 `StaleDeliveryError`, `UnsupportedActionInvocationSchemaError`, and
 `MalformedActionInvocationError` classes.
 
-After verification, compare the signed org, project, action ID, and action name
+After verification, compare the signed org, action ID, and action name
 with the endpoint's configured expectations. Deduplicate by delivery ID within
 the action/secret scope before performing side effects. Never choose a user or
 tenant from `parameters`; user-mapped agent integrations should resolve by the
-signed `(project_id, agent_id)` pair.
+signed `(org_id, agent_id)` pair.
 
 Organization-scoped Actions use the stable secret reference
 `mobius/org-action/{action_id}`. During key rotation, select the verification
 key using both `X-Mobius-Secret-Ref` and `X-Mobius-Secret-Version`, and retain
 the retiring version until its advertised retirement time. A delivery always
-signs the consuming project's `project_id`, even though the Action definition
-and signing key belong to the organization. The Action ID is stable across
+signs the consuming org's `org_id`. The Action ID is stable across
 renames and should be the primary endpoint-side identity check.
 
 ## Organization Actions
@@ -189,7 +188,7 @@ organization; from the CLI that state is explicit:
 ## Action Invocation Audit
 
 `ListActionInvocations` / `list_action_invocations` / `listActionInvocations`
-lists the project's invocation audit records with every contract filter:
+lists the org's invocation audit records with every contract filter:
 run, job, environment, action name, immutable action ID, definition scope,
 signing-secret version, delivery ID, correlation ID, terminal status, and
 pagination.
@@ -211,9 +210,9 @@ SDKs.
 
 ## Artifact Uploads
 
-An action handler or other project service that produces deterministic bytes
-can publish them directly to Mobius with a project API key holding
-`mobius.project.edit`:
+An action handler or other org-scoped service that produces deterministic
+bytes can publish them directly to Mobius with an org-scoped API key holding
+the artifacts write permission:
 
 ```go
 artifact, err := client.CreateArtifact(ctx, mobius.CreateArtifactOptions{
@@ -336,18 +335,17 @@ stream.
 
 ## Create-or-Adopt Provisioning
 
-`CreateProject`/`CreateAgent` (Go), `create_project`/`create_agent`
-(Python), and `createProject`/`createAgent` (TypeScript) create a resource —
-or, in adopt mode, return the one that already carries the same
-`external_ref`. Adopt mode is how provision-per-tenant code becomes safely
-retryable: run the same call again after a crash or timeout and it converges
-on the same resource instead of failing with 409.
+`CreateAgent` (Go), `create_agent` (Python), and `createAgent` (TypeScript)
+create a resource — or, in adopt mode, return the one that already carries
+the same `external_ref`. Adopt mode is how provision-per-tenant code becomes
+safely retryable: run the same call again after a crash or timeout and it
+converges on the same resource instead of failing with 409.
 
 ```go
-project, err := client.CreateProject(ctx, mobius.CreateProjectOptions{
-	Project:       api.CreateProjectRequest{Name: "Tenant 42"},
+agent, err := client.CreateAgent(ctx, mobius.CreateAgentOptions{
+	Agent:         api.CreateAgentRequest{Name: "PR reviewer"},
 	AdoptExisting: true,
-	ExternalRef:   "workspace-42",
+	ExternalRef:   "tenant-42/pr-reviewer",
 })
 ```
 
@@ -360,9 +358,9 @@ agent = client.create_agent(
 ```
 
 ```ts
-const project = await client.createProject(
-  { name: "Tenant 42" },
-  { adoptExisting: true, externalRef: "workspace-42" },
+const agent = await client.createAgent(
+  { name: "PR reviewer" },
+  { adoptExisting: true, externalRef: "tenant-42/pr-reviewer" },
 );
 ```
 
@@ -383,26 +381,18 @@ retryable create, pass the adopt options; don't wrap a plain create in your
 own retry loop.
 
 **Conflict codes.** Adopt refuses to paper over identity conflicts. The
-stable codes — exported as constants on each SDK's API error type
+stable code — exported as a constant on each SDK's API error type
 (`mobius.ErrCodeExternalIdentityConflict` in Go,
-`MobiusAPIError.EXTERNAL_IDENTITY_CONFLICT` in Python and TypeScript, and
-likewise for the others):
+`MobiusAPIError.EXTERNAL_IDENTITY_CONFLICT` in Python and TypeScript):
 
-- `external_identity_conflict` (409): the request names an identity (project
-  handle, agent name) that differs from the resource owning the matched
+- `external_identity_conflict` (409): the request names an identity (e.g.
+  agent name) that differs from the resource owning the matched
   `external_ref`, or the match is soft-deleted — adopt never resurrects or
   replaces a deleted resource.
-- `project_archived` (409): the matched project is archived. Adopt never
-  silently unarchives; unarchive explicitly, then retry.
-- `project_capacity_reached` (429): creating a *new* project would exceed
-  the org's project limit; an existing `external_ref` match still adopts
-  even at the limit. Because it rides a 429, the built-in retry layer
-  surfaces it as the rate-limit error type once retries are exhausted — the
-  code itself is visible only when reading the response envelope directly.
 
-## Project Administration
+## Org Administration
 
-The curated clients expose the same project-administration operations in each
+The curated clients expose the same org-administration operations in each
 language: apply/list/protect/delete blueprints, read the permission catalog,
 manage machine principals and roles, and manage role assignments. Request and
 response bodies use the generated OpenAPI models; handwritten option objects
@@ -455,10 +445,10 @@ timing decisions. Entry versions make replayed changes detectable.
 ## Skills
 
 Skills are reusable instruction bundles assignable to agents. The curated
-clients expose the project lifecycle, the organization lifecycle (shared
-across projects, Admin/Owner only), usage reporting, and ordered agent
-assignments. Import takes the Claude Code or Dive-style document as a plain
-string — reading files stays a CLI concern:
+clients expose the org-owned skill lifecycle, the organization-shared skill
+lifecycle (Admin/Owner only), usage reporting, and ordered agent assignments.
+Import takes the Claude Code or Dive-style document as a plain string —
+reading files stays a CLI concern:
 
 ```python
 skill = client.import_skill(Path("SKILL.md").read_text(), name="PR review")
@@ -468,7 +458,7 @@ client.replace_agent_skill_assignments(agent_id, [skill.id])
 ```ts
 const shared = await client.importOrganizationSkill(content);
 const usage = await client.getOrganizationSkillUsage(shared.id);
-// usage.projects lists per-project agent counts before a replace or delete.
+// usage.assignmentCount is the number of agents assigned this skill.
 ```
 
 Updates (`UpdateSkill`, `ReplaceOrganizationSkill`) are explicit full-body

@@ -896,7 +896,7 @@ func NewEnvironmentArtifactPublishAction() mobius.Action {
 			}
 		}
 		// Without a lease the API cannot attach run/step lineage; fall back to
-		// a project-authorized private upload with the tags kept as metadata.
+		// an org-authorized private upload with the tags kept as metadata.
 		opts := mobius.CreateArtifactOptions{Path: path, Name: in.Name, Mime: in.Mime}
 		if len(in.Tags) > 0 {
 			opts.Metadata = make(map[string]any, len(in.Tags))

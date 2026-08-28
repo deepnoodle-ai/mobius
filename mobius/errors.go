@@ -66,29 +66,13 @@ func unexpectedAPIStatus(op string, statusCode int, status string, header http.H
 	return fmt.Errorf("mobius: %s: unexpected status %s", op, status)
 }
 
-// Stable [APIError].Code values returned by the create-or-adopt endpoints
-// ([Client.CreateAgent], [Client.CreateProject]) when if_exists=adopt
-// matches a resource it cannot adopt. Branch on these instead of matching
-// message text.
-const (
-	// ErrCodeExternalIdentityConflict (409): the request names an identity
-	// (project handle, agent name) that differs from the resource that owns
-	// the matched external_ref, or the match is soft-deleted — adopt never
-	// resurrects or replaces a deleted resource.
-	ErrCodeExternalIdentityConflict = "external_identity_conflict"
-	// ErrCodeProjectArchived (409): the matched project is archived. Adopt
-	// never silently unarchives a project or mints a replacement identity;
-	// unarchive it explicitly, then retry.
-	ErrCodeProjectArchived = "project_archived"
-	// ErrCodeProjectCapacityReached (429): creating a new project would
-	// exceed the org's project limit. An existing external_ref match still
-	// adopts even at the limit, so this surfaces only for genuinely new
-	// projects. Because it rides a 429, the built-in transport reports it as
-	// [*RateLimitError] once retries are exhausted; the code appears on
-	// [APIError] only when reading the response envelope directly (custom
-	// HTTP clients, raw responses).
-	ErrCodeProjectCapacityReached = "project_capacity_reached"
-)
+// ErrCodeExternalIdentityConflict (409) is a stable [APIError].Code returned
+// by create-or-adopt endpoints (e.g. [Client.CreateAgent]) when
+// if_exists=adopt names an identity (e.g. agent name) that differs from the
+// resource that owns the matched external_ref, or the match is
+// soft-deleted — adopt never resurrects or replaces a deleted resource.
+// Branch on this instead of matching message text.
+const ErrCodeExternalIdentityConflict = "external_identity_conflict"
 
 // ErrPayloadTooLarge is returned when the server rejects a custom event
 // payload for exceeding the size limit (HTTP 413).
@@ -104,19 +88,19 @@ var ErrPayloadTooLarge = errors.New("mobius: custom event payload too large")
 // can restart under a rotated credential.
 var ErrAuthRevoked = errors.New("mobius: credential revoked")
 
-// ErrProjectNotFound is returned when the worker socket endpoint answers 404:
-// the project handle doesn't exist, or the base URL points somewhere that
-// isn't a Mobius API. Reconnecting cannot fix a missing project, so the
-// worker run loop treats this as terminal instead of retrying forever.
-var ErrProjectNotFound = errors.New("mobius: project not found - check MOBIUS_PROJECT/--project and the API URL")
+// ErrEndpointNotFound is returned when the worker socket endpoint answers
+// 404: the base URL points somewhere that isn't a Mobius API. Reconnecting
+// cannot fix this, so the worker run loop treats it as terminal instead of
+// retrying forever.
+var ErrEndpointNotFound = errors.New("mobius: endpoint not found - check the API URL")
 
 // ErrWorkerInstanceConflict is returned when the server rejects a worker
 // claim because another live process has already registered the same
-// worker_instance_id in the project. Surfaces from the run loop as a
+// worker_instance_id in the org. Surfaces from the run loop as a
 // hard error: the operator either configured the same instance ID in
 // two processes, or two replicas auto-detected the same identifier.
 // The message returned by [InstanceConflictError] names the offending
-// project and instance ID so the operator can resolve.
+// instance ID so the operator can resolve.
 var ErrWorkerInstanceConflict = errors.New("mobius: worker instance conflict")
 
 // InstanceConflictError carries the human-readable remediation message
@@ -124,7 +108,6 @@ var ErrWorkerInstanceConflict = errors.New("mobius: worker instance conflict")
 // keeps working; errors.As(err, &ic) reads the fields.
 type InstanceConflictError struct {
 	WorkerInstanceID string
-	ProjectHandle    string
 	Message          string
 }
 
@@ -134,8 +117,8 @@ func (e *InstanceConflictError) Error() string {
 	}
 	if e.WorkerInstanceID != "" {
 		return fmt.Sprintf(
-			"mobius: worker_instance_id %q is already registered in project %q by another live process; set WorkerConfig.WorkerInstanceID to a unique value per process, or wait for the existing registration to age out",
-			e.WorkerInstanceID, e.ProjectHandle,
+			"mobius: worker_instance_id %q is already registered by another live process; set WorkerConfig.WorkerInstanceID to a unique value per process, or wait for the existing registration to age out",
+			e.WorkerInstanceID,
 		)
 	}
 	return ErrWorkerInstanceConflict.Error()

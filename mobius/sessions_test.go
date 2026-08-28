@@ -35,7 +35,7 @@ func TestInvokeAgent_HighLevelClient(t *testing.T) {
 	var body map[string]interface{}
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
-		case r.Method == http.MethodPost && r.URL.Path == "/v1/projects/test-project/agents/invoke":
+		case r.Method == http.MethodPost && r.URL.Path == "/v1/agents/invoke":
 			assert.Equal(t, r.Header.Get("Idempotency-Key"), "evt_1")
 			b, _ := io.ReadAll(r.Body)
 			assert.NoError(t, json.Unmarshal(b, &body))
@@ -119,7 +119,7 @@ func TestStartTurn_HighLevelClient(t *testing.T) {
 	var body map[string]interface{}
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, r.Method, http.MethodPost)
-		assert.Equal(t, r.URL.Path, "/v1/projects/test-project/sessions/sess_1/turns")
+		assert.Equal(t, r.URL.Path, "/v1/sessions/sess_1/turns")
 		assert.Equal(t, r.Header.Get("Idempotency-Key"), "evt_1")
 		raw, _ := io.ReadAll(r.Body)
 		assert.NoError(t, json.Unmarshal(raw, &body))
@@ -153,7 +153,7 @@ func TestStartTurn_HighLevelClient(t *testing.T) {
 func TestListSessionMessages_IncludesContext(t *testing.T) {
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, r.Method, http.MethodGet)
-		assert.Equal(t, r.URL.Path, "/v1/projects/test-project/sessions/sess_1/messages")
+		assert.Equal(t, r.URL.Path, "/v1/sessions/sess_1/messages")
 		assert.Equal(t, r.URL.Query().Get("include"), "context")
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = io.WriteString(w, `{"items":[{"id":"msg_1","session_id":"sess_1","agent_id":"agent_1","role":"system","content":[{"type":"reminder","name":"app-board","tier":"contextual","content":"Chosen: none"}],"entry_type":"message","sequence":1,"created_at":"2026-07-14T12:00:00Z"}]}`)
@@ -260,7 +260,7 @@ func TestNudgeSession_HighLevelClient(t *testing.T) {
 	var body map[string]interface{}
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, r.Method, http.MethodPost)
-		assert.Equal(t, r.URL.Path, "/v1/projects/test-project/sessions/s1/nudges")
+		assert.Equal(t, r.URL.Path, "/v1/sessions/s1/nudges")
 		assert.Equal(t, r.Header.Get("Idempotency-Key"), "event_2")
 		raw, _ := io.ReadAll(r.Body)
 		assert.NoError(t, json.Unmarshal(raw, &body))
@@ -289,13 +289,13 @@ func TestSessionNudgeLifecycle_HighLevelClient(t *testing.T) {
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		switch {
-		case r.Method == http.MethodGet && r.URL.Path == "/v1/projects/test-project/sessions/s1/nudges":
+		case r.Method == http.MethodGet && r.URL.Path == "/v1/sessions/s1/nudges":
 			assert.Equal(t, r.URL.Query().Get("status"), "pending")
 			assert.Equal(t, r.URL.Query().Get("order"), "desc")
 			_, _ = io.WriteString(w, `{"items":[`+queued+`],"has_more":false}`)
-		case r.Method == http.MethodGet && r.URL.Path == "/v1/projects/test-project/sessions/s1/nudges/nudge_1":
+		case r.Method == http.MethodGet && r.URL.Path == "/v1/sessions/s1/nudges/nudge_1":
 			_, _ = io.WriteString(w, queued)
-		case r.Method == http.MethodPost && r.URL.Path == "/v1/projects/test-project/sessions/s1/nudges/nudge_1/cancel":
+		case r.Method == http.MethodPost && r.URL.Path == "/v1/sessions/s1/nudges/nudge_1/cancel":
 			_, _ = io.WriteString(w, cancelled)
 		default:
 			http.NotFound(w, r)
@@ -324,7 +324,7 @@ func TestSessionNudgeLifecycle_HighLevelClient(t *testing.T) {
 func TestInvokeAgentStream_HighLevelClient(t *testing.T) {
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
-		case r.Method == http.MethodPost && r.URL.Path == "/v1/projects/test-project/agents/invoke":
+		case r.Method == http.MethodPost && r.URL.Path == "/v1/agents/invoke":
 			assert.Equal(t, r.Header.Get("Accept"), "text/event-stream")
 			assert.Equal(t, r.Header.Get("Idempotency-Key"), "evt_stream_1")
 			w.Header().Set("Content-Type", "text/event-stream")

@@ -25,10 +25,11 @@ func registerAgentsCommands(app *cli.App) {
 			cli.String("color", "").Help("Display color for this agent (Mantine palette key, e.g. `indigo`). Optional; empty falls back to a hash-derived color."),
 			cli.String("compaction-policy", "").Help("Controls how a session's transcript is automatically summarized as it grows. On create the supplied fields are merged over the owning… Accepts JSON, @file, or @-."),
 			cli.String("description", "").Help("Optional human-readable description."),
-			cli.String("external-ref", "").Help("Client-owned durable identity key. Unique within the project when present. Treat this as assign-once: create requests may set it; update…"),
+			cli.String("external-ref", "").Help("Client-owned durable identity key. Unique within the org when present. Treat this as assign-once: create requests may set it; update…"),
 			cli.String("if-exists", "").Help("Create-or-adopt behavior when a request's `external_ref` matches an existing resource. `error` (the default) rejects the request with 409…"),
 			cli.String("memory-context", "").Help("Automatic memory delivery policy. The JSON object requires `mode` (`index`, `full`, or `off`) and optionally accepts `max_bytes`, for… Accepts JSON, @file, or @-."),
-			cli.String("model", "").Help("Model identifier for agents. Any id from `GET /v1/projects/{project_handle}/catalog/models`, including slash-bearing OpenRouter catalog…"),
+			cli.Bool("memory-enabled", "").Help("Hard gate for runtime memory. When false, memory tools and automatic memory context are absent. Defaults to true."),
+			cli.String("model", "").Help("Model identifier for agents. Any id from `GET /v1/catalog/models`, including slash-bearing OpenRouter catalog ids, or an optionally…"),
 			cli.String("model-route", "").Help("Default model route used by built-in messaging and by loop agent steps that do not override the route. Accepts JSON, @file, or @-."),
 			cli.String("name", "").Help("[required] Unique name for this agent. Free-form human-readable label, 1-63 characters."),
 			cli.String("system-prompt", "").Help("Custom system prompt for agents. Empty uses the generated default."),
@@ -46,7 +47,6 @@ func registerAgentsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
 			var body api.CreateAgentJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -76,6 +76,10 @@ func registerAgentsCommands(app *cli.App) {
 				if err := decodeFlagJSON(ctx, "memory-context", ctx.String("memory-context"), &body.MemoryContext); err != nil {
 					return err
 				}
+			}
+			if ctx.IsSet("memory-enabled") {
+				v := ctx.Bool("memory-enabled")
+				body.MemoryEnabled = &v
 			}
 			if ctx.IsSet("model") {
 				v := ctx.String("model")
@@ -117,7 +121,7 @@ func registerAgentsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.CreateAgentWithResponse(ctx.Context(), p0, body)
+			resp, err := client.CreateAgentWithResponse(ctx.Context(), body)
 			if err != nil {
 				return err
 			}
@@ -134,9 +138,8 @@ func registerAgentsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			resp, err := client.DeleteAgentWithResponse(ctx.Context(), p0, p1)
+			p0 := ctx.Arg(0)
+			resp, err := client.DeleteAgentWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
 			}
@@ -147,6 +150,9 @@ func registerAgentsCommands(app *cli.App) {
 		Description("Delete a memory entry").
 		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		AddArg(&cli.Arg{Name: "memory-key", Description: "The key identifying a memory entry. Restricted to a path-safe character set (letters, numbers, and `. _ : -`) so it stays reliably…", Required: true}).
+		Flags(
+			cli.String("user-id", "").Help("User principal ID for a private memory partition. It must identify a current human member of this organization. Omit for shared memory."),
+		).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -154,10 +160,14 @@ func registerAgentsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			p2 := ctx.Arg(1)
-			resp, err := client.DeleteAgentMemoryEntryWithResponse(ctx.Context(), p0, p1, p2)
+			p0 := ctx.Arg(0)
+			p1 := ctx.Arg(1)
+			params := &api.DeleteAgentMemoryEntryParams{}
+			if ctx.IsSet("user-id") {
+				v := api.MemoryUserIDParam(ctx.String("user-id"))
+				params.UserId = &v
+			}
+			resp, err := client.DeleteAgentMemoryEntryWithResponse(ctx.Context(), p0, p1, params)
 			if err != nil {
 				return err
 			}
@@ -175,10 +185,9 @@ func registerAgentsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			p2 := ctx.Arg(1)
-			resp, err := client.DeleteAgentMessagingBindingWithResponse(ctx.Context(), p0, p1, p2)
+			p0 := ctx.Arg(0)
+			p1 := ctx.Arg(1)
+			resp, err := client.DeleteAgentMessagingBindingWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}
@@ -195,9 +204,8 @@ func registerAgentsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			resp, err := client.GetAgentWithResponse(ctx.Context(), p0, p1)
+			p0 := ctx.Arg(0)
+			resp, err := client.GetAgentWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
 			}
@@ -214,9 +222,8 @@ func registerAgentsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			resp, err := client.GetAgentMemoryWithResponse(ctx.Context(), p0, p1)
+			p0 := ctx.Arg(0)
+			resp, err := client.GetAgentMemoryWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
 			}
@@ -238,8 +245,7 @@ func registerAgentsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
+			p0 := ctx.Arg(0)
 			params := &api.GetAgentToolsParams{}
 			if ctx.IsSet("toolkit-ids") {
 				v := ctx.String("toolkit-ids")
@@ -253,7 +259,7 @@ func registerAgentsCommands(app *cli.App) {
 				v := ctx.String("allowed-tools")
 				params.AllowedTools = &v
 			}
-			resp, err := client.GetAgentToolsWithResponse(ctx.Context(), p0, p1, params)
+			resp, err := client.GetAgentToolsWithResponse(ctx.Context(), p0, params)
 			if err != nil {
 				return err
 			}
@@ -263,9 +269,10 @@ func registerAgentsCommands(app *cli.App) {
 	agentsGrp.Command("list").
 		Description("List agents").
 		Flags(
-			cli.String("name", "").Help("Filter to the project-unique agent with this exact name."),
+			cli.String("name", "").Help("Filter to the org-unique agent with this exact name."),
 			cli.String("principal-id", "").Help("Filter to the agent backed by this principal."),
 			cli.String("status", "").Help("Filter by administrative status (active/inactive), independent of presence."),
+			cli.String("cursor", "").Help("Cursor for pagination (opaque string from previous response)"),
 			cli.Int("limit", "").Help("Maximum number of items to return"),
 		).
 		Use(requireAuth()).
@@ -275,7 +282,6 @@ func registerAgentsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
 			params := &api.ListAgentsParams{}
 			if ctx.IsSet("name") {
 				v := ctx.String("name")
@@ -289,11 +295,15 @@ func registerAgentsCommands(app *cli.App) {
 				v := api.AgentStatus(ctx.String("status"))
 				params.Status = &v
 			}
+			if ctx.IsSet("cursor") {
+				v := api.CursorParam(ctx.String("cursor"))
+				params.Cursor = &v
+			}
 			if ctx.IsSet("limit") {
 				v := api.LimitParam(ctx.Int("limit"))
 				params.Limit = &v
 			}
-			resp, err := client.ListAgentsWithResponse(ctx.Context(), p0, params)
+			resp, err := client.ListAgentsWithResponse(ctx.Context(), params)
 			if err != nil {
 				return err
 			}
@@ -314,8 +324,7 @@ func registerAgentsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
+			p0 := ctx.Arg(0)
 			params := &api.ListAgentMemoryChangesParams{}
 			if ctx.IsSet("after") {
 				v := ctx.String("after")
@@ -325,7 +334,7 @@ func registerAgentsCommands(app *cli.App) {
 				v := api.LimitParam(ctx.Int("limit"))
 				params.Limit = &v
 			}
-			resp, err := client.ListAgentMemoryChangesWithResponse(ctx.Context(), p0, p1, params)
+			resp, err := client.ListAgentMemoryChangesWithResponse(ctx.Context(), p0, params)
 			if err != nil {
 				return err
 			}
@@ -349,8 +358,7 @@ func registerAgentsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
+			p0 := ctx.Arg(0)
 			params := &api.ListAgentMemoryEntriesParams{}
 			if ctx.IsSet("query") {
 				v := ctx.String("query")
@@ -372,7 +380,7 @@ func registerAgentsCommands(app *cli.App) {
 				v := api.LimitParam(ctx.Int("limit"))
 				params.Limit = &v
 			}
-			resp, err := client.ListAgentMemoryEntriesWithResponse(ctx.Context(), p0, p1, params)
+			resp, err := client.ListAgentMemoryEntriesWithResponse(ctx.Context(), p0, params)
 			if err != nil {
 				return err
 			}
@@ -394,8 +402,7 @@ func registerAgentsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
+			p0 := ctx.Arg(0)
 			params := &api.ListTurnMessagesParams{}
 			if ctx.IsSet("after-sequence") {
 				v := api.AfterSequenceParam(int64(ctx.Int("after-sequence")))
@@ -409,7 +416,7 @@ func registerAgentsCommands(app *cli.App) {
 				v := api.ContextIncludeParam(ctx.String("include"))
 				params.Include = &v
 			}
-			resp, err := client.ListTurnMessagesWithResponse(ctx.Context(), p0, p1, params)
+			resp, err := client.ListTurnMessagesWithResponse(ctx.Context(), p0, params)
 			if err != nil {
 				return err
 			}
@@ -426,9 +433,8 @@ func registerAgentsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			resp, err := client.ListAgentMessagingBindingsWithResponse(ctx.Context(), p0, p1)
+			p0 := ctx.Arg(0)
+			resp, err := client.ListAgentMessagingBindingsWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
 			}
@@ -445,9 +451,8 @@ func registerAgentsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			resp, err := client.ListAgentSkillAssignmentsWithResponse(ctx.Context(), p0, p1)
+			p0 := ctx.Arg(0)
+			resp, err := client.ListAgentSkillAssignmentsWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
 			}
@@ -464,9 +469,8 @@ func registerAgentsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			resp, err := client.ListAgentToolkitAssignmentsWithResponse(ctx.Context(), p0, p1)
+			p0 := ctx.Arg(0)
+			resp, err := client.ListAgentToolkitAssignmentsWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
 			}
@@ -483,9 +487,8 @@ func registerAgentsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			resp, err := client.ProvisionAgentInboxWithResponse(ctx.Context(), p0, p1)
+			p0 := ctx.Arg(0)
+			resp, err := client.ProvisionAgentInboxWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
 			}
@@ -507,8 +510,7 @@ func registerAgentsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
+			p0 := ctx.Arg(0)
 			var body api.ReplaceAgentSkillAssignmentsJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -523,7 +525,7 @@ func registerAgentsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.ReplaceAgentSkillAssignmentsWithResponse(ctx.Context(), p0, p1, body)
+			resp, err := client.ReplaceAgentSkillAssignmentsWithResponse(ctx.Context(), p0, body)
 			if err != nil {
 				return err
 			}
@@ -545,8 +547,7 @@ func registerAgentsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
+			p0 := ctx.Arg(0)
 			var body api.ReplaceAgentToolkitAssignmentsJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -561,7 +562,7 @@ func registerAgentsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.ReplaceAgentToolkitAssignmentsWithResponse(ctx.Context(), p0, p1, body)
+			resp, err := client.ReplaceAgentToolkitAssignmentsWithResponse(ctx.Context(), p0, body)
 			if err != nil {
 				return err
 			}
@@ -579,6 +580,7 @@ func registerAgentsCommands(app *cli.App) {
 			cli.String("metadata", "").Help("Optional structured metadata to store alongside the memory. Accepts JSON, @file, or @-."),
 			cli.Bool("pinned", "").Help("Pin to exempt this memory from compaction."),
 			cli.String("summary", "").Help("Optional short one-line summary (≤140 chars) shown in the memory index."),
+			cli.String("user-id", "").Help("User principal ID for private memory. It must identify a current human member of this organization. Omit or send empty for shared memory."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -589,9 +591,8 @@ func registerAgentsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			p2 := ctx.Arg(1)
+			p0 := ctx.Arg(0)
+			p1 := ctx.Arg(1)
 			var body api.SaveAgentMemoryEntryJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -620,13 +621,17 @@ func registerAgentsCommands(app *cli.App) {
 				v := ctx.String("summary")
 				body.Summary = &v
 			}
+			if ctx.IsSet("user-id") {
+				v := ctx.String("user-id")
+				body.UserId = &v
+			}
 			if body.Content == "" {
 				return fmt.Errorf("--content is required (or supply it via --file)")
 			}
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.SaveAgentMemoryEntryWithResponse(ctx.Context(), p0, p1, p2, body)
+			resp, err := client.SaveAgentMemoryEntryWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}
@@ -660,8 +665,7 @@ func registerAgentsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
+			p0 := ctx.Arg(0)
 			var body api.SaveAgentMessagingBindingJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -727,7 +731,7 @@ func registerAgentsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.SaveAgentMessagingBindingWithResponse(ctx.Context(), p0, p1, body)
+			resp, err := client.SaveAgentMessagingBindingWithResponse(ctx.Context(), p0, body)
 			if err != nil {
 				return err
 			}
@@ -741,11 +745,12 @@ func registerAgentsCommands(app *cli.App) {
 			cli.String("color", "").Help("Replacement display color (Mantine palette key, e.g. `indigo`). Pass empty string to clear and fall back to a hash-derived color."),
 			cli.String("compaction-policy", "").Help("Controls how a session's transcript is automatically summarized as it grows. On create the supplied fields are merged over the owning… Accepts JSON, @file, or @-."),
 			cli.String("description", "").Help("Replacement description."),
-			cli.String("external-ref", "").Help("Assign-once client identity key, unique within the project. Accepted when the agent has no external_ref, or when it repeats the current…"),
+			cli.String("external-ref", "").Help("Assign-once client identity key, unique within the org. Accepted when the agent has no external_ref, or when it repeats the current value…"),
 			cli.String("memory-context", "").Help("Replacement automatic memory delivery policy. Send an empty object to clear the stored override and restore the bounded index default… Accepts JSON, @file, or @-."),
-			cli.String("model", "").Help("Replacement model identifier for agents (any id from `GET /v1/projects/{project_handle}/catalog/models`, including slash-bearing OpenRouter…"),
+			cli.Bool("memory-enabled", "").Help("Replacement runtime memory hard gate. Definition bundles cannot override this stored agent setting."),
+			cli.String("model", "").Help("Replacement model identifier for agents (any id from `GET /v1/catalog/models`, including slash-bearing OpenRouter catalog ids, or an…"),
 			cli.String("model-route", "").Help("Default model route used by built-in messaging and by loop agent steps that do not override the route. Accepts JSON, @file, or @-."),
-			cli.String("name", "").Help("Free-form human-readable label, 1-63 characters; must be unique within the project."),
+			cli.String("name", "").Help("Free-form human-readable label, 1-63 characters; must be unique within the org."),
 			cli.String("status", "").Help("Replacement agent status: `active` or `inactive`. Use DELETE to delete the agent."),
 			cli.String("system-prompt", "").Help("Replacement system prompt for agents."),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
@@ -762,8 +767,7 @@ func registerAgentsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
+			p0 := ctx.Arg(0)
 			var body api.UpdateAgentJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -789,6 +793,10 @@ func registerAgentsCommands(app *cli.App) {
 				if err := decodeFlagJSON(ctx, "memory-context", ctx.String("memory-context"), &body.MemoryContext); err != nil {
 					return err
 				}
+			}
+			if ctx.IsSet("memory-enabled") {
+				v := ctx.Bool("memory-enabled")
+				body.MemoryEnabled = &v
 			}
 			if ctx.IsSet("model") {
 				v := ctx.String("model")
@@ -829,13 +837,13 @@ func registerAgentsCommands(app *cli.App) {
 				v := api.AgentToolPresentation(ctx.String("tool-presentation"))
 				body.ToolPresentation = &v
 			}
-			if ctx.String("file") == "" && !ctx.IsSet("color") && !ctx.IsSet("compaction-policy") && !ctx.IsSet("description") && !ctx.IsSet("external-ref") && !ctx.IsSet("memory-context") && !ctx.IsSet("model") && !ctx.IsSet("model-route") && !ctx.IsSet("name") && !ctx.IsSet("status") && !ctx.IsSet("system-prompt") && !ctx.IsSet("tag") && !ctx.IsSet("thinking-effort") && !ctx.IsSet("timeout-seconds") && !ctx.IsSet("tool-presentation") {
+			if ctx.String("file") == "" && !ctx.IsSet("color") && !ctx.IsSet("compaction-policy") && !ctx.IsSet("description") && !ctx.IsSet("external-ref") && !ctx.IsSet("memory-context") && !ctx.IsSet("memory-enabled") && !ctx.IsSet("model") && !ctx.IsSet("model-route") && !ctx.IsSet("name") && !ctx.IsSet("status") && !ctx.IsSet("system-prompt") && !ctx.IsSet("tag") && !ctx.IsSet("thinking-effort") && !ctx.IsSet("timeout-seconds") && !ctx.IsSet("tool-presentation") {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.UpdateAgentWithResponse(ctx.Context(), p0, p1, body)
+			resp, err := client.UpdateAgentWithResponse(ctx.Context(), p0, body)
 			if err != nil {
 				return err
 			}

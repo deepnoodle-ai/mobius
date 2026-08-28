@@ -51,7 +51,6 @@ def test_verify_action_invocation_v1_golden_fixture() -> None:
     )
 
     assert verified.invocation.mobius.scope.org_id == "org_fixture"
-    assert verified.invocation.mobius.scope.project_id == "prj_fixture"
     assert verified.invocation.mobius.action.id == "act_fixture"
     assert verified.invocation.mobius.actor.agent_id == "agt_fixture"
     assert verified.invocation.mobius.origin.kind == "agent_tool_call"

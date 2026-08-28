@@ -12,7 +12,7 @@ import (
 func TestListActionInvocationsEncodesEveryFilter(t *testing.T) {
 	var gotQuery url.Values
 	c, _ := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/v1/projects/test-project/action-invocations" {
+		if r.URL.Path != "/v1/action-invocations" {
 			t.Fatalf("path = %s", r.URL.Path)
 		}
 		gotQuery = r.URL.Query()

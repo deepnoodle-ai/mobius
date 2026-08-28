@@ -68,7 +68,6 @@ test("signed action invocation: verifies and parses the shared golden fixture", 
   });
 
   assert.equal(verified.invocation.mobius.scope.orgId, "org_fixture");
-  assert.equal(verified.invocation.mobius.scope.projectId, "prj_fixture");
   assert.equal(verified.invocation.mobius.action.id, "act_fixture");
   assert.equal(verified.invocation.mobius.actor.agentId, "agt_fixture");
   assert.equal(verified.invocation.mobius.origin.kind, "agent_tool_call");

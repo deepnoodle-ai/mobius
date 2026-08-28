@@ -17,13 +17,13 @@ func TestPrincipalsCreateWithRoleAndKey(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		switch {
-		case r.Method == http.MethodGet && r.URL.Path == "/v1/projects/default/roles":
+		case r.Method == http.MethodGet && r.URL.Path == "/v1/roles":
 			_, _ = w.Write([]byte(`{"items":[{"id":"role_worker","name":"Worker","permissions":[],"system_defined":true,"created_at":"2026-07-13T00:00:00Z","updated_at":"2026-07-13T00:00:00Z"}],"has_more":false}`))
-		case r.Method == http.MethodPost && r.URL.Path == "/v1/projects/default/principals":
+		case r.Method == http.MethodPost && r.URL.Path == "/v1/principals":
 			assert.NoError(t, json.NewDecoder(r.Body).Decode(&principalBody))
 			w.WriteHeader(http.StatusCreated)
 			_, _ = w.Write([]byte(`{"id":"principal_1","name":"worker-prod","kind":"service","state":"active","role_ids":["role_worker"],"created_at":"2026-07-13T00:00:00Z","updated_at":"2026-07-13T00:00:00Z"}`))
-		case r.Method == http.MethodPost && r.URL.Path == "/v1/projects/default/api-keys":
+		case r.Method == http.MethodPost && r.URL.Path == "/v1/api-keys":
 			assert.NoError(t, json.NewDecoder(r.Body).Decode(&keyBody))
 			w.WriteHeader(http.StatusCreated)
 			_, _ = w.Write([]byte(`{"id":"key_1","name":"worker-prod-primary","key":"mbx_secret","key_prefix":"mbx_secr","principal_id":"principal_1","created_at":"2026-07-13T00:00:00Z","updated_at":"2026-07-13T00:00:00Z"}`))

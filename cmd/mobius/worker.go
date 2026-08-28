@@ -16,7 +16,7 @@ import (
 )
 
 // registerWorkerCommand attaches the `mobius worker` subcommand, which claims
-// and executes jobs from one or more queues in the configured project. The
+// and executes jobs from one or more queues in the authenticated org. The
 // worker ships with every stock action from github.com/deepnoodle-ai/mobius/mobius/action
 // registered, so it can run trivial and test loops out of the box.
 //
@@ -41,7 +41,7 @@ func registerWorkerCommand(app *cli.App) {
 				Help("Worker version reported to Mobius"),
 			cli.Strings("queues", "").
 				Env("MOBIUS_QUEUES").
-				Help("Queue names to poll; empty = all queues in the project"),
+				Help("Queue names to poll; empty = all queues in the org"),
 			cli.Strings("actions", "a").
 				Env("MOBIUS_WORKER_ACTION_NAMES").
 				Help("Action names to advertise; empty = every registered action"),
@@ -144,7 +144,6 @@ func registerWorkerCommand(app *cli.App) {
 			logger.Info("starting worker",
 				"name", name,
 				"api_url", auth.APIURL,
-				"project", auth.Project,
 				"environment_id", environmentID,
 				"queues", queues,
 				"actions", actions,

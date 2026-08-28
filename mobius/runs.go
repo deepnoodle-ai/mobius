@@ -21,14 +21,14 @@ type StartRunOptions struct {
 	Config map[string]interface{}
 	Meta   map[string]interface{}
 	Source *api.LoopRunSource
-	// IdempotencyKey deduplicates run creation within the project.
+	// IdempotencyKey deduplicates run creation within the org.
 	IdempotencyKey string
 	// ExternalID is the deprecated name for IdempotencyKey.
 	// Deprecated: use IdempotencyKey.
 	ExternalID string
 }
 
-// ListRunsOptions filters and paginates project loop runs.
+// ListRunsOptions filters and paginates org loop runs.
 type ListRunsOptions struct {
 	Status api.LoopRunStatus
 	LoopID string
@@ -59,7 +59,7 @@ func (c *Client) StartRun(ctx context.Context, loopID string, opts *StartRunOpti
 	if req.IdempotencyKey != nil {
 		key = *req.IdempotencyKey
 	}
-	resp, err := c.ac.StartRunWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.IDParam(loopID), req, idempotencyRequestEditors(key)...)
+	resp, err := c.ac.StartRunWithResponse(ctx, api.IDParam(loopID), req, idempotencyRequestEditors(key)...)
 	if err != nil {
 		return nil, fmt.Errorf("mobius: start run: %w", err)
 	}
@@ -69,9 +69,9 @@ func (c *Client) StartRun(ctx context.Context, loopID string, opts *StartRunOpti
 	return resp.JSON202, nil
 }
 
-// ListRuns returns project loop runs matching opts.
+// ListRuns returns org loop runs matching opts.
 func (c *Client) ListRuns(ctx context.Context, opts *ListRunsOptions) (*api.LoopRunListResponse, error) {
-	resp, err := c.ac.ListRunsWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), listRunsParams(opts))
+	resp, err := c.ac.ListRunsWithResponse(ctx, listRunsParams(opts))
 	if err != nil {
 		return nil, fmt.Errorf("mobius: list runs: %w", err)
 	}
@@ -83,7 +83,7 @@ func (c *Client) ListRuns(ctx context.Context, opts *ListRunsOptions) (*api.Loop
 
 // GetRun returns the current loop run detail.
 func (c *Client) GetRun(ctx context.Context, runID string) (*api.LoopRun, error) {
-	resp, err := c.ac.GetRunWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.IDParam(runID))
+	resp, err := c.ac.GetRunWithResponse(ctx, api.IDParam(runID))
 	if err != nil {
 		return nil, fmt.Errorf("mobius: get run: %w", err)
 	}
@@ -99,7 +99,7 @@ func (c *Client) CancelRun(ctx context.Context, runID string, reason string) (*a
 	if reason != "" {
 		req.Reason = &reason
 	}
-	resp, err := c.ac.CancelRunWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.IDParam(runID), req)
+	resp, err := c.ac.CancelRunWithResponse(ctx, api.IDParam(runID), req)
 	if err != nil {
 		return nil, fmt.Errorf("mobius: cancel run: %w", err)
 	}
@@ -115,7 +115,7 @@ func (c *Client) SignalRun(ctx context.Context, runID, stepKey string, result ma
 	if result != nil {
 		req.Result = &result
 	}
-	resp, err := c.ac.SignalRunWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.IDParam(runID), req)
+	resp, err := c.ac.SignalRunWithResponse(ctx, api.IDParam(runID), req)
 	if err != nil {
 		return nil, fmt.Errorf("mobius: signal run: %w", err)
 	}

@@ -266,7 +266,7 @@ func TestGetSessionTranscript_BuildsQuery(t *testing.T) {
 	assert.Equal(t, snap.ResumeCursor, "1.1")
 	assert.NotNil(t, snap.Interactions)
 	assert.Equal(t, len(snap.Interactions), 0)
-	assert.Equal(t, gotPath, "/v1/projects/test-project/sessions/sess_1/transcript")
+	assert.Equal(t, gotPath, "/v1/sessions/sess_1/transcript")
 	assert.Equal(t, gotCursor, "10.2")
 	assert.Equal(t, gotLimit, "50")
 }
@@ -409,17 +409,17 @@ func TestInvokeAgent_StreamsTurnToTerminal(t *testing.T) {
 	var streamCalls int32
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
-		case r.Method == http.MethodPost && r.URL.Path == "/v1/projects/test-project/agents/invoke":
+		case r.Method == http.MethodPost && r.URL.Path == "/v1/agents/invoke":
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusAccepted)
 			_, _ = io.WriteString(w, invokeAckWithCursor("s1", "t1", 42))
-		case r.URL.Path == "/v1/projects/test-project/sessions/s1/transcript/stream":
+		case r.URL.Path == "/v1/sessions/s1/transcript/stream":
 			atomic.AddInt32(&streamCalls, 1)
 			assert.Equal(t, r.URL.Query().Get("cursor"), "41.6") // opened from the seeded cursor
 			w.Header().Set("Content-Type", "text/event-stream")
 			_, _ = io.WriteString(w, "event: message.upsert\ndata: {\"event_type\":\"message.upsert\",\"id\":\"m_a\",\"session_id\":\"s1\",\"agent_id\":\"a1\",\"role\":\"assistant\",\"status\":\"final\",\"turn_id\":\"t1\",\"turn_index\":1,\"sequence\":43,\"entry_type\":\"message\",\"content\":[{\"type\":\"text\",\"text\":\"done\"}],\"created_at\":\"2026-07-11T17:03:21Z\"}\n\n")
 			_, _ = io.WriteString(w, "id: 43.9\nevent: turn.upsert\ndata: {\"event_type\":\"turn.upsert\",\"id\":\"t1\",\"session_id\":\"s1\",\"agent_id\":\"a1\",\"attempt\":1,\"status\":\"completed\",\"created_at\":\"2026-07-11T17:03:20Z\",\"updated_at\":\"2026-07-11T17:03:40Z\"}\n\n")
-		case r.Method == http.MethodGet && r.URL.Path == "/v1/projects/test-project/sessions/s1/transcript":
+		case r.Method == http.MethodGet && r.URL.Path == "/v1/sessions/s1/transcript":
 			assert.Equal(t, r.URL.Query().Get("cursor"), "41.6")
 			w.Header().Set("Content-Type", "application/json")
 			_, _ = io.WriteString(w, `{"messages":[],"turns":[],"has_more":false,"resume_cursor":"43.9"}`)
@@ -466,16 +466,16 @@ func TestInvokeAgent_StreamsTurnToTerminal(t *testing.T) {
 func TestInvokeAgent_RedrainsFromInvocationCursorBeforeFinalUpdate(t *testing.T) {
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
-		case r.Method == http.MethodPost && r.URL.Path == "/v1/projects/test-project/agents/invoke":
+		case r.Method == http.MethodPost && r.URL.Path == "/v1/agents/invoke":
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusAccepted)
 			_, _ = io.WriteString(w, invokeAckWithCursor("s1", "t1", 42))
-		case r.URL.Path == "/v1/projects/test-project/sessions/s1/transcript/stream":
+		case r.URL.Path == "/v1/sessions/s1/transcript/stream":
 			w.Header().Set("Content-Type", "text/event-stream")
 			_, _ = io.WriteString(w, "event: message.upsert\ndata: {\"event_type\":\"message.upsert\",\"id\":\"m_preview\",\"session_id\":\"s1\",\"agent_id\":\"a1\",\"role\":\"assistant\",\"status\":\"streaming\",\"turn_id\":\"t1\",\"turn_index\":1,\"sequence\":null,\"entry_type\":\"message\",\"content\":[{\"type\":\"tool_use\",\"id\":\"call_1\",\"name\":\"naming_words_coin\",\"input\":{\"count\":2}}],\"created_at\":\"2026-07-11T17:03:21Z\"}\n\n")
 			_, _ = io.WriteString(w, "id: 44.3\nevent: message.upsert\ndata: {\"event_type\":\"message.upsert\",\"id\":\"m_result\",\"session_id\":\"s1\",\"agent_id\":\"a1\",\"role\":\"user\",\"status\":\"final\",\"turn_id\":\"t1\",\"turn_index\":2,\"sequence\":44,\"entry_type\":\"message\",\"content\":[{\"type\":\"tool_result\",\"tool_use_id\":\"call_1\",\"content\":\"ok\"}],\"created_at\":\"2026-07-11T17:03:21Z\"}\n\n")
 			_, _ = io.WriteString(w, "id: 44.9\nevent: turn.upsert\ndata: {\"event_type\":\"turn.upsert\",\"id\":\"t1\",\"session_id\":\"s1\",\"agent_id\":\"a1\",\"attempt\":1,\"status\":\"completed\",\"created_at\":\"2026-07-11T17:03:20Z\",\"updated_at\":\"2026-07-11T17:03:40Z\"}\n\n")
-		case r.Method == http.MethodGet && r.URL.Path == "/v1/projects/test-project/sessions/s1/transcript":
+		case r.Method == http.MethodGet && r.URL.Path == "/v1/sessions/s1/transcript":
 			w.Header().Set("Content-Type", "application/json")
 			switch {
 			case r.URL.Query().Get("cursor") == "44.9":
@@ -531,15 +531,15 @@ func TestInvokeAgent_DedupedInFlightReplaysFromStableCursor(t *testing.T) {
 
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
-		case r.Method == http.MethodPost && r.URL.Path == "/v1/projects/test-project/agents/invoke":
+		case r.Method == http.MethodPost && r.URL.Path == "/v1/agents/invoke":
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusAccepted)
 			_, _ = w.Write(ackBody)
-		case r.URL.Path == "/v1/projects/test-project/sessions/s1/transcript/stream":
+		case r.URL.Path == "/v1/sessions/s1/transcript/stream":
 			assert.Equal(t, r.URL.Query().Get("cursor"), "41.6")
 			w.Header().Set("Content-Type", "text/event-stream")
 			_, _ = io.WriteString(w, "id: 45.9\nevent: turn.upsert\ndata: {\"event_type\":\"turn.upsert\",\"id\":\"t1\",\"session_id\":\"s1\",\"agent_id\":\"a1\",\"attempt\":1,\"status\":\"completed\",\"created_at\":\"2026-07-11T17:03:20Z\",\"updated_at\":\"2026-07-11T17:03:40Z\"}\n\n")
-		case r.Method == http.MethodGet && r.URL.Path == "/v1/projects/test-project/sessions/s1/transcript":
+		case r.Method == http.MethodGet && r.URL.Path == "/v1/sessions/s1/transcript":
 			assert.Equal(t, r.URL.Query().Get("cursor"), "41.6")
 			w.Header().Set("Content-Type", "application/json")
 			_, _ = io.WriteString(w, `{"messages":[{"id":"m_call","session_id":"s1","agent_id":"a1","role":"assistant","status":"final","turn_id":"t1","turn_index":1,"sequence":43,"entry_type":"message","content":[{"type":"tool_use","id":"call_1","name":"naming_words_coin","input":{"count":2},"resolved_action":{"name":"naming.words.coin","input":{"count":2}}}],"created_at":"2026-07-11T17:03:21Z"}],"turns":[{"id":"t1","session_id":"s1","agent_id":"a1","attempt":1,"status":"completed","created_at":"2026-07-11T17:03:20Z","updated_at":"2026-07-11T17:03:40Z"}],"has_more":false,"resume_cursor":"45.9"}`)
@@ -565,14 +565,14 @@ func TestInvokeAgent_DedupedInFlightReplaysFromStableCursor(t *testing.T) {
 func TestInvokeAgent_ReturnsTerminalReconciliationError(t *testing.T) {
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
-		case r.Method == http.MethodPost && r.URL.Path == "/v1/projects/test-project/agents/invoke":
+		case r.Method == http.MethodPost && r.URL.Path == "/v1/agents/invoke":
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusAccepted)
 			_, _ = io.WriteString(w, invokeAckWithCursor("s1", "t1", 42))
-		case r.URL.Path == "/v1/projects/test-project/sessions/s1/transcript/stream":
+		case r.URL.Path == "/v1/sessions/s1/transcript/stream":
 			w.Header().Set("Content-Type", "text/event-stream")
 			_, _ = io.WriteString(w, "id: 43.9\nevent: turn.upsert\ndata: {\"event_type\":\"turn.upsert\",\"id\":\"t1\",\"session_id\":\"s1\",\"agent_id\":\"a1\",\"attempt\":1,\"status\":\"completed\",\"created_at\":\"2026-07-11T17:03:20Z\",\"updated_at\":\"2026-07-11T17:03:40Z\"}\n\n")
-		case r.Method == http.MethodGet && r.URL.Path == "/v1/projects/test-project/sessions/s1/transcript":
+		case r.Method == http.MethodGet && r.URL.Path == "/v1/sessions/s1/transcript":
 			http.Error(w, `{"error":{"code":"snapshot_unavailable"}}`, http.StatusInternalServerError)
 		default:
 			http.NotFound(w, r)
@@ -596,7 +596,7 @@ func TestInvokeAgent_LazyStreamNeverOpensWithoutNext(t *testing.T) {
 	var streamCalls int32
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
-		case r.Method == http.MethodPost && r.URL.Path == "/v1/projects/test-project/agents/invoke":
+		case r.Method == http.MethodPost && r.URL.Path == "/v1/agents/invoke":
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusAccepted)
 			_, _ = io.WriteString(w, invokeAckWithCursor("s1", "t1", 42))
@@ -642,11 +642,11 @@ func TestInvokeAgent_TerminalAckHydratesFromSnapshot(t *testing.T) {
 	var streamCalls int32
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
-		case r.Method == http.MethodPost && r.URL.Path == "/v1/projects/test-project/agents/invoke":
+		case r.Method == http.MethodPost && r.URL.Path == "/v1/agents/invoke":
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusAccepted)
 			_, _ = io.WriteString(w, invokeAckTerminal("s1", "t1"))
-		case r.Method == http.MethodGet && r.URL.Path == "/v1/projects/test-project/sessions/s1/transcript":
+		case r.Method == http.MethodGet && r.URL.Path == "/v1/sessions/s1/transcript":
 			w.Header().Set("Content-Type", "application/json")
 			// Two pages: hydration must follow next_page_token until has_more
 			// is false so Messages includes the older page.

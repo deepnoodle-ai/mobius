@@ -19,18 +19,16 @@ func TestAuthStatusReportsSavedCredentialAfterInjection(t *testing.T) {
 	unsetEnv(t, "MOBIUS_API_URL")
 	t.Setenv("MOBIUS_CONFIG_DIR", t.TempDir())
 	resetActiveAuth(t)
-	srv := newAuthProbeServer(t, "mbc_saved.default", "/v1/projects/default/loops", http.StatusOK)
+	srv := newAuthProbeServer(t, "mbc_saved", "/v1/loops", http.StatusOK)
 	defer srv.Close()
 
 	err := authstore.Save(&authstore.Credential{
-		Source:        authstore.SourceBrowserLogin,
-		APIURL:        srv.URL,
-		Token:         "mbc_saved",
-		CredentialID:  "cred_123",
-		OrgName:       "Example Org",
-		ProjectID:     "prj_123",
-		ProjectHandle: "default",
-		UserEmail:     "user@example.invalid",
+		Source:       authstore.SourceBrowserLogin,
+		APIURL:       srv.URL,
+		Token:        "mbc_saved",
+		CredentialID: "cred_123",
+		OrgName:      "Example Org",
+		UserEmail:    "user@example.invalid",
 	})
 	if err != nil {
 		t.Fatalf("save credential: %v", err)
@@ -49,7 +47,7 @@ func TestAuthStatusReportsSavedCredentialAfterInjection(t *testing.T) {
 	if strings.Contains(result.Stdout, "MOBIUS_API_KEY environment variable") {
 		t.Fatalf("stdout incorrectly reported synthetic env var:\n%s", result.Stdout)
 	}
-	if !strings.Contains(result.Stdout, "Auth check: GET /v1/projects/default/loops -> HTTP 200") {
+	if !strings.Contains(result.Stdout, "Auth check: GET /v1/loops -> HTTP 200") {
 		t.Fatalf("stdout missing auth check:\n%s", result.Stdout)
 	}
 	if !strings.Contains(result.Stdout, "Authenticated: yes (browser-based CLI credential verified)") {
@@ -58,7 +56,7 @@ func TestAuthStatusReportsSavedCredentialAfterInjection(t *testing.T) {
 }
 
 func TestAuthStatusReportsRealAPIKeyEnv(t *testing.T) {
-	srv := newAuthProbeServer(t, "mbx_env", "/v1/projects", http.StatusOK)
+	srv := newAuthProbeServer(t, "mbx_env", "/v1/loops", http.StatusOK)
 	defer srv.Close()
 	t.Setenv("MOBIUS_API_KEY", "mbx_env")
 	t.Setenv("MOBIUS_API_URL", srv.URL)
@@ -84,7 +82,7 @@ func TestAuthStatusReportsRealAPIKeyEnv(t *testing.T) {
 	if !strings.Contains(result.Stdout, "Auth source: MOBIUS_API_KEY environment variable") {
 		t.Fatalf("stdout missing env auth source:\n%s", result.Stdout)
 	}
-	if !strings.Contains(result.Stdout, "Auth check: GET /v1/projects -> HTTP 200") {
+	if !strings.Contains(result.Stdout, "Auth check: GET /v1/loops -> HTTP 200") {
 		t.Fatalf("stdout missing auth check:\n%s", result.Stdout)
 	}
 	if !strings.Contains(result.Stdout, "Authenticated: yes (raw API key verified)") {
@@ -93,7 +91,7 @@ func TestAuthStatusReportsRealAPIKeyEnv(t *testing.T) {
 }
 
 func TestAuthStatusReportsRejectedCredential(t *testing.T) {
-	srv := newAuthProbeServer(t, "mbx_env", "/v1/projects", http.StatusUnauthorized)
+	srv := newAuthProbeServer(t, "mbx_env", "/v1/loops", http.StatusUnauthorized)
 	defer srv.Close()
 	t.Setenv("MOBIUS_API_KEY", "mbx_env")
 	t.Setenv("MOBIUS_API_URL", srv.URL)
@@ -104,7 +102,7 @@ func TestAuthStatusReportsRejectedCredential(t *testing.T) {
 	if !result.Success() {
 		t.Fatalf("auth status failed: %v\nstderr: %s", result.Err, result.Stderr)
 	}
-	if !strings.Contains(result.Stdout, "Auth check: GET /v1/projects -> HTTP 401") {
+	if !strings.Contains(result.Stdout, "Auth check: GET /v1/loops -> HTTP 401") {
 		t.Fatalf("stdout missing rejected auth check:\n%s", result.Stdout)
 	}
 	if !strings.Contains(result.Stdout, "Authenticated: no (raw API key rejected)") {
@@ -112,25 +110,8 @@ func TestAuthStatusReportsRejectedCredential(t *testing.T) {
 	}
 }
 
-func TestAuthStatusReportsScopeForProjectPinnedAPIKey(t *testing.T) {
-	srv := newAuthProbeServer(t, "mbc_token.my-project", "/v1/projects/my-project/loops", http.StatusOK)
-	defer srv.Close()
-	t.Setenv("MOBIUS_API_KEY", "mbc_token.my-project")
-	t.Setenv("MOBIUS_API_URL", srv.URL)
-	t.Setenv("MOBIUS_CONFIG_DIR", t.TempDir())
-	resetActiveAuth(t)
-
-	result := newApp().Test(t, cli.TestArgs("auth", "status"))
-	if !result.Success() {
-		t.Fatalf("auth status failed: %v\nstderr: %s", result.Err, result.Stderr)
-	}
-	if !strings.Contains(result.Stdout, "Scope: project:my-project") {
-		t.Fatalf("stdout missing project scope:\n%s", result.Stdout)
-	}
-}
-
 func TestAuthStatusReportsOrgScopeForRawAPIKey(t *testing.T) {
-	srv := newAuthProbeServer(t, "mbx_env", "/v1/projects", http.StatusOK)
+	srv := newAuthProbeServer(t, "mbx_env", "/v1/loops", http.StatusOK)
 	defer srv.Close()
 	t.Setenv("MOBIUS_API_KEY", "mbx_env")
 	t.Setenv("MOBIUS_API_URL", srv.URL)
@@ -151,7 +132,7 @@ func TestAuthStatusReportsUserScopeForBrowserCredential(t *testing.T) {
 	unsetEnv(t, "MOBIUS_API_URL")
 	t.Setenv("MOBIUS_CONFIG_DIR", t.TempDir())
 	resetActiveAuth(t)
-	srv := newAuthProbeServer(t, "mbc_saved", "/v1/projects", http.StatusOK)
+	srv := newAuthProbeServer(t, "mbc_saved", "/v1/loops", http.StatusOK)
 	defer srv.Close()
 
 	if err := authstore.Save(&authstore.Credential{
@@ -159,7 +140,6 @@ func TestAuthStatusReportsUserScopeForBrowserCredential(t *testing.T) {
 		APIURL:    srv.URL,
 		Token:     "mbc_saved",
 		UserEmail: "user@example.invalid",
-		// No project — pure browser-issued user credential.
 	}); err != nil {
 		t.Fatalf("save credential: %v", err)
 	}
@@ -173,23 +153,9 @@ func TestAuthStatusReportsUserScopeForBrowserCredential(t *testing.T) {
 	}
 }
 
-func TestAuthProbePathUsesProjectScopedEndpointForPinnedCLIToken(t *testing.T) {
-	tests := []struct {
-		name string
-		key  string
-		want string
-	}{
-		{name: "raw api key", key: "mbx_env", want: "/v1/projects"},
-		{name: "org scoped cli token", key: "mbc_token", want: "/v1/projects"},
-		{name: "project pinned cli token", key: "mbc_token.my-project", want: "/v1/projects/my-project/loops"},
-		{name: "invalid project suffix", key: "mbc_token.BadProject", want: "/v1/projects"},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := authProbePath(tt.key); got != tt.want {
-				t.Fatalf("authProbePath(%q) = %q, want %q", tt.key, got, tt.want)
-			}
-		})
+func TestAuthProbePathIsOrgScoped(t *testing.T) {
+	if got := authProbePath("mbx_env"); got != "/v1/loops" {
+		t.Fatalf("authProbePath() = %q, want /v1/loops", got)
 	}
 }
 
@@ -211,42 +177,8 @@ func TestAddDeviceCodeClientInfo(t *testing.T) {
 	}
 }
 
-func TestAuthLoginDoesNotRequestProjectFromEnvOrDefault(t *testing.T) {
-	srv, requestedProject := newDeviceLoginServer(t)
-	defer srv.Close()
-
-	result := newApp().Test(t,
-		cli.TestArgs("auth", "login", "--api-url", srv.URL, "--no-browser"),
-		cli.TestEnv("MOBIUS_CONFIG_DIR", t.TempDir()),
-		cli.TestEnv("MOBIUS_PROJECT", "env-project"),
-	)
-	if !result.Success() {
-		t.Fatalf("auth login failed: %v\nstderr: %s", result.Err, result.Stderr)
-	}
-	if got := <-requestedProject; got != "" {
-		t.Fatalf("requested project = %q, want empty", got)
-	}
-}
-
-func TestAuthLoginRequestsExplicitProject(t *testing.T) {
-	srv, requestedProject := newDeviceLoginServer(t)
-	defer srv.Close()
-
-	result := newApp().Test(t,
-		cli.TestArgs("auth", "login", "--api-url", srv.URL, "--no-browser", "--project", "cli-project"),
-		cli.TestEnv("MOBIUS_CONFIG_DIR", t.TempDir()),
-		cli.TestEnv("MOBIUS_PROJECT", "env-project"),
-	)
-	if !result.Success() {
-		t.Fatalf("auth login failed: %v\nstderr: %s", result.Err, result.Stderr)
-	}
-	if got := <-requestedProject; got != "cli-project" {
-		t.Fatalf("requested project = %q, want cli-project", got)
-	}
-}
-
 func TestAuthLoginDisplaysVerificationURLFromCustomAPIURL(t *testing.T) {
-	srv, requestedProject := newDeviceLoginServer(t)
+	srv := newDeviceLoginServer(t)
 	defer srv.Close()
 
 	result := newApp().Test(t,
@@ -262,13 +194,10 @@ func TestAuthLoginDisplaysVerificationURLFromCustomAPIURL(t *testing.T) {
 	if strings.Contains(result.Stdout, "https://example.invalid/auth/device") {
 		t.Fatalf("stdout used server-provided verification origin:\n%s", result.Stdout)
 	}
-	if got := <-requestedProject; got != "" {
-		t.Fatalf("requested project = %q, want empty", got)
-	}
 }
 
 func TestAuthLoginDisplaysVerificationURLFromWebURL(t *testing.T) {
-	srv, requestedProject := newDeviceLoginServer(t)
+	srv := newDeviceLoginServer(t)
 	defer srv.Close()
 
 	result := newApp().Test(t,
@@ -283,9 +212,6 @@ func TestAuthLoginDisplaysVerificationURLFromWebURL(t *testing.T) {
 	}
 	if strings.Contains(result.Stdout, "https://example.invalid/auth/device") {
 		t.Fatalf("stdout used server-provided verification origin:\n%s", result.Stdout)
-	}
-	if got := <-requestedProject; got != "" {
-		t.Fatalf("requested project = %q, want empty", got)
 	}
 }
 
@@ -331,13 +257,13 @@ func TestProfileFlagOverridesDefaultProfile(t *testing.T) {
 		t.Fatalf("save local profile: %v", err)
 	}
 
-	result := newApp().Test(t, cli.TestArgs("projects", "list", "--profile", "local"))
+	result := newApp().Test(t, cli.TestArgs("loops", "list", "--profile", "local"))
 	if !result.Success() {
-		t.Fatalf("projects list --profile local failed: %v\nstderr: %s", result.Err, result.Stderr)
+		t.Fatalf("loops list --profile local failed: %v\nstderr: %s", result.Err, result.Stderr)
 	}
 	select {
 	case got := <-localHits:
-		if got != "GET /v1/projects Bearer mbx_local" {
+		if got != "GET /v1/loops Bearer mbx_local" {
 			t.Fatalf("local server saw %q, want local profile request", got)
 		}
 	default:
@@ -360,14 +286,14 @@ func TestGeneratedCommandUsesCustomAPIURL(t *testing.T) {
 	defer srv.Close()
 
 	result := newApp().Test(t,
-		cli.TestArgs("projects", "list", "--api-url", srv.URL, "--api-key", "mbx_test"),
+		cli.TestArgs("loops", "list", "--api-url", srv.URL, "--api-key", "mbx_test"),
 		cli.TestEnv("MOBIUS_CONFIG_DIR", t.TempDir()),
 	)
 	if !result.Success() {
-		t.Fatalf("projects list failed: %v\nstderr: %s", result.Err, result.Stderr)
+		t.Fatalf("loops list failed: %v\nstderr: %s", result.Err, result.Stderr)
 	}
-	if got := <-seen; got != "GET /v1/projects Bearer mbx_test" {
-		t.Fatalf("request = %q, want custom server projects request", got)
+	if got := <-seen; got != "GET /v1/loops Bearer mbx_test" {
+		t.Fatalf("request = %q, want custom server loops request", got)
 	}
 }
 
@@ -409,10 +335,9 @@ func newAuthProbeServer(t *testing.T, wantToken, wantPath string, status int) *h
 	}))
 }
 
-func newDeviceLoginServer(t *testing.T) (*httptest.Server, <-chan string) {
+func newDeviceLoginServer(t *testing.T) *httptest.Server {
 	t.Helper()
-	requestedProject := make(chan string, 1)
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/v1/auth/device/code":
 			if r.Method != http.MethodPost {
@@ -425,7 +350,6 @@ func newDeviceLoginServer(t *testing.T) (*httptest.Server, <-chan string) {
 				http.Error(w, "bad form", http.StatusBadRequest)
 				return
 			}
-			requestedProject <- r.PostFormValue("mobius_requested_project_handle")
 			w.Header().Set("Content-Type", "application/json")
 			_, _ = w.Write([]byte(`{"device_code":"dev_123","user_code":"ABCD-EFGH","verification_uri":"https://example.invalid/auth/device","verification_uri_complete":"https://example.invalid/auth/device?code=ABCD-EFGH","expires_in":60,"interval":1}`))
 		case "/v1/auth/device/token":
@@ -441,7 +365,6 @@ func newDeviceLoginServer(t *testing.T) (*httptest.Server, <-chan string) {
 			http.NotFound(w, r)
 		}
 	}))
-	return srv, requestedProject
 }
 
 func unsetEnv(t *testing.T, key string) {

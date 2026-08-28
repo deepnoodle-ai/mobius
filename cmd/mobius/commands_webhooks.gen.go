@@ -24,7 +24,7 @@ func registerWebhooksCommands(app *cli.App) {
 		Flags(
 			cli.Bool("enabled", "").Help("Whether the webhook starts enabled. Defaults to true when omitted."),
 			cli.Strings("events", "").Help("Event types to subscribe to. Use wildcards for broad subscriptions, e.g. `[\"run.*\"]` for all run events. Omit this field or send an empty…"),
-			cli.String("name", "").Help("[required] Human-readable name, unique within the project."),
+			cli.String("name", "").Help("[required] Human-readable name, unique within the org."),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
 			cli.String("url", "").Help("The endpoint Mobius will POST event payloads to. May be left empty at creation time so a candidate URL can be tested via the ping endpoint…"),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
@@ -37,7 +37,6 @@ func registerWebhooksCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
 			var body api.CreateWebhookJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -69,7 +68,7 @@ func registerWebhooksCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.CreateWebhookWithResponse(ctx.Context(), p0, body)
+			resp, err := client.CreateWebhookWithResponse(ctx.Context(), body)
 			if err != nil {
 				return err
 			}
@@ -86,9 +85,8 @@ func registerWebhooksCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			resp, err := client.DeleteWebhookWithResponse(ctx.Context(), p0, p1)
+			p0 := ctx.Arg(0)
+			resp, err := client.DeleteWebhookWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
 			}
@@ -105,9 +103,8 @@ func registerWebhooksCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			resp, err := client.GetWebhookWithResponse(ctx.Context(), p0, p1)
+			p0 := ctx.Arg(0)
+			resp, err := client.GetWebhookWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
 			}
@@ -128,7 +125,6 @@ func registerWebhooksCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
 			params := &api.ListWebhooksParams{}
 			if ctx.IsSet("enabled") {
 				v := ctx.Bool("enabled")
@@ -142,7 +138,7 @@ func registerWebhooksCommands(app *cli.App) {
 				v := ctx.Int("limit")
 				params.Limit = &v
 			}
-			resp, err := client.ListWebhooksWithResponse(ctx.Context(), p0, params)
+			resp, err := client.ListWebhooksWithResponse(ctx.Context(), params)
 			if err != nil {
 				return err
 			}
@@ -163,8 +159,7 @@ func registerWebhooksCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
+			p0 := ctx.Arg(0)
 			params := &api.ListWebhookDeliveriesParams{}
 			if ctx.IsSet("cursor") {
 				v := ctx.String("cursor")
@@ -174,7 +169,7 @@ func registerWebhooksCommands(app *cli.App) {
 				v := ctx.Int("limit")
 				params.Limit = &v
 			}
-			resp, err := client.ListWebhookDeliveriesWithResponse(ctx.Context(), p0, p1, params)
+			resp, err := client.ListWebhookDeliveriesWithResponse(ctx.Context(), p0, params)
 			if err != nil {
 				return err
 			}
@@ -196,8 +191,7 @@ func registerWebhooksCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
+			p0 := ctx.Arg(0)
 			var body api.PingWebhookJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -209,7 +203,7 @@ func registerWebhooksCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.PingWebhookWithResponse(ctx.Context(), p0, p1, body)
+			resp, err := client.PingWebhookWithResponse(ctx.Context(), p0, body)
 			if err != nil {
 				return err
 			}
@@ -226,9 +220,8 @@ func registerWebhooksCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			resp, err := client.RotateWebhookSecretWithResponse(ctx.Context(), p0, p1)
+			p0 := ctx.Arg(0)
+			resp, err := client.RotateWebhookSecretWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
 			}
@@ -254,8 +247,7 @@ func registerWebhooksCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
+			p0 := ctx.Arg(0)
 			var body api.UpdateWebhookJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -288,7 +280,7 @@ func registerWebhooksCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.UpdateWebhookWithResponse(ctx.Context(), p0, p1, body)
+			resp, err := client.UpdateWebhookWithResponse(ctx.Context(), p0, body)
 			if err != nil {
 				return err
 			}

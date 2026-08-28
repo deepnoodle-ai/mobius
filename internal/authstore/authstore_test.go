@@ -8,27 +8,23 @@ import (
 	"testing"
 )
 
-func TestProfilesRoundTripWithExplicitProjectAndDefault(t *testing.T) {
+func TestProfilesRoundTripWithOrgAndDefault(t *testing.T) {
 	t.Setenv("MOBIUS_CONFIG_DIR", t.TempDir())
 
 	err := PutProfile("prod-admin", Profile{
-		Source:        SourceBrowserLogin,
-		APIURL:        "https://api.example.invalid",
-		Token:         "mbc_secret",
-		OrgID:         "org_123",
-		ProjectID:     "prj_123",
-		ProjectHandle: "prod",
+		Source: SourceBrowserLogin,
+		APIURL: "https://api.example.invalid",
+		Token:  "mbc_secret",
+		OrgID:  "org_123",
 	}, true)
 	if err != nil {
 		t.Fatalf("put profile: %v", err)
 	}
 	err = PutProfile("prod-viewer", Profile{
-		Source:        SourceBrowserLogin,
-		APIURL:        "https://api.example.invalid",
-		Token:         "mbc_viewer.prod",
-		OrgID:         "org_123",
-		ProjectID:     "prj_123",
-		ProjectHandle: "prod",
+		Source: SourceBrowserLogin,
+		APIURL: "https://api.example.invalid",
+		Token:  "mbc_viewer",
+		OrgID:  "org_123",
 	}, false)
 	if err != nil {
 		t.Fatalf("put second profile: %v", err)
@@ -41,11 +37,8 @@ func TestProfilesRoundTripWithExplicitProjectAndDefault(t *testing.T) {
 	if profile.Name != "prod-admin" {
 		t.Fatalf("default profile = %q, want prod-admin", profile.Name)
 	}
-	if profile.ProjectHandle != "prod" {
-		t.Fatalf("project = %q, want prod", profile.ProjectHandle)
-	}
-	if got := profile.RequestToken(); got != "mbc_secret.prod" {
-		t.Fatalf("request token = %q, want suffixed token", got)
+	if got := profile.RequestToken(); got != "mbc_secret" {
+		t.Fatalf("request token = %q, want unmodified token", got)
 	}
 
 	data, err := os.ReadFile(filepath.Join(os.Getenv("MOBIUS_CONFIG_DIR"), "credentials"))
@@ -53,7 +46,7 @@ func TestProfilesRoundTripWithExplicitProjectAndDefault(t *testing.T) {
 		t.Fatalf("read credentials: %v", err)
 	}
 	text := string(data)
-	if !strings.Contains(text, "[prod-admin]") || !strings.Contains(text, "project = 'prod'") || !strings.Contains(text, "default = true") {
+	if !strings.Contains(text, "[prod-admin]") || !strings.Contains(text, "org_id = 'org_123'") || !strings.Contains(text, "default = true") {
 		t.Fatalf("credentials file missing expected TOML fields:\n%s", text)
 	}
 }

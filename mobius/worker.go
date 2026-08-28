@@ -409,11 +409,11 @@ func (w *Worker) Run(ctx context.Context) error {
 			// Terminal protocol failures must not reconnect: a revoked
 			// credential needs a fresh process, a duplicate
 			// worker_instance_id means another live process owns this
-			// identity, and a missing project needs operator attention. All
-			// bubble up as a non-zero exit so a supervisor can restart
-			// (rotated credential) or an operator can fix the configuration,
-			// rather than spinning in a reconnect loop.
-			if errors.Is(err, ErrAuthRevoked) || errors.Is(err, ErrWorkerInstanceConflict) || errors.Is(err, ErrProjectNotFound) {
+			// identity, and an unresolvable endpoint needs operator
+			// attention. All bubble up as a non-zero exit so a supervisor
+			// can restart (rotated credential) or an operator can fix the
+			// configuration, rather than spinning in a reconnect loop.
+			if errors.Is(err, ErrAuthRevoked) || errors.Is(err, ErrWorkerInstanceConflict) || errors.Is(err, ErrEndpointNotFound) {
 				return err
 			}
 			w.config.Logger.Warn("worker socket disconnected; reconnecting", "error", err)
@@ -532,11 +532,11 @@ func (w *Worker) runSocket(ctx context.Context) error {
 			switch resp.StatusCode {
 			case 401, 403:
 				// 401: the credential was revoked. 403: the credential is
-				// live but no longer authorized for this project. Both need
-				// operator action, not a retry loop.
+				// live but no longer authorized. Both need operator action,
+				// not a retry loop.
 				return ErrAuthRevoked
 			case 404:
-				return fmt.Errorf("mobius: worker socket dial: %w", ErrProjectNotFound)
+				return fmt.Errorf("mobius: worker socket dial: %w", ErrEndpointNotFound)
 			}
 		}
 		return fmt.Errorf("mobius: worker socket dial: %w", err)
@@ -701,12 +701,12 @@ func (w *Worker) runSocket(ctx context.Context) error {
 						// requeued in seconds — silently dropping it would
 						// strand the job in `claimed` for a full lease TTL.
 						w.config.Logger.Warn("server returned more jobs than available worker slots; requeueing", "job_id", j.Id)
-						over := claimedRuntimeJob(w.client.projectHandle, w.config.WorkerInstanceID, w.config.EnvironmentID, j)
+						over := claimedRuntimeJob(w.config.WorkerInstanceID, w.config.EnvironmentID, j)
 						w.deliverReport(w.config.Logger, over.JobID,
 							failureReportFrame(over, "WorkerOverCapacity", "worker had no free slot for claimed job"))
 						continue
 					}
-					job := claimedRuntimeJob(w.client.projectHandle, w.config.WorkerInstanceID, w.config.EnvironmentID, j)
+					job := claimedRuntimeJob(w.config.WorkerInstanceID, w.config.EnvironmentID, j)
 					jobCtx, cancelJob := context.WithCancel(ctx)
 					w.mu.Lock()
 					w.inflight[job.JobID] = cancelJob
@@ -809,7 +809,6 @@ func (w *Worker) terminalProtocolError(e api.WorkerSocketProtocolError) error {
 	case "worker_instance_conflict":
 		return &InstanceConflictError{
 			WorkerInstanceID: w.config.WorkerInstanceID,
-			ProjectHandle:    w.client.projectHandle,
 			Message:          e.Message,
 		}
 	default:

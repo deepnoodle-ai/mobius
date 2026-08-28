@@ -27,7 +27,7 @@ class Error(BaseModel):
     )
     code: str = Field(
         ...,
-        description='Stable, machine-readable error code in lower_snake_case. The cross-cutting codes clients can rely on across endpoints are: `bad_request` (malformed input / failed validation), `unauthorized`, `permission_denied`, `forbidden`, `not_found`, `conflict` / `already_exists`, `rate_limit_exceeded`, and `service_unavailable`. Direct session invocation conflicts use `session_turn_active` with the blocking `turn_id` and `status` in `details`. Session-key lookups without an agent scope use `session_key_scope_required`; supplying both agent ID and name uses `session_agent_ref_conflict`. Project API-key creation for a principal with no role assignments uses `principal_has_no_roles`. Authenticated callers missing a permission receive `permission_denied` with the required permission in `details`. Endpoint-specific codes (e.g. `loop_paused`, `invalid_signature`) extend this set; an unrecognized code should be handled by its HTTP status family.',
+        description='Stable, machine-readable error code in lower_snake_case. The cross-cutting codes clients can rely on across endpoints are: `bad_request` (malformed input / failed validation), `unauthorized`, `permission_denied`, `forbidden`, `not_found`, `conflict` / `already_exists`, `rate_limit_exceeded`, and `service_unavailable`. Direct session invocation conflicts use `session_turn_active` with the blocking `turn_id` and `status` in `details`. Session-key lookups without an agent scope use `session_key_scope_required`; supplying both agent ID and name uses `session_agent_ref_conflict`. API-key creation for a principal with no role assignments uses `principal_has_no_roles`. Authenticated callers missing a permission receive `permission_denied` with the required permission in `details`. Endpoint-specific codes (e.g. `loop_paused`, `invalid_signature`) extend this set; an unrecognized code should be handled by its HTTP status family.',
     )
     message: str = Field(..., description='Human-readable error message')
     details: dict[str, Any] | None = Field(
@@ -98,7 +98,7 @@ class GenerationDeltaFrame(BaseModel):
 
 class ResourceScope(StrEnum):
     """
-    Optional namespace for named runtime resources. Omitted/null means the project/default scope; `owner` means names are unique within `(project, owned_by)`.
+    Optional namespace for named runtime resources. Omitted/null means the org/default scope; `owner` means names are unique within `(org, owned_by)`.
     """
 
     owner = 'owner'
@@ -150,68 +150,6 @@ class AgentStatus(StrEnum):
 
     active = 'active'
     inactive = 'inactive'
-
-
-class ProjectAccessMode(StrEnum):
-    """
-    `open`: every org member can see and use the project, subject to role assignments. `restricted`: only listed project members (and org owners/admins) can see or use the project.
-    """
-
-    open = 'open'
-    restricted = 'restricted'
-
-
-class Project(BaseModel):
-    """
-    Workspace boundary for loops, actions, credentials, agents, and runtime activity. Most operational APIs live under a project, so this object tells clients which handle to use and who can see the project.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    id: str = Field(..., description='Unique identifier for this project.')
-    name: str = Field(..., description='Human-readable project name.')
-    handle: str = Field(
-        ...,
-        description='URL-safe slug used as a path segment in project API routes. Unique within the org. Immutable after creation.',
-    )
-    description: str | None = Field(
-        None, description='Optional human-readable description.'
-    )
-    external_ref: str | None = Field(
-        None,
-        description='Client-owned tenant/workspace correlation key. Unique within the org when present. Set this when provisioning one Mobius project per external workspace so client-resolver callbacks can map scheduled runs back to the owning tenant.',
-    )
-    access_mode: ProjectAccessMode = Field(
-        ..., description='Current project access policy: `open` or `restricted`.'
-    )
-    created_by: str | None = Field(
-        None, description='Principal ID of whoever created this project.'
-    )
-    tags: TagMap | None = Field(
-        None,
-        description='Free-form labels used for filtering, ownership, or automation.',
-    )
-    created_at: AwareDatetime = Field(
-        ..., description='Timestamp when this project was created.'
-    )
-    updated_at: AwareDatetime = Field(
-        ..., description='Timestamp when this project was last updated.'
-    )
-
-
-class ProjectListResponse(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    items: list[Project] = Field(..., description='The list of results for this page.')
-    has_more: bool = Field(
-        ..., description='Whether more results are available beyond this page.'
-    )
-    next_cursor: str | None = Field(
-        None,
-        description='Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.',
-    )
 
 
 class AgentModelRouteMode(StrEnum):
@@ -362,13 +300,13 @@ class Agent(BaseModel):
     )
     name: str = Field(
         ...,
-        description='Mutable unique name within the project. Free-form human-readable label; use `id` for stable references and job targeting.',
+        description='Mutable unique name within the org. Free-form human-readable label; use `id` for stable references and job targeting.',
         max_length=63,
         min_length=1,
     )
     external_ref: str | None = Field(
         None,
-        description='Client-owned durable identity key for this agent. Unique within the project when present, and assign-once: create requests may set it; update requests may set it only while the agent has no existing external_ref, or repeat the current value idempotently. Use it to reconcile the same agent across systems while allowing the display name to change.',
+        description='Client-owned durable identity key for this agent. Unique within the org when present, and assign-once: create requests may set it; update requests may set it only while the agent has no existing external_ref, or repeat the current value idempotently. Use it to reconcile the same agent across systems while allowing the display name to change.',
         max_length=200,
         min_length=1,
     )
@@ -382,7 +320,7 @@ class Agent(BaseModel):
     )
     model: str | None = Field(
         None,
-        description='Model identifier for agents. Accepts any id returned by `GET /v1/projects/{project_handle}/catalog/models` (including slash-bearing OpenRouter catalog ids), optionally `provider/`-prefixed (e.g. `xai/grok-4`); bare known ids (e.g. `claude-sonnet-4-6`) are auto-detected to their provider. Empty string falls back to the platform default.',
+        description='Model identifier for agents. Accepts any id returned by `GET /v1/catalog/models` (including slash-bearing OpenRouter catalog ids), optionally `provider/`-prefixed (e.g. `xai/grok-4`); bare known ids (e.g. `claude-sonnet-4-6`) are auto-detected to their provider. Empty string falls back to the platform default.',
     )
     model_route: AgentModelRoute | None = Field(
         None, description='Default route for model calls made by this agent.'
@@ -404,6 +342,10 @@ class Agent(BaseModel):
         None,
         description='Default session-compaction policy. New sessions opened against this agent inherit it (below server defaults, above explicit per-session overrides). Absent when the agent has no default.',
     )
+    memory_enabled: bool = Field(
+        ...,
+        description='Hard gate for runtime memory. When false, memory tools and automatic memory context are absent and invocation-time definitions cannot re-enable them. Stored entries remain available to administrators.',
+    )
     memory_context: MemoryContextPolicy | None = Field(
         None,
         description='Automatic memory delivery policy. Absent means the bounded index default.',
@@ -417,7 +359,7 @@ class Agent(BaseModel):
     )
     email_address: str | None = Field(
         None,
-        description='Inbox address provisioned via POST /v1/projects/{project_handle}/agents/{resource_id}/inbox (opt-in; not created automatically at agent creation). The field is populated only after a successful provisioning call. Use this address to add the agent as a member on external platforms (Linear, GitHub, Slack, etc.) so the platform can deliver notifications to the agent.',
+        description='Inbox address provisioned via POST /v1/agents/{resource_id}/inbox (opt-in; not created automatically at agent creation). The field is populated only after a successful provisioning call. Use this address to add the agent as a member on external platforms (Linear, GitHub, Slack, etc.) so the platform can deliver notifications to the agent.',
     )
     tags: TagMap | None = Field(
         None,
@@ -434,6 +376,20 @@ class Agent(BaseModel):
     )
     updated_at: AwareDatetime = Field(
         ..., description='Timestamp when this agent was last updated.'
+    )
+
+
+class AgentListResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    items: list[Agent] = Field(..., description='The list of results for this page.')
+    has_more: bool = Field(
+        ..., description='Whether more matching agents remain after this page.'
+    )
+    next_cursor: str | None = Field(
+        None,
+        description='Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false.',
     )
 
 
@@ -469,10 +425,10 @@ class SessionScope(StrEnum):
 
 class SessionVisibility(StrEnum):
     """
-    Visibility of the session in project surfaces: `project` or `private`.
+    Visibility of the session in org surfaces: `organization` or `private`.
     """
 
-    project = 'project'
+    organization = 'organization'
     private = 'private'
 
 
@@ -597,7 +553,7 @@ class Session(BaseModel):
         description='Stable caller-assigned conversation key, unique within one agent.',
     )
     visibility: SessionVisibility = Field(
-        ..., description='Where the session appears in project UI surfaces.'
+        ..., description='Where the session appears in org UI surfaces.'
     )
     model_override: str | None = Field(
         None,
@@ -674,13 +630,6 @@ class Session(BaseModel):
     )
     created_at: AwareDatetime = Field(..., description='Record creation timestamp.')
     updated_at: AwareDatetime = Field(..., description='Last update timestamp.')
-
-
-class AgentListResponse(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    items: list[Agent] = Field(..., description='The list of results for this page.')
 
 
 class AgentTurnStatus(StrEnum):
@@ -1216,7 +1165,7 @@ class APIKey(BaseModel):
     )
     id: str = Field(..., description='Unique identifier for this API key.')
     name: str = Field(
-        ..., description='Human-readable label, unique within the project.'
+        ..., description='Human-readable label, unique within the organization.'
     )
     key_prefix: str = Field(
         ...,
@@ -1229,7 +1178,7 @@ class APIKey(BaseModel):
     )
     org_role: str | None = Field(
         None,
-        description='For organization-level keys, the system role the key acts as org-wide (e.g. `Admin`). Absent for project-scoped keys.',
+        description='The system role this key acts as, when it is not bound to a specific principal (e.g. `Admin`). Absent for principal-bound keys.',
     )
     expires_at: AwareDatetime | None = Field(
         None,
@@ -1271,7 +1220,7 @@ class APIKeyCreateResult(BaseModel):
     )
     org_role: str | None = Field(
         None,
-        description='For organization-level keys, the system role the key acts as org-wide (e.g. `Admin`). Absent for project-scoped keys.',
+        description='The system role this key acts as, when it is not bound to a specific principal (e.g. `Admin`). Absent for principal-bound keys.',
     )
     expires_at: AwareDatetime | None = Field(
         None,
@@ -1308,35 +1257,9 @@ class APIKeyListResponse(BaseModel):
     has_more: bool = Field(..., description='Whether additional pages are available.')
 
 
-class CreateAPIKeyRequest(BaseModel):
-    """
-    Request shape for creating a project API key bound to a machine principal. The key authenticates as that principal; permissions are managed by assigning roles to the principal, not by granting permissions to the key.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    name: str = Field(
-        ..., description='Human-readable label, unique within the project.'
-    )
-    principal_id: str = Field(..., description='Principal this key authenticates as.')
-    scope_role_id: str | None = Field(
-        None,
-        description="Optional role whose permissions cap this key below its principal's full grants.",
-    )
-    allow_unassigned_principal: bool = Field(
-        False,
-        description='Allow minting a key for a principal with no project role assignments. The resulting key cannot access project resources until a role is assigned. Omit this for normal onboarding so a missing assignment fails with `principal_has_no_roles`.',
-    )
-    expires_at: AwareDatetime | None = Field(
-        None, description='Optional hard expiry. Omit for a non-expiring key.'
-    )
-    tags: TagMap | None = Field(None, description='Labels to apply to the new API key.')
-
-
 class Role(StrEnum):
     """
-    System role the key acts as, applied org-wide across every project. Defaults to `Admin`. `Owner` grants full control (including billing and org deletion); `Admin` covers org and project administration without billing; lower roles narrow to build/run, run-only, or read-only.
+    System role the key acts as when `principal_id` is omitted, applied org-wide. Defaults to `Admin`. `Owner` grants full control (including billing and org deletion); `Admin` covers org administration without billing; lower roles narrow to build/run, run-only, or read-only. Ignored when `principal_id` is set.
     """
 
     Owner = 'Owner'
@@ -1346,20 +1269,32 @@ class Role(StrEnum):
     Viewer = 'Viewer'
 
 
-class CreateOrgAPIKeyRequest(BaseModel):
+class CreateAPIKeyRequest(BaseModel):
     """
-    Request shape for creating an organization-level API key. The key authenticates as the organization's system principal and acts with the chosen `role` applied org-wide across every project.
+    Request shape for creating an organization API key. Pass `principal_id` to bind the key to an existing machine principal — the key authenticates as that principal, and permissions are managed by assigning roles to the principal rather than to the key. Omit `principal_id` to mint a key that acts directly with the chosen system `role` instead.
     """
 
     model_config = ConfigDict(
         extra='forbid',
     )
     name: str = Field(
-        ..., description='Human-readable label, unique among organization API keys.'
+        ..., description='Human-readable label, unique within the organization.'
+    )
+    principal_id: str | None = Field(
+        None,
+        description='Principal this key authenticates as. Omit to create a system-role key not bound to any principal.',
+    )
+    scope_role_id: str | None = Field(
+        None,
+        description="Optional role whose permissions cap this key below its principal's full grants. Only applicable when `principal_id` is set.",
+    )
+    allow_unassigned_principal: bool = Field(
+        False,
+        description='Allow minting a key for a principal with no role assignments. The resulting key cannot access org resources until a role is assigned. Omit this for normal onboarding so a missing assignment fails with `principal_has_no_roles`. Only applicable when `principal_id` is set.',
     )
     role: Role = Field(
         'Admin',
-        description='System role the key acts as, applied org-wide across every project. Defaults to `Admin`. `Owner` grants full control (including billing and org deletion); `Admin` covers org and project administration without billing; lower roles narrow to build/run, run-only, or read-only.',
+        description='System role the key acts as when `principal_id` is omitted, applied org-wide. Defaults to `Admin`. `Owner` grants full control (including billing and org deletion); `Admin` covers org administration without billing; lower roles narrow to build/run, run-only, or read-only. Ignored when `principal_id` is set.',
     )
     expires_at: AwareDatetime | None = Field(
         None, description='Optional hard expiry. Omit for a non-expiring key.'
@@ -1450,7 +1385,7 @@ class ActionAnnotations(BaseModel):
 
 class ActionEndpointKind(StrEnum):
     """
-    Backing kind for a project-owned custom action. `http` actions POST to a registered endpoint. `worker` actions dispatch jobs to connected workers that advertise the registered action name.
+    Backing kind for a custom action. `http` actions POST to a registered endpoint. `worker` actions dispatch jobs to connected workers that advertise the registered action name.
     """
 
     http = 'http'
@@ -1459,7 +1394,7 @@ class ActionEndpointKind(StrEnum):
 
 class ActionInvocationFormat(StrEnum):
     """
-    Outbound request-body contract for an HTTP action. `legacy` sends the unversioned `{run_id, step_key, parameters}` body. `signed_context_v1` sends a versioned envelope whose project, action, actor, and origin claims are derived by Mobius and covered by the existing HMAC signature. Worker-backed actions must use `legacy`.
+    Outbound request-body contract for an HTTP action. `legacy` sends the unversioned `{run_id, step_key, parameters}` body. `signed_context_v1` sends a versioned envelope whose org, action, actor, and origin claims are derived by Mobius and covered by the existing HMAC signature. Worker-backed actions must use `legacy`.
     """
 
     legacy = 'legacy'
@@ -1475,7 +1410,6 @@ class ActionInvocationScopeV1(BaseModel):
         extra='allow',
     )
     org_id: str
-    project_id: str
 
 
 class ActionInvocationActionV1(BaseModel):
@@ -1528,7 +1462,7 @@ class ActionInvocationOriginV1(BaseModel):
 
 class CreateActionRequest(BaseModel):
     """
-    Registers a project-owned custom action callable from loops and agents.
+    Registers an org-owned custom action callable from loops and agents.
     """
 
     model_config = ConfigDict(
@@ -1536,7 +1470,7 @@ class CreateActionRequest(BaseModel):
     )
     name: str = Field(
         ...,
-        description='Identifier used in loop step definitions. Lowercase alphanumeric + hyphens, e.g. "send-email". Must be unique within the project. Cannot start with "mobius." (reserved prefix).',
+        description='Identifier used in loop step definitions. Lowercase alphanumeric + hyphens, e.g. "send-email". Must be unique within the org. Cannot start with "mobius." (reserved prefix).',
     )
     title: str | None = Field(
         None, description='Human-readable display name shown in the UI and catalog.'
@@ -1608,7 +1542,7 @@ class UpdateActionRequest(BaseModel):
 
 class Action(BaseModel):
     """
-    Project-owned custom action definition callable by loops and agents.
+    Org-owned custom action definition callable by loops and agents.
     """
 
     model_config = ConfigDict(
@@ -1624,7 +1558,7 @@ class Action(BaseModel):
     )
     endpoint_kind: ActionEndpointKind = Field(
         ...,
-        description='Backing kind of this project-owned action. `http` actions POST to an endpoint URL. `worker` actions are dispatched through jobs to connected workers that advertise this registered name.',
+        description='Backing kind of this org-owned action. `http` actions POST to an endpoint URL. `worker` actions are dispatched through jobs to connected workers that advertise this registered name.',
     )
     invocation_format: ActionInvocationFormat = Field(
         ..., description='Resolved outbound request-body contract for this action.'
@@ -1666,10 +1600,9 @@ class RotateSecretResult(BaseModel):
         extra='forbid',
     )
     secret_ref: str = Field(
-        ...,
-        description='Project secret reference that now stores the action signing key.',
+        ..., description='Org secret reference that now stores the action signing key.'
     )
-    secret_version: int = Field(..., description='New project-secret version number.')
+    secret_version: int = Field(..., description='New org-secret version number.')
     signing_secret: str = Field(
         ...,
         description='Base64-encoded 32-byte signing key. Store it immediately — this is the only time it is returned.',
@@ -1678,7 +1611,7 @@ class RotateSecretResult(BaseModel):
 
 class EndpointKind(StrEnum):
     """
-    Backing kind. "builtin" for Mobius platform actions implemented in Go (no DB row), "http" for project-owned or integration HTTP endpoints, and "worker" for project-owned custom actions dispatched to connected workers.
+    Backing kind. "builtin" for Mobius platform actions implemented in Go (no DB row), "http" for org-owned or integration HTTP endpoints, and "worker" for org-owned custom actions dispatched to connected workers.
     """
 
     builtin = 'builtin'
@@ -1688,7 +1621,7 @@ class EndpointKind(StrEnum):
 
 class Source(StrEnum):
     """
-    Origin of this action: "platform" for built-in or integration-backed actions provided by Mobius, "custom" for project- or organization-owned HTTP or worker-backed actions. The `integration` field carries the provider slug for integration-backed platform actions.
+    Origin of this action: "platform" for built-in or integration-backed actions provided by Mobius, "custom" for org-owned HTTP or worker-backed actions. The `integration` field carries the provider slug for integration-backed platform actions.
     """
 
     platform = 'platform'
@@ -1697,11 +1630,11 @@ class Source(StrEnum):
 
 class DefinitionScope(StrEnum):
     """
-    Scope that owns the selected definition. A project definition shadows an organization definition with the same canonical name; execution still occurs in the consuming project.
+    Scope that owns the selected definition. A custom action definition shadows a shared organization definition with the same canonical name.
     """
 
     platform = 'platform'
-    project = 'project'
+    custom = 'custom'
     organization = 'organization'
 
 
@@ -1825,7 +1758,7 @@ class DefinitionScope1(StrEnum):
     """
 
     platform = 'platform'
-    project = 'project'
+    custom = 'custom'
     organization = 'organization'
 
 
@@ -2035,7 +1968,7 @@ class Reason(StrEnum):
 
 class Source1(StrEnum):
     """
-    Where credentials come from — a project integration (`byok`) or a platform-managed key (`platform`).
+    Where credentials come from — an org integration (`byok`) or a platform-managed key (`platform`).
     """
 
     byok = 'byok'
@@ -2044,7 +1977,7 @@ class Source1(StrEnum):
 
 class ModelOption(BaseModel):
     """
-    One selectable LLM model in the project model catalog.
+    One selectable LLM model in the org model catalog.
     """
 
     model_config = ConfigDict(
@@ -2282,7 +2215,7 @@ class UpdateEnvironmentRequest(BaseModel):
     )
     scope: ResourceScope | None = Field(
         None,
-        description='Resource scope; send null to return to the project/default scope.',
+        description='Resource scope; send null to return to the org/default scope.',
     )
     owned_by: str | None = Field(
         None, description='Canonical user owner ID. Send null to clear ownership.'
@@ -2377,7 +2310,7 @@ class WorkerSocketRegisterFrame(BaseModel):
     )
     queues: list[str] | None = Field(
         None,
-        description='Queue names this worker can claim. Empty means all project queues.',
+        description='Queue names this worker can claim. Empty means all org queues.',
     )
     action_names: list[str] | None = Field(
         None,
@@ -2705,70 +2638,6 @@ class WorkerSocketErrorFrame(BaseModel):
     error: WorkerSocketProtocolError
 
 
-class ProjectCapabilities(BaseModel):
-    """
-    Project-scoped capabilities for the current caller. These booleans are resolved inside the project authorization context and can differ from coarse organization role flags.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    can_manage_project: bool = Field(
-        ..., description='True when the caller can update or archive this project.'
-    )
-    can_manage_access: bool = Field(
-        ...,
-        description='True when the caller can manage project members, roles, and machine identities.',
-    )
-
-
-class CreateProjectRequest(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    name: str = Field(..., description='Human-readable project name.')
-    handle: str | None = Field(
-        None,
-        description='URL-safe slug for API routes. Auto-derived from name if omitted. Must be unique within the org. Cannot be changed after creation.',
-    )
-    description: str | None = Field(
-        None, description='Optional human-readable description.'
-    )
-    external_ref: str | None = Field(
-        None,
-        description='Client-owned tenant/workspace correlation key. Unique within the org when present. Treat this as assign-once: create requests may set it; update requests may set it only while the project has no existing external_ref. Required when `if_exists` is `adopt`.',
-    )
-    if_exists: IfExists | None = 'error'
-    access_mode: ProjectAccessMode | None = Field(
-        None, description='Initial project access policy: `open` or `restricted`.'
-    )
-    tags: TagMap | None = Field(
-        None, description='Initial labels used for filtering, ownership, or automation.'
-    )
-
-
-class UpdateProjectRequest(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    name: str | None = Field(None, description='Replacement human-readable name.')
-    description: str | None = Field(None, description='Replacement description.')
-    external_ref: str | None = Field(
-        None,
-        description='Assign-once client tenant/workspace correlation key. Accepted when the current project has no external_ref, or when it repeats the current value. Changing an already-set value returns 409.',
-    )
-    access_mode: ProjectAccessMode | None = Field(
-        None, description='Replacement project access policy: `open` or `restricted`.'
-    )
-    seed_existing_members: bool | None = Field(
-        None,
-        description='When transitioning from `open` to `restricted`, set true to insert all current org members as project members so nobody loses visibility on the flip. Ignored on other transitions.',
-    )
-    tags: TagMap | None = Field(
-        None, description='Replacement labels; send an empty object to clear all tags.'
-    )
-
-
 class WebhookDeliveryStatus(StrEnum):
     """
     `pending` — queued, not yet attempted. `processing` — currently being delivered. `delivered` — recipient returned 2xx. `failed` — all retry attempts exhausted.
@@ -2782,16 +2651,14 @@ class WebhookDeliveryStatus(StrEnum):
 
 class Webhook(BaseModel):
     """
-    A project-level outgoing webhook subscription. When a subscribed event fires, Mobius POSTs the event payload to `url`.
+    An org-level outgoing webhook subscription. When a subscribed event fires, Mobius POSTs the event payload to `url`.
     """
 
     model_config = ConfigDict(
         extra='forbid',
     )
     id: str = Field(..., description='Unique identifier for this webhook.')
-    name: str = Field(
-        ..., description='Human-readable name, unique within the project.'
-    )
+    name: str = Field(..., description='Human-readable name, unique within the org.')
     url: str = Field(
         ..., description='The customer endpoint Mobius POSTs event payloads to.'
     )
@@ -2813,8 +2680,7 @@ class Webhook(BaseModel):
         description='Free-form labels used for filtering, ownership, or delivery policy.',
     )
     secret_ref: str | None = Field(
-        None,
-        description="Project secret reference that stores this webhook's signing key.",
+        None, description="Org secret reference that stores this webhook's signing key."
     )
     secret_version: int | None = Field(
         None,
@@ -2897,9 +2763,7 @@ class CreateWebhookRequest(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    name: str = Field(
-        ..., description='Human-readable name, unique within the project.'
-    )
+    name: str = Field(..., description='Human-readable name, unique within the org.')
     url: str | None = Field(
         None,
         description='The endpoint Mobius will POST event payloads to. May be left empty at creation time so a candidate URL can be tested via the ping endpoint before it is saved; events do not fire for webhooks with an empty URL.',
@@ -2970,10 +2834,6 @@ class BillingUsageEvent(BaseModel):
         extra='forbid',
     )
     id: str
-    project_id: str = Field(
-        ...,
-        description='Project the usage was attributed to. Empty when the event was recorded without project attribution.',
-    )
     api_key_id: str
     period_start: AwareDatetime
     counter: str
@@ -3050,14 +2910,13 @@ class BillingUsageEventListResponse(BaseModel):
 
 
 class Scope(StrEnum):
-    project = 'project'
     org = 'org'
     platform = 'platform'
     action = 'action'
 
 
 class Category(StrEnum):
-    project = 'project'
+    org = 'org'
     access = 'access'
     loops = 'loops'
     runs = 'runs'
@@ -3097,7 +2956,7 @@ class PermissionDefinition(BaseModel):
     risk: Risk1
     assignable: bool = Field(
         ...,
-        description='Whether this permission should be selectable in the current project role builder.',
+        description='Whether this permission should be selectable in the current org role builder.',
     )
     user_kinds: list[UserKind] = Field(
         ...,
@@ -3152,18 +3011,15 @@ class PermissionCatalogResponse(BaseModel):
 
 class Role1(BaseModel):
     """
-    Named bundle of permissions assignable to human or machine principals. Roles let admins grant loop, project, and integration capabilities consistently without editing every user individually.
+    Named bundle of permissions assignable to human or machine principals. Roles let admins grant loop, org, and integration capabilities consistently without editing every user individually.
     """
 
     model_config = ConfigDict(
         extra='forbid',
     )
     id: str = Field(..., description='Unique identifier for this role.')
-    project_id: str | None = Field(
-        None, description='Scoping project. Empty for system-defined roles.'
-    )
     name: str = Field(
-        ..., description='Human-readable role name, unique within org+project scope.'
+        ..., description='Human-readable role name, unique within org scope.'
     )
     description: str | None = Field(
         None,
@@ -3171,7 +3027,7 @@ class Role1(BaseModel):
     )
     permissions: list[str] = Field(
         ...,
-        description='Permission strings granted by this role. Source allowed values from `GET /v1/projects/{project_handle}/permissions`; legacy IDs or values not present in that catalog are rejected.',
+        description='Permission strings granted by this role. Source allowed values from `GET /v1/permissions`; legacy IDs or values not present in that catalog are rejected.',
     )
     system_defined: bool = Field(
         ...,
@@ -3188,7 +3044,7 @@ class Role1(BaseModel):
 
 class RoleAssignment(BaseModel):
     """
-    Binding between a principal and a role in one project. Use assignments to explain why a principal (human or machine) has access and to audit who granted it.
+    Binding between a principal and a role in one org. Use assignments to explain why a principal (human or machine) has access and to audit who granted it.
     """
 
     model_config = ConfigDict(
@@ -3231,14 +3087,14 @@ class CreateRoleRequest(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    name: str = Field(..., description='Unique name within the project.')
+    name: str = Field(..., description='Unique name within the org.')
     description: str | None = Field(
         None,
         description='Optional human-readable description of what this role grants.',
     )
     permissions: list[str] = Field(
         ...,
-        description='Permission strings to include. Source allowed values from `GET /v1/projects/{project_handle}/permissions`; legacy IDs or values not present in that catalog are rejected.',
+        description='Permission strings to include. Source allowed values from `GET /v1/permissions`; legacy IDs or values not present in that catalog are rejected.',
     )
     tags: TagMap | None = None
 
@@ -3250,7 +3106,7 @@ class UpdateRoleRequest(BaseModel):
     description: str | None = Field(None, description='Replacement description.')
     permissions: list[str] | None = Field(
         None,
-        description='Replaces the existing permissions array entirely. Source allowed values from `GET /v1/projects/{project_handle}/permissions`; legacy IDs or values not present in that catalog are rejected.',
+        description='Replaces the existing permissions array entirely. Source allowed values from `GET /v1/permissions`; legacy IDs or values not present in that catalog are rejected.',
     )
     tags: TagMap | None = None
 
@@ -3533,7 +3389,7 @@ class HttpSubscriberConsumer(BaseModel):
     )
     secret_ref: str = Field(
         ...,
-        description="Required reference to a project secret used to sign deliveries with HMAC-SHA256 over the canonical string `v1.{delivery_id}.{unix_timestamp}.{raw_body}`, where `delivery_id` is the value in `X-Mobius-Delivery-Id` and `raw_body` is the exact callback request body bytes. Accepts `<name>` for the latest enabled version or `<name>:<version>` to pin a specific positive-integer version. The plaintext signing bytes are taken from the secret's `signing_key_b64` key, which must base64-decode to exactly 32 bytes. The hex signature is forwarded as `X-Mobius-Signature: sha256=<hex>` alongside `X-Mobius-Secret-Ref`, `X-Mobius-Secret-Version`, `X-Mobius-Signature-Version: v1`, and a unix `X-Mobius-Timestamp`. Consumers should reject stale timestamps (for example, older than five minutes). When `secret_ref` resolution fails the dispatch is retried by the event processor rather than sent unsigned.",
+        description="Required reference to an org secret used to sign deliveries with HMAC-SHA256 over the canonical string `v1.{delivery_id}.{unix_timestamp}.{raw_body}`, where `delivery_id` is the value in `X-Mobius-Delivery-Id` and `raw_body` is the exact callback request body bytes. Accepts `<name>` for the latest enabled version or `<name>:<version>` to pin a specific positive-integer version. The plaintext signing bytes are taken from the secret's `signing_key_b64` key, which must base64-decode to exactly 32 bytes. The hex signature is forwarded as `X-Mobius-Signature: sha256=<hex>` alongside `X-Mobius-Secret-Ref`, `X-Mobius-Secret-Version`, `X-Mobius-Signature-Version: v1`, and a unix `X-Mobius-Timestamp`. Consumers should reject stale timestamps (for example, older than five minutes). When `secret_ref` resolution fails the dispatch is retried by the event processor rather than sent unsigned.",
     )
 
 
@@ -3999,7 +3855,7 @@ class CreateAgentRequest(BaseModel):
     )
     external_ref: str | None = Field(
         None,
-        description='Client-owned durable identity key. Unique within the project when present. Treat this as assign-once: create requests may set it; update requests may set it only while the agent has no existing external_ref, or repeat the current value idempotently. Required when `if_exists` is `adopt`.',
+        description='Client-owned durable identity key. Unique within the org when present. Treat this as assign-once: create requests may set it; update requests may set it only while the agent has no existing external_ref, or repeat the current value idempotently. Required when `if_exists` is `adopt`.',
         max_length=200,
         min_length=1,
     )
@@ -4014,7 +3870,7 @@ class CreateAgentRequest(BaseModel):
     )
     model: str | None = Field(
         None,
-        description='Model identifier for agents. Any id from `GET /v1/projects/{project_handle}/catalog/models`, including slash-bearing OpenRouter catalog ids, or an optionally `provider/`-prefixed id (e.g. `xai/grok-4`); bare known ids (e.g. `claude-sonnet-4-6`) are auto-detected. Empty falls back to the platform default.',
+        description='Model identifier for agents. Any id from `GET /v1/catalog/models`, including slash-bearing OpenRouter catalog ids, or an optionally `provider/`-prefixed id (e.g. `xai/grok-4`); bare known ids (e.g. `claude-sonnet-4-6`) are auto-detected. Empty falls back to the platform default.',
     )
     model_route: AgentModelRoute | None = Field(
         None, description='Default route for model calls made by this agent.'
@@ -4034,6 +3890,10 @@ class CreateAgentRequest(BaseModel):
     compaction_policy: SessionCompactionPolicy | None = Field(
         None,
         description='Default session-compaction policy new sessions inherit from this agent.',
+    )
+    memory_enabled: bool = Field(
+        True,
+        description='Hard gate for runtime memory. When false, memory tools and automatic memory context are absent. Defaults to true.',
     )
     memory_context: MemoryContextPolicy | None = Field(
         None,
@@ -4067,13 +3927,13 @@ class UpdateAgentRequest(BaseModel):
     )
     name: str | None = Field(
         None,
-        description='Free-form human-readable label, 1-63 characters; must be unique within the project.',
+        description='Free-form human-readable label, 1-63 characters; must be unique within the org.',
         max_length=63,
         min_length=1,
     )
     external_ref: str | None = Field(
         None,
-        description='Assign-once client identity key, unique within the project. Accepted when the agent has no external_ref, or when it repeats the current value idempotently. Changing an already-set value returns 409.',
+        description='Assign-once client identity key, unique within the org. Accepted when the agent has no external_ref, or when it repeats the current value idempotently. Changing an already-set value returns 409.',
         max_length=200,
         min_length=1,
     )
@@ -4087,7 +3947,7 @@ class UpdateAgentRequest(BaseModel):
     )
     model: str | None = Field(
         None,
-        description='Replacement model identifier for agents (any id from `GET /v1/projects/{project_handle}/catalog/models`, including slash-bearing OpenRouter catalog ids, or an optionally `provider/`-prefixed id).',
+        description='Replacement model identifier for agents (any id from `GET /v1/catalog/models`, including slash-bearing OpenRouter catalog ids, or an optionally `provider/`-prefixed id).',
     )
     model_route: AgentModelRoute | None = Field(
         None,
@@ -4112,6 +3972,10 @@ class UpdateAgentRequest(BaseModel):
     compaction_policy: SessionCompactionPolicy | None = Field(
         None,
         description='Replacement default session-compaction policy. Send an empty object to clear the default and fall back to server defaults.',
+    )
+    memory_enabled: bool | None = Field(
+        None,
+        description='Replacement runtime memory hard gate. Definition bundles cannot override this stored agent setting.',
     )
     memory_context: UpdateMemoryContextPolicy | None = None
     thinking_effort: ThinkingEffort | None = Field(
@@ -4166,7 +4030,7 @@ class MemorySearchCoverage(BaseModel):
 
 class AgentMemory(BaseModel):
     """
-    Summary of an agent's private memory: how many entries it holds, a breakdown by kind, and when it last changed.
+    Summary across an agent's shared and user-private memory partitions: how many entries it holds, a breakdown by kind, and when it last changed.
     """
 
     model_config = ConfigDict(
@@ -4184,7 +4048,7 @@ class AgentMemory(BaseModel):
 
 class AgentMemoryEntry(BaseModel):
     """
-    A single durable memory in an agent's private memory, identified by a stable key the agent chose.
+    A single durable memory in an agent's shared or user-private partition, identified by a stable key within that partition.
     """
 
     model_config = ConfigDict(
@@ -4192,6 +4056,10 @@ class AgentMemoryEntry(BaseModel):
     )
     key: str = Field(
         ..., description='Stable identifier the agent chose for this memory.'
+    )
+    user_id: str = Field(
+        ...,
+        description='User principal ID for private memory; empty for shared memory.',
     )
     kind: MemoryKind
     summary: str | None = Field(
@@ -4260,6 +4128,10 @@ class AgentMemoryChange(BaseModel):
     )
     id: str
     agent_id: str
+    user_id: str = Field(
+        ...,
+        description='User principal ID for the changed private partition; empty for shared memory.',
+    )
     memory_entry_id: str
     memory_key: str
     operation: AgentMemoryChangeOperation
@@ -4288,11 +4160,16 @@ class AgentMemoryChangeListResponse(BaseModel):
 
 class SaveAgentMemoryEntryRequest(BaseModel):
     """
-    Content for a memory entry. The key comes from the path.
+    Content and partition for a memory entry. The key comes from the path.
     """
 
     model_config = ConfigDict(
         extra='forbid',
+    )
+    user_id: str = Field(
+        '',
+        description='User principal ID for private memory. It must identify a current human member of this organization. Omit or send empty for shared memory.',
+        max_length=200,
     )
     content: str = Field(
         ..., description='The content to remember.', max_length=16384, min_length=1
@@ -4358,7 +4235,7 @@ class SessionThinkingBlock(BaseModel):
 
 class SessionResolvedAction(BaseModel):
     """
-    Canonical project action resolved by a catalog tool dispatch.
+    Canonical org action resolved by a catalog tool dispatch.
     """
 
     model_config = ConfigDict(
@@ -4366,7 +4243,7 @@ class SessionResolvedAction(BaseModel):
     )
     name: str = Field(
         ...,
-        description='Canonical project action name, before provider-safe wire-name mangling.',
+        description='Canonical org action name, before provider-safe wire-name mangling.',
     )
     input: dict[str, Any] = Field(
         ...,
@@ -4596,11 +4473,11 @@ class ToolkitAction(BaseModel):
 
 class Source3(StrEnum):
     """
-    Provenance of this toolkit. `system` toolkits are built-in; `project` toolkits are user-authored.
+    Provenance of this toolkit. `system` toolkits are built-in; `organization` toolkits are user-authored.
     """
 
     system = 'system'
-    project = 'project'
+    organization = 'organization'
 
 
 class Toolkit(BaseModel):
@@ -4618,7 +4495,7 @@ class Toolkit(BaseModel):
     )
     source: Source3 = Field(
         ...,
-        description='Provenance of this toolkit. `system` toolkits are built-in; `project` toolkits are user-authored.',
+        description='Provenance of this toolkit. `system` toolkits are built-in; `organization` toolkits are user-authored.',
     )
     tags: TagMap | None = Field(None, description='Labels to apply to the toolkit.')
     actions: list[ToolkitAction] = Field(
@@ -4637,12 +4514,11 @@ class Toolkit(BaseModel):
 
 class Source4(StrEnum):
     """
-    Ownership and mutability of the Skill. `system` is built-in, `organization` is shared, and `project` is project-local.
+    Ownership and mutability of the Skill. `system` is built-in and `organization` is shared and mutable by the org.
     """
 
     system = 'system'
     organization = 'organization'
-    project = 'project'
 
 
 class Skill(BaseModel):
@@ -4660,7 +4536,7 @@ class Skill(BaseModel):
     )
     source: Source4 = Field(
         ...,
-        description='Ownership and mutability of the Skill. `system` is built-in, `organization` is shared, and `project` is project-local.',
+        description='Ownership and mutability of the Skill. `system` is built-in and `organization` is shared and mutable by the org.',
     )
     instructions: str = Field(
         ..., description='Markdown instructions loaded when the skill is active.'
@@ -5101,14 +4977,14 @@ class AgentTurnOperationPolicy(BaseModel):
 
 class AgentRef(BaseModel):
     """
-    Reference to an agent in this project. Supply exactly one of `id` (the agent identifier) or `name` (the project-unique agent name). A blueprint-binding reference form is reserved for a later release and is not resolvable yet.
+    Reference to an agent in this org. Supply exactly one of `id` (the agent identifier) or `name` (the org-unique agent name). A blueprint-binding reference form is reserved for a later release and is not resolvable yet.
     """
 
     model_config = ConfigDict(
         extra='forbid',
     )
     id: str | None = Field(None, description='Agent identifier.')
-    name: str | None = Field(None, description='Project-unique agent name.')
+    name: str | None = Field(None, description='Org-unique agent name.')
 
 
 class Mode2(StrEnum):
@@ -5415,7 +5291,7 @@ class SessionNudgeListResponse(BaseModel):
 
 class ArtifactVisibility(StrEnum):
     """
-    Private artifacts are visible only to their owner user. Shared artifacts are visible to the project.
+    Private artifacts are visible only to their owner user. Shared artifacts are visible to the org.
     """
 
     private = 'private'
@@ -5462,7 +5338,7 @@ class Artifact(BaseModel):
     )
     name: str = Field(
         ...,
-        description='Display name or relative virtual path. Forward slash may be used to organize artifacts inside private or shared project space.',
+        description='Display name or relative virtual path. Forward slash may be used to organize artifacts inside private or shared org space.',
     )
     mime_type: str = Field(
         ..., description='MIME type recorded for the artifact content.'
@@ -6027,7 +5903,7 @@ class LoopInteractionStep(BaseModel):
 
 class LoopSubLoopStep(BaseModel):
     """
-    Loop-trigger step configuration recognised inside `LoopSpec.steps[].config`. Triggers another loop in the same project as an independent child run (fire-and-forget). The child run records `parent_run_id`, `parent_loop_id`, and `parent_step_key` so the lineage is visible from the child.
+    Loop-trigger step configuration recognised inside `LoopSpec.steps[].config`. Triggers another loop in the same org as an independent child run (fire-and-forget). The child run records `parent_run_id`, `parent_loop_id`, and `parent_step_key` so the lineage is visible from the child.
     """
 
     model_config = ConfigDict(
@@ -6035,7 +5911,7 @@ class LoopSubLoopStep(BaseModel):
     )
     loop_id: str = Field(
         ...,
-        description='ID of the loop to trigger, scoped to the same project as the parent loop.',
+        description='ID of the loop to trigger, scoped to the same org as the parent loop.',
     )
     event: dict[str, Any] | None = Field(
         None,
@@ -6185,7 +6061,7 @@ class Status4(StrEnum):
 
 class HTTPTriggerDeliveryResult(BaseModel):
     """
-    Synchronous receipt for an inbound HTTP-trigger delivery. The trigger dispatch and run start happen asynchronously after this response. Clients can poll via `GET /v1/projects/{project_handle}/runs?source_event_id=<source_event_id>` to discover the run once the source-event processor reserves it.
+    Synchronous receipt for an inbound HTTP-trigger delivery. The trigger dispatch and run start happen asynchronously after this response. Clients can poll via `GET /v1/runs?source_event_id=<source_event_id>` to discover the run once the source-event processor reserves it.
     """
 
     model_config = ConfigDict(
@@ -6447,13 +6323,17 @@ class SkillListResponse(BaseModel):
     items: list[Skill] = Field(..., description='The list of results for this page.')
 
 
-class OrganizationSkillProjectUsage(BaseModel):
+class OrganizationSkillUsage(BaseModel):
+    """
+    Assignment impact for one organization Skill.
+    """
+
     model_config = ConfigDict(
         extra='forbid',
     )
-    project_id: str = Field(..., description='Consuming project ID.')
-    agent_count: int = Field(
-        ..., description='Number of agents assigned the Skill in this project.', ge=1
+    skill_id: str = Field(..., description='Organization Skill ID.')
+    assignment_count: int = Field(
+        ..., description='Number of agents assigned this Skill.', ge=0
     )
 
 
@@ -6814,8 +6694,7 @@ class Principal(BaseModel):
         description='Optional human principal accountable for this machine principal.',
     )
     role_ids: list[str] | None = Field(
-        None,
-        description='Role IDs currently assigned to this principal in the project.',
+        None, description='Role IDs currently assigned to this principal in the org.'
     )
     metadata: dict[str, Any] | None = Field(
         None,
@@ -6858,7 +6737,7 @@ class CreatePrincipalRequest(BaseModel):
     )
     role_ids: list[str] | None = Field(
         None,
-        description='One or more role IDs to assign at creation time. All assignments are created atomically with the principal. Requires `mobius.project.admin`. Each role must belong to this project or be system-defined.',
+        description='One or more role IDs to assign at creation time. All assignments are created atomically with the principal. Requires `mobius.org.admin`. Each role must belong to this org or be system-defined.',
         min_length=1,
     )
     tags: TagMap | None = None
@@ -6878,14 +6757,14 @@ class UpdatePrincipalRequest(BaseModel):
     metadata: dict[str, Any] | None = Field(None, description='Replacement metadata.')
     role_ids: list[str] | None = Field(
         None,
-        description='Replacement role IDs for this principal in the project. Send an empty array to remove all project role assignments. Requires `mobius.project.admin`.',
+        description='Replacement role IDs for this principal in the org. Send an empty array to remove all org role assignments. Requires `mobius.org.admin`.',
     )
     tags: TagMap | None = None
 
 
 class Table(BaseModel):
     """
-    Project table metadata and schema.
+    Table metadata and schema.
     """
 
     model_config = ConfigDict(
@@ -6894,7 +6773,7 @@ class Table(BaseModel):
     id: str = Field(..., description='Unique table identifier.')
     name: str = Field(
         ...,
-        description='Lowercase snake_case table name, unique within the project.',
+        description='Lowercase snake_case table name, unique within the org.',
         max_length=64,
         pattern='^[a-z][a-z0-9_]*$',
     )
@@ -6985,7 +6864,7 @@ class CreateTableRequest(BaseModel):
     )
     name: str = Field(
         ...,
-        description='Table name (lowercase, snake_case); unique within the project.',
+        description='Table name (lowercase, snake_case); unique within the org.',
         max_length=64,
         pattern='^[a-z][a-z0-9_]*$',
     )
@@ -7012,7 +6891,7 @@ class UpdateTableRequest(BaseModel):
     )
     name: str | None = Field(
         None,
-        description='Table name (lowercase, snake_case); unique within the project.',
+        description='Table name (lowercase, snake_case); unique within the org.',
         max_length=64,
         pattern='^[a-z][a-z0-9_]*$',
     )
@@ -7035,7 +6914,7 @@ class UpdateTableRequest(BaseModel):
 
 class TableRow(BaseModel):
     """
-    One stored row in a project table.
+    One stored row in a table.
     """
 
     model_config = ConfigDict(
@@ -7266,7 +7145,7 @@ class CreateArtifactRequest(BaseModel):
     )
     name: str = Field(
         ...,
-        description='Display name or relative virtual path. Forward slash may be used to organize artifacts inside private or shared project space.',
+        description='Display name or relative virtual path. Forward slash may be used to organize artifacts inside private or shared org space.',
         max_length=256,
     )
     mime: str | None = Field(
@@ -7341,7 +7220,7 @@ class CreateOrganizationActionRequest(BaseModel):
         extra='forbid',
     )
     name: str = Field(
-        ..., description='Canonical dotted name selected by project toolkits.'
+        ..., description="Canonical dotted name selected by the org's toolkits."
     )
     title: str | None = None
     description: str | None = None
@@ -7445,7 +7324,7 @@ class ActionCatalogEntry(BaseModel):
     )
     endpoint_kind: EndpointKind = Field(
         ...,
-        description='Backing kind. "builtin" for Mobius platform actions implemented in Go (no DB row), "http" for project-owned or integration HTTP endpoints, and "worker" for project-owned custom actions dispatched to connected workers.',
+        description='Backing kind. "builtin" for Mobius platform actions implemented in Go (no DB row), "http" for org-owned or integration HTTP endpoints, and "worker" for org-owned custom actions dispatched to connected workers.',
     )
     integration: str | None = Field(
         None,
@@ -7453,11 +7332,11 @@ class ActionCatalogEntry(BaseModel):
     )
     source: Source = Field(
         ...,
-        description='Origin of this action: "platform" for built-in or integration-backed actions provided by Mobius, "custom" for project- or organization-owned HTTP or worker-backed actions. The `integration` field carries the provider slug for integration-backed platform actions.',
+        description='Origin of this action: "platform" for built-in or integration-backed actions provided by Mobius, "custom" for org-owned HTTP or worker-backed actions. The `integration` field carries the provider slug for integration-backed platform actions.',
     )
     definition_scope: DefinitionScope = Field(
         ...,
-        description='Scope that owns the selected definition. A project definition shadows an organization definition with the same canonical name; execution still occurs in the consuming project.',
+        description='Scope that owns the selected definition. A custom action definition shadows a shared organization definition with the same canonical name.',
     )
     readiness: CapabilityReadiness = Field(
         ...,
@@ -7487,7 +7366,7 @@ class ActionCatalogEntry(BaseModel):
     )
     invocation_format: ActionInvocationFormat | None = Field(
         None,
-        description='Resolved request-body contract for a project-owned custom action.',
+        description='Resolved request-body contract for an org-owned custom action.',
     )
     execution: ActionExecutionMetadata | None = Field(
         None,
@@ -7497,7 +7376,7 @@ class ActionCatalogEntry(BaseModel):
 
 class ActionCatalogListResponse(BaseModel):
     """
-    Unpaginated project action catalog. This endpoint returns the complete set of available project and platform actions so clients can build pickers without paging across a small catalog.
+    Unpaginated action catalog. This endpoint returns the complete set of available custom and platform actions so clients can build pickers without paging across a small catalog.
     """
 
     model_config = ConfigDict(
@@ -7532,7 +7411,7 @@ class EventCatalogSource(BaseModel):
     )
     readiness: CapabilityReadiness = Field(
         ...,
-        description='Whether this source can start a loop now. `capability` sources are always `ready`. `integration` sources are `ready` only when the project has an active, usable connection for the provider.',
+        description='Whether this source can start a loop now. `capability` sources are always `ready`. `integration` sources are `ready` only when the org has an active, usable connection for the provider.',
     )
     readiness_reason: CapabilityReadinessReason | None = Field(
         None,
@@ -7558,7 +7437,7 @@ class ModelProviderGroup(BaseModel):
     display_name: str = Field(..., description='Human-readable provider label.')
     source: Source1 = Field(
         ...,
-        description='Where credentials come from — a project integration (`byok`) or a platform-managed key (`platform`).',
+        description='Where credentials come from — an org integration (`byok`) or a platform-managed key (`platform`).',
     )
     models: list[ModelOption] = Field(
         ..., description='Models offered by this provider in display order.'
@@ -7653,7 +7532,7 @@ class DeliveryChannel(BaseModel):
 
 class Consumer(BaseModel):
     """
-    Polymorphic identifier of what is waiting on this interaction's resolution. Replaces the previously special-cased `run_id` + `signal_name` pair. When `kind=run`, the legacy fields are also populated for compatibility. `http_subscriber` requires `secret_ref` and enqueues a durable callback dispatch to `callback_url` when the interaction resolves; the canonical string `v1.{delivery_id}.{unix_timestamp}.{raw_body}` is signed with HMAC-SHA256 against the resolved project signing key and the signed dispatch carries `X-Mobius-Signature`, `X-Mobius-Secret-Ref`, `X-Mobius-Secret-Version`, and `X-Mobius-Timestamp`. Signed dispatches also carry `X-Mobius-Signature-Version: v1`. Every durable dispatch also carries the stable outbox row id in `X-Mobius-Delivery-Id` and `Idempotency-Key`; retries reuse the same value. Verifiers should recompute the signature over the exact raw body, reject stale timestamps (for example, older than five minutes), deduplicate by delivery id, and check the signing headers.
+    Polymorphic identifier of what is waiting on this interaction's resolution. Replaces the previously special-cased `run_id` + `signal_name` pair. When `kind=run`, the legacy fields are also populated for compatibility. `http_subscriber` requires `secret_ref` and enqueues a durable callback dispatch to `callback_url` when the interaction resolves; the canonical string `v1.{delivery_id}.{unix_timestamp}.{raw_body}` is signed with HMAC-SHA256 against the resolved org signing key and the signed dispatch carries `X-Mobius-Signature`, `X-Mobius-Secret-Ref`, `X-Mobius-Secret-Version`, and `X-Mobius-Timestamp`. Signed dispatches also carry `X-Mobius-Signature-Version: v1`. Every durable dispatch also carries the stable outbox row id in `X-Mobius-Delivery-Id` and `Idempotency-Key`; retries reuse the same value. Verifiers should recompute the signature over the exact raw body, reject stale timestamps (for example, older than five minutes), deduplicate by delivery id, and check the signing headers.
     """
 
     model_config = ConfigDict(
@@ -8258,7 +8137,7 @@ class LoopCheckStep(BaseModel):
 
 class StartLoopRunRequest(BaseModel):
     """
-    Body for `POST /v1/projects/{project_handle}/loops/{resource_id}/runs`. All fields are optional; an empty body starts a run with an empty event/config envelope and no attribution.
+    Body for `POST /v1/loops/{resource_id}/runs`. All fields are optional; an empty body starts a run with an empty event/config envelope and no attribution.
     """
 
     model_config = ConfigDict(
@@ -8281,7 +8160,7 @@ class StartLoopRunRequest(BaseModel):
     )
     idempotency_key: str | None = Field(
         None,
-        description='Caller-supplied idempotency key, scoped to (org, project). Repeat calls with the same `idempotency_key` while the prior run is still non-terminal return the existing run (same `id`). A repeat after the prior run terminated returns `409 Conflict` with code `idempotency_key_conflict` and details containing the existing run id and its terminal status.',
+        description='Caller-supplied idempotency key, scoped to the org. Repeat calls with the same `idempotency_key` while the prior run is still non-terminal return the existing run (same `id`). A repeat after the prior run terminated returns `409 Conflict` with code `idempotency_key_conflict` and details containing the existing run id and its terminal status.',
     )
     budget_usd: float | None = Field(
         None,
@@ -8422,26 +8301,6 @@ class LoopRunListResponse(BaseModel):
     )
 
 
-class OrganizationSkillUsage(BaseModel):
-    """
-    Assignment impact for one organization Skill.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    skill_id: str = Field(..., description='Organization Skill ID.')
-    assignment_count: int = Field(
-        ..., description='Number of agents assigned this Skill.', ge=0
-    )
-    project_count: int = Field(
-        ..., description='Number of projects containing an assignment.', ge=0
-    )
-    projects: list[OrganizationSkillProjectUsage] = Field(
-        ..., description='Assignment counts grouped by consuming project.'
-    )
-
-
 class BlueprintResourceRef(BaseModel):
     """
     A reference to a Mobius resource by direct `id`, by blueprint `key` (resolved within this apply first, then against existing bindings), or by `blueprint_ref` (resolved by key; its namespace is recorded as provenance and is not used for reference resolution in this version).
@@ -8457,7 +8316,7 @@ class BlueprintResourceRef(BaseModel):
 
 class BlueprintActionInput(BaseModel):
     """
-    A desired action. `name` is its immutable project-unique identity.
+    A desired action. `name` is its immutable org-unique identity.
     """
 
     model_config = ConfigDict(
@@ -8586,7 +8445,7 @@ class BlueprintLoopInput(BaseModel):
 
 class BlueprintTableInput(BaseModel):
     """
-    A desired table. `key` is its stable Blueprint handle; `name` is project-unique (lower snake_case) and may be changed after binding. `schema` carries the full column and identity definition and is validated on apply. The identity column and the required-ness of existing columns are immutable after create, so a re-apply that changes them is rejected.
+    A desired table. `key` is its stable Blueprint handle; `name` is org-unique (lower snake_case) and may be changed after binding. `schema` carries the full column and identity definition and is validated on apply. The identity column and the required-ness of existing columns are immutable after create, so a re-apply that changes them is rejected.
     """
 
     model_config = ConfigDict(
@@ -8639,7 +8498,7 @@ class ActionInvocationV1(BaseModel):
 
 class EventCatalogResponse(BaseModel):
     """
-    The triggerable event catalog available to a project.
+    The triggerable event catalog available to an org.
     """
 
     model_config = ConfigDict(
@@ -8656,7 +8515,7 @@ class EventCatalogResponse(BaseModel):
 
 class ModelCatalogResponse(BaseModel):
     """
-    Models a platform agent can be assigned in this project, grouped by available provider.
+    Models a platform agent can be assigned in this org, grouped by available provider.
     """
 
     model_config = ConfigDict(
@@ -8677,7 +8536,7 @@ class ModelCatalogResponse(BaseModel):
 
 class WorkerModelCatalogListResponse(BaseModel):
     """
-    Local LLM models advertised by online project workers.
+    Local LLM models advertised by online org workers.
     """
 
     model_config = ConfigDict(
@@ -9461,9 +9320,13 @@ class SessionTranscriptSnapshot(BaseModel):
         ...,
         description='Pending interactions raised by agent tool calls in this session.',
     )
-    has_more: bool
+    has_more: bool = Field(
+        ..., description='Whether next_page_token continues this fixed transcript cut.'
+    )
     resume_cursor: str
-    next_page_token: str | None = None
+    next_page_token: str | None = Field(
+        None, description='Opaque continuation present when has_more is true.'
+    )
 
 
 class MessageBlockFrame(BaseModel):

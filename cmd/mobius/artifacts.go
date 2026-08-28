@@ -19,7 +19,7 @@ import (
 func registerArtifactUploadCommand(app *cli.App) {
 	grp := app.Group("artifacts")
 	grp.Command("upload").
-		Description("Upload a file as a private project artifact").
+		Description("Upload a file as a private org artifact").
 		AddArg(&cli.Arg{Name: "path", Description: "File to upload ('-' for stdin).", Required: true}).
 		Flags(
 			cli.String("name", "").Help("Display name or relative virtual path (e.g. renders/report.html). Defaults to the file's base name."),

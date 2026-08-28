@@ -72,9 +72,9 @@ var overrides = map[string]Override{
 	"importSkill": {Skip: true},
 
 	// --- org-skills -------------------------------------------------------
-	// Organization Skills have org-wide authority and do not require a
-	// project profile. Keep them in a distinct group so their CRUD verbs do
-	// not collide with the existing project-scoped `skills` commands.
+	// Organization Skills have org-wide authority and are read-only through
+	// the plain `skills` mutation routes. Keep them in a distinct group so
+	// their CRUD verbs do not collide with the existing `skills` commands.
 	"listOrganizationSkills":  {Group: "org-skills", Command: "list"},
 	"createOrganizationSkill": {Group: "org-skills", Command: "create"},
 	// Hand-written for the same reason as `importSkill`.
@@ -98,7 +98,7 @@ var overrides = map[string]Override{
 
 	// --- org-api-keys -----------------------------------------------------
 	// The spec folded these into the `api-keys` tag (paths moved to
-	// /v1/api-keys), but sharing a group with the project-key ops would
+	// /v1/api-keys), but sharing a group with the plain api-key ops would
 	// collide on the create/list/get/delete leaves (create-2, list-2, …).
 	// Keep the dedicated CLI group so the surface stays
 	// `mobius org-api-keys <verb>` as shipped in v0.0.36.
@@ -182,25 +182,24 @@ var overrides = map[string]Override{
 var groupDescriptions = map[string]string{
 	"actions":       "Actions available to loops and agents",
 	"agents":        "Agent identities, presence, and lifecycle",
-	"api-keys":      "API keys scoped to a single project",
-	"org-api-keys":  "API keys acting org-wide across all projects",
+	"api-keys":      "API keys scoped to the org",
+	"org-api-keys":  "API keys acting org-wide across principals",
 	"org-actions":   "Organization-scoped signed HTTP actions",
-	"org-skills":    "Skills shared across organization projects",
+	"org-skills":    "Skills shared across the organization",
 	"artifacts":     "Run output artifacts and storage quota",
-	"blueprints":    "Project blueprint application and bindings",
+	"blueprints":    "Org blueprint application and bindings",
 	"catalog":       "Available actions and triggerable events",
 	"environments":  "Managed execution environments",
 	"interactions":  "Information, approval, and review requests between users and agents",
 	"loops":         "Loop definitions, versions, and runs",
 	"organizations": "Organization settings and control plane",
-	"projects":      "Projects within the organization",
-	"permissions":   "Assignable project permission catalog",
+	"permissions":   "Assignable org permission catalog",
 	"principals":    "Machine identities and their roles",
-	"roles":         "Project roles and assignments",
+	"roles":         "Org roles and assignments",
 	"runs":          "Loop runs",
 	"sessions":      "Conversation sessions, transcripts, and invocation",
 	"skills":        "Skill templates that shape agent behavior and tool access",
-	"tables":        "Project-scoped tables and rows",
+	"tables":        "Org-scoped tables and rows",
 	"toolkits":      "Sets of tools agents can use to take action",
 	"webhooks":      "Outgoing webhook subscriptions",
 }

@@ -52,7 +52,6 @@ class ActionContext:
     session_id: str | None = None
     agent_turn_id: str | None = None
     tool_call_id: str | None = None
-    project_id: str | None = None
     attempt: int = 1
     queue: str | None = None
     step_id: str | None = None
@@ -318,7 +317,6 @@ class Worker:
         if code == "worker_instance_conflict":
             return WorkerInstanceConflictError(
                 worker_instance_id=self.config.worker_instance_id,
-                project_handle=self.client.project,
                 message=error.get("message"),
             )
         return None
@@ -349,7 +347,6 @@ class Worker:
             session_id=job.session_id,
             agent_turn_id=job.agent_turn_id,
             tool_call_id=job.tool_call_id,
-            project_id=self.client.project,
             attempt=job.claim_attempt,
             queue=job.queue,
             step_id=job.step_id,

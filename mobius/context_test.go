@@ -3,7 +3,6 @@ package mobius
 import (
 	"context"
 	"log/slog"
-	"net/http"
 	"testing"
 
 	"github.com/deepnoodle-ai/wonton/assert"
@@ -15,30 +14,14 @@ func newTestContext(job *runtimeJob) Context {
 	return newContext(context.Background(), nil, job, slog.Default(), nil)
 }
 
-func TestContext_ProjectHandle_AndDeprecatedProjectIDAlias(t *testing.T) {
-	ctx := newTestContext(&runtimeJob{
-		JobID:         "job_1",
-		RunID:         "run_1",
-		ProjectHandle: "test-project",
-	})
-	assert.Equal(t, ctx.ProjectHandle(), "test-project")
-	assert.Equal(t, ctx.ProjectID(), "test-project")
-}
-
-func TestClient_ProjectHandleAccessor(t *testing.T) {
-	c, _ := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
-	assert.Equal(t, c.ProjectHandle(), "test-project")
-}
-
 func TestContext_JobIdentity(t *testing.T) {
 	ctx := newTestContext(&runtimeJob{
-		JobID:         "job_1",
-		RunID:         "run_1",
-		ProjectHandle: "test-project",
-		StepID:        "step_1",
-		LeaseToken:    "lease_1",
-		Attempt:       3,
-		Queue:         "default",
+		JobID:      "job_1",
+		RunID:      "run_1",
+		StepID:     "step_1",
+		LeaseToken: "lease_1",
+		Attempt:    3,
+		Queue:      "default",
 	})
 
 	assert.Equal(t, ctx.JobID(), "job_1")

@@ -38,11 +38,9 @@ type deviceCodeResponse struct {
 // deviceTokenResponse is the RFC 6749 §5.1 success envelope plus the
 // mobius-specific credential_id extension.
 type deviceTokenResponse struct {
-	AccessToken   string `json:"access_token"`
-	TokenType     string `json:"token_type"`
-	CredentialID  string `json:"credential_id"`
-	ProjectID     string `json:"project_id"`
-	ProjectHandle string `json:"project_handle"`
+	AccessToken  string `json:"access_token"`
+	TokenType    string `json:"token_type"`
+	CredentialID string `json:"credential_id"`
 }
 
 // oauthError matches the RFC 6749 §5.2 error envelope.
@@ -60,10 +58,8 @@ func registerAuthCommands(app *cli.App) {
 
 	grp.Command("login").
 		Description("Log this device into Mobius via the browser").
-		OmitGlobalFlag("project").
 		Flags(
 			cli.String("org", "").Help("Requested org ID (optional; browser will prompt otherwise)"),
-			cli.String("project", "").Help("Project handle to pin this login to (optional)"),
 			cli.String("label", "").Help("Device label shown in the web app (defaults to user@host)"),
 			cli.String("web-url", "").Env("MOBIUS_WEB_URL").Help("Web app base URL for browser confirmation (optional)"),
 			cli.Bool("default", "").Default(false).Help("Mark this profile as the default"),
@@ -126,9 +122,6 @@ func runAuthLogin(ctx *cli.Context) error {
 	if org := ctx.String("org"); org != "" {
 		form.Set("mobius_requested_org_id", org)
 	}
-	if ctx.IsSet("project") && ctx.String("project") != "" {
-		form.Set("mobius_requested_project_handle", ctx.String("project"))
-	}
 	addDeviceCodeClientInfo(form)
 
 	challenge, err := postDeviceCode(ctx.Context(), httpClient, apiURL, form)
@@ -153,7 +146,7 @@ func runAuthLogin(ctx *cli.Context) error {
 
 	ctx.Println("Waiting for you to confirm in the browser...")
 
-	token, credID, projectID, projectHandle, err := pollForToken(ctx.Context(), httpClient, apiURL, challenge)
+	token, credID, err := pollForToken(ctx.Context(), httpClient, apiURL, challenge)
 	if err != nil {
 		return err
 	}
@@ -162,18 +155,13 @@ func runAuthLogin(ctx *cli.Context) error {
 	if profileName == "" {
 		profileName = "default"
 	}
-	if projectHandle == "" && ctx.IsSet("project") {
-		projectHandle = ctx.String("project")
-	}
 	cred := authstore.Profile{
-		Source:        authstore.SourceBrowserLogin,
-		APIURL:        apiURL,
-		Token:         token,
-		CredentialID:  credID,
-		OrgID:         ctx.String("org"),
-		ProjectID:     projectID,
-		ProjectHandle: projectHandle,
-		CreatedAt:     time.Now().UTC().Format(time.RFC3339),
+		Source:       authstore.SourceBrowserLogin,
+		APIURL:       apiURL,
+		Token:        token,
+		CredentialID: credID,
+		OrgID:        ctx.String("org"),
+		CreatedAt:    time.Now().UTC().Format(time.RFC3339),
 	}
 	if err := authstore.PutProfile(profileName, cred, ctx.Bool("default")); err != nil {
 		return fmt.Errorf("save credential: %w", err)
@@ -326,7 +314,7 @@ func joinURLPaths(basePath, targetPath string) string {
 // responses are expected during the normal waiting window, everything else
 // is terminal. We honor the server's suggested interval, increase it by 5s on
 // slow_down, and cap the overall wait by expires_in.
-func pollForToken(ctx context.Context, client *http.Client, apiURL string, ch *deviceCodeResponse) (string, string, string, string, error) {
+func pollForToken(ctx context.Context, client *http.Client, apiURL string, ch *deviceCodeResponse) (string, string, error) {
 	interval := time.Duration(ch.Interval) * time.Second
 	if interval <= 0 {
 		interval = 5 * time.Second
@@ -336,11 +324,11 @@ func pollForToken(ctx context.Context, client *http.Client, apiURL string, ch *d
 	for {
 		select {
 		case <-ctx.Done():
-			return "", "", "", "", ctx.Err()
+			return "", "", ctx.Err()
 		case <-time.After(interval):
 		}
 		if time.Now().After(expiresAt) {
-			return "", "", "", "", errors.New("login flow expired before confirmation; run `mobius auth login` again")
+			return "", "", errors.New("login flow expired before confirmation; run `mobius auth login` again")
 		}
 
 		form := url.Values{
@@ -349,12 +337,12 @@ func pollForToken(ctx context.Context, client *http.Client, apiURL string, ch *d
 		}
 		req, err := http.NewRequestWithContext(ctx, http.MethodPost, apiURL+"/v1/auth/device/token", strings.NewReader(form.Encode()))
 		if err != nil {
-			return "", "", "", "", err
+			return "", "", err
 		}
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		resp, err := client.Do(req)
 		if err != nil {
-			return "", "", "", "", fmt.Errorf("poll for token: %w", err)
+			return "", "", fmt.Errorf("poll for token: %w", err)
 		}
 		body, _ := io.ReadAll(resp.Body)
 		_ = resp.Body.Close()
@@ -362,17 +350,17 @@ func pollForToken(ctx context.Context, client *http.Client, apiURL string, ch *d
 		if resp.StatusCode == http.StatusOK {
 			var tok deviceTokenResponse
 			if err := json.Unmarshal(body, &tok); err != nil {
-				return "", "", "", "", fmt.Errorf("decode token response: %w", err)
+				return "", "", fmt.Errorf("decode token response: %w", err)
 			}
 			if tok.AccessToken == "" {
-				return "", "", "", "", errors.New("server returned 200 but no access_token")
+				return "", "", errors.New("server returned 200 but no access_token")
 			}
-			return tok.AccessToken, tok.CredentialID, tok.ProjectID, tok.ProjectHandle, nil
+			return tok.AccessToken, tok.CredentialID, nil
 		}
 
 		var oe oauthError
 		if err := json.Unmarshal(body, &oe); err != nil {
-			return "", "", "", "", fmt.Errorf("poll for token: HTTP %d: %s", resp.StatusCode, strings.TrimSpace(string(body)))
+			return "", "", fmt.Errorf("poll for token: HTTP %d: %s", resp.StatusCode, strings.TrimSpace(string(body)))
 		}
 		switch oe.Error {
 		case "authorization_pending":
@@ -381,14 +369,14 @@ func pollForToken(ctx context.Context, client *http.Client, apiURL string, ch *d
 			interval += 5 * time.Second
 			continue
 		case "access_denied":
-			return "", "", "", "", errors.New("login was denied in the browser")
+			return "", "", errors.New("login was denied in the browser")
 		case "expired_token":
-			return "", "", "", "", errors.New("login flow expired before confirmation; run `mobius auth login` again")
+			return "", "", errors.New("login flow expired before confirmation; run `mobius auth login` again")
 		default:
 			if oe.ErrorDescription != "" {
-				return "", "", "", "", fmt.Errorf("device token exchange failed: %s (%s)", oe.Error, oe.ErrorDescription)
+				return "", "", fmt.Errorf("device token exchange failed: %s (%s)", oe.Error, oe.ErrorDescription)
 			}
-			return "", "", "", "", fmt.Errorf("device token exchange failed: %s", oe.Error)
+			return "", "", fmt.Errorf("device token exchange failed: %s", oe.Error)
 		}
 	}
 }
@@ -459,15 +447,11 @@ func runAuthStatus(ctx *cli.Context) error {
 	return nil
 }
 
-// printAPIKeyScope surfaces what a raw API key carries — project-pinned vs
-// org-scoped — so "why is my key getting 403s?" stops being a guessing game.
-// Today the server doesn't expose a whoami endpoint, so SA name and agent
-// binding can't be resolved from the key alone; that gap is tracked as a
-// follow-up.
+// printAPIKeyScope surfaces what a raw API key carries. Today the server
+// doesn't expose a whoami endpoint, so SA name and agent binding can't be
+// resolved from the key alone; that gap is tracked as a follow-up.
 func printAPIKeyScope(ctx *cli.Context, apiKey string) {
-	if handle, ok := mobius.ProjectHandleFromAPIKey(apiKey); ok {
-		ctx.Printf("Scope: project:%s\n", handle)
-	} else if apiKey != "" {
+	if apiKey != "" {
 		ctx.Println("Scope: org")
 	}
 }
@@ -486,12 +470,10 @@ func printSavedCredentialStatus(ctx *cli.Context, cred *authstore.Profile) {
 	if cred.CredentialID != "" {
 		ctx.Printf("Credential ID: %s\n", cred.CredentialID)
 	}
-	// Browser-issued profiles carry the user identity; project-pinned
-	// profiles carry the project handle. Surface scope explicitly so the
-	// reader doesn't have to infer it from which fields happen to be set.
+	// Browser-issued profiles carry the user identity. Surface scope
+	// explicitly so the reader doesn't have to infer it from which fields
+	// happen to be set.
 	switch {
-	case cred.ProjectHandle != "" || cred.ProjectID != "":
-		ctx.Printf("Scope: project:%s\n", firstNonEmpty(cred.ProjectHandle, cred.ProjectID))
 	case cred.UserEmail != "" || cred.UserID != "":
 		ctx.Println("Scope: user")
 	default:
@@ -499,9 +481,6 @@ func printSavedCredentialStatus(ctx *cli.Context, cred *authstore.Profile) {
 	}
 	if cred.OrgName != "" || cred.OrgID != "" {
 		ctx.Printf("Org: %s\n", firstNonEmpty(cred.OrgName, cred.OrgID))
-	}
-	if cred.ProjectHandle != "" || cred.ProjectID != "" {
-		ctx.Printf("Project: %s\n", firstNonEmpty(cred.ProjectHandle, cred.ProjectID))
 	}
 	if cred.UserEmail != "" || cred.UserName != "" || cred.UserID != "" {
 		ctx.Printf("User: %s\n", firstNonEmpty(cred.UserEmail, cred.UserName, cred.UserID))
@@ -595,16 +574,14 @@ func printProfiles(ctx *cli.Context, store *authstore.Store) error {
 		if p.Default {
 			def = "*"
 		}
-		project := firstNonEmpty(p.ProjectHandle, "all projects")
 		lastUsed := firstNonEmpty(p.LastUsedAt, "never")
-		rows = append(rows, []string{def, name, firstNonEmpty(p.OrgName, p.OrgID), project, p.APIURL, lastUsed})
+		rows = append(rows, []string{def, name, firstNonEmpty(p.OrgName, p.OrgID), p.APIURL, lastUsed})
 	}
 	sel := -1
 	view := tui.Table([]tui.TableColumn{
 		{Title: "DEFAULT"},
 		{Title: "PROFILE"},
 		{Title: "ORG"},
-		{Title: "PROJECT"},
 		{Title: "ENDPOINT"},
 		{Title: "LAST USED"},
 	}, &sel).Rows(rows)
@@ -711,14 +688,7 @@ func verifyAuthenticatedRequest(ctx *cli.Context) (authProbeResult, error) {
 }
 
 func authProbePath(apiKey string) string {
-	if project, ok := projectHandleFromCLIToken(apiKey); ok {
-		return "/v1/projects/" + url.PathEscape(project) + "/loops"
-	}
-	return "/v1/projects"
-}
-
-func projectHandleFromCLIToken(apiKey string) (string, bool) {
-	return mobius.ProjectHandleFromAPIKey(apiKey)
+	return "/v1/loops"
 }
 
 // hasAuth reports whether clientFromContext will have a usable token.

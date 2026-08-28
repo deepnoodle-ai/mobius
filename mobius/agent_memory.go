@@ -54,12 +54,12 @@ type MemorySyncResult struct {
 
 // GetAgentMemory returns a summary of an agent's private memory.
 func (c *Client) GetAgentMemory(ctx context.Context, agentID string) (*api.AgentMemory, error) {
-	resp, err := c.ac.GetAgentMemoryWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.IDParam(agentID))
+	resp, err := c.ac.GetAgentMemoryWithResponse(ctx, api.IDParam(agentID))
 	if err != nil {
 		return nil, fmt.Errorf("mobius: get agent memory: %w", err)
 	}
 	if resp.JSON200 == nil {
-		return nil, unexpectedProjectResourceStatus("get agent memory", resp.HTTPResponse, resp.Body)
+		return nil, unexpectedResourceStatus("get agent memory", resp.HTTPResponse, resp.Body)
 	}
 	return resp.JSON200, nil
 }
@@ -86,19 +86,19 @@ func (c *Client) ListAgentMemoryEntries(ctx context.Context, agentID string, opt
 			params.Limit = &opts.Limit
 		}
 	}
-	resp, err := c.ac.ListAgentMemoryEntriesWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.IDParam(agentID), params)
+	resp, err := c.ac.ListAgentMemoryEntriesWithResponse(ctx, api.IDParam(agentID), params)
 	if err != nil {
 		return nil, fmt.Errorf("mobius: list agent memory entries: %w", err)
 	}
 	if resp.JSON200 == nil {
-		return nil, unexpectedProjectResourceStatus("list agent memory entries", resp.HTTPResponse, resp.Body)
+		return nil, unexpectedResourceStatus("list agent memory entries", resp.HTTPResponse, resp.Body)
 	}
 	return resp.JSON200, nil
 }
 
 // SaveAgentMemoryEntry creates or updates the memory entry stored under key.
 func (c *Client) SaveAgentMemoryEntry(ctx context.Context, agentID, key string, req api.SaveAgentMemoryEntryRequest) (*api.AgentMemoryEntry, error) {
-	resp, err := c.ac.SaveAgentMemoryEntryWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.IDParam(agentID), api.MemoryKeyParam(key), req)
+	resp, err := c.ac.SaveAgentMemoryEntryWithResponse(ctx, api.IDParam(agentID), api.MemoryKeyParam(key), req)
 	if err != nil {
 		return nil, fmt.Errorf("mobius: save agent memory entry: %w", err)
 	}
@@ -108,17 +108,17 @@ func (c *Client) SaveAgentMemoryEntry(ctx context.Context, agentID, key string, 
 	if resp.JSON201 != nil {
 		return resp.JSON201, nil
 	}
-	return nil, unexpectedProjectResourceStatus("save agent memory entry", resp.HTTPResponse, resp.Body)
+	return nil, unexpectedResourceStatus("save agent memory entry", resp.HTTPResponse, resp.Body)
 }
 
 // DeleteAgentMemoryEntry deletes the memory entry stored under key.
 func (c *Client) DeleteAgentMemoryEntry(ctx context.Context, agentID, key string) error {
-	resp, err := c.ac.DeleteAgentMemoryEntryWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.IDParam(agentID), api.MemoryKeyParam(key))
+	resp, err := c.ac.DeleteAgentMemoryEntryWithResponse(ctx, api.IDParam(agentID), api.MemoryKeyParam(key), nil)
 	if err != nil {
 		return fmt.Errorf("mobius: delete agent memory entry: %w", err)
 	}
 	if resp.StatusCode() != http.StatusNoContent {
-		return unexpectedProjectResourceStatus("delete agent memory entry", resp.HTTPResponse, resp.Body)
+		return unexpectedResourceStatus("delete agent memory entry", resp.HTTPResponse, resp.Body)
 	}
 	return nil
 }
@@ -136,12 +136,12 @@ func (c *Client) ListAgentMemoryChanges(ctx context.Context, agentID string, opt
 			params.Limit = &opts.Limit
 		}
 	}
-	resp, err := c.ac.ListAgentMemoryChangesWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.IDParam(agentID), params)
+	resp, err := c.ac.ListAgentMemoryChangesWithResponse(ctx, api.IDParam(agentID), params)
 	if err != nil {
 		return nil, fmt.Errorf("mobius: list agent memory changes: %w", err)
 	}
 	if resp.JSON200 == nil {
-		return nil, unexpectedProjectResourceStatus("list agent memory changes", resp.HTTPResponse, resp.Body)
+		return nil, unexpectedResourceStatus("list agent memory changes", resp.HTTPResponse, resp.Body)
 	}
 	return resp.JSON200, nil
 }

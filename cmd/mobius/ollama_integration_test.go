@@ -43,8 +43,6 @@ type testGenerationContext struct {
 }
 
 func (c testGenerationContext) Logger() *slog.Logger             { return slog.Default() }
-func (c testGenerationContext) ProjectHandle() string            { return "test" }
-func (c testGenerationContext) ProjectID() string                { return "test" }
 func (c testGenerationContext) RunID() string                    { return "run_test" }
 func (c testGenerationContext) JobID() string                    { return "job_test" }
 func (c testGenerationContext) WorkflowName() string             { return "" }

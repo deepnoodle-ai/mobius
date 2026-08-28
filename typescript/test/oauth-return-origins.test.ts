@@ -16,7 +16,6 @@ async function withMockFetch(
     const client = new Client({
       apiKey: "mbx_test",
       baseURL: "https://api.example.invalid",
-      project: "test-project",
       retry: 0,
     });
     await fn(client);

@@ -24,7 +24,6 @@ Set your API key:
 
 ```bash
 export MOBIUS_API_KEY=mbx_your_api_key_here
-export MOBIUS_PROJECT=default
 ```
 
 Check the CLI is working:
@@ -34,7 +33,7 @@ mobius --version
 mobius --help
 ```
 
-Inspect the resources available in your project:
+Inspect the resources available in your org:
 
 ```bash
 mobius loops list
@@ -73,7 +72,7 @@ runtime platform (Cloud Run revision, Kubernetes pod, Fly machine, Railway
 replica, Render instance) and falls back to a per-boot UUID. Override with
 `--instance-id` only when you need a fixed identifier across restarts.
 
-The stock worker registers built-in actions like `print`, `fail`, `json`, `time`, and `random`. Run `mobius worker --help` for the full worker flags. Global flags can also be provided via `MOBIUS_API_URL`, `MOBIUS_API_KEY`, `MOBIUS_PROJECT`, and `MOBIUS_LOG_LEVEL`.
+The stock worker registers built-in actions like `print`, `fail`, `json`, `time`, and `random`. Run `mobius worker --help` for the full worker flags. Global flags can also be provided via `MOBIUS_API_URL`, `MOBIUS_API_KEY`, and `MOBIUS_LOG_LEVEL`.
 
 ## Documentation
 

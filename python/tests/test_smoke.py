@@ -59,7 +59,6 @@ def _client_with(handler) -> Client:
         ClientOptions(
             api_key="mbx_test",
             base_url="https://api.example.invalid",
-            project="test-project",
         ),
         transport=httpx.MockTransport(handler),
     )
@@ -71,28 +70,18 @@ def test_client_defaults_to_production_api_host() -> None:
     client.close()
 
 
-def test_api_key_project_suffix_is_used_and_conflicts_are_rejected() -> None:
-    client = Client("mbx_secret.test-project")
-    assert client.project == "test-project"
-    client.close()
-
-    with pytest.raises(ValueError):
-        Client("mbx_secret.test-project", project="other-project")
-
-
-def test_worker_socket_url_uses_project_scoped_websocket_route() -> None:
+def test_worker_socket_url_uses_websocket_route() -> None:
     client = Client(
         ClientOptions(
             api_key="mbx_test",
             base_url="http://localhost:8080/api",
-            project="test-project",
         )
     )
-    assert client.worker_socket_url() == "ws://localhost:8080/api/v1/projects/test-project/workers/socket"
+    assert client.worker_socket_url() == "ws://localhost:8080/api/v1/workers/socket"
     client.close()
 
 
-def test_loop_helpers_use_project_scoped_routes() -> None:
+def test_loop_helpers_use_org_scoped_routes() -> None:
     requests: list[tuple[str, str, str]] = []
 
     def handler(request: httpx.Request) -> httpx.Response:
@@ -128,11 +117,11 @@ def test_loop_helpers_use_project_scoped_routes() -> None:
     assert created.name == "Research"
     assert updated.status is LoopStatus.active
     assert len(listed.items) == 1
-    assert requests[0][0:2] == ("POST", "/v1/projects/test-project/loops")
+    assert requests[0][0:2] == ("POST", "/v1/loops")
     assert any(req[0] == "DELETE" and req[1].endswith("/loops/loop_1") for req in requests)
 
 
-def test_project_resource_list_helpers() -> None:
+def test_org_resource_list_helpers() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         path = request.url.path
         if path.endswith("/blueprints/bindings"):
@@ -167,7 +156,7 @@ def test_project_resource_list_helpers() -> None:
     assert client.list_interactions(
         ListInteractionsOptions(status="pending", session_id="sess_1", inbox=True)
     ).items == []
-    assert client.list_project_permissions().items == []
+    assert client.list_org_permissions().items == []
     assert client.list_principals(
         ListPrincipalsOptions(kind="service", include_disabled=True)
     ).items == []
@@ -228,7 +217,7 @@ def test_start_run_posts_to_loop_bound_route() -> None:
     )
 
     assert run.id == "run_1"
-    assert seen["path"] == "/v1/projects/test-project/loops/loop_1/runs"
+    assert seen["path"] == "/v1/loops/loop_1/runs"
     assert seen["idempotency_key"] == "run-request-1"
     assert '"idempotency_key":"run-request-1"' in str(seen["body"])
     assert '"event":{"topic":"sdk"}' in str(seen["body"])
@@ -253,7 +242,7 @@ def test_start_run_keeps_external_id_as_deprecated_alias() -> None:
         )
 
 
-def test_run_control_helpers_use_project_scoped_paths_and_enum_query_values() -> None:
+def test_run_control_helpers_use_enum_query_values() -> None:
     seen: list[str] = []
 
     def handler(request: httpx.Request) -> httpx.Response:
@@ -306,7 +295,7 @@ def test_invoke_agent_posts_the_compound_invoke_request_shape() -> None:
     assert turn.session_id == "sess_1"
     assert turn.id == "turn_1"
     assert turn.deduped is False
-    assert seen["path"] == "/v1/projects/test-project/agents/invoke"
+    assert seen["path"] == "/v1/agents/invoke"
     assert seen["idempotency_key"] == "evt_1"
     assert '"agent_ref":{"id":"agent_1"}' in str(seen["body"])
     assert '"idempotency_key":"evt_1"' in str(seen["body"])
@@ -345,7 +334,7 @@ def test_start_turn_passes_runtime_context_to_existing_session() -> None:
     )
 
     assert turn.id == "turn_1"
-    assert seen["path"] == "/v1/projects/test-project/sessions/sess_1/turns"
+    assert seen["path"] == "/v1/sessions/sess_1/turns"
     assert seen["idempotency_key"] == "evt_1"
     assert seen["body"] == {
         "role": "user",
@@ -477,9 +466,9 @@ def test_session_nudge_lifecycle_routes() -> None:
     assert client.get_session_nudge("s1", "nudge_1").status == "pending"
     assert client.cancel_nudge("s1", "nudge_1").status == "cancelled"
     assert seen == [
-        "GET /v1/projects/test-project/sessions/s1/nudges",
-        "GET /v1/projects/test-project/sessions/s1/nudges/nudge_1",
-        "POST /v1/projects/test-project/sessions/s1/nudges/nudge_1/cancel",
+        "GET /v1/sessions/s1/nudges",
+        "GET /v1/sessions/s1/nudges/nudge_1",
+        "POST /v1/sessions/s1/nudges/nudge_1/cancel",
     ]
 
 

@@ -20,7 +20,7 @@ func TestStartRun_HighLevelClient(t *testing.T) {
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		switch {
-		case r.Method == http.MethodPost && r.URL.Path == "/v1/projects/test-project/loops/loop_1/runs":
+		case r.Method == http.MethodPost && r.URL.Path == "/v1/loops/loop_1/runs":
 			assert.Equal(t, r.Header.Get("Idempotency-Key"), "run-request-1")
 			b, _ := io.ReadAll(r.Body)
 			assert.NoError(t, json.Unmarshal(b, &body))
@@ -67,16 +67,16 @@ func TestRunControl_HighLevelClient(t *testing.T) {
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		switch {
-		case r.Method == http.MethodGet && r.URL.Path == "/v1/projects/test-project/runs/run_1":
+		case r.Method == http.MethodGet && r.URL.Path == "/v1/runs/run_1":
 			_, _ = io.WriteString(w, loopRunJSON("run_1", "completed"))
-		case r.Method == http.MethodGet && r.URL.Path == "/v1/projects/test-project/runs":
+		case r.Method == http.MethodGet && r.URL.Path == "/v1/runs":
 			seenQuery = r.URL.RawQuery
 			_, _ = io.WriteString(w, fmt.Sprintf(`{"items":[%s],"has_more":false}`, loopRunJSON("run_1", "completed")))
-		case r.Method == http.MethodPost && r.URL.Path == "/v1/projects/test-project/runs/run_1/cancel":
+		case r.Method == http.MethodPost && r.URL.Path == "/v1/runs/run_1/cancel":
 			b, _ := io.ReadAll(r.Body)
 			assert.NoError(t, json.Unmarshal(b, &cancelBody))
 			_, _ = io.WriteString(w, loopRunJSON("run_1", "cancelled"))
-		case r.Method == http.MethodPost && r.URL.Path == "/v1/projects/test-project/runs/run_1/signals":
+		case r.Method == http.MethodPost && r.URL.Path == "/v1/runs/run_1/signals":
 			b, _ := io.ReadAll(r.Body)
 			assert.NoError(t, json.Unmarshal(b, &signalBody))
 			_, _ = io.WriteString(w, loopRunJSON("run_1", "running"))
@@ -118,18 +118,18 @@ func TestWaitRun_FetchesAfterStreamClosesBeforeTerminal(t *testing.T) {
 	var getCalls atomic.Int32
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
-		case r.Method == http.MethodGet && r.URL.Path == "/v1/projects/test-project/runs/run_1":
+		case r.Method == http.MethodGet && r.URL.Path == "/v1/runs/run_1":
 			w.Header().Set("Content-Type", "application/json")
 			if getCalls.Add(1) == 1 {
 				_, _ = io.WriteString(w, loopRunJSON("run_1", "running"))
 				return
 			}
 			_, _ = io.WriteString(w, loopRunJSON("run_1", "completed"))
-		case r.Method == http.MethodGet && r.URL.Path == "/v1/projects/test-project/runs/run_1/events.stream":
+		case r.Method == http.MethodGet && r.URL.Path == "/v1/runs/run_1/events.stream":
 			w.Header().Set("Content-Type", "text/event-stream")
 			_, _ = io.WriteString(w, `event: run.updated
 id: 7
-data: {"id":"evt_1","org_id":"org_1","project_id":"proj_1","run_id":"run_1","event_type":"run.updated","sequence":7,"payload":{"status":"running"},"created_at":"2026-05-27T00:00:00Z"}
+data: {"id":"evt_1","org_id":"org_1","run_id":"run_1","event_type":"run.updated","sequence":7,"payload":{"status":"running"},"created_at":"2026-05-27T00:00:00Z"}
 
 `)
 		default:
@@ -149,7 +149,6 @@ func loopRunJSON(id, status string) string {
 	return fmt.Sprintf(`{
 		"id":%q,
 		"org_id":"org_1",
-		"project_id":"proj_1",
 			"loop_id":"loop_1",
 			"loop_version_id":"lver_1",
 			"loop_version":1,

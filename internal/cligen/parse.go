@@ -16,7 +16,7 @@ import (
 type ClientInfo struct {
 	Methods      map[string]*Method     // keyed by Go method name (without WithResponse suffix)
 	ParamStructs map[string]*StructInfo // keyed by Go type name
-	BodyStructs  map[string]*StructInfo // keyed by JSONRequestBody alias name (e.g. "CreateProjectJSONRequestBody")
+	BodyStructs  map[string]*StructInfo // keyed by JSONRequestBody alias name (e.g. "CreateAgentJSONRequestBody")
 	TypeAliases  map[string]string      // e.g. "IDParam" -> "string", "LimitParam" -> "int"
 }
 

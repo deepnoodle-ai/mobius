@@ -17,7 +17,7 @@ import (
 
 // registerTablesCommands registers every generated subcommand in the "tables" group.
 func registerTablesCommands(app *cli.App) {
-	tablesGrp := app.Group("tables").Description("Project-scoped tables and rows")
+	tablesGrp := app.Group("tables").Description("Org-scoped tables and rows")
 	tablesGrp.Alias("table")
 	tablesGrp.Command("bulk-create-rows").
 		Description("Bulk create rows").
@@ -34,8 +34,7 @@ func registerTablesCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
+			p0 := ctx.Arg(0)
 			var body api.BulkCreateTableRowsJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -51,7 +50,7 @@ func registerTablesCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.BulkCreateTableRowsWithResponse(ctx.Context(), p0, p1, body)
+			resp, err := client.BulkCreateTableRowsWithResponse(ctx.Context(), p0, body)
 			if err != nil {
 				return err
 			}
@@ -63,7 +62,7 @@ func registerTablesCommands(app *cli.App) {
 		Flags(
 			cli.String("description", "").Help("Optional human-readable description of the table."),
 			cli.String("instructions", "").Help("Optional author guidance for how this table should be used (e.g. surfaced to agents). Accepts text, @file, or @-. Use @@ to escape a literal leading @."),
-			cli.String("name", "").Help("[required] Table name (lowercase, snake_case); unique within the project."),
+			cli.String("name", "").Help("[required] Table name (lowercase, snake_case); unique within the org."),
 			cli.String("schema", "").Help("[required] Column definition for a virtual table. Each table has exactly one required string identity column and may nominate one optional string… Accepts JSON, @file, or @-."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
@@ -75,7 +74,6 @@ func registerTablesCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
 			var body api.CreateTableJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -108,7 +106,7 @@ func registerTablesCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.CreateTableWithResponse(ctx.Context(), p0, body)
+			resp, err := client.CreateTableWithResponse(ctx.Context(), body)
 			if err != nil {
 				return err
 			}
@@ -130,8 +128,7 @@ func registerTablesCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
+			p0 := ctx.Arg(0)
 			var body api.CreateTableRowJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -147,7 +144,7 @@ func registerTablesCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.CreateTableRowWithResponse(ctx.Context(), p0, p1, body)
+			resp, err := client.CreateTableRowWithResponse(ctx.Context(), p0, body)
 			if err != nil {
 				return err
 			}
@@ -164,9 +161,8 @@ func registerTablesCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			resp, err := client.DeleteTableWithResponse(ctx.Context(), p0, p1)
+			p0 := ctx.Arg(0)
+			resp, err := client.DeleteTableWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
 			}
@@ -184,10 +180,9 @@ func registerTablesCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			p2 := ctx.Arg(1)
-			resp, err := client.DeleteTableRowWithResponse(ctx.Context(), p0, p1, p2)
+			p0 := ctx.Arg(0)
+			p1 := ctx.Arg(1)
+			resp, err := client.DeleteTableRowWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}
@@ -204,9 +199,8 @@ func registerTablesCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			resp, err := client.GetTableWithResponse(ctx.Context(), p0, p1)
+			p0 := ctx.Arg(0)
+			resp, err := client.GetTableWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
 			}
@@ -224,10 +218,9 @@ func registerTablesCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			p2 := ctx.Arg(1)
-			resp, err := client.GetTableRowWithResponse(ctx.Context(), p0, p1, p2)
+			p0 := ctx.Arg(0)
+			p1 := ctx.Arg(1)
+			resp, err := client.GetTableRowWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
 			}
@@ -244,9 +237,8 @@ func registerTablesCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			resp, err := client.GetTableStatsWithResponse(ctx.Context(), p0, p1)
+			p0 := ctx.Arg(0)
+			resp, err := client.GetTableStatsWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
 			}
@@ -258,7 +250,7 @@ func registerTablesCommands(app *cli.App) {
 		Flags(
 			cli.String("cursor", "").Help("Cursor for pagination (opaque string from previous response)"),
 			cli.Int("limit", "").Help("Maximum number of items to return"),
-			cli.String("name", "").Help("Filter tables by name. Table names are unique within a project; use this as a discovery filter and use the returned table `id` for…"),
+			cli.String("name", "").Help("Filter tables by name. Table names are unique within an org; use this as a discovery filter and use the returned table `id` for follow-up…"),
 		).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
@@ -267,7 +259,6 @@ func registerTablesCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
 			params := &api.ListTablesParams{}
 			if ctx.IsSet("cursor") {
 				v := api.CursorParam(ctx.String("cursor"))
@@ -281,7 +272,7 @@ func registerTablesCommands(app *cli.App) {
 				v := api.TableNameQueryParam(ctx.String("name"))
 				params.Name = &v
 			}
-			resp, err := client.ListTablesWithResponse(ctx.Context(), p0, params)
+			resp, err := client.ListTablesWithResponse(ctx.Context(), params)
 			if err != nil {
 				return err
 			}
@@ -306,8 +297,7 @@ func registerTablesCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
+			p0 := ctx.Arg(0)
 			var body api.QueryTableRowsJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -333,7 +323,7 @@ func registerTablesCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.QueryTableRowsWithResponse(ctx.Context(), p0, p1, body)
+			resp, err := client.QueryTableRowsWithResponse(ctx.Context(), p0, body)
 			if err != nil {
 				return err
 			}
@@ -359,8 +349,7 @@ func registerTablesCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
+			p0 := ctx.Arg(0)
 			var body api.SearchTableRowsJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -391,7 +380,7 @@ func registerTablesCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.SearchTableRowsWithResponse(ctx.Context(), p0, p1, body)
+			resp, err := client.SearchTableRowsWithResponse(ctx.Context(), p0, body)
 			if err != nil {
 				return err
 			}
@@ -404,7 +393,7 @@ func registerTablesCommands(app *cli.App) {
 		Flags(
 			cli.String("description", "").Help("Optional human-readable description of the table."),
 			cli.String("instructions", "").Help("Optional author guidance for how this table should be used (e.g. surfaced to agents). Accepts text, @file, or @-. Use @@ to escape a literal leading @."),
-			cli.String("name", "").Help("Table name (lowercase, snake_case); unique within the project."),
+			cli.String("name", "").Help("Table name (lowercase, snake_case); unique within the org."),
 			cli.String("schema", "").Help("Column definition for a virtual table. Each table has exactly one required string identity column and may nominate one optional string… Accepts JSON, @file, or @-."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
@@ -416,8 +405,7 @@ func registerTablesCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
+			p0 := ctx.Arg(0)
 			var body api.UpdateTableJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -448,7 +436,7 @@ func registerTablesCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.UpdateTableWithResponse(ctx.Context(), p0, p1, body)
+			resp, err := client.UpdateTableWithResponse(ctx.Context(), p0, body)
 			if err != nil {
 				return err
 			}
@@ -472,9 +460,8 @@ func registerTablesCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			p2 := ctx.Arg(1)
+			p0 := ctx.Arg(0)
+			p1 := ctx.Arg(1)
 			var body api.UpdateTableRowJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -494,7 +481,7 @@ func registerTablesCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.UpdateTableRowWithResponse(ctx.Context(), p0, p1, p2, body)
+			resp, err := client.UpdateTableRowWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
 				return err
 			}
@@ -516,8 +503,7 @@ func registerTablesCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
+			p0 := ctx.Arg(0)
 			var body api.UpsertTableRowJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -533,7 +519,7 @@ func registerTablesCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.UpsertTableRowWithResponse(ctx.Context(), p0, p1, body)
+			resp, err := client.UpsertTableRowWithResponse(ctx.Context(), p0, body)
 			if err != nil {
 				return err
 			}

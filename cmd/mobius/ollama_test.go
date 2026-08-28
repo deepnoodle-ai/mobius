@@ -18,7 +18,7 @@ import (
 func sampleGenerationSpec() map[string]any {
 	return map[string]any{
 		"route":  map[string]any{"mode": "worker", "provider": "ollama", "model": "llama3"},
-		"mobius": map[string]any{"org_id": "org_1", "project_id": "proj_1"},
+		"mobius": map[string]any{"org_id": "org_1"},
 		"request": map[string]any{
 			"model": "llama3",
 			"messages": []map[string]any{

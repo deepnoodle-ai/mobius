@@ -56,7 +56,7 @@ type ListLoopsOptions struct {
 
 // ListLoops returns saved loop summaries.
 func (c *Client) ListLoops(ctx context.Context, opts *ListLoopsOptions) (*api.LoopListResponse, error) {
-	resp, err := c.ac.ListLoopsWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), listLoopsParams(opts))
+	resp, err := c.ac.ListLoopsWithResponse(ctx, listLoopsParams(opts))
 	if err != nil {
 		return nil, fmt.Errorf("mobius: list loops: %w", err)
 	}
@@ -68,7 +68,7 @@ func (c *Client) ListLoops(ctx context.Context, opts *ListLoopsOptions) (*api.Lo
 
 // GetLoop returns a saved loop by ID.
 func (c *Client) GetLoop(ctx context.Context, id string) (*api.Loop, error) {
-	resp, err := c.ac.GetLoopWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.IDParam(id))
+	resp, err := c.ac.GetLoopWithResponse(ctx, api.IDParam(id))
 	if err != nil {
 		return nil, fmt.Errorf("mobius: get loop: %w", err)
 	}
@@ -85,7 +85,7 @@ func (c *Client) CreateLoop(ctx context.Context, opts LoopOptions) (*api.Loop, e
 	if err != nil {
 		return nil, err
 	}
-	resp, err := c.ac.CreateLoopWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), req)
+	resp, err := c.ac.CreateLoopWithResponse(ctx, req)
 	if err != nil {
 		return nil, fmt.Errorf("mobius: create loop: %w", err)
 	}
@@ -101,7 +101,7 @@ func (c *Client) UpdateLoop(ctx context.Context, id string, opts UpdateLoopOptio
 	if err != nil {
 		return nil, err
 	}
-	resp, err := c.ac.UpdateLoopWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.IDParam(id), req)
+	resp, err := c.ac.UpdateLoopWithResponse(ctx, api.IDParam(id), req)
 	if err != nil {
 		return nil, fmt.Errorf("mobius: update loop: %w", err)
 	}
@@ -113,7 +113,7 @@ func (c *Client) UpdateLoop(ctx context.Context, id string, opts UpdateLoopOptio
 
 // DeleteLoop archives a saved loop by ID.
 func (c *Client) DeleteLoop(ctx context.Context, id string) error {
-	resp, err := c.ac.DeleteLoopWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.IDParam(id))
+	resp, err := c.ac.DeleteLoopWithResponse(ctx, api.IDParam(id))
 	if err != nil {
 		return fmt.Errorf("mobius: delete loop: %w", err)
 	}

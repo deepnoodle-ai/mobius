@@ -60,18 +60,18 @@ test("client: defaults to the production API host", async () => {
     },
   });
   try {
-    const client = new Client({ apiKey: "mbx_test", project: "test-project" });
+    const client = new Client({ apiKey: "mbx_test" });
     await client.listLoops();
   } finally {
     restore();
   }
   assert.equal(
     requestedURL,
-    `${DEFAULT_BASE_URL}/v1/projects/test-project/loops`,
+    `${DEFAULT_BASE_URL}/v1/loops`,
   );
 });
 
-test("client: project resource list helpers", async () => {
+test("client: org resource list helpers", async () => {
   const original = globalThis.fetch;
   globalThis.fetch = (async (input: RequestInfo | URL) => {
     const url = new URL(typeof input === "string" ? input : input.toString());
@@ -108,7 +108,6 @@ test("client: project resource list helpers", async () => {
     const client = new Client({
       apiKey: "mbx_test",
       baseURL: "https://api.example.invalid",
-      project: "test-project",
     });
     assert.deepEqual(
       (
@@ -129,7 +128,7 @@ test("client: project resource list helpers", async () => {
       ).items,
       [],
     );
-    assert.deepEqual((await client.listProjectPermissions()).items, []);
+    assert.deepEqual((await client.listOrgPermissions()).items, []);
     assert.deepEqual(
       (
         await client.listPrincipals({
@@ -154,27 +153,14 @@ test("client: project resource list helpers", async () => {
   }
 });
 
-test("client: extracts project handle from project-pinned API key", () => {
-  const client = new Client({ apiKey: "mbx_secret.prod" });
-  assert.equal(client.project, "prod");
-});
-
-test("client: rejects conflicting explicit project", () => {
-  assert.throws(
-    () => new Client({ apiKey: "mbx_secret.prod", project: "staging" }),
-    ConfigError,
-  );
-});
-
 test("client: workerSocketURL uses websocket scheme", () => {
   const client = new Client({
     apiKey: "mbx_test",
     baseURL: "http://localhost:8080",
-    project: "default",
   });
   assert.equal(
     client.workerSocketURL(),
-    "ws://localhost:8080/v1/projects/default/workers/socket",
+    "ws://localhost:8080/v1/workers/socket",
   );
 });
 
@@ -195,7 +181,6 @@ test("client: startRun posts the new request shape", async () => {
     const client = new Client({
       apiKey: "mbx_test",
       baseURL: "https://api.example.invalid",
-      project: "test-project",
     });
     const run = await client.startRun("loop_1", {
       idempotencyKey: "run-request-1",
@@ -208,7 +193,7 @@ test("client: startRun posts the new request shape", async () => {
   }
   assert.equal(
     requestedURL,
-    "https://api.example.invalid/v1/projects/test-project/loops/loop_1/runs",
+    "https://api.example.invalid/v1/loops/loop_1/runs",
   );
   assert.match(requestBody, /"idempotency_key":"run-request-1"/);
   assert.equal(idempotencyHeader, "run-request-1");
@@ -226,7 +211,7 @@ test("client: startRun keeps external_id as a deprecated alias", async () => {
     },
   });
   try {
-    const client = new Client({ apiKey: "mbx_test", project: "test-project" });
+    const client = new Client({ apiKey: "mbx_test" });
     await client.startRun("loop_1", { external_id: "legacy-1" });
     await assert.rejects(
       client.startRun("loop_1", { idempotencyKey: "a", external_id: "b" }),
@@ -251,7 +236,6 @@ test("client: run control helpers use loop run endpoints", async () => {
     const client = new Client({
       apiKey: "mbx_test",
       baseURL: "https://api.example.invalid",
-      project: "test-project",
     });
     await client.getRun("run_1");
     await client.cancelRun("run_1", "user requested");
@@ -259,15 +243,15 @@ test("client: run control helpers use loop run endpoints", async () => {
   } finally {
     restore();
   }
-  assert.ok(seen.some((url) => url.endsWith("/v1/projects/test-project/runs/run_1")));
+  assert.ok(seen.some((url) => url.endsWith("/v1/runs/run_1")));
   assert.ok(
     seen.some((url) =>
-      url.endsWith("/v1/projects/test-project/runs/run_1/cancel"),
+      url.endsWith("/v1/runs/run_1/cancel"),
     ),
   );
   assert.ok(
     seen.some((url) =>
-      url.endsWith("/v1/projects/test-project/runs/run_1/signals"),
+      url.endsWith("/v1/runs/run_1/signals"),
     ),
   );
 });
@@ -307,7 +291,6 @@ test("client: resolves agents by name and sessions by agent name plus key", asyn
     const client = new Client({
       apiKey: "mbx_test",
       baseURL: "https://api.example.invalid",
-      project: "test-project",
     });
     assert.equal((await client.resolveAgent("Scout")).id, "agent_1");
     assert.equal((await client.resolveAgent("Scout")).id, "agent_1");
@@ -347,7 +330,6 @@ data: {"type":"run_updated","run_id":"run_1","seq":7,"timestamp":"2026-04-27T00:
   const client = new Client({
     apiKey: "mbx_test",
     baseURL: "https://api.example.invalid",
-    project: "test-project",
   });
   const run = await client.waitRun("run_1", { reconnectDelayMs: 1 });
 
@@ -474,7 +456,6 @@ test("client: invokeAgent posts the compound invoke request shape", async () => 
     const client = new Client({
       apiKey: "mbx_test",
       baseURL: "https://api.example.invalid",
-      project: "test-project",
     });
     const turn = await client.invokeAgent({
       agentId: "agent_1",
@@ -515,7 +496,7 @@ test("client: invokeAgent posts the compound invoke request shape", async () => 
   }
   assert.equal(
     requestedURL,
-    "https://api.example.invalid/v1/projects/test-project/agents/invoke",
+    "https://api.example.invalid/v1/agents/invoke",
   );
   assert.match(requestBody, /"agent_ref":\{"id":"agent_1"\}/);
   assert.match(requestBody, /"idempotency_key":"evt_1"/);
@@ -545,7 +526,6 @@ test("client: startTurn passes runtime context to an existing session", async ()
     const client = new Client({
       apiKey: "mbx_test",
       baseURL: "https://api.example.invalid",
-      project: "test-project",
     });
     const turn = await client.startTurn("sess_1", {
       content: [{ type: "text", text: "hi" }],
@@ -560,7 +540,7 @@ test("client: startTurn passes runtime context to an existing session", async ()
   }
   assert.equal(
     requestedURL,
-    "https://api.example.invalid/v1/projects/test-project/sessions/sess_1/turns",
+    "https://api.example.invalid/v1/sessions/sess_1/turns",
   );
   assert.deepEqual(JSON.parse(requestBody), {
     role: "user",
@@ -585,7 +565,7 @@ test("client: invokeAgent does not mark mode new as replay-safe", async () => {
     },
   });
   try {
-    const client = new Client({ apiKey: "mbx_test", project: "test-project" });
+    const client = new Client({ apiKey: "mbx_test" });
     await client.invokeAgent({
       agentName: "support",
       content: [{ type: "text", text: "hi" }],
@@ -612,7 +592,7 @@ test("client: invokeAgent omits a whitespace-only idempotency key", async () => 
     },
   });
   try {
-    const client = new Client({ apiKey: "mbx_test", project: "test-project" });
+    const client = new Client({ apiKey: "mbx_test" });
     await client.invokeAgent({
       agentName: "support",
       content: [{ type: "text", text: "hi" }],
@@ -638,7 +618,7 @@ test("client: nudgeSession mirrors its normalized idempotency key", async () => 
     },
   });
   try {
-    const client = new Client({ apiKey: "mbx_test", project: "test-project" });
+    const client = new Client({ apiKey: "mbx_test" });
     await client.nudgeSession("sess_1", {
       content: "Use the shorter name",
       idempotencyKey: "  event_2  ",
@@ -684,7 +664,6 @@ test("client: listSessionMessages can include runtime context", async () => {
     const client = new Client({
       apiKey: "mbx_test",
       baseURL: "https://api.example.invalid",
-      project: "test-project",
     });
     const messages = await client.listSessionMessages("sess_1", { include: "context" });
     assert.equal(messages.items[0]?.content[0]?.type, "reminder");
@@ -694,7 +673,7 @@ test("client: listSessionMessages can include runtime context", async () => {
   }
   assert.equal(
     requestedURL,
-    "https://api.example.invalid/v1/projects/test-project/sessions/sess_1/messages?include=context",
+    "https://api.example.invalid/v1/sessions/sess_1/messages?include=context",
   );
 });
 
@@ -731,7 +710,6 @@ test("client: session nudge lifecycle routes", async () => {
     const client = new Client({
       apiKey: "mbx_test",
       baseURL: "https://api.example.invalid",
-      project: "test-project",
     });
     const page = await client.listNudges("s1", {
       status: ["pending"],
@@ -747,14 +725,14 @@ test("client: session nudge lifecycle routes", async () => {
     globalThis.fetch = original;
   }
   assert.deepEqual(requests, [
-    "GET /v1/projects/test-project/sessions/s1/nudges",
-    "GET /v1/projects/test-project/sessions/s1/nudges/nudge_1",
-    "POST /v1/projects/test-project/sessions/s1/nudges/nudge_1/cancel",
+    "GET /v1/sessions/s1/nudges",
+    "GET /v1/sessions/s1/nudges/nudge_1",
+    "POST /v1/sessions/s1/nudges/nudge_1/cancel",
   ]);
 });
 
 test("client: invokeAgent requires agent ref and content", async () => {
-  const client = new Client({ apiKey: "mbx_test", project: "test-project" });
+  const client = new Client({ apiKey: "mbx_test" });
   await assert.rejects(() =>
     client.invokeAgent({ content: [{ type: "text", text: "hi" }] }),
   );
@@ -777,7 +755,6 @@ test("client: invokeAgentStream streams session frames inline", async () => {
   const client = new Client({
     apiKey: "mbx_test",
     baseURL: "https://api.example.invalid",
-    project: "test-project",
   });
 
   const events = [];
@@ -803,7 +780,6 @@ function loopRun(id: string, status: string) {
   return {
     id,
     org_id: "org_1",
-    project_id: "proj_1",
     loop_id: "loop_1",
     loop_version_id: "lver_1",
     loop_version: 1,

@@ -32,7 +32,6 @@ def _client() -> Client:
         ClientOptions(
             api_key="mbx_test",
             base_url="https://api.example.invalid",
-            project="test-project",
         ),
         transport=httpx.MockTransport(lambda _: httpx.Response(500)),
     )
@@ -153,7 +152,6 @@ def test_terminal_protocol_error_classifies_codes() -> None:
     )
     assert isinstance(conflict, WorkerInstanceConflictError)
     assert conflict.worker_instance_id == "dup"
-    assert conflict.project_handle == "test-project"
     assert str(conflict) == "already registered"
 
     assert isinstance(
@@ -177,9 +175,7 @@ async def test_run_reraises_instance_conflict_without_reconnecting() -> None:
             # loop so the test fails fast (run returns) instead of hanging.
             worker._stopping = True
             return
-        raise WorkerInstanceConflictError(
-            worker_instance_id="dup", project_handle="test-project"
-        )
+        raise WorkerInstanceConflictError(worker_instance_id="dup")
 
     worker._run_socket = fake_run_socket  # type: ignore[method-assign]
 

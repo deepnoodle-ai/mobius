@@ -3,7 +3,7 @@ import { test } from "node:test";
 
 import { Client } from "../src/client.js";
 
-test("client: project-authorized artifact upload sends multipart metadata and idempotency", async () => {
+test("client: org-authorized artifact upload sends multipart metadata and idempotency", async () => {
   const originalFetch = globalThis.fetch;
   let capturedURL = "";
   let capturedHeaders = new Headers();
@@ -27,7 +27,6 @@ test("client: project-authorized artifact upload sends multipart metadata and id
     const client = new Client({
       apiKey: "mbx_test",
       baseURL: "https://api.example.invalid",
-      project: "omni",
       retry: 0,
     });
     const artifact = await client.createArtifact({
@@ -44,7 +43,7 @@ test("client: project-authorized artifact upload sends multipart metadata and id
 
   assert.equal(
     capturedURL,
-    "https://api.example.invalid/v1/projects/omni/artifacts",
+    "https://api.example.invalid/v1/artifacts",
   );
   assert.equal(capturedHeaders.get("Authorization"), "Bearer mbx_test");
   assert.equal(capturedHeaders.get("Idempotency-Key"), "render-1");

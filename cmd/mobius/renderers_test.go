@@ -12,7 +12,6 @@ import (
 const sampleRun = `{
   "id": "run_abc",
   "org_id": "org_1",
-  "project_id": "proj_1",
   "loop_id": "loop_greeter",
   "loop_version_id": "lver_1",
   "loop_version": 3,
@@ -106,7 +105,7 @@ func TestRegisterResponseRendererTakesPrecedence(t *testing.T) {
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"id":"loop_1","org_id":"org_1","project_id":"proj_1","handle":"x","name":"x","latest_version":1,"status":"active","triggers":[],"created_at":"2025-01-01T00:00:00Z","updated_at":"2025-01-01T00:00:00Z"}`))
+		_, _ = w.Write([]byte(`{"id":"loop_1","org_id":"org_1","handle":"x","name":"x","latest_version":1,"status":"active","triggers":[],"created_at":"2025-01-01T00:00:00Z","updated_at":"2025-01-01T00:00:00Z"}`))
 	}))
 	defer srv.Close()
 

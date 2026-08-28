@@ -24,7 +24,7 @@ type CreateAgentOptions struct {
 	AdoptExisting bool
 
 	// ExternalRef is the client-owned durable identity key for this agent,
-	// unique within the project and assign-once. Required when AdoptExisting
+	// unique within the org and assign-once. Required when AdoptExisting
 	// is set; optional otherwise.
 	ExternalRef string
 }
@@ -47,7 +47,7 @@ func (c *Client) CreateAgent(ctx context.Context, opts CreateAgentOptions) (*api
 		req.IfExists = &adopt
 		ctx = contextWithReplaySafe(ctx)
 	}
-	resp, err := c.ac.CreateAgentWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), req)
+	resp, err := c.ac.CreateAgentWithResponse(ctx, req)
 	if err != nil {
 		return nil, fmt.Errorf("mobius: create agent: %w", err)
 	}
@@ -58,12 +58,12 @@ func (c *Client) CreateAgent(ctx context.Context, opts CreateAgentOptions) (*api
 	if resp.JSON200 != nil {
 		return resp.JSON200, nil
 	}
-	return nil, unexpectedProjectResourceStatus("create agent", resp.HTTPResponse, resp.Body)
+	return nil, unexpectedResourceStatus("create agent", resp.HTTPResponse, resp.Body)
 }
 
 // ListAgentsOptions filters [Client.ListAgents].
 type ListAgentsOptions struct {
-	// Name filters to the project-unique agent with this exact name.
+	// Name filters to the org-unique agent with this exact name.
 	Name string
 	// PrincipalID filters to the agent backed by this principal.
 	PrincipalID string
@@ -96,24 +96,24 @@ func (c *Client) ListAgents(ctx context.Context, opts *ListAgentsOptions) (*api.
 			params.Limit = &limit
 		}
 	}
-	resp, err := c.ac.ListAgentsWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), params)
+	resp, err := c.ac.ListAgentsWithResponse(ctx, params)
 	if err != nil {
 		return nil, fmt.Errorf("mobius: list agents: %w", err)
 	}
 	if resp.JSON200 == nil {
-		return nil, unexpectedProjectResourceStatus("list agents", resp.HTTPResponse, resp.Body)
+		return nil, unexpectedResourceStatus("list agents", resp.HTTPResponse, resp.Body)
 	}
 	return resp.JSON200, nil
 }
 
 // GetAgent returns one agent by ID.
 func (c *Client) GetAgent(ctx context.Context, agentID string) (*api.Agent, error) {
-	resp, err := c.ac.GetAgentWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.IDParam(agentID))
+	resp, err := c.ac.GetAgentWithResponse(ctx, api.IDParam(agentID))
 	if err != nil {
 		return nil, fmt.Errorf("mobius: get agent: %w", err)
 	}
 	if resp.JSON200 == nil {
-		return nil, unexpectedProjectResourceStatus("get agent", resp.HTTPResponse, resp.Body)
+		return nil, unexpectedResourceStatus("get agent", resp.HTTPResponse, resp.Body)
 	}
 	return resp.JSON200, nil
 }
@@ -121,12 +121,12 @@ func (c *Client) GetAgent(ctx context.Context, agentID string) (*api.Agent, erro
 // UpdateAgent patches mutable agent fields. The agent's backing identity
 // (principal_id) is immutable; reassigning identity is delete-and-recreate.
 func (c *Client) UpdateAgent(ctx context.Context, agentID string, req api.UpdateAgentRequest) (*api.Agent, error) {
-	resp, err := c.ac.UpdateAgentWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.IDParam(agentID), req)
+	resp, err := c.ac.UpdateAgentWithResponse(ctx, api.IDParam(agentID), req)
 	if err != nil {
 		return nil, fmt.Errorf("mobius: update agent: %w", err)
 	}
 	if resp.JSON200 == nil {
-		return nil, unexpectedProjectResourceStatus("update agent", resp.HTTPResponse, resp.Body)
+		return nil, unexpectedResourceStatus("update agent", resp.HTTPResponse, resp.Body)
 	}
 	return resp.JSON200, nil
 }
@@ -136,12 +136,12 @@ func (c *Client) UpdateAgent(ctx context.Context, agentID string, req api.Update
 // create-or-adopt against the same ExternalRef returns 409 even with
 // AdoptExisting.
 func (c *Client) DeleteAgent(ctx context.Context, agentID string) error {
-	resp, err := c.ac.DeleteAgentWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.IDParam(agentID))
+	resp, err := c.ac.DeleteAgentWithResponse(ctx, api.IDParam(agentID))
 	if err != nil {
 		return fmt.Errorf("mobius: delete agent: %w", err)
 	}
 	if resp.StatusCode() != http.StatusNoContent {
-		return unexpectedProjectResourceStatus("delete agent", resp.HTTPResponse, resp.Body)
+		return unexpectedResourceStatus("delete agent", resp.HTTPResponse, resp.Body)
 	}
 	return nil
 }

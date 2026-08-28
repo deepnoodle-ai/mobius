@@ -47,7 +47,7 @@ func TestCreateArtifactFromPathSendsOnlyContractFields(t *testing.T) {
 		t.Fatalf("file body = %q", got.fileBody)
 	}
 	if got.leaseToken != "" {
-		t.Fatalf("project-authorized upload must not send a lease header")
+		t.Fatalf("org-authorized upload must not send a lease header")
 	}
 	if got.idempotencyKey != "delivery-1:report" {
 		t.Fatalf("idempotency key = %q", got.idempotencyKey)
@@ -203,7 +203,7 @@ type artifactUploadCapture struct {
 
 func captureArtifactUpload(t *testing.T, r *http.Request) artifactUploadCapture {
 	t.Helper()
-	if r.Method != http.MethodPost || r.URL.Path != "/v1/projects/test-project/artifacts" {
+	if r.Method != http.MethodPost || r.URL.Path != "/v1/artifacts" {
 		t.Fatalf("unexpected request %s %s", r.Method, r.URL.Path)
 	}
 	mr, err := r.MultipartReader()

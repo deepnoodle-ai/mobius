@@ -17,14 +17,14 @@ import (
 
 // registerRolesCommands registers every generated subcommand in the "roles" group.
 func registerRolesCommands(app *cli.App) {
-	rolesGrp := app.Group("roles").Description("Project roles and assignments")
+	rolesGrp := app.Group("roles").Description("Org roles and assignments")
 	rolesGrp.Alias("role")
 	rolesGrp.Command("create").
 		Description("Create role").
 		Flags(
 			cli.String("description", "").Help("Optional human-readable description of what this role grants."),
-			cli.String("name", "").Help("[required] Unique name within the project."),
-			cli.Strings("permissions", "").Help("[required] Permission strings to include. Source allowed values from `GET /v1/projects/{project_handle}/permissions`; legacy IDs or values not present…"),
+			cli.String("name", "").Help("[required] Unique name within the org."),
+			cli.Strings("permissions", "").Help("[required] Permission strings to include. Source allowed values from `GET /v1/permissions`; legacy IDs or values not present in that catalog are…"),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
@@ -36,7 +36,6 @@ func registerRolesCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
 			var body api.CreateRoleJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -67,7 +66,7 @@ func registerRolesCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.CreateRoleWithResponse(ctx.Context(), p0, body)
+			resp, err := client.CreateRoleWithResponse(ctx.Context(), body)
 			if err != nil {
 				return err
 			}
@@ -90,7 +89,6 @@ func registerRolesCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
 			var body api.CreateRoleAssignmentJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -112,7 +110,7 @@ func registerRolesCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.CreateRoleAssignmentWithResponse(ctx.Context(), p0, body)
+			resp, err := client.CreateRoleAssignmentWithResponse(ctx.Context(), body)
 			if err != nil {
 				return err
 			}
@@ -129,9 +127,8 @@ func registerRolesCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			resp, err := client.DeleteRoleWithResponse(ctx.Context(), p0, p1)
+			p0 := ctx.Arg(0)
+			resp, err := client.DeleteRoleWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
 			}
@@ -148,9 +145,8 @@ func registerRolesCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			resp, err := client.DeleteRoleAssignmentWithResponse(ctx.Context(), p0, p1)
+			p0 := ctx.Arg(0)
+			resp, err := client.DeleteRoleAssignmentWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
 			}
@@ -167,9 +163,8 @@ func registerRolesCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			resp, err := client.GetRoleWithResponse(ctx.Context(), p0, p1)
+			p0 := ctx.Arg(0)
+			resp, err := client.GetRoleWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
 			}
@@ -189,7 +184,6 @@ func registerRolesCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
 			params := &api.ListRolesParams{}
 			if ctx.IsSet("limit") {
 				v := api.LimitParam(ctx.Int("limit"))
@@ -199,7 +193,7 @@ func registerRolesCommands(app *cli.App) {
 				v := api.CursorParam(ctx.String("cursor"))
 				params.Cursor = &v
 			}
-			resp, err := client.ListRolesWithResponse(ctx.Context(), p0, params)
+			resp, err := client.ListRolesWithResponse(ctx.Context(), params)
 			if err != nil {
 				return err
 			}
@@ -219,7 +213,6 @@ func registerRolesCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
 			params := &api.ListRoleAssignmentsParams{}
 			if ctx.IsSet("principal-id") {
 				v := ctx.String("principal-id")
@@ -229,7 +222,7 @@ func registerRolesCommands(app *cli.App) {
 				v := ctx.String("role-id")
 				params.RoleId = &v
 			}
-			resp, err := client.ListRoleAssignmentsWithResponse(ctx.Context(), p0, params)
+			resp, err := client.ListRoleAssignmentsWithResponse(ctx.Context(), params)
 			if err != nil {
 				return err
 			}
@@ -241,7 +234,7 @@ func registerRolesCommands(app *cli.App) {
 		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		Flags(
 			cli.String("description", "").Help("Replacement description."),
-			cli.Strings("permissions", "").Help("Replaces the existing permissions array entirely. Source allowed values from `GET /v1/projects/{project_handle}/permissions`; legacy IDs or…"),
+			cli.Strings("permissions", "").Help("Replaces the existing permissions array entirely. Source allowed values from `GET /v1/permissions`; legacy IDs or values not present in…"),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
@@ -253,8 +246,7 @@ func registerRolesCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
+			p0 := ctx.Arg(0)
 			var body api.UpdateRoleJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -279,7 +271,7 @@ func registerRolesCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.UpdateRoleWithResponse(ctx.Context(), p0, p1, body)
+			resp, err := client.UpdateRoleWithResponse(ctx.Context(), p0, body)
 			if err != nil {
 				return err
 			}

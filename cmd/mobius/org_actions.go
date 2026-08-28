@@ -32,7 +32,7 @@ func registerOrgActionSecretCommands(app *cli.App) {
 		cli.String("endpoint-url", "").Help("[required] Public HTTPS endpoint. Private, loopback, link-local, and redirect targets are rejected."),
 		cli.String("input-schema", "").Help("input-schema Accepts JSON, @file, or @-."),
 		cli.String("invocation-format", "").Help("invocation-format"),
-		cli.String("name", "").Help("[required] Canonical dotted name selected by project toolkits."),
+		cli.String("name", "").Help("[required] Canonical dotted name selected by the org's toolkits."),
 		cli.String("output-schema", "").Help("output-schema Accepts JSON, @file, or @-."),
 		cli.String("title", "").Help("title"),
 		cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),

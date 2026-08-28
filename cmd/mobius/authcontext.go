@@ -30,14 +30,13 @@ const (
 // flag parsing, then read by clientFromContext, the auth API helpers, and
 // the auth status command.
 //
-// APIURL, APIKey, and Project are the *effective* values, taking the
-// precedence rules into account: explicit flag/env > saved profile > built-in
-// default. Each field is resolved independently.
+// APIURL and APIKey are the *effective* values, taking the precedence rules
+// into account: explicit flag/env > saved profile > built-in default. Each
+// field is resolved independently.
 type resolvedAuth struct {
 	Source  authSource
 	APIURL  string
 	APIKey  string
-	Project string
 	Profile *authstore.Profile
 }
 
@@ -50,7 +49,7 @@ var (
 
 // authMiddleware resolves the credential to use for this invocation and
 // stashes it for later reads. It runs after flag parsing — so --profile,
-// --api-key, --api-url, and --project are already populated — and before
+// --api-key and --api-url are already populated — and before
 // every handler.
 //
 // The middleware never fails the command: if no credential can be resolved,
@@ -91,7 +90,6 @@ func resolveAuth(ctx *cli.Context) *resolvedAuth {
 	}
 
 	out.APIURL = pickURL(ctx, out.Profile)
-	out.Project = pickProject(ctx, out.Profile)
 	return out
 }
 
@@ -110,17 +108,6 @@ func pickURL(ctx *cli.Context, p *authstore.Profile) string {
 		return v
 	}
 	return mobius.DefaultBaseURL
-}
-
-// pickProject applies the same precedence as pickURL for the project handle.
-func pickProject(ctx *cli.Context, p *authstore.Profile) string {
-	if ctx.IsSet("project") {
-		return ctx.String("project")
-	}
-	if p != nil && p.ProjectHandle != "" {
-		return p.ProjectHandle
-	}
-	return ctx.String("project")
 }
 
 // apiKeyFlagSource decides whether an api-key flag value came from the

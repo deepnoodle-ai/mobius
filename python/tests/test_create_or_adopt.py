@@ -11,7 +11,6 @@ from deepnoodle.mobius import (
     Client,
     ClientOptions,
     CreateAgentRequest,
-    CreateProjectRequest,
     MobiusAPIError,
 )
 
@@ -21,7 +20,6 @@ def _client_with(handler, *, retry: int = 0) -> Client:
         ClientOptions(
             api_key="mbx_test",
             base_url="https://api.example.invalid",
-            project="test-project",
             retry=retry,
         ),
         transport=httpx.MockTransport(handler),
@@ -35,18 +33,7 @@ def _agent(agent_id: str = "agent_1") -> dict:
         "name": "PR reviewer",
         "status": "active",
         "external_ref": "tenant-42/pr-reviewer",
-        "created_at": "2026-07-17T00:00:00Z",
-        "updated_at": "2026-07-17T00:00:00Z",
-    }
-
-
-def _project(project_id: str = "prj_1") -> dict:
-    return {
-        "id": project_id,
-        "name": "Product Ops",
-        "handle": "product-ops",
-        "access_mode": "restricted",
-        "external_ref": "workspace-42",
+        "memory_enabled": False,
         "created_at": "2026-07-17T00:00:00Z",
         "updated_at": "2026-07-17T00:00:00Z",
     }
@@ -55,7 +42,7 @@ def _project(project_id: str = "prj_1") -> dict:
 def test_create_agent_adopt_sends_adopt_fields() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         assert request.method == "POST"
-        assert request.url.path == "/v1/projects/test-project/agents"
+        assert request.url.path == "/v1/agents"
         body = json.loads(request.content)
         assert body["if_exists"] == "adopt"
         assert body["external_ref"] == "tenant-42/pr-reviewer"
@@ -153,82 +140,4 @@ def test_create_agent_adopt_conflict_code() -> None:
         )
     assert exc.value.code == MobiusAPIError.EXTERNAL_IDENTITY_CONFLICT
     assert exc.value.status == 409
-    client.close()
-
-
-def test_create_project_adopt_hits_projects_route() -> None:
-    def handler(request: httpx.Request) -> httpx.Response:
-        assert request.method == "POST"
-        assert request.url.path == "/v1/projects"
-        body = json.loads(request.content)
-        assert body["if_exists"] == "adopt"
-        assert body["external_ref"] == "workspace-42"
-        return httpx.Response(200, json=_project())
-
-    client = _client_with(handler)
-    project = client.create_project(
-        CreateProjectRequest(name="Product Ops"),
-        adopt_existing=True,
-        external_ref="workspace-42",
-    )
-    assert project.id == "prj_1"
-    client.close()
-
-
-def test_create_project_adopt_requires_external_ref_before_http() -> None:
-    def handler(request: httpx.Request) -> httpx.Response:
-        raise AssertionError("no request may be sent when the options are invalid")
-
-    client = _client_with(handler)
-    with pytest.raises(ValueError, match="external_ref"):
-        client.create_project(
-            CreateProjectRequest(name="Product Ops"), adopt_existing=True
-        )
-    client.close()
-
-
-def test_create_project_adopt_retries_transient_503() -> None:
-    requests = 0
-
-    def handler(request: httpx.Request) -> httpx.Response:
-        nonlocal requests
-        requests += 1
-        if requests == 1:
-            return httpx.Response(503, headers={"Retry-After": "0"})
-        return httpx.Response(200, json=_project())
-
-    client = _client_with(handler, retry=2)
-    project = client.create_project(
-        CreateProjectRequest(name="Product Ops"),
-        adopt_existing=True,
-        external_ref="workspace-42",
-    )
-    assert project.id == "prj_1"
-    assert requests == 2, "the transient 503 must be retried in adopt mode"
-    client.close()
-
-
-def test_create_project_adopt_conflict_codes() -> None:
-    assert MobiusAPIError.PROJECT_ARCHIVED == "project_archived"
-    assert MobiusAPIError.PROJECT_CAPACITY_REACHED == "project_capacity_reached"
-
-    def handler(request: httpx.Request) -> httpx.Response:
-        return httpx.Response(
-            409,
-            json={
-                "error": {
-                    "code": "project_archived",
-                    "message": "project is archived",
-                }
-            },
-        )
-
-    client = _client_with(handler)
-    with pytest.raises(MobiusAPIError) as exc:
-        client.create_project(
-            CreateProjectRequest(name="Product Ops"),
-            adopt_existing=True,
-            external_ref="workspace-42",
-        )
-    assert exc.value.code == MobiusAPIError.PROJECT_ARCHIVED
     client.close()

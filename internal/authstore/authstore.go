@@ -1,8 +1,8 @@
 // Package authstore persists browser-issued CLI credentials.
 //
 // Credentials live in one TOML file with multiple named profiles. Profile
-// names are just labels; the target project is an explicit field so multiple
-// profiles can point at the same project with different credentials.
+// names are just labels; each profile is scoped to whichever org the saved
+// token authenticates as.
 package authstore
 
 import (
@@ -38,8 +38,6 @@ type Profile struct {
 	CredentialID  string `toml:"credential_id,omitempty"`
 	OrgID         string `toml:"org_id,omitempty"`
 	OrgName       string `toml:"org_name,omitempty"`
-	ProjectID     string `toml:"project_id,omitempty"`
-	ProjectHandle string `toml:"project,omitempty"`
 	UserID        string `toml:"user_id,omitempty"`
 	UserEmail     string `toml:"user_email,omitempty"`
 	UserName      string `toml:"user_name,omitempty"`
@@ -50,29 +48,9 @@ type Profile struct {
 // Credential is kept as a compatibility alias for older single-profile code.
 type Credential = Profile
 
-// RequestToken returns the bearer token to present on HTTP requests. Pinned
-// profiles store project_id and project explicitly; when the saved token is
-// raw, append the project suffix expected by the API.
+// RequestToken returns the bearer token to present on HTTP requests.
 func (p Profile) RequestToken() string {
-	if p.Token == "" || p.ProjectID == "" || p.ProjectHandle == "" {
-		return p.Token
-	}
-	suffix := "." + p.ProjectHandle
-	if strings.HasSuffix(p.Token, suffix) {
-		return p.Token
-	}
-	if credentialHasSuffix(p.Token) {
-		return p.Token
-	}
-	return p.Token + suffix
-}
-
-func credentialHasSuffix(token string) bool {
-	if !strings.HasPrefix(token, "mbx_") && !strings.HasPrefix(token, "mbc_") {
-		return false
-	}
-	dot := strings.LastIndexByte(token, '.')
-	return dot >= 0 && dot != len(token)-1
+	return p.Token
 }
 
 // Store is the on-disk credentials file.

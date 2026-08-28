@@ -49,7 +49,7 @@ const catalogEntryJSON = `{
 func TestListActionCatalog(t *testing.T) {
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, r.Method, http.MethodGet)
-		assert.Equal(t, r.URL.Path, "/v1/projects/test-project/catalog/actions")
+		assert.Equal(t, r.URL.Path, "/v1/catalog/actions")
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		_, _ = io.WriteString(w, catalogListJSON)
@@ -74,7 +74,7 @@ func TestListActionCatalog(t *testing.T) {
 func TestGetActionCatalogEntry(t *testing.T) {
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, r.Method, http.MethodGet)
-		assert.Equal(t, r.URL.Path, "/v1/projects/test-project/catalog/actions/render-template")
+		assert.Equal(t, r.URL.Path, "/v1/catalog/actions/render-template")
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		_, _ = io.WriteString(w, catalogEntryJSON)

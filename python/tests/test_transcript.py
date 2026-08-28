@@ -32,7 +32,6 @@ def _client_with(handler) -> Client:
         ClientOptions(
             api_key="mbx_test",
             base_url="https://api.example.invalid",
-            project="test-project",
         ),
         transport=httpx.MockTransport(handler),
     )
@@ -311,7 +310,7 @@ def test_get_session_transcript_builds_query() -> None:
     snap = client.get_session_transcript("sess_1", GetSessionTranscriptOptions(cursor="10.2", limit=50))
     assert snap.resume_cursor == "1.1"
     assert snap.interactions == []
-    assert seen["path"] == "/v1/projects/test-project/sessions/sess_1/transcript"
+    assert seen["path"] == "/v1/sessions/sess_1/transcript"
     assert seen["cursor"] == "10.2"
     assert seen["limit"] == "50"
 
@@ -434,7 +433,7 @@ def test_nudge_session_is_a_thin_typed_wrapper() -> None:
         ),
     )
     assert ack.nudge_id == "nudge_1"
-    assert seen["path"] == "/v1/projects/test-project/sessions/s1/nudges"
+    assert seen["path"] == "/v1/sessions/s1/nudges"
     assert seen["idempotency_key"] == "event_2"
     assert seen["body"] == {
         "content": "Use the shorter name",

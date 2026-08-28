@@ -18,7 +18,6 @@ async function withMockFetch(
       new Client({
         apiKey: "mbx_test",
         baseURL: "https://api.example.invalid",
-        project: "test-project",
         retry: 0,
       }),
     );
@@ -27,12 +26,11 @@ async function withMockFetch(
   }
 }
 
-test("client: listBillingUsageEvents requires a project and encodes the exact reader filters", async () => {
+test("client: listBillingUsageEvents encodes the exact reader filters", async () => {
   await withMockFetch(
     (url) => {
       assert.equal(url.pathname, "/v1/billing/usage-events");
       assert.deepEqual(Object.fromEntries(url.searchParams), {
-        project_id: "prj_1",
         recorded_after: "2026-07-22T12:00:00Z",
         period_start: "2026-07-01T00:00:00Z",
         counter: "llm.tokens",
@@ -54,7 +52,6 @@ test("client: listBillingUsageEvents requires a project and encodes the exact re
     },
     async (client) => {
       await client.listBillingUsageEvents({
-        projectId: "prj_1",
         recordedAfter: "2026-07-22T12:00:00Z",
         periodStart: "2026-07-01T00:00:00Z",
         counter: "llm.tokens",
@@ -66,10 +63,6 @@ test("client: listBillingUsageEvents requires a project and encodes the exact re
         cursor: "cur_1",
         limit: 25,
       });
-      await assert.rejects(
-        client.listBillingUsageEvents({ projectId: "  " }),
-        /projectId is required/,
-      );
     },
   );
 });
@@ -92,7 +85,6 @@ test("client: iterateBillingUsageEvents drains chronological cursor pages", asyn
     async (client) => {
       const items = [];
       for await (const item of client.iterateBillingUsageEvents({
-        projectId: "prj_1",
         recordedAfter: "2026-07-22T12:00:00Z",
         limit: 1,
       })) {
@@ -121,9 +113,7 @@ test("client: iterateBillingUsageEvents fails fast on has_more without next_curs
       const drained: string[] = [];
       await assert.rejects(
         (async () => {
-          for await (const item of client.iterateBillingUsageEvents({
-            projectId: "prj_1",
-          })) {
+          for await (const item of client.iterateBillingUsageEvents({})) {
             drained.push(item.id);
           }
         })(),

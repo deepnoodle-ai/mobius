@@ -33,7 +33,7 @@ func (c *Client) CreateEnvironmentGitCredential(ctx context.Context, environment
 		return nil, fmt.Errorf("mobius: repo_full_name is required")
 	}
 	var out EnvironmentGitCredential
-	if err := c.doJSON(ctx, http.MethodPost, "/v1/projects/"+url.PathEscape(c.projectHandle)+"/environments/"+url.PathEscape(environmentID)+"/git/credentials", req, &out); err != nil {
+	if err := c.doJSON(ctx, http.MethodPost, "/v1/environments/"+url.PathEscape(environmentID)+"/git/credentials", req, &out); err != nil {
 		return nil, err
 	}
 	return &out, nil

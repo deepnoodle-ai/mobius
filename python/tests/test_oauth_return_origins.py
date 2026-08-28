@@ -14,7 +14,6 @@ def _client_with(handler) -> Client:
         ClientOptions(
             api_key="mbx_test",
             base_url="https://api.example.invalid",
-            project="test-project",
             retry=0,
         ),
         transport=httpx.MockTransport(handler),

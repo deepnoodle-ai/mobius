@@ -12,7 +12,6 @@ function testClient(): Client {
   return new Client({
     apiKey: "mbx_test",
     baseURL: "http://localhost:8080",
-    project: "test-project",
   });
 }
 
@@ -25,7 +24,6 @@ test("worker: registers action functions fluently", () => {
   const client = new Client({
     apiKey: "mbx_test",
     baseURL: "http://localhost:8080",
-    project: "default",
   });
   const worker = new Worker(client, { logger: null });
   assert.equal(
@@ -71,7 +69,6 @@ test("worker: classifies terminal protocol error codes", () => {
   });
   assert.ok(conflict instanceof WorkerInstanceConflictError);
   assert.equal(conflict.workerInstanceId, "dup");
-  assert.equal(conflict.projectHandle, "test-project");
   assert.equal(conflict.message, "already registered");
 
   assert.ok(classify({ code: "invalid_actor" }) instanceof AuthRevokedError);
@@ -93,7 +90,7 @@ test("worker: run rethrows instance conflict without reconnecting", async () => 
       worker.stop();
       return;
     }
-    throw new WorkerInstanceConflictError("dup", "test-project");
+    throw new WorkerInstanceConflictError("dup");
   };
 
   await assert.rejects(worker.run(), WorkerInstanceConflictError);
@@ -104,7 +101,6 @@ test("worker pool: registers shared action functions fluently", () => {
   const client = new Client({
     apiKey: "mbx_test",
     baseURL: "http://localhost:8080",
-    project: "default",
   });
   const pool = new WorkerPool(client, { logger: null, count: 2 });
   assert.equal(pool.register("demo.action", async () => ({ ok: true })), pool);
