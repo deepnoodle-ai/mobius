@@ -5273,7 +5273,7 @@ class CreateSessionRequest(BaseModel):
     visibility: SessionVisibility | None = None
     model_override: str | None = Field(
         None,
-        description="Model to use for a newly created session. Overrides the stored agent's model.",
+        description="Model to use for a newly created session. Overrides the stored agent's model. Ignored when an existing session is resolved.",
     )
     compaction_policy: SessionCompactionPolicy | None = Field(
         None,

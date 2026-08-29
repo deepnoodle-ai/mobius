@@ -183,7 +183,7 @@ func registerSessionsCommands(app *cli.App) {
 			cli.String("compaction-policy", "").Help("Controls how a session's transcript is automatically summarized as it grows. On create the supplied fields are merged over the owning… Accepts JSON, @file, or @-."),
 			cli.String("metadata", "").Help("Free-form caller metadata for the session. Accepts JSON, @file, or @-."),
 			cli.String("mode", "").Help("`continue_or_create` (default) resolves an existing session for the `session_key` or creates one; `new` always creates a fresh session…"),
-			cli.String("model-override", "").Help("Model to use for a newly created session. Overrides the stored agent's model."),
+			cli.String("model-override", "").Help("Model to use for a newly created session. Overrides the stored agent's model. Ignored when an existing session is resolved."),
 			cli.String("retention", "").Help("Controls how long a session is retained. Applied only when the session is first created (like `compaction_policy`); ignored when an… Accepts JSON, @file, or @-."),
 			cli.String("session-key", "").Help("Stable key identifying the conversation within the agent."),
 			cli.String("thinking-effort", "").Help("Reasoning-effort level for a turn, lowest (`low`) to highest (`max`). Higher effort spends more tokens on reasoning, improving quality on…"),

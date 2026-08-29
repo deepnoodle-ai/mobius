@@ -10,7 +10,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 
 - Removed definition-resolver operations and invocation-time agent `config`.
   Agent behavior now comes from the stored agent; session creation exposes the
-  narrow `model_override` used by model pickers.
+  narrow `model_override` used by model pickers
+  ([#201](https://github.com/deepnoodle-ai/mobius/pull/201)).
 
 ## [0.0.61] - 2026-08-17
 

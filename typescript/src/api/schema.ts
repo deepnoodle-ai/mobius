@@ -6954,7 +6954,7 @@ export interface components {
             /** @description Human-friendly session title. */
             title?: string;
             visibility?: components["schemas"]["SessionVisibility"];
-            /** @description Model to use for a newly created session. Overrides the stored agent's model. */
+            /** @description Model to use for a newly created session. Overrides the stored agent's model. Ignored when an existing session is resolved. */
             model_override?: string;
             /** @description Per-session compaction overrides applied when the session is first created. Merged over the agent's default policy and server defaults. Ignored when an existing session is resolved. */
             compaction_policy?: components["schemas"]["SessionCompactionPolicy"];
@@ -12448,24 +12448,14 @@ export interface operations {
                  *         "mode": "continue_or_create",
                  *         "session_key": "app:acct_123:user_456:slack:support:thread_789",
                  *         "title": "Support in Slack",
+                 *         "model_override": "claude-sonnet-4-6",
                  *         "metadata": {
                  *           "account_id": "acct_123",
                  *           "user_id": "user_456"
                  *         }
                  *       },
-                 *       "config": {
-                 *         "instructions": "You are Acme's support agent. Be concise and cite ticket numbers.",
-                 *         "model": "claude-sonnet-4-6",
-                 *         "effort": "medium",
-                 *         "toolkits": [
-                 *           {
-                 *             "name": "tickets",
-                 *             "actions": [
-                 *               "tickets.search",
-                 *               "tickets.get"
-                 *             ]
-                 *           }
-                 *         ]
+                 *       "operation": {
+                 *         "timeout_seconds": 120
                  *       },
                  *       "input": {
                  *         "content": [
