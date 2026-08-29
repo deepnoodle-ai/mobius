@@ -5937,7 +5937,7 @@ type CreateSessionRequest struct {
 	// Mode `continue_or_create` (default) resolves an existing session for the `session_key` or creates one; `new` always creates a fresh session; `continue` resolves an existing session and fails if none exists.
 	Mode *CreateSessionRequestMode `json:"mode,omitempty"`
 
-	// ModelOverride Model to use for a newly created session. Overrides the stored agent's model. Ignored when an existing session is resolved.
+	// ModelOverride Model to use for a newly created session. Overrides the stored agent's model. Ignored when an existing session is resolved. Creating a session for a worker-routed agent returns `400 invalid_argument` with `details.argument = model_override`.
 	ModelOverride *string `json:"model_override,omitempty"`
 
 	// Retention Controls how long a session is retained. Applied only when the session is first created (like `compaction_policy`); ignored when an existing session is resolved. `standard` is the default and keeps the session forever. `bounded` expires the session — pruning its transcript from every read path — once it has been idle past `ttl_seconds`. Kept for audit after expiry: a tombstone session row with its token totals, and the turn rows with their status, error, usage, and timings.
@@ -6872,7 +6872,7 @@ type InvokeSessionSpec struct {
 	// Mode `continue_or_create` (default) resolves an existing session for the `session_key` or creates one; `new` always creates a fresh session; `continue` resolves an existing session and fails if none exists.
 	Mode *InvokeSessionSpecMode `json:"mode,omitempty"`
 
-	// ModelOverride Model to use for a newly created session. Overrides the stored agent's model and is ignored when an existing session is resolved.
+	// ModelOverride Model to use for a newly created session. Overrides the stored agent's model and is ignored when an existing session is resolved. Creating a session for a worker-routed agent returns `400 invalid_argument` with `details.argument = model_override`.
 	ModelOverride *string `json:"model_override,omitempty"`
 
 	// Retention Controls how long a session is retained. Applied only when the session is first created (like `compaction_policy`); ignored when an existing session is resolved. `standard` is the default and keeps the session forever. `bounded` expires the session — pruning its transcript from every read path — once it has been idle past `ttl_seconds`. Kept for audit after expiry: a tombstone session row with its token totals, and the turn rows with their status, error, usage, and timings.

@@ -5142,7 +5142,7 @@ class InvokeSessionSpec(BaseModel):
     visibility: SessionVisibility | None = None
     model_override: str | None = Field(
         None,
-        description="Model to use for a newly created session. Overrides the stored agent's model and is ignored when an existing session is resolved.",
+        description="Model to use for a newly created session. Overrides the stored agent's model and is ignored when an existing session is resolved. Creating a session for a worker-routed agent returns `400 invalid_argument` with `details.argument = model_override`.",
     )
     compaction_policy: SessionCompactionPolicy | None = Field(
         None,
@@ -5273,7 +5273,7 @@ class CreateSessionRequest(BaseModel):
     visibility: SessionVisibility | None = None
     model_override: str | None = Field(
         None,
-        description="Model to use for a newly created session. Overrides the stored agent's model. Ignored when an existing session is resolved.",
+        description="Model to use for a newly created session. Overrides the stored agent's model. Ignored when an existing session is resolved. Creating a session for a worker-routed agent returns `400 invalid_argument` with `details.argument = model_override`.",
     )
     compaction_policy: SessionCompactionPolicy | None = Field(
         None,

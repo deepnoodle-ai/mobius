@@ -14483,7 +14483,9 @@ components:
         model_override:
           type: string
           description: Model to use for a newly created session. Overrides the stored agent's
-            model and is ignored when an existing session is resolved.
+            model and is ignored when an existing session is resolved. Creating a session
+            for a worker-routed agent returns `400 invalid_argument` with `details.argument
+            = model_override`.
         compaction_policy:
           $ref: '#/components/schemas/SessionCompactionPolicy'
           description: Per-session compaction overrides applied when the session is first
@@ -14632,7 +14634,8 @@ components:
         model_override:
           type: string
           description: Model to use for a newly created session. Overrides the stored agent's
-            model. Ignored when an existing session is resolved.
+            model. Ignored when an existing session is resolved. Creating a session for a
+            worker-routed agent returns `400 invalid_argument` with `details.argument = model_override`.
         compaction_policy:
           $ref: '#/components/schemas/SessionCompactionPolicy'
           description: Per-session compaction overrides applied when the session is first

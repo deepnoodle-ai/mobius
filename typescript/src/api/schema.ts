@@ -6883,7 +6883,7 @@ export interface components {
             /** @description Human-friendly title for a newly created session. */
             title?: string;
             visibility?: components["schemas"]["SessionVisibility"];
-            /** @description Model to use for a newly created session. Overrides the stored agent's model and is ignored when an existing session is resolved. */
+            /** @description Model to use for a newly created session. Overrides the stored agent's model and is ignored when an existing session is resolved. Creating a session for a worker-routed agent returns `400 invalid_argument` with `details.argument = model_override`. */
             model_override?: string;
             /** @description Per-session compaction overrides applied when the session is first created. Merged over the agent's default policy and server defaults. Ignored when an existing session is resolved. */
             compaction_policy?: components["schemas"]["SessionCompactionPolicy"];
@@ -6954,7 +6954,7 @@ export interface components {
             /** @description Human-friendly session title. */
             title?: string;
             visibility?: components["schemas"]["SessionVisibility"];
-            /** @description Model to use for a newly created session. Overrides the stored agent's model. Ignored when an existing session is resolved. */
+            /** @description Model to use for a newly created session. Overrides the stored agent's model. Ignored when an existing session is resolved. Creating a session for a worker-routed agent returns `400 invalid_argument` with `details.argument = model_override`. */
             model_override?: string;
             /** @description Per-session compaction overrides applied when the session is first created. Merged over the agent's default policy and server defaults. Ignored when an existing session is resolved. */
             compaction_policy?: components["schemas"]["SessionCompactionPolicy"];
