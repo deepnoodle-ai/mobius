@@ -147,17 +147,27 @@ func runPrincipalCreate(ctx *cli.Context) error {
 
 func resolveRoleName(ctx *cli.Context, client *api.ClientWithResponses, name string) (string, error) {
 	limit := api.LimitParam(100)
-	resp, err := client.ListRolesWithResponse(ctx.Context(), &api.ListRolesParams{Limit: &limit})
-	if err != nil {
-		return "", err
-	}
-	if resp.JSON200 == nil {
-		return "", printResponse(ctx, "listRoles", resp.StatusCode(), resp.Body)
-	}
-	for _, role := range resp.JSON200.Items {
-		if role.Name == name {
-			return role.Id, nil
+	var cursor *string
+	for {
+		resp, err := client.ListRolesWithResponse(ctx.Context(), &api.ListRolesParams{
+			Cursor: cursor,
+			Limit:  &limit,
+		})
+		if err != nil {
+			return "", err
 		}
+		if resp.JSON200 == nil {
+			return "", printResponse(ctx, "listRoles", resp.StatusCode(), resp.Body)
+		}
+		for _, role := range resp.JSON200.Items {
+			if role.Name == name {
+				return role.Id, nil
+			}
+		}
+		if !resp.JSON200.HasMore || resp.JSON200.NextCursor == nil || *resp.JSON200.NextCursor == "" {
+			break
+		}
+		cursor = resp.JSON200.NextCursor
 	}
 	return "", fmt.Errorf("role %q not found", name)
 }
