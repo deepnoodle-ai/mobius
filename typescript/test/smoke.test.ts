@@ -200,6 +200,7 @@ test("client: startRun posts the new request shape", async () => {
     const run = await client.startRun("loop_1", {
       idempotencyKey: "run-request-1",
       event: { topic: "sdk" },
+      config: { audience: "operators" },
     });
     assert.equal(run.id, "run_1");
   } finally {
@@ -212,6 +213,7 @@ test("client: startRun posts the new request shape", async () => {
   assert.match(requestBody, /"idempotency_key":"run-request-1"/);
   assert.equal(idempotencyHeader, "run-request-1");
   assert.match(requestBody, /"event":\{"topic":"sdk"\}/);
+  assert.match(requestBody, /"config":\{"audience":"operators"\}/);
 });
 
 test("client: startRun keeps external_id as a deprecated alias", async () => {
@@ -479,12 +481,9 @@ test("client: invokeAgent posts the compound invoke request shape", async () => 
       content: [{ type: "text", text: "hi" }],
       context: [{ name: "naming-board", content: "Chosen: none" }],
       idempotencyKey: "evt_1",
-      session: { session_key: "app:acct_1:user_2" },
-      config: {
-        instructions: "Be concise.",
-        model: "claude-sonnet-4-6",
-        effort: "medium",
-        toolkits: [{ name: "tickets", actions: ["tickets.search"] }],
+      session: {
+        session_key: "app:acct_1:user_2",
+        model_override: "claude-sonnet-5",
       },
       operation: { timeout_seconds: 90 },
       output: { schema: { type: "object" } },
@@ -523,11 +522,8 @@ test("client: invokeAgent posts the compound invoke request shape", async () => 
   assert.equal(idempotencyHeader, "evt_1");
   assert.match(requestBody, /"context":\[\{"name":"naming-board","content":"Chosen: none"\}\]/);
   assert.match(requestBody, /"session_key":"app:acct_1:user_2"/);
-  assert.match(requestBody, /"config":\{/);
-  assert.match(requestBody, /"instructions":"Be concise\."/);
-  assert.match(requestBody, /"model":"claude-sonnet-4-6"/);
-  assert.match(requestBody, /"effort":"medium"/);
-  assert.match(requestBody, /"toolkits":\[\{"name":"tickets","actions":\["tickets\.search"\]\}\]/);
+  assert.match(requestBody, /"model_override":"claude-sonnet-5"/);
+  assert.doesNotMatch(requestBody, /"config":\{/);
   assert.match(requestBody, /"operation":\{"timeout_seconds":90\}/);
   assert.match(requestBody, /"output":\{"schema":\{"type":"object"\}\}/);
 });

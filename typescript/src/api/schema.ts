@@ -814,30 +814,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/organization/definition-resolver": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get the org's definition-resolver config
-         * @description Returns the active org's pluggable definition-source configuration: where definitions resolve from (`mobius_stored` default or `client_resolver`) and, for the client resolver, the endpoint and caching policy. The bearer token is never returned — `auth_configured` reports whether one is set. Requires `Admin` or `Owner` membership.
-         */
-        get: operations["getDefinitionResolver"];
-        /**
-         * Replace the org's definition-resolver config
-         * @description Full-replace of the active org's definition-source configuration. All configurable fields are authoritative; `auth.token` is write-only — supply it to set or rotate the shared bearer token, omit `auth` to keep the existing token, or send an empty token to clear it. Execution behavior stays clamped by the org policy ceiling regardless of source. Requires `Admin` or `Owner` membership.
-         */
-        put: operations["replaceDefinitionResolver"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/organization/oauth-return-origins": {
         parameters: {
             query?: never;
@@ -1281,9 +1257,7 @@ export interface paths {
          * Invoke an agent
          * @description One compound runtime call for hosted apps: it resolves an agent, resolves or creates a session by `session_key`, appends the caller's input message, and starts an agent turn — collapsing the create-or-resolve-session plus start-turn sequence into a single retryable request. This is the entry point a product backend (an embedded app, a Slack handler, a Telegram bot) calls per inbound message; the lower-level session and turn APIs remain available for finer control.
          *
-         *     The optional `config` block lets you send an agent definition with the request — instructions, model, effort, per-turn timeout, toolkits, and skills — instead of using the one stored in Mobius. A field you set replaces the agent's value; a field you leave out keeps it. Mobius remembers the config on the session and reuses it on later turns until you send a new one. If your organization limits values like the model or timeout, those limits still apply. Omit `config` to run the agent on its stored definition.
-         *
-         *     `config.timeout_seconds` is the session definition fallback; zero uses the platform default. For a one-shot override, send `operation.timeout_seconds` with a value of at least one. The operation value applies only to the newly admitted turn and takes precedence over the saved config value.
+         *     Agents always run from their stored definition. A newly created session may set `session.model_override` to keep that conversation on one model. For a one-shot timeout override, send `operation.timeout_seconds` with a value of at least one; it applies only to the newly admitted turn.
          *
          *     By default it returns `202 Accepted` immediately with a durable `after_sequence` stream cursor; the turn keeps running even if the caller disconnects. When the request sets `Accept: text/event-stream`, the response is `200 OK` and the turn's activity is streamed inline on the same connection, identical to the `POST /v1/projects/{project_handle}/sessions/{session_id}/turns` stream. A repeated call with the same `input.idempotency_key` resolves the same session and returns the existing invocation without restarting it or writing new input, so a webhook handler can acknowledge fast and retry safely. Requires the `mobius.agent.invoke` permission (or the agent's own backing principal).
          *
@@ -1431,7 +1405,7 @@ export interface paths {
          * Start an agent turn
          * @description Appends one caller input message to the session and starts an agent turn to respond. By default returns `202 Accepted` immediately with a durable `after_sequence` cursor (a message `sequence`) to stream from. The turn keeps running even if the caller disconnects. When the request sets `Accept: text/event-stream`, the response is `200 OK` and the turn's activity is streamed inline on the same connection, equivalent to opening `GET .../stream` at the returned cursor. A repeated call with the same `idempotency_key` returns the existing invocation without restarting it or writing new input. A distinct send while a direct turn is queued, running, or waiting returns `409 session_turn_active` before appending the new input; use the nudge endpoint explicitly to steer an active turn. Requires the `mobius.agent.invoke` permission (or the agent's own backing principal).
          *
-         *     The session definition's `config.timeout_seconds` may be zero to use the platform default. Set `operation.timeout_seconds` to at least one for a one-shot override on this turn; it takes precedence and is not saved on the session.
+         *     Set `operation.timeout_seconds` to at least one for a one-shot timeout override on this turn. It takes precedence over the agent default and is not saved on the session.
          */
         post: operations["startTurn"];
         delete?: never;
@@ -2830,7 +2804,7 @@ export interface components {
             principal_id: string;
             /** @description Mutable unique name within the project. Free-form human-readable label; use `id` for stable references and job targeting. */
             name: string;
-            /** @description Client-owned durable identity key for this agent. Unique within the project when present, and assign-once: create requests may set it; update requests may set it only while the agent has no existing external_ref, or repeat the current value idempotently. When set, the organization definition resolver addresses this agent as `agent/<external_ref>` instead of `agent/<name>`, so the selector survives display-name changes. */
+            /** @description Client-owned durable identity key for this agent. Unique within the project when present, and assign-once: create requests may set it; update requests may set it only while the agent has no existing external_ref, or repeat the current value idempotently. Use it to reconcile the same agent across systems while allowing the display name to change. */
             external_ref?: string;
             /** @description Optional human-readable description. */
             description?: string;
@@ -2989,6 +2963,8 @@ export interface components {
             session_key: string;
             /** @description Where the session appears in project UI surfaces. */
             visibility: components["schemas"]["SessionVisibility"];
+            /** @description Model selected for this session. Omitted when the session inherits the agent's model. */
+            model_override?: string;
             /** @description Model the session most recently exchanged tokens with. */
             model?: string;
             /** @description Provider for the recorded `model`. */
@@ -5089,82 +5065,6 @@ export interface components {
             /** @description Resolved to a role ID server-side. Mutually exclusive with `role_id`. */
             role_name?: string;
         } & (unknown | unknown);
-        /** @description The org's pluggable definition-source configuration (redacted view). The bearer token is never included; `auth_configured` reports its presence. */
-        DefinitionResolverConfig: {
-            /**
-             * @description Where the org's definitions resolve from by default.
-             * @enum {string}
-             */
-            source: "mobius_stored" | "client_resolver";
-            /** @description HTTPS endpoint Mobius posts resolve requests to (client_resolver only). */
-            endpoint_url?: string;
-            /** @description Whether a shared bearer token is currently set for the resolver. */
-            auth_configured: boolean;
-            /** @description Per-request resolve timeout in milliseconds. */
-            timeout_ms?: number;
-            /** @description The resolve wire-protocol version Mobius speaks. */
-            protocol_version?: number;
-            /** @description Skip the network when the cached bundle is younger than this (seconds). */
-            revalidate_after_s?: number;
-            /** @description Hard ceiling on serving last-known-good (seconds); 0 is unbounded. */
-            stale_max_age_s?: number;
-            /**
-             * @description Behavior when the resolver endpoint is unreachable.
-             * @enum {string}
-             */
-            on_unavailable: "last_known_good" | "fail";
-            /**
-             * @deprecated
-             * @description Deprecated compatibility field. Resolver results are scoped by project and agent, so Mobius no longer populates an org-wide digest.
-             */
-            last_good_digest?: string;
-            /**
-             * Format: date-time
-             * @deprecated
-             * @description Deprecated compatibility field. Resolver results are scoped by project and agent, so Mobius no longer populates an org-wide timestamp.
-             */
-            last_good_at?: string | null;
-            /**
-             * Format: date-time
-             * @description When the config was last updated.
-             */
-            updated_at: string;
-        };
-        /** @description Full-replace body for the org's definition-resolver config. */
-        PutDefinitionResolverRequest: {
-            /**
-             * @description Where the org's definitions resolve from by default.
-             * @enum {string}
-             */
-            source: "mobius_stored" | "client_resolver";
-            /** @description HTTPS endpoint Mobius posts resolve requests to. Required for client_resolver. */
-            endpoint_url?: string;
-            /** @description Shared-secret auth. Omit to keep the existing token. */
-            auth?: components["schemas"]["DefinitionResolverAuth"];
-            /** @description Per-request resolve timeout in milliseconds. Defaults to 2000 when omitted or non-positive. */
-            timeout_ms?: number;
-            /** @description The resolve wire-protocol version Mobius speaks. Defaults to 1. */
-            protocol_version?: number;
-            /** @description Skip the network when the cached bundle is younger than this (seconds). */
-            revalidate_after_s?: number;
-            /** @description Hard ceiling on serving last-known-good (seconds); 0 is unbounded. */
-            stale_max_age_s?: number;
-            /**
-             * @description Behavior when the resolver endpoint is unreachable. Defaults to last_known_good.
-             * @enum {string}
-             */
-            on_unavailable?: "last_known_good" | "fail";
-        };
-        /** @description Shared-secret auth for the client resolver. The token is write-only: supply it to set or rotate, send an empty string to clear. */
-        DefinitionResolverAuth: {
-            /**
-             * @description Auth mode. Only `bearer` is supported today.
-             * @enum {string}
-             */
-            mode?: "bearer";
-            /** @description Bearer token Mobius sends to the resolver. Write-only; never returned. */
-            token?: string;
-        };
         /** @description The organization's allowlist of exact HTTPS origins an embedded partner may name as an OAuth connect `return_url`. Origins are stored normalized (lowercase host, default ports stripped). An empty list disables embedded return for the organization. */
         OAuthReturnOrigins: {
             /** @description Normalized exact HTTPS return origins (for example `https://app.partner.example`). */
@@ -5831,7 +5731,7 @@ export interface components {
         CreateAgentRequest: {
             /** @description Unique name for this agent. Free-form human-readable label, 1-63 characters. */
             name: string;
-            /** @description Client-owned durable identity key. Unique within the project when present. Treat this as assign-once: create requests may set it; update requests may set it only while the agent has no existing external_ref, or repeat the current value idempotently. When set, the organization definition resolver addresses this agent as `agent/<external_ref>`. Required when `if_exists` is `adopt`. */
+            /** @description Client-owned durable identity key. Unique within the project when present. Treat this as assign-once: create requests may set it; update requests may set it only while the agent has no existing external_ref, or repeat the current value idempotently. Required when `if_exists` is `adopt`. */
             external_ref?: string;
             if_exists?: components["schemas"]["IfExists"];
             /** @description Optional human-readable description. */
@@ -5864,7 +5764,7 @@ export interface components {
         UpdateAgentRequest: {
             /** @description Free-form human-readable label, 1-63 characters; must be unique within the project. */
             name?: string;
-            /** @description Assign-once client identity key, unique within the project. Accepted when the agent has no external_ref, or when it repeats the current value idempotently. Changing an already-set value returns 409. When set, the organization definition resolver addresses this agent as `agent/<external_ref>`. */
+            /** @description Assign-once client identity key, unique within the project. Accepted when the agent has no external_ref, or when it repeats the current value idempotently. Changing an already-set value returns 409. */
             external_ref?: string;
             /** @description Replacement description. */
             description?: string;
@@ -6946,66 +6846,23 @@ export interface components {
              */
             created_at?: string;
         };
-        /** @description A single compound invocation: which agent to run, how to resolve the session, the caller's input message, and optional channel routing context. `config.timeout_seconds` may be zero to use the platform default; `operation.timeout_seconds` must be at least one and takes precedence for this admitted turn. */
+        /** @description A single compound invocation: which stored agent to run, how to resolve the session, the caller's input message, and optional channel routing context. `operation.timeout_seconds` must be at least one and takes precedence for this admitted turn. */
         InvokeAgentRequest: {
             agent_ref: components["schemas"]["AgentRef"];
             session?: components["schemas"]["InvokeSessionSpec"];
-            config?: components["schemas"]["InlineAgentConfig"];
             operation?: components["schemas"]["AgentTurnOperationPolicy"];
             input: components["schemas"]["InvokeInput"];
             /** @description Optional structured-output contract for this turn. Read the validated value from the completed turn's `output`. */
             output?: components["schemas"]["TurnOutputSpec"];
             channel_context?: components["schemas"]["ChannelContext"];
         };
-        /**
-         * @description An agent definition sent with the invocation instead of one stored in Mobius ahead of time. Send it on the call that creates the session and it becomes that session's definition; send it again on a later turn to replace it; leave it out and the session keeps the definition it already has.
-         *
-         *     A session holds one config at a time. If two calls share a session and both send `config`, the last one Mobius saves wins, so give each definition you want to run at the same time its own session.
-         *
-         *     Every field is optional. A field you set replaces the agent's value; a field you leave out keeps the agent's value. The `toolkits` and `skills` lists replace the agent's lists entirely — they are not merged item by item. If your organization sets limits on the model, effort, or timeout, those limits still apply, so a value here can never exceed them. Use `config` for one-off invocations only: loops and schedules must point to a stored agent, so creating or updating one with `config` is rejected.
-         */
-        InlineAgentConfig: {
-            /** @description System-prompt instructions for the agent. Replaces the agent's configured system prompt for this session. Empty falls back to the generated default. */
-            instructions?: string;
-            /** @description LLM model identifier. Resolves through the same model routing and allow rules as a stored agent's model. */
-            model?: string;
-            /** @description Reasoning-effort level for the agent's turns. */
-            effort?: components["schemas"]["ThinkingEffort"];
-            /**
-             * Format: int64
-             * @description Per-turn execution timeout in seconds. Zero uses the platform default. A loop step's own timeout still overrides this.
-             */
-            timeout_seconds?: number;
-            /** @description Automatic memory delivery policy for this session's resolved agent definition. Replaces the stored or client-resolved policy. */
-            memory_context?: components["schemas"]["MemoryContextPolicy"];
-            /** @description Toolkit selections that replace the agent's toolkit assignments for this session. Each names the actions (from this project's action catalog) the agent may call. Replaces wholesale — an omitted `toolkits` inherits the agent's assignments. */
-            toolkits?: components["schemas"]["InlineToolkit"][];
-            /** @description Skills that replace the agent's skill assignments for this session. Each carries its full instruction body, lazy-loaded via the invoke_skill tool. Replaces wholesale. */
-            skills?: components["schemas"]["InlineSkill"][];
-        };
-        /** @description Operational policy for this newly admitted turn only. Unlike `config`, this policy is not saved on the session. Its timeout takes precedence over the session's inline-definition timeout and remains constrained by any deployment timeout ceiling. `config.timeout_seconds` may be zero to use the platform default; this operation timeout must be at least one. */
+        /** @description Operational policy for this newly admitted turn only. It is not saved on the session. Its timeout takes precedence over the agent default and must be at least one second. */
         AgentTurnOperationPolicy: {
             /**
              * Format: int64
              * @description Overall active-execution budget for this logical turn.
              */
             timeout_seconds?: number;
-        };
-        /** @description A toolkit selection carried in an inline agent config. */
-        InlineToolkit: {
-            /** @description Toolkit name. */
-            name: string;
-            /** @description Action names (from the project catalog) this toolkit grants. */
-            actions?: string[];
-        };
-        /** @description A skill definition carried in an inline agent config. */
-        InlineSkill: {
-            /** @description Skill name, referenced by the invoke_skill tool. */
-            name: string;
-            /** @description One-line summary shown in the agent's skills list. */
-            description?: string;
-            /** @description The skill's full instructions, loaded on demand. */
-            body?: string;
         };
         /** @description Reference to an agent in this project. Supply exactly one of `id` (the agent identifier) or `name` (the project-unique agent name). A blueprint-binding reference form is reserved for a later release and is not resolvable yet. */
         AgentRef: {
@@ -7026,6 +6883,8 @@ export interface components {
             /** @description Human-friendly title for a newly created session. */
             title?: string;
             visibility?: components["schemas"]["SessionVisibility"];
+            /** @description Model to use for a newly created session. Overrides the stored agent's model and is ignored when an existing session is resolved. */
+            model_override?: string;
             /** @description Per-session compaction overrides applied when the session is first created. Merged over the agent's default policy and server defaults. Ignored when an existing session is resolved. */
             compaction_policy?: components["schemas"]["SessionCompactionPolicy"];
             /** @description Retention policy applied when the session is first created. Ignored when an existing session is resolved. */
@@ -7095,8 +6954,8 @@ export interface components {
             /** @description Human-friendly session title. */
             title?: string;
             visibility?: components["schemas"]["SessionVisibility"];
-            /** @description Model to record on the session. */
-            model?: string;
+            /** @description Model to use for a newly created session. Overrides the stored agent's model. */
+            model_override?: string;
             /** @description Per-session compaction overrides applied when the session is first created. Merged over the agent's default policy and server defaults. Ignored when an existing session is resolved. */
             compaction_policy?: components["schemas"]["SessionCompactionPolicy"];
             /** @description Retention policy applied when the session is first created. Ignored when an existing session is resolved. */
@@ -7108,7 +6967,7 @@ export interface components {
                 [key: string]: unknown;
             };
         };
-        /** @description Caller input that starts an agent turn in a session. The session definition's `config.timeout_seconds` may be zero to use the platform default; `operation.timeout_seconds` must be at least one and takes precedence for this admitted turn. */
+        /** @description Caller input that starts an agent turn in a session. `operation.timeout_seconds` must be at least one and takes precedence for this admitted turn. */
         StartTurnRequest: {
             /**
              * @description Role of the input message. A turn carries caller input, so only `user` is accepted; defaults to `user` when omitted.
@@ -11441,57 +11300,6 @@ export interface operations {
                 };
                 content?: never;
             };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    getDefinitionResolver: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DefinitionResolverConfig"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    replaceDefinitionResolver: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["PutDefinitionResolverRequest"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DefinitionResolverConfig"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];

@@ -47,8 +47,6 @@ from deepnoodle.mobius.client import (
     UpdateLoopOptions,
 )
 from deepnoodle.mobius._api.models import (
-    InlineAgentConfig,
-    InlineToolkit,
     InvokeSessionSpec,
     LoopRunSource,
     LoopRunStatus,
@@ -296,12 +294,8 @@ def test_invoke_agent_posts_the_compound_invoke_request_shape() -> None:
             content=[{"type": "text", "text": "hi"}],
             context=[RuntimeContextItem(name="naming-board", content="Chosen: none")],
             idempotency_key="evt_1",
-            session=InvokeSessionSpec(session_key="app:acct_1:user_2"),
-            config=InlineAgentConfig(
-                instructions="Be concise.",
-                model="claude-sonnet-4-6",
-                effort="medium",
-                toolkits=[InlineToolkit(name="tickets", actions=["tickets.search"])],
+            session=InvokeSessionSpec(
+                session_key="app:acct_1:user_2", model_override="claude-sonnet-5"
             ),
             operation=AgentTurnOperationPolicy(timeout_seconds=90),
             output=TurnOutputSpec(schema={"type": "object"}),
@@ -320,10 +314,8 @@ def test_invoke_agent_posts_the_compound_invoke_request_shape() -> None:
         seen["body"]
     )
     assert '"session_key":"app:acct_1:user_2"' in str(seen["body"])
-    assert '"instructions":"Be concise."' in str(seen["body"])
-    assert '"model":"claude-sonnet-4-6"' in str(seen["body"])
-    assert '"effort":"medium"' in str(seen["body"])
-    assert '"toolkits":[{"name":"tickets","actions":["tickets.search"]}]' in str(seen["body"])
+    assert '"model_override":"claude-sonnet-5"' in str(seen["body"])
+    assert '"config"' not in str(seen["body"])
     assert '"operation":{"timeout_seconds":90}' in str(seen["body"])
     # The schema field is aliased off the python-reserved name; it must
     # serialize under its wire name "schema", not "schema_".

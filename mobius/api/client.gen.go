@@ -1019,57 +1019,6 @@ func (e CreateSessionRequestMode) Valid() bool {
 	}
 }
 
-// Defines values for DefinitionResolverAuthMode.
-const (
-	DefinitionResolverAuthModeBearer DefinitionResolverAuthMode = "bearer"
-)
-
-// Valid indicates whether the value is a known member of the DefinitionResolverAuthMode enum.
-func (e DefinitionResolverAuthMode) Valid() bool {
-	switch e {
-	case DefinitionResolverAuthModeBearer:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for DefinitionResolverConfigOnUnavailable.
-const (
-	DefinitionResolverConfigOnUnavailableFail          DefinitionResolverConfigOnUnavailable = "fail"
-	DefinitionResolverConfigOnUnavailableLastKnownGood DefinitionResolverConfigOnUnavailable = "last_known_good"
-)
-
-// Valid indicates whether the value is a known member of the DefinitionResolverConfigOnUnavailable enum.
-func (e DefinitionResolverConfigOnUnavailable) Valid() bool {
-	switch e {
-	case DefinitionResolverConfigOnUnavailableFail:
-		return true
-	case DefinitionResolverConfigOnUnavailableLastKnownGood:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for DefinitionResolverConfigSource.
-const (
-	DefinitionResolverConfigSourceClientResolver DefinitionResolverConfigSource = "client_resolver"
-	DefinitionResolverConfigSourceMobiusStored   DefinitionResolverConfigSource = "mobius_stored"
-)
-
-// Valid indicates whether the value is a known member of the DefinitionResolverConfigSource enum.
-func (e DefinitionResolverConfigSource) Valid() bool {
-	switch e {
-	case DefinitionResolverConfigSourceClientResolver:
-		return true
-	case DefinitionResolverConfigSourceMobiusStored:
-		return true
-	default:
-		return false
-	}
-}
-
 // Defines values for DeliveryChannelKind.
 const (
 	DeliveryChannelKindEmail     DeliveryChannelKind = "email"
@@ -2537,42 +2486,6 @@ const (
 func (e ProvisionEnvironmentProvider) Valid() bool {
 	switch e {
 	case ProvisionEnvironmentProviderSprites:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for PutDefinitionResolverRequestOnUnavailable.
-const (
-	PutDefinitionResolverRequestOnUnavailableFail          PutDefinitionResolverRequestOnUnavailable = "fail"
-	PutDefinitionResolverRequestOnUnavailableLastKnownGood PutDefinitionResolverRequestOnUnavailable = "last_known_good"
-)
-
-// Valid indicates whether the value is a known member of the PutDefinitionResolverRequestOnUnavailable enum.
-func (e PutDefinitionResolverRequestOnUnavailable) Valid() bool {
-	switch e {
-	case PutDefinitionResolverRequestOnUnavailableFail:
-		return true
-	case PutDefinitionResolverRequestOnUnavailableLastKnownGood:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for PutDefinitionResolverRequestSource.
-const (
-	PutDefinitionResolverRequestSourceClientResolver PutDefinitionResolverRequestSource = "client_resolver"
-	PutDefinitionResolverRequestSourceMobiusStored   PutDefinitionResolverRequestSource = "mobius_stored"
-)
-
-// Valid indicates whether the value is a known member of the PutDefinitionResolverRequestSource enum.
-func (e PutDefinitionResolverRequestSource) Valid() bool {
-	switch e {
-	case PutDefinitionResolverRequestSourceClientResolver:
-		return true
-	case PutDefinitionResolverRequestSourceMobiusStored:
 		return true
 	default:
 		return false
@@ -4406,7 +4319,7 @@ type Agent struct {
 	// EmailAddress Inbox address provisioned via POST /v1/projects/{project_handle}/agents/{resource_id}/inbox (opt-in; not created automatically at agent creation). The field is populated only after a successful provisioning call. Use this address to add the agent as a member on external platforms (Linear, GitHub, Slack, etc.) so the platform can deliver notifications to the agent.
 	EmailAddress *string `json:"email_address,omitempty"`
 
-	// ExternalRef Client-owned durable identity key for this agent. Unique within the project when present, and assign-once: create requests may set it; update requests may set it only while the agent has no existing external_ref, or repeat the current value idempotently. When set, the organization definition resolver addresses this agent as `agent/<external_ref>` instead of `agent/<name>`, so the selector survives display-name changes.
+	// ExternalRef Client-owned durable identity key for this agent. Unique within the project when present, and assign-once: create requests may set it; update requests may set it only while the agent has no existing external_ref, or repeat the current value idempotently. Use it to reconcile the same agent across systems while allowing the display name to change.
 	ExternalRef *string `json:"external_ref,omitempty"`
 
 	// Id Unique identifier for this agent.
@@ -4852,7 +4765,7 @@ type AgentTurnListResponse struct {
 	NextCursor *string `json:"next_cursor,omitempty"`
 }
 
-// AgentTurnOperationPolicy Operational policy for this newly admitted turn only. Unlike `config`, this policy is not saved on the session. Its timeout takes precedence over the session's inline-definition timeout and remains constrained by any deployment timeout ceiling. `config.timeout_seconds` may be zero to use the platform default; this operation timeout must be at least one.
+// AgentTurnOperationPolicy Operational policy for this newly admitted turn only. It is not saved on the session. Its timeout takes precedence over the agent default and must be at least one second.
 type AgentTurnOperationPolicy struct {
 	// TimeoutSeconds Overall active-execution budget for this logical turn.
 	TimeoutSeconds *int64 `json:"timeout_seconds,omitempty"`
@@ -5651,7 +5564,7 @@ type CreateAgentRequest struct {
 	// Description Optional human-readable description.
 	Description *string `json:"description,omitempty"`
 
-	// ExternalRef Client-owned durable identity key. Unique within the project when present. Treat this as assign-once: create requests may set it; update requests may set it only while the agent has no existing external_ref, or repeat the current value idempotently. When set, the organization definition resolver addresses this agent as `agent/<external_ref>`. Required when `if_exists` is `adopt`.
+	// ExternalRef Client-owned durable identity key. Unique within the project when present. Treat this as assign-once: create requests may set it; update requests may set it only while the agent has no existing external_ref, or repeat the current value idempotently. Required when `if_exists` is `adopt`.
 	ExternalRef *string `json:"external_ref,omitempty"`
 
 	// IfExists Create-or-adopt behavior when a request's `external_ref` matches an existing resource. `error` (the default) rejects the request with 409. `adopt` returns the existing resource unchanged instead — mutable fields in the request are ignored, since no write happens — and requires `external_ref` to be set; omitting it returns 400.
@@ -6024,8 +5937,8 @@ type CreateSessionRequest struct {
 	// Mode `continue_or_create` (default) resolves an existing session for the `session_key` or creates one; `new` always creates a fresh session; `continue` resolves an existing session and fails if none exists.
 	Mode *CreateSessionRequestMode `json:"mode,omitempty"`
 
-	// Model Model to record on the session.
-	Model *string `json:"model,omitempty"`
+	// ModelOverride Model to use for a newly created session. Overrides the stored agent's model.
+	ModelOverride *string `json:"model_override,omitempty"`
 
 	// Retention Controls how long a session is retained. Applied only when the session is first created (like `compaction_policy`); ignored when an existing session is resolved. `standard` is the default and keeps the session forever. `bounded` expires the session — pruning its transcript from every read path — once it has been idle past `ttl_seconds`. Kept for audit after expiry: a tombstone session row with its token totals, and the turn rows with their status, error, usage, and timings.
 	//
@@ -6144,62 +6057,6 @@ type CreateWebhookRequest struct {
 	// Url The endpoint Mobius will POST event payloads to. May be left empty at creation time so a candidate URL can be tested via the ping endpoint before it is saved; events do not fire for webhooks with an empty URL.
 	Url *string `json:"url,omitempty"`
 }
-
-// DefinitionResolverAuth Shared-secret auth for the client resolver. The token is write-only: supply it to set or rotate, send an empty string to clear.
-type DefinitionResolverAuth struct {
-	// Mode Auth mode. Only `bearer` is supported today.
-	Mode *DefinitionResolverAuthMode `json:"mode,omitempty"`
-
-	// Token Bearer token Mobius sends to the resolver. Write-only; never returned.
-	Token *string `json:"token,omitempty"`
-}
-
-// DefinitionResolverAuthMode Auth mode. Only `bearer` is supported today.
-type DefinitionResolverAuthMode string
-
-// DefinitionResolverConfig The org's pluggable definition-source configuration (redacted view). The bearer token is never included; `auth_configured` reports its presence.
-type DefinitionResolverConfig struct {
-	// AuthConfigured Whether a shared bearer token is currently set for the resolver.
-	AuthConfigured bool `json:"auth_configured"`
-
-	// EndpointUrl HTTPS endpoint Mobius posts resolve requests to (client_resolver only).
-	EndpointUrl *string `json:"endpoint_url,omitempty"`
-
-	// LastGoodAt Deprecated compatibility field. Resolver results are scoped by project and agent, so Mobius no longer populates an org-wide timestamp.
-	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
-	LastGoodAt *time.Time `json:"last_good_at,omitempty"`
-
-	// LastGoodDigest Deprecated compatibility field. Resolver results are scoped by project and agent, so Mobius no longer populates an org-wide digest.
-	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
-	LastGoodDigest *string `json:"last_good_digest,omitempty"`
-
-	// OnUnavailable Behavior when the resolver endpoint is unreachable.
-	OnUnavailable DefinitionResolverConfigOnUnavailable `json:"on_unavailable"`
-
-	// ProtocolVersion The resolve wire-protocol version Mobius speaks.
-	ProtocolVersion *int `json:"protocol_version,omitempty"`
-
-	// RevalidateAfterS Skip the network when the cached bundle is younger than this (seconds).
-	RevalidateAfterS *int `json:"revalidate_after_s,omitempty"`
-
-	// Source Where the org's definitions resolve from by default.
-	Source DefinitionResolverConfigSource `json:"source"`
-
-	// StaleMaxAgeS Hard ceiling on serving last-known-good (seconds); 0 is unbounded.
-	StaleMaxAgeS *int `json:"stale_max_age_s,omitempty"`
-
-	// TimeoutMs Per-request resolve timeout in milliseconds.
-	TimeoutMs *int `json:"timeout_ms,omitempty"`
-
-	// UpdatedAt When the config was last updated.
-	UpdatedAt time.Time `json:"updated_at"`
-}
-
-// DefinitionResolverConfigOnUnavailable Behavior when the resolver endpoint is unreachable.
-type DefinitionResolverConfigOnUnavailable string
-
-// DefinitionResolverConfigSource Where the org's definitions resolve from by default.
-type DefinitionResolverConfigSource string
 
 // Delivery Optional per-interaction delivery override. When absent, each participant is notified via the app inbox only.
 type Delivery struct {
@@ -6469,55 +6326,6 @@ type IndexDef struct {
 	Columns []string `json:"columns"`
 
 	// Name Stable index name unique within the table schema.
-	Name string `json:"name"`
-}
-
-// InlineAgentConfig An agent definition sent with the invocation instead of one stored in Mobius ahead of time. Send it on the call that creates the session and it becomes that session's definition; send it again on a later turn to replace it; leave it out and the session keeps the definition it already has.
-//
-// A session holds one config at a time. If two calls share a session and both send `config`, the last one Mobius saves wins, so give each definition you want to run at the same time its own session.
-//
-// Every field is optional. A field you set replaces the agent's value; a field you leave out keeps the agent's value. The `toolkits` and `skills` lists replace the agent's lists entirely — they are not merged item by item. If your organization sets limits on the model, effort, or timeout, those limits still apply, so a value here can never exceed them. Use `config` for one-off invocations only: loops and schedules must point to a stored agent, so creating or updating one with `config` is rejected.
-type InlineAgentConfig struct {
-	// Effort Reasoning-effort level for a turn, lowest (`low`) to highest (`max`). Higher effort spends more tokens on reasoning, improving quality on hard tasks at the cost of latency and credits. Levels above what the resolved model supports are clamped down. Set on an agent it is the default; set on a session or loop step it overrides the agent default. `inherit` (or omitting the field) defers to the layer below — the agent default for a session/step, or the provider's own default when nothing sets a level.
-	Effort *ThinkingEffort `json:"effort,omitempty"`
-
-	// Instructions System-prompt instructions for the agent. Replaces the agent's configured system prompt for this session. Empty falls back to the generated default.
-	Instructions *string `json:"instructions,omitempty"`
-
-	// MemoryContext Automatic memory delivery policy. The JSON object requires `mode` (`index`, `full`, or `off`) and optionally accepts `max_bytes`, for example `{"mode":"full","max_bytes":131072}`.
-	MemoryContext *MemoryContextPolicy `json:"memory_context,omitempty"`
-
-	// Model LLM model identifier. Resolves through the same model routing and allow rules as a stored agent's model.
-	Model *string `json:"model,omitempty"`
-
-	// Skills Skills that replace the agent's skill assignments for this session. Each carries its full instruction body, lazy-loaded via the invoke_skill tool. Replaces wholesale.
-	Skills *[]InlineSkill `json:"skills,omitempty"`
-
-	// TimeoutSeconds Per-turn execution timeout in seconds. Zero uses the platform default. A loop step's own timeout still overrides this.
-	TimeoutSeconds *int64 `json:"timeout_seconds,omitempty"`
-
-	// Toolkits Toolkit selections that replace the agent's toolkit assignments for this session. Each names the actions (from this project's action catalog) the agent may call. Replaces wholesale — an omitted `toolkits` inherits the agent's assignments.
-	Toolkits *[]InlineToolkit `json:"toolkits,omitempty"`
-}
-
-// InlineSkill A skill definition carried in an inline agent config.
-type InlineSkill struct {
-	// Body The skill's full instructions, loaded on demand.
-	Body *string `json:"body,omitempty"`
-
-	// Description One-line summary shown in the agent's skills list.
-	Description *string `json:"description,omitempty"`
-
-	// Name Skill name, referenced by the invoke_skill tool.
-	Name string `json:"name"`
-}
-
-// InlineToolkit A toolkit selection carried in an inline agent config.
-type InlineToolkit struct {
-	// Actions Action names (from the project catalog) this toolkit grants.
-	Actions *[]string `json:"actions,omitempty"`
-
-	// Name Toolkit name.
 	Name string `json:"name"`
 }
 
@@ -7015,7 +6823,7 @@ type InvokeActionRequest struct {
 	TimeoutSeconds *int `json:"timeout_seconds,omitempty"`
 }
 
-// InvokeAgentRequest A single compound invocation: which agent to run, how to resolve the session, the caller's input message, and optional channel routing context. `config.timeout_seconds` may be zero to use the platform default; `operation.timeout_seconds` must be at least one and takes precedence for this admitted turn.
+// InvokeAgentRequest A single compound invocation: which stored agent to run, how to resolve the session, the caller's input message, and optional channel routing context. `operation.timeout_seconds` must be at least one and takes precedence for this admitted turn.
 type InvokeAgentRequest struct {
 	// AgentRef Reference to an agent in this project. Supply exactly one of `id` (the agent identifier) or `name` (the project-unique agent name). A blueprint-binding reference form is reserved for a later release and is not resolvable yet.
 	AgentRef AgentRef `json:"agent_ref"`
@@ -7023,17 +6831,10 @@ type InvokeAgentRequest struct {
 	// ChannelContext Optional messaging provider/channel routing context (Slack, Telegram, …). Persisted on the started turn's input-message metadata under a `channel_context` key so chat history and support views can trace a turn back to the provider thread it came from.
 	ChannelContext *ChannelContext `json:"channel_context,omitempty"`
 
-	// Config An agent definition sent with the invocation instead of one stored in Mobius ahead of time. Send it on the call that creates the session and it becomes that session's definition; send it again on a later turn to replace it; leave it out and the session keeps the definition it already has.
-	//
-	// A session holds one config at a time. If two calls share a session and both send `config`, the last one Mobius saves wins, so give each definition you want to run at the same time its own session.
-	//
-	// Every field is optional. A field you set replaces the agent's value; a field you leave out keeps the agent's value. The `toolkits` and `skills` lists replace the agent's lists entirely — they are not merged item by item. If your organization sets limits on the model, effort, or timeout, those limits still apply, so a value here can never exceed them. Use `config` for one-off invocations only: loops and schedules must point to a stored agent, so creating or updating one with `config` is rejected.
-	Config *InlineAgentConfig `json:"config,omitempty"`
-
 	// Input The caller input message that starts the agent turn.
 	Input InvokeInput `json:"input"`
 
-	// Operation Operational policy for this newly admitted turn only. Unlike `config`, this policy is not saved on the session. Its timeout takes precedence over the session's inline-definition timeout and remains constrained by any deployment timeout ceiling. `config.timeout_seconds` may be zero to use the platform default; this operation timeout must be at least one.
+	// Operation Operational policy for this newly admitted turn only. It is not saved on the session. Its timeout takes precedence over the agent default and must be at least one second.
 	Operation *AgentTurnOperationPolicy `json:"operation,omitempty"`
 
 	// Output Attaches a structured-output contract to a turn. When present, Mobius exposes a reserved submit tool whose input schema is the schema below, validates the submission server-side, and a turn that never produces a schema-valid object fails with `error_type: output_schema_unsatisfied` instead of completing. Read the validated value from the completed turn's `output`. This is a per-turn contract, not agent identity, so it works with stored agents and may differ between turns of one session.
@@ -7070,6 +6871,9 @@ type InvokeSessionSpec struct {
 
 	// Mode `continue_or_create` (default) resolves an existing session for the `session_key` or creates one; `new` always creates a fresh session; `continue` resolves an existing session and fails if none exists.
 	Mode *InvokeSessionSpecMode `json:"mode,omitempty"`
+
+	// ModelOverride Model to use for a newly created session. Overrides the stored agent's model and is ignored when an existing session is resolved.
+	ModelOverride *string `json:"model_override,omitempty"`
 
 	// Retention Controls how long a session is retained. Applied only when the session is first created (like `compaction_policy`); ignored when an existing session is resolved. `standard` is the default and keeps the session forever. `bounded` expires the session — pruning its transcript from every read path — once it has been idle past `ttl_seconds`. Kept for audit after expiry: a tombstone session row with its token totals, and the turn rows with their status, error, usage, and timings.
 	//
@@ -8501,39 +8305,6 @@ type ProjectListResponse struct {
 // ProvisionEnvironmentProvider Providers the control plane can provision on demand. Worker-provided environments are registered out-of-band via the attach endpoint and are never provisioned through create/acquire.
 type ProvisionEnvironmentProvider string
 
-// PutDefinitionResolverRequest Full-replace body for the org's definition-resolver config.
-type PutDefinitionResolverRequest struct {
-	// Auth Shared-secret auth for the client resolver. The token is write-only: supply it to set or rotate, send an empty string to clear.
-	Auth *DefinitionResolverAuth `json:"auth,omitempty"`
-
-	// EndpointUrl HTTPS endpoint Mobius posts resolve requests to. Required for client_resolver.
-	EndpointUrl *string `json:"endpoint_url,omitempty"`
-
-	// OnUnavailable Behavior when the resolver endpoint is unreachable. Defaults to last_known_good.
-	OnUnavailable *PutDefinitionResolverRequestOnUnavailable `json:"on_unavailable,omitempty"`
-
-	// ProtocolVersion The resolve wire-protocol version Mobius speaks. Defaults to 1.
-	ProtocolVersion *int `json:"protocol_version,omitempty"`
-
-	// RevalidateAfterS Skip the network when the cached bundle is younger than this (seconds).
-	RevalidateAfterS *int `json:"revalidate_after_s,omitempty"`
-
-	// Source Where the org's definitions resolve from by default.
-	Source PutDefinitionResolverRequestSource `json:"source"`
-
-	// StaleMaxAgeS Hard ceiling on serving last-known-good (seconds); 0 is unbounded.
-	StaleMaxAgeS *int `json:"stale_max_age_s,omitempty"`
-
-	// TimeoutMs Per-request resolve timeout in milliseconds. Defaults to 2000 when omitted or non-positive.
-	TimeoutMs *int `json:"timeout_ms,omitempty"`
-}
-
-// PutDefinitionResolverRequestOnUnavailable Behavior when the resolver endpoint is unreachable. Defaults to last_known_good.
-type PutDefinitionResolverRequestOnUnavailable string
-
-// PutDefinitionResolverRequestSource Where the org's definitions resolve from by default.
-type PutDefinitionResolverRequestSource string
-
 // PutOAuthReturnOriginsRequest Full-replace body for the organization's OAuth return-origin allowlist. Each entry must be an exact HTTPS origin; entries are normalized and de-duplicated. At most 20 origins are accepted.
 type PutOAuthReturnOriginsRequest struct {
 	// Origins Exact HTTPS return origins to allow. An empty array disables embedded return.
@@ -8919,6 +8690,9 @@ type Session struct {
 
 	// Model Model the session most recently exchanged tokens with.
 	Model *string `json:"model,omitempty"`
+
+	// ModelOverride Model selected for this session. Omitted when the session inherits the agent's model.
+	ModelOverride *string `json:"model_override,omitempty"`
 
 	// ModelProvider Provider for the recorded `model`.
 	ModelProvider *string `json:"model_provider,omitempty"`
@@ -9741,7 +9515,7 @@ type StartLoopRunRequest struct {
 	Source *LoopRunSource `json:"source,omitempty"`
 }
 
-// StartTurnRequest Caller input that starts an agent turn in a session. The session definition's `config.timeout_seconds` may be zero to use the platform default; `operation.timeout_seconds` must be at least one and takes precedence for this admitted turn.
+// StartTurnRequest Caller input that starts an agent turn in a session. `operation.timeout_seconds` must be at least one and takes precedence for this admitted turn.
 type StartTurnRequest struct {
 	// Content Ordered content blocks for the input message. Canonical documents use `{ "type": "document", "source": { "type": "base64", "media_type": "application/pdf", "data": "..." }, "title": "report.pdf" }` or a URL source. Mobius also translates supported OpenAI `input_file` and Chat Completions `file` blocks at ingestion.
 	Content []map[string]interface{} `json:"content"`
@@ -9757,7 +9531,7 @@ type StartTurnRequest struct {
 	// Metadata Free-form caller metadata attached to the input message.
 	Metadata *map[string]interface{} `json:"metadata,omitempty"`
 
-	// Operation Operational policy for this newly admitted turn only. Unlike `config`, this policy is not saved on the session. Its timeout takes precedence over the session's inline-definition timeout and remains constrained by any deployment timeout ceiling. `config.timeout_seconds` may be zero to use the platform default; this operation timeout must be at least one.
+	// Operation Operational policy for this newly admitted turn only. It is not saved on the session. Its timeout takes precedence over the agent default and must be at least one second.
 	Operation *AgentTurnOperationPolicy `json:"operation,omitempty"`
 
 	// Output Attaches a structured-output contract to a turn. When present, Mobius exposes a reserved submit tool whose input schema is the schema below, validates the submission server-side, and a turn that never produces a schema-valid object fails with `error_type: output_schema_unsatisfied` instead of completing. Read the validated value from the completed turn's `output`. This is a per-turn contract, not agent identity, so it works with stored agents and may differ between turns of one session.
@@ -10260,7 +10034,7 @@ type UpdateAgentRequest struct {
 	// Description Replacement description.
 	Description *string `json:"description,omitempty"`
 
-	// ExternalRef Assign-once client identity key, unique within the project. Accepted when the agent has no external_ref, or when it repeats the current value idempotently. Changing an already-set value returns 409. When set, the organization definition resolver addresses this agent as `agent/<external_ref>`.
+	// ExternalRef Assign-once client identity key, unique within the project. Accepted when the agent has no external_ref, or when it repeats the current value idempotently. Changing an already-set value returns 409.
 	ExternalRef *string `json:"external_ref,omitempty"`
 
 	// MemoryContext Replacement automatic memory delivery policy. Send an empty object to clear the stored override and restore the bounded index default. Otherwise `mode` is required (`index`, `full`, or `off`) and `max_bytes` is optional.
@@ -11698,9 +11472,6 @@ type UpdateOrganizationActionJSONRequestBody = UpdateOrganizationActionRequest
 
 // ActivateOrganizationActionSecretVersionJSONRequestBody defines body for ActivateOrganizationActionSecretVersion for application/json ContentType.
 type ActivateOrganizationActionSecretVersionJSONRequestBody = ActivateOrganizationActionSecretRequest
-
-// ReplaceDefinitionResolverJSONRequestBody defines body for ReplaceDefinitionResolver for application/json ContentType.
-type ReplaceDefinitionResolverJSONRequestBody = PutDefinitionResolverRequest
 
 // ReplaceOAuthReturnOriginsJSONRequestBody defines body for ReplaceOAuthReturnOrigins for application/json ContentType.
 type ReplaceOAuthReturnOriginsJSONRequestBody = PutOAuthReturnOriginsRequest
@@ -20739,14 +20510,6 @@ type ClientInterface interface {
 	// RevokeOrganizationActionSecretVersion request
 	RevokeOrganizationActionSecretVersion(ctx context.Context, actionId string, secretVersion int64, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	// GetDefinitionResolver request
-	GetDefinitionResolver(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// ReplaceDefinitionResolverWithBody request with any body
-	ReplaceDefinitionResolverWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	ReplaceDefinitionResolver(ctx context.Context, body ReplaceDefinitionResolverJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
 	// GetOAuthReturnOrigins request
 	GetOAuthReturnOrigins(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -21540,42 +21303,6 @@ func (c *Client) ActivateOrganizationActionSecretVersion(ctx context.Context, ac
 
 func (c *Client) RevokeOrganizationActionSecretVersion(ctx context.Context, actionId string, secretVersion int64, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewRevokeOrganizationActionSecretVersionRequest(c.Server, actionId, secretVersion)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) GetDefinitionResolver(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetDefinitionResolverRequest(c.Server)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) ReplaceDefinitionResolverWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewReplaceDefinitionResolverRequestWithBody(c.Server, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) ReplaceDefinitionResolver(ctx context.Context, body ReplaceDefinitionResolverJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewReplaceDefinitionResolverRequest(c.Server, body)
 	if err != nil {
 		return nil, err
 	}
@@ -24908,73 +24635,6 @@ func NewRevokeOrganizationActionSecretVersionRequest(server string, actionId str
 	if err != nil {
 		return nil, err
 	}
-
-	return req, nil
-}
-
-// NewGetDefinitionResolverRequest generates requests for GetDefinitionResolver
-func NewGetDefinitionResolverRequest(server string) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/organization/definition-resolver")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewReplaceDefinitionResolverRequest calls the generic ReplaceDefinitionResolver builder with application/json body
-func NewReplaceDefinitionResolverRequest(server string, body ReplaceDefinitionResolverJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewReplaceDefinitionResolverRequestWithBody(server, "application/json", bodyReader)
-}
-
-// NewReplaceDefinitionResolverRequestWithBody generates requests for ReplaceDefinitionResolver with any type of body
-func NewReplaceDefinitionResolverRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/v1/organization/definition-resolver")
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
 }
@@ -34082,14 +33742,6 @@ type ClientWithResponsesInterface interface {
 	// RevokeOrganizationActionSecretVersionWithResponse request
 	RevokeOrganizationActionSecretVersionWithResponse(ctx context.Context, actionId string, secretVersion int64, reqEditors ...RequestEditorFn) (*RevokeOrganizationActionSecretVersionResponse, error)
 
-	// GetDefinitionResolverWithResponse request
-	GetDefinitionResolverWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetDefinitionResolverResponse, error)
-
-	// ReplaceDefinitionResolverWithBodyWithResponse request with any body
-	ReplaceDefinitionResolverWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ReplaceDefinitionResolverResponse, error)
-
-	ReplaceDefinitionResolverWithResponse(ctx context.Context, body ReplaceDefinitionResolverJSONRequestBody, reqEditors ...RequestEditorFn) (*ReplaceDefinitionResolverResponse, error)
-
 	// GetOAuthReturnOriginsWithResponse request
 	GetOAuthReturnOriginsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetOAuthReturnOriginsResponse, error)
 
@@ -35118,73 +34770,6 @@ func (r RevokeOrganizationActionSecretVersionResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r RevokeOrganizationActionSecretVersionResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type GetDefinitionResolverResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *DefinitionResolverConfig
-	JSON401      *Unauthorized
-	JSON403      *Forbidden
-	JSON404      *NotFound
-}
-
-// Status returns HTTPResponse.Status
-func (r GetDefinitionResolverResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r GetDefinitionResolverResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r GetDefinitionResolverResponse) ContentType() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Header.Get("Content-Type")
-	}
-	return ""
-}
-
-type ReplaceDefinitionResolverResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *DefinitionResolverConfig
-	JSON400      *BadRequest
-	JSON401      *Unauthorized
-	JSON403      *Forbidden
-	JSON404      *NotFound
-}
-
-// Status returns HTTPResponse.Status
-func (r ReplaceDefinitionResolverResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r ReplaceDefinitionResolverResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
-func (r ReplaceDefinitionResolverResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -40780,32 +40365,6 @@ func (c *ClientWithResponses) RevokeOrganizationActionSecretVersionWithResponse(
 	return ParseRevokeOrganizationActionSecretVersionResponse(rsp)
 }
 
-// GetDefinitionResolverWithResponse request returning *GetDefinitionResolverResponse
-func (c *ClientWithResponses) GetDefinitionResolverWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetDefinitionResolverResponse, error) {
-	rsp, err := c.GetDefinitionResolver(ctx, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseGetDefinitionResolverResponse(rsp)
-}
-
-// ReplaceDefinitionResolverWithBodyWithResponse request with arbitrary body returning *ReplaceDefinitionResolverResponse
-func (c *ClientWithResponses) ReplaceDefinitionResolverWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ReplaceDefinitionResolverResponse, error) {
-	rsp, err := c.ReplaceDefinitionResolverWithBody(ctx, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseReplaceDefinitionResolverResponse(rsp)
-}
-
-func (c *ClientWithResponses) ReplaceDefinitionResolverWithResponse(ctx context.Context, body ReplaceDefinitionResolverJSONRequestBody, reqEditors ...RequestEditorFn) (*ReplaceDefinitionResolverResponse, error) {
-	rsp, err := c.ReplaceDefinitionResolver(ctx, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseReplaceDefinitionResolverResponse(rsp)
-}
-
 // GetOAuthReturnOriginsWithResponse request returning *GetOAuthReturnOriginsResponse
 func (c *ClientWithResponses) GetOAuthReturnOriginsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetOAuthReturnOriginsResponse, error) {
 	rsp, err := c.GetOAuthReturnOrigins(ctx, reqEditors...)
@@ -43365,107 +42924,6 @@ func ParseRevokeOrganizationActionSecretVersionResponse(rsp *http.Response) (*Re
 			return nil, err
 		}
 		response.JSON409 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseGetDefinitionResolverResponse parses an HTTP response from a GetDefinitionResolverWithResponse call
-func ParseGetDefinitionResolverResponse(rsp *http.Response) (*GetDefinitionResolverResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &GetDefinitionResolverResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest DefinitionResolverConfig
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
-
-	}
-
-	return response, nil
-}
-
-// ParseReplaceDefinitionResolverResponse parses an HTTP response from a ReplaceDefinitionResolverWithResponse call
-func ParseReplaceDefinitionResolverResponse(rsp *http.Response) (*ReplaceDefinitionResolverResponse, error) {
-	bodyBytes, err := io.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &ReplaceDefinitionResolverResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest DefinitionResolverConfig
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest BadRequest
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON400 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest Unauthorized
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON401 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest Forbidden
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest NotFound
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
 
 	}
 

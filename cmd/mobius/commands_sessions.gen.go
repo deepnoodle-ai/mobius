@@ -183,7 +183,7 @@ func registerSessionsCommands(app *cli.App) {
 			cli.String("compaction-policy", "").Help("Controls how a session's transcript is automatically summarized as it grows. On create the supplied fields are merged over the owning… Accepts JSON, @file, or @-."),
 			cli.String("metadata", "").Help("Free-form caller metadata for the session. Accepts JSON, @file, or @-."),
 			cli.String("mode", "").Help("`continue_or_create` (default) resolves an existing session for the `session_key` or creates one; `new` always creates a fresh session…"),
-			cli.String("model", "").Help("Model to record on the session."),
+			cli.String("model-override", "").Help("Model to use for a newly created session. Overrides the stored agent's model."),
 			cli.String("retention", "").Help("Controls how long a session is retained. Applied only when the session is first created (like `compaction_policy`); ignored when an… Accepts JSON, @file, or @-."),
 			cli.String("session-key", "").Help("Stable key identifying the conversation within the agent."),
 			cli.String("thinking-effort", "").Help("Reasoning-effort level for a turn, lowest (`low`) to highest (`max`). Higher effort spends more tokens on reasoning, improving quality on…"),
@@ -221,9 +221,9 @@ func registerSessionsCommands(app *cli.App) {
 				v := api.CreateSessionRequestMode(ctx.String("mode"))
 				body.Mode = &v
 			}
-			if ctx.IsSet("model") {
-				v := ctx.String("model")
-				body.Model = &v
+			if ctx.IsSet("model-override") {
+				v := ctx.String("model-override")
+				body.ModelOverride = &v
 			}
 			if ctx.IsSet("retention") {
 				if err := decodeFlagJSON(ctx, "retention", ctx.String("retention"), &body.Retention); err != nil {
@@ -423,9 +423,8 @@ func registerSessionsCommands(app *cli.App) {
 		Flags(
 			cli.String("agent-ref", "").Help("[required] Reference to an agent in this project. Supply exactly one of `id` (the agent identifier) or `name` (the project-unique agent name). A… Accepts JSON, @file, or @-."),
 			cli.String("channel-context", "").Help("Optional messaging provider/channel routing context (Slack, Telegram, …). Persisted on the started turn's input-message metadata under a… Accepts JSON, @file, or @-."),
-			cli.String("config", "").Help("An agent definition sent with the invocation instead of one stored in Mobius ahead of time. Send it on the call that creates the session… Accepts JSON, @file, or @-."),
 			cli.String("input", "").Help("[required] The caller input message that starts the agent turn. Accepts JSON, @file, or @-."),
-			cli.String("operation", "").Help("Operational policy for this newly admitted turn only. Unlike `config`, this policy is not saved on the session. Its timeout takes… Accepts JSON, @file, or @-."),
+			cli.String("operation", "").Help("Operational policy for this newly admitted turn only. It is not saved on the session. Its timeout takes precedence over the agent default… Accepts JSON, @file, or @-."),
 			cli.String("session", "").Help("How to resolve or create the session this invocation runs in. Mirrors the create-session policy: `mode` + `session_key` resolve a durable… Accepts JSON, @file, or @-."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
@@ -449,11 +448,6 @@ func registerSessionsCommands(app *cli.App) {
 			}
 			if ctx.IsSet("channel-context") {
 				if err := decodeFlagJSON(ctx, "channel-context", ctx.String("channel-context"), &body.ChannelContext); err != nil {
-					return err
-				}
-			}
-			if ctx.IsSet("config") {
-				if err := decodeFlagJSON(ctx, "config", ctx.String("config"), &body.Config); err != nil {
 					return err
 				}
 			}
@@ -757,7 +751,7 @@ func registerSessionsCommands(app *cli.App) {
 			cli.String("context", "").Help("Ordered application-owned runtime context for this turn. Send the full current value for each named item. Mobius records an item only on… Accepts JSON, @file, or @-."),
 			cli.String("idempotency-key", "").Help("Dedup key scoped to the session. A repeat call with the same key returns the existing invocation and writes nothing new; it never restarts…"),
 			cli.String("metadata", "").Help("Free-form caller metadata attached to the input message. Accepts JSON, @file, or @-."),
-			cli.String("operation", "").Help("Operational policy for this newly admitted turn only. Unlike `config`, this policy is not saved on the session. Its timeout takes… Accepts JSON, @file, or @-."),
+			cli.String("operation", "").Help("Operational policy for this newly admitted turn only. It is not saved on the session. Its timeout takes precedence over the agent default… Accepts JSON, @file, or @-."),
 			cli.String("role", "").Help("Role of the input message. A turn carries caller input, so only `user` is accepted; defaults to `user` when omitted."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),

@@ -55,15 +55,8 @@ func TestInvokeAgent_HighLevelClient(t *testing.T) {
 		Context:        []RuntimeContextItem{{Name: "naming-board", Content: "Chosen: none"}},
 		IdempotencyKey: "evt_1",
 		Session: &api.InvokeSessionSpec{
-			SessionKey: ptr("app:acct_1:user_2"),
-		},
-		Config: &api.InlineAgentConfig{
-			Instructions: ptr("Be concise."),
-			Model:        ptr("claude-sonnet-4-6"),
-			Effort:       ptr(api.ThinkingEffortMedium),
-			Toolkits: &[]api.InlineToolkit{
-				{Name: "tickets", Actions: &[]string{"tickets.search"}},
-			},
+			SessionKey:    ptr("app:acct_1:user_2"),
+			ModelOverride: ptr("claude-sonnet-5"),
 		},
 		Operation: &api.AgentTurnOperationPolicy{TimeoutSeconds: ptr(int64(90))},
 		Output: &api.TurnOutputSpec{Schema: map[string]interface{}{
@@ -84,11 +77,9 @@ func TestInvokeAgent_HighLevelClient(t *testing.T) {
 	assert.Equal(t, contextItem["name"], "naming-board")
 	assert.Equal(t, contextItem["content"], "Chosen: none")
 	assert.Equal(t, body["session"].(map[string]any)["session_key"], "app:acct_1:user_2")
-	config := body["config"].(map[string]any)
-	assert.Equal(t, config["instructions"], "Be concise.")
-	assert.Equal(t, config["model"], "claude-sonnet-4-6")
-	assert.Equal(t, config["effort"], "medium")
-	assert.Equal(t, config["toolkits"].([]any)[0].(map[string]any)["name"], "tickets")
+	assert.Equal(t, body["session"].(map[string]any)["model_override"], "claude-sonnet-5")
+	_, hasConfig := body["config"]
+	assert.False(t, hasConfig)
 	assert.Equal(t, body["operation"].(map[string]any)["timeout_seconds"], float64(90))
 	assert.Equal(t, body["output"].(map[string]any)["schema"].(map[string]any)["type"], "object")
 

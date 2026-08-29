@@ -368,7 +368,7 @@ class Agent(BaseModel):
     )
     external_ref: str | None = Field(
         None,
-        description='Client-owned durable identity key for this agent. Unique within the project when present, and assign-once: create requests may set it; update requests may set it only while the agent has no existing external_ref, or repeat the current value idempotently. When set, the organization definition resolver addresses this agent as `agent/<external_ref>` instead of `agent/<name>`, so the selector survives display-name changes.',
+        description='Client-owned durable identity key for this agent. Unique within the project when present, and assign-once: create requests may set it; update requests may set it only while the agent has no existing external_ref, or repeat the current value idempotently. Use it to reconcile the same agent across systems while allowing the display name to change.',
         max_length=200,
         min_length=1,
     )
@@ -598,6 +598,10 @@ class Session(BaseModel):
     )
     visibility: SessionVisibility = Field(
         ..., description='Where the session appears in project UI surfaces.'
+    )
+    model_override: str | None = Field(
+        None,
+        description="Model selected for this session. Omitted when the session inherits the agent's model.",
     )
     model: str | None = Field(
         None, description='Model the session most recently exchanged tokens with.'
@@ -3287,109 +3291,6 @@ class CreateRoleAssignmentRequest(
     root: CreateRoleAssignmentRequest1 | CreateRoleAssignmentRequest2
 
 
-class Source3(StrEnum):
-    """
-    Where the org's definitions resolve from by default.
-    """
-
-    mobius_stored = 'mobius_stored'
-    client_resolver = 'client_resolver'
-
-
-class OnUnavailable(StrEnum):
-    """
-    Behavior when the resolver endpoint is unreachable.
-    """
-
-    last_known_good = 'last_known_good'
-    fail = 'fail'
-
-
-class DefinitionResolverConfig(BaseModel):
-    """
-    The org's pluggable definition-source configuration (redacted view). The bearer token is never included; `auth_configured` reports its presence.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    source: Source3 = Field(
-        ..., description="Where the org's definitions resolve from by default."
-    )
-    endpoint_url: str | None = Field(
-        None,
-        description='HTTPS endpoint Mobius posts resolve requests to (client_resolver only).',
-    )
-    auth_configured: bool = Field(
-        ...,
-        description='Whether a shared bearer token is currently set for the resolver.',
-    )
-    timeout_ms: int | None = Field(
-        None, description='Per-request resolve timeout in milliseconds.'
-    )
-    protocol_version: int | None = Field(
-        None, description='The resolve wire-protocol version Mobius speaks.'
-    )
-    revalidate_after_s: int | None = Field(
-        None,
-        description='Skip the network when the cached bundle is younger than this (seconds).',
-    )
-    stale_max_age_s: int | None = Field(
-        None,
-        description='Hard ceiling on serving last-known-good (seconds); 0 is unbounded.',
-    )
-    on_unavailable: OnUnavailable = Field(
-        ..., description='Behavior when the resolver endpoint is unreachable.'
-    )
-    last_good_digest: str | None = Field(
-        None,
-        deprecated=True,
-        description='Deprecated compatibility field. Resolver results are scoped by project and agent, so Mobius no longer populates an org-wide digest.',
-    )
-    last_good_at: AwareDatetime | None = Field(
-        None,
-        deprecated=True,
-        description='Deprecated compatibility field. Resolver results are scoped by project and agent, so Mobius no longer populates an org-wide timestamp.',
-    )
-    updated_at: AwareDatetime = Field(
-        ..., description='When the config was last updated.'
-    )
-
-
-class OnUnavailable1(StrEnum):
-    """
-    Behavior when the resolver endpoint is unreachable. Defaults to last_known_good.
-    """
-
-    last_known_good = 'last_known_good'
-    fail = 'fail'
-
-
-class Mode2(StrEnum):
-    """
-    Auth mode. Only `bearer` is supported today.
-    """
-
-    bearer = 'bearer'
-
-
-class DefinitionResolverAuth(BaseModel):
-    """
-    Shared-secret auth for the client resolver. The token is write-only: supply it to set or rotate, send an empty string to clear.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    mode: Mode2 | None = Field(
-        None, description='Auth mode. Only `bearer` is supported today.'
-    )
-    token: str | None = Field(
-        None,
-        description='Bearer token Mobius sends to the resolver. Write-only; never returned.',
-    )
-
-
 class OAuthReturnOrigins(BaseModel):
     """
     The organization's allowlist of exact HTTPS origins an embedded partner may name as an OAuth connect `return_url`. Origins are stored normalized (lowercase host, default ports stripped). An empty list disables embedded return for the organization.
@@ -4098,7 +3999,7 @@ class CreateAgentRequest(BaseModel):
     )
     external_ref: str | None = Field(
         None,
-        description='Client-owned durable identity key. Unique within the project when present. Treat this as assign-once: create requests may set it; update requests may set it only while the agent has no existing external_ref, or repeat the current value idempotently. When set, the organization definition resolver addresses this agent as `agent/<external_ref>`. Required when `if_exists` is `adopt`.',
+        description='Client-owned durable identity key. Unique within the project when present. Treat this as assign-once: create requests may set it; update requests may set it only while the agent has no existing external_ref, or repeat the current value idempotently. Required when `if_exists` is `adopt`.',
         max_length=200,
         min_length=1,
     )
@@ -4172,7 +4073,7 @@ class UpdateAgentRequest(BaseModel):
     )
     external_ref: str | None = Field(
         None,
-        description='Assign-once client identity key, unique within the project. Accepted when the agent has no external_ref, or when it repeats the current value idempotently. Changing an already-set value returns 409. When set, the organization definition resolver addresses this agent as `agent/<external_ref>`.',
+        description='Assign-once client identity key, unique within the project. Accepted when the agent has no external_ref, or when it repeats the current value idempotently. Changing an already-set value returns 409.',
         max_length=200,
         min_length=1,
     )
@@ -4693,7 +4594,7 @@ class ToolkitAction(BaseModel):
     )
 
 
-class Source5(StrEnum):
+class Source3(StrEnum):
     """
     Provenance of this toolkit. `system` toolkits are built-in; `project` toolkits are user-authored.
     """
@@ -4715,7 +4616,7 @@ class Toolkit(BaseModel):
     description: str | None = Field(
         None, description="Markdown description of the toolkit's purpose."
     )
-    source: Source5 = Field(
+    source: Source3 = Field(
         ...,
         description='Provenance of this toolkit. `system` toolkits are built-in; `project` toolkits are user-authored.',
     )
@@ -4734,7 +4635,7 @@ class Toolkit(BaseModel):
     updated_at: AwareDatetime = Field(..., description='Last update timestamp.')
 
 
-class Source6(StrEnum):
+class Source4(StrEnum):
     """
     Ownership and mutability of the Skill. `system` is built-in, `organization` is shared, and `project` is project-local.
     """
@@ -4757,7 +4658,7 @@ class Skill(BaseModel):
     description: str | None = Field(
         None, description="Markdown description of the skill's purpose."
     )
-    source: Source6 = Field(
+    source: Source4 = Field(
         ...,
         description='Ownership and mutability of the Skill. `system` is built-in, `organization` is shared, and `project` is project-local.',
     )
@@ -5187,7 +5088,7 @@ class AppendSessionMessage(BaseModel):
 
 class AgentTurnOperationPolicy(BaseModel):
     """
-    Operational policy for this newly admitted turn only. Unlike `config`, this policy is not saved on the session. Its timeout takes precedence over the session's inline-definition timeout and remains constrained by any deployment timeout ceiling. `config.timeout_seconds` may be zero to use the platform default; this operation timeout must be at least one.
+    Operational policy for this newly admitted turn only. It is not saved on the session. Its timeout takes precedence over the agent default and must be at least one second.
     """
 
     model_config = ConfigDict(
@@ -5195,39 +5096,6 @@ class AgentTurnOperationPolicy(BaseModel):
     )
     timeout_seconds: int | None = Field(
         None, description='Overall active-execution budget for this logical turn.', ge=1
-    )
-
-
-class InlineToolkit(BaseModel):
-    """
-    A toolkit selection carried in an inline agent config.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    name: str = Field(..., description='Toolkit name.')
-    actions: list[str] | None = Field(
-        None, description='Action names (from the project catalog) this toolkit grants.'
-    )
-
-
-class InlineSkill(BaseModel):
-    """
-    A skill definition carried in an inline agent config.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    name: str = Field(
-        ..., description='Skill name, referenced by the invoke_skill tool.'
-    )
-    description: str | None = Field(
-        None, description="One-line summary shown in the agent's skills list."
-    )
-    body: str | None = Field(
-        None, description="The skill's full instructions, loaded on demand."
     )
 
 
@@ -5243,7 +5111,7 @@ class AgentRef(BaseModel):
     name: str | None = Field(None, description='Project-unique agent name.')
 
 
-class Mode3(StrEnum):
+class Mode2(StrEnum):
     """
     `continue_or_create` (default) resolves an existing session for the `session_key` or creates one; `new` always creates a fresh session; `continue` resolves an existing session and fails if none exists.
     """
@@ -5261,7 +5129,7 @@ class InvokeSessionSpec(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    mode: Mode3 | None = Field(
+    mode: Mode2 | None = Field(
         None,
         description='`continue_or_create` (default) resolves an existing session for the `session_key` or creates one; `new` always creates a fresh session; `continue` resolves an existing session and fails if none exists.',
     )
@@ -5272,6 +5140,10 @@ class InvokeSessionSpec(BaseModel):
         None, description='Human-friendly title for a newly created session.'
     )
     visibility: SessionVisibility | None = None
+    model_override: str | None = Field(
+        None,
+        description="Model to use for a newly created session. Overrides the stored agent's model and is ignored when an existing session is resolved.",
+    )
     compaction_policy: SessionCompactionPolicy | None = Field(
         None,
         description="Per-session compaction overrides applied when the session is first created. Merged over the agent's default policy and server defaults. Ignored when an existing session is resolved.",
@@ -5390,7 +5262,7 @@ class CreateSessionRequest(BaseModel):
         extra='forbid',
     )
     agent_id: str = Field(..., description='Agent that owns the session.')
-    mode: Mode3 | None = Field(
+    mode: Mode2 | None = Field(
         None,
         description='`continue_or_create` (default) resolves an existing session for the `session_key` or creates one; `new` always creates a fresh session; `continue` resolves an existing session and fails if none exists.',
     )
@@ -5399,7 +5271,10 @@ class CreateSessionRequest(BaseModel):
     )
     title: str | None = Field(None, description='Human-friendly session title.')
     visibility: SessionVisibility | None = None
-    model: str | None = Field(None, description='Model to record on the session.')
+    model_override: str | None = Field(
+        None,
+        description="Model to use for a newly created session. Overrides the stored agent's model.",
+    )
     compaction_policy: SessionCompactionPolicy | None = Field(
         None,
         description="Per-session compaction overrides applied when the session is first created. Merged over the agent's default policy and server defaults. Ignored when an existing session is resolved.",
@@ -5427,7 +5302,7 @@ class Role3(StrEnum):
 
 class StartTurnRequest(BaseModel):
     """
-    Caller input that starts an agent turn in a session. The session definition's `config.timeout_seconds` may be zero to use the platform default; `operation.timeout_seconds` must be at least one and takes precedence for this admitted turn.
+    Caller input that starts an agent turn in a session. `operation.timeout_seconds` must be at least one and takes precedence for this admitted turn.
     """
 
     model_config = ConfigDict(
@@ -5668,7 +5543,7 @@ class RunNameSpec(BaseModel):
     )
 
 
-class Source7(StrEnum):
+class Source5(StrEnum):
     """
     How the repository target is resolved. `static` clones `full_name`; `match` clones the repository the trigger event concerns.
     """
@@ -5693,7 +5568,7 @@ class LoopSpecRepository(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    source: Source7 = Field(
+    source: Source5 = Field(
         'static',
         description='How the repository target is resolved. `static` clones `full_name`; `match` clones the repository the trigger event concerns.',
     )
@@ -6005,7 +5880,7 @@ class LoopAgentSessionPolicy(BaseModel):
     )
 
 
-class Mode5(StrEnum):
+class Mode4(StrEnum):
     """
     Model route mode: `managed` or `worker`.
     """
@@ -6022,7 +5897,7 @@ class LoopModelRoute(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    mode: Mode5 = Field(..., description='Model route mode: `managed` or `worker`.')
+    mode: Mode4 = Field(..., description='Model route mode: `managed` or `worker`.')
     environment_id: str | None = Field(
         None, description='Managed environment to route worker-backed model calls to.'
     )
@@ -7256,7 +7131,7 @@ class TableRowQueryListResponse(BaseModel):
     )
 
 
-class Mode6(StrEnum):
+class Mode5(StrEnum):
     """
     Search mode. `keyword` uses token-prefix matching, `semantic` uses similarity over indexed row text, and `hybrid` combines both.
     """
@@ -7275,7 +7150,7 @@ class SearchRowsRequest(BaseModel):
         description='Search query. Hyphens and other punctuation split terms for keyword matching.',
         min_length=1,
     )
-    mode: Mode6 = Field(
+    mode: Mode5 = Field(
         'keyword',
         description='Search mode. `keyword` uses token-prefix matching, `semantic` uses similarity over indexed row text, and `hybrid` combines both.',
     )
@@ -7761,46 +7636,6 @@ class WorkerSocketFrame(
     )
 
 
-class PutDefinitionResolverRequest(BaseModel):
-    """
-    Full-replace body for the org's definition-resolver config.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    source: Source3 = Field(
-        ..., description="Where the org's definitions resolve from by default."
-    )
-    endpoint_url: str | None = Field(
-        None,
-        description='HTTPS endpoint Mobius posts resolve requests to. Required for client_resolver.',
-    )
-    auth: DefinitionResolverAuth | None = Field(
-        None, description='Shared-secret auth. Omit to keep the existing token.'
-    )
-    timeout_ms: int | None = Field(
-        None,
-        description='Per-request resolve timeout in milliseconds. Defaults to 2000 when omitted or non-positive.',
-    )
-    protocol_version: int | None = Field(
-        None,
-        description='The resolve wire-protocol version Mobius speaks. Defaults to 1.',
-    )
-    revalidate_after_s: int | None = Field(
-        None,
-        description='Skip the network when the cached bundle is younger than this (seconds).',
-    )
-    stale_max_age_s: int | None = Field(
-        None,
-        description='Hard ceiling on serving last-known-good (seconds); 0 is unbounded.',
-    )
-    on_unavailable: OnUnavailable1 | None = Field(
-        None,
-        description='Behavior when the resolver endpoint is unreachable. Defaults to last_known_good.',
-    )
-
-
 class DeliveryChannel(BaseModel):
     """
     A single delivery destination. `inbox_only` carries no payload; `email` requires the `email` variant.
@@ -8108,46 +7943,23 @@ class AppendSessionMessagesRequest(BaseModel):
     )
 
 
-class InlineAgentConfig(BaseModel):
+class InvokeAgentRequest(BaseModel):
     """
-    An agent definition sent with the invocation instead of one stored in Mobius ahead of time. Send it on the call that creates the session and it becomes that session's definition; send it again on a later turn to replace it; leave it out and the session keeps the definition it already has.
-
-    A session holds one config at a time. If two calls share a session and both send `config`, the last one Mobius saves wins, so give each definition you want to run at the same time its own session.
-
-    Every field is optional. A field you set replaces the agent's value; a field you leave out keeps the agent's value. The `toolkits` and `skills` lists replace the agent's lists entirely — they are not merged item by item. If your organization sets limits on the model, effort, or timeout, those limits still apply, so a value here can never exceed them. Use `config` for one-off invocations only: loops and schedules must point to a stored agent, so creating or updating one with `config` is rejected.
+    A single compound invocation: which stored agent to run, how to resolve the session, the caller's input message, and optional channel routing context. `operation.timeout_seconds` must be at least one and takes precedence for this admitted turn.
     """
 
     model_config = ConfigDict(
         extra='forbid',
     )
-    instructions: str | None = Field(
+    agent_ref: AgentRef
+    session: InvokeSessionSpec | None = None
+    operation: AgentTurnOperationPolicy | None = None
+    input: InvokeInput
+    output: TurnOutputSpec | None = Field(
         None,
-        description="System-prompt instructions for the agent. Replaces the agent's configured system prompt for this session. Empty falls back to the generated default.",
+        description="Optional structured-output contract for this turn. Read the validated value from the completed turn's `output`.",
     )
-    model: str | None = Field(
-        None,
-        description="LLM model identifier. Resolves through the same model routing and allow rules as a stored agent's model.",
-    )
-    effort: ThinkingEffort | None = Field(
-        None, description="Reasoning-effort level for the agent's turns."
-    )
-    timeout_seconds: int | None = Field(
-        None,
-        description="Per-turn execution timeout in seconds. Zero uses the platform default. A loop step's own timeout still overrides this.",
-        ge=0,
-    )
-    memory_context: MemoryContextPolicy | None = Field(
-        None,
-        description="Automatic memory delivery policy for this session's resolved agent definition. Replaces the stored or client-resolved policy.",
-    )
-    toolkits: list[InlineToolkit] | None = Field(
-        None,
-        description="Toolkit selections that replace the agent's toolkit assignments for this session. Each names the actions (from this project's action catalog) the agent may call. Replaces wholesale — an omitted `toolkits` inherits the agent's assignments.",
-    )
-    skills: list[InlineSkill] | None = Field(
-        None,
-        description="Skills that replace the agent's skill assignments for this session. Each carries its full instruction body, lazy-loaded via the invoke_skill tool. Replaces wholesale.",
-    )
+    channel_context: ChannelContext | None = None
 
 
 class SessionNudgeAck(BaseModel):
@@ -9154,26 +8966,6 @@ class CreateRunBackedInteractionRequest(BaseModel):
 
 class InteractionUpsertFrame(Interaction):
     event_type: Literal['interaction.upsert']
-
-
-class InvokeAgentRequest(BaseModel):
-    """
-    A single compound invocation: which agent to run, how to resolve the session, the caller's input message, and optional channel routing context. `config.timeout_seconds` may be zero to use the platform default; `operation.timeout_seconds` must be at least one and takes precedence for this admitted turn.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    agent_ref: AgentRef
-    session: InvokeSessionSpec | None = None
-    config: InlineAgentConfig | None = None
-    operation: AgentTurnOperationPolicy | None = None
-    input: InvokeInput
-    output: TurnOutputSpec | None = Field(
-        None,
-        description="Optional structured-output contract for this turn. Read the validated value from the completed turn's `output`.",
-    )
-    channel_context: ChannelContext | None = None
 
 
 class LoopAgentStepSpec(BaseModel):

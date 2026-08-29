@@ -41,7 +41,6 @@ from ._api.models import (
     CreateRoleRequest,
     CreateLoopRequest,
     IfExists,
-    InlineAgentConfig,
     InteractionKind,
     InteractionListResponse,
     InvokeAgentRequest,
@@ -231,14 +230,8 @@ class InvokeAgentOptions:
     # session.thinking_effort to override the agent's reasoning-effort default
     # for this session.
     session: InvokeSessionSpec | None = None
-    # Inline agent definition (instructions, model, effort, timeout, toolkits,
-    # skills) sent with the invocation instead of using the agent stored in
-    # Mobius. Set fields replace the agent's values; omitted fields keep them.
-    # Mobius remembers the config on the session and reuses it on later turns
-    # until a new one is sent. Omit to run the agent on its stored definition.
-    config: InlineAgentConfig | None = None
     # Policy for only this newly admitted turn. Its timeout takes precedence
-    # over the saved config timeout and is not saved on the session.
+    # over the stored agent timeout and is not saved on the session.
     operation: AgentTurnOperationPolicy | None = None
     # Structured-output contract for this turn. When set, Mobius exposes a
     # reserved submit tool for the schema, validates the submission
@@ -261,7 +254,7 @@ class StartTurnOptions:
     # invocation, writes no new input, and never restarts a terminal turn.
     idempotency_key: str | None = None
     # Policy for only this newly admitted turn. Its timeout takes precedence
-    # over the saved config timeout and is not saved on the session.
+    # over the stored agent timeout and is not saved on the session.
     operation: AgentTurnOperationPolicy | None = None
     # Structured-output contract for this turn. See InvokeAgentOptions.output;
     # read the validated value from TurnTranscript.output.
@@ -2261,7 +2254,6 @@ def _invoke_agent_request(opts: InvokeAgentOptions) -> InvokeAgentRequest:
             metadata=opts.input_metadata,
         ),
         session=opts.session,
-        config=opts.config,
         operation=opts.operation,
         output=opts.output,
         channel_context=opts.channel_context,

@@ -108,10 +108,6 @@ turn, err := client.InvokeAgent(ctx, mobius.InvokeAgentOptions{
 		"type": "text", "text": "Check the name and create a shortlist.",
 	}},
 	IdempotencyKey: inboundMessageID,
-	Config: &api.InlineAgentConfig{Toolkits: &[]api.InlineToolkit{
-		{Name: "naming", Actions: &[]string{"naming.domain.check"}},
-		{Name: "shortlists", Actions: &[]string{"shortlists.create"}},
-	}},
 })
 if err != nil { return err }
 for turn.Next() {
@@ -131,8 +127,8 @@ if err := turn.Err(); err != nil { return err }
 if err := turn.TurnError(); err != nil { return err }
 ```
 
-Imports omitted above: `github.com/deepnoodle-ai/mobius/mobius`, its generated
-`mobius/api` package, and `fmt`. An overlapping distinct direct invoke returns
+Imports omitted above: `github.com/deepnoodle-ai/mobius/mobius` and `fmt`.
+An overlapping distinct direct invoke returns
 typed `*mobius.APIError` code `session_turn_active`; explicitly wait or call
 `NudgeSession` rather than silently turning another message into direction.
 
