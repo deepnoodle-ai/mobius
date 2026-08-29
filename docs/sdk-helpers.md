@@ -576,7 +576,7 @@ Both invoke and existing-session turn helpers accept a one-shot execution
 timeout. Set `Operation: &api.AgentTurnOperationPolicy{TimeoutSeconds: &seconds}`
 in Go, `operation=mobius.AgentTurnOperationPolicy(timeout_seconds=90)` in
 Python, or `operation: { timeout_seconds: 90 }` in TypeScript. This policy
-applies only to the newly admitted turn, overrides the saved config timeout,
+applies only to the newly admitted turn, overrides the stored agent timeout,
 and is not persisted on the session.
 
 Runtime-context names must be unique within a request. Supply names without the

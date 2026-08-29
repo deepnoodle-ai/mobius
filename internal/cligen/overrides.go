@@ -108,9 +108,6 @@ var overrides = map[string]Override{
 	"deleteOrgAPIKey": {Group: "org-api-keys", Command: "delete"},
 
 	// --- organizations ------------------------------------------------------
-	// `get` strips only the first PascalCase word, landing on `get-resolver`;
-	// spell it out so it matches its sibling `replace-definition-resolver`.
-	"getDefinitionResolver": {Command: "get-definition-resolver"},
 	// "OAuth" (capital O+A only, not a fully-uppercase initialism like "API")
 	// defeats the word-splitting heuristics: the auto-derive lands on
 	// `get-auth-return-origins` (drops the "o"). Spell it out lowercase to

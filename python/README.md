@@ -18,10 +18,6 @@ try:
         agent_name="launch-scout",
         idempotency_key=inbound_message_id,
         content=[{"type": "text", "text": "Check the name and create a shortlist."}],
-        config=mobius.InlineAgentConfig(toolkits=[
-            mobius.InlineToolkit(name="naming", actions=["naming.domain.check"]),
-            mobius.InlineToolkit(name="shortlists", actions=["shortlists.create"]),
-        ]),
     ))
     for update in turn.updates():
         for message in update.transcript.renderable_messages():

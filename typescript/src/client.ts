@@ -29,7 +29,6 @@ import type {
   CreateRoleRequest,
   CreateLoopRequest,
   ImportSkillRequest,
-  InlineAgentConfig,
   Interaction,
   InteractionKind,
   InteractionListResponse,
@@ -412,16 +411,8 @@ export interface InvokeAgentOptions {
    */
   session?: InvokeSessionSpec;
   /**
-   * Inline agent definition (instructions, model, effort, timeout, toolkits,
-   * skills) sent with the invocation instead of using the agent stored in
-   * Mobius. Set fields replace the agent's values; omitted fields keep them.
-   * Mobius remembers the config on the session and reuses it on later turns
-   * until a new one is sent. Omit to run the agent on its stored definition.
-   */
-  config?: InlineAgentConfig;
-  /**
    * Policy for only this newly admitted turn. Its timeout takes precedence
-   * over the saved config timeout and is not saved on the session.
+   * over the stored agent timeout and is not saved on the session.
    */
   operation?: AgentTurnOperationPolicy;
   /**
@@ -450,7 +441,7 @@ export interface StartTurnOptions {
   idempotencyKey?: string;
   /**
    * Policy for only this newly admitted turn. Its timeout takes precedence
-   * over the saved config timeout and is not saved on the session.
+   * over the stored agent timeout and is not saved on the session.
    */
   operation?: AgentTurnOperationPolicy;
   /**
@@ -2753,7 +2744,6 @@ function invokeAgentRequest(opts: InvokeAgentOptions): InvokeAgentRequest {
       metadata: opts.inputMetadata,
     }) as InvokeInput,
     session: opts.session,
-    config: opts.config,
     operation: opts.operation,
     output: opts.output,
     channel_context: opts.channelContext,
