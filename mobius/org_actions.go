@@ -63,7 +63,7 @@ func (c *Client) ListOrganizationActions(ctx context.Context, opts *ListOrganiza
 		return nil, fmt.Errorf("mobius: list organization actions: %w", err)
 	}
 	if resp.JSON200 == nil {
-		return nil, unexpectedProjectResourceStatus("list organization actions", resp.HTTPResponse, resp.Body)
+		return nil, unexpectedResourceStatus("list organization actions", resp.HTTPResponse, resp.Body)
 	}
 	return resp.JSON200, nil
 }
@@ -78,7 +78,7 @@ func (c *Client) CreateOrganizationAction(ctx context.Context, req api.CreateOrg
 		return nil, fmt.Errorf("mobius: create organization action: %w", err)
 	}
 	if resp.JSON201 == nil {
-		return nil, unexpectedProjectResourceStatus("create organization action", resp.HTTPResponse, resp.Body)
+		return nil, unexpectedResourceStatus("create organization action", resp.HTTPResponse, resp.Body)
 	}
 	return organizationActionSecretMaterial("create organization action", resp.JSON201, api.OrganizationActionSecretVersionStatusActive)
 }
@@ -91,7 +91,7 @@ func (c *Client) GetOrganizationAction(ctx context.Context, actionID string) (*a
 		return nil, fmt.Errorf("mobius: get organization action: %w", err)
 	}
 	if resp.JSON200 == nil {
-		return nil, unexpectedProjectResourceStatus("get organization action", resp.HTTPResponse, resp.Body)
+		return nil, unexpectedResourceStatus("get organization action", resp.HTTPResponse, resp.Body)
 	}
 	return resp.JSON200, nil
 }
@@ -104,12 +104,12 @@ func (c *Client) UpdateOrganizationAction(ctx context.Context, actionID string, 
 		return nil, fmt.Errorf("mobius: update organization action: %w", err)
 	}
 	if resp.JSON200 == nil {
-		return nil, unexpectedProjectResourceStatus("update organization action", resp.HTTPResponse, resp.Body)
+		return nil, unexpectedResourceStatus("update organization action", resp.HTTPResponse, resp.Body)
 	}
 	return resp.JSON200, nil
 }
 
-// DeleteOrganizationAction deletes the shared definition from future project
+// DeleteOrganizationAction deletes the shared definition from future
 // catalogs.
 func (c *Client) DeleteOrganizationAction(ctx context.Context, actionID string) error {
 	resp, err := c.ac.DeleteOrganizationActionWithResponse(ctx, actionID)
@@ -117,7 +117,7 @@ func (c *Client) DeleteOrganizationAction(ctx context.Context, actionID string) 
 		return fmt.Errorf("mobius: delete organization action: %w", err)
 	}
 	if resp.StatusCode() != http.StatusNoContent {
-		return unexpectedProjectResourceStatus("delete organization action", resp.HTTPResponse, resp.Body)
+		return unexpectedResourceStatus("delete organization action", resp.HTTPResponse, resp.Body)
 	}
 	return nil
 }
@@ -132,7 +132,7 @@ func (c *Client) RotateOrganizationActionSecret(ctx context.Context, actionID st
 		return nil, fmt.Errorf("mobius: rotate organization action secret: %w", err)
 	}
 	if resp.JSON200 == nil {
-		return nil, unexpectedProjectResourceStatus("rotate organization action secret", resp.HTTPResponse, resp.Body)
+		return nil, unexpectedResourceStatus("rotate organization action secret", resp.HTTPResponse, resp.Body)
 	}
 	return organizationActionSecretMaterial("rotate organization action secret", resp.JSON200, api.OrganizationActionSecretVersionStatusPending)
 }
@@ -153,7 +153,7 @@ func (c *Client) ActivateOrganizationActionSecretVersion(ctx context.Context, ac
 		return nil, fmt.Errorf("mobius: activate organization action secret version: %w", err)
 	}
 	if resp.JSON200 == nil {
-		return nil, unexpectedProjectResourceStatus("activate organization action secret version", resp.HTTPResponse, resp.Body)
+		return nil, unexpectedResourceStatus("activate organization action secret version", resp.HTTPResponse, resp.Body)
 	}
 	return resp.JSON200, nil
 }
@@ -167,7 +167,7 @@ func (c *Client) RevokeOrganizationActionSecretVersion(ctx context.Context, acti
 		return nil, fmt.Errorf("mobius: revoke organization action secret version: %w", err)
 	}
 	if resp.JSON200 == nil {
-		return nil, unexpectedProjectResourceStatus("revoke organization action secret version", resp.HTTPResponse, resp.Body)
+		return nil, unexpectedResourceStatus("revoke organization action secret version", resp.HTTPResponse, resp.Body)
 	}
 	return resp.JSON200, nil
 }

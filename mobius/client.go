@@ -8,7 +8,6 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
-	"regexp"
 	"strings"
 	"time"
 
@@ -26,10 +25,9 @@ const DefaultMaxRetries = 3
 // Client holds connection settings for the Mobius API. Create one with NewClient
 // and use it to construct Workers, start runs, or manage loops.
 type Client struct {
-	baseURL       string
-	apiKey        string
-	projectHandle string
-	httpClient    *http.Client
+	baseURL    string
+	apiKey     string
+	httpClient *http.Client
 	// transferClient serves large-body transfers (artifact upload/download).
 	// http.Client.Timeout covers the entire exchange including the body, so
 	// the 60s default on httpClient would abort any artifact that takes
@@ -51,12 +49,9 @@ type ClientConfig struct {
 // Option configures a Client.
 type Option func(*Client)
 
-// WithAPIKey sets the API key used to authenticate all requests.
-// Project-pinned keys are presented to the server as
-// "mbx_<secret>.<handle>" or "mbc_<secret>.<handle>" — pass the
-// credential exactly as it was issued and the client will extract the
-// handle for URL templating. Org-scoped keys without a suffix are also
-// accepted.
+// WithAPIKey sets the API key used to authenticate all requests. The key
+// determines the org every request is scoped to; pass the credential
+// exactly as it was issued.
 func WithAPIKey(key string) Option {
 	return func(c *Client) { c.apiKey = key }
 }
@@ -96,26 +91,8 @@ func WithLogger(log *slog.Logger) Option {
 	return func(c *Client) { c.config.Logger = log }
 }
 
-// WithProjectHandle sets the project handle used for all project-scoped operations.
-// Required for workers and project-scoped API operations.
-func WithProjectHandle(handle string) Option {
-	return func(c *Client) { c.projectHandle = handle }
-}
-
-// projectHandleRe matches the project-handle regex enforced by the
-// server (domain/validate.go). Extracting the handle from the
-// credential means the worker only needs one environment variable:
-// the handle is already in the token, so passing it again via
-// WithProjectHandle is redundant and will error out on conflict.
-var projectHandleRe = regexp.MustCompile(`^[a-z0-9]+(-[a-z0-9]+)*$`)
-
 // NewClient returns a Client targeting the default Mobius API host unless
-// overridden with WithBaseURL. Construction validates the credential
-// shape (when WithAPIKey is supplied): a "mbx_<secret>.<handle>" or
-// "mbc_<secret>.<handle>" token is split on the final dot, the handle is
-// validated against the server's handle regex, and any explicit
-// WithProjectHandle must match the embedded handle. All of these surface
-// as an error here rather than as a 403 on the first request.
+// overridden with WithBaseURL.
 func NewClient(opts ...Option) (*Client, error) {
 	c := &Client{
 		baseURL:    DefaultBaseURL,
@@ -127,9 +104,6 @@ func NewClient(opts ...Option) (*Client, error) {
 	}
 	for _, opt := range opts {
 		opt(c)
-	}
-	if err := c.resolveProjectHandleFromAPIKey(); err != nil {
-		return nil, err
 	}
 	if !c.customHTTP {
 		c.httpClient.Transport = &RetryingTransport{
@@ -177,56 +151,6 @@ func transferTransport() http.RoundTripper {
 	return http.DefaultTransport
 }
 
-// resolveProjectHandleFromAPIKey extracts the optional ".<handle>"
-// suffix from the configured API key so the URL templater can stop
-// requiring WithProjectHandle for project-pinned credentials. The
-// apiKey itself is left untouched — the full suffixed credential still
-// rides on the Authorization header, and the server
-// re-runs the suffix-vs-pinned-project check as defence in depth.
-func (c *Client) resolveProjectHandleFromAPIKey() error {
-	if c.apiKey == "" {
-		return nil
-	}
-	handle, ok := ProjectHandleFromAPIKey(c.apiKey)
-	if !ok {
-		if hasCredentialSuffix(c.apiKey) || strings.HasSuffix(c.apiKey, ".") {
-			return fmt.Errorf("mobius: invalid project handle suffix in API key")
-		}
-		return nil
-	}
-	if c.projectHandle != "" && c.projectHandle != handle {
-		return fmt.Errorf("mobius: WithProjectHandle(%q) conflicts with the handle embedded in the API key (%q)", c.projectHandle, handle)
-	}
-	c.projectHandle = handle
-	return nil
-}
-
-// ProjectHandleFromAPIKey returns the project suffix from a pinned Mobius
-// credential. The suffix format is mbx_<secret>.<handle> for API keys and
-// mbc_<secret>.<handle> for browser-issued CLI credentials.
-func ProjectHandleFromAPIKey(key string) (string, bool) {
-	if !strings.HasPrefix(key, "mbx_") && !strings.HasPrefix(key, "mbc_") {
-		return "", false
-	}
-	dot := strings.LastIndexByte(key, '.')
-	if dot < 0 || dot == len(key)-1 {
-		return "", false
-	}
-	handle := key[dot+1:]
-	if !projectHandleRe.MatchString(handle) {
-		return "", false
-	}
-	return handle, true
-}
-
-func hasCredentialSuffix(key string) bool {
-	if !strings.HasPrefix(key, "mbx_") && !strings.HasPrefix(key, "mbc_") {
-		return false
-	}
-	dot := strings.LastIndexByte(key, '.')
-	return dot >= 0 && (dot != len(key)-1 || strings.HasSuffix(key, "."))
-}
-
 // RawClient returns the underlying generated ClientWithResponses for direct access
 // to all generated API methods.
 func (c *Client) RawClient() *api.ClientWithResponses {
@@ -252,9 +176,6 @@ func (c *Client) doMultipartWithHeaders(ctx context.Context, method, path, conte
 }
 
 func (c *Client) doWithHeaders(ctx context.Context, hc *http.Client, method, path, contentType string, body io.Reader, headers map[string]string, out any) error {
-	if c.projectHandle == "" {
-		return fmt.Errorf("mobius: no project configured - set MOBIUS_PROJECT or pass --project")
-	}
 	req, err := http.NewRequestWithContext(ctx, method, strings.TrimRight(c.baseURL, "/")+path, body)
 	if err != nil {
 		return err
@@ -287,11 +208,4 @@ func (c *Client) doWithHeaders(ctx context.Context, hc *http.Client, method, pat
 		return fmt.Errorf("mobius: decode response: %w", err)
 	}
 	return nil
-}
-
-// ProjectHandle returns the project handle this client is bound to,
-// either from WithProjectHandle or extracted from a project-pinned API
-// key. Returns "" if no handle has been resolved.
-func (c *Client) ProjectHandle() string {
-	return c.projectHandle
 }

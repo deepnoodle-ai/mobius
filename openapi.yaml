@@ -10,7 +10,7 @@ info:
 
     **Base URL.** Production is `https://api.mobiusops.ai`. Every route is prefixed with the stable major version `/v1`; breaking changes ship under a new prefix, not in place. The `version` field above tracks revisions of this specification, independent of the `/v1` URL version.
 
-    **Authentication.** Send a credential in the `Authorization: Bearer <credential>` header. Project **API keys** (prefix `mbx_`) authenticate as a machine principal in one project and are issued from the Mobius app or the API-key endpoints; **CLI credentials** (prefix `mbc_`) are issued by the device-authorization flow on behalf of a user. See the `BearerAuth` security scheme for details.
+    **Authentication.** Send a credential in the `Authorization: Bearer <credential>` header. **API keys** (prefix `mbx_`) authenticate as a machine principal in one org and are issued from the Mobius app or the API-key endpoints; **CLI credentials** (prefix `mbc_`) are issued by the device-authorization flow on behalf of a user. See the `BearerAuth` security scheme for details.
 
     **Conventions.** Collections return a cursor-paginated envelope (`items` / `has_more` / `next_cursor`); single resources return the bare object. Errors use a shared envelope with a stable machine-readable `error.code`. Timestamps are ISO-8601 UTC.
 servers:
@@ -23,10 +23,10 @@ security:
 tags:
 - name: api-keys
   x-displayName: API Keys
-  description: Organization and project API keys used for programmatic authentication.
+  description: Organization API keys used for programmatic authentication.
 - name: actions
   x-displayName: Actions
-  description: Project and catalog actions invoked by agents and loop steps.
+  description: Org and catalog actions invoked by agents and loop steps.
 - name: catalog
   x-displayName: Catalog
   description: Catalog API operations.
@@ -37,9 +37,6 @@ tags:
   x-displayName: Jobs
   description: The worker WebSocket protocol used by customer-side workers to claim, run,
     and report jobs.
-- name: projects
-  x-displayName: Projects
-  description: Project records, membership, defaults, and configuration.
 - name: webhooks
   x-displayName: Webhooks
   description: Outgoing webhook subscriptions, tests, and delivery history.
@@ -48,7 +45,7 @@ tags:
   description: Organization subscription, invoice, and billing portal endpoints.
 - name: permissions
   x-displayName: Permissions
-  description: Permission definitions and presets used to build project roles.
+  description: Permission definitions and presets used to build org roles.
 - name: roles
   x-displayName: Roles
   description: System and custom roles plus user role assignments.
@@ -74,11 +71,10 @@ tags:
   description: Durable loop run executions with their steps and event streams.
 - name: toolkits
   x-displayName: Toolkits
-  description: Project-local and system toolkit templates that grant agents access to action
-    selectors.
+  description: Org-local and system toolkit templates that grant agents access to action selectors.
 - name: skills
   x-displayName: Skills
-  description: Project-local and system skill templates used to shape agent behavior and requested
+  description: Org-local and system skill templates used to shape agent behavior and requested
     tools.
 - name: blueprints
   x-displayName: Blueprints
@@ -88,23 +84,23 @@ tags:
   description: Principals API operations.
 - name: tables
   x-displayName: Tables
-  description: Agent-readable and -writable project tables.
+  description: Agent-readable and -writable org tables.
 - name: artifacts
   x-displayName: Artifacts
   description: Files produced by agents during loop runs and stored for later inspection.
 paths:
-  /v1/projects/{project_handle}/api-keys:
+  /v1/api-keys:
     post:
       operationId: createAPIKey
       tags:
       - api-keys
       summary: Create API key
-      description: Creates an API key bound to a machine principal in this project. The key
-        authenticates as that principal; associated permissions come from that principal's
-        role assignments. The raw key value is returned in `key` and is never retrievable
-        again after this response.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
+      description: Creates an API key for the active organization. Pass `principal_id` to
+        bind the key to an existing machine principal — it authenticates as that principal
+        and inherits its role assignments (optionally capped by `scope_role_id`). Omit `principal_id`
+        to mint a key that acts directly with the chosen system `role` (defaults to `Admin`)
+        instead of any specific principal's grants. The raw key value is returned in `key`
+        and is never retrievable again after this response.
       requestBody:
         required: true
         content:
@@ -152,9 +148,8 @@ paths:
       tags:
       - api-keys
       summary: List API keys
-      description: Returns API keys for this project, including pagination metadata.
+      description: Returns the active organization's API keys, including pagination metadata.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/LimitParam'
       - $ref: '#/components/parameters/CursorParam'
       responses:
@@ -168,9 +163,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-  /v1/projects/{project_handle}/api-keys/{resource_id}:
+  /v1/api-keys/{resource_id}:
     get:
       operationId: getAPIKey
       tags:
@@ -178,7 +171,6 @@ paths:
       summary: Get API key
       description: Returns metadata for a single API key without exposing the raw secret.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/IDParam'
       responses:
         '200':
@@ -201,111 +193,6 @@ paths:
       description: Revokes the key. In-flight requests using this key will immediately start
         receiving 401 while credential metadata remains available for audit history.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      - $ref: '#/components/parameters/IDParam'
-      responses:
-        '204':
-          description: No Content
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '429':
-          $ref: '#/components/responses/TooManyRequests'
-  /v1/api-keys:
-    post:
-      operationId: createOrgAPIKey
-      tags:
-      - api-keys
-      summary: Create organization API key
-      description: Creates an organization-level API key for the active organization. The
-        key authenticates as the organization's system principal and acts with the chosen
-        `role` applied org-wide across every project (defaults to `Admin`). The raw key value
-        is returned in `key` and is never retrievable again after this response. Requires
-        org admin.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateOrgAPIKeyRequest'
-            example:
-              name: Org automation
-              expires_at: '2026-09-15T14:30:00Z'
-              tags:
-                owner: platform
-      responses:
-        '201':
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/APIKeyCreateResult'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '409':
-          $ref: '#/components/responses/Conflict'
-        '429':
-          $ref: '#/components/responses/TooManyRequests'
-    get:
-      operationId: listOrgAPIKeys
-      tags:
-      - api-keys
-      summary: List organization API keys
-      description: Returns the active organization's org-level API keys, including pagination
-        metadata. Requires org admin.
-      parameters:
-      - $ref: '#/components/parameters/LimitParam'
-      - $ref: '#/components/parameters/CursorParam'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/APIKeyListResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-  /v1/api-keys/{resource_id}:
-    get:
-      operationId: getOrgAPIKey
-      tags:
-      - api-keys
-      summary: Get organization API key
-      description: Returns metadata for a single organization API key without exposing the
-        raw secret. Requires org admin.
-      parameters:
-      - $ref: '#/components/parameters/IDParam'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/APIKey'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-    delete:
-      operationId: deleteOrgAPIKey
-      tags:
-      - api-keys
-      summary: Delete organization API key
-      description: Revokes the organization API key. In-flight requests using this key will
-        immediately start receiving 401 while credential metadata remains available for audit
-        history. Requires org admin.
-      parameters:
       - $ref: '#/components/parameters/IDParam'
       responses:
         '204':
@@ -326,8 +213,8 @@ paths:
       x-public: true
       summary: List organization actions
       description: Lists signed HTTP actions owned by the active organization. These definitions
-        are available to every project in the organization, but a toolkit must still select
-        an action before an agent can call it. Requires Admin or Owner membership.
+        are available org-wide, but a toolkit must still select an action before an agent
+        can call it. Requires Admin or Owner membership.
       parameters:
       - $ref: '#/components/parameters/CursorParam'
       - $ref: '#/components/parameters/LimitParam'
@@ -407,9 +294,9 @@ paths:
       - actions
       x-public: true
       summary: Update organization action
-      description: Updates the shared definition or enables/disables invocation. A project
-        action with the same canonical name continues to shadow this definition in that project.
-        Requires Admin or Owner membership.
+      description: Updates the shared definition or enables/disables invocation. A custom
+        action with the same canonical name continues to shadow this definition. Requires
+        Admin or Owner membership.
       parameters:
       - name: action_id
         in: path
@@ -446,7 +333,7 @@ paths:
       - actions
       x-public: true
       summary: Delete organization action
-      description: Deletes the shared definition from future project catalogs. Requires Admin
+      description: Deletes the shared definition from future action catalogs. Requires Admin
         or Owner membership.
       parameters:
       - name: action_id
@@ -579,17 +466,15 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
-  /v1/projects/{project_handle}/actions:
+  /v1/actions:
     post:
       operationId: createAction
       tags:
       - actions
       summary: Create action
-      description: Registers a project-owned custom action definition. HTTP actions require
-        `endpoint_url` and receive a signing secret. Worker-backed actions omit `endpoint_url`;
-        compatible workers make the registered action ready by advertising its name when connected.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
+      description: Registers an org-owned custom action definition. HTTP actions require `endpoint_url`
+        and receive a signing secret. Worker-backed actions omit `endpoint_url`; compatible
+        workers make the registered action ready by advertising its name when connected.
       requestBody:
         required: true
         content:
@@ -654,7 +539,7 @@ paths:
           $ref: '#/components/responses/Conflict'
         '429':
           $ref: '#/components/responses/TooManyRequests'
-  /v1/projects/{project_handle}/actions/{action_name}:
+  /v1/actions/{action_name}:
     patch:
       operationId: updateAction
       tags:
@@ -663,7 +548,6 @@ paths:
       description: Updates action metadata, schemas, annotations, tags, or the HTTP endpoint
         URL. Worker-backed actions cannot set an endpoint URL.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/ActionNameParam'
       requestBody:
         required: true
@@ -698,11 +582,10 @@ paths:
       tags:
       - actions
       summary: Delete action
-      description: Deletes a project-owned custom action definition. Runnable loop specs that
+      description: Deletes an org-owned custom action definition. Runnable loop specs that
         still reference the action block deletion with `409 Conflict` until the reference
         is removed.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/ActionNameParam'
       responses:
         '204':
@@ -717,7 +600,7 @@ paths:
           $ref: '#/components/responses/Conflict'
         '429':
           $ref: '#/components/responses/TooManyRequests'
-  /v1/projects/{project_handle}/actions/{action_name}/secret/rotate:
+  /v1/actions/{action_name}/secret/rotate:
     post:
       operationId: rotateActionSecret
       tags:
@@ -726,7 +609,6 @@ paths:
       description: Rotates the signing secret for an HTTP-backed custom action. Worker actions
         do not have signing secrets and return a validation error.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/ActionNameParam'
       responses:
         '200':
@@ -747,7 +629,7 @@ paths:
           $ref: '#/components/responses/NotFound'
         '429':
           $ref: '#/components/responses/TooManyRequests'
-  /v1/projects/{project_handle}/action-invocations:
+  /v1/action-invocations:
     get:
       operationId: listActionInvocations
       tags:
@@ -756,7 +638,6 @@ paths:
       description: Lists recent action invocation audit records from loops, agents, direct
         invocations, and job-backed execution.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/CursorParam'
       - $ref: '#/components/parameters/LimitParam'
       - name: run_id
@@ -781,7 +662,7 @@ paths:
           type: string
       - name: action_id
         in: query
-        description: Filter to an immutable project or organization Action ID.
+        description: Filter to an immutable custom or organization Action ID.
         schema:
           type: string
       - name: definition_scope
@@ -791,7 +672,7 @@ paths:
           type: string
           enum:
           - platform
-          - project
+          - custom
           - organization
       - name: secret_version
         in: query
@@ -826,7 +707,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
-  /v1/projects/{project_handle}/actions/{action_name}/invoke:
+  /v1/actions/{action_name}/invoke:
     post:
       operationId: invokeAction
       tags:
@@ -836,7 +717,6 @@ paths:
         used by loops. HTTP and managed platform actions are dispatched to Mobius server workers;
         worker-backed custom actions are dispatched to compatible customer workers.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/ActionNameParam'
       requestBody:
         required: true
@@ -883,18 +763,15 @@ paths:
           $ref: '#/components/responses/Conflict'
         '429':
           $ref: '#/components/responses/TooManyRequests'
-  /v1/projects/{project_handle}/catalog/events:
+  /v1/catalog/events:
     get:
       operationId: listCatalogEvents
       tags:
       - catalog
       summary: List events
-      description: Returns triggerable event sources for this project, including built-in
-        platform sources and connected integration providers. Each source lists its active
-        event types, readiness, and any reserved matcher prefixes the authoring UI should
-        recognize.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
+      description: Returns triggerable event sources for this org, including built-in platform
+        sources and connected integration providers. Each source lists its active event types,
+        readiness, and any reserved matcher prefixes the authoring UI should recognize.
       responses:
         '200':
           description: OK
@@ -906,18 +783,16 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
-  /v1/projects/{project_handle}/catalog/actions:
+  /v1/catalog/actions:
     get:
       operationId: listCatalogActions
       tags:
       - catalog
       summary: List actions
-      description: 'Returns the full catalog of actions available to this project: project-owned
-        HTTP actions and platform-provided integration actions (Slack, GitHub, etc.). The
-        `available` flag indicates whether the action can currently be invoked. Custom HTTP
-        actions are created and managed on the `/actions` resource.'
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
+      description: 'Returns the full catalog of actions available to this org: org-owned HTTP
+        actions and platform-provided integration actions (Slack, GitHub, etc.). The `available`
+        flag indicates whether the action can currently be invoked. Custom HTTP actions are
+        created and managed on the `/actions` resource.'
       responses:
         '200':
           description: OK
@@ -929,7 +804,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
-  /v1/projects/{project_handle}/catalog/actions/{action_name}:
+  /v1/catalog/actions/{action_name}:
     get:
       operationId: getCatalogAction
       tags:
@@ -938,7 +813,6 @@ paths:
       description: Returns availability status, schemas, and metadata for a single catalog
         entry.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/ActionNameParam'
       responses:
         '200':
@@ -953,17 +827,15 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-  /v1/projects/{project_handle}/catalog/models:
+  /v1/catalog/models:
     get:
       operationId: listCatalogModels
       tags:
       - catalog
       summary: List models
       description: Returns assignable agent models grouped by provider. Providers appear only
-        when the project has usable credentials, either from BYOK integration state or platform-managed
+        when the org has usable credentials, either from BYOK integration state or platform-managed
         configuration.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       responses:
         '200':
           description: OK
@@ -977,18 +849,16 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-  /v1/projects/{project_handle}/catalog/worker-models:
+  /v1/catalog/worker-models:
     get:
       operationId: listCatalogWorkerModels
       tags:
       - catalog
       summary: List worker models
-      description: Returns local LLM models currently advertised by online project workers.
-        Each item includes the exact `model_route` object to assign to an agent or loop step.
-        Matching is exact on `provider` and `model`; queues are not part of the standard local
-        LLM path.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
+      description: Returns local LLM models currently advertised by online org workers. Each
+        item includes the exact `model_route` object to assign to an agent or loop step. Matching
+        is exact on `provider` and `model`; queues are not part of the standard local LLM
+        path.
       responses:
         '200':
           description: OK
@@ -1002,16 +872,15 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-  /v1/projects/{project_handle}/environments:
+  /v1/environments:
     get:
       operationId: listEnvironments
       tags:
       - environments
       summary: List environments
-      description: Returns project environments visible to the caller, newest-first. Filters
-        let clients narrow by lifecycle status, run, and recently destroyed tombstones.
+      description: Returns org environments visible to the caller, newest-first. Filters let
+        clients narrow by lifecycle status, run, and recently destroyed tombstones.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/CursorParam'
       - $ref: '#/components/parameters/LimitParam'
       - name: status
@@ -1059,8 +928,6 @@ paths:
       description: Creates a durable execution environment record and provisions it with the
         selected provider. The server resolves scope and ownership before enforcing uniqueness
         for the environment name.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       requestBody:
         required: true
         content:
@@ -1102,7 +969,7 @@ paths:
           $ref: '#/components/responses/Conflict'
         '429':
           $ref: '#/components/responses/TooManyRequests'
-  /v1/projects/{project_handle}/environments/{environment_id}:
+  /v1/environments/{environment_id}:
     get:
       operationId: getEnvironment
       tags:
@@ -1111,7 +978,6 @@ paths:
       description: Returns the current environment record, including provider status, lease
         metadata, ownership, binding, and retention settings.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/EnvironmentIDParam'
       responses:
         '200':
@@ -1133,7 +999,6 @@ paths:
       summary: Update environment
       description: Only scope, owned_by, and tags are mutable from the public API.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/EnvironmentIDParam'
       requestBody:
         required: true
@@ -1170,7 +1035,6 @@ paths:
         state in Mobius. The response includes the final environment snapshot after the destroy
         request is accepted.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/EnvironmentIDParam'
       responses:
         '200':
@@ -1187,17 +1051,15 @@ paths:
           $ref: '#/components/responses/NotFound'
         '429':
           $ref: '#/components/responses/TooManyRequests'
-  /v1/projects/{project_handle}/workers/socket:
+  /v1/workers/socket:
     get:
       operationId: openWorkerSocket
       tags:
       - jobs
       summary: Open worker WebSocket
       description: Upgrades to the worker WebSocket protocol. Workers authenticate with normal
-        project credentials, send `worker.register`, then exchange typed JSON frames for claim,
+        org credentials, send `worker.register`, then exchange typed JSON frames for claim,
         heartbeat, report, cancellation, and generation streaming.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       responses:
         '101':
           description: WebSocket upgrade accepted.
@@ -1214,228 +1076,14 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-  /v1/projects:
-    get:
-      operationId: listProjects
-      tags:
-      - projects
-      summary: List projects
-      description: 'Lists the projects the caller can see, newest first. Results are paginated:
-        pass `limit` to size the page and follow `next_cursor` (returned while `has_more`
-        is true) to walk the full set — the way to enumerate an org that runs a project per
-        tenant. Use `search` to substring-match name, handle, or description, and repeat `tag`
-        to narrow to projects carrying specific labels. Deleted projects are omitted from
-        normal list responses.'
-      parameters:
-      - name: search
-        in: query
-        description: Case-insensitive substring filter applied to project name, handle, and
-          description.
-        schema:
-          type: string
-      - name: tag
-        in: query
-        description: Filter to projects carrying the given tags. Each value is either a bare
-          key (matches any project that has the key) or `key:value` (matches the exact key/value
-          pair). Comma-separate to require several tags; a project must match every one.
-        schema:
-          type: array
-          items:
-            type: string
-        style: form
-        explode: false
-      - $ref: '#/components/parameters/CursorParam'
-      - $ref: '#/components/parameters/LimitParam'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProjectListResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-    post:
-      operationId: createProject
-      tags:
-      - projects
-      summary: Create project
-      description: |-
-        Creates a project within the authenticated org. If `handle` is omitted it is auto-derived from `name` (lowercased, spaces replaced with hyphens).
-
-        By default (`if_exists: error`, the default), a duplicate `handle` or `external_ref` returns 409. Set `if_exists: adopt` together with `external_ref` to make the call safely retryable: when an active project already carries that `external_ref`, it is returned unchanged with `200` instead of erroring — `name`, `description`, `access_mode`, and `tags` are ignored on adopt, since no write happens. `external_ref` is required to use `adopt`; omitting it returns 400.
-
-        Adopt conflict responses carry stable codes: `external_identity_conflict` when the request supplies a `handle` that differs from the matched project's handle; `project_archived` when the matched project is archived (adopt never silently unarchives a project or mints a replacement identity). `429 project_capacity_reached` is returned when creating a new project would exceed the org's project limit; an existing `external_ref` match still adopts even at that limit.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateProjectRequest'
-            example:
-              name: Product Ops
-              handle: product-ops
-              description: Product operations workflows
-              access_mode: restricted
-              tags:
-                owner: product
-      responses:
-        '200':
-          description: 'The existing project, adopted by `external_ref` (`if_exists: adopt`).
-            No fields were written.'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Project'
-        '201':
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Project'
-              example:
-                id: prj_3q7m9x2v5n8p4r6t
-                name: Product Ops
-                handle: product-ops
-                description: Product operations workflows
-                access_mode: restricted
-                created_by: user_2f9s3k4m5n6p7q8r
-                tags:
-                  owner: product
-                created_at: '2026-06-15T14:30:00Z'
-                updated_at: '2026-06-15T14:30:00Z'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '409':
-          $ref: '#/components/responses/Conflict'
-        '429':
-          $ref: '#/components/responses/TooManyRequests'
-  /v1/projects/{project_handle}:
-    get:
-      operationId: getProject
-      tags:
-      - projects
-      summary: Get project
-      description: Requires the `mobius.project.view` permission for the project.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Project'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-    patch:
-      operationId: updateProject
-      tags:
-      - projects
-      summary: Update project
-      description: Updates `name`, `description`, and/or `access_mode`. The request also accepts
-        `seed_existing_members` when flipping `access_mode` from `open` to `restricted`. The
-        project handle is immutable and cannot be changed after creation.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpdateProjectRequest'
-            example:
-              name: Product Operations
-              access_mode: restricted
-              seed_existing_members: true
-              tags:
-                owner: product
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Project'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
-        '429':
-          $ref: '#/components/responses/TooManyRequests'
-    delete:
-      operationId: deleteProject
-      tags:
-      - projects
-      summary: Delete project
-      description: Deletes the project from active use. New trigger fires, scheduled runs,
-        manual starts, and edits are blocked; in-flight runs are allowed to drain. The project
-        is hidden from project listings, but historical runs remain readable while the retained
-        record exists.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      responses:
-        '204':
-          description: No Content
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
-        '429':
-          $ref: '#/components/responses/TooManyRequests'
-  /v1/projects/{project_handle}/capabilities:
-    get:
-      operationId: getProjectCapabilities
-      tags:
-      - projects
-      summary: Get project capabilities
-      description: Returns route-local capability booleans for the current caller and project.
-        Clients use this response to show management affordances that match the same project-scoped
-        authorization enforced by write endpoints.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
-      responses:
-        '200':
-          description: Effective capabilities for this project.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProjectCapabilities'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-  /v1/projects/{project_handle}/webhooks:
+  /v1/webhooks:
     get:
       operationId: listWebhooks
       tags:
       - webhooks
       summary: List webhooks
-      description: Returns all outgoing webhook subscriptions for the project.
+      description: Returns all outgoing webhook subscriptions for the org.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - name: enabled
         in: query
         schema:
@@ -1473,11 +1121,9 @@ paths:
       - webhooks
       summary: Create webhook
       description: |-
-        Creates a new outgoing webhook subscription. Webhook names must be unique within the project. Returns 409 if the name already exists.
+        Creates a new outgoing webhook subscription. Webhook names must be unique within the org. Returns 409 if the name already exists.
 
         A signing key is generated automatically and returned in the response; this is the only time the raw key is exposed. Rotate it with `POST /webhooks/{resource_id}/secret/rotate` if compromised.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       requestBody:
         required: true
         content:
@@ -1524,7 +1170,7 @@ paths:
           $ref: '#/components/responses/Conflict'
         '429':
           $ref: '#/components/responses/TooManyRequests'
-  /v1/projects/{project_handle}/webhooks/{resource_id}:
+  /v1/webhooks/{resource_id}:
     get:
       operationId: getWebhook
       tags:
@@ -1533,7 +1179,6 @@ paths:
       description: Returns one outgoing webhook subscription and its event filters. The raw
         signing key is never returned after creation or rotation.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/IDParam'
       responses:
         '200':
@@ -1556,7 +1201,6 @@ paths:
       description: Updates the webhook name, URL, event subscriptions, enabled state, or tags.
         Signing key rotation is handled by the dedicated rotate endpoint.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/IDParam'
       requestBody:
         required: true
@@ -1598,7 +1242,6 @@ paths:
       summary: Delete webhook
       description: Deletes the webhook and stops future deliveries for its subscribed events.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/IDParam'
       responses:
         '204':
@@ -1611,7 +1254,7 @@ paths:
           $ref: '#/components/responses/NotFound'
         '429':
           $ref: '#/components/responses/TooManyRequests'
-  /v1/projects/{project_handle}/webhooks/{resource_id}/secret/rotate:
+  /v1/webhooks/{resource_id}/secret/rotate:
     post:
       operationId: rotateWebhookSecret
       tags:
@@ -1620,7 +1263,6 @@ paths:
       description: Generates a new HMAC-SHA256 signing key version for the webhook. Store
         the returned key immediately; it cannot be retrieved again.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/IDParam'
       responses:
         '200':
@@ -1641,7 +1283,7 @@ paths:
           $ref: '#/components/responses/NotFound'
         '429':
           $ref: '#/components/responses/TooManyRequests'
-  /v1/projects/{project_handle}/webhooks/{resource_id}/ping:
+  /v1/webhooks/{resource_id}/ping:
     post:
       operationId: pingWebhook
       tags:
@@ -1651,7 +1293,6 @@ paths:
         URL. Use this before saving a new endpoint; the payload has `type: "ping"` and the
         response reports delivery status and latency.'
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/IDParam'
       requestBody:
         required: false
@@ -1682,7 +1323,7 @@ paths:
           $ref: '#/components/responses/NotFound'
         '429':
           $ref: '#/components/responses/TooManyRequests'
-  /v1/projects/{project_handle}/webhooks/{resource_id}/deliveries:
+  /v1/webhooks/{resource_id}/deliveries:
     get:
       operationId: listWebhookDeliveries
       tags:
@@ -1693,7 +1334,6 @@ paths:
         are retried up to 10 times (5xx, 408, 429 are retryable; other 4xx are not). A delivery
         transitions to `failed` only after exhausting all retry attempts.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/IDParam'
       - name: cursor
         in: query
@@ -1756,17 +1396,6 @@ paths:
         schema:
           type: string
           format: date-time
-      - name: project_id
-        in: query
-        required: false
-        description: Filter to rows attributed to one or more projects. Repeat the parameter
-          for multiple projects.
-        schema:
-          type: array
-          items:
-            type: string
-        style: form
-        explode: true
       - name: recorded_after
         in: query
         required: false
@@ -1826,17 +1455,15 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
-  /v1/projects/{project_handle}/permissions:
+  /v1/permissions:
     get:
-      operationId: listProjectPermissions
+      operationId: listOrgPermissions
       tags:
       - permissions
-      summary: List project permissions
+      summary: List org permissions
       description: Returns the canonical permission definitions, role presets, and action
-        execution permission groups available when building project roles. Use this endpoint
-        to source the permission IDs accepted by the role creation and update endpoints.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
+        execution permission groups available when building org roles. Use this endpoint to
+        source the permission IDs accepted by the role creation and update endpoints.
       responses:
         '200':
           description: OK
@@ -1850,15 +1477,14 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-  /v1/projects/{project_handle}/roles:
+  /v1/roles:
     get:
       operationId: listRoles
       tags:
       - roles
       summary: List roles
-      description: Returns system-defined roles plus custom roles scoped to this project.
+      description: Returns system-defined roles plus custom roles scoped to this org.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/LimitParam'
       - $ref: '#/components/parameters/CursorParam'
       responses:
@@ -1877,10 +1503,8 @@ paths:
       tags:
       - roles
       summary: Create role
-      description: Creates a custom role scoped to the project. Only system-defined roles
-        exist at the org/global tier and are created automatically by the platform.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
+      description: Creates a custom role scoped to the org. Only system-defined roles exist
+        at the platform/global tier and are created automatically by the platform.
       requestBody:
         required: true
         content:
@@ -1902,16 +1526,15 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '409':
           $ref: '#/components/responses/Conflict'
-  /v1/projects/{project_handle}/roles/{resource_id}:
+  /v1/roles/{resource_id}:
     get:
       operationId: getRole
       tags:
       - roles
       summary: Get role
       description: Returns a role by ID. Both system-defined and custom roles belonging to
-        this project are accessible via this endpoint.
+        this org are accessible via this endpoint.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/IDParam'
       responses:
         '200':
@@ -1934,7 +1557,6 @@ paths:
       description: Updates description or permissions of a custom role. Role names are immutable.
         System-defined roles (system_defined=true) cannot be updated and return 403.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/IDParam'
       requestBody:
         required: true
@@ -1967,7 +1589,6 @@ paths:
       description: Hard-deletes the role and all its assignments. System-defined roles cannot
         be deleted.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/IDParam'
       responses:
         '204':
@@ -1978,7 +1599,7 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-  /v1/projects/{project_handle}/role-assignments:
+  /v1/role-assignments:
     get:
       operationId: listRoleAssignments
       tags:
@@ -1986,7 +1607,6 @@ paths:
       summary: List role assignments
       description: Returns role assignments optionally filtered by principal or role.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - name: principal_id
         in: query
         description: Filter to assignments for a specific principal.
@@ -2013,11 +1633,9 @@ paths:
       tags:
       - roles
       summary: Create role assignment
-      description: Binds a role to a principal in this project (human or machine). The assignment
+      description: Binds a role to a principal in this org (human or machine). The assignment
         records the creating user in `granted_by`. To manage a machine principal's roles without
         referencing its ID directly, use `role_ids` on the principal create and update endpoints.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       requestBody:
         required: true
         content:
@@ -2041,7 +1659,7 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
-  /v1/projects/{project_handle}/role-assignments/{resource_id}:
+  /v1/role-assignments/{resource_id}:
     delete:
       operationId: deleteRoleAssignment
       tags:
@@ -2051,7 +1669,6 @@ paths:
         are not deleted, but the principal immediately loses permissions granted only through
         this assignment.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/IDParam'
       responses:
         '204':
@@ -2118,7 +1735,7 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-  /v1/projects/{project_handle}/interactions:
+  /v1/interactions:
     post:
       operationId: createInteraction
       tags:
@@ -2127,8 +1744,6 @@ paths:
       description: Creates a standalone or run-backed interaction. Run-backed interactions
         record an `interaction.responded` event when completed; omit `run_id` and `signal_name`
         for interactions with no loop-run association.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       requestBody:
         required: true
         content:
@@ -2193,7 +1808,6 @@ paths:
         run, session, target, or the current caller's inbox. Inbox filtering includes direct
         targets.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - name: status
         in: query
         schema:
@@ -2239,7 +1853,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
-  /v1/projects/{project_handle}/interactions/{resource_id}:
+  /v1/interactions/{resource_id}:
     get:
       operationId: getInteraction
       tags:
@@ -2249,7 +1863,6 @@ paths:
         Run-backed interactions include the run and signal identifiers used to resume loop
         execution.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/IDParam'
       responses:
         '200':
@@ -2269,12 +1882,11 @@ paths:
       tags:
       - interactions
       summary: Delete interaction
-      description: Deletes an interaction so it disappears from inbox and project listings.
-        The row is retained for audit history. Only terminal interactions (`completed`, `cancelled`,
+      description: Deletes an interaction so it disappears from inbox and org listings. The
+        row is retained for audit history. Only terminal interactions (`completed`, `cancelled`,
         `expired`) may be deleted; pending or in-review interactions must be cancelled first
         so any waiting loop run can route to a fallback.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/IDParam'
       responses:
         '204':
@@ -2287,7 +1899,7 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-  /v1/projects/{project_handle}/interactions/{resource_id}/respond:
+  /v1/interactions/{resource_id}/respond:
     post:
       operationId: respondToInteraction
       tags:
@@ -2298,7 +1910,6 @@ paths:
 
         The request body is intentionally the same envelope for every kind: `action`, `value`, and `comment`. Kind-specific behavior is selected from the interaction itself, not from separate request-body shapes.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/IDParam'
       requestBody:
         required: true
@@ -2366,7 +1977,7 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
-  /v1/projects/{project_handle}/interactions/{resource_id}/review:
+  /v1/interactions/{resource_id}/review:
     post:
       operationId: reviewInteraction
       tags:
@@ -2379,7 +1990,6 @@ paths:
 
         Only a principal named by `resolution_policy.review.reviewer_user_ids` may call this, or the interaction's creator when that list is empty. Assignees cannot accept their own work.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/IDParam'
       requestBody:
         required: true
@@ -2415,7 +2025,7 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
-  /v1/projects/{project_handle}/interactions/{resource_id}/cancel:
+  /v1/interactions/{resource_id}/cancel:
     post:
       operationId: cancelInteraction
       tags:
@@ -2428,7 +2038,6 @@ paths:
         loops can route to a fallback. Only humans may cancel by default — agents must request
         cancellation through an interaction.'
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/IDParam'
       requestBody:
         required: false
@@ -2453,7 +2062,7 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-  /v1/projects/{project_handle}/agents:
+  /v1/agents:
     post:
       operationId: createAgent
       tags:
@@ -2463,8 +2072,6 @@ paths:
         Creates an agent. An agent IS a principal (principals.kind = agent): its backing identity row is created atomically with the agent — there is no separate machine-identity side record. The agent principal is for identity, ownership, and attribution; an agent's tools come from its assigned toolkits, not from roles.
 
         By default (`if_exists: error`, the default), a duplicate `name` or `external_ref` returns 409. Set `if_exists: adopt` together with `external_ref` to make the call safely retryable: when a live agent already carries that `external_ref`, it is returned unchanged with `200` instead of erroring — mutable fields are ignored, since no write happens. `external_ref` is required to use `adopt`; omitting it returns 400. A soft-deleted agent still owns its `external_ref`: it is never resurrected and never replaced, so a match against a deleted agent returns 409 even with `adopt`.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       requestBody:
         required: true
         content:
@@ -2501,6 +2108,7 @@ paths:
                 color: teal
                 model: claude-sonnet-4-6
                 tool_presentation: meta
+                memory_enabled: true
                 status: active
                 tags:
                   owner: product
@@ -2527,12 +2135,12 @@ paths:
       summary: List agents
       description: Returns active and inactive agents with computed presence. Deleted agents
         are excluded. Filter by exact name or principal_id to resolve a configured agent without
-        copying its Mobius ID into application state.
+        copying its Mobius ID into application state. Follow `next_cursor` while `has_more`
+        is true to enumerate every match.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - name: name
         in: query
-        description: Filter to the project-unique agent with this exact name.
+        description: Filter to the org-unique agent with this exact name.
         schema:
           type: string
       - name: principal_id
@@ -2545,6 +2153,7 @@ paths:
         description: Filter by administrative status (active/inactive), independent of presence.
         schema:
           $ref: '#/components/schemas/AgentStatus'
+      - $ref: '#/components/parameters/CursorParam'
       - $ref: '#/components/parameters/LimitParam'
       responses:
         '200':
@@ -2559,7 +2168,7 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-  /v1/projects/{project_handle}/agents/{resource_id}:
+  /v1/agents/{resource_id}:
     get:
       operationId: getAgent
       tags:
@@ -2569,7 +2178,6 @@ paths:
         Presence is derived from recent presence records, so it may change without the agent
         record itself being updated.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/IDParam'
       responses:
         '200':
@@ -2592,7 +2200,6 @@ paths:
       description: Updates mutable agent fields. Setting `status` to `inactive` prevents the
         agent from claiming new jobs but does not terminate active presence records.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/IDParam'
       requestBody:
         required: true
@@ -2634,7 +2241,6 @@ paths:
         The agent's backing machine principal is archived for attribution history. In-flight
         jobs claiming this agent are not automatically cancelled.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/IDParam'
       responses:
         '204':
@@ -2647,7 +2253,7 @@ paths:
           $ref: '#/components/responses/NotFound'
         '429':
           $ref: '#/components/responses/TooManyRequests'
-  /v1/projects/{project_handle}/agents/{resource_id}/inbox:
+  /v1/agents/{resource_id}/inbox:
     post:
       operationId: provisionAgentInbox
       tags:
@@ -2657,7 +2263,6 @@ paths:
         from the agent ID (`{agentID}@mobiusinbox.com`) and stored on the agent record. Idempotent:
         if an inbox is already provisioned, the existing agent is returned unchanged.'
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/IDParam'
       responses:
         '200':
@@ -2674,7 +2279,7 @@ paths:
           $ref: '#/components/responses/NotFound'
         '429':
           $ref: '#/components/responses/TooManyRequests'
-  /v1/projects/{project_handle}/turns/{turn_id}/messages:
+  /v1/turns/{turn_id}/messages:
     get:
       operationId: listTurnMessages
       tags:
@@ -2684,7 +2289,6 @@ paths:
         endpoint when a client already has a turn ID; use the session messages endpoint to
         read the full session transcript.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/TurnIdParam'
       - $ref: '#/components/parameters/AfterSequenceParam'
       - $ref: '#/components/parameters/LimitParam'
@@ -2702,7 +2306,7 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-  /v1/projects/{project_handle}/agents/{resource_id}/messaging-bindings:
+  /v1/agents/{resource_id}/messaging-bindings:
     get:
       operationId: listAgentMessagingBindings
       tags:
@@ -2710,7 +2314,6 @@ paths:
       summary: List agent messaging bindings
       description: Returns messaging provider accounts that route messages to this agent.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/IDParam'
       responses:
         '200':
@@ -2732,7 +2335,6 @@ paths:
       summary: Save agent messaging binding
       description: Saves one provider-account binding used to route messages to this agent.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/IDParam'
       requestBody:
         required: true
@@ -2770,7 +2372,7 @@ paths:
           $ref: '#/components/responses/Conflict'
         '429':
           $ref: '#/components/responses/TooManyRequests'
-  /v1/projects/{project_handle}/agents/{resource_id}/messaging-bindings/{binding_id}:
+  /v1/agents/{resource_id}/messaging-bindings/{binding_id}:
     delete:
       operationId: deleteAgentMessagingBinding
       tags:
@@ -2778,7 +2380,6 @@ paths:
       summary: Delete agent messaging binding
       description: Deletes one messaging binding from the agent and provider account.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/IDParam'
       - name: binding_id
         in: path
@@ -2797,7 +2398,7 @@ paths:
           $ref: '#/components/responses/NotFound'
         '429':
           $ref: '#/components/responses/TooManyRequests'
-  /v1/projects/{project_handle}/agents/{resource_id}/toolkit-assignments:
+  /v1/agents/{resource_id}/toolkit-assignments:
     get:
       operationId: listAgentToolkitAssignments
       tags:
@@ -2805,7 +2406,6 @@ paths:
       summary: List agent toolkit assignments
       description: Returns the toolkits assigned to an agent in assignment order.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/IDParam'
       responses:
         '200':
@@ -2830,7 +2430,6 @@ paths:
         filters. Assigned skills do not narrow it: a skill''s `allowed_tools` grant applies
         only once the agent invokes that skill.'
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/IDParam'
       requestBody:
         required: true
@@ -2858,7 +2457,7 @@ paths:
           $ref: '#/components/responses/NotFound'
         '429':
           $ref: '#/components/responses/TooManyRequests'
-  /v1/projects/{project_handle}/agents/{resource_id}/skill-assignments:
+  /v1/agents/{resource_id}/skill-assignments:
     get:
       operationId: listAgentSkillAssignments
       tags:
@@ -2866,7 +2465,6 @@ paths:
       summary: List agent skill assignments
       description: Returns the skills assigned to an agent in assignment order.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/IDParam'
       responses:
         '200':
@@ -2891,7 +2489,6 @@ paths:
         only once the agent invokes that skill, and never widens the set beyond the assigned
         toolkits'' actions.'
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/IDParam'
       requestBody:
         required: true
@@ -2919,7 +2516,7 @@ paths:
           $ref: '#/components/responses/NotFound'
         '429':
           $ref: '#/components/responses/TooManyRequests'
-  /v1/projects/{project_handle}/agents/{resource_id}/tools:
+  /v1/agents/{resource_id}/tools:
     get:
       operationId: getAgentTools
       tags:
@@ -2930,7 +2527,6 @@ paths:
 
         Assigned skills do not narrow this set — a skill's `allowed_tools` grant applies only once the agent invokes that skill at runtime. Pass `skill_name` to preview the tools the agent would be left with while that one skill is loaded.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/IDParam'
       - name: toolkit_ids
         in: query
@@ -2967,7 +2563,7 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-  /v1/projects/{project_handle}/agents/{resource_id}/memory:
+  /v1/agents/{resource_id}/memory:
     get:
       operationId: getAgentMemory
       tags:
@@ -2975,10 +2571,9 @@ paths:
       summary: Get agent memory
       description: 'Returns a summary of the agent''s private memory: how many entries it
         holds, a breakdown by kind, and when it last changed. Each agent has its own durable
-        memory; only that agent reads or writes it during runs, but project members can observe
+        memory; only that agent reads or writes it during runs, but org members can observe
         and edit it here.'
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/IDParam'
       responses:
         '200':
@@ -2993,20 +2588,18 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-  /v1/projects/{project_handle}/agents/{resource_id}/memory/entries:
+  /v1/agents/{resource_id}/memory/entries:
     get:
       operationId: listAgentMemoryEntries
       tags:
       - agents
       summary: List agent memory entries
-      description: Lists the entries in an agent's private memory, each a keyed, durable memory
-        the agent remembered. Pass `query` to search over keys, kinds, summaries, and content;
-        choose keyword, semantic, or hybrid ranking with `search_mode`; and use `kind` to
-        filter to one kind. With no non-blank `query`, this is always a normal browse/list
-        operation and `search_mode` is ignored. Returns an empty page when the agent has no
-        memory yet.
+      description: Lists durable entries across the agent's shared and user-private memory
+        partitions. Pass `query` to search over keys, kinds, summaries, and content; choose
+        keyword, semantic, or hybrid ranking with `search_mode`; and use `kind` to filter
+        to one kind. With no non-blank `query`, this is always a normal browse/list operation
+        and `search_mode` is ignored. Returns an empty page when the agent has no memory yet.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/IDParam'
       - name: query
         in: query
@@ -3044,18 +2637,17 @@ paths:
           $ref: '#/components/responses/NotFound'
         '503':
           $ref: '#/components/responses/ServiceUnavailable'
-  /v1/projects/{project_handle}/agents/{resource_id}/memory/changes:
+  /v1/agents/{resource_id}/memory/changes:
     get:
       operationId: listAgentMemoryChanges
       tags:
       - agents
       summary: List agent memory changes
-      description: Returns the content-free, append-only change feed for this agent's memory.
-        Consumers use the opaque cursor to resume after the last observed mutation. If the
-        cursor has expired, relist current entries and start a new feed traversal without
-        `after`.
+      description: Returns the content-free, append-only change feed for this agent's shared
+        and user-private memory partitions. Consumers use the opaque cursor to resume after
+        the last observed mutation. If the cursor has expired, relist current entries and
+        start a new feed traversal without `after`.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/IDParam'
       - name: after
         in: query
@@ -3087,16 +2679,17 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /v1/projects/{project_handle}/agents/{resource_id}/memory/entries/{memory_key}:
+  /v1/agents/{resource_id}/memory/entries/{memory_key}:
     put:
       operationId: saveAgentMemoryEntry
       tags:
       - agents
       summary: Save memory entry
-      description: Saves the memory entry identified by `memory_key`, creating it when it
-        does not exist. Editing memory here is equivalent to the agent calling `mobius.memory.remember`.
+      description: Saves the memory entry identified by `memory_key` in the requested partition,
+        creating it when it does not exist. Omit `user_id` to write shared memory. A non-empty
+        `user_id` must identify a current human member of the organization. Runtime user turns
+        always write their private partition.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/IDParam'
       - $ref: '#/components/parameters/MemoryKeyParam'
       requestBody:
@@ -3110,6 +2703,7 @@ paths:
               summary: Production database region
               kind: fact
               importance: 80
+              user_id: user_2f9s3k4m5n6p7q8r
       responses:
         '200':
           description: Updated
@@ -3138,12 +2732,13 @@ paths:
       tags:
       - agents
       summary: Delete a memory entry
-      description: 'Deletes the memory entry identified by `memory_key`, equivalent to the
-        agent calling `mobius.memory.forget`. Idempotent: succeeds even if no such entry exists.'
+      description: 'Deletes the memory entry identified by `memory_key` from the requested
+        partition. Omit `user_id` to target shared memory. Idempotent: succeeds even if no
+        such entry exists.'
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/IDParam'
       - $ref: '#/components/parameters/MemoryKeyParam'
+      - $ref: '#/components/parameters/MemoryUserIDParam'
       responses:
         '204':
           description: Deleted
@@ -3155,7 +2750,7 @@ paths:
           $ref: '#/components/responses/NotFound'
         '429':
           $ref: '#/components/responses/TooManyRequests'
-  /v1/projects/{project_handle}/agents/invoke:
+  /v1/agents/invoke:
     post:
       operationId: invokeAgent
       tags:
@@ -3166,11 +2761,9 @@ paths:
 
         Agents always run from their stored definition. A newly created session may set `session.model_override` to keep that conversation on one model. For a one-shot timeout override, send `operation.timeout_seconds` with a value of at least one; it applies only to the newly admitted turn.
 
-        By default it returns `202 Accepted` immediately with a durable `after_sequence` stream cursor; the turn keeps running even if the caller disconnects. When the request sets `Accept: text/event-stream`, the response is `200 OK` and the turn's activity is streamed inline on the same connection, identical to the `POST /v1/projects/{project_handle}/sessions/{session_id}/turns` stream. A repeated call with the same `input.idempotency_key` resolves the same session and returns the existing invocation without restarting it or writing new input, so a webhook handler can acknowledge fast and retry safely. Requires the `mobius.agent.invoke` permission (or the agent's own backing principal).
+        By default it returns `202 Accepted` immediately with a durable `after_sequence` stream cursor; the turn keeps running even if the caller disconnects. When the request sets `Accept: text/event-stream`, the response is `200 OK` and the turn's activity is streamed inline on the same connection, identical to the `POST /v1/sessions/{session_id}/turns` stream. A repeated call with the same `input.idempotency_key` resolves the same session and returns the existing invocation without restarting it or writing new input, so a webhook handler can acknowledge fast and retry safely. Requires the `mobius.agent.invoke` permission (or the agent's own backing principal).
 
         Only one direct invocation may be nonterminal in a session. A distinct input while a turn is queued, running, or waiting returns `409` with `error.code = session_turn_active` and `error.details = {turn_id, status}` before the new input is appended. Use the session nudge endpoint explicitly to steer a running or waiting turn; Mobius never converts a second send into a nudge implicitly.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       requestBody:
         required: true
         content:
@@ -3203,7 +2796,7 @@ paths:
       responses:
         '200':
           description: 'Server-sent event stream of the turn''s activity, returned when the
-            request sets `Accept: text/event-stream`. Framing matches `GET /v1/projects/{project_handle}/sessions/{session_id}/stream`.'
+            request sets `Accept: text/event-stream`. Framing matches `GET /v1/sessions/{session_id}/stream`.'
           content:
             text/event-stream:
               schema:
@@ -3231,17 +2824,15 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '429':
           $ref: '#/components/responses/TooManyRequests'
-  /v1/projects/{project_handle}/sessions:
+  /v1/sessions:
     get:
       operationId: listSessions
       tags:
       - sessions
       summary: List sessions
-      description: Returns durable conversation sessions for the project, newest activity
-        first. Pass `agent_id` or `agent_name` to scope the list to one agent's remembered
-        conversations.
+      description: Returns durable conversation sessions for the org, newest activity first.
+        Pass `agent_id` or `agent_name` to scope the list to one agent's remembered conversations.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - name: agent_id
         in: query
         description: Filter to sessions owned by this agent.
@@ -3249,8 +2840,8 @@ paths:
           type: string
       - name: agent_name
         in: query
-        description: Filter to sessions owned by the project-unique agent with this exact
-          name. Mutually exclusive with `agent_id`.
+        description: Filter to sessions owned by the org-unique agent with this exact name.
+          Mutually exclusive with `agent_id`.
         schema:
           type: string
       - name: session_key
@@ -3313,8 +2904,6 @@ paths:
         `session_key` is returned, or a new one is created; `mode: new` always creates a fresh
         session; `mode: continue` resolves an existing session and fails if none exists. This
         is the entry point an application calls before sending input events.'
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       requestBody:
         required: true
         content:
@@ -3336,7 +2925,7 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-  /v1/projects/{project_handle}/sessions/{session_id}:
+  /v1/sessions/{session_id}:
     get:
       operationId: getSession
       tags:
@@ -3344,7 +2933,6 @@ paths:
       summary: Get session
       description: Returns one durable conversation session.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/SessionIdParam'
       responses:
         '200':
@@ -3369,7 +2957,6 @@ paths:
         `active` restores an archived session. Deleted sessions are retained tombstones and
         cannot be restored.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/SessionIdParam'
       requestBody:
         required: true
@@ -3404,7 +2991,6 @@ paths:
       description: Deletes a session from normal product views. The transcript row is retained
         as a tombstone for audit and retention.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/SessionIdParam'
       responses:
         '204':
@@ -3419,7 +3005,7 @@ paths:
           $ref: '#/components/responses/Conflict'
         '429':
           $ref: '#/components/responses/TooManyRequests'
-  /v1/projects/{project_handle}/sessions/{session_id}/attachments:
+  /v1/sessions/{session_id}/attachments:
     post:
       operationId: createSessionAttachment
       tags:
@@ -3428,9 +3014,8 @@ paths:
       description: |-
         Uploads one document or image into server-managed artifact storage and binds it immutably to this session. DOCX, XLSX, and PPTX uploads start asynchronous Markdown conversion through the document service. The returned `content_block` is the canonical block callers append in a session message or turn input.
 
-        Phase 1 accepts PDF (up to 5 MiB and 50 pages), DOCX, XLSX, or PPTX (up to 5 MiB), Markdown or plain text (up to 100 KiB), and PNG, JPEG, WebP, or GIF images (up to 5 MiB). Mobius detects the media type from the bytes and does not trust the multipart MIME declaration. The feature must be enabled for the organization or project.
+        Phase 1 accepts PDF (up to 5 MiB and 50 pages), DOCX, XLSX, or PPTX (up to 5 MiB), Markdown or plain text (up to 100 KiB), and PNG, JPEG, WebP, or GIF images (up to 5 MiB). Mobius detects the media type from the bytes and does not trust the multipart MIME declaration. The feature must be enabled for the organization.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/SessionIdParam'
       - name: Idempotency-Key
         in: header
@@ -3487,7 +3072,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /v1/projects/{project_handle}/sessions/{session_id}/attachments/{artifact_id}:
+  /v1/sessions/{session_id}/attachments/{artifact_id}:
     delete:
       operationId: deleteSessionAttachment
       tags:
@@ -3496,10 +3081,9 @@ paths:
       description: Deletes one artifact created through this session's attachment endpoint.
         The server re-checks the session binding and append permission before deleting bytes
         and releasing artifact quota. Retrying an artifact this session already deleted returns
-        204. A 404 means the artifact was never bound to this session, or the session or project
-        does not exist.
+        204. A 404 means the artifact was never bound to this session, or the session does
+        not exist.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/SessionIdParam'
       - $ref: '#/components/parameters/ArtifactIdParam'
       responses:
@@ -3513,7 +3097,7 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
-  /v1/projects/{project_handle}/sessions/{session_id}/messages:
+  /v1/sessions/{session_id}/messages:
     get:
       operationId: listSessionMessages
       tags:
@@ -3526,7 +3110,6 @@ paths:
         the response carries both `next_sequence` (forward cursor) and `prev_sequence` (backward
         cursor).'
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/SessionIdParam'
       - $ref: '#/components/parameters/AfterSequenceParam'
       - $ref: '#/components/parameters/BeforeSequenceParam'
@@ -3555,7 +3138,6 @@ paths:
         session. The service assigns sequence numbers atomically and may append an additional
         compaction summary when the session crosses its compaction threshold.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/SessionIdParam'
       requestBody:
         required: true
@@ -3580,7 +3162,7 @@ paths:
           $ref: '#/components/responses/NotFound'
         '429':
           $ref: '#/components/responses/TooManyRequests'
-  /v1/projects/{project_handle}/sessions/{session_id}/turns:
+  /v1/sessions/{session_id}/turns:
     get:
       operationId: listSessionTurns
       tags:
@@ -3595,7 +3177,6 @@ paths:
         a loaded message window's `turn_id`s to their headers; when `ids` is set the cursor
         and order parameters are ignored.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/SessionIdParam'
       - name: ids
         in: query
@@ -3634,7 +3215,6 @@ paths:
 
         Set `operation.timeout_seconds` to at least one for a one-shot timeout override on this turn. It takes precedence over the agent default and is not saved on the session.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/SessionIdParam'
       requestBody:
         required: true
@@ -3673,7 +3253,7 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '429':
           $ref: '#/components/responses/TooManyRequests'
-  /v1/projects/{project_handle}/sessions/{session_id}/turns/{turn_id}:
+  /v1/sessions/{session_id}/turns/{turn_id}:
     get:
       operationId: getSessionTurn
       tags:
@@ -3681,7 +3261,6 @@ paths:
       summary: Get a session turn
       description: Returns one agent turn in the session.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/SessionIdParam'
       - $ref: '#/components/parameters/TurnIdParam'
       responses:
@@ -3697,7 +3276,7 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-  /v1/projects/{project_handle}/sessions/{session_id}/nudges:
+  /v1/sessions/{session_id}/nudges:
     get:
       operationId: listSessionNudges
       tags:
@@ -3707,7 +3286,6 @@ paths:
         one or more lifecycle states. Live `nudge.*` stream events are low-latency hints;
         this list is the authoritative queue view.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/SessionIdParam'
       - name: status
         in: query
@@ -3753,7 +3331,6 @@ paths:
         content returns `409 Conflict`. Requires the `mobius.agent.invoke` permission (or
         the agent''s own backing principal).'
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/SessionIdParam'
       requestBody:
         required: true
@@ -3780,7 +3357,7 @@ paths:
           $ref: '#/components/responses/Conflict'
         '429':
           $ref: '#/components/responses/TooManyRequests'
-  /v1/projects/{project_handle}/sessions/{session_id}/nudges/{nudge_id}:
+  /v1/sessions/{session_id}/nudges/{nudge_id}:
     get:
       operationId: getSessionNudge
       tags:
@@ -3788,7 +3365,6 @@ paths:
       summary: Get a session nudge
       description: Returns one durable nudge queue entry.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/SessionIdParam'
       - $ref: '#/components/parameters/NudgeIdParam'
       responses:
@@ -3804,7 +3380,7 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-  /v1/projects/{project_handle}/sessions/{session_id}/nudges/{nudge_id}/cancel:
+  /v1/sessions/{session_id}/nudges/{nudge_id}/cancel:
     post:
       operationId: cancelNudge
       tags:
@@ -3814,7 +3390,6 @@ paths:
         wins the race, returns `409 nudge_already_delivered` with the current nudge resource
         in `error.details.nudge`.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/SessionIdParam'
       - $ref: '#/components/parameters/NudgeIdParam'
       responses:
@@ -3832,7 +3407,7 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
-  /v1/projects/{project_handle}/sessions/{session_id}/turns/{turn_id}/live:
+  /v1/sessions/{session_id}/turns/{turn_id}/live:
     get:
       operationId: getSessionTurnLive
       tags:
@@ -3844,7 +3419,6 @@ paths:
         an empty frame list after process handoff or once the durable transcript has caught
         up.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/SessionIdParam'
       - $ref: '#/components/parameters/TurnIdParam'
       responses:
@@ -3860,7 +3434,7 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-  /v1/projects/{project_handle}/sessions/{session_id}/turns/{turn_id}/cancel:
+  /v1/sessions/{session_id}/turns/{turn_id}/cancel:
     post:
       operationId: cancelTurn
       tags:
@@ -3871,7 +3445,6 @@ paths:
 
         A cancelled turn cannot be resumed. Reusing its invocation idempotency key returns the same cancelled turn; retrying the task requires a new invocation and may repeat external effects. Stream cursors resume observation only. A live loop-owned turn returns `409 turn_owned_by_run`; cancel its run instead. Requires the `mobius.agent.invoke` permission (or the agent's own backing principal).
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/SessionIdParam'
       - $ref: '#/components/parameters/TurnIdParam'
       responses:
@@ -3894,17 +3467,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /v1/projects/{project_handle}/sessions/{session_id}/transcript:
+  /v1/sessions/{session_id}/transcript:
     get:
       operationId: getSessionTranscript
       tags:
       - sessions
       summary: Get the live transcript snapshot
       description: Returns the transcript tail and authoritative turn state consumed by SessionTranscriptReducer.
-        Without a cursor this is a bootstrap tail. With cursor it incrementally drains a fixed
-        upper cut; continue with next_page_token until has_more is false.
+        Without a cursor this is a bootstrap tail; when older rows exist, next_page_token
+        walks backward through them while resume_cursor remains fixed at the bootstrap head.
+        With cursor it incrementally drains a fixed upper cut. In either mode, continue with
+        next_page_token until has_more is false.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/SessionIdParam'
       - name: cursor
         in: query
@@ -3932,7 +3506,7 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-  /v1/projects/{project_handle}/sessions/{session_id}/transcript/stream:
+  /v1/sessions/{session_id}/transcript/stream:
     get:
       operationId: streamSessionTranscript
       tags:
@@ -3942,7 +3516,6 @@ paths:
         parameter takes precedence over Last-Event-ID. State-frame ids are delivered watermarks
         and never regress.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/SessionIdParam'
       - name: cursor
         in: query
@@ -3969,7 +3542,7 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-  /v1/projects/{project_handle}/sessions/{session_id}/stream:
+  /v1/sessions/{session_id}/stream:
     get:
       operationId: streamSession
       tags:
@@ -3984,7 +3557,6 @@ paths:
 
         Live-only `generation.delta`, `session.message.preview`, `session.resync`, `tool.call`, and `tool.result` frames carry no `id:`, are interleaved best-effort for low-latency rendering, and are never persisted or replayed — on reconnect the durable message frames are the source of truth.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/SessionIdParam'
       - $ref: '#/components/parameters/AfterSequenceParam'
       - $ref: '#/components/parameters/LastEventIDParam'
@@ -4005,7 +3577,7 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-  /v1/projects/{project_handle}/sessions/{session_id}/cancel:
+  /v1/sessions/{session_id}/cancel:
     post:
       operationId: cancelSession
       tags:
@@ -4016,7 +3588,6 @@ paths:
 
         By default loop-owned turns are left to the loop engine and skipped. Set `force=true` to also cancel loop-owned turns — the recovery path for a session wedged on a turn whose run is dead or stuck. Forcing may leave that run inconsistent, so use it only to unlock an otherwise stuck session, not as a routine stop.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/SessionIdParam'
       - name: force
         in: query
@@ -4039,7 +3610,7 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-  /v1/projects/{project_handle}/sessions/{session_id}/compact:
+  /v1/sessions/{session_id}/compact:
     post:
       operationId: compactSession
       tags:
@@ -4049,7 +3620,6 @@ paths:
         of the configured strategy or token threshold. This is a no-op when there is nothing
         new to compact. Returns the updated session.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/SessionIdParam'
       responses:
         '200':
@@ -4068,17 +3638,16 @@ paths:
           $ref: '#/components/responses/Conflict'
         '429':
           $ref: '#/components/responses/TooManyRequests'
-  /v1/projects/{project_handle}/loops:
+  /v1/loops:
     get:
       operationId: listLoops
       tags:
       - loops
       summary: List loops
-      description: Returns loops in the project, newest-first. Supports filtering by lifecycle
+      description: Returns loops in the org, newest-first. Supports filtering by lifecycle
         status, associated agent, and cursor-based pagination. Deleted loops are omitted from
         normal list responses.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - name: status
         in: query
         description: Filter by lifecycle status. Omit to return the normal loop list, or pass
@@ -4126,8 +3695,6 @@ paths:
       description: Creates a new loop, addressed thereafter by its generated `id`. If authoring
         fields such as `steps` are supplied, they become the runnable definition immediately
         and the loop returns `active`.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       requestBody:
         required: true
         content:
@@ -4192,7 +3759,7 @@ paths:
           $ref: '#/components/responses/Conflict'
         '429':
           $ref: '#/components/responses/TooManyRequests'
-  /v1/projects/{project_handle}/loops/{resource_id}:
+  /v1/loops/{resource_id}:
     get:
       operationId: getLoop
       tags:
@@ -4200,7 +3767,6 @@ paths:
       summary: Get loop
       description: Returns one loop by ID, including its current authored definition.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/IDParam'
       responses:
         '200':
@@ -4221,10 +3787,9 @@ paths:
       - loops
       summary: Update loop
       description: Updates mutable fields on the loop. If authoring fields such as `steps`
-        are supplied, they replace the current runnable definition immediately. The id, org,
-        and project remain immutable.
+        are supplied, they replace the current runnable definition immediately. The id and
+        org remain immutable.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/IDParam'
       requestBody:
         required: true
@@ -4264,7 +3829,6 @@ paths:
       description: Deletes the loop from active use. Existing runs remain queryable, but new
         runs cannot be started.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/IDParam'
       responses:
         '204':
@@ -4291,7 +3855,7 @@ paths:
       - name: http_handle
         in: path
         required: true
-        description: Globally unique identifier for the trigger. The endpoint carries no project
+        description: Globally unique identifier for the trigger. The endpoint carries no org
           context, so the handle is resolved on its own; it defaults to the trigger's globally
           unique id and is treated as an unguessable delivery token.
         schema:
@@ -4365,7 +3929,7 @@ paths:
                 error:
                   code: payload_too_large
                   message: request body exceeds the maximum allowed size
-  /v1/projects/{project_handle}/loops/{resource_id}/runs:
+  /v1/loops/{resource_id}/runs:
     post:
       operationId: startRun
       tags:
@@ -4376,7 +3940,6 @@ paths:
         carries an `idempotency_key` that matches a still-active prior run. Reusing the key
         after the prior run is terminal returns `409 Conflict`.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/IDParam'
       requestBody:
         required: false
@@ -4433,16 +3996,15 @@ paths:
           $ref: '#/components/responses/Conflict'
         '429':
           $ref: '#/components/responses/TooManyRequests'
-  /v1/projects/{project_handle}/runs:
+  /v1/runs:
     get:
       operationId: listRuns
       tags:
       - runs
       summary: List loop runs
-      description: Returns loop runs for the project, newest-first. Supports filters by status,
+      description: Returns loop runs for the org, newest-first. Supports filters by status,
         loop_id, and source_event_id, plus cursor-based pagination.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - name: status
         in: query
         schema:
@@ -4483,7 +4045,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
-  /v1/projects/{project_handle}/runs/{resource_id}:
+  /v1/runs/{resource_id}:
     get:
       operationId: getRun
       tags:
@@ -4492,7 +4054,6 @@ paths:
       description: Returns one loop run by ID with its current status, event, config, result,
         and source attribution.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/IDParam'
       responses:
         '200':
@@ -4507,7 +4068,7 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-  /v1/projects/{project_handle}/runs/{resource_id}/cancel:
+  /v1/runs/{resource_id}/cancel:
     post:
       operationId: cancelRun
       tags:
@@ -4516,7 +4077,6 @@ paths:
       description: Marks the run cancelled and closes any open waits. Safe to call on an already-terminal
         run (returns the current state, no error).
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/IDParam'
       requestBody:
         required: false
@@ -4543,7 +4103,7 @@ paths:
           $ref: '#/components/responses/NotFound'
         '429':
           $ref: '#/components/responses/TooManyRequests'
-  /v1/projects/{project_handle}/runs/{resource_id}/resume:
+  /v1/runs/{resource_id}/resume:
     post:
       operationId: resumeRun
       tags:
@@ -4553,7 +4113,6 @@ paths:
         must still reference the current runnable loop version. Guardrail failures require
         a higher limit in the request body before the run can continue.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/IDParam'
       requestBody:
         required: false
@@ -4583,7 +4142,7 @@ paths:
           $ref: '#/components/responses/Conflict'
         '429':
           $ref: '#/components/responses/TooManyRequests'
-  /v1/projects/{project_handle}/runs/{resource_id}/retry:
+  /v1/runs/{resource_id}/retry:
     post:
       operationId: retryRun
       tags:
@@ -4593,7 +4152,6 @@ paths:
         equivalent to resume, but records the operator intent as a retry in the run event
         log.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/IDParam'
       requestBody:
         required: false
@@ -4622,7 +4180,7 @@ paths:
           $ref: '#/components/responses/Conflict'
         '429':
           $ref: '#/components/responses/TooManyRequests'
-  /v1/projects/{project_handle}/runs/{resource_id}/steps:
+  /v1/runs/{resource_id}/steps:
     get:
       operationId: listRunSteps
       tags:
@@ -4632,7 +4190,6 @@ paths:
         row carries the step's kind, status, attempt count, inputs, result, and any error
         metadata recorded by the engine.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/IDParam'
       responses:
         '200':
@@ -4647,7 +4204,7 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-  /v1/projects/{project_handle}/runs/{resource_id}/events:
+  /v1/runs/{resource_id}/events:
     get:
       operationId: listRunEvents
       tags:
@@ -4658,7 +4215,6 @@ paths:
 
         Content-negotiated: with `Accept: text/event-stream` this opens a long-lived Server-Sent Events stream instead of returning a JSON page: durable events are replayed from `after_sequence` and then tailed live, and the stream closes after the run is terminal and the server has drained all durable events committed before or with that terminal state. Reconnect with `?after_sequence=N` (or the `Last-Event-ID` header) to resume.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/IDParam'
       - name: after_sequence
         in: query
@@ -4690,7 +4246,7 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-  /v1/projects/{project_handle}/runs/{resource_id}/signals:
+  /v1/runs/{resource_id}/signals:
     post:
       operationId: signalRun
       tags:
@@ -4700,7 +4256,6 @@ paths:
         `step_key`. The `result` payload becomes the step's output, available to downstream
         steps at `steps.<id>.output` or `steps[0].output` in `${{ ... }}` templates.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/IDParam'
       requestBody:
         required: true
@@ -4730,16 +4285,15 @@ paths:
           $ref: '#/components/responses/NotFound'
         '429':
           $ref: '#/components/responses/TooManyRequests'
-  /v1/projects/{project_handle}/toolkits:
+  /v1/toolkits:
     get:
       operationId: listToolkits
       tags:
       - toolkits
       summary: List toolkits
-      description: Returns project-local and system toolkit templates visible to the project
-        by default.
+      description: Returns organization-owned and system toolkit templates visible to the
+        caller's organization by default.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - name: include_system
         in: query
         description: Include read-only system templates.
@@ -4764,9 +4318,7 @@ paths:
       tags:
       - toolkits
       summary: Create toolkit
-      description: Creates a project-local toolkit with named action selectors.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
+      description: Creates an organization toolkit with named action selectors.
       requestBody:
         required: true
         content:
@@ -4792,7 +4344,7 @@ paths:
                 id: kit_4r8q2m7x9p5v3n6t
                 name: GitHub review
                 description: GitHub actions needed for pull-request review.
-                source: project
+                source: organization
                 tags:
                   owner: product
                 actions:
@@ -4814,15 +4366,14 @@ paths:
           $ref: '#/components/responses/Conflict'
         '429':
           $ref: '#/components/responses/TooManyRequests'
-  /v1/projects/{project_handle}/toolkits/{toolkit_id}:
+  /v1/toolkits/{toolkit_id}:
     get:
       operationId: getToolkit
       tags:
       - toolkits
       summary: Get toolkit
-      description: Returns a single project-local or system toolkit template by ID.
+      description: Returns a single organization-owned or system toolkit template by ID.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - name: toolkit_id
         in: path
         required: true
@@ -4850,7 +4401,6 @@ paths:
       description: Updates the mutable toolkit representation. Send the full request body,
         including required field `name`; partial payloads are rejected.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - name: toolkit_id
         in: path
         required: true
@@ -4895,10 +4445,9 @@ paths:
       tags:
       - toolkits
       summary: Delete toolkit
-      description: Deletes a project-local toolkit. The toolkit is automatically detached
+      description: Deletes an organization toolkit. The toolkit is automatically detached
         from any agents that reference it, so deletion is never blocked by existing assignments.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - name: toolkit_id
         in: path
         required: true
@@ -4916,17 +4465,15 @@ paths:
           $ref: '#/components/responses/NotFound'
         '429':
           $ref: '#/components/responses/TooManyRequests'
-  /v1/projects/{project_handle}/skills:
+  /v1/skills:
     get:
       operationId: listSkills
       tags:
       - skills
       summary: List skills
-      description: Returns project-local, organization-shared, and system skills visible to
-        the project by default. Organization skills are read-only through project mutation
-        routes.
+      description: Returns organization-owned and system skills visible to the caller's organization
+        by default.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - name: include_system
         in: query
         description: Include read-only system skill templates.
@@ -4951,9 +4498,7 @@ paths:
       tags:
       - skills
       summary: Create skill
-      description: Creates a project-local skill with instructions and requested tool filters.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
+      description: Creates an organization skill with instructions and requested tool filters.
       requestBody:
         required: true
         content:
@@ -4979,7 +4524,7 @@ paths:
                 id: skill_7n4q8x2m9p5v3r6t
                 name: Pull request review
                 description: Review pull requests for correctness and risk.
-                source: project
+                source: organization
                 instructions: Check the diff and leave concise findings.
                 allowed_tools:
                 - github.create_review_comment
@@ -5001,16 +4546,14 @@ paths:
           $ref: '#/components/responses/Conflict'
         '429':
           $ref: '#/components/responses/TooManyRequests'
-  /v1/projects/{project_handle}/skills/import:
+  /v1/skills/import:
     post:
       operationId: importSkill
       tags:
       - skills
       summary: Import skill
-      description: Imports a Claude Code or Dive-style skill document into a project-local
+      description: Imports a Claude Code or Dive-style skill document into an organization
         Mobius skill.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       requestBody:
         required: true
         content:
@@ -5036,7 +4579,7 @@ paths:
                 id: skill_7n4q8x2m9p5v3r6t
                 name: Pull request review
                 description: Review pull requests for correctness and risk.
-                source: project
+                source: organization
                 instructions: Check the diff and leave concise findings.
                 allowed_tools:
                 - github.create_review_comment
@@ -5058,16 +4601,14 @@ paths:
           $ref: '#/components/responses/Conflict'
         '429':
           $ref: '#/components/responses/TooManyRequests'
-  /v1/projects/{project_handle}/skills/{skill_id}:
+  /v1/skills/{skill_id}:
     get:
       operationId: getSkill
       tags:
       - skills
       summary: Get skill
-      description: Returns a single project-local, organization-shared, or system skill by
-        ID.
+      description: Returns a single organization-owned or system skill by ID.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - name: skill_id
         in: path
         required: true
@@ -5095,7 +4636,6 @@ paths:
       description: Updates the mutable skill representation. Send the full request body, including
         required fields `name` and `instructions`; partial payloads are rejected.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - name: skill_id
         in: path
         required: true
@@ -5140,10 +4680,9 @@ paths:
       tags:
       - skills
       summary: Delete skill
-      description: Deletes a project-local skill. The skill is automatically detached from
+      description: Deletes an organization skill. The skill is automatically detached from
         any agents that reference it, so deletion is never blocked by existing assignments.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - name: skill_id
         in: path
         required: true
@@ -5340,8 +4879,8 @@ paths:
       tags:
       - skills
       summary: Get organization skill usage
-      description: Returns assignment impact across projects. Requires organization Admin
-        or Owner access.
+      description: Returns assignment impact across the organization's agents. Requires organization
+        Admin or Owner access.
       parameters:
       - name: skill_id
         in: path
@@ -5362,19 +4901,17 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-  /v1/projects/{project_handle}/blueprints/apply:
+  /v1/blueprints/apply:
     post:
       operationId: applyBlueprint
       tags:
       - blueprints
-      summary: Apply a blueprint to a project
+      summary: Apply a blueprint to an org
       description: 'Creates missing resources, updates resources Mobius manages on behalf
         of the blueprint, adopts matching uniquely-named resources where safe, and reports
         the resulting changes and bindings. With `mode: preview`, the request validates and
         returns a plan without mutating anything. Re-apply converges because each blueprint
         resource is persisted with its binding.'
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       requestBody:
         required: true
         content:
@@ -5421,17 +4958,16 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '429':
           $ref: '#/components/responses/TooManyRequests'
-  /v1/projects/{project_handle}/blueprints/bindings:
+  /v1/blueprints/bindings:
     get:
       operationId: listBlueprintBindings
       tags:
       - blueprints
       summary: List blueprint bindings
-      description: 'Returns the project''s blueprint bindings: the mapping from each blueprint-defined
+      description: 'Returns the org''s blueprint bindings: the mapping from each blueprint-defined
         resource key to the Mobius resource it provisions. Optionally filtered by namespace
         and blueprint identifier.'
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - name: namespace
         in: query
         description: Optional namespace filter for the owning blueprint identity.
@@ -5457,7 +4993,7 @@ paths:
           $ref: '#/components/responses/NotFound'
         '429':
           $ref: '#/components/responses/TooManyRequests'
-  /v1/projects/{project_handle}/blueprints/{blueprint_key}/protection:
+  /v1/blueprints/{blueprint_key}/protection:
     put:
       operationId: setBlueprintProtection
       tags:
@@ -5467,7 +5003,6 @@ paths:
         Protected resources can still be changed by Blueprint Apply or removed by deleting
         the blueprint, but ordinary resource update and delete operations return `blueprint_resource_protected`.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - name: blueprint_key
         in: path
         required: true
@@ -5503,7 +5038,7 @@ paths:
           $ref: '#/components/responses/Conflict'
         '429':
           $ref: '#/components/responses/TooManyRequests'
-  /v1/projects/{project_handle}/blueprints/{blueprint_key}:
+  /v1/blueprints/{blueprint_key}:
     delete:
       operationId: deleteBlueprint
       tags:
@@ -5517,7 +5052,6 @@ paths:
         again to see what remains. Omitting `namespace` targets only the unnamespaced blueprint;
         it is not a wildcard across namespaces.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - name: blueprint_key
         in: path
         required: true
@@ -5555,17 +5089,15 @@ paths:
           $ref: '#/components/responses/Conflict'
         '429':
           $ref: '#/components/responses/TooManyRequests'
-  /v1/projects/{project_handle}/principals:
+  /v1/principals:
     post:
       operationId: createPrincipal
       tags:
       - principals
       summary: Create service principal
-      description: Creates a standalone `service` principal within the project. Supply `role_ids`
+      description: Creates a standalone `service` principal within the org. Supply `role_ids`
         to assign roles at creation time; agent and system principals are created by their
         own flows.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       requestBody:
         required: true
         content:
@@ -5594,12 +5126,11 @@ paths:
       tags:
       - principals
       summary: List machine principals
-      description: Returns project machine principals (`service`, `agent`, `system`) used
-        by workers, agents, and loop. Only active principals are returned by default; pass
-        `include_disabled=true` to also include disabled ones (e.g. for an admin audit). Filter
-        by `kind` to narrow to a single kind.
+      description: Returns org machine principals (`service`, `agent`, `system`) used by workers,
+        agents, and loop. Only active principals are returned by default; pass `include_disabled=true`
+        to also include disabled ones (e.g. for an admin audit). Filter by `kind` to narrow
+        to a single kind.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - name: kind
         in: query
         required: false
@@ -5627,7 +5158,7 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-  /v1/projects/{project_handle}/principals/{resource_id}:
+  /v1/principals/{resource_id}:
     get:
       operationId: getPrincipal
       tags:
@@ -5637,7 +5168,6 @@ paths:
         and timestamps. API keys belonging to the principal are managed through the API key
         endpoints.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/IDParam'
       responses:
         '200':
@@ -5660,7 +5190,6 @@ paths:
       description: Updates mutable fields. To disable without deleting, set `state` to `disabled`.
         The `name` field is immutable after creation.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/IDParam'
       requestBody:
         required: true
@@ -5693,7 +5222,6 @@ paths:
         an agent or active API key still references the principal; disable instead for an
         immediate kill switch.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/IDParam'
       responses:
         '204':
@@ -5706,15 +5234,14 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
-  /v1/projects/{project_handle}/tables:
+  /v1/tables:
     get:
       operationId: listTables
       tags:
       - tables
       summary: List tables
-      description: Lists the project's tables, optionally filtered by name.
+      description: Lists the org's tables, optionally filtered by name.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/CursorParam'
       - $ref: '#/components/parameters/LimitParam'
       - $ref: '#/components/parameters/TableNameQueryParam'
@@ -5734,9 +5261,7 @@ paths:
       tags:
       - tables
       summary: Create table
-      description: Creates a project table with a typed column schema.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
+      description: Creates an organization table with a typed column schema.
       requestBody:
         required: true
         content:
@@ -5789,7 +5314,7 @@ paths:
           $ref: '#/components/responses/Conflict'
         '429':
           $ref: '#/components/responses/TooManyRequests'
-  /v1/projects/{project_handle}/tables/{table_id}:
+  /v1/tables/{table_id}:
     get:
       operationId: getTable
       tags:
@@ -5797,7 +5322,6 @@ paths:
       summary: Get table
       description: Gets table metadata and column schema by table ID.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/TableIDParam'
       responses:
         '200':
@@ -5820,7 +5344,6 @@ paths:
       description: Updates table metadata or schema. A table's identity column, secondary
         key column, and required column settings are immutable after creation.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/TableIDParam'
       requestBody:
         required: true
@@ -5876,7 +5399,6 @@ paths:
       description: Deletes one table and all rows stored under it; the operation cannot be
         undone.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/TableIDParam'
       responses:
         '204':
@@ -5889,7 +5411,7 @@ paths:
           $ref: '#/components/responses/NotFound'
         '429':
           $ref: '#/components/responses/TooManyRequests'
-  /v1/projects/{project_handle}/tables/{table_id}/stats:
+  /v1/tables/{table_id}/stats:
     get:
       operationId: getTableStats
       tags:
@@ -5900,7 +5422,6 @@ paths:
         Values are point-in-time estimates intended for capacity planning and operator UI,
         not billing.'
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/TableIDParam'
       responses:
         '200':
@@ -5915,7 +5436,7 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-  /v1/projects/{project_handle}/tables/{table_id}/rows:
+  /v1/tables/{table_id}/rows:
     post:
       operationId: createTableRow
       tags:
@@ -5923,7 +5444,6 @@ paths:
       summary: Create row
       description: Validates row data against the table schema and inserts one new row.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/TableIDParam'
       requestBody:
         required: true
@@ -5963,7 +5483,7 @@ paths:
           $ref: '#/components/responses/NotFound'
         '429':
           $ref: '#/components/responses/TooManyRequests'
-  /v1/projects/{project_handle}/tables/{table_id}/query:
+  /v1/tables/{table_id}/query:
     post:
       operationId: queryTableRows
       tags:
@@ -5974,7 +5494,6 @@ paths:
         `{"$gt": v}`, `{"$gte": v}`, `{"$lt": v}`, `{"$lte": v}`, `{"$in": [v,...]}`, `{"$exists":
         bool}`.'
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/TableIDParam'
       requestBody:
         required: false
@@ -6022,7 +5541,7 @@ paths:
           $ref: '#/components/responses/NotFound'
         '429':
           $ref: '#/components/responses/TooManyRequests'
-  /v1/projects/{project_handle}/tables/{table_id}/search:
+  /v1/tables/{table_id}/search:
     post:
       operationId: searchTableRows
       tags:
@@ -6034,7 +5553,6 @@ paths:
         tokens match. Optional field filters use the same syntax as row queries and are applied
         before search.'
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/TableIDParam'
       requestBody:
         required: true
@@ -6077,7 +5595,7 @@ paths:
           $ref: '#/components/responses/NotFound'
         '429':
           $ref: '#/components/responses/TooManyRequests'
-  /v1/projects/{project_handle}/tables/{table_id}/upsert:
+  /v1/tables/{table_id}/upsert:
     post:
       operationId: upsertTableRow
       tags:
@@ -6086,7 +5604,6 @@ paths:
       description: Inserts or updates a row identified by the table's identity column. Existing
         rows are patched with supplied fields; missing matches create a new row.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/TableIDParam'
       requestBody:
         required: true
@@ -6148,7 +5665,7 @@ paths:
           $ref: '#/components/responses/Conflict'
         '429':
           $ref: '#/components/responses/TooManyRequests'
-  /v1/projects/{project_handle}/tables/{table_id}/bulk:
+  /v1/tables/{table_id}/bulk:
     post:
       operationId: bulkCreateTableRows
       tags:
@@ -6157,7 +5674,6 @@ paths:
       description: Validates and inserts up to 1,000 rows in one request, preserving input
         order.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/TableIDParam'
       requestBody:
         required: true
@@ -6202,7 +5718,7 @@ paths:
           $ref: '#/components/responses/NotFound'
         '429':
           $ref: '#/components/responses/TooManyRequests'
-  /v1/projects/{project_handle}/tables/{table_id}/rows/{row_id}:
+  /v1/tables/{table_id}/rows/{row_id}:
     get:
       operationId: getTableRow
       tags:
@@ -6210,7 +5726,6 @@ paths:
       summary: Get row by ID
       description: Gets one table row by ID, including its JSON data and version.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/TableIDParam'
       - name: row_id
         in: path
@@ -6250,7 +5765,6 @@ paths:
         not included in the request. If `version` is provided, it must match the current row
         version.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/TableIDParam'
       - name: row_id
         in: path
@@ -6304,7 +5818,6 @@ paths:
       summary: Delete row
       description: Deletes one row from the table by row ID.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/TableIDParam'
       - name: row_id
         in: path
@@ -6323,17 +5836,16 @@ paths:
           $ref: '#/components/responses/NotFound'
         '429':
           $ref: '#/components/responses/TooManyRequests'
-  /v1/projects/{project_handle}/artifacts:
+  /v1/artifacts:
     get:
       operationId: listArtifacts
       tags:
       - artifacts
       summary: List artifacts
-      description: Returns ready artifacts in the project, ordered (created_at desc, id desc).
+      description: Returns ready artifacts in the org, ordered (created_at desc, id desc).
         Optional filters narrow by run, step, or mime prefix. Deleted or unfinished artifacts
         are excluded from API reads.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - name: run_id
         in: query
         required: false
@@ -6371,11 +5883,10 @@ paths:
       - artifacts
       summary: Create artifact
       description: |-
-        Accepts a project-authorized multipart file upload. Without a worker lease, the caller needs `mobius.project.edit`; the artifact is private to the authenticated principal and has no run or step lineage. A worker may instead supply `X-Mobius-Lease-Token` with `mobius.work.execute`; Mobius then derives run, step, job, worker session, attempt, and shared visibility from the active claim. Caller-supplied lineage, ownership, and visibility fields are rejected in both modes.
+        Accepts an org-authorized multipart file upload. Without a worker lease, the caller needs `mobius.project.edit`; the artifact is private to the authenticated principal and has no run or step lineage. A worker may instead supply `X-Mobius-Lease-Token` with `mobius.work.execute`; Mobius then derives run, step, job, worker session, attempt, and shared visibility from the active claim. Caller-supplied lineage, ownership, and visibility fields are rejected in both modes.
 
         DOCX, XLSX, and PPTX uploads may pass `convert=true` to start asynchronous Markdown extraction for later model delivery.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - name: X-Mobius-Lease-Token
         in: header
         required: false
@@ -6389,7 +5900,7 @@ paths:
           type: string
           maxLength: 255
         description: Optional durable retry key, unique within the authenticated principal's
-          project scope.
+          org scope.
       requestBody:
         required: true
         content:
@@ -6427,16 +5938,15 @@ paths:
                 error:
                   code: payload_too_large
                   message: artifact upload exceeds the maximum allowed size
-  /v1/projects/{project_handle}/artifacts/{artifact_id}:
+  /v1/artifacts/{artifact_id}:
     get:
       operationId: getArtifact
       tags:
       - artifacts
       summary: Get artifact
-      description: Returns artifact metadata after enforcing the caller's project and owner-user
+      description: Returns artifact metadata after enforcing the caller's org and owner-user
         artifact scope.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/ArtifactIdParam'
       responses:
         '200':
@@ -6460,7 +5970,6 @@ paths:
         success. Deleted artifacts are removed from public API visibility, and their content
         no longer counts toward artifact quota.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/ArtifactIdParam'
       responses:
         '204':
@@ -6475,7 +5984,7 @@ paths:
           $ref: '#/components/responses/Conflict'
         '429':
           $ref: '#/components/responses/TooManyRequests'
-  /v1/projects/{project_handle}/artifacts/{artifact_id}/content:
+  /v1/artifacts/{artifact_id}/content:
     get:
       operationId: getArtifactContent
       tags:
@@ -6485,7 +5994,6 @@ paths:
         artifact access scope. Safe preview mime types are returned inline; all other content
         is served as an attachment with `X-Content-Type-Options: nosniff`.'
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/ArtifactIdParam'
       responses:
         '200':
@@ -6503,7 +6011,7 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
-  /v1/projects/{project_handle}/artifacts/{artifact_id}/signed-url:
+  /v1/artifacts/{artifact_id}/signed-url:
     post:
       operationId: createArtifactSignedUrl
       tags:
@@ -6513,7 +6021,6 @@ paths:
         after enforcing the caller's artifact access scope. Use `getArtifactContent` when
         bytes should flow through the Mobius API instead of a signed storage URL.
       parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       - $ref: '#/components/parameters/ArtifactIdParam'
       - name: ttl_seconds
         in: query
@@ -6541,15 +6048,13 @@ paths:
           $ref: '#/components/responses/Conflict'
         '429':
           $ref: '#/components/responses/TooManyRequests'
-  /v1/projects/{project_handle}/settings/artifact-storage/quota:
+  /v1/settings/artifact-storage/quota:
     get:
       operationId: getArtifactStorageQuota
       tags:
       - artifacts
       summary: Get artifact storage quota
       description: Returns Mobius-managed artifact quota usage for the current org.
-      parameters:
-      - $ref: '#/components/parameters/ProjectHandleParam'
       responses:
         '200':
           description: OK
@@ -6570,23 +6075,11 @@ components:
         Bearer credential supplied via the `Authorization: Bearer <credential>` header. Two credential types are accepted:
 
         - **API keys** — prefix `mbx_`. Issued from the Mobius app or via the
-        API key endpoints. API keys authenticate as a machine principal in one
-        project. Send the raw `mbx_...` secret for normal requests. A
-        trailing `.<project_handle>` suffix is accepted for compatibility and
-        is validated when present.
+        API key endpoints. API keys authenticate as a machine principal in
+        one org. Send the raw `mbx_...` secret.
         - **CLI credentials** — prefix `mbc_`. Issued by the device-auth
-        flow on behalf of a user. Unpinned CLI credentials are org-scoped and
-        sent as the raw token. Project-pinned CLI credentials may include a
-        trailing `.<project_handle>` suffix; the suffix is validated when
-        present.
+        flow on behalf of a user, org-scoped, sent as the raw token.
   parameters:
-    ProjectHandleParam:
-      name: project_handle
-      in: path
-      required: true
-      schema:
-        type: string
-      description: Project handle
     IDParam:
       name: resource_id
       in: path
@@ -6762,6 +6255,14 @@ components:
         minLength: 1
         maxLength: 256
         pattern: ^[A-Za-z0-9._:-]+$
+    MemoryUserIDParam:
+      name: user_id
+      in: query
+      description: User principal ID for a private memory partition. It must identify a current
+        human member of this organization. Omit for shared memory.
+      schema:
+        type: string
+        maxLength: 200
     ContextIncludeParam:
       name: include
       in: query
@@ -6800,8 +6301,8 @@ components:
         type: string
         pattern: ^[a-z][a-z0-9_]*$
         maxLength: 64
-      description: Filter tables by name. Table names are unique within a project; use this
-        as a discovery filter and use the returned table `id` for follow-up operations.
+      description: Filter tables by name. Table names are unique within an org; use this as
+        a discovery filter and use the returned table `id` for follow-up operations.
   responses:
     BadRequest:
       description: Bad Request
@@ -6907,9 +6408,9 @@ components:
                 Direct session invocation conflicts use `session_turn_active` with the blocking
                 `turn_id` and `status` in `details`. Session-key lookups without an agent
                 scope use `session_key_scope_required`; supplying both agent ID and name uses
-                `session_agent_ref_conflict`. Project API-key creation for a principal with
-                no role assignments uses `principal_has_no_roles`. Authenticated callers missing
-                a permission receive `permission_denied` with the required permission in `details`.
+                `session_agent_ref_conflict`. API-key creation for a principal with no role
+                assignments uses `principal_has_no_roles`. Authenticated callers missing a
+                permission receive `permission_denied` with the required permission in `details`.
                 Endpoint-specific codes (e.g. `loop_paused`, `invalid_signature`) extend this
                 set; an unrecognized code should be handled by its HTTP status family.'
             message:
@@ -6989,7 +6490,7 @@ components:
       enum:
       - owner
       description: Optional namespace for named runtime resources. Omitted/null means the
-        project/default scope; `owner` means names are unique within `(project, owned_by)`.
+        org/default scope; `owner` means names are unique within `(org, owned_by)`.
     CapabilityReadiness:
       type: string
       enum:
@@ -7044,94 +6545,6 @@ components:
       - inactive
       description: Administrative status. Inactive agents cannot claim new jobs. Deleted agents
         are excluded from normal reads.
-    ProjectAccessMode:
-      type: string
-      enum:
-      - open
-      - restricted
-      description: '`open`: every org member can see and use the project, subject to role
-        assignments. `restricted`: only listed project members (and org owners/admins) can
-        see or use the project.'
-    Project:
-      type: object
-      additionalProperties: false
-      description: Workspace boundary for loops, actions, credentials, agents, and runtime
-        activity. Most operational APIs live under a project, so this object tells clients
-        which handle to use and who can see the project.
-      required:
-      - id
-      - name
-      - handle
-      - access_mode
-      - created_at
-      - updated_at
-      properties:
-        id:
-          type: string
-          description: Unique identifier for this project.
-        name:
-          type: string
-          description: Human-readable project name.
-        handle:
-          type: string
-          description: URL-safe slug used as a path segment in project API routes. Unique
-            within the org. Immutable after creation.
-        description:
-          type: string
-          description: Optional human-readable description.
-        external_ref:
-          type: string
-          description: Client-owned tenant/workspace correlation key. Unique within the org
-            when present. Set this when provisioning one Mobius project per external workspace
-            so client-resolver callbacks can map scheduled runs back to the owning tenant.
-        access_mode:
-          $ref: '#/components/schemas/ProjectAccessMode'
-          description: 'Current project access policy: `open` or `restricted`.'
-        created_by:
-          type: string
-          description: Principal ID of whoever created this project.
-        tags:
-          $ref: '#/components/schemas/TagMap'
-          description: Free-form labels used for filtering, ownership, or automation.
-        created_at:
-          type: string
-          format: date-time
-          description: Timestamp when this project was created.
-        updated_at:
-          type: string
-          format: date-time
-          description: Timestamp when this project was last updated.
-      example:
-        id: prj_3q7m9x2v5n8p4r6t
-        name: Product Ops
-        handle: product-ops
-        description: Product operations workflows
-        external_ref: workspace_789
-        access_mode: restricted
-        created_by: user_2f9s3k4m5n6p7q8r
-        tags:
-          owner: product
-        created_at: '2026-06-15T14:30:00Z'
-        updated_at: '2026-06-15T14:30:00Z'
-    ProjectListResponse:
-      type: object
-      additionalProperties: false
-      required:
-      - items
-      - has_more
-      properties:
-        items:
-          type: array
-          description: The list of results for this page.
-          items:
-            $ref: '#/components/schemas/Project'
-        has_more:
-          type: boolean
-          description: Whether more results are available beyond this page.
-        next_cursor:
-          type: string
-          description: Opaque cursor to pass as `cursor` on the next request. Absent when
-            `has_more` is false.
     AgentModelRouteMode:
       type: string
       enum:
@@ -7271,6 +6684,7 @@ components:
       - status
       - created_at
       - updated_at
+      - memory_enabled
       properties:
         id:
           type: string
@@ -7282,7 +6696,7 @@ components:
             when filtering or claiming resources owned by this agent.
         name:
           type: string
-          description: Mutable unique name within the project. Free-form human-readable label;
+          description: Mutable unique name within the org. Free-form human-readable label;
             use `id` for stable references and job targeting.
           minLength: 1
           maxLength: 63
@@ -7291,7 +6705,7 @@ components:
           minLength: 1
           maxLength: 200
           description: 'Client-owned durable identity key for this agent. Unique within the
-            project when present, and assign-once: create requests may set it; update requests
+            org when present, and assign-once: create requests may set it; update requests
             may set it only while the agent has no existing external_ref, or repeat the current
             value idempotently. Use it to reconcile the same agent across systems while allowing
             the display name to change.'
@@ -7307,7 +6721,7 @@ components:
           maxLength: 24
         model:
           type: string
-          description: Model identifier for agents. Accepts any id returned by `GET /v1/projects/{project_handle}/catalog/models`
+          description: Model identifier for agents. Accepts any id returned by `GET /v1/catalog/models`
             (including slash-bearing OpenRouter catalog ids), optionally `provider/`-prefixed
             (e.g. `xai/grok-4`); bare known ids (e.g. `claude-sonnet-4-6`) are auto-detected
             to their provider. Empty string falls back to the platform default.
@@ -7334,6 +6748,11 @@ components:
           description: Default session-compaction policy. New sessions opened against this
             agent inherit it (below server defaults, above explicit per-session overrides).
             Absent when the agent has no default.
+        memory_enabled:
+          type: boolean
+          description: Hard gate for runtime memory. When false, memory tools and automatic
+            memory context are absent and invocation-time definitions cannot re-enable them.
+            Stored entries remain available to administrators.
         memory_context:
           $ref: '#/components/schemas/MemoryContextPolicy'
           description: Automatic memory delivery policy. Absent means the bounded index default.
@@ -7347,11 +6766,11 @@ components:
           description: 'Current agent status: `active` or `inactive`.'
         email_address:
           type: string
-          description: Inbox address provisioned via POST /v1/projects/{project_handle}/agents/{resource_id}/inbox
-            (opt-in; not created automatically at agent creation). The field is populated
-            only after a successful provisioning call. Use this address to add the agent as
-            a member on external platforms (Linear, GitHub, Slack, etc.) so the platform can
-            deliver notifications to the agent.
+          description: Inbox address provisioned via POST /v1/agents/{resource_id}/inbox (opt-in;
+            not created automatically at agent creation). The field is populated only after
+            a successful provisioning call. Use this address to add the agent as a member
+            on external platforms (Linear, GitHub, Slack, etc.) so the platform can deliver
+            notifications to the agent.
         tags:
           $ref: '#/components/schemas/TagMap'
           description: Free-form labels used for filtering, ownership, or automation.
@@ -7377,6 +6796,7 @@ components:
         color: teal
         model: claude-sonnet-4-6
         tool_presentation: meta
+        memory_enabled: true
         status: active
         tags:
           owner: product
@@ -7384,6 +6804,25 @@ components:
         updated_by: user_2f9s3k4m5n6p7q8r
         created_at: '2026-06-15T14:30:00Z'
         updated_at: '2026-06-15T14:30:00Z'
+    AgentListResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - has_more
+      properties:
+        items:
+          type: array
+          description: The list of results for this page.
+          items:
+            $ref: '#/components/schemas/Agent'
+        has_more:
+          type: boolean
+          description: Whether more matching agents remain after this page.
+        next_cursor:
+          type: string
+          description: Opaque cursor to pass as `cursor` on the next request. Absent when
+            `has_more` is false.
     SessionStatus:
       type: string
       enum:
@@ -7408,9 +6847,9 @@ components:
     SessionVisibility:
       type: string
       enum:
-      - project
+      - organization
       - private
-      description: 'Visibility of the session in project surfaces: `project` or `private`.'
+      description: 'Visibility of the session in org surfaces: `organization` or `private`.'
     SessionRetentionPolicy:
       type: object
       additionalProperties: false
@@ -7566,7 +7005,7 @@ components:
           description: Stable caller-assigned conversation key, unique within one agent.
         visibility:
           $ref: '#/components/schemas/SessionVisibility'
-          description: Where the session appears in project UI surfaces.
+          description: Where the session appears in org UI surfaces.
         model_override:
           type: string
           description: Model selected for this session. Omitted when the session inherits
@@ -7655,17 +7094,6 @@ components:
           type: string
           format: date-time
           description: Last update timestamp.
-    AgentListResponse:
-      type: object
-      additionalProperties: false
-      required:
-      - items
-      properties:
-        items:
-          type: array
-          description: The list of results for this page.
-          items:
-            $ref: '#/components/schemas/Agent'
     AgentTurnStatus:
       type: string
       enum:
@@ -8253,7 +7681,7 @@ components:
           description: Unique identifier for this API key.
         name:
           type: string
-          description: Human-readable label, unique within the project.
+          description: Human-readable label, unique within the organization.
         key_prefix:
           type: string
           description: First 8 characters of the key, used to identify it without exposing
@@ -8267,8 +7695,8 @@ components:
             full grants.
         org_role:
           type: string
-          description: For organization-level keys, the system role the key acts as org-wide
-            (e.g. `Admin`). Absent for project-scoped keys.
+          description: The system role this key acts as, when it is not bound to a specific
+            principal (e.g. `Admin`). Absent for principal-bound keys.
         expires_at:
           type: string
           format: date-time
@@ -8329,8 +7757,8 @@ components:
             full grants.
         org_role:
           type: string
-          description: For organization-level keys, the system role the key acts as org-wide
-            (e.g. `Admin`). Absent for project-scoped keys.
+          description: The system role this key acts as, when it is not bound to a specific
+            principal (e.g. `Admin`). Absent for principal-bound keys.
         expires_at:
           type: string
           format: date-time
@@ -8398,28 +7826,44 @@ components:
       type: object
       required:
       - name
-      - principal_id
       additionalProperties: false
-      description: Request shape for creating a project API key bound to a machine principal.
-        The key authenticates as that principal; permissions are managed by assigning roles
-        to the principal, not by granting permissions to the key.
+      description: Request shape for creating an organization API key. Pass `principal_id`
+        to bind the key to an existing machine principal — the key authenticates as that principal,
+        and permissions are managed by assigning roles to the principal rather than to the
+        key. Omit `principal_id` to mint a key that acts directly with the chosen system `role`
+        instead.
       properties:
         name:
           type: string
-          description: Human-readable label, unique within the project.
+          description: Human-readable label, unique within the organization.
         principal_id:
           type: string
-          description: Principal this key authenticates as.
+          description: Principal this key authenticates as. Omit to create a system-role key
+            not bound to any principal.
         scope_role_id:
           type: string
           description: Optional role whose permissions cap this key below its principal's
-            full grants.
+            full grants. Only applicable when `principal_id` is set.
         allow_unassigned_principal:
           type: boolean
           default: false
-          description: Allow minting a key for a principal with no project role assignments.
-            The resulting key cannot access project resources until a role is assigned. Omit
-            this for normal onboarding so a missing assignment fails with `principal_has_no_roles`.
+          description: Allow minting a key for a principal with no role assignments. The resulting
+            key cannot access org resources until a role is assigned. Omit this for normal
+            onboarding so a missing assignment fails with `principal_has_no_roles`. Only applicable
+            when `principal_id` is set.
+        role:
+          type: string
+          enum:
+          - Owner
+          - Admin
+          - Editor
+          - Operator
+          - Viewer
+          default: Admin
+          description: System role the key acts as when `principal_id` is omitted, applied
+            org-wide. Defaults to `Admin`. `Owner` grants full control (including billing
+            and org deletion); `Admin` covers org administration without billing; lower roles
+            narrow to build/run, run-only, or read-only. Ignored when `principal_id` is set.
         expires_at:
           type: string
           format: date-time
@@ -8432,43 +7876,6 @@ components:
         principal_id: svc_7q2v9x6m3n8p5r4t
         tags:
           owner: product
-    CreateOrgAPIKeyRequest:
-      type: object
-      required:
-      - name
-      additionalProperties: false
-      description: Request shape for creating an organization-level API key. The key authenticates
-        as the organization's system principal and acts with the chosen `role` applied org-wide
-        across every project.
-      properties:
-        name:
-          type: string
-          description: Human-readable label, unique among organization API keys.
-        role:
-          type: string
-          enum:
-          - Owner
-          - Admin
-          - Editor
-          - Operator
-          - Viewer
-          default: Admin
-          description: System role the key acts as, applied org-wide across every project.
-            Defaults to `Admin`. `Owner` grants full control (including billing and org deletion);
-            `Admin` covers org and project administration without billing; lower roles narrow
-            to build/run, run-only, or read-only.
-        expires_at:
-          type: string
-          format: date-time
-          description: Optional hard expiry. Omit for a non-expiring key.
-        tags:
-          $ref: '#/components/schemas/TagMap'
-          description: Labels to apply to the new API key.
-      example:
-        name: Org automation
-        role: Admin
-        tags:
-          owner: platform
     CreateOrganizationActionRequest:
       type: object
       additionalProperties: false
@@ -8478,7 +7885,7 @@ components:
       properties:
         name:
           type: string
-          description: Canonical dotted name selected by project toolkits.
+          description: Canonical dotted name selected by the org's toolkits.
         title:
           type: string
         description:
@@ -8694,9 +8101,9 @@ components:
       enum:
       - http
       - worker
-      description: Backing kind for a project-owned custom action. `http` actions POST to
-        a registered endpoint. `worker` actions dispatch jobs to connected workers that advertise
-        the registered action name.
+      description: Backing kind for a custom action. `http` actions POST to a registered endpoint.
+        `worker` actions dispatch jobs to connected workers that advertise the registered
+        action name.
     ActionInvocationFormat:
       type: string
       enum:
@@ -8704,8 +8111,8 @@ components:
       - signed_context_v1
       description: Outbound request-body contract for an HTTP action. `legacy` sends the unversioned
         `{run_id, step_key, parameters}` body. `signed_context_v1` sends a versioned envelope
-        whose project, action, actor, and origin claims are derived by Mobius and covered
-        by the existing HMAC signature. Worker-backed actions must use `legacy`.
+        whose org, action, actor, and origin claims are derived by Mobius and covered by the
+        existing HMAC signature. Worker-backed actions must use `legacy`.
     ActionInvocationV1:
       type: object
       additionalProperties: true
@@ -8749,11 +8156,8 @@ components:
       additionalProperties: true
       required:
       - org_id
-      - project_id
       properties:
         org_id:
-          type: string
-        project_id:
           type: string
     ActionInvocationActionV1:
       type: object
@@ -8824,15 +8228,15 @@ components:
     CreateActionRequest:
       type: object
       additionalProperties: false
-      description: Registers a project-owned custom action callable from loops and agents.
+      description: Registers an org-owned custom action callable from loops and agents.
       required:
       - name
       properties:
         name:
           type: string
           description: Identifier used in loop step definitions. Lowercase alphanumeric +
-            hyphens, e.g. "send-email". Must be unique within the project. Cannot start with
-            "mobius." (reserved prefix).
+            hyphens, e.g. "send-email". Must be unique within the org. Cannot start with "mobius."
+            (reserved prefix).
         title:
           type: string
           description: Human-readable display name shown in the UI and catalog.
@@ -8938,7 +8342,7 @@ components:
     Action:
       type: object
       additionalProperties: false
-      description: Project-owned custom action definition callable by loops and agents.
+      description: Org-owned custom action definition callable by loops and agents.
       required:
       - id
       - name
@@ -8963,9 +8367,9 @@ components:
           type: string
           allOf:
           - $ref: '#/components/schemas/ActionEndpointKind'
-          description: Backing kind of this project-owned action. `http` actions POST to an
-            endpoint URL. `worker` actions are dispatched through jobs to connected workers
-            that advertise this registered name.
+          description: Backing kind of this org-owned action. `http` actions POST to an endpoint
+            URL. `worker` actions are dispatched through jobs to connected workers that advertise
+            this registered name.
         invocation_format:
           $ref: '#/components/schemas/ActionInvocationFormat'
           description: Resolved outbound request-body contract for this action.
@@ -9042,11 +8446,11 @@ components:
       properties:
         secret_ref:
           type: string
-          description: Project secret reference that now stores the action signing key.
+          description: Org secret reference that now stores the action signing key.
         secret_version:
           type: integer
           format: int64
-          description: New project-secret version number.
+          description: New org-secret version number.
         signing_secret:
           type: string
           description: Base64-encoded 32-byte signing key. Store it immediately — this is
@@ -9082,8 +8486,8 @@ components:
           - http
           - worker
           description: Backing kind. "builtin" for Mobius platform actions implemented in
-            Go (no DB row), "http" for project-owned or integration HTTP endpoints, and "worker"
-            for project-owned custom actions dispatched to connected workers.
+            Go (no DB row), "http" for org-owned or integration HTTP endpoints, and "worker"
+            for org-owned custom actions dispatched to connected workers.
         integration:
           type: string
           description: Integration slug this action belongs to (e.g. "slack"), if platform-provided.
@@ -9093,18 +8497,17 @@ components:
           - platform
           - custom
           description: 'Origin of this action: "platform" for built-in or integration-backed
-            actions provided by Mobius, "custom" for project- or organization-owned HTTP or
-            worker-backed actions. The `integration` field carries the provider slug for integration-backed
-            platform actions.'
+            actions provided by Mobius, "custom" for org-owned HTTP or worker-backed actions.
+            The `integration` field carries the provider slug for integration-backed platform
+            actions.'
         definition_scope:
           type: string
           enum:
           - platform
-          - project
+          - custom
           - organization
-          description: Scope that owns the selected definition. A project definition shadows
-            an organization definition with the same canonical name; execution still occurs
-            in the consuming project.
+          description: Scope that owns the selected definition. A custom action definition
+            shadows a shared organization definition with the same canonical name.
         readiness:
           $ref: '#/components/schemas/CapabilityReadiness'
           description: Whether this action can be called right now. `needs_setup` when the
@@ -9142,7 +8545,7 @@ components:
         invocation_format:
           allOf:
           - $ref: '#/components/schemas/ActionInvocationFormat'
-          description: Resolved request-body contract for a project-owned custom action.
+          description: Resolved request-body contract for an org-owned custom action.
         execution:
           $ref: '#/components/schemas/ActionExecutionMetadata'
           description: Execution locations and worker requirements available to loop authors.
@@ -9185,9 +8588,9 @@ components:
       additionalProperties: false
       required:
       - items
-      description: Unpaginated project action catalog. This endpoint returns the complete
-        set of available project and platform actions so clients can build pickers without
-        paging across a small catalog.
+      description: Unpaginated action catalog. This endpoint returns the complete set of available
+        custom and platform actions so clients can build pickers without paging across a small
+        catalog.
       properties:
         items:
           type: array
@@ -9278,7 +8681,7 @@ components:
           type: string
           enum:
           - platform
-          - project
+          - custom
           - organization
           description: Scope that owned the selected action definition.
         invocation_format:
@@ -9389,7 +8792,7 @@ components:
       required:
       - items
       - reserved_prefixes
-      description: The triggerable event catalog available to a project.
+      description: The triggerable event catalog available to an org.
       properties:
         items:
           type: array
@@ -9435,8 +8838,8 @@ components:
         readiness:
           $ref: '#/components/schemas/CapabilityReadiness'
           description: Whether this source can start a loop now. `capability` sources are
-            always `ready`. `integration` sources are `ready` only when the project has an
-            active, usable connection for the provider.
+            always `ready`. `integration` sources are `ready` only when the org has an active,
+            usable connection for the provider.
         readiness_reason:
           $ref: '#/components/schemas/CapabilityReadinessReason'
           description: Why an `integration` source is `needs_setup`. Omitted when `readiness`
@@ -9492,7 +8895,7 @@ components:
     ModelCatalogResponse:
       type: object
       additionalProperties: false
-      description: Models a platform agent can be assigned in this project, grouped by available
+      description: Models a platform agent can be assigned in this org, grouped by available
         provider.
       required:
       - default_model
@@ -9538,7 +8941,7 @@ components:
           enum:
           - byok
           - platform
-          description: Where credentials come from — a project integration (`byok`) or a platform-managed
+          description: Where credentials come from — an org integration (`byok`) or a platform-managed
             key (`platform`).
         models:
           type: array
@@ -9548,7 +8951,7 @@ components:
     ModelOption:
       type: object
       additionalProperties: false
-      description: One selectable LLM model in the project model catalog.
+      description: One selectable LLM model in the org model catalog.
       required:
       - id
       - provider
@@ -9581,7 +8984,7 @@ components:
       additionalProperties: false
       required:
       - items
-      description: Local LLM models advertised by online project workers.
+      description: Local LLM models advertised by online org workers.
       properties:
         items:
           type: array
@@ -9808,7 +9211,7 @@ components:
           allOf:
           - $ref: '#/components/schemas/ResourceScope'
           nullable: true
-          description: Resource scope; send null to return to the project/default scope.
+          description: Resource scope; send null to return to the org/default scope.
         owned_by:
           type: string
           nullable: true
@@ -9943,7 +9346,7 @@ components:
           type: array
           items:
             type: string
-          description: Queue names this worker can claim. Empty means all project queues.
+          description: Queue names this worker can claim. Empty means all org queues.
         action_names:
           type: array
           items:
@@ -10357,87 +9760,6 @@ components:
           $ref: '#/components/schemas/WorkerSocketMessageID'
         error:
           $ref: '#/components/schemas/WorkerSocketProtocolError'
-    ProjectCapabilities:
-      type: object
-      additionalProperties: false
-      description: Project-scoped capabilities for the current caller. These booleans are
-        resolved inside the project authorization context and can differ from coarse organization
-        role flags.
-      required:
-      - can_manage_project
-      - can_manage_access
-      properties:
-        can_manage_project:
-          type: boolean
-          description: True when the caller can update or archive this project.
-        can_manage_access:
-          type: boolean
-          description: True when the caller can manage project members, roles, and machine
-            identities.
-    CreateProjectRequest:
-      type: object
-      additionalProperties: false
-      required:
-      - name
-      properties:
-        name:
-          type: string
-          description: Human-readable project name.
-        handle:
-          type: string
-          description: URL-safe slug for API routes. Auto-derived from name if omitted. Must
-            be unique within the org. Cannot be changed after creation.
-        description:
-          type: string
-          description: Optional human-readable description.
-        external_ref:
-          type: string
-          description: 'Client-owned tenant/workspace correlation key. Unique within the org
-            when present. Treat this as assign-once: create requests may set it; update requests
-            may set it only while the project has no existing external_ref. Required when
-            `if_exists` is `adopt`.'
-        if_exists:
-          $ref: '#/components/schemas/IfExists'
-        access_mode:
-          $ref: '#/components/schemas/ProjectAccessMode'
-          description: 'Initial project access policy: `open` or `restricted`.'
-        tags:
-          $ref: '#/components/schemas/TagMap'
-          description: Initial labels used for filtering, ownership, or automation.
-      example:
-        name: Product Ops
-        handle: product-ops
-        description: Product operations workflows
-        external_ref: workspace_789
-        access_mode: restricted
-        tags:
-          owner: product
-    UpdateProjectRequest:
-      type: object
-      additionalProperties: false
-      properties:
-        name:
-          type: string
-          description: Replacement human-readable name.
-        description:
-          type: string
-          description: Replacement description.
-        external_ref:
-          type: string
-          description: Assign-once client tenant/workspace correlation key. Accepted when
-            the current project has no external_ref, or when it repeats the current value.
-            Changing an already-set value returns 409.
-        access_mode:
-          $ref: '#/components/schemas/ProjectAccessMode'
-          description: 'Replacement project access policy: `open` or `restricted`.'
-        seed_existing_members:
-          type: boolean
-          description: When transitioning from `open` to `restricted`, set true to insert
-            all current org members as project members so nobody loses visibility on the flip.
-            Ignored on other transitions.
-        tags:
-          $ref: '#/components/schemas/TagMap'
-          description: Replacement labels; send an empty object to clear all tags.
     WebhookDeliveryStatus:
       type: string
       enum:
@@ -10458,15 +9780,15 @@ components:
       - enabled
       - created_at
       - updated_at
-      description: A project-level outgoing webhook subscription. When a subscribed event
-        fires, Mobius POSTs the event payload to `url`.
+      description: An org-level outgoing webhook subscription. When a subscribed event fires,
+        Mobius POSTs the event payload to `url`.
       properties:
         id:
           type: string
           description: Unique identifier for this webhook.
         name:
           type: string
-          description: Human-readable name, unique within the project.
+          description: Human-readable name, unique within the org.
         url:
           type: string
           description: The customer endpoint Mobius POSTs event payloads to.
@@ -10491,7 +9813,7 @@ components:
           description: Free-form labels used for filtering, ownership, or delivery policy.
         secret_ref:
           type: string
-          description: Project secret reference that stores this webhook's signing key.
+          description: Org secret reference that stores this webhook's signing key.
         secret_version:
           type: integer
           format: int64
@@ -10635,7 +9957,7 @@ components:
       properties:
         name:
           type: string
-          description: Human-readable name, unique within the project.
+          description: Human-readable name, unique within the org.
         url:
           type: string
           description: The endpoint Mobius will POST event payloads to. May be left empty
@@ -10717,7 +10039,6 @@ components:
       additionalProperties: false
       required:
       - id
-      - project_id
       - api_key_id
       - period_start
       - counter
@@ -10744,10 +10065,6 @@ components:
       properties:
         id:
           type: string
-        project_id:
-          type: string
-          description: Project the usage was attributed to. Empty when the event was recorded
-            without project attribution.
         api_key_id:
           type: string
         period_start:
@@ -10876,14 +10193,13 @@ components:
         scope:
           type: string
           enum:
-          - project
           - org
           - platform
           - action
         category:
           type: string
           enum:
-          - project
+          - org
           - access
           - loops
           - runs
@@ -10902,8 +10218,8 @@ components:
           - critical
         assignable:
           type: boolean
-          description: Whether this permission should be selectable in the current project
-            role builder.
+          description: Whether this permission should be selectable in the current org role
+            builder.
         user_kinds:
           type: array
           minItems: 1
@@ -10936,7 +10252,6 @@ components:
         scope:
           type: string
           enum:
-          - project
           - org
           - platform
           - action
@@ -10998,7 +10313,7 @@ components:
       type: object
       additionalProperties: false
       description: Named bundle of permissions assignable to human or machine principals.
-        Roles let admins grant loop, project, and integration capabilities consistently without
+        Roles let admins grant loop, org, and integration capabilities consistently without
         editing every user individually.
       required:
       - id
@@ -11011,12 +10326,9 @@ components:
         id:
           type: string
           description: Unique identifier for this role.
-        project_id:
-          type: string
-          description: Scoping project. Empty for system-defined roles.
         name:
           type: string
-          description: Human-readable role name, unique within org+project scope.
+          description: Human-readable role name, unique within org scope.
         description:
           type: string
           description: Optional human-readable description of what this role grants.
@@ -11025,8 +10337,7 @@ components:
           items:
             type: string
           description: Permission strings granted by this role. Source allowed values from
-            `GET /v1/projects/{project_handle}/permissions`; legacy IDs or values not present
-            in that catalog are rejected.
+            `GET /v1/permissions`; legacy IDs or values not present in that catalog are rejected.
         system_defined:
           type: boolean
           description: True for built-in platform roles that cannot be modified or deleted.
@@ -11043,9 +10354,8 @@ components:
     RoleAssignment:
       type: object
       additionalProperties: false
-      description: Binding between a principal and a role in one project. Use assignments
-        to explain why a principal (human or machine) has access and to audit who granted
-        it.
+      description: Binding between a principal and a role in one org. Use assignments to explain
+        why a principal (human or machine) has access and to audit who granted it.
       required:
       - id
       - principal_id
@@ -11111,7 +10421,7 @@ components:
       properties:
         name:
           type: string
-          description: Unique name within the project.
+          description: Unique name within the org.
         description:
           type: string
           description: Optional human-readable description of what this role grants.
@@ -11119,7 +10429,7 @@ components:
           type: array
           items:
             type: string
-          description: Permission strings to include. Source allowed values from `GET /v1/projects/{project_handle}/permissions`;
+          description: Permission strings to include. Source allowed values from `GET /v1/permissions`;
             legacy IDs or values not present in that catalog are rejected.
         tags:
           $ref: '#/components/schemas/TagMap'
@@ -11135,8 +10445,8 @@ components:
           items:
             type: string
           description: Replaces the existing permissions array entirely. Source allowed values
-            from `GET /v1/projects/{project_handle}/permissions`; legacy IDs or values not
-            present in that catalog are rejected.
+            from `GET /v1/permissions`; legacy IDs or values not present in that catalog are
+            rejected.
         tags:
           $ref: '#/components/schemas/TagMap'
     CreateRoleAssignmentRequest:
@@ -11407,13 +10717,13 @@ components:
         the legacy fields are also populated for compatibility. `http_subscriber` requires
         `secret_ref` and enqueues a durable callback dispatch to `callback_url` when the interaction
         resolves; the canonical string `v1.{delivery_id}.{unix_timestamp}.{raw_body}` is signed
-        with HMAC-SHA256 against the resolved project signing key and the signed dispatch
-        carries `X-Mobius-Signature`, `X-Mobius-Secret-Ref`, `X-Mobius-Secret-Version`, and
-        `X-Mobius-Timestamp`. Signed dispatches also carry `X-Mobius-Signature-Version: v1`.
-        Every durable dispatch also carries the stable outbox row id in `X-Mobius-Delivery-Id`
-        and `Idempotency-Key`; retries reuse the same value. Verifiers should recompute the
-        signature over the exact raw body, reject stale timestamps (for example, older than
-        five minutes), deduplicate by delivery id, and check the signing headers.'
+        with HMAC-SHA256 against the resolved org signing key and the signed dispatch carries
+        `X-Mobius-Signature`, `X-Mobius-Secret-Ref`, `X-Mobius-Secret-Version`, and `X-Mobius-Timestamp`.
+        Signed dispatches also carry `X-Mobius-Signature-Version: v1`. Every durable dispatch
+        also carries the stable outbox row id in `X-Mobius-Delivery-Id` and `Idempotency-Key`;
+        retries reuse the same value. Verifiers should recompute the signature over the exact
+        raw body, reject stale timestamps (for example, older than five minutes), deduplicate
+        by delivery id, and check the signing headers.'
       properties:
         kind:
           type: string
@@ -11484,12 +10794,12 @@ components:
             with interaction resolution.
         secret_ref:
           type: string
-          description: 'Required reference to a project secret used to sign deliveries with
-            HMAC-SHA256 over the canonical string `v1.{delivery_id}.{unix_timestamp}.{raw_body}`,
-            where `delivery_id` is the value in `X-Mobius-Delivery-Id` and `raw_body` is the
-            exact callback request body bytes. Accepts `<name>` for the latest enabled version
-            or `<name>:<version>` to pin a specific positive-integer version. The plaintext
-            signing bytes are taken from the secret''s `signing_key_b64` key, which must base64-decode
+          description: 'Required reference to an org secret used to sign deliveries with HMAC-SHA256
+            over the canonical string `v1.{delivery_id}.{unix_timestamp}.{raw_body}`, where
+            `delivery_id` is the value in `X-Mobius-Delivery-Id` and `raw_body` is the exact
+            callback request body bytes. Accepts `<name>` for the latest enabled version or
+            `<name>:<version>` to pin a specific positive-integer version. The plaintext signing
+            bytes are taken from the secret''s `signing_key_b64` key, which must base64-decode
             to exactly 32 bytes. The hex signature is forwarded as `X-Mobius-Signature: sha256=<hex>`
             alongside `X-Mobius-Secret-Ref`, `X-Mobius-Secret-Version`, `X-Mobius-Signature-Version:
             v1`, and a unix `X-Mobius-Timestamp`. Consumers should reject stale timestamps
@@ -12475,10 +11785,10 @@ components:
           type: string
           minLength: 1
           maxLength: 200
-          description: 'Client-owned durable identity key. Unique within the project when
-            present. Treat this as assign-once: create requests may set it; update requests
-            may set it only while the agent has no existing external_ref, or repeat the current
-            value idempotently. Required when `if_exists` is `adopt`.'
+          description: 'Client-owned durable identity key. Unique within the org when present.
+            Treat this as assign-once: create requests may set it; update requests may set
+            it only while the agent has no existing external_ref, or repeat the current value
+            idempotently. Required when `if_exists` is `adopt`.'
         if_exists:
           $ref: '#/components/schemas/IfExists'
         description:
@@ -12492,7 +11802,7 @@ components:
           maxLength: 24
         model:
           type: string
-          description: Model identifier for agents. Any id from `GET /v1/projects/{project_handle}/catalog/models`,
+          description: Model identifier for agents. Any id from `GET /v1/catalog/models`,
             including slash-bearing OpenRouter catalog ids, or an optionally `provider/`-prefixed
             id (e.g. `xai/grok-4`); bare known ids (e.g. `claude-sonnet-4-6`) are auto-detected.
             Empty falls back to the platform default.
@@ -12515,6 +11825,11 @@ components:
         compaction_policy:
           $ref: '#/components/schemas/SessionCompactionPolicy'
           description: Default session-compaction policy new sessions inherit from this agent.
+        memory_enabled:
+          type: boolean
+          default: true
+          description: Hard gate for runtime memory. When false, memory tools and automatic
+            memory context are absent. Defaults to true.
         memory_context:
           $ref: '#/components/schemas/MemoryContextPolicy'
           description: Automatic memory delivery policy. Omit for the bounded index default.
@@ -12543,15 +11858,15 @@ components:
         name:
           type: string
           description: Free-form human-readable label, 1-63 characters; must be unique within
-            the project.
+            the org.
           minLength: 1
           maxLength: 63
         external_ref:
           type: string
           minLength: 1
           maxLength: 200
-          description: Assign-once client identity key, unique within the project. Accepted
-            when the agent has no external_ref, or when it repeats the current value idempotently.
+          description: Assign-once client identity key, unique within the org. Accepted when
+            the agent has no external_ref, or when it repeats the current value idempotently.
             Changing an already-set value returns 409.
         description:
           type: string
@@ -12564,7 +11879,7 @@ components:
           maxLength: 24
         model:
           type: string
-          description: Replacement model identifier for agents (any id from `GET /v1/projects/{project_handle}/catalog/models`,
+          description: Replacement model identifier for agents (any id from `GET /v1/catalog/models`,
             including slash-bearing OpenRouter catalog ids, or an optionally `provider/`-prefixed
             id).
         model_route:
@@ -12595,6 +11910,10 @@ components:
           $ref: '#/components/schemas/SessionCompactionPolicy'
           description: Replacement default session-compaction policy. Send an empty object
             to clear the default and fall back to server defaults.
+        memory_enabled:
+          type: boolean
+          description: Replacement runtime memory hard gate. Definition bundles cannot override
+            this stored agent setting.
         memory_context:
           $ref: '#/components/schemas/UpdateMemoryContextPolicy'
         thinking_effort:
@@ -12645,8 +11964,8 @@ components:
     AgentMemory:
       type: object
       additionalProperties: false
-      description: 'Summary of an agent''s private memory: how many entries it holds, a breakdown
-        by kind, and when it last changed.'
+      description: 'Summary across an agent''s shared and user-private memory partitions:
+        how many entries it holds, a breakdown by kind, and when it last changed.'
       required:
       - agent_id
       - entry_count
@@ -12670,10 +11989,11 @@ components:
     AgentMemoryEntry:
       type: object
       additionalProperties: false
-      description: A single durable memory in an agent's private memory, identified by a stable
-        key the agent chose.
+      description: A single durable memory in an agent's shared or user-private partition,
+        identified by a stable key within that partition.
       required:
       - key
+      - user_id
       - kind
       - entry_id
       - importance
@@ -12685,6 +12005,9 @@ components:
         key:
           type: string
           description: Stable identifier the agent chose for this memory.
+        user_id:
+          type: string
+          description: User principal ID for private memory; empty for shared memory.
         kind:
           $ref: '#/components/schemas/MemoryKind'
         summary:
@@ -12762,6 +12085,7 @@ components:
       required:
       - id
       - agent_id
+      - user_id
       - memory_entry_id
       - memory_key
       - operation
@@ -12773,6 +12097,10 @@ components:
           type: string
         agent_id:
           type: string
+        user_id:
+          type: string
+          description: User principal ID for the changed private partition; empty for shared
+            memory.
         memory_entry_id:
           type: string
         memory_key:
@@ -12813,10 +12141,16 @@ components:
     SaveAgentMemoryEntryRequest:
       type: object
       additionalProperties: false
-      description: Content for a memory entry. The key comes from the path.
+      description: Content and partition for a memory entry. The key comes from the path.
       required:
       - content
       properties:
+        user_id:
+          type: string
+          default: ''
+          maxLength: 200
+          description: User principal ID for private memory. It must identify a current human
+            member of this organization. Omit or send empty for shared memory.
         content:
           type: string
           minLength: 1
@@ -12883,11 +12217,11 @@ components:
       required:
       - name
       - input
-      description: Canonical project action resolved by a catalog tool dispatch.
+      description: Canonical org action resolved by a catalog tool dispatch.
       properties:
         name:
           type: string
-          description: Canonical project action name, before provider-safe wire-name mangling.
+          description: Canonical org action name, before provider-safe wire-name mangling.
         input:
           type: object
           additionalProperties: true
@@ -13264,8 +12598,8 @@ components:
           type: string
           enum:
           - system
-          - project
-          description: Provenance of this toolkit. `system` toolkits are built-in; `project`
+          - organization
+          description: Provenance of this toolkit. `system` toolkits are built-in; `organization`
             toolkits are user-authored.
         tags:
           $ref: '#/components/schemas/TagMap'
@@ -13294,7 +12628,7 @@ components:
         id: kit_4r8q2m7x9p5v3n6t
         name: GitHub review
         description: GitHub actions needed for pull-request review.
-        source: project
+        source: organization
         tags:
           owner: product
         actions:
@@ -13330,9 +12664,8 @@ components:
           enum:
           - system
           - organization
-          - project
-          description: Ownership and mutability of the Skill. `system` is built-in, `organization`
-            is shared, and `project` is project-local.
+          description: Ownership and mutability of the Skill. `system` is built-in and `organization`
+            is shared and mutable by the org.
         instructions:
           type: string
           description: Markdown instructions loaded when the skill is active.
@@ -13365,7 +12698,7 @@ components:
         id: skill_7n4q8x2m9p5v3r6t
         name: Pull request review
         description: Review pull requests for correctness and risk.
-        source: project
+        source: organization
         instructions: Check the diff and leave concise findings.
         allowed_tools:
         - github.create_review_comment
@@ -13700,10 +13033,12 @@ components:
             $ref: '#/components/schemas/Interaction'
         has_more:
           type: boolean
+          description: Whether next_page_token continues this fixed transcript cut.
         resume_cursor:
           type: string
         next_page_token:
           type: string
+          description: Opaque continuation present when has_more is true.
     SessionTranscriptFrame:
       oneOf:
       - $ref: '#/components/schemas/MessageUpsertFrame'
@@ -14444,16 +13779,16 @@ components:
       type: object
       additionalProperties: false
       minProperties: 1
-      description: Reference to an agent in this project. Supply exactly one of `id` (the
-        agent identifier) or `name` (the project-unique agent name). A blueprint-binding reference
-        form is reserved for a later release and is not resolvable yet.
+      description: Reference to an agent in this org. Supply exactly one of `id` (the agent
+        identifier) or `name` (the org-unique agent name). A blueprint-binding reference form
+        is reserved for a later release and is not resolvable yet.
       properties:
         id:
           type: string
           description: Agent identifier.
         name:
           type: string
-          description: Project-unique agent name.
+          description: Org-unique agent name.
     InvokeSessionSpec:
       type: object
       additionalProperties: false
@@ -14879,7 +14214,7 @@ components:
       - private
       - shared
       description: Private artifacts are visible only to their owner user. Shared artifacts
-        are visible to the project.
+        are visible to the org.
     ArtifactConversionSummary:
       type: object
       description: Markdown-extraction state for an Office upload that requested conversion.
@@ -14925,7 +14260,7 @@ components:
         name:
           type: string
           description: Display name or relative virtual path. Forward slash may be used to
-            organize artifacts inside private or shared project space.
+            organize artifacts inside private or shared org space.
         mime_type:
           type: string
           description: MIME type recorded for the artifact content.
@@ -16085,7 +15420,7 @@ components:
       type: object
       additionalProperties: false
       description: Loop-trigger step configuration recognised inside `LoopSpec.steps[].config`.
-        Triggers another loop in the same project as an independent child run (fire-and-forget).
+        Triggers another loop in the same org as an independent child run (fire-and-forget).
         The child run records `parent_run_id`, `parent_loop_id`, and `parent_step_key` so
         the lineage is visible from the child.
       required:
@@ -16093,8 +15428,7 @@ components:
       properties:
         loop_id:
           type: string
-          description: ID of the loop to trigger, scoped to the same project as the parent
-            loop.
+          description: ID of the loop to trigger, scoped to the same org as the parent loop.
         event:
           type: object
           additionalProperties: true
@@ -16251,8 +15585,8 @@ components:
       - status
       description: Synchronous receipt for an inbound HTTP-trigger delivery. The trigger dispatch
         and run start happen asynchronously after this response. Clients can poll via `GET
-        /v1/projects/{project_handle}/runs?source_event_id=<source_event_id>` to discover
-        the run once the source-event processor reserves it.
+        /v1/runs?source_event_id=<source_event_id>` to discover the run once the source-event
+        processor reserves it.
       properties:
         source_event_id:
           type: string
@@ -16272,9 +15606,8 @@ components:
     StartLoopRunRequest:
       type: object
       additionalProperties: false
-      description: Body for `POST /v1/projects/{project_handle}/loops/{resource_id}/runs`.
-        All fields are optional; an empty body starts a run with an empty event/config envelope
-        and no attribution.
+      description: Body for `POST /v1/loops/{resource_id}/runs`. All fields are optional;
+        an empty body starts a run with an empty event/config envelope and no attribution.
       properties:
         event:
           type: object
@@ -16297,11 +15630,11 @@ components:
           description: Attribution for the call that starts the run.
         idempotency_key:
           type: string
-          description: Caller-supplied idempotency key, scoped to (org, project). Repeat calls
-            with the same `idempotency_key` while the prior run is still non-terminal return
-            the existing run (same `id`). A repeat after the prior run terminated returns
-            `409 Conflict` with code `idempotency_key_conflict` and details containing the
-            existing run id and its terminal status.
+          description: Caller-supplied idempotency key, scoped to the org. Repeat calls with
+            the same `idempotency_key` while the prior run is still non-terminal return the
+            existing run (same `id`). A repeat after the prior run terminated returns `409
+            Conflict` with code `idempotency_key_conflict` and details containing the existing
+            run id and its terminal status.
         budget_usd:
           type: number
           format: double
@@ -16802,8 +16135,6 @@ components:
       required:
       - skill_id
       - assignment_count
-      - project_count
-      - projects
       properties:
         skill_id:
           type: string
@@ -16812,29 +16143,6 @@ components:
           type: integer
           minimum: 0
           description: Number of agents assigned this Skill.
-        project_count:
-          type: integer
-          minimum: 0
-          description: Number of projects containing an assignment.
-        projects:
-          type: array
-          description: Assignment counts grouped by consuming project.
-          items:
-            $ref: '#/components/schemas/OrganizationSkillProjectUsage'
-    OrganizationSkillProjectUsage:
-      type: object
-      additionalProperties: false
-      required:
-      - project_id
-      - agent_count
-      properties:
-        project_id:
-          type: string
-          description: Consuming project ID.
-        agent_count:
-          type: integer
-          minimum: 1
-          description: Number of agents assigned the Skill in this project.
     BlueprintApplyMode:
       type: string
       description: '`apply` performs the change; `preview` validates and returns a plan without
@@ -16947,7 +16255,7 @@ components:
     BlueprintActionInput:
       type: object
       additionalProperties: false
-      description: A desired action. `name` is its immutable project-unique identity.
+      description: A desired action. `name` is its immutable org-unique identity.
       required:
       - key
       - name
@@ -17208,7 +16516,7 @@ components:
     BlueprintTableInput:
       type: object
       additionalProperties: false
-      description: A desired table. `key` is its stable Blueprint handle; `name` is project-unique
+      description: A desired table. `key` is its stable Blueprint handle; `name` is org-unique
         (lower snake_case) and may be changed after binding. `schema` carries the full column
         and identity definition and is validated on apply. The identity column and the required-ness
         of existing columns are immutable after create, so a re-apply that changes them is
@@ -17514,7 +16822,7 @@ components:
           items:
             type: string
           uniqueItems: true
-          description: Role IDs currently assigned to this principal in the project.
+          description: Role IDs currently assigned to this principal in the org.
         metadata:
           type: object
           additionalProperties: true
@@ -17566,8 +16874,8 @@ components:
           minItems: 1
           uniqueItems: true
           description: One or more role IDs to assign at creation time. All assignments are
-            created atomically with the principal. Requires `mobius.project.admin`. Each role
-            must belong to this project or be system-defined.
+            created atomically with the principal. Requires `mobius.org.admin`. Each role
+            must belong to this org or be system-defined.
         tags:
           $ref: '#/components/schemas/TagMap'
     UpdatePrincipalRequest:
@@ -17592,8 +16900,8 @@ components:
           items:
             type: string
           uniqueItems: true
-          description: Replacement role IDs for this principal in the project. Send an empty
-            array to remove all project role assignments. Requires `mobius.project.admin`.
+          description: Replacement role IDs for this principal in the org. Send an empty array
+            to remove all org role assignments. Requires `mobius.org.admin`.
         tags:
           $ref: '#/components/schemas/TagMap'
     Table:
@@ -17605,7 +16913,7 @@ components:
       - schema
       - created_at
       - updated_at
-      description: Project table metadata and schema.
+      description: Table metadata and schema.
       properties:
         id:
           type: string
@@ -17614,7 +16922,7 @@ components:
           type: string
           pattern: ^[a-z][a-z0-9_]*$
           maxLength: 64
-          description: Lowercase snake_case table name, unique within the project.
+          description: Lowercase snake_case table name, unique within the org.
         description:
           type: string
           description: Human-readable table description.
@@ -17756,7 +17064,7 @@ components:
           type: string
           pattern: ^[a-z][a-z0-9_]*$
           maxLength: 64
-          description: Table name (lowercase, snake_case); unique within the project.
+          description: Table name (lowercase, snake_case); unique within the org.
         description:
           type: string
           maxLength: 1000
@@ -17790,7 +17098,7 @@ components:
           type: string
           pattern: ^[a-z][a-z0-9_]*$
           maxLength: 64
-          description: Table name (lowercase, snake_case); unique within the project.
+          description: Table name (lowercase, snake_case); unique within the org.
         description:
           type: string
           maxLength: 1000
@@ -17814,7 +17122,7 @@ components:
       - version
       - created_at
       - updated_at
-      description: One stored row in a project table.
+      description: One stored row in a table.
       properties:
         id:
           type: string
@@ -18089,7 +17397,7 @@ components:
           type: string
           maxLength: 256
           description: Display name or relative virtual path. Forward slash may be used to
-            organize artifacts inside private or shared project space.
+            organize artifacts inside private or shared org space.
         mime:
           type: string
           description: Optional MIME type override. Defaults to the uploaded file part content
@@ -18188,9 +17496,6 @@ x-tagGroups:
 - name: Jobs
   tags:
   - jobs
-- name: Projects
-  tags:
-  - projects
 - name: Webhooks
   tags:
   - webhooks

@@ -24,7 +24,7 @@ func TestCreateAgentSendsAdoptFields(t *testing.T) {
 	var got api.CreateAgentRequest
 	c, _ := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, http.MethodPost, r.Method)
-		assert.Equal(t, "/v1/projects/test-project/agents", r.URL.Path)
+		assert.Equal(t, "/v1/agents", r.URL.Path)
 		assert.NoError(t, json.NewDecoder(r.Body).Decode(&got))
 		// Adopt of an existing agent answers 200, not 201.
 		writeJSON(w, http.StatusOK, agentJSON("agent_1"))
@@ -133,19 +133,19 @@ func TestCreateAgentAdoptConflictCode(t *testing.T) {
 func TestAgentLifecycleRoutes(t *testing.T) {
 	c, _ := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method + " " + r.URL.Path {
-		case "GET /v1/projects/test-project/agents":
+		case "GET /v1/agents":
 			assert.Equal(t, "PR reviewer", r.URL.Query().Get("name"))
 			assert.Equal(t, "active", r.URL.Query().Get("status"))
 			assert.Equal(t, "5", r.URL.Query().Get("limit"))
 			writeJSON(w, http.StatusOK, `{"items":[`+agentJSON("agent_1")+`]}`)
-		case "GET /v1/projects/test-project/agents/agent_1":
+		case "GET /v1/agents/agent_1":
 			writeJSON(w, http.StatusOK, agentJSON("agent_1"))
-		case "PATCH /v1/projects/test-project/agents/agent_1":
+		case "PATCH /v1/agents/agent_1":
 			var req api.UpdateAgentRequest
 			assert.NoError(t, json.NewDecoder(r.Body).Decode(&req))
 			assert.NotNil(t, req.Description)
 			writeJSON(w, http.StatusOK, agentJSON("agent_1"))
-		case "DELETE /v1/projects/test-project/agents/agent_1":
+		case "DELETE /v1/agents/agent_1":
 			w.WriteHeader(http.StatusNoContent)
 		default:
 			t.Fatalf("unexpected request %s %s", r.Method, r.URL.Path)

@@ -20,29 +20,29 @@ func skillJSON(id, source string) string {
 	}`, id, source)
 }
 
-func TestSkillProjectLifecycleRoutes(t *testing.T) {
+func TestSkillLifecycleRoutes(t *testing.T) {
 	c, _ := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method + " " + r.URL.Path {
-		case "GET /v1/projects/test-project/skills":
+		case "GET /v1/skills":
 			if got := r.URL.Query().Get("include_system"); got != "false" {
 				t.Fatalf("include_system = %q, want false", got)
 			}
-			writeJSON(w, http.StatusOK, `{"items":[`+skillJSON("skill_1", "project")+`]}`)
-		case "POST /v1/projects/test-project/skills":
+			writeJSON(w, http.StatusOK, `{"items":[`+skillJSON("skill_1", "organization")+`]}`)
+		case "POST /v1/skills":
 			var req api.SkillRequest
 			if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Name != "Pull request review" {
 				t.Fatalf("create body = %#v (%v)", req, err)
 			}
-			writeJSON(w, http.StatusCreated, skillJSON("skill_1", "project"))
-		case "GET /v1/projects/test-project/skills/skill_1":
-			writeJSON(w, http.StatusOK, skillJSON("skill_1", "project"))
-		case "PUT /v1/projects/test-project/skills/skill_1":
+			writeJSON(w, http.StatusCreated, skillJSON("skill_1", "organization"))
+		case "GET /v1/skills/skill_1":
+			writeJSON(w, http.StatusOK, skillJSON("skill_1", "organization"))
+		case "PUT /v1/skills/skill_1":
 			var req api.SkillRequest
 			if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Instructions == "" {
 				t.Fatalf("update must send the full body, got %#v (%v)", req, err)
 			}
-			writeJSON(w, http.StatusOK, skillJSON("skill_1", "project"))
-		case "DELETE /v1/projects/test-project/skills/skill_1":
+			writeJSON(w, http.StatusOK, skillJSON("skill_1", "organization"))
+		case "DELETE /v1/skills/skill_1":
 			w.WriteHeader(http.StatusNoContent)
 		default:
 			t.Fatalf("unexpected request %s %s", r.Method, r.URL.Path)
@@ -76,13 +76,13 @@ func TestImportSkillSendsDocumentVerbatim(t *testing.T) {
 	doc := "---\nallowed_tools:\n  - github.create_review_comment\n---\nCheck the diff and leave concise findings.\n"
 	var got api.ImportSkillRequest
 	c, _ := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/v1/projects/test-project/skills/import" {
+		if r.URL.Path != "/v1/skills/import" {
 			t.Fatalf("path = %s", r.URL.Path)
 		}
 		if err := json.NewDecoder(r.Body).Decode(&got); err != nil {
 			t.Fatal(err)
 		}
-		writeJSON(w, http.StatusCreated, skillJSON("skill_1", "project"))
+		writeJSON(w, http.StatusCreated, skillJSON("skill_1", "organization"))
 	}))
 
 	skill, err := c.ImportSkill(context.Background(), doc, "Pull request review")
@@ -95,7 +95,7 @@ func TestImportSkillSendsDocumentVerbatim(t *testing.T) {
 	if got.Name == nil || *got.Name != "Pull request review" {
 		t.Fatalf("name override = %v", got.Name)
 	}
-	if skill.Source != api.SkillSourceProject {
+	if skill.Source != api.SkillSourceOrganization {
 		t.Fatalf("source = %q", skill.Source)
 	}
 }
@@ -106,7 +106,7 @@ func TestImportSkillOmitsEmptyNameOverride(t *testing.T) {
 		if err := json.NewDecoder(r.Body).Decode(&raw); err != nil {
 			t.Fatal(err)
 		}
-		writeJSON(w, http.StatusCreated, skillJSON("skill_1", "project"))
+		writeJSON(w, http.StatusCreated, skillJSON("skill_1", "organization"))
 	}))
 
 	if _, err := c.ImportSkill(context.Background(), "Just instructions.", ""); err != nil {
@@ -127,10 +127,7 @@ func TestOrganizationSkillRoutesAndProvenance(t *testing.T) {
 		case "PUT /v1/organization/skills/skill_org":
 			writeJSON(w, http.StatusOK, skillJSON("skill_org", "organization"))
 		case "GET /v1/organization/skills/skill_org/usage":
-			writeJSON(w, http.StatusOK, `{
-				"skill_id":"skill_org","assignment_count":3,"project_count":2,
-				"projects":[{"project_id":"proj_a","agent_count":2},{"project_id":"proj_b","agent_count":1}]
-			}`)
+			writeJSON(w, http.StatusOK, `{"skill_id":"skill_org","assignment_count":3}`)
 		default:
 			t.Fatalf("unexpected request %s %s", r.Method, r.URL.Path)
 		}
@@ -155,7 +152,7 @@ func TestOrganizationSkillRoutesAndProvenance(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if usage.AssignmentCount != 3 || len(usage.Projects) != 2 {
+	if usage.AssignmentCount != 3 {
 		t.Fatalf("usage = %#v", usage)
 	}
 }
@@ -179,9 +176,9 @@ func TestReplaceAgentSkillAssignmentsPreservesOrder(t *testing.T) {
 	var got api.ReplaceSkillsRequest
 	c, _ := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method + " " + r.URL.Path {
-		case "GET /v1/projects/test-project/agents/agent_1/skill-assignments":
+		case "GET /v1/agents/agent_1/skill-assignments":
 			writeJSON(w, http.StatusOK, `{"items":[{"agent_id":"agent_1","skill_id":"skill_2","enabled":true,"position":0,"created_at":"2026-07-17T00:00:00Z"}]}`)
-		case "PUT /v1/projects/test-project/agents/agent_1/skill-assignments":
+		case "PUT /v1/agents/agent_1/skill-assignments":
 			if err := json.NewDecoder(r.Body).Decode(&got); err != nil {
 				t.Fatal(err)
 			}

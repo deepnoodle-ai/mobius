@@ -65,7 +65,7 @@ type ArtifactDownload struct {
 	ContentLength int64
 }
 
-// CreateArtifactOptions configures a project-authorized artifact upload.
+// CreateArtifactOptions configures an org-authorized artifact upload.
 // Exactly one of Path or Reader must supply the artifact bytes.
 type CreateArtifactOptions struct {
 	// Path streams the artifact from a file without buffering it in memory.
@@ -90,7 +90,7 @@ type CreateArtifactOptions struct {
 }
 
 // CreateArtifact uploads a private, principal-owned artifact using the
-// client's project authorization. Ownership and visibility are derived from
+// client's org authorization. Ownership and visibility are derived from
 // the authenticated principal; run/step lineage can only be attached by the
 // server from a worker lease (see [Client.CreateArtifactRefFromFileWithLease]).
 func (c *Client) CreateArtifact(ctx context.Context, opts CreateArtifactOptions) (*Artifact, error) {
@@ -194,7 +194,7 @@ func (c *Client) CreateArtifactRefFromFileWithLease(ctx context.Context, path, n
 // [Client.CreateArtifactFromFile]: the API no longer accepts caller-supplied
 // run/step lineage or visibility, so the method cannot honor its signature.
 var ErrCreateArtifactFromFileRemoved = errors.New(
-	"mobius: CreateArtifactFromFile is no longer supported: the API derives artifact lineage and visibility from a worker lease and rejects caller-supplied run_id, step_id, and visibility; use CreateArtifact for a project-authorized private upload, or CreateArtifactRefFromFileWithLease under a worker lease",
+	"mobius: CreateArtifactFromFile is no longer supported: the API derives artifact lineage and visibility from a worker lease and rejects caller-supplied run_id, step_id, and visibility; use CreateArtifact for an org-authorized private upload, or CreateArtifactRefFromFileWithLease under a worker lease",
 )
 
 // CreateArtifactFromFile is unsupported and returns
@@ -247,7 +247,7 @@ func (c *Client) uploadArtifact(ctx context.Context, upload artifactUpload) (*Ar
 		headers["Idempotency-Key"] = upload.idempotencyKey
 	}
 	var out Artifact
-	err := c.doMultipartWithHeaders(ctx, http.MethodPost, "/v1/projects/"+url.PathEscape(c.projectHandle)+"/artifacts", contentType, reader, headers, &out)
+	err := c.doMultipartWithHeaders(ctx, http.MethodPost, "/v1/artifacts", contentType, reader, headers, &out)
 	if err != nil {
 		_ = reader.CloseWithError(err)
 		<-writeErr
@@ -292,13 +292,10 @@ func (c *Client) DownloadArtifactToFile(ctx context.Context, artifactID, path st
 	if strings.TrimSpace(path) == "" {
 		return nil, fmt.Errorf("mobius: path is required")
 	}
-	if c.projectHandle == "" {
-		return nil, fmt.Errorf("mobius: no project configured - set MOBIUS_PROJECT or pass --project")
-	}
 	if maxBytes <= 0 {
 		maxBytes = 100 * 1024 * 1024
 	}
-	reqPath := "/v1/projects/" + url.PathEscape(c.projectHandle) + "/artifacts/" + url.PathEscape(artifactID) + "/content"
+	reqPath := "/v1/artifacts/" + url.PathEscape(artifactID) + "/content"
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, strings.TrimRight(c.baseURL, "/")+reqPath, nil)
 	if err != nil {
 		return nil, err

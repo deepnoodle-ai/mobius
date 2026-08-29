@@ -35,7 +35,6 @@ import {
 
 const client = new Client({
   apiKey: process.env.MOBIUS_API_KEY!,
-  project: process.env.MOBIUS_PROJECT!,
 });
 
 try {
@@ -111,8 +110,8 @@ The `worker_instance_id` is auto-detected from the runtime platform
 (Cloud Run revision, Kubernetes pod, Fly machine, Railway replica,
 Render instance) and falls back to a per-boot UUID. Set
 `workerInstanceId` explicitly only for stable singleton workers — two
-live processes using the same override in the same project will
-collide and the second will throw `WorkerInstanceConflictError`.
+live processes using the same override will collide and the second
+will throw `WorkerInstanceConflictError`.
 
 For independent presence rows (one row per worker) — e.g. graceful
 draining or in-flight isolation — use `WorkerPool` with `count` and

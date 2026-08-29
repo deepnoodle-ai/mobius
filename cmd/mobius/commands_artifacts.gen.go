@@ -30,14 +30,13 @@ func registerArtifactsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
+			p0 := ctx.Arg(0)
 			params := &api.CreateArtifactSignedUrlParams{}
 			if ctx.IsSet("ttl-seconds") {
 				v := int64(ctx.Int("ttl-seconds"))
 				params.TtlSeconds = &v
 			}
-			resp, err := client.CreateArtifactSignedUrlWithResponse(ctx.Context(), p0, p1, params)
+			resp, err := client.CreateArtifactSignedUrlWithResponse(ctx.Context(), p0, params)
 			if err != nil {
 				return err
 			}
@@ -54,9 +53,8 @@ func registerArtifactsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			resp, err := client.DeleteArtifactWithResponse(ctx.Context(), p0, p1)
+			p0 := ctx.Arg(0)
+			resp, err := client.DeleteArtifactWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
 			}
@@ -73,9 +71,8 @@ func registerArtifactsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			resp, err := client.GetArtifactWithResponse(ctx.Context(), p0, p1)
+			p0 := ctx.Arg(0)
+			resp, err := client.GetArtifactWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
 			}
@@ -92,9 +89,8 @@ func registerArtifactsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			resp, err := client.GetArtifactContentWithResponse(ctx.Context(), p0, p1)
+			p0 := ctx.Arg(0)
+			resp, err := client.GetArtifactContentWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
 			}
@@ -110,8 +106,7 @@ func registerArtifactsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			resp, err := client.GetArtifactStorageQuotaWithResponse(ctx.Context(), p0)
+			resp, err := client.GetArtifactStorageQuotaWithResponse(ctx.Context())
 			if err != nil {
 				return err
 			}
@@ -134,7 +129,6 @@ func registerArtifactsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
 			params := &api.ListArtifactsParams{}
 			if ctx.IsSet("run-id") {
 				v := ctx.String("run-id")
@@ -156,7 +150,7 @@ func registerArtifactsCommands(app *cli.App) {
 				v := api.LimitParam(ctx.Int("limit"))
 				params.Limit = &v
 			}
-			resp, err := client.ListArtifactsWithResponse(ctx.Context(), p0, params)
+			resp, err := client.ListArtifactsWithResponse(ctx.Context(), params)
 			if err != nil {
 				return err
 			}

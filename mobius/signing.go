@@ -63,8 +63,7 @@ type ActionInvocationContextV1 struct {
 }
 
 type ActionInvocationScopeV1 struct {
-	OrgID     string `json:"org_id"`
-	ProjectID string `json:"project_id"`
+	OrgID string `json:"org_id"`
 }
 
 type ActionInvocationActionV1 struct {
@@ -253,8 +252,8 @@ func validateActionInvocationV1(invocation *ActionInvocationV1) error {
 	if invocation.Mobius.SchemaVersion != 1 {
 		return fmt.Errorf("%w: %d", ErrUnsupportedActionInvocationSchema, invocation.Mobius.SchemaVersion)
 	}
-	if strings.TrimSpace(invocation.Mobius.Scope.OrgID) == "" || strings.TrimSpace(invocation.Mobius.Scope.ProjectID) == "" {
-		return fmt.Errorf("%w: mobius.scope org_id and project_id are required", ErrMalformedActionInvocation)
+	if strings.TrimSpace(invocation.Mobius.Scope.OrgID) == "" {
+		return fmt.Errorf("%w: mobius.scope org_id is required", ErrMalformedActionInvocation)
 	}
 	if strings.TrimSpace(invocation.Mobius.Action.ID) == "" || strings.TrimSpace(invocation.Mobius.Action.Name) == "" {
 		return fmt.Errorf("%w: mobius.action id and name are required", ErrMalformedActionInvocation)

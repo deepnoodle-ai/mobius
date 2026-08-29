@@ -20,7 +20,6 @@ func TestGeneratedCommandRejectsUnknownRequestFileField(t *testing.T) {
 		"--file", path,
 		"--dry-run",
 		"--api-key", "mbx_test",
-		"--project", "default",
 	))
 
 	assert.False(t, result.Success())
@@ -40,7 +39,6 @@ func TestGeneratedSkillInstructionsReadTextFile(t *testing.T) {
 		"--dry-run",
 		"--output", "json",
 		"--api-key", "mbx_test",
-		"--project", "default",
 	))
 
 	assert.True(t, result.Success(), "dry-run failed: %v\nstderr: %s", result.Err, result.Stderr)
@@ -57,7 +55,6 @@ func TestGeneratedSkillInstructionsEscapeLeadingAt(t *testing.T) {
 		"--dry-run",
 		"--output", "json",
 		"--api-key", "mbx_test",
-		"--project", "default",
 	))
 
 	assert.True(t, result.Success(), "dry-run failed: %v\nstderr: %s", result.Err, result.Stderr)
@@ -79,7 +76,6 @@ func TestGeneratedToolkitAssignmentsAcceptCommaSeparatedIDs(t *testing.T) {
 		"--dry-run",
 		"--output", "json",
 		"--api-key", "mbx_test",
-		"--project", "default",
 	))
 
 	assert.True(t, result.Success(), "dry-run failed: %v\nstderr: %s", result.Err, result.Stderr)
@@ -131,7 +127,6 @@ steps:
 		"--dry-run",
 		"--output", "json",
 		"--api-key", "mbx_test",
-		"--project", "default",
 	))
 	assert.True(t, result.Success(), "interaction dry-run failed: %v\nstderr: %s", result.Err, result.Stderr)
 	var body struct {

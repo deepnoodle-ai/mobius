@@ -853,7 +853,7 @@ func (s *transcriptStream) connect() bool {
 		if cursor := s.view.Cursor(); cursor != "" {
 			params.Cursor = &cursor
 		}
-		resp, err := s.client.ac.StreamSessionTranscript(s.ctx, api.ProjectHandleParam(s.client.projectHandle), api.SessionIdParam(s.sessionID), params, acceptEventStream)
+		resp, err := s.client.ac.StreamSessionTranscript(s.ctx, api.SessionIdParam(s.sessionID), params, acceptEventStream)
 		if err != nil {
 			if s.ctx.Err() != nil {
 				s.done = true
@@ -991,7 +991,7 @@ func (c *Client) GetSessionTranscript(ctx context.Context, sessionID string, opt
 			params.Limit = &limit
 		}
 	}
-	resp, err := c.ac.GetSessionTranscriptWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.SessionIdParam(sessionID), params)
+	resp, err := c.ac.GetSessionTranscriptWithResponse(ctx, api.SessionIdParam(sessionID), params)
 	if err != nil {
 		return nil, fmt.Errorf("mobius: get session transcript: %w", err)
 	}
@@ -1016,7 +1016,7 @@ func (c *Client) StreamSessionTranscript(ctx context.Context, sessionID string, 
 	if opts != nil && opts.Cursor != "" {
 		params.Cursor = &opts.Cursor
 	}
-	resp, err := c.ac.StreamSessionTranscript(ctx, api.ProjectHandleParam(c.projectHandle), api.SessionIdParam(sessionID), params, acceptEventStream)
+	resp, err := c.ac.StreamSessionTranscript(ctx, api.SessionIdParam(sessionID), params, acceptEventStream)
 	if err != nil {
 		return nil, fmt.Errorf("mobius: open session transcript stream: %w", err)
 	}

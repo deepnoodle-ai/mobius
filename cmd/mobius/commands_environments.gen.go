@@ -25,7 +25,7 @@ func registerEnvironmentsCommands(app *cli.App) {
 			cli.String("name", "").Help("Human-readable environment name."),
 			cli.String("owned-by", "").Help("Canonical user owner ID. Defaults to the authenticated user."),
 			cli.String("provider", "").Help("Providers the control plane can provision on demand. Worker-provided environments are registered out-of-band via the attach endpoint and…"),
-			cli.String("scope", "").Help("Optional namespace for named runtime resources. Omitted/null means the project/default scope; `owner` means names are unique within…"),
+			cli.String("scope", "").Help("Optional namespace for named runtime resources. Omitted/null means the org/default scope; `owner` means names are unique within `(org…"),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
 			cli.String("template-id", "").Help("V1 supports only coding-default."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
@@ -38,7 +38,6 @@ func registerEnvironmentsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
 			var body api.CreateEnvironmentJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -75,7 +74,7 @@ func registerEnvironmentsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.CreateEnvironmentWithResponse(ctx.Context(), p0, body)
+			resp, err := client.CreateEnvironmentWithResponse(ctx.Context(), body)
 			if err != nil {
 				return err
 			}
@@ -92,9 +91,8 @@ func registerEnvironmentsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			resp, err := client.DestroyEnvironmentWithResponse(ctx.Context(), p0, p1)
+			p0 := ctx.Arg(0)
+			resp, err := client.DestroyEnvironmentWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
 			}
@@ -111,9 +109,8 @@ func registerEnvironmentsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			resp, err := client.GetEnvironmentWithResponse(ctx.Context(), p0, p1)
+			p0 := ctx.Arg(0)
+			resp, err := client.GetEnvironmentWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
 			}
@@ -137,7 +134,6 @@ func registerEnvironmentsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
 			params := &api.ListEnvironmentsParams{}
 			if ctx.IsSet("cursor") {
 				v := api.CursorParam(ctx.String("cursor"))
@@ -166,7 +162,7 @@ func registerEnvironmentsCommands(app *cli.App) {
 				}
 				params.DestroyedSince = &v
 			}
-			resp, err := client.ListEnvironmentsWithResponse(ctx.Context(), p0, params)
+			resp, err := client.ListEnvironmentsWithResponse(ctx.Context(), params)
 			if err != nil {
 				return err
 			}
@@ -178,7 +174,7 @@ func registerEnvironmentsCommands(app *cli.App) {
 		AddArg(&cli.Arg{Name: "environment-id", Description: "Environment ID.", Required: true}).
 		Flags(
 			cli.String("owned-by", "").Help("Canonical user owner ID. Send null to clear ownership."),
-			cli.String("scope", "").Help("Resource scope; send null to return to the project/default scope."),
+			cli.String("scope", "").Help("Resource scope; send null to return to the org/default scope."),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
@@ -190,8 +186,7 @@ func registerEnvironmentsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
+			p0 := ctx.Arg(0)
 			var body api.UpdateEnvironmentJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -216,7 +211,7 @@ func registerEnvironmentsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.UpdateEnvironmentWithResponse(ctx.Context(), p0, p1, body)
+			resp, err := client.UpdateEnvironmentWithResponse(ctx.Context(), p0, body)
 			if err != nil {
 				return err
 			}

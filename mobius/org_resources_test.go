@@ -10,29 +10,29 @@ import (
 	"github.com/deepnoodle-ai/wonton/assert"
 )
 
-func TestProjectResourceListHelpers(t *testing.T) {
+func TestOrgResourceListHelpers(t *testing.T) {
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		switch r.URL.Path {
-		case "/v1/projects/test-project/blueprints/bindings":
+		case "/v1/blueprints/bindings":
 			assert.Equal(t, r.URL.Query().Get("namespace"), "starter")
 			assert.Equal(t, r.URL.Query().Get("blueprint_key"), "support")
 			_, _ = io.WriteString(w, `{"items":[]}`)
-		case "/v1/projects/test-project/interactions":
+		case "/v1/interactions":
 			assert.Equal(t, r.URL.Query().Get("session_id"), "sess_1")
 			assert.Equal(t, r.URL.Query().Get("status"), "pending")
 			assert.Equal(t, r.URL.Query().Get("inbox"), "true")
 			_, _ = io.WriteString(w, `{"items":[],"has_more":false}`)
-		case "/v1/projects/test-project/permissions":
+		case "/v1/permissions":
 			_, _ = io.WriteString(w, `{"items":[],"presets":[],"action_groups":[]}`)
-		case "/v1/projects/test-project/principals":
+		case "/v1/principals":
 			assert.Equal(t, r.URL.Query().Get("kind"), "service")
 			assert.Equal(t, r.URL.Query().Get("include_disabled"), "true")
 			_, _ = io.WriteString(w, `{"items":[]}`)
-		case "/v1/projects/test-project/roles":
+		case "/v1/roles":
 			assert.Equal(t, r.URL.Query().Get("cursor"), "role_cursor")
 			_, _ = io.WriteString(w, `{"items":[],"has_more":false}`)
-		case "/v1/projects/test-project/role-assignments":
+		case "/v1/role-assignments":
 			assert.Equal(t, r.URL.Query().Get("principal_id"), "principal_1")
 			_, _ = io.WriteString(w, `{"items":[]}`)
 		default:
@@ -55,7 +55,7 @@ func TestProjectResourceListHelpers(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, len(interactions.Items), 0)
 
-	permissions, err := c.ListProjectPermissions(ctx)
+	permissions, err := c.ListOrgPermissions(ctx)
 	assert.NoError(t, err)
 	assert.Equal(t, len(permissions.Items), 0)
 

@@ -28,14 +28,13 @@ def _client_with(handler) -> Client:
         ClientOptions(
             api_key="mbx_test",
             base_url="https://api.example.invalid",
-            project="test-project",
             retry=0,
         ),
         transport=httpx.MockTransport(handler),
     )
 
 
-def _skill(skill_id: str = "skill_1", source: str = "project") -> dict:
+def _skill(skill_id: str = "skill_1", source: str = "organization") -> dict:
     return {
         "id": skill_id,
         "name": "Pull request review",
@@ -47,12 +46,12 @@ def _skill(skill_id: str = "skill_1", source: str = "project") -> dict:
     }
 
 
-def test_project_lifecycle_routes() -> None:
+def test_skill_lifecycle_routes() -> None:
     seen: list[tuple[str, str]] = []
 
     def handler(request: httpx.Request) -> httpx.Response:
         seen.append((request.method, request.url.path))
-        if request.method == "GET" and request.url.path == "/v1/projects/test-project/skills":
+        if request.method == "GET" and request.url.path == "/v1/skills":
             assert request.url.params["include_system"] == "false"
             return httpx.Response(200, json={"items": [_skill()]})
         if request.method == "POST":
@@ -79,7 +78,7 @@ def test_project_lifecycle_routes() -> None:
     client.delete_skill("skill_1")
     client.close()
 
-    assert [p for _, p in seen[2:]] == ["/v1/projects/test-project/skills/skill_1"] * 3
+    assert [p for _, p in seen[2:]] == ["/v1/skills/skill_1"] * 3
     assert [m for m, _ in seen[2:]] == ["GET", "PUT", "DELETE"]
 
 
@@ -87,7 +86,7 @@ def test_import_sends_document_verbatim() -> None:
     bodies: list[dict] = []
 
     def handler(request: httpx.Request) -> httpx.Response:
-        assert request.url.path == "/v1/projects/test-project/skills/import"
+        assert request.url.path == "/v1/skills/import"
         bodies.append(json.loads(request.content))
         return httpx.Response(201, json=_skill())
 
@@ -96,7 +95,7 @@ def test_import_sends_document_verbatim() -> None:
     client.close()
 
     assert bodies == [{"content": SKILL_DOC, "name": "Pull request review"}]
-    assert skill.source == "project"
+    assert skill.source == "organization"
 
 
 def test_import_omits_name_when_not_given() -> None:
@@ -127,15 +126,7 @@ def test_organization_routes_and_provenance() -> None:
         if path == "/v1/organization/skills/skill_org/usage":
             return httpx.Response(
                 200,
-                json={
-                    "skill_id": "skill_org",
-                    "assignment_count": 3,
-                    "project_count": 2,
-                    "projects": [
-                        {"project_id": "proj_a", "agent_count": 2},
-                        {"project_id": "proj_b", "agent_count": 1},
-                    ],
-                },
+                json={"skill_id": "skill_org", "assignment_count": 3},
             )
         return httpx.Response(404)
 
@@ -151,7 +142,6 @@ def test_organization_routes_and_provenance() -> None:
     client.close()
 
     assert usage.assignment_count == 3
-    assert [p.project_id for p in usage.projects] == ["proj_a", "proj_b"]
 
 
 def test_delete_organization_skill_surfaces_in_use_conflict() -> None:
@@ -178,7 +168,7 @@ def test_replace_agent_skill_assignments_preserves_order() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         assert (
             request.url.path
-            == "/v1/projects/test-project/agents/agent_1/skill-assignments"
+            == "/v1/agents/agent_1/skill-assignments"
         )
         if request.method == "GET":
             return httpx.Response(200, json={"items": []})

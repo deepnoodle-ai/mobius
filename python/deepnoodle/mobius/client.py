@@ -36,7 +36,6 @@ from ._api.models import (
     CreateAgentRequest,
     CreateOrganizationActionRequest,
     CreatePrincipalRequest,
-    CreateProjectRequest,
     CreateRoleAssignmentRequest,
     CreateRoleRequest,
     CreateLoopRequest,
@@ -64,7 +63,6 @@ from ._api.models import (
     Principal,
     PrincipalKind,
     PrincipalListResponse,
-    Project,
     PutOAuthReturnOriginsRequest,
     RuntimeContext,
     RuntimeContextItem,
@@ -76,7 +74,7 @@ from ._api.models import (
     SkillAssignmentListResponse,
     SkillListResponse,
     SkillRequest,
-    Role1 as ProjectRole,
+    Role1 as OrgRole,
     RoleAssignment,
     RoleAssignmentListResponse,
     RoleListResponse,
@@ -111,23 +109,15 @@ from .transcript import (
 )
 
 DEFAULT_BASE_URL = "https://api.mobiusops.ai"
-_HANDLE_RE = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
 
 
 @dataclass
 class ClientOptions:
     api_key: str
     base_url: str = DEFAULT_BASE_URL
-    project: str = "default"
-    namespace: str | None = None
     timeout: float = 60.0
     retry: int = DEFAULT_MAX_RETRIES
     logger: logging.Logger | None = None
-
-    def __post_init__(self) -> None:
-        if self.namespace and self.project == "default":
-            self.project = self.namespace
-        self.namespace = self.project
 
 
 @dataclass
@@ -212,7 +202,7 @@ class InvokeAgentOptions:
     content: list[dict[str, Any]]
     # Agent identifier. Mutually exclusive with agent_name.
     agent_id: str | None = None
-    # Project-unique agent name. Mutually exclusive with agent_id.
+    # Org-unique agent name. Mutually exclusive with agent_id.
     agent_name: str | None = None
     # Ordered application-owned state for this turn.
     context: list[RuntimeContextItem] | None = None
@@ -304,14 +294,14 @@ class ListOrganizationActionsOptions:
 
 @dataclass
 class ListActionInvocationsOptions:
-    """Filters for the project's action invocation audit records."""
+    """Filters for the org's action invocation audit records."""
 
     run_id: str | None = None
     job_id: str | None = None
     environment_id: str | None = None
     action_name: str | None = None
     action_id: str | None = None
-    # Scope that owned the selected definition: "platform", "project", or
+    # Scope that owned the selected definition: "platform", "custom", or
     # "organization".
     definition_scope: str | None = None
     # Signing-secret version used for the HTTP delivery.
@@ -499,8 +489,6 @@ class Client:
         opts: ClientOptions | str,
         *,
         base_url: str | None = None,
-        project: str | None = None,
-        namespace: str | None = None,
         timeout: float = 60.0,
         retry: int = DEFAULT_MAX_RETRIES,
         transport: httpx.BaseTransport | None = None,
@@ -509,22 +497,11 @@ class Client:
             opts = ClientOptions(
                 api_key=opts,
                 base_url=base_url or DEFAULT_BASE_URL,
-                project=project or namespace or "default",
                 timeout=timeout,
                 retry=retry,
             )
         elif base_url is not None:
             opts.base_url = base_url
-        handle = _extract_handle_from_api_key(opts.api_key)
-        explicit = opts.project or opts.namespace
-        if handle:
-            if explicit and explicit != "default" and explicit != handle:
-                raise ValueError(
-                    f"project={explicit!r} conflicts with the handle embedded in the API key ({handle!r})"
-                )
-            self.project = handle
-        else:
-            self.project = explicit or "default"
         self.base_url = opts.base_url.rstrip("/")
         self.api_key = opts.api_key
         self._logger = opts.logger or logging.getLogger("deepnoodle.mobius")
@@ -552,7 +529,7 @@ class Client:
         parsed = urlparse(self.base_url)
         scheme = "wss" if parsed.scheme == "https" else "ws"
         base_path = parsed.path.rstrip("/")
-        path = f"{base_path}/v1/projects/{quote(self.project, safe='')}/workers/socket"
+        path = f"{base_path}/v1/workers/socket"
         return urlunparse((scheme, parsed.netloc, path, "", "", ""))
 
     def create_artifact(
@@ -564,7 +541,7 @@ class Client:
         metadata: dict[str, Any] | None = None,
         idempotency_key: str | None = None,
     ) -> Artifact:
-        """Publish a private artifact using the client's project authorization.
+        """Publish a private artifact using the client's org authorization.
 
         ``file`` may be raw bytes, a binary file object, or a filesystem
         path. Path sources stream from disk and default ``name`` to the
@@ -603,7 +580,7 @@ class Client:
             filename = clean_name.rsplit("/", 1)[-1] or "artifact"
             resp = self._request(
                 "POST",
-                "/v1/projects/{project}/artifacts",
+                "/v1/artifacts",
                 files={"file": (filename, source, mime or "application/octet-stream")},
                 data=fields,
                 idempotency_key=idempotency_key,
@@ -614,29 +591,29 @@ class Client:
                 opened.close()
 
     def list_loops(self, opts: ListLoopsOptions | None = None) -> LoopListResponse:
-        resp = self._request("GET", "/v1/projects/{project}/loops", params=_params(opts))
+        resp = self._request("GET", "/v1/loops", params=_params(opts))
         return LoopListResponse.model_validate(resp.json())
 
     def get_loop(self, loop_id: str) -> Loop:
-        resp = self._request("GET", f"/v1/projects/{{project}}/loops/{quote(loop_id, safe='')}")
+        resp = self._request("GET", f"/v1/loops/{quote(loop_id, safe='')}")
         return Loop.model_validate(resp.json())
 
     def create_loop(self, opts: LoopOptions) -> Loop:
         body = CreateLoopRequest(**_merge_loop_fields(opts))
-        resp = self._request("POST", "/v1/projects/{project}/loops", json=body)
+        resp = self._request("POST", "/v1/loops", json=body)
         return Loop.model_validate(resp.json())
 
     def update_loop(self, loop_id: str, opts: UpdateLoopOptions) -> Loop:
         body = UpdateLoopRequest(**_merge_loop_fields(opts))
-        resp = self._request("PATCH", f"/v1/projects/{{project}}/loops/{quote(loop_id, safe='')}", json=body)
+        resp = self._request("PATCH", f"/v1/loops/{quote(loop_id, safe='')}", json=body)
         return Loop.model_validate(resp.json())
 
     def delete_loop(self, loop_id: str) -> None:
-        self._request("DELETE", f"/v1/projects/{{project}}/loops/{quote(loop_id, safe='')}")
+        self._request("DELETE", f"/v1/loops/{quote(loop_id, safe='')}")
 
     def apply_blueprint(self, request: ApplyBlueprintRequest) -> BlueprintApplyResult:
         resp = self._request(
-            "POST", "/v1/projects/{project}/blueprints/apply", json=request
+            "POST", "/v1/blueprints/apply", json=request
         )
         return BlueprintApplyResult.model_validate(resp.json())
 
@@ -645,7 +622,7 @@ class Client:
     ) -> BlueprintBindingListResponse:
         resp = self._request(
             "GET",
-            "/v1/projects/{project}/blueprints/bindings",
+            "/v1/blueprints/bindings",
             params=_params(opts),
         )
         return BlueprintBindingListResponse.model_validate(resp.json())
@@ -658,7 +635,7 @@ class Client:
     ) -> BlueprintBindingListResponse:
         resp = self._request(
             "PUT",
-            f"/v1/projects/{{project}}/blueprints/{quote(blueprint_key, safe='')}/protection",
+            f"/v1/blueprints/{quote(blueprint_key, safe='')}/protection",
             params=_params(opts),
             json=SetBlueprintProtectionRequest(protected=protected),
         )
@@ -669,7 +646,7 @@ class Client:
     ) -> BlueprintDeleteResult:
         resp = self._request(
             "DELETE",
-            f"/v1/projects/{{project}}/blueprints/{quote(blueprint_key, safe='')}",
+            f"/v1/blueprints/{quote(blueprint_key, safe='')}",
             params=_params(opts),
         )
         return BlueprintDeleteResult.model_validate(resp.json())
@@ -678,32 +655,32 @@ class Client:
         self, opts: ListInteractionsOptions | None = None
     ) -> InteractionListResponse:
         resp = self._request(
-            "GET", "/v1/projects/{project}/interactions", params=_params(opts)
+            "GET", "/v1/interactions", params=_params(opts)
         )
         return InteractionListResponse.model_validate(resp.json())
 
-    def list_project_permissions(self) -> PermissionCatalogResponse:
-        resp = self._request("GET", "/v1/projects/{project}/permissions")
+    def list_org_permissions(self) -> PermissionCatalogResponse:
+        resp = self._request("GET", "/v1/permissions")
         return PermissionCatalogResponse.model_validate(resp.json())
 
     def list_principals(
         self, opts: ListPrincipalsOptions | None = None
     ) -> PrincipalListResponse:
         resp = self._request(
-            "GET", "/v1/projects/{project}/principals", params=_params(opts)
+            "GET", "/v1/principals", params=_params(opts)
         )
         return PrincipalListResponse.model_validate(resp.json())
 
     def create_principal(self, request: CreatePrincipalRequest) -> Principal:
         resp = self._request(
-            "POST", "/v1/projects/{project}/principals", json=request
+            "POST", "/v1/principals", json=request
         )
         return Principal.model_validate(resp.json())
 
     def get_principal(self, principal_id: str) -> Principal:
         resp = self._request(
             "GET",
-            f"/v1/projects/{{project}}/principals/{quote(principal_id, safe='')}",
+            f"/v1/principals/{quote(principal_id, safe='')}",
         )
         return Principal.model_validate(resp.json())
 
@@ -712,7 +689,7 @@ class Client:
     ) -> Principal:
         resp = self._request(
             "PATCH",
-            f"/v1/projects/{{project}}/principals/{quote(principal_id, safe='')}",
+            f"/v1/principals/{quote(principal_id, safe='')}",
             json=request,
         )
         return Principal.model_validate(resp.json())
@@ -720,43 +697,43 @@ class Client:
     def delete_principal(self, principal_id: str) -> None:
         self._request(
             "DELETE",
-            f"/v1/projects/{{project}}/principals/{quote(principal_id, safe='')}",
+            f"/v1/principals/{quote(principal_id, safe='')}",
         )
 
     def list_roles(self, opts: ListRolesOptions | None = None) -> RoleListResponse:
         resp = self._request(
-            "GET", "/v1/projects/{project}/roles", params=_params(opts)
+            "GET", "/v1/roles", params=_params(opts)
         )
         return RoleListResponse.model_validate(resp.json())
 
-    def create_role(self, request: CreateRoleRequest) -> ProjectRole:
-        resp = self._request("POST", "/v1/projects/{project}/roles", json=request)
-        return ProjectRole.model_validate(resp.json())
+    def create_role(self, request: CreateRoleRequest) -> OrgRole:
+        resp = self._request("POST", "/v1/roles", json=request)
+        return OrgRole.model_validate(resp.json())
 
-    def get_role(self, role_id: str) -> ProjectRole:
+    def get_role(self, role_id: str) -> OrgRole:
         resp = self._request(
-            "GET", f"/v1/projects/{{project}}/roles/{quote(role_id, safe='')}"
+            "GET", f"/v1/roles/{quote(role_id, safe='')}"
         )
-        return ProjectRole.model_validate(resp.json())
+        return OrgRole.model_validate(resp.json())
 
-    def update_role(self, role_id: str, request: UpdateRoleRequest) -> ProjectRole:
+    def update_role(self, role_id: str, request: UpdateRoleRequest) -> OrgRole:
         resp = self._request(
             "PATCH",
-            f"/v1/projects/{{project}}/roles/{quote(role_id, safe='')}",
+            f"/v1/roles/{quote(role_id, safe='')}",
             json=request,
         )
-        return ProjectRole.model_validate(resp.json())
+        return OrgRole.model_validate(resp.json())
 
     def delete_role(self, role_id: str) -> None:
         self._request(
-            "DELETE", f"/v1/projects/{{project}}/roles/{quote(role_id, safe='')}"
+            "DELETE", f"/v1/roles/{quote(role_id, safe='')}"
         )
 
     def list_role_assignments(
         self, opts: ListRoleAssignmentsOptions | None = None
     ) -> RoleAssignmentListResponse:
         resp = self._request(
-            "GET", "/v1/projects/{project}/role-assignments", params=_params(opts)
+            "GET", "/v1/role-assignments", params=_params(opts)
         )
         return RoleAssignmentListResponse.model_validate(resp.json())
 
@@ -764,14 +741,14 @@ class Client:
         self, request: CreateRoleAssignmentRequest
     ) -> RoleAssignment:
         resp = self._request(
-            "POST", "/v1/projects/{project}/role-assignments", json=request
+            "POST", "/v1/role-assignments", json=request
         )
         return RoleAssignment.model_validate(resp.json())
 
     def delete_role_assignment(self, assignment_id: str) -> None:
         self._request(
             "DELETE",
-            f"/v1/projects/{{project}}/role-assignments/{quote(assignment_id, safe='')}",
+            f"/v1/role-assignments/{quote(assignment_id, safe='')}",
         )
 
     def create_agent(
@@ -797,49 +774,16 @@ class Client:
         )
         resp = self._request(
             "POST",
-            "/v1/projects/{project}/agents",
+            "/v1/agents",
             json=request,
             replay_safe=adopt_existing,
         )
         return Agent.model_validate(resp.json())
 
-    def create_project(
-        self,
-        request: CreateProjectRequest,
-        *,
-        adopt_existing: bool = False,
-        external_ref: str | None = None,
-    ) -> Project:
-        """Create a project, or adopt the one already carrying ``external_ref``.
-
-        With ``adopt_existing`` the call is safely retryable: when an active
-        project already carries ``external_ref``, it is returned unchanged
-        (HTTP 200) instead of failing with 409, and mutable fields in
-        ``request`` are ignored. ``external_ref`` is required with
-        ``adopt_existing``; adopt-mode creates are also retried on transient
-        failures like idempotent requests. Conflicts that cannot be adopted
-        raise :class:`MobiusAPIError` with
-        ``code == MobiusAPIError.EXTERNAL_IDENTITY_CONFLICT`` (handle
-        mismatch or deleted match) or ``MobiusAPIError.PROJECT_ARCHIVED``.
-        A new project can be rejected at the org's project limit
-        (``project_capacity_reached``, 429); an existing ``external_ref``
-        match still adopts even at that limit.
-        """
-        request = _with_adopt_fields(
-            request, "create_project", adopt_existing, external_ref
-        )
-        resp = self._request(
-            "POST",
-            "/v1/projects",
-            json=request,
-            replay_safe=adopt_existing,
-        )
-        return Project.model_validate(resp.json())
-
     def get_agent_memory(self, agent_id: str) -> AgentMemory:
         """Return a summary of an agent's private memory."""
         resp = self._request(
-            "GET", f"/v1/projects/{{project}}/agents/{quote(agent_id, safe='')}/memory"
+            "GET", f"/v1/agents/{quote(agent_id, safe='')}/memory"
         )
         return AgentMemory.model_validate(resp.json())
 
@@ -853,7 +797,7 @@ class Client:
         """
         resp = self._request(
             "GET",
-            f"/v1/projects/{{project}}/agents/{quote(agent_id, safe='')}/memory/entries",
+            f"/v1/agents/{quote(agent_id, safe='')}/memory/entries",
             params=_params(opts),
         )
         return AgentMemoryEntryListResponse.model_validate(resp.json())
@@ -864,7 +808,7 @@ class Client:
         """Create or update the memory entry stored under ``key``."""
         resp = self._request(
             "PUT",
-            f"/v1/projects/{{project}}/agents/{quote(agent_id, safe='')}/memory/entries/{quote(key, safe='')}",
+            f"/v1/agents/{quote(agent_id, safe='')}/memory/entries/{quote(key, safe='')}",
             json=request,
         )
         return AgentMemoryEntry.model_validate(resp.json())
@@ -873,7 +817,7 @@ class Client:
         """Delete the memory entry stored under ``key``."""
         self._request(
             "DELETE",
-            f"/v1/projects/{{project}}/agents/{quote(agent_id, safe='')}/memory/entries/{quote(key, safe='')}",
+            f"/v1/agents/{quote(agent_id, safe='')}/memory/entries/{quote(key, safe='')}",
         )
 
     def list_agent_memory_changes(
@@ -892,7 +836,7 @@ class Client:
             params["limit"] = limit
         resp = self._request(
             "GET",
-            f"/v1/projects/{{project}}/agents/{quote(agent_id, safe='')}/memory/changes",
+            f"/v1/agents/{quote(agent_id, safe='')}/memory/changes",
             params=params or None,
         )
         return AgentMemoryChangeListResponse.model_validate(resp.json())
@@ -991,7 +935,7 @@ class Client:
         return OrganizationAction.model_validate(resp.json())
 
     def delete_organization_action(self, action_id: str) -> None:
-        """Delete the shared definition from future project catalogs."""
+        """Delete the shared definition from future catalogs."""
         self._request(
             "DELETE", f"/v1/organization/actions/{quote(action_id, safe='')}"
         )
@@ -1089,29 +1033,29 @@ class Client:
         """
         resp = self._request(
             "GET",
-            "/v1/projects/{project}/action-invocations",
+            "/v1/action-invocations",
             params=_params(opts),
         )
         return ActionInvocationListResponse.model_validate(resp.json())
 
     def list_skills(self, *, include_system: bool | None = None) -> SkillListResponse:
-        """List project-local, organization-shared, and system skills.
+        """List org-owned, organization-shared, and system skills.
 
         System skill templates are included by default; pass
         ``include_system=False`` to omit them. Organization skills are
-        read-only through project mutation routes.
+        read-only through these mutation routes.
         """
         params: dict[str, Any] = {}
         if include_system is not None:
             params["include_system"] = "true" if include_system else "false"
         resp = self._request(
-            "GET", "/v1/projects/{project}/skills", params=params or None
+            "GET", "/v1/skills", params=params or None
         )
         return SkillListResponse.model_validate(resp.json())
 
     def create_skill(self, request: SkillRequest) -> Skill:
-        """Create a project-local skill."""
-        resp = self._request("POST", "/v1/projects/{project}/skills", json=request)
+        """Create an org-owned skill."""
+        resp = self._request("POST", "/v1/skills", json=request)
         return Skill.model_validate(resp.json())
 
     def import_skill(self, content: str, *, name: str | None = None) -> Skill:
@@ -1122,20 +1066,20 @@ class Client:
         """
         resp = self._request(
             "POST",
-            "/v1/projects/{project}/skills/import",
+            "/v1/skills/import",
             json=ImportSkillRequest(content=content, name=name),
         )
         return Skill.model_validate(resp.json())
 
     def get_skill(self, skill_id: str) -> Skill:
-        """Return a single project-local, organization-shared, or system skill."""
+        """Return a single org-owned, organization-shared, or system skill."""
         resp = self._request(
-            "GET", f"/v1/projects/{{project}}/skills/{quote(skill_id, safe='')}"
+            "GET", f"/v1/skills/{quote(skill_id, safe='')}"
         )
         return Skill.model_validate(resp.json())
 
     def update_skill(self, skill_id: str, request: SkillRequest) -> Skill:
-        """Replace a project-local skill.
+        """Replace an org-owned skill.
 
         The server requires the full body — including ``name`` and
         ``instructions`` — on every update; there is no partial patch, so
@@ -1143,18 +1087,18 @@ class Client:
         """
         resp = self._request(
             "PUT",
-            f"/v1/projects/{{project}}/skills/{quote(skill_id, safe='')}",
+            f"/v1/skills/{quote(skill_id, safe='')}",
             json=request,
         )
         return Skill.model_validate(resp.json())
 
     def delete_skill(self, skill_id: str) -> None:
-        """Delete a project-local skill.
+        """Delete an org-owned skill.
 
         The skill is automatically detached from any agents that reference it.
         """
         self._request(
-            "DELETE", f"/v1/projects/{{project}}/skills/{quote(skill_id, safe='')}"
+            "DELETE", f"/v1/skills/{quote(skill_id, safe='')}"
         )
 
     def list_organization_skills(self) -> SkillListResponse:
@@ -1224,7 +1168,7 @@ class Client:
         )
 
     def get_organization_skill_usage(self, skill_id: str) -> OrganizationSkillUsage:
-        """Report an organization skill's assignment impact across projects.
+        """Report an organization skill's assignment impact across agents.
 
         Lets callers see what a replace or delete would touch. Requires
         Admin or Owner membership.
@@ -1240,7 +1184,7 @@ class Client:
         """Return the skills assigned to an agent in assignment order."""
         resp = self._request(
             "GET",
-            f"/v1/projects/{{project}}/agents/{quote(agent_id, safe='')}/skill-assignments",
+            f"/v1/agents/{quote(agent_id, safe='')}/skill-assignments",
         )
         return SkillAssignmentListResponse.model_validate(resp.json())
 
@@ -1254,7 +1198,7 @@ class Client:
         """
         resp = self._request(
             "PUT",
-            f"/v1/projects/{{project}}/agents/{quote(agent_id, safe='')}/skill-assignments",
+            f"/v1/agents/{quote(agent_id, safe='')}/skill-assignments",
             json=ReplaceSkillsRequest(skill_ids=list(skill_ids)),
         )
         return SkillAssignmentListResponse.model_validate(resp.json())
@@ -1277,23 +1221,23 @@ class Client:
         body = StartLoopRunRequest(**values)
         resp = self._request(
             "POST",
-            f"/v1/projects/{{project}}/loops/{quote(loop_id, safe='')}/runs",
+            f"/v1/loops/{quote(loop_id, safe='')}/runs",
             json=body,
             idempotency_key=body.idempotency_key,
         )
         return LoopRun.model_validate(resp.json())
 
     def list_runs(self, opts: ListRunsOptions | None = None) -> LoopRunListResponse:
-        resp = self._request("GET", "/v1/projects/{project}/runs", params=_params(opts))
+        resp = self._request("GET", "/v1/runs", params=_params(opts))
         return LoopRunListResponse.model_validate(resp.json())
 
     def get_run(self, run_id: str) -> LoopRun:
-        resp = self._request("GET", f"/v1/projects/{{project}}/runs/{quote(run_id, safe='')}")
+        resp = self._request("GET", f"/v1/runs/{quote(run_id, safe='')}")
         return LoopRun.model_validate(resp.json())
 
     def cancel_run(self, run_id: str, reason: str | None = None) -> LoopRun:
         body = CancelLoopRunRequest(reason=reason)
-        resp = self._request("POST", f"/v1/projects/{{project}}/runs/{quote(run_id, safe='')}/cancel", json=body)
+        resp = self._request("POST", f"/v1/runs/{quote(run_id, safe='')}/cancel", json=body)
         return LoopRun.model_validate(resp.json())
 
     def signal_run(
@@ -1303,7 +1247,7 @@ class Client:
         result: dict[str, Any] | None = None,
     ) -> LoopRun:
         body = SignalLoopRunRequest(step_key=step_key, result=result)
-        resp = self._request("POST", f"/v1/projects/{{project}}/runs/{quote(run_id, safe='')}/signals", json=body)
+        resp = self._request("POST", f"/v1/runs/{quote(run_id, safe='')}/signals", json=body)
         return LoopRun.model_validate(resp.json())
 
     # Resolves (or creates) a session, appends opts.content as the caller's
@@ -1318,7 +1262,7 @@ class Client:
         body = _invoke_agent_request(opts)
         resp = self._request(
             "POST",
-            "/v1/projects/{project}/agents/invoke",
+            "/v1/agents/invoke",
             json=body,
             idempotency_key=_invoke_agent_replay_key(body),
         )
@@ -1343,7 +1287,7 @@ class Client:
         )
         resp = self._request(
             "POST",
-            f"/v1/projects/{{project}}/sessions/{quote(session_id, safe='')}/turns",
+            f"/v1/sessions/{quote(session_id, safe='')}/turns",
             json=body,
             idempotency_key=body.idempotency_key,
         )
@@ -1362,7 +1306,7 @@ class Client:
     def invoke_agent_stream(self, opts: InvokeAgentOptions) -> Iterator[SessionStreamEvent]:
         body = _invoke_agent_request(opts)
         payload = _model_dump(body)
-        path = self._path("/v1/projects/{project}/agents/invoke")
+        path = self._path("/v1/agents/invoke")
         with self._client.stream(
             "POST",
             path,
@@ -1397,19 +1341,19 @@ class Client:
                     yield SessionStreamEvent(event_type=event_type, data=json.loads(data))
 
     def list_sessions(self, opts: ListSessionsOptions | None = None) -> SessionListResponse:
-        resp = self._request("GET", "/v1/projects/{project}/sessions", params=_params(opts))
+        resp = self._request("GET", "/v1/sessions", params=_params(opts))
         return SessionListResponse.model_validate(resp.json())
 
     def get_session(self, session_id: str) -> Session:
         resp = self._request(
-            "GET", f"/v1/projects/{{project}}/sessions/{quote(session_id, safe='')}"
+            "GET", f"/v1/sessions/{quote(session_id, safe='')}"
         )
         return Session.model_validate(resp.json())
 
     def cancel_session(self, session_id: str, *, force: bool = False) -> Session:
         resp = self._request(
             "POST",
-            f"/v1/projects/{{project}}/sessions/{quote(session_id, safe='')}/cancel",
+            f"/v1/sessions/{quote(session_id, safe='')}/cancel",
             params={"force": "true"} if force else None,
         )
         return Session.model_validate(resp.json())
@@ -1417,7 +1361,7 @@ class Client:
     def compact_session(self, session_id: str) -> Session:
         resp = self._request(
             "POST",
-            f"/v1/projects/{{project}}/sessions/{quote(session_id, safe='')}/compact",
+            f"/v1/sessions/{quote(session_id, safe='')}/compact",
         )
         return Session.model_validate(resp.json())
 
@@ -1426,7 +1370,7 @@ class Client:
     ) -> SessionMessageListResponse:
         resp = self._request(
             "GET",
-            f"/v1/projects/{{project}}/sessions/{quote(session_id, safe='')}/messages",
+            f"/v1/sessions/{quote(session_id, safe='')}/messages",
             params=_params(opts),
         )
         return SessionMessageListResponse.model_validate(resp.json())
@@ -1441,7 +1385,7 @@ class Client:
         body = NudgeSessionRequest(**values)
         resp = self._request(
             "POST",
-            f"/v1/projects/{{project}}/sessions/{quote(session_id, safe='')}/nudges",
+            f"/v1/sessions/{quote(session_id, safe='')}/nudges",
             json=body,
             idempotency_key=body.idempotency_key,
         )
@@ -1452,7 +1396,7 @@ class Client:
     ) -> SessionNudgeListResponse:
         resp = self._request(
             "GET",
-            f"/v1/projects/{{project}}/sessions/{quote(session_id, safe='')}/nudges",
+            f"/v1/sessions/{quote(session_id, safe='')}/nudges",
             params=_params(opts),
         )
         return SessionNudgeListResponse.model_validate(resp.json())
@@ -1460,7 +1404,7 @@ class Client:
     def get_session_nudge(self, session_id: str, nudge_id: str) -> SessionNudge:
         resp = self._request(
             "GET",
-            f"/v1/projects/{{project}}/sessions/{quote(session_id, safe='')}/nudges/"
+            f"/v1/sessions/{quote(session_id, safe='')}/nudges/"
             f"{quote(nudge_id, safe='')}",
         )
         return SessionNudge.model_validate(resp.json())
@@ -1468,7 +1412,7 @@ class Client:
     def cancel_nudge(self, session_id: str, nudge_id: str) -> SessionNudge:
         resp = self._request(
             "POST",
-            f"/v1/projects/{{project}}/sessions/{quote(session_id, safe='')}/nudges/"
+            f"/v1/sessions/{quote(session_id, safe='')}/nudges/"
             f"{quote(nudge_id, safe='')}/cancel",
         )
         return SessionNudge.model_validate(resp.json())
@@ -1478,7 +1422,7 @@ class Client:
     ) -> AgentTurnListResponse:
         resp = self._request(
             "GET",
-            f"/v1/projects/{{project}}/sessions/{quote(session_id, safe='')}/turns",
+            f"/v1/sessions/{quote(session_id, safe='')}/turns",
             params=_params(opts),
         )
         return AgentTurnListResponse.model_validate(resp.json())
@@ -1486,7 +1430,7 @@ class Client:
     def get_session_turn(self, session_id: str, turn_id: str) -> AgentTurn:
         resp = self._request(
             "GET",
-            f"/v1/projects/{{project}}/sessions/{quote(session_id, safe='')}/turns/"
+            f"/v1/sessions/{quote(session_id, safe='')}/turns/"
             f"{quote(turn_id, safe='')}",
         )
         return AgentTurn.model_validate(resp.json())
@@ -1494,7 +1438,7 @@ class Client:
     def cancel_turn(self, session_id: str, turn_id: str) -> AgentTurn:
         resp = self._request(
             "POST",
-            f"/v1/projects/{{project}}/sessions/{quote(session_id, safe='')}/turns/"
+            f"/v1/sessions/{quote(session_id, safe='')}/turns/"
             f"{quote(turn_id, safe='')}/cancel",
         )
         return AgentTurn.model_validate(resp.json())
@@ -1517,7 +1461,7 @@ class Client:
                 params["page_token"] = opts.page_token
             if opts.limit:
                 params["limit"] = opts.limit
-        path = f"/v1/projects/{{project}}/sessions/{quote(session_id, safe='')}/transcript"
+        path = f"/v1/sessions/{quote(session_id, safe='')}/transcript"
         resp = self._request("GET", path, params=params)
         data = resp.json()
         # The interactions projection was added to transcript snapshots in an
@@ -1536,7 +1480,7 @@ class Client:
         opts: StreamSessionTranscriptOptions | None = None,
     ) -> Iterator[TranscriptStreamEvent]:
         params = {"cursor": opts.cursor} if opts and opts.cursor else None
-        path = f"/v1/projects/{{project}}/sessions/{quote(session_id, safe='')}/transcript/stream"
+        path = f"/v1/sessions/{quote(session_id, safe='')}/transcript/stream"
         with self._client.stream(
             "GET", self._path(path, params=params), headers={"Accept": "text/event-stream"}
         ) as resp:
@@ -1587,7 +1531,7 @@ class Client:
         delay: float,
         follow: bool = False,
     ) -> Iterator[TranscriptUpdate]:
-        path = f"/v1/projects/{{project}}/sessions/{quote(session_id, safe='')}/transcript/stream"
+        path = f"/v1/sessions/{quote(session_id, safe='')}/transcript/stream"
         reconnect_count = 0
         while True:
             params = {"cursor": transcript.cursor} if transcript.cursor else None
@@ -1674,7 +1618,7 @@ class Client:
 
     def watch_run(self, run_id: str, since: int = 0) -> Iterator[RunEvent]:
         params = {"after_sequence": since} if since > 0 else None
-        path = f"/v1/projects/{{project}}/runs/{quote(run_id, safe='')}/events.stream"
+        path = f"/v1/runs/{quote(run_id, safe='')}/events.stream"
         with self._client.stream("GET", self._path(path, params=params)) as resp:
             resp.raise_for_status()
             buf = ""
@@ -1762,7 +1706,7 @@ class Client:
         return resp
 
     def _path(self, path: str, params: dict[str, Any] | None = None) -> str:
-        out = path.replace("{project}", quote(self.project, safe=""))
+        out = path
         if params:
             clean = {k: v for k, v in params.items() if v not in (None, "")}
             if clean:
@@ -2142,20 +2086,7 @@ def _iter_transcript_frames(resp: httpx.Response) -> Iterator[TranscriptStreamEv
             )
 
 
-def _extract_handle_from_api_key(api_key: str) -> str | None:
-    if not (api_key.startswith("mbx_") or api_key.startswith("mbc_")):
-        return None
-    if "." not in api_key:
-        return None
-    handle = api_key.rsplit(".", 1)[1]
-    if not handle:
-        return None
-    if not _HANDLE_RE.match(handle):
-        raise ValueError(f"invalid project handle suffix in API key: {handle!r}")
-    return handle
-
-
-_CreateRequestT = TypeVar("_CreateRequestT", CreateAgentRequest, CreateProjectRequest)
+_CreateRequestT = TypeVar("_CreateRequestT", bound=CreateAgentRequest)
 
 
 def _with_adopt_fields(

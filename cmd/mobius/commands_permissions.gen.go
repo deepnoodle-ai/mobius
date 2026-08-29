@@ -13,10 +13,10 @@ import (
 
 // registerPermissionsCommands registers every generated subcommand in the "permissions" group.
 func registerPermissionsCommands(app *cli.App) {
-	permissionsGrp := app.Group("permissions").Description("Assignable project permission catalog")
+	permissionsGrp := app.Group("permissions").Description("Assignable org permission catalog")
 	permissionsGrp.Alias("permission")
 	permissionsGrp.Command("list-permissions").
-		Description("List project permissions").
+		Description("List org permissions").
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -24,12 +24,11 @@ func registerPermissionsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			resp, err := client.ListProjectPermissionsWithResponse(ctx.Context(), p0)
+			resp, err := client.ListOrgPermissionsWithResponse(ctx.Context())
 			if err != nil {
 				return err
 			}
-			return printResponse(ctx, "listProjectPermissions", resp.StatusCode(), resp.Body)
+			return printResponse(ctx, "listOrgPermissions", resp.StatusCode(), resp.Body)
 		})
 
 }

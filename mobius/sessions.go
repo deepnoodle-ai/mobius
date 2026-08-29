@@ -19,7 +19,7 @@ import (
 type InvokeAgentOptions struct {
 	// AgentID is the agent identifier. Mutually exclusive with AgentName.
 	AgentID string
-	// AgentName is the project-unique agent name. Mutually exclusive with
+	// AgentName is the org-unique agent name. Mutually exclusive with
 	// AgentID.
 	AgentName string
 
@@ -157,7 +157,7 @@ func (c *Client) InvokeAgent(ctx context.Context, opts InvokeAgentOptions) (*Tur
 	if err != nil {
 		return nil, err
 	}
-	resp, err := c.ac.InvokeAgentWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), req, idempotencyRequestEditors(invokeAgentReplayKey(req))...)
+	resp, err := c.ac.InvokeAgentWithResponse(ctx, req, idempotencyRequestEditors(invokeAgentReplayKey(req))...)
 	if err != nil {
 		return nil, fmt.Errorf("mobius: invoke agent: %w", err)
 	}
@@ -186,7 +186,7 @@ func (c *Client) StartTurn(ctx context.Context, sessionID string, opts StartTurn
 	if opts.Metadata != nil {
 		body.Metadata = &opts.Metadata
 	}
-	resp, err := c.ac.StartTurnWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.SessionIdParam(sessionID), body, idempotencyRequestEditors(key)...)
+	resp, err := c.ac.StartTurnWithResponse(ctx, api.SessionIdParam(sessionID), body, idempotencyRequestEditors(key)...)
 	if err != nil {
 		return nil, fmt.Errorf("mobius: start turn: %w", err)
 	}
@@ -233,7 +233,7 @@ func (c *Client) InvokeAgentStream(ctx context.Context, opts InvokeAgentOptions)
 	}
 	requestEditors := idempotencyRequestEditors(invokeAgentReplayKey(req))
 	requestEditors = append(requestEditors, acceptEventStream)
-	resp, err := c.ac.InvokeAgent(ctx, api.ProjectHandleParam(c.projectHandle), req, requestEditors...)
+	resp, err := c.ac.InvokeAgent(ctx, req, requestEditors...)
 	if err != nil {
 		return nil, fmt.Errorf("mobius: invoke agent stream: %w", err)
 	}
@@ -248,7 +248,7 @@ func (c *Client) InvokeAgentStream(ctx context.Context, opts InvokeAgentOptions)
 	return ch, nil
 }
 
-// ListSessions returns a cursor-paginated project session page.
+// ListSessions returns a cursor-paginated org session page.
 func (c *Client) ListSessions(ctx context.Context, opts *ListSessionsOptions) (*api.SessionListResponse, error) {
 	params := &api.ListSessionsParams{}
 	if opts != nil {
@@ -275,7 +275,7 @@ func (c *Client) ListSessions(ctx context.Context, opts *ListSessionsOptions) (*
 			params.Limit = &v
 		}
 	}
-	resp, err := c.ac.ListSessionsWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), params)
+	resp, err := c.ac.ListSessionsWithResponse(ctx, params)
 	if err != nil {
 		return nil, fmt.Errorf("mobius: list sessions: %w", err)
 	}
@@ -287,7 +287,7 @@ func (c *Client) ListSessions(ctx context.Context, opts *ListSessionsOptions) (*
 
 // GetSession returns one durable session.
 func (c *Client) GetSession(ctx context.Context, sessionID string) (*api.Session, error) {
-	resp, err := c.ac.GetSessionWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.SessionIdParam(sessionID))
+	resp, err := c.ac.GetSessionWithResponse(ctx, api.SessionIdParam(sessionID))
 	if err != nil {
 		return nil, fmt.Errorf("mobius: get session: %w", err)
 	}
@@ -304,7 +304,7 @@ func (c *Client) CancelSession(ctx context.Context, sessionID string, force bool
 	if force {
 		params.Force = &force
 	}
-	resp, err := c.ac.CancelSessionWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.SessionIdParam(sessionID), params)
+	resp, err := c.ac.CancelSessionWithResponse(ctx, api.SessionIdParam(sessionID), params)
 	if err != nil {
 		return nil, fmt.Errorf("mobius: cancel session: %w", err)
 	}
@@ -316,7 +316,7 @@ func (c *Client) CancelSession(ctx context.Context, sessionID string, force bool
 
 // CompactSession requests manual compaction of a session transcript.
 func (c *Client) CompactSession(ctx context.Context, sessionID string) (*api.Session, error) {
-	resp, err := c.ac.CompactSessionWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.SessionIdParam(sessionID))
+	resp, err := c.ac.CompactSessionWithResponse(ctx, api.SessionIdParam(sessionID))
 	if err != nil {
 		return nil, fmt.Errorf("mobius: compact session: %w", err)
 	}
@@ -351,7 +351,7 @@ func (c *Client) ListSessionMessages(ctx context.Context, sessionID string, opts
 			params.Include = &v
 		}
 	}
-	resp, err := c.ac.ListSessionMessagesWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.SessionIdParam(sessionID), params)
+	resp, err := c.ac.ListSessionMessagesWithResponse(ctx, api.SessionIdParam(sessionID), params)
 	if err != nil {
 		return nil, fmt.Errorf("mobius: list session messages: %w", err)
 	}
@@ -373,7 +373,7 @@ func (c *Client) NudgeSession(ctx context.Context, sessionID string, opts NudgeS
 	if opts.Wake {
 		body.Wake = &opts.Wake
 	}
-	resp, err := c.ac.NudgeSessionWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.SessionIdParam(sessionID), body, idempotencyRequestEditors(key)...)
+	resp, err := c.ac.NudgeSessionWithResponse(ctx, api.SessionIdParam(sessionID), body, idempotencyRequestEditors(key)...)
 	if err != nil {
 		return nil, fmt.Errorf("mobius: nudge session: %w", err)
 	}
@@ -407,7 +407,7 @@ func (c *Client) ListSessionNudges(ctx context.Context, sessionID string, opts *
 			params.Limit = &v
 		}
 	}
-	resp, err := c.ac.ListSessionNudgesWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.SessionIdParam(sessionID), params)
+	resp, err := c.ac.ListSessionNudgesWithResponse(ctx, api.SessionIdParam(sessionID), params)
 	if err != nil {
 		return nil, fmt.Errorf("mobius: list session nudges: %w", err)
 	}
@@ -419,7 +419,7 @@ func (c *Client) ListSessionNudges(ctx context.Context, sessionID string, opts *
 
 // GetSessionNudge returns one durable nudge.
 func (c *Client) GetSessionNudge(ctx context.Context, sessionID, nudgeID string) (*api.SessionNudge, error) {
-	resp, err := c.ac.GetSessionNudgeWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.SessionIdParam(sessionID), api.NudgeIdParam(nudgeID))
+	resp, err := c.ac.GetSessionNudgeWithResponse(ctx, api.SessionIdParam(sessionID), api.NudgeIdParam(nudgeID))
 	if err != nil {
 		return nil, fmt.Errorf("mobius: get session nudge: %w", err)
 	}
@@ -431,7 +431,7 @@ func (c *Client) GetSessionNudge(ctx context.Context, sessionID, nudgeID string)
 
 // CancelNudge cancels a pending durable nudge.
 func (c *Client) CancelNudge(ctx context.Context, sessionID, nudgeID string) (*api.SessionNudge, error) {
-	resp, err := c.ac.CancelNudgeWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.SessionIdParam(sessionID), api.NudgeIdParam(nudgeID))
+	resp, err := c.ac.CancelNudgeWithResponse(ctx, api.SessionIdParam(sessionID), api.NudgeIdParam(nudgeID))
 	if err != nil {
 		return nil, fmt.Errorf("mobius: cancel nudge: %w", err)
 	}
@@ -461,7 +461,7 @@ func (c *Client) ListSessionTurns(ctx context.Context, sessionID string, opts *L
 			params.Limit = &v
 		}
 	}
-	resp, err := c.ac.ListSessionTurnsWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.SessionIdParam(sessionID), params)
+	resp, err := c.ac.ListSessionTurnsWithResponse(ctx, api.SessionIdParam(sessionID), params)
 	if err != nil {
 		return nil, fmt.Errorf("mobius: list session turns: %w", err)
 	}
@@ -473,7 +473,7 @@ func (c *Client) ListSessionTurns(ctx context.Context, sessionID string, opts *L
 
 // GetSessionTurn returns one session turn.
 func (c *Client) GetSessionTurn(ctx context.Context, sessionID, turnID string) (*api.AgentTurn, error) {
-	resp, err := c.ac.GetSessionTurnWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.SessionIdParam(sessionID), api.TurnIdParam(turnID))
+	resp, err := c.ac.GetSessionTurnWithResponse(ctx, api.SessionIdParam(sessionID), api.TurnIdParam(turnID))
 	if err != nil {
 		return nil, fmt.Errorf("mobius: get session turn: %w", err)
 	}
@@ -485,7 +485,7 @@ func (c *Client) GetSessionTurn(ctx context.Context, sessionID, turnID string) (
 
 // CancelTurn cancels one queued/running/waiting session turn.
 func (c *Client) CancelTurn(ctx context.Context, sessionID, turnID string) (*api.AgentTurn, error) {
-	resp, err := c.ac.CancelTurnWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.SessionIdParam(sessionID), api.TurnIdParam(turnID))
+	resp, err := c.ac.CancelTurnWithResponse(ctx, api.SessionIdParam(sessionID), api.TurnIdParam(turnID))
 	if err != nil {
 		return nil, fmt.Errorf("mobius: cancel turn: %w", err)
 	}

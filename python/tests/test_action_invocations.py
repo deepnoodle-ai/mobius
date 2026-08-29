@@ -16,7 +16,6 @@ def _client_with(handler) -> Client:
         ClientOptions(
             api_key="mbx_test",
             base_url="https://api.example.invalid",
-            project="test-project",
             retry=0,
         ),
         transport=httpx.MockTransport(handler),
@@ -27,7 +26,7 @@ def test_list_encodes_every_filter() -> None:
     seen: list[dict[str, str]] = []
 
     def handler(request: httpx.Request) -> httpx.Response:
-        assert request.url.path == "/v1/projects/test-project/action-invocations"
+        assert request.url.path == "/v1/action-invocations"
         seen.append(dict(request.url.params))
         return httpx.Response(200, json={"items": [], "has_more": False})
 

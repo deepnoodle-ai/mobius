@@ -53,7 +53,6 @@ function newClient(): Client {
   return new Client({
     apiKey: "mbx_test",
     baseURL: "https://api.example.invalid",
-    project: "test-project",
   });
 }
 
@@ -655,7 +654,7 @@ test("client: getSessionTranscript builds the snapshot URL with query", async ()
   const url = new URL(requestedURL);
   assert.equal(
     url.pathname,
-    "/v1/projects/test-project/sessions/sess_1/transcript",
+    "/v1/sessions/sess_1/transcript",
   );
   assert.equal(url.searchParams.get("cursor"), "10.2");
   assert.equal(url.searchParams.get("limit"), "50");
@@ -864,7 +863,7 @@ test("client: nudgeSession is a typed thin wrapper", async () => {
   }
   assert.equal(
     new URL(requestedURL).pathname,
-    "/v1/projects/test-project/sessions/s1/nudges",
+    "/v1/sessions/s1/nudges",
   );
   assert.deepEqual(JSON.parse(requestedBody), {
     content: "Use the shorter name",

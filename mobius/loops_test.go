@@ -16,7 +16,7 @@ func TestCreateLoop_HighLevelClient(t *testing.T) {
 	var body map[string]any
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, r.Method, http.MethodPost)
-		assert.Equal(t, r.URL.Path, "/v1/projects/test-project/loops")
+		assert.Equal(t, r.URL.Path, "/v1/loops")
 		b, _ := io.ReadAll(r.Body)
 		assert.NoError(t, json.Unmarshal(b, &body))
 		w.Header().Set("Content-Type", "application/json")
@@ -41,7 +41,7 @@ func TestCreateLoopWithSpec_HighLevelClient(t *testing.T) {
 	var body map[string]any
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, r.Method, http.MethodPost)
-		assert.Equal(t, r.URL.Path, "/v1/projects/test-project/loops")
+		assert.Equal(t, r.URL.Path, "/v1/loops")
 		b, _ := io.ReadAll(r.Body)
 		assert.NoError(t, json.Unmarshal(b, &body))
 		w.Header().Set("Content-Type", "application/json")
@@ -76,7 +76,7 @@ func TestUpdateLoop_HighLevelClient(t *testing.T) {
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		switch {
-		case r.Method == http.MethodPatch && r.URL.Path == "/v1/projects/test-project/loops/loop_1":
+		case r.Method == http.MethodPatch && r.URL.Path == "/v1/loops/loop_1":
 			b, _ := io.ReadAll(r.Body)
 			assert.NoError(t, json.Unmarshal(b, &body))
 			_, _ = io.WriteString(w, loopJSON("loop_1", "research v2"))

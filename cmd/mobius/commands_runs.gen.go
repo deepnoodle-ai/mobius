@@ -34,8 +34,7 @@ func registerRunsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
+			p0 := ctx.Arg(0)
 			var body api.CancelRunJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -47,7 +46,7 @@ func registerRunsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.CancelRunWithResponse(ctx.Context(), p0, p1, body)
+			resp, err := client.CancelRunWithResponse(ctx.Context(), p0, body)
 			if err != nil {
 				return err
 			}
@@ -64,9 +63,8 @@ func registerRunsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			resp, err := client.GetRunWithResponse(ctx.Context(), p0, p1)
+			p0 := ctx.Arg(0)
+			resp, err := client.GetRunWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
 			}
@@ -89,7 +87,6 @@ func registerRunsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
 			params := &api.ListRunsParams{}
 			if ctx.IsSet("status") {
 				v := api.LoopRunStatus(ctx.String("status"))
@@ -111,7 +108,7 @@ func registerRunsCommands(app *cli.App) {
 				v := ctx.Int("limit")
 				params.Limit = &v
 			}
-			resp, err := client.ListRunsWithResponse(ctx.Context(), p0, params)
+			resp, err := client.ListRunsWithResponse(ctx.Context(), params)
 			if err != nil {
 				return err
 			}
@@ -133,8 +130,7 @@ func registerRunsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
+			p0 := ctx.Arg(0)
 			params := &api.ListRunEventsParams{}
 			if ctx.IsSet("after-sequence") {
 				v := int64(ctx.Int("after-sequence"))
@@ -148,7 +144,7 @@ func registerRunsCommands(app *cli.App) {
 				v := api.LastEventIDParam(int64(ctx.Int("last-event-id")))
 				params.LastEventID = &v
 			}
-			resp, err := client.ListRunEventsWithResponse(ctx.Context(), p0, p1, params)
+			resp, err := client.ListRunEventsWithResponse(ctx.Context(), p0, params)
 			if err != nil {
 				return err
 			}
@@ -165,9 +161,8 @@ func registerRunsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			resp, err := client.ListRunStepsWithResponse(ctx.Context(), p0, p1)
+			p0 := ctx.Arg(0)
+			resp, err := client.ListRunStepsWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
 			}
@@ -193,8 +188,7 @@ func registerRunsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
+			p0 := ctx.Arg(0)
 			var body api.ResumeRunJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -223,7 +217,7 @@ func registerRunsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.ResumeRunWithResponse(ctx.Context(), p0, p1, body)
+			resp, err := client.ResumeRunWithResponse(ctx.Context(), p0, body)
 			if err != nil {
 				return err
 			}
@@ -249,8 +243,7 @@ func registerRunsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
+			p0 := ctx.Arg(0)
 			var body api.RetryRunJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -279,7 +272,7 @@ func registerRunsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.RetryRunWithResponse(ctx.Context(), p0, p1, body)
+			resp, err := client.RetryRunWithResponse(ctx.Context(), p0, body)
 			if err != nil {
 				return err
 			}
@@ -302,8 +295,7 @@ func registerRunsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
+			p0 := ctx.Arg(0)
 			var body api.SignalRunJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -322,7 +314,7 @@ func registerRunsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.SignalRunWithResponse(ctx.Context(), p0, p1, body)
+			resp, err := client.SignalRunWithResponse(ctx.Context(), p0, body)
 			if err != nil {
 				return err
 			}
@@ -337,7 +329,7 @@ func registerRunsCommands(app *cli.App) {
 			cli.String("config", "").Help("Optional static or caller-provided configuration for handling the event. Templates reference it via `config.*`. Accepts JSON, @file, or @-."),
 			cli.Int("credit-budget", "").Help("Per-run budget override in whole credits (1 credit = $0.01). Same ceiling semantics as `budget_usd`; set exactly one."),
 			cli.String("event", "").Help("Exact event object that starts the run. Manual/API starts use this object the same way integration, HTTP, and schedule triggers do… Accepts JSON, @file, or @-."),
-			cli.String("idempotency-key", "").Help("Caller-supplied idempotency key, scoped to (org, project). Repeat calls with the same `idempotency_key` while the prior run is still…"),
+			cli.String("idempotency-key", "").Help("Caller-supplied idempotency key, scoped to the org. Repeat calls with the same `idempotency_key` while the prior run is still non-terminal…"),
 			cli.String("meta", "").Help("Optional event metadata supplied by the caller. Mobius also adds provenance such as run, loop, source, trigger, and source-event ids. Accepts JSON, @file, or @-."),
 			cli.String("source", "").Help("Optional attribution for the call that started this run. Triggers and HTTP trigger dispatch populate `trigger_id` and `trigger_fire_id`… Accepts JSON, @file, or @-."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
@@ -350,8 +342,7 @@ func registerRunsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
+			p0 := ctx.Arg(0)
 			var body api.StartRunJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -392,7 +383,7 @@ func registerRunsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.StartRunWithResponse(ctx.Context(), p0, p1, body)
+			resp, err := client.StartRunWithResponse(ctx.Context(), p0, body)
 			if err != nil {
 				return err
 			}

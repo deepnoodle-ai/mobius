@@ -115,7 +115,6 @@ export interface ActionContext {
   sessionId?: string;
   agentTurnId?: string;
   toolCallId?: string;
-  projectId?: string;
   workerInstanceId: string;
   attempt: number;
   queue?: string;
@@ -399,7 +398,6 @@ export class Worker {
       case "worker_instance_conflict":
         return new WorkerInstanceConflictError(
           this.config.workerInstanceId,
-          this.client.project,
           error.message,
         );
       default:
@@ -513,7 +511,6 @@ export class Worker {
       sessionId: job.session_id,
       agentTurnId: job.agent_turn_id,
       toolCallId: job.tool_call_id,
-      projectId: this.client.project,
       workerInstanceId: this.config.workerInstanceId ?? "",
       attempt: job.claim_attempt,
       queue: job.queue,

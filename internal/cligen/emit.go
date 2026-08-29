@@ -27,10 +27,7 @@ type PlannedCommand struct {
 	Body       *BodyArg    // non-nil if method takes a JSONRequestBody
 }
 
-// PathArg is a path parameter surfaced on the CLI. Most path params are
-// positional arguments; some (e.g. "project") are surfaced as global flags
-// on the root app, so the command reads them via ctx.String instead of
-// consuming a positional slot.
+// PathArg is a path parameter surfaced on the CLI as a positional argument.
 type PathArg struct {
 	GoName      string // signature argument name (e.g. "id")
 	FlagName    string // kebab-case CLI flag name (e.g. "id")
@@ -38,7 +35,6 @@ type PathArg struct {
 	Description string // help text from the OpenAPI parameter description
 	IsInt       bool
 	IsInt64     bool
-	AsFlag      bool // read from a global flag rather than a positional arg
 }
 
 // QueryBlock captures the *{OpId}Params query-params struct.
@@ -188,14 +184,6 @@ func classifyParams(m *Method, client *ClientInfo, pc *PlannedCommand) (bool, st
 				GoType:   p.Type,
 				IsInt:    kind == "int",
 				IsInt64:  kind == "int64",
-			}
-			if (p.Name == "projectHandle" || p.Name == "project") && kind == "string" {
-				arg.AsFlag = true
-				// Bind to the global --project flag regardless of the spec's
-				// path-param name (oapi-codegen renamed the param "project" ->
-				// "projectHandle") so a saved profile's project handle still
-				// flows through (see the authFor read in the run body).
-				arg.FlagName = "project"
 			}
 			pc.PathParams = append(pc.PathParams, arg)
 		default:
@@ -358,7 +346,7 @@ func summarizeHelp(s string) string {
 // global flag or the body file flag. Such fields stay file-only.
 func isReservedFlag(name string) bool {
 	switch name {
-	case "api-url", "api-key", "project", "profile", "log-level",
+	case "api-url", "api-key", "profile", "log-level",
 		"output", "fields", "quiet", "var", "file", "dry-run":
 		return true
 	}
@@ -682,15 +670,12 @@ func renderCommand(b *bytes.Buffer, group string, c PlannedCommand) error {
 	fmt.Fprintf(b, "\t%s.Command(%q).\n", groupVar(group), c.Command)
 	fmt.Fprintf(b, "\t\tDescription(%q).\n", c.Description)
 
-	// Positional args (path params that aren't surfaced as flags). When the
-	// spec gives a parameter a description, emit a full cli.Arg so the help
-	// text shows; otherwise fall back to the terser Args() form.
+	// Positional args. When the spec gives a parameter a description, emit a
+	// full cli.Arg so the help text shows; otherwise fall back to the terser
+	// Args() form.
 	var positional []PathArg
 	hasDesc := false
 	for _, p := range c.PathParams {
-		if p.AsFlag {
-			continue
-		}
 		positional = append(positional, p)
 		if summarizeHelp(p.Description) != "" {
 			hasDesc = true
@@ -721,9 +706,7 @@ func renderCommand(b *bytes.Buffer, group string, c PlannedCommand) error {
 			"Command argv after --. Use this for values beginning with '-' (for example: -- sh -lc 'echo hi').")
 	}
 
-	// Flags (query + body file). Flag-backed path params like --project are
-	// declared as global flags on the root app, so we don't emit a
-	// per-command flag for them here — the handler reads them via ctx.String.
+	// Flags (query + body file).
 	var flags []string
 	if c.QueryBlock != nil {
 		for _, f := range c.QueryBlock.Fields {
@@ -798,18 +781,10 @@ func renderCommand(b *bytes.Buffer, group string, c PlannedCommand) error {
 	fmt.Fprintf(b, "\t\t\tif err != nil { return err }\n")
 	fmt.Fprintf(b, "\t\t\tclient := mc.RawClient()\n")
 
-	// Collect path-param locals. Positional path params consume args in
-	// order; flag-backed ones (e.g. --project) read from their flag — except
-	// "project" itself, which we read through authFor so a saved profile's
-	// project handle still flows through when --project / MOBIUS_PROJECT
-	// aren't explicitly set.
+	// Collect path-param locals. Positional path params consume args in order.
 	argIdx := 0
 	for i, p := range c.PathParams {
 		switch {
-		case p.AsFlag && p.FlagName == "project":
-			fmt.Fprintf(b, "\t\t\tp%d := authFor(ctx).Project\n", i)
-		case p.AsFlag:
-			fmt.Fprintf(b, "\t\t\tp%d := ctx.String(%q)\n", i, p.FlagName)
 		case p.IsInt:
 			fmt.Fprintf(b, "\t\t\tp%d, err := parseIntArg(ctx.Arg(%d), %q)\n", i, argIdx, p.FlagName)
 			fmt.Fprintf(b, "\t\t\tif err != nil { return err }\n")

@@ -2,7 +2,7 @@ import { strict as assert } from "node:assert";
 import { test } from "node:test";
 
 import { Client, ConfigError, MobiusAPIError } from "../src/client.js";
-import type { Agent, Project } from "../src/api/index.js";
+import type { Agent } from "../src/api/index.js";
 
 function agent(id = "agent_1"): Agent {
   return {
@@ -14,18 +14,6 @@ function agent(id = "agent_1"): Agent {
     created_at: "2026-07-17T00:00:00Z",
     updated_at: "2026-07-17T00:00:00Z",
   } as Agent;
-}
-
-function project(id = "prj_1"): Project {
-  return {
-    id,
-    name: "Product Ops",
-    handle: "product-ops",
-    access_mode: "restricted",
-    external_ref: "workspace-42",
-    created_at: "2026-07-17T00:00:00Z",
-    updated_at: "2026-07-17T00:00:00Z",
-  } as Project;
 }
 
 async function withMockFetch(
@@ -42,7 +30,6 @@ async function withMockFetch(
     const client = new Client({
       apiKey: "mbx_test",
       baseURL: "https://api.example.invalid",
-      project: "test-project",
       retry: opts.retry ?? 0,
     });
     await fn(client);
@@ -55,7 +42,7 @@ test("client: createAgent adopt sends if_exists/external_ref and accepts 200", a
   await withMockFetch(
     (method, url, init) => {
       assert.equal(method, "POST");
-      assert.equal(url.pathname, "/v1/projects/test-project/agents");
+      assert.equal(url.pathname, "/v1/agents");
       const body = JSON.parse(String(init?.body));
       assert.equal(body.if_exists, "adopt");
       assert.equal(body.external_ref, "tenant-42/pr-reviewer");
@@ -176,71 +163,6 @@ test("client: adopt conflict surfaces the documented 409 code", async () => {
           assert.ok(err instanceof MobiusAPIError);
           assert.equal(err.code, MobiusAPIError.EXTERNAL_IDENTITY_CONFLICT);
           assert.equal(err.status, 409);
-          return true;
-        },
-      );
-    },
-  );
-});
-
-test("client: createProject adopt sends if_exists and hits /v1/projects", async () => {
-  await withMockFetch(
-    (method, url, init) => {
-      assert.equal(method, "POST");
-      assert.equal(url.pathname, "/v1/projects");
-      const body = JSON.parse(String(init?.body));
-      assert.equal(body.if_exists, "adopt");
-      assert.equal(body.external_ref, "workspace-42");
-      return Response.json(project(), { status: 200 });
-    },
-    async (client) => {
-      const created = await client.createProject(
-        { name: "Product Ops" },
-        { adoptExisting: true, externalRef: "workspace-42" },
-      );
-      assert.equal(created.id, "prj_1");
-    },
-  );
-});
-
-test("client: createProject adopt without externalRef fails before any request", async () => {
-  let requests = 0;
-  await withMockFetch(
-    () => {
-      requests++;
-      return Response.json(project());
-    },
-    async (client) => {
-      await assert.rejects(
-        client.createProject({ name: "Product Ops" }, { adoptExisting: true }),
-        (err: unknown) => err instanceof ConfigError,
-      );
-    },
-  );
-  assert.equal(requests, 0);
-});
-
-test("client: project adopt conflict codes are documented constants", async () => {
-  assert.equal(MobiusAPIError.PROJECT_ARCHIVED, "project_archived");
-  assert.equal(
-    MobiusAPIError.PROJECT_CAPACITY_REACHED,
-    "project_capacity_reached",
-  );
-  await withMockFetch(
-    () =>
-      Response.json(
-        { error: { code: "project_archived", message: "project is archived" } },
-        { status: 409 },
-      ),
-    async (client) => {
-      await assert.rejects(
-        client.createProject(
-          { name: "Product Ops" },
-          { adoptExisting: true, externalRef: "workspace-42" },
-        ),
-        (err: unknown) => {
-          assert.ok(err instanceof MobiusAPIError);
-          assert.equal(err.code, MobiusAPIError.PROJECT_ARCHIVED);
           return true;
         },
       );

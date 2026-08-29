@@ -12,11 +12,6 @@ type Context interface {
 	context.Context
 
 	Logger() *slog.Logger
-	ProjectHandle() string
-	// ProjectID is a deprecated alias for ProjectHandle.
-	//
-	// Deprecated: use ProjectHandle.
-	ProjectID() string
 	RunID() string
 	JobID() string
 	// WorkflowName is retained for source compatibility with pre-automation
@@ -38,7 +33,6 @@ type executionContext struct {
 	context.Context
 	logger        *slog.Logger
 	client        *Client
-	projectHndl   string
 	environmentID string
 	runID         string
 	jobID         string
@@ -50,8 +44,6 @@ type executionContext struct {
 
 func (c *executionContext) Logger() *slog.Logger             { return c.logger }
 func (c *executionContext) MobiusClient() *Client            { return c.client }
-func (c *executionContext) ProjectHandle() string            { return c.projectHndl }
-func (c *executionContext) ProjectID() string                { return c.projectHndl }
 func (c *executionContext) EnvironmentID() string            { return c.environmentID }
 func (c *executionContext) RunID() string                    { return c.runID }
 func (c *executionContext) JobID() string                    { return c.jobID }
@@ -67,7 +59,6 @@ func newContext(ctx context.Context, client *Client, j *runtimeJob, logger *slog
 		Context:       ctx,
 		logger:        logger,
 		client:        client,
-		projectHndl:   j.ProjectHandle,
 		environmentID: j.EnvironmentID,
 		runID:         j.RunID,
 		jobID:         j.JobID,

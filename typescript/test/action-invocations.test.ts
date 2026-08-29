@@ -16,7 +16,6 @@ async function withMockFetch(
     const client = new Client({
       apiKey: "mbx_test",
       baseURL: "https://api.example.invalid",
-      project: "test-project",
       retry: 0,
     });
     await fn(client);
@@ -31,7 +30,7 @@ test("client: listActionInvocations encodes every filter", async () => {
     (_method, url) => {
       assert.equal(
         url.pathname,
-        "/v1/projects/test-project/action-invocations",
+        "/v1/action-invocations",
       );
       queries.push(Object.fromEntries(url.searchParams));
       return Response.json({ items: [], has_more: false });

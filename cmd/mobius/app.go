@@ -32,10 +32,6 @@ func newApp() *cli.App {
 		cli.String("profile", "").
 			Env("MOBIUS_PROFILE").
 			Help("Credential profile"),
-		cli.String("project", "").
-			Env("MOBIUS_PROJECT").
-			Default("default").
-			Help("Project handle"),
 		cli.String("log-level", "").
 			Env("MOBIUS_LOG_LEVEL").
 			Default("info").
@@ -71,50 +67,15 @@ func newApp() *cli.App {
 
 // clientFromContext builds a *mobius.Client from the credential resolved by
 // authMiddleware. An empty key is accepted here; individual subcommands that
-// require auth should attach the requireAuth middleware. A construction
-// error — e.g. a conflict between the resolved project and the project
-// suffix embedded in a project-pinned API key — surfaces here so the caller
-// can fail the command before any HTTP request is sent.
-//
-// The project handle is forwarded when the user set --project / MOBIUS_PROJECT
-// explicitly, when it came from a saved profile, or when the API key is
-// org-scoped (no embedded suffix). For project-pinned keys the handle is
-// extracted from the key itself; if a project is also resolved it must match
-// (NewClient enforces this).
+// require auth should attach the requireAuth middleware.
 func clientFromContext(ctx *cli.Context) (*mobius.Client, error) {
 	auth := authFor(ctx)
 	logger := newLogger(ctx.String("log-level"))
-	opts := []mobius.Option{
+	return mobius.NewClient(
 		mobius.WithBaseURL(auth.APIURL),
 		mobius.WithAPIKey(auth.APIKey),
 		mobius.WithLogger(logger),
-	}
-	orgScopedKey := auth.APIKey != "" && projectHandleFromCredential(auth.APIKey) == ""
-	if forwardProject(ctx, auth) || orgScopedKey {
-		opts = append(opts, mobius.WithProjectHandle(auth.Project))
-	}
-	return mobius.NewClient(opts...)
-}
-
-// forwardProject reports whether the resolved project handle should be sent
-// to NewClient. We forward when the caller set --project / MOBIUS_PROJECT
-// explicitly, or when the project came from a saved profile (a logged-in user
-// with a project-scoped profile expects that scope to apply automatically).
-func forwardProject(ctx *cli.Context, auth *resolvedAuth) bool {
-	if ctx.IsSet("project") {
-		return true
-	}
-	return auth.Source == authSourceProfile && auth.Profile != nil && auth.Profile.ProjectHandle != ""
-}
-
-func projectHandleFromCredential(key string) string {
-	if project, ok := projectHandleFromCLIToken(key); ok {
-		return project
-	}
-	if project, ok := mobius.ProjectHandleFromAPIKey(key); ok {
-		return project
-	}
-	return ""
+	)
 }
 
 func newLogger(level string) *slog.Logger {

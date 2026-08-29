@@ -17,7 +17,7 @@ func (c *Client) GetOAuthReturnOrigins(ctx context.Context) (*api.OAuthReturnOri
 		return nil, fmt.Errorf("mobius: get oauth return origins: %w", err)
 	}
 	if resp.JSON200 == nil {
-		return nil, unexpectedProjectResourceStatus("get oauth return origins", resp.HTTPResponse, resp.Body)
+		return nil, unexpectedResourceStatus("get oauth return origins", resp.HTTPResponse, resp.Body)
 	}
 	return resp.JSON200, nil
 }
@@ -36,7 +36,7 @@ func (c *Client) ReplaceOAuthReturnOrigins(ctx context.Context, origins []string
 		return nil, fmt.Errorf("mobius: replace oauth return origins: %w", err)
 	}
 	if resp.JSON200 == nil {
-		return nil, unexpectedProjectResourceStatus("replace oauth return origins", resp.HTTPResponse, resp.Body)
+		return nil, unexpectedResourceStatus("replace oauth return origins", resp.HTTPResponse, resp.Body)
 	}
 	return resp.JSON200, nil
 }

@@ -37,7 +37,6 @@ func registerSkillsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
 			var body api.CreateSkillJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -75,7 +74,7 @@ func registerSkillsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.CreateSkillWithResponse(ctx.Context(), p0, body)
+			resp, err := client.CreateSkillWithResponse(ctx.Context(), body)
 			if err != nil {
 				return err
 			}
@@ -92,9 +91,8 @@ func registerSkillsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			resp, err := client.DeleteSkillWithResponse(ctx.Context(), p0, p1)
+			p0 := ctx.Arg(0)
+			resp, err := client.DeleteSkillWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
 			}
@@ -111,9 +109,8 @@ func registerSkillsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			resp, err := client.GetSkillWithResponse(ctx.Context(), p0, p1)
+			p0 := ctx.Arg(0)
+			resp, err := client.GetSkillWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
 			}
@@ -132,13 +129,12 @@ func registerSkillsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
 			params := &api.ListSkillsParams{}
 			if ctx.IsSet("include-system") {
 				v := ctx.Bool("include-system")
 				params.IncludeSystem = &v
 			}
-			resp, err := client.ListSkillsWithResponse(ctx.Context(), p0, params)
+			resp, err := client.ListSkillsWithResponse(ctx.Context(), params)
 			if err != nil {
 				return err
 			}
@@ -164,8 +160,7 @@ func registerSkillsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
+			p0 := ctx.Arg(0)
 			var body api.UpdateSkillJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -203,7 +198,7 @@ func registerSkillsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.UpdateSkillWithResponse(ctx.Context(), p0, p1, body)
+			resp, err := client.UpdateSkillWithResponse(ctx.Context(), p0, body)
 			if err != nil {
 				return err
 			}

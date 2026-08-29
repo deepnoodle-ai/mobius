@@ -21,7 +21,7 @@ func TestArtifactsUploadStreamsFileWithContractFields(t *testing.T) {
 	var fileBody, lease, idempotency string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, http.MethodPost, r.Method)
-		assert.Equal(t, "/v1/projects/default/artifacts", r.URL.Path)
+		assert.Equal(t, "/v1/artifacts", r.URL.Path)
 		lease = r.Header.Get("X-Mobius-Lease-Token")
 		idempotency = r.Header.Get("Idempotency-Key")
 		mr, err := r.MultipartReader()

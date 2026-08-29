@@ -17,16 +17,17 @@ import (
 
 // registerApiKeysCommands registers every generated subcommand in the "api-keys" group.
 func registerApiKeysCommands(app *cli.App) {
-	apiKeysGrp := app.Group("api-keys").Description("API keys scoped to a single project")
+	apiKeysGrp := app.Group("api-keys").Description("API keys scoped to the org")
 	apiKeysGrp.Alias("api-key")
 	apiKeysGrp.Command("create").
 		Description("Create API key").
 		Flags(
-			cli.Bool("allow-unassigned-principal", "").Help("Allow minting a key for a principal with no project role assignments. The resulting key cannot access project resources until a role is…"),
+			cli.Bool("allow-unassigned-principal", "").Help("Allow minting a key for a principal with no role assignments. The resulting key cannot access org resources until a role is assigned. Omit…"),
 			cli.String("expires-at", "").Help("Optional hard expiry. Omit for a non-expiring key. Accepts JSON, @file, or @-."),
-			cli.String("name", "").Help("[required] Human-readable label, unique within the project."),
-			cli.String("principal-id", "").Help("[required] Principal this key authenticates as."),
-			cli.String("scope-role-id", "").Help("Optional role whose permissions cap this key below its principal's full grants."),
+			cli.String("name", "").Help("[required] Human-readable label, unique within the organization."),
+			cli.String("principal-id", "").Help("Principal this key authenticates as. Omit to create a system-role key not bound to any principal."),
+			cli.String("role", "").Help("System role the key acts as when `principal_id` is omitted, applied org-wide. Defaults to `Admin`. `Owner` grants full control (including…"),
+			cli.String("scope-role-id", "").Help("Optional role whose permissions cap this key below its principal's full grants. Only applicable when `principal_id` is set."),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
@@ -38,7 +39,6 @@ func registerApiKeysCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
 			var body api.CreateAPIKeyJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -56,7 +56,12 @@ func registerApiKeysCommands(app *cli.App) {
 				body.Name = ctx.String("name")
 			}
 			if ctx.IsSet("principal-id") {
-				body.PrincipalId = ctx.String("principal-id")
+				v := ctx.String("principal-id")
+				body.PrincipalId = &v
+			}
+			if ctx.IsSet("role") {
+				v := api.CreateAPIKeyRequestRole(ctx.String("role"))
+				body.Role = &v
 			}
 			if ctx.IsSet("scope-role-id") {
 				v := ctx.String("scope-role-id")
@@ -71,13 +76,10 @@ func registerApiKeysCommands(app *cli.App) {
 			if body.Name == "" {
 				return fmt.Errorf("--name is required (or supply it via --file)")
 			}
-			if body.PrincipalId == "" {
-				return fmt.Errorf("--principal-id is required (or supply it via --file)")
-			}
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.CreateAPIKeyWithResponse(ctx.Context(), p0, body)
+			resp, err := client.CreateAPIKeyWithResponse(ctx.Context(), body)
 			if err != nil {
 				return err
 			}
@@ -94,9 +96,8 @@ func registerApiKeysCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			resp, err := client.DeleteAPIKeyWithResponse(ctx.Context(), p0, p1)
+			p0 := ctx.Arg(0)
+			resp, err := client.DeleteAPIKeyWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
 			}
@@ -113,9 +114,8 @@ func registerApiKeysCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			resp, err := client.GetAPIKeyWithResponse(ctx.Context(), p0, p1)
+			p0 := ctx.Arg(0)
+			resp, err := client.GetAPIKeyWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
 			}
@@ -135,7 +135,6 @@ func registerApiKeysCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
 			params := &api.ListAPIKeysParams{}
 			if ctx.IsSet("limit") {
 				v := api.LimitParam(ctx.Int("limit"))
@@ -145,7 +144,7 @@ func registerApiKeysCommands(app *cli.App) {
 				v := api.CursorParam(ctx.String("cursor"))
 				params.Cursor = &v
 			}
-			resp, err := client.ListAPIKeysWithResponse(ctx.Context(), p0, params)
+			resp, err := client.ListAPIKeysWithResponse(ctx.Context(), params)
 			if err != nil {
 				return err
 			}

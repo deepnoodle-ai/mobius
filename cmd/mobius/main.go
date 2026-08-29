@@ -4,7 +4,7 @@
 // resources (loops, runs, agents, …) plus a `worker` subcommand that
 // connects to Mobius Cloud and executes action or generation jobs.
 //
-// Global flags — `--api-url`, `--api-key`, `--project`, `--log-level` — are
+// Global flags — `--api-url`, `--api-key`, `--log-level` — are
 // shared by every subcommand and fall back to the matching MOBIUS_* environment
 // variables.
 //

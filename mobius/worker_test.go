@@ -74,7 +74,7 @@ func (h *fakeHold) ensureCount() int {
 
 func newTestWorker(t *testing.T, cfg WorkerConfig) (*Worker, *fakeHold) {
 	t.Helper()
-	c, err := NewClient(WithBaseURL("https://api.example.invalid"), WithAPIKey("mbx_test"), WithProjectHandle("test-project"))
+	c, err := NewClient(WithBaseURL("https://api.example.invalid"), WithAPIKey("mbx_test"))
 	assert.NoError(t, err)
 	w := c.NewWorker(cfg)
 	fake := newFakeHold()

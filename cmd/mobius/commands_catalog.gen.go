@@ -24,9 +24,8 @@ func registerCatalogCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			resp, err := client.GetCatalogActionWithResponse(ctx.Context(), p0, p1)
+			p0 := ctx.Arg(0)
+			resp, err := client.GetCatalogActionWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
 			}
@@ -42,8 +41,7 @@ func registerCatalogCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			resp, err := client.ListCatalogActionsWithResponse(ctx.Context(), p0)
+			resp, err := client.ListCatalogActionsWithResponse(ctx.Context())
 			if err != nil {
 				return err
 			}
@@ -59,8 +57,7 @@ func registerCatalogCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			resp, err := client.ListCatalogEventsWithResponse(ctx.Context(), p0)
+			resp, err := client.ListCatalogEventsWithResponse(ctx.Context())
 			if err != nil {
 				return err
 			}
@@ -76,8 +73,7 @@ func registerCatalogCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			resp, err := client.ListCatalogModelsWithResponse(ctx.Context(), p0)
+			resp, err := client.ListCatalogModelsWithResponse(ctx.Context())
 			if err != nil {
 				return err
 			}
@@ -93,8 +89,7 @@ func registerCatalogCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			resp, err := client.ListCatalogWorkerModelsWithResponse(ctx.Context(), p0)
+			resp, err := client.ListCatalogWorkerModelsWithResponse(ctx.Context())
 			if err != nil {
 				return err
 			}

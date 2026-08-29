@@ -17,7 +17,7 @@ import (
 
 // registerOrgSkillsCommands registers every generated subcommand in the "org-skills" group.
 func registerOrgSkillsCommands(app *cli.App) {
-	orgSkillsGrp := app.Group("org-skills").Description("Skills shared across organization projects")
+	orgSkillsGrp := app.Group("org-skills").Description("Skills shared across the organization")
 	orgSkillsGrp.Alias("org-skill")
 	orgSkillsGrp.Command("create").
 		Description("Create organization skill").

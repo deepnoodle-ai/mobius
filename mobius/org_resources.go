@@ -8,7 +8,7 @@ import (
 	"github.com/deepnoodle-ai/mobius/mobius/api"
 )
 
-// ListBlueprintBindingsOptions filters blueprint-owned project resources.
+// ListBlueprintBindingsOptions filters blueprint-owned org resources.
 type ListBlueprintBindingsOptions struct {
 	Namespace    string
 	BlueprintKey string
@@ -25,7 +25,7 @@ type SetBlueprintProtectionOptions struct {
 	Namespace string
 }
 
-// ListInteractionsOptions filters and paginates project interactions.
+// ListInteractionsOptions filters and paginates org interactions.
 type ListInteractionsOptions struct {
 	Status       api.InteractionStatus
 	Kind         api.InteractionKind
@@ -37,45 +37,45 @@ type ListInteractionsOptions struct {
 	Limit        int
 }
 
-// ListPrincipalsOptions filters project machine principals.
+// ListPrincipalsOptions filters org machine principals.
 type ListPrincipalsOptions struct {
 	Kind            api.PrincipalKind
 	IncludeDisabled bool
 	Limit           int
 }
 
-// ListRoleAssignmentsOptions filters project role assignments.
+// ListRoleAssignmentsOptions filters org role assignments.
 type ListRoleAssignmentsOptions struct {
 	PrincipalID string
 	RoleID      string
 }
 
-// ListRolesOptions paginates project roles.
+// ListRolesOptions paginates org roles.
 type ListRolesOptions struct {
 	Cursor string
 	Limit  int
 }
 
-// ApplyBlueprint applies a project blueprint in preview or apply mode.
+// ApplyBlueprint applies an org blueprint in preview or apply mode.
 func (c *Client) ApplyBlueprint(ctx context.Context, req api.ApplyBlueprintRequest) (*api.BlueprintApplyResult, error) {
-	resp, err := c.ac.ApplyBlueprintWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), req)
+	resp, err := c.ac.ApplyBlueprintWithResponse(ctx, req)
 	if err != nil {
 		return nil, fmt.Errorf("mobius: apply blueprint: %w", err)
 	}
 	if resp.JSON200 == nil {
-		return nil, unexpectedProjectResourceStatus("apply blueprint", resp.HTTPResponse, resp.Body)
+		return nil, unexpectedResourceStatus("apply blueprint", resp.HTTPResponse, resp.Body)
 	}
 	return resp.JSON200, nil
 }
 
-// ListBlueprintBindings returns resources owned by project blueprints.
+// ListBlueprintBindings returns resources owned by org blueprints.
 func (c *Client) ListBlueprintBindings(ctx context.Context, opts *ListBlueprintBindingsOptions) (*api.BlueprintBindingListResponse, error) {
-	resp, err := c.ac.ListBlueprintBindingsWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), listBlueprintBindingsParams(opts))
+	resp, err := c.ac.ListBlueprintBindingsWithResponse(ctx, listBlueprintBindingsParams(opts))
 	if err != nil {
 		return nil, fmt.Errorf("mobius: list blueprint bindings: %w", err)
 	}
 	if resp.JSON200 == nil {
-		return nil, unexpectedProjectResourceStatus("list blueprint bindings", resp.HTTPResponse, resp.Body)
+		return nil, unexpectedResourceStatus("list blueprint bindings", resp.HTTPResponse, resp.Body)
 	}
 	return resp.JSON200, nil
 }
@@ -88,7 +88,6 @@ func (c *Client) SetBlueprintProtection(ctx context.Context, blueprintKey string
 	}
 	resp, err := c.ac.SetBlueprintProtectionWithResponse(
 		ctx,
-		api.ProjectHandleParam(c.projectHandle),
 		blueprintKey,
 		params,
 		api.SetBlueprintProtectionRequest{Protected: protected},
@@ -97,7 +96,7 @@ func (c *Client) SetBlueprintProtection(ctx context.Context, blueprintKey string
 		return nil, fmt.Errorf("mobius: set blueprint protection: %w", err)
 	}
 	if resp.JSON200 == nil {
-		return nil, unexpectedProjectResourceStatus("set blueprint protection", resp.HTTPResponse, resp.Body)
+		return nil, unexpectedResourceStatus("set blueprint protection", resp.HTTPResponse, resp.Body)
 	}
 	return resp.JSON200, nil
 }
@@ -113,192 +112,192 @@ func (c *Client) DeleteBlueprint(ctx context.Context, blueprintKey string, opts 
 			params.DeleteRetained = &opts.DeleteRetained
 		}
 	}
-	resp, err := c.ac.DeleteBlueprintWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), blueprintKey, params)
+	resp, err := c.ac.DeleteBlueprintWithResponse(ctx, blueprintKey, params)
 	if err != nil {
 		return nil, fmt.Errorf("mobius: delete blueprint: %w", err)
 	}
 	if resp.JSON200 == nil {
-		return nil, unexpectedProjectResourceStatus("delete blueprint", resp.HTTPResponse, resp.Body)
+		return nil, unexpectedResourceStatus("delete blueprint", resp.HTTPResponse, resp.Body)
 	}
 	return resp.JSON200, nil
 }
 
-// ListInteractions returns project interactions, including session-scoped ones.
+// ListInteractions returns org interactions, including session-scoped ones.
 func (c *Client) ListInteractions(ctx context.Context, opts *ListInteractionsOptions) (*api.InteractionListResponse, error) {
-	resp, err := c.ac.ListInteractionsWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), listInteractionsParams(opts))
+	resp, err := c.ac.ListInteractionsWithResponse(ctx, listInteractionsParams(opts))
 	if err != nil {
 		return nil, fmt.Errorf("mobius: list interactions: %w", err)
 	}
 	if resp.JSON200 == nil {
-		return nil, unexpectedProjectResourceStatus("list interactions", resp.HTTPResponse, resp.Body)
+		return nil, unexpectedResourceStatus("list interactions", resp.HTTPResponse, resp.Body)
 	}
 	return resp.JSON200, nil
 }
 
-// ListProjectPermissions returns the assignable permission catalog.
-func (c *Client) ListProjectPermissions(ctx context.Context) (*api.PermissionCatalogResponse, error) {
-	resp, err := c.ac.ListProjectPermissionsWithResponse(ctx, api.ProjectHandleParam(c.projectHandle))
+// ListOrgPermissions returns the assignable permission catalog.
+func (c *Client) ListOrgPermissions(ctx context.Context) (*api.PermissionCatalogResponse, error) {
+	resp, err := c.ac.ListOrgPermissionsWithResponse(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("mobius: list project permissions: %w", err)
+		return nil, fmt.Errorf("mobius: list org permissions: %w", err)
 	}
 	if resp.JSON200 == nil {
-		return nil, unexpectedProjectResourceStatus("list project permissions", resp.HTTPResponse, resp.Body)
+		return nil, unexpectedResourceStatus("list org permissions", resp.HTTPResponse, resp.Body)
 	}
 	return resp.JSON200, nil
 }
 
-// ListPrincipals returns project machine principals.
+// ListPrincipals returns org machine principals.
 func (c *Client) ListPrincipals(ctx context.Context, opts *ListPrincipalsOptions) (*api.PrincipalListResponse, error) {
-	resp, err := c.ac.ListPrincipalsWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), listPrincipalsParams(opts))
+	resp, err := c.ac.ListPrincipalsWithResponse(ctx, listPrincipalsParams(opts))
 	if err != nil {
 		return nil, fmt.Errorf("mobius: list principals: %w", err)
 	}
 	if resp.JSON200 == nil {
-		return nil, unexpectedProjectResourceStatus("list principals", resp.HTTPResponse, resp.Body)
+		return nil, unexpectedResourceStatus("list principals", resp.HTTPResponse, resp.Body)
 	}
 	return resp.JSON200, nil
 }
 
-// CreatePrincipal creates a project machine principal.
+// CreatePrincipal creates an org machine principal.
 func (c *Client) CreatePrincipal(ctx context.Context, req api.CreatePrincipalRequest) (*api.Principal, error) {
-	resp, err := c.ac.CreatePrincipalWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), req)
+	resp, err := c.ac.CreatePrincipalWithResponse(ctx, req)
 	if err != nil {
 		return nil, fmt.Errorf("mobius: create principal: %w", err)
 	}
 	if resp.JSON201 == nil {
-		return nil, unexpectedProjectResourceStatus("create principal", resp.HTTPResponse, resp.Body)
+		return nil, unexpectedResourceStatus("create principal", resp.HTTPResponse, resp.Body)
 	}
 	return resp.JSON201, nil
 }
 
-// GetPrincipal returns a project machine principal by ID.
+// GetPrincipal returns an org machine principal by ID.
 func (c *Client) GetPrincipal(ctx context.Context, id string) (*api.Principal, error) {
-	resp, err := c.ac.GetPrincipalWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.IDParam(id))
+	resp, err := c.ac.GetPrincipalWithResponse(ctx, api.IDParam(id))
 	if err != nil {
 		return nil, fmt.Errorf("mobius: get principal: %w", err)
 	}
 	if resp.JSON200 == nil {
-		return nil, unexpectedProjectResourceStatus("get principal", resp.HTTPResponse, resp.Body)
+		return nil, unexpectedResourceStatus("get principal", resp.HTTPResponse, resp.Body)
 	}
 	return resp.JSON200, nil
 }
 
-// UpdatePrincipal updates a project machine principal by ID.
+// UpdatePrincipal updates an org machine principal by ID.
 func (c *Client) UpdatePrincipal(ctx context.Context, id string, req api.UpdatePrincipalRequest) (*api.Principal, error) {
-	resp, err := c.ac.UpdatePrincipalWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.IDParam(id), req)
+	resp, err := c.ac.UpdatePrincipalWithResponse(ctx, api.IDParam(id), req)
 	if err != nil {
 		return nil, fmt.Errorf("mobius: update principal: %w", err)
 	}
 	if resp.JSON200 == nil {
-		return nil, unexpectedProjectResourceStatus("update principal", resp.HTTPResponse, resp.Body)
+		return nil, unexpectedResourceStatus("update principal", resp.HTTPResponse, resp.Body)
 	}
 	return resp.JSON200, nil
 }
 
-// DeletePrincipal archives a project machine principal by ID.
+// DeletePrincipal archives an org machine principal by ID.
 func (c *Client) DeletePrincipal(ctx context.Context, id string) error {
-	resp, err := c.ac.DeletePrincipalWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.IDParam(id))
+	resp, err := c.ac.DeletePrincipalWithResponse(ctx, api.IDParam(id))
 	if err != nil {
 		return fmt.Errorf("mobius: delete principal: %w", err)
 	}
 	if resp.StatusCode() != http.StatusNoContent {
-		return unexpectedProjectResourceStatus("delete principal", resp.HTTPResponse, resp.Body)
+		return unexpectedResourceStatus("delete principal", resp.HTTPResponse, resp.Body)
 	}
 	return nil
 }
 
-// ListRoles returns project roles.
+// ListRoles returns org roles.
 func (c *Client) ListRoles(ctx context.Context, opts *ListRolesOptions) (*api.RoleListResponse, error) {
-	resp, err := c.ac.ListRolesWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), listRolesParams(opts))
+	resp, err := c.ac.ListRolesWithResponse(ctx, listRolesParams(opts))
 	if err != nil {
 		return nil, fmt.Errorf("mobius: list roles: %w", err)
 	}
 	if resp.JSON200 == nil {
-		return nil, unexpectedProjectResourceStatus("list roles", resp.HTTPResponse, resp.Body)
+		return nil, unexpectedResourceStatus("list roles", resp.HTTPResponse, resp.Body)
 	}
 	return resp.JSON200, nil
 }
 
-// CreateRole creates a project role.
+// CreateRole creates an org role.
 func (c *Client) CreateRole(ctx context.Context, req api.CreateRoleRequest) (*api.Role, error) {
-	resp, err := c.ac.CreateRoleWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), req)
+	resp, err := c.ac.CreateRoleWithResponse(ctx, req)
 	if err != nil {
 		return nil, fmt.Errorf("mobius: create role: %w", err)
 	}
 	if resp.JSON201 == nil {
-		return nil, unexpectedProjectResourceStatus("create role", resp.HTTPResponse, resp.Body)
+		return nil, unexpectedResourceStatus("create role", resp.HTTPResponse, resp.Body)
 	}
 	return resp.JSON201, nil
 }
 
-// GetRole returns a project role by ID.
+// GetRole returns an org role by ID.
 func (c *Client) GetRole(ctx context.Context, id string) (*api.Role, error) {
-	resp, err := c.ac.GetRoleWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.IDParam(id))
+	resp, err := c.ac.GetRoleWithResponse(ctx, api.IDParam(id))
 	if err != nil {
 		return nil, fmt.Errorf("mobius: get role: %w", err)
 	}
 	if resp.JSON200 == nil {
-		return nil, unexpectedProjectResourceStatus("get role", resp.HTTPResponse, resp.Body)
+		return nil, unexpectedResourceStatus("get role", resp.HTTPResponse, resp.Body)
 	}
 	return resp.JSON200, nil
 }
 
-// UpdateRole updates a project role by ID.
+// UpdateRole updates an org role by ID.
 func (c *Client) UpdateRole(ctx context.Context, id string, req api.UpdateRoleRequest) (*api.Role, error) {
-	resp, err := c.ac.UpdateRoleWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.IDParam(id), req)
+	resp, err := c.ac.UpdateRoleWithResponse(ctx, api.IDParam(id), req)
 	if err != nil {
 		return nil, fmt.Errorf("mobius: update role: %w", err)
 	}
 	if resp.JSON200 == nil {
-		return nil, unexpectedProjectResourceStatus("update role", resp.HTTPResponse, resp.Body)
+		return nil, unexpectedResourceStatus("update role", resp.HTTPResponse, resp.Body)
 	}
 	return resp.JSON200, nil
 }
 
-// DeleteRole deletes a project role by ID.
+// DeleteRole deletes an org role by ID.
 func (c *Client) DeleteRole(ctx context.Context, id string) error {
-	resp, err := c.ac.DeleteRoleWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.IDParam(id))
+	resp, err := c.ac.DeleteRoleWithResponse(ctx, api.IDParam(id))
 	if err != nil {
 		return fmt.Errorf("mobius: delete role: %w", err)
 	}
 	if resp.StatusCode() != http.StatusNoContent {
-		return unexpectedProjectResourceStatus("delete role", resp.HTTPResponse, resp.Body)
+		return unexpectedResourceStatus("delete role", resp.HTTPResponse, resp.Body)
 	}
 	return nil
 }
 
-// ListRoleAssignments returns project role assignments.
+// ListRoleAssignments returns org role assignments.
 func (c *Client) ListRoleAssignments(ctx context.Context, opts *ListRoleAssignmentsOptions) (*api.RoleAssignmentListResponse, error) {
-	resp, err := c.ac.ListRoleAssignmentsWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), listRoleAssignmentsParams(opts))
+	resp, err := c.ac.ListRoleAssignmentsWithResponse(ctx, listRoleAssignmentsParams(opts))
 	if err != nil {
 		return nil, fmt.Errorf("mobius: list role assignments: %w", err)
 	}
 	if resp.JSON200 == nil {
-		return nil, unexpectedProjectResourceStatus("list role assignments", resp.HTTPResponse, resp.Body)
+		return nil, unexpectedResourceStatus("list role assignments", resp.HTTPResponse, resp.Body)
 	}
 	return resp.JSON200, nil
 }
 
-// CreateRoleAssignment assigns a project role to a principal.
+// CreateRoleAssignment assigns an org role to a principal.
 func (c *Client) CreateRoleAssignment(ctx context.Context, req api.CreateRoleAssignmentRequest) (*api.RoleAssignment, error) {
-	resp, err := c.ac.CreateRoleAssignmentWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), req)
+	resp, err := c.ac.CreateRoleAssignmentWithResponse(ctx, req)
 	if err != nil {
 		return nil, fmt.Errorf("mobius: create role assignment: %w", err)
 	}
 	if resp.JSON201 == nil {
-		return nil, unexpectedProjectResourceStatus("create role assignment", resp.HTTPResponse, resp.Body)
+		return nil, unexpectedResourceStatus("create role assignment", resp.HTTPResponse, resp.Body)
 	}
 	return resp.JSON201, nil
 }
 
-// DeleteRoleAssignment deletes a project role assignment by ID.
+// DeleteRoleAssignment deletes an org role assignment by ID.
 func (c *Client) DeleteRoleAssignment(ctx context.Context, id string) error {
-	resp, err := c.ac.DeleteRoleAssignmentWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), api.IDParam(id))
+	resp, err := c.ac.DeleteRoleAssignmentWithResponse(ctx, api.IDParam(id))
 	if err != nil {
 		return fmt.Errorf("mobius: delete role assignment: %w", err)
 	}
 	if resp.StatusCode() != http.StatusNoContent {
-		return unexpectedProjectResourceStatus("delete role assignment", resp.HTTPResponse, resp.Body)
+		return unexpectedResourceStatus("delete role assignment", resp.HTTPResponse, resp.Body)
 	}
 	return nil
 }
@@ -394,7 +393,7 @@ func listRolesParams(opts *ListRolesOptions) *api.ListRolesParams {
 	return params
 }
 
-func unexpectedProjectResourceStatus(op string, response *http.Response, body []byte) error {
+func unexpectedResourceStatus(op string, response *http.Response, body []byte) error {
 	if response == nil {
 		return fmt.Errorf("mobius: %s: missing HTTP response", op)
 	}

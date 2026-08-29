@@ -22,7 +22,7 @@ func newTestClient(t *testing.T, h http.Handler) (*Client, *httptest.Server) {
 	t.Helper()
 	srv := httptest.NewServer(h)
 	t.Cleanup(srv.Close)
-	c, err := NewClient(WithBaseURL(srv.URL), WithAPIKey("mbx_test"), WithProjectHandle("test-project"))
+	c, err := NewClient(WithBaseURL(srv.URL), WithAPIKey("mbx_test"))
 	assert.NoError(t, err)
 	return c, srv
 }
@@ -39,30 +39,8 @@ func TestNewClient_WithBaseURLOverride(t *testing.T) {
 	assert.Equal(t, c.baseURL, "https://api.example.invalid")
 }
 
-func TestNewClient_ExtractsHandleFromAPIKey(t *testing.T) {
-	c, err := NewClient(WithAPIKey("mbx_secret.prod"))
-	assert.NoError(t, err)
-	assert.Equal(t, c.projectHandle, "prod")
-	assert.Equal(t, c.apiKey, "mbx_secret.prod")
-}
-
-func TestNewClient_HandleConflictBetweenFlagAndKey(t *testing.T) {
-	_, err := NewClient(WithAPIKey("mbx_secret.prod"), WithProjectHandle("staging"))
-	assert.True(t, err != nil)
-}
-
-func TestNewClient_InvalidHandleSuffix(t *testing.T) {
-	_, err := NewClient(WithAPIKey("mbx_secret.Not_A_Handle"))
-	assert.True(t, err != nil)
-}
-
-func TestNewClient_RejectsTrailingDotSuffix(t *testing.T) {
-	_, err := NewClient(WithAPIKey("mbx_secret."))
-	assert.True(t, err != nil)
-}
-
-func TestWorkerSocketURL_EscapesProjectHandleAndSwitchesScheme(t *testing.T) {
-	c, err := NewClient(WithBaseURL("https://api.example.test/base/"), WithAPIKey("mbx_test"), WithProjectHandle("team a/b"))
+func TestWorkerSocketURL_SwitchesScheme(t *testing.T) {
+	c, err := NewClient(WithBaseURL("https://api.example.test/base/"), WithAPIKey("mbx_test"))
 	assert.NoError(t, err)
 
 	got, err := c.workerSocketURL()
@@ -71,7 +49,7 @@ func TestWorkerSocketURL_EscapesProjectHandleAndSwitchesScheme(t *testing.T) {
 	u, err := url.Parse(got)
 	assert.NoError(t, err)
 	assert.Equal(t, u.Scheme, "wss")
-	assert.Equal(t, u.EscapedPath(), "/base/v1/projects/team%20a%2Fb/workers/socket")
+	assert.Equal(t, u.EscapedPath(), "/base/v1/workers/socket")
 }
 
 func TestWorkerRun_ExecutesActionJobOverWebSocket(t *testing.T) {
@@ -410,7 +388,7 @@ func TestWorkerRun_InstanceConflictIsTerminal(t *testing.T) {
 			MessageId: register.MessageId,
 			Error: api.WorkerSocketProtocolError{
 				Code:    "worker_instance_conflict",
-				Message: `worker_instance_id "dup" already registered in project "test-project"`,
+				Message: `worker_instance_id "dup" already registered by another live process`,
 			},
 		})
 		// Hold the connection open until the worker tears it down so the
@@ -434,7 +412,6 @@ func TestWorkerRun_InstanceConflictIsTerminal(t *testing.T) {
 		var ic *InstanceConflictError
 		assert.True(t, errors.As(err, &ic))
 		assert.Equal(t, ic.WorkerInstanceID, "dup")
-		assert.Equal(t, ic.ProjectHandle, "test-project")
 	case <-time.After(2 * time.Second):
 		t.Fatal("worker did not exit on instance conflict (reconnect loop?)")
 	}
@@ -445,7 +422,7 @@ func newWorkerSocketTestClient(t *testing.T, fn func(t *testing.T, conn *websock
 	t.Helper()
 	upgrader := websocket.Upgrader{}
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		assert.Equal(t, r.URL.Path, "/v1/projects/test-project/workers/socket")
+		assert.Equal(t, r.URL.Path, "/v1/workers/socket")
 		assert.Equal(t, r.Header.Get("Authorization"), "Bearer mbx_test")
 		conn, err := upgrader.Upgrade(w, r, nil)
 		assert.NoError(t, err)
@@ -454,7 +431,7 @@ func newWorkerSocketTestClient(t *testing.T, fn func(t *testing.T, conn *websock
 	}))
 	t.Cleanup(srv.Close)
 
-	c, err := NewClient(WithBaseURL(srv.URL), WithAPIKey("mbx_test"), WithProjectHandle("test-project"))
+	c, err := NewClient(WithBaseURL(srv.URL), WithAPIKey("mbx_test"))
 	assert.NoError(t, err)
 	return c, srv
 }

@@ -23,7 +23,6 @@ var ErrLeaseLost = errors.New("mobius: lease lost")
 type runtimeJob struct {
 	JobID             string
 	RunID             string
-	ProjectHandle     string
 	EnvironmentID     string
 	StepID            string
 	AgentTurnID       string
@@ -121,9 +120,6 @@ func (c *Client) dialWorkerSocket(ctx context.Context) (*workerSocket, *http.Res
 }
 
 func (c *Client) workerSocketURL() (string, error) {
-	if c.projectHandle == "" {
-		return "", fmt.Errorf("mobius: worker socket: no project configured - set MOBIUS_PROJECT or pass --project")
-	}
 	u, err := url.Parse(c.baseURL)
 	if err != nil {
 		return "", fmt.Errorf("mobius: worker socket: invalid base URL: %w", err)
@@ -139,8 +135,8 @@ func (c *Client) workerSocketURL() (string, error) {
 	}
 	base := strings.TrimRight(u.Path, "/")
 	escapedBase := strings.TrimRight(u.EscapedPath(), "/")
-	u.Path = base + "/v1/projects/" + c.projectHandle + "/workers/socket"
-	u.RawPath = escapedBase + "/v1/projects/" + url.PathEscape(c.projectHandle) + "/workers/socket"
+	u.Path = base + "/v1/workers/socket"
+	u.RawPath = escapedBase + "/v1/workers/socket"
 	u.RawQuery = ""
 	return u.String(), nil
 }
@@ -174,7 +170,7 @@ func readSocketFrame(ctx context.Context, s *workerSocket, out chan<- socketEnve
 	}
 }
 
-func claimedRuntimeJob(projectHandle, workerID, environmentID string, j api.WorkerSocketClaimedJob) *runtimeJob {
+func claimedRuntimeJob(workerID, environmentID string, j api.WorkerSocketClaimedJob) *runtimeJob {
 	params := map[string]any{}
 	if raw, ok := j.Spec["parameters"].(map[string]any); ok {
 		params = raw
@@ -191,7 +187,6 @@ func claimedRuntimeJob(projectHandle, workerID, environmentID string, j api.Work
 	return &runtimeJob{
 		JobID:             j.Id,
 		RunID:             stringPtrValue(j.RunId),
-		ProjectHandle:     projectHandle,
 		EnvironmentID:     environmentID,
 		StepID:            stringPtrValue(j.StepId),
 		AgentTurnID:       stringPtrValue(j.AgentTurnId),

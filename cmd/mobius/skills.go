@@ -37,7 +37,7 @@ func registerSkillImportCommands(app *cli.App) {
 			if err != nil {
 				return err
 			}
-			resp, err := mc.RawClient().ImportSkillWithResponse(ctx.Context(), authFor(ctx).Project, *body)
+			resp, err := mc.RawClient().ImportSkillWithResponse(ctx.Context(), *body)
 			if err != nil {
 				return err
 			}

@@ -26,7 +26,7 @@ const sseReadBufferSize = 8 << 20
 // to replay durable events recorded after that sequence before switching to
 // live updates.
 func (c *Client) WatchRun(ctx context.Context, runID string, since int64) (<-chan RunEvent, error) {
-	resp, err := c.ac.ListRunEvents(ctx, api.ProjectHandleParam(c.projectHandle), api.IDParam(runID), &api.ListRunEventsParams{
+	resp, err := c.ac.ListRunEvents(ctx, api.IDParam(runID), &api.ListRunEventsParams{
 		AfterSequence: sinceSequenceParam(since),
 	}, acceptEventStream)
 	if err != nil {

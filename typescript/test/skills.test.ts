@@ -7,7 +7,7 @@ import type { Skill } from "../src/api/index.js";
 const SKILL_DOC =
   "---\nallowed_tools:\n  - github.create_review_comment\n---\nCheck the diff and leave concise findings.\n";
 
-function skill(id = "skill_1", source: Skill["source"] = "project"): Skill {
+function skill(id = "skill_1", source: Skill["source"] = "organization"): Skill {
   return {
     id,
     name: "Pull request review",
@@ -32,7 +32,6 @@ async function withMockFetch(
     const client = new Client({
       apiKey: "mbx_test",
       baseURL: "https://api.example.invalid",
-      project: "test-project",
       retry: 0,
     });
     await fn(client);
@@ -41,7 +40,7 @@ async function withMockFetch(
   }
 }
 
-test("client: project skill lifecycle hits the documented routes", async () => {
+test("client: skill lifecycle hits the documented routes", async () => {
   const seen: string[] = [];
   await withMockFetch(
     (method, url, init) => {
@@ -59,7 +58,7 @@ test("client: project skill lifecycle hits the documented routes", async () => {
         assert.ok(body.instructions, "update must send the full body");
         return Response.json(skill());
       }
-      if (url.pathname === "/v1/projects/test-project/skills") {
+      if (url.pathname === "/v1/skills") {
         assert.equal(url.searchParams.get("include_system"), "false");
         return Response.json({ items: [skill()] });
       }
@@ -79,11 +78,11 @@ test("client: project skill lifecycle hits the documented routes", async () => {
     },
   );
   assert.deepEqual(seen, [
-    "GET /v1/projects/test-project/skills",
-    "POST /v1/projects/test-project/skills",
-    "GET /v1/projects/test-project/skills/skill_1",
-    "PUT /v1/projects/test-project/skills/skill_1",
-    "DELETE /v1/projects/test-project/skills/skill_1",
+    "GET /v1/skills",
+    "POST /v1/skills",
+    "GET /v1/skills/skill_1",
+    "PUT /v1/skills/skill_1",
+    "DELETE /v1/skills/skill_1",
   ]);
 });
 
@@ -91,7 +90,7 @@ test("client: importSkill sends the document verbatim", async () => {
   const bodies: unknown[] = [];
   await withMockFetch(
     (_method, url, init) => {
-      assert.equal(url.pathname, "/v1/projects/test-project/skills/import");
+      assert.equal(url.pathname, "/v1/skills/import");
       bodies.push(JSON.parse(String(init?.body)));
       return Response.json(skill(), { status: 201 });
     },
@@ -99,7 +98,7 @@ test("client: importSkill sends the document verbatim", async () => {
       const imported = await client.importSkill(SKILL_DOC, {
         name: "Pull request review",
       });
-      assert.equal(imported.source, "project");
+      assert.equal(imported.source, "organization");
       await client.importSkill("Just instructions.");
     },
   );
@@ -127,11 +126,6 @@ test("client: organization skill routes preserve provenance and usage", async ()
       return Response.json({
         skill_id: "skill_org",
         assignment_count: 3,
-        project_count: 2,
-        projects: [
-          { project_id: "proj_a", agent_count: 2 },
-          { project_id: "proj_b", agent_count: 1 },
-        ],
       });
     },
     async (client) => {
@@ -144,10 +138,6 @@ test("client: organization skill routes preserve provenance and usage", async ()
       });
       const usage = await client.getOrganizationSkillUsage("skill_org");
       assert.equal(usage.assignment_count, 3);
-      assert.deepEqual(
-        usage.projects.map((p) => p.project_id),
-        ["proj_a", "proj_b"],
-      );
     },
   );
 });
@@ -179,7 +169,7 @@ test("client: replaceAgentSkillAssignments preserves order and allows empty", as
     (method, url, init) => {
       assert.equal(
         url.pathname,
-        "/v1/projects/test-project/agents/agent_1/skill-assignments",
+        "/v1/agents/agent_1/skill-assignments",
       );
       if (method === "GET") return Response.json({ items: [] });
       bodies.push(JSON.parse(String(init?.body)));

@@ -25,9 +25,9 @@ func registerPrincipalCreateCommand(app *cli.App) {
 			cli.String("owner-id", "").Help("Human principal accountable for this service principal."),
 			cli.String("metadata", "").Help("Arbitrary metadata. Accepts JSON, @file, or @-."),
 			cli.Strings("role-ids", "").Help("Role IDs to assign atomically. Repeatable."),
-			cli.String("role", "").Help("Project role name to resolve and assign atomically."),
+			cli.String("role", "").Help("Role name to resolve and assign atomically."),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
-			cli.Bool("with-key", "").Help("Mint the principal's first project API key."),
+			cli.Bool("with-key", "").Help("Mint the principal's first API key."),
 			cli.String("key-name", "").Help("Key name. Defaults to <principal>-primary."),
 			cli.String("expires-at", "").Help("Optional RFC3339 key expiry."),
 			cli.Bool("allow-unassigned-principal", "").Help("Allow a dormant key when no role is assigned."),
@@ -44,7 +44,6 @@ func runPrincipalCreate(ctx *cli.Context) error {
 		return err
 	}
 	client := mc.RawClient()
-	project := authFor(ctx).Project
 	var body api.CreatePrincipalJSONRequestBody
 	if err := readJSONBody(ctx, &body); err != nil {
 		return err
@@ -77,7 +76,7 @@ func runPrincipalCreate(ctx *cli.Context) error {
 		body.RoleIds = &v
 	}
 	if roleName := ctx.String("role"); roleName != "" {
-		roleID, err := resolveRoleName(ctx, client, project, roleName)
+		roleID, err := resolveRoleName(ctx, client, roleName)
 		if err != nil {
 			return err
 		}
@@ -98,7 +97,7 @@ func runPrincipalCreate(ctx *cli.Context) error {
 		return printDryRun(ctx, body)
 	}
 
-	principalResp, err := client.CreatePrincipalWithResponse(ctx.Context(), project, body)
+	principalResp, err := client.CreatePrincipalWithResponse(ctx.Context(), body)
 	if err != nil {
 		return err
 	}
@@ -115,7 +114,7 @@ func runPrincipalCreate(ctx *cli.Context) error {
 	}
 	keyBody := api.CreateAPIKeyJSONRequestBody{
 		Name:        keyName,
-		PrincipalId: principalResp.JSON201.Id,
+		PrincipalId: &principalResp.JSON201.Id,
 	}
 	if ctx.Bool("allow-unassigned-principal") {
 		v := true
@@ -128,7 +127,7 @@ func runPrincipalCreate(ctx *cli.Context) error {
 		}
 		keyBody.ExpiresAt = &expiresAt
 	}
-	keyResp, err := client.CreateAPIKeyWithResponse(ctx.Context(), project, keyBody)
+	keyResp, err := client.CreateAPIKeyWithResponse(ctx.Context(), keyBody)
 	if err != nil {
 		return fmt.Errorf("principal %s was created, but key creation failed: %w", principalResp.JSON201.Id, err)
 	}
@@ -146,19 +145,29 @@ func runPrincipalCreate(ctx *cli.Context) error {
 	return printResponse(ctx, "createPrincipalWithKey", http.StatusCreated, raw)
 }
 
-func resolveRoleName(ctx *cli.Context, client *api.ClientWithResponses, project, name string) (string, error) {
+func resolveRoleName(ctx *cli.Context, client *api.ClientWithResponses, name string) (string, error) {
 	limit := api.LimitParam(100)
-	resp, err := client.ListRolesWithResponse(ctx.Context(), project, &api.ListRolesParams{Limit: &limit})
-	if err != nil {
-		return "", err
-	}
-	if resp.JSON200 == nil {
-		return "", printResponse(ctx, "listRoles", resp.StatusCode(), resp.Body)
-	}
-	for _, role := range resp.JSON200.Items {
-		if role.Name == name {
-			return role.Id, nil
+	var cursor *string
+	for {
+		resp, err := client.ListRolesWithResponse(ctx.Context(), &api.ListRolesParams{
+			Cursor: cursor,
+			Limit:  &limit,
+		})
+		if err != nil {
+			return "", err
 		}
+		if resp.JSON200 == nil {
+			return "", printResponse(ctx, "listRoles", resp.StatusCode(), resp.Body)
+		}
+		for _, role := range resp.JSON200.Items {
+			if role.Name == name {
+				return role.Id, nil
+			}
+		}
+		if !resp.JSON200.HasMore || resp.JSON200.NextCursor == nil || *resp.JSON200.NextCursor == "" {
+			break
+		}
+		cursor = resp.JSON200.NextCursor
 	}
-	return "", fmt.Errorf("role %q not found in project %q", name, project)
+	return "", fmt.Errorf("role %q not found", name)
 }

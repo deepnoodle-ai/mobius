@@ -19,8 +19,6 @@ type testActionContext struct {
 }
 
 func (testActionContext) Logger() *slog.Logger                               { return slog.Default() }
-func (testActionContext) ProjectHandle() string                              { return "test-project" }
-func (c testActionContext) ProjectID() string                                { return c.ProjectHandle() }
 func (testActionContext) RunID() string                                      { return "run_test" }
 func (testActionContext) JobID() string                                      { return "job_test" }
 func (testActionContext) WorkflowName() string                               { return "" }

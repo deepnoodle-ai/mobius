@@ -28,7 +28,7 @@ func registerActionsCommands(app *cli.App) {
 			cli.String("endpoint-url", "").Help("Required when endpoint_kind is `http`; omitted for worker actions."),
 			cli.String("input-schema", "").Help("JSON Schema describing the expected input parameters. Accepts JSON, @file, or @-."),
 			cli.String("invocation-format", "").Help("Request-body contract for HTTP invocations. Omit to preserve the legacy body. `signed_context_v1` is valid only with `endpoint_kind: http`."),
-			cli.String("name", "").Help("[required] Identifier used in loop step definitions. Lowercase alphanumeric + hyphens, e.g. \"send-email\". Must be unique within the project. Cannot…"),
+			cli.String("name", "").Help("[required] Identifier used in loop step definitions. Lowercase alphanumeric + hyphens, e.g. \"send-email\". Must be unique within the org. Cannot start…"),
 			cli.String("output-schema", "").Help("JSON Schema describing the expected output shape. Accepts JSON, @file, or @-."),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
 			cli.String("title", "").Help("Human-readable display name shown in the UI and catalog."),
@@ -42,7 +42,6 @@ func registerActionsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
 			var body api.CreateActionJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -97,7 +96,7 @@ func registerActionsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.CreateActionWithResponse(ctx.Context(), p0, body)
+			resp, err := client.CreateActionWithResponse(ctx.Context(), body)
 			if err != nil {
 				return err
 			}
@@ -114,9 +113,8 @@ func registerActionsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			resp, err := client.DeleteActionWithResponse(ctx.Context(), p0, p1)
+			p0 := ctx.Arg(0)
+			resp, err := client.DeleteActionWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
 			}
@@ -139,8 +137,7 @@ func registerActionsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
+			p0 := ctx.Arg(0)
 			var body api.InvokeActionJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -160,7 +157,7 @@ func registerActionsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.InvokeActionWithResponse(ctx.Context(), p0, p1, body)
+			resp, err := client.InvokeActionWithResponse(ctx.Context(), p0, body)
 			if err != nil {
 				return err
 			}
@@ -176,7 +173,7 @@ func registerActionsCommands(app *cli.App) {
 			cli.String("job-id", "").Help("Filter to invocations from a specific job."),
 			cli.String("environment-id", "").Help("Filter to invocations executed in a specific environment."),
 			cli.String("action-name", "").Help("Filter to invocations of a specific action."),
-			cli.String("action-id", "").Help("Filter to an immutable project or organization Action ID."),
+			cli.String("action-id", "").Help("Filter to an immutable custom or organization Action ID."),
 			cli.String("definition-scope", "").Help("Filter by the scope that owned the selected definition."),
 			cli.Int("secret-version", "").Help("Filter to deliveries signed with a specific secret version."),
 			cli.String("delivery-id", "").Help("Filter to a signed delivery identity."),
@@ -190,7 +187,6 @@ func registerActionsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
 			params := &api.ListActionInvocationsParams{}
 			if ctx.IsSet("cursor") {
 				v := api.CursorParam(ctx.String("cursor"))
@@ -240,7 +236,7 @@ func registerActionsCommands(app *cli.App) {
 				v := ctx.String("status")
 				params.Status = &v
 			}
-			resp, err := client.ListActionInvocationsWithResponse(ctx.Context(), p0, params)
+			resp, err := client.ListActionInvocationsWithResponse(ctx.Context(), params)
 			if err != nil {
 				return err
 			}
@@ -257,9 +253,8 @@ func registerActionsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			resp, err := client.RotateActionSecretWithResponse(ctx.Context(), p0, p1)
+			p0 := ctx.Arg(0)
+			resp, err := client.RotateActionSecretWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
 			}
@@ -288,8 +283,7 @@ func registerActionsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
+			p0 := ctx.Arg(0)
 			var body api.UpdateActionJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -337,7 +331,7 @@ func registerActionsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.UpdateActionWithResponse(ctx.Context(), p0, p1, body)
+			resp, err := client.UpdateActionWithResponse(ctx.Context(), p0, body)
 			if err != nil {
 				return err
 			}

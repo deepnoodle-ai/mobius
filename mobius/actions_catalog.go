@@ -7,8 +7,8 @@ import (
 	"github.com/deepnoodle-ai/mobius/mobius/api"
 )
 
-// ListActionCatalog returns every action available to the bound
-// project — both project-owned actions and platform-provided
+// ListActionCatalog returns every action available to the org —
+// both org-owned actions and platform-provided
 // integration actions. The returned `Readiness` field distinguishes
 // "action exists" from "action exists but the required integration is
 // not configured": an entry with `Readiness == needs_setup` is
@@ -18,7 +18,7 @@ import (
 // integration is missing credentials" should consult this list before
 // calling [Context.RunServerAction].
 func (c *Client) ListActionCatalog(ctx context.Context) ([]api.ActionCatalogEntry, error) {
-	resp, err := c.ac.ListCatalogActionsWithResponse(ctx, api.ProjectHandleParam(c.projectHandle))
+	resp, err := c.ac.ListCatalogActionsWithResponse(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("mobius: list action catalog: %w", err)
 	}
@@ -28,7 +28,7 @@ func (c *Client) ListActionCatalog(ctx context.Context) ([]api.ActionCatalogEntr
 	return resp.JSON200.Items, nil
 }
 
-// ListActionInvocationsOptions filters and paginates the project's action
+// ListActionInvocationsOptions filters and paginates the org's action
 // invocation audit records. Zero-valued fields are omitted from the query.
 type ListActionInvocationsOptions struct {
 	// RunID filters to invocations from a specific loop run.
@@ -39,10 +39,10 @@ type ListActionInvocationsOptions struct {
 	EnvironmentID string
 	// ActionName filters to invocations of a specific action.
 	ActionName string
-	// ActionID filters to an immutable project or organization Action ID.
+	// ActionID filters to an immutable custom or organization Action ID.
 	ActionID string
 	// DefinitionScope filters by the scope that owned the selected
-	// definition: platform, project, or organization.
+	// definition: platform, custom, or organization.
 	DefinitionScope api.ListActionInvocationsParamsDefinitionScope
 	// SecretVersion filters to deliveries signed with a specific
 	// signing-secret version.
@@ -104,12 +104,12 @@ func (c *Client) ListActionInvocations(ctx context.Context, opts *ListActionInvo
 			params.Limit = &limit
 		}
 	}
-	resp, err := c.ac.ListActionInvocationsWithResponse(ctx, api.ProjectHandleParam(c.projectHandle), params)
+	resp, err := c.ac.ListActionInvocationsWithResponse(ctx, params)
 	if err != nil {
 		return nil, fmt.Errorf("mobius: list action invocations: %w", err)
 	}
 	if resp.JSON200 == nil {
-		return nil, unexpectedProjectResourceStatus("list action invocations", resp.HTTPResponse, resp.Body)
+		return nil, unexpectedResourceStatus("list action invocations", resp.HTTPResponse, resp.Body)
 	}
 	return resp.JSON200, nil
 }
@@ -124,7 +124,6 @@ func (c *Client) GetActionCatalogEntry(ctx context.Context, actionName string) (
 		return nil, fmt.Errorf("mobius: get action catalog entry: actionName is required")
 	}
 	resp, err := c.ac.GetCatalogActionWithResponse(ctx,
-		api.ProjectHandleParam(c.projectHandle),
 		api.ActionNameParam(actionName),
 	)
 	if err != nil {

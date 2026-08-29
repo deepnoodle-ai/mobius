@@ -34,8 +34,7 @@ func registerInteractionsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
+			p0 := ctx.Arg(0)
 			var body api.CancelInteractionJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -47,7 +46,7 @@ func registerInteractionsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.CancelInteractionWithResponse(ctx.Context(), p0, p1, body)
+			resp, err := client.CancelInteractionWithResponse(ctx.Context(), p0, body)
 			if err != nil {
 				return err
 			}
@@ -67,7 +66,6 @@ func registerInteractionsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
 			var body api.CreateInteractionJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -78,7 +76,7 @@ func registerInteractionsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.CreateInteractionWithResponse(ctx.Context(), p0, body)
+			resp, err := client.CreateInteractionWithResponse(ctx.Context(), body)
 			if err != nil {
 				return err
 			}
@@ -95,9 +93,8 @@ func registerInteractionsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			resp, err := client.DeleteInteractionWithResponse(ctx.Context(), p0, p1)
+			p0 := ctx.Arg(0)
+			resp, err := client.DeleteInteractionWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
 			}
@@ -114,9 +111,8 @@ func registerInteractionsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			resp, err := client.GetInteractionWithResponse(ctx.Context(), p0, p1)
+			p0 := ctx.Arg(0)
+			resp, err := client.GetInteractionWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
 			}
@@ -142,7 +138,6 @@ func registerInteractionsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
 			params := &api.ListInteractionsParams{}
 			if ctx.IsSet("status") {
 				v := api.InteractionStatus(ctx.String("status"))
@@ -176,7 +171,7 @@ func registerInteractionsCommands(app *cli.App) {
 				v := api.LimitParam(ctx.Int("limit"))
 				params.Limit = &v
 			}
-			resp, err := client.ListInteractionsWithResponse(ctx.Context(), p0, params)
+			resp, err := client.ListInteractionsWithResponse(ctx.Context(), params)
 			if err != nil {
 				return err
 			}
@@ -200,8 +195,7 @@ func registerInteractionsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
+			p0 := ctx.Arg(0)
 			var body api.RespondToInteractionJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -225,7 +219,7 @@ func registerInteractionsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.RespondToInteractionWithResponse(ctx.Context(), p0, p1, body)
+			resp, err := client.RespondToInteractionWithResponse(ctx.Context(), p0, body)
 			if err != nil {
 				return err
 			}
@@ -248,8 +242,7 @@ func registerInteractionsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
+			p0 := ctx.Arg(0)
 			var body api.ReviewInteractionJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -267,7 +260,7 @@ func registerInteractionsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.ReviewInteractionWithResponse(ctx.Context(), p0, p1, body)
+			resp, err := client.ReviewInteractionWithResponse(ctx.Context(), p0, body)
 			if err != nil {
 				return err
 			}

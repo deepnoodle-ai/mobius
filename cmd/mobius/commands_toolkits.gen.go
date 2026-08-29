@@ -36,7 +36,6 @@ func registerToolkitsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
 			var body api.CreateToolkitJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -65,7 +64,7 @@ func registerToolkitsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.CreateToolkitWithResponse(ctx.Context(), p0, body)
+			resp, err := client.CreateToolkitWithResponse(ctx.Context(), body)
 			if err != nil {
 				return err
 			}
@@ -82,9 +81,8 @@ func registerToolkitsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			resp, err := client.DeleteToolkitWithResponse(ctx.Context(), p0, p1)
+			p0 := ctx.Arg(0)
+			resp, err := client.DeleteToolkitWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
 			}
@@ -101,9 +99,8 @@ func registerToolkitsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
-			resp, err := client.GetToolkitWithResponse(ctx.Context(), p0, p1)
+			p0 := ctx.Arg(0)
+			resp, err := client.GetToolkitWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
 			}
@@ -122,13 +119,12 @@ func registerToolkitsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
 			params := &api.ListToolkitsParams{}
 			if ctx.IsSet("include-system") {
 				v := ctx.Bool("include-system")
 				params.IncludeSystem = &v
 			}
-			resp, err := client.ListToolkitsWithResponse(ctx.Context(), p0, params)
+			resp, err := client.ListToolkitsWithResponse(ctx.Context(), params)
 			if err != nil {
 				return err
 			}
@@ -153,8 +149,7 @@ func registerToolkitsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := authFor(ctx).Project
-			p1 := ctx.Arg(0)
+			p0 := ctx.Arg(0)
 			var body api.UpdateToolkitJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -183,7 +178,7 @@ func registerToolkitsCommands(app *cli.App) {
 			if ctx.Bool("dry-run") {
 				return printDryRun(ctx, body)
 			}
-			resp, err := client.UpdateToolkitWithResponse(ctx.Context(), p0, p1, body)
+			resp, err := client.UpdateToolkitWithResponse(ctx.Context(), p0, body)
 			if err != nil {
 				return err
 			}

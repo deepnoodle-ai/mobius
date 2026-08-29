@@ -19,7 +19,6 @@ def _client_with(handler) -> Client:
         ClientOptions(
             api_key="mbx_test",
             base_url="https://api.example.invalid",
-            project="test-project",
             retry=0,
         ),
         transport=httpx.MockTransport(handler),
@@ -29,6 +28,7 @@ def _client_with(handler) -> Client:
 def _entry(entry_id: str, key: str) -> dict:
     return {
         "key": key,
+        "user_id": "user_1",
         "kind": "fact",
         "entry_id": entry_id,
         "importance": 50,
@@ -43,6 +43,7 @@ def _change(change_id: str, version: int) -> dict:
     return {
         "id": change_id,
         "agent_id": "agent_1",
+        "user_id": "user_1",
         "memory_entry_id": "mem_1",
         "memory_key": "prefs",
         "operation": "updated",
@@ -107,8 +108,8 @@ def test_memory_summary_search_save_delete_routes() -> None:
     client.delete_agent_memory_entry("agent_1", "prefs")
     client.close()
 
-    assert seen[0][1] == "/v1/projects/test-project/agents/agent_1/memory"
-    assert seen[2][1] == "/v1/projects/test-project/agents/agent_1/memory/entries/prefs"
+    assert seen[0][1] == "/v1/agents/agent_1/memory"
+    assert seen[2][1] == "/v1/agents/agent_1/memory/entries/prefs"
     assert seen[3][0] == "DELETE"
 
 

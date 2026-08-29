@@ -26,22 +26,10 @@ class MobiusAPIError(Exception):
     """
 
     #: Adopt-mode create conflict code (409): the request names an identity
-    #: (project handle, agent name) that differs from the resource owning the
-    #: matched ``external_ref``, or the match is soft-deleted — adopt never
+    #: (agent name) that differs from the resource owning the matched
+    #: ``external_ref``, or the match is soft-deleted — adopt never
     #: resurrects or replaces a deleted resource.
     EXTERNAL_IDENTITY_CONFLICT = "external_identity_conflict"
-
-    #: Adopt-mode create conflict code (409): the matched project is
-    #: archived. Adopt never silently unarchives a project or mints a
-    #: replacement identity; unarchive it explicitly, then retry.
-    PROJECT_ARCHIVED = "project_archived"
-
-    #: Create conflict code (429): creating a new project would exceed the
-    #: org's project limit; an existing ``external_ref`` match still adopts
-    #: even at the limit. Because it rides a 429, the retry layer raises
-    #: :class:`RateLimitError` once retries are exhausted; the code appears
-    #: on this error type only when reading the response envelope directly.
-    PROJECT_CAPACITY_REACHED = "project_capacity_reached"
 
     def __init__(
         self,
@@ -86,27 +74,24 @@ class WorkerInstanceConflictError(Exception):
     """Raised when the server returns HTTP 409 ``worker_instance_conflict`` on claim.
 
     Another live process has already registered this ``worker_instance_id``
-    in the project under a different session token. Surfaces from
-    :meth:`Worker.run` as a hard error so the operator notices the
-    misconfiguration instead of the worker silently retrying — fix by
-    configuring a unique instance ID per process or by relying on the
-    SDK's auto-detection.
+    under a different session token. Surfaces from :meth:`Worker.run` as a
+    hard error so the operator notices the misconfiguration instead of the
+    worker silently retrying — fix by configuring a unique instance ID per
+    process or by relying on the SDK's auto-detection.
     """
 
     def __init__(
         self,
         *,
         worker_instance_id: str | None = None,
-        project_handle: str | None = None,
         message: str | None = None,
     ) -> None:
         self.worker_instance_id = worker_instance_id
-        self.project_handle = project_handle
         if message is None:
-            if worker_instance_id and project_handle:
+            if worker_instance_id:
                 message = (
                     f"mobius: worker_instance_id {worker_instance_id!r} is already "
-                    f"registered in project {project_handle!r} by another live process; "
+                    "registered by another live process; "
                     "configure a unique instance ID per process or rely on auto-detection"
                 )
             else:

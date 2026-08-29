@@ -16,7 +16,6 @@ def _client_with(handler) -> Client:
         ClientOptions(
             api_key="mbx_test",
             base_url="https://api.example.invalid",
-            project="test-project",
         ),
         transport=httpx.MockTransport(handler),
     )
@@ -76,7 +75,7 @@ def test_create_artifact_sends_contract_multipart_fields() -> None:
     assert artifact.id == "art_1"
     assert artifact.metadata == {"renderer": "omni"}
     assert captured["method"] == "POST"
-    assert captured["path"] == "/v1/projects/test-project/artifacts"
+    assert captured["path"] == "/v1/artifacts"
     assert captured["idempotency"] == "delivery-1:report"
     parts = captured["parts"]
     assert parts["name"] == b"renders/report.html"

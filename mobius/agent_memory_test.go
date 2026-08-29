@@ -23,7 +23,7 @@ func writeJSON(w http.ResponseWriter, status int, body string) {
 func TestListAgentMemoryEntriesEncodesSearchParams(t *testing.T) {
 	var gotQuery url.Values
 	c, _ := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/v1/projects/test-project/agents/agent_1/memory/entries" {
+		if r.URL.Path != "/v1/agents/agent_1/memory/entries" {
 			t.Fatalf("path = %s", r.URL.Path)
 		}
 		gotQuery = r.URL.Query()
@@ -93,15 +93,15 @@ func TestListAgentMemoryEntriesSurfacesSemanticUnavailableWithoutDowngrade(t *te
 func TestGetSaveDeleteAgentMemoryRoutes(t *testing.T) {
 	c, _ := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method + " " + r.URL.Path {
-		case "GET /v1/projects/test-project/agents/agent_1/memory":
+		case "GET /v1/agents/agent_1/memory":
 			writeJSON(w, http.StatusOK, `{"agent_id":"agent_1","entry_count":2,"counts_by_kind":{"fact":2},"updated_at":"2026-07-17T00:00:00Z"}`)
-		case "PUT /v1/projects/test-project/agents/agent_1/memory/entries/prefs":
+		case "PUT /v1/agents/agent_1/memory/entries/prefs":
 			var req api.SaveAgentMemoryEntryRequest
 			if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Content != "dark mode" {
 				t.Fatalf("save body = %#v (%v)", req, err)
 			}
 			writeJSON(w, http.StatusCreated, `{"key":"prefs","kind":"fact","entry_id":"mem_1","importance":50,"pinned":false,"version":1,"created_at":"2026-07-17T00:00:00Z","updated_at":"2026-07-17T00:00:00Z"}`)
-		case "DELETE /v1/projects/test-project/agents/agent_1/memory/entries/prefs":
+		case "DELETE /v1/agents/agent_1/memory/entries/prefs":
 			w.WriteHeader(http.StatusNoContent)
 		default:
 			t.Fatalf("unexpected request %s %s", r.Method, r.URL.Path)
@@ -131,7 +131,7 @@ func TestGetSaveDeleteAgentMemoryRoutes(t *testing.T) {
 
 func TestSyncAgentMemoryDrainsChangePages(t *testing.T) {
 	c, _ := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/v1/projects/test-project/agents/agent_1/memory/changes" {
+		if r.URL.Path != "/v1/agents/agent_1/memory/changes" {
 			t.Fatalf("path = %s", r.URL.Path)
 		}
 		switch r.URL.Query().Get("after") {
@@ -165,14 +165,14 @@ func TestSyncAgentMemoryDrainsChangePages(t *testing.T) {
 func TestSyncAgentMemoryRecoversFromExpiredCursor(t *testing.T) {
 	c, _ := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
-		case "/v1/projects/test-project/agents/agent_1/memory/changes":
+		case "/v1/agents/agent_1/memory/changes":
 			if after := r.URL.Query().Get("after"); after == "cur_stale" {
 				writeJSON(w, http.StatusGone, `{"error":{"code":"memory_cursor_expired","message":"cursor predates retained history"}}`)
 				return
 			}
 			// Fresh traversal: retained history fits in one page.
 			writeJSON(w, http.StatusOK, `{"items":[`+memoryChangeJSON("chg_9", 9)+`],"has_more":false,"next_cursor":"cur_fresh"}`)
-		case "/v1/projects/test-project/agents/agent_1/memory/entries":
+		case "/v1/agents/agent_1/memory/entries":
 			switch r.URL.Query().Get("cursor") {
 			case "":
 				writeJSON(w, http.StatusOK, `{"items":[`+memoryEntryJSON("mem_1", "prefs")+`],"has_more":true,"next_cursor":"ecur_1"}`)

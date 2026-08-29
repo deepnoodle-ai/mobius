@@ -17,13 +17,13 @@ func TestPrincipalsCreateWithRoleAndKey(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		switch {
-		case r.Method == http.MethodGet && r.URL.Path == "/v1/projects/default/roles":
+		case r.Method == http.MethodGet && r.URL.Path == "/v1/roles":
 			_, _ = w.Write([]byte(`{"items":[{"id":"role_worker","name":"Worker","permissions":[],"system_defined":true,"created_at":"2026-07-13T00:00:00Z","updated_at":"2026-07-13T00:00:00Z"}],"has_more":false}`))
-		case r.Method == http.MethodPost && r.URL.Path == "/v1/projects/default/principals":
+		case r.Method == http.MethodPost && r.URL.Path == "/v1/principals":
 			assert.NoError(t, json.NewDecoder(r.Body).Decode(&principalBody))
 			w.WriteHeader(http.StatusCreated)
 			_, _ = w.Write([]byte(`{"id":"principal_1","name":"worker-prod","kind":"service","state":"active","role_ids":["role_worker"],"created_at":"2026-07-13T00:00:00Z","updated_at":"2026-07-13T00:00:00Z"}`))
-		case r.Method == http.MethodPost && r.URL.Path == "/v1/projects/default/api-keys":
+		case r.Method == http.MethodPost && r.URL.Path == "/v1/api-keys":
 			assert.NoError(t, json.NewDecoder(r.Body).Decode(&keyBody))
 			w.WriteHeader(http.StatusCreated)
 			_, _ = w.Write([]byte(`{"id":"key_1","name":"worker-prod-primary","key":"mbx_secret","key_prefix":"mbx_secr","principal_id":"principal_1","created_at":"2026-07-13T00:00:00Z","updated_at":"2026-07-13T00:00:00Z"}`))
@@ -48,6 +48,43 @@ func TestPrincipalsCreateWithRoleAndKey(t *testing.T) {
 	assert.Equal(t, "principal_1", keyBody["principal_id"])
 	assert.Equal(t, "worker-prod-primary", keyBody["name"])
 	assert.Equal(t, "2026-08-01T12:00:00Z", keyBody["expires_at"])
+}
+
+func TestPrincipalsCreateFindsRoleOnLaterPage(t *testing.T) {
+	var cursors []string
+	var principalBody map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch {
+		case r.Method == http.MethodGet && r.URL.Path == "/v1/roles":
+			cursor := r.URL.Query().Get("cursor")
+			cursors = append(cursors, cursor)
+			if cursor == "" {
+				_, _ = w.Write([]byte(`{"items":[],"has_more":true,"next_cursor":"roles_page_2"}`))
+				return
+			}
+			assert.Equal(t, "roles_page_2", cursor)
+			_, _ = w.Write([]byte(`{"items":[{"id":"role_worker","name":"Worker","permissions":[],"system_defined":true,"created_at":"2026-07-13T00:00:00Z","updated_at":"2026-07-13T00:00:00Z"}],"has_more":false}`))
+		case r.Method == http.MethodPost && r.URL.Path == "/v1/principals":
+			assert.NoError(t, json.NewDecoder(r.Body).Decode(&principalBody))
+			w.WriteHeader(http.StatusCreated)
+			_, _ = w.Write([]byte(`{"id":"principal_1","name":"worker-prod","kind":"service","state":"active","role_ids":["role_worker"],"created_at":"2026-07-13T00:00:00Z","updated_at":"2026-07-13T00:00:00Z"}`))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+
+	result := newApp().Test(t, cli.TestArgs(
+		"principals", "create", "worker-prod",
+		"--role", "Worker",
+		"--api-url", srv.URL,
+		"--api-key", "mbx_test",
+		"--quiet",
+	))
+	assert.True(t, result.Success(), "principals create failed: %v\nstderr: %s", result.Err, result.Stderr)
+	assert.Equal(t, []string{"", "roles_page_2"}, cursors)
+	assert.Equal(t, "role_worker", principalBody["role_ids"].([]any)[0])
 }
 
 func TestAPIKeysCreateAcceptsBareRFC3339Expiry(t *testing.T) {

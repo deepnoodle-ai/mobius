@@ -78,7 +78,7 @@ class WatchSessionTranscriptOptions:
 
 @dataclass(frozen=True)
 class NormalizedToolUse:
-    """Provider wire identity plus canonical project-action identity."""
+    """Provider wire identity plus the canonical catalog action, when resolved."""
 
     wire_name: str
     wire_input: dict[str, Any]

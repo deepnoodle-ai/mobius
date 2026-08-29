@@ -108,7 +108,6 @@ func TestVerifyActionInvocationV1GoldenFixture(t *testing.T) {
 		t.Fatalf("verify action invocation: %v", err)
 	}
 	assert.Equal(t, "org_fixture", got.Invocation.Mobius.Scope.OrgID)
-	assert.Equal(t, "prj_fixture", got.Invocation.Mobius.Scope.ProjectID)
 	assert.Equal(t, "act_fixture", got.Invocation.Mobius.Action.ID)
 	assert.Equal(t, "agt_fixture", got.Invocation.Mobius.Actor.AgentID)
 	assert.Equal(t, "agent_tool_call", got.Invocation.Mobius.Origin.Kind)

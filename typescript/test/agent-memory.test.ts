@@ -10,6 +10,7 @@ import type {
 function entry(entryId: string, key: string): AgentMemoryEntry {
   return {
     key,
+    user_id: "user_1",
     kind: "fact",
     entry_id: entryId,
     importance: 50,
@@ -24,6 +25,7 @@ function change(changeId: string, version: number): AgentMemoryChange {
   return {
     id: changeId,
     agent_id: "agent_1",
+    user_id: "user_1",
     memory_entry_id: "mem_1",
     memory_key: "prefs",
     operation: "updated",
@@ -46,7 +48,6 @@ async function withMockFetch(
     const client = new Client({
       apiKey: "mbx_test",
       baseURL: "https://api.example.invalid",
-      project: "test-project",
       retry: 0,
     });
     await fn(client);
@@ -83,7 +84,7 @@ test("client: listAgentMemoryEntries encodes search params and preserves coverag
   assert.ok(capturedURL);
   assert.equal(
     capturedURL.pathname,
-    "/v1/projects/test-project/agents/agent_1/memory/entries",
+    "/v1/agents/agent_1/memory/entries",
   );
   assert.equal(capturedURL.searchParams.get("query"), "preferences");
   assert.equal(capturedURL.searchParams.get("search_mode"), "hybrid");
@@ -162,9 +163,9 @@ test("client: memory summary, save, and delete hit the documented routes", async
   );
 
   assert.deepEqual(seen, [
-    "GET /v1/projects/test-project/agents/agent_1/memory",
-    "PUT /v1/projects/test-project/agents/agent_1/memory/entries/prefs",
-    "DELETE /v1/projects/test-project/agents/agent_1/memory/entries/prefs",
+    "GET /v1/agents/agent_1/memory",
+    "PUT /v1/agents/agent_1/memory/entries/prefs",
+    "DELETE /v1/agents/agent_1/memory/entries/prefs",
   ]);
 });
 
@@ -173,7 +174,7 @@ test("client: syncAgentMemory drains change pages", async () => {
     (_method, url) => {
       assert.equal(
         url.pathname,
-        "/v1/projects/test-project/agents/agent_1/memory/changes",
+        "/v1/agents/agent_1/memory/changes",
       );
       if (url.searchParams.get("after") === "cur_0") {
         return Response.json({
