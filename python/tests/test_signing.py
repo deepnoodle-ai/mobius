@@ -128,3 +128,11 @@ def test_parse_signing_secret() -> None:
     ) == b"01234567890123456789012345678901"
     with pytest.raises(ValueError):
         parse_signing_secret("not-a-secret")
+
+
+@pytest.mark.parametrize("trailing", [" ", "\n"])
+def test_parse_signing_secret_rejects_trailing_whitespace(trailing: str) -> None:
+    with pytest.raises(ValueError):
+        parse_signing_secret(
+            "whsec_MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDE" + trailing
+        )

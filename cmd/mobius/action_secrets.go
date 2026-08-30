@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/deepnoodle-ai/wonton/cli"
 
@@ -189,17 +190,38 @@ func (s *secretSink) deliver(ctx *cli.Context, opID string, status int, body []b
 	if err != nil {
 		return fmt.Errorf("%s: render masked response: %w", opID, err)
 	}
-	if err := os.WriteFile(s.file, []byte(secret+"\n"), 0o600); err != nil {
+	if err := writeSecretFile(s.file, []byte(secret+"\n"), s.force); err != nil {
 		return fmt.Errorf("%s: the signing secret could not be saved (%v); it was NOT printed and cannot be retrieved again — rotate the secret and retry", opID, err)
-	}
-	if s.force {
-		if err := os.Chmod(s.file, 0o600); err != nil {
-			return fmt.Errorf("%s: chmod %s: %w", opID, s.file, err)
-		}
 	}
 	if err := printResponse(ctx, opID, status, maskedBody); err != nil {
 		return err
 	}
 	fmt.Fprintf(ctx.Stderr(), "Wrote one-time signing secret to %s\n", s.file)
 	return nil
+}
+
+func writeSecretFile(path string, data []byte, force bool) error {
+	if !force {
+		return os.WriteFile(path, data, 0o600)
+	}
+
+	tmp, err := os.CreateTemp(filepath.Dir(path), "."+filepath.Base(path)+".tmp-*")
+	if err != nil {
+		return err
+	}
+	tmpName := tmp.Name()
+	defer func() { _ = os.Remove(tmpName) }()
+
+	if err := tmp.Chmod(0o600); err != nil {
+		_ = tmp.Close()
+		return err
+	}
+	if _, err := tmp.Write(data); err != nil {
+		_ = tmp.Close()
+		return err
+	}
+	if err := tmp.Close(); err != nil {
+		return err
+	}
+	return os.Rename(tmpName, path)
 }

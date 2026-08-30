@@ -4,6 +4,7 @@ import base64
 import hashlib
 import hmac
 import json
+import re
 import time
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
@@ -127,6 +128,10 @@ def parse_signing_secret(secret: str) -> bytes:
     if not secret.startswith(prefix):
         raise ValueError("mobius: signing secret must start with 'whsec_'")
     encoded = secret.removeprefix(prefix)
+    if re.fullmatch(r"[A-Za-z0-9_-]+", encoded) is None:
+        raise ValueError(
+            "mobius: signing secret must contain a raw-URL-base64 encoded 32-byte key"
+        )
     try:
         key = base64.urlsafe_b64decode(encoded + "=" * (-len(encoded) % 4))
     except (ValueError, TypeError):
