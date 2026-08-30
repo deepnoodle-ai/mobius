@@ -78,7 +78,7 @@ func registerSessionsCommands(app *cli.App) {
 				return fmt.Errorf("--messages is required (or supply it via --file)")
 			}
 			if ctx.Bool("dry-run") {
-				return printDryRun(ctx, body)
+				return printDryRun(ctx, body, "messages", "token_input_total", "token_output_total")
 			}
 			resp, err := client.AppendSessionMessagesWithResponse(ctx.Context(), p0, body)
 			if err != nil {
@@ -250,7 +250,7 @@ func registerSessionsCommands(app *cli.App) {
 				return fmt.Errorf("--agent-id is required (or supply it via --file)")
 			}
 			if ctx.Bool("dry-run") {
-				return printDryRun(ctx, body)
+				return printDryRun(ctx, body, "compaction_policy", "metadata", "owner", "retention")
 			}
 			resp, err := client.CreateSessionWithResponse(ctx.Context(), body)
 			if err != nil {
@@ -465,7 +465,7 @@ func registerSessionsCommands(app *cli.App) {
 				return fmt.Errorf("--input is required (or supply it via --file)")
 			}
 			if ctx.Bool("dry-run") {
-				return printDryRun(ctx, body)
+				return printDryRun(ctx, body, "agent_ref", "channel_context", "input", "operation", "output", "session")
 			}
 			resp, err := client.InvokeAgentWithResponse(ctx.Context(), body)
 			if err != nil {
@@ -721,7 +721,7 @@ func registerSessionsCommands(app *cli.App) {
 				return fmt.Errorf("--content is required (or supply it via --file)")
 			}
 			if ctx.Bool("dry-run") {
-				return printDryRun(ctx, body)
+				return printDryRun(ctx, body, "metadata")
 			}
 			resp, err := client.NudgeSessionWithResponse(ctx.Context(), p0, body)
 			if err != nil {
@@ -787,7 +787,7 @@ func registerSessionsCommands(app *cli.App) {
 				return fmt.Errorf("--content is required (or supply it via --file)")
 			}
 			if ctx.Bool("dry-run") {
-				return printDryRun(ctx, body)
+				return printDryRun(ctx, body, "content", "context", "metadata", "operation", "output")
 			}
 			resp, err := client.StartTurnWithResponse(ctx.Context(), p0, body)
 			if err != nil {
@@ -902,7 +902,7 @@ func registerSessionsCommands(app *cli.App) {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
 			if ctx.Bool("dry-run") {
-				return printDryRun(ctx, body)
+				return printDryRun(ctx, body, "compaction_policy")
 			}
 			resp, err := client.UpdateSessionWithResponse(ctx.Context(), p0, body)
 			if err != nil {

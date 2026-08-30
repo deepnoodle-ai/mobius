@@ -1751,7 +1751,7 @@ class Action(BaseModel):
     )
     signing_secret: str | None = Field(
         None,
-        description='Base64-encoded 32-byte HMAC-SHA256 signing key. Only populated on create and rotate responses; absent on all other reads. Store this value securely on first receipt — it cannot be retrieved again.',
+        description='One-time `whsec_` plus raw-URL-base64 encoded 32-byte HMAC-SHA256 signing key. Only populated on create and rotate responses; absent on all other reads. Store this value securely on first receipt — it cannot be retrieved again.',
     )
     created_at: AwareDatetime = Field(
         ..., description='Timestamp when this action was created.'
@@ -1769,13 +1769,10 @@ class RotateSecretResult(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    secret_ref: str = Field(
-        ..., description='Org secret reference that now stores the action signing key.'
-    )
-    secret_version: int = Field(..., description='New org-secret version number.')
+    secret_version: int = Field(..., description='New internal vault version number.')
     signing_secret: str = Field(
         ...,
-        description='Base64-encoded 32-byte signing key. Store it immediately — this is the only time it is returned.',
+        description='One-time `whsec_` raw-URL-base64 signing key. Store it immediately — this is the only time it is returned.',
     )
 
 
@@ -2843,16 +2840,13 @@ class Webhook(BaseModel):
         None,
         description='Free-form labels used for filtering, ownership, or delivery policy.',
     )
-    secret_ref: str | None = Field(
-        None, description="Org secret reference that stores this webhook's signing key."
-    )
     secret_version: int | None = Field(
         None,
-        description='Version of `secret_ref` created by this response. Only populated on create and rotate responses.',
+        description='Internal vault version created by this response. Only populated on create and rotate responses.',
     )
     signing_secret: str | None = Field(
         None,
-        description='Base64-encoded 32-byte HMAC-SHA256 signing key. Only populated on create and rotate responses; absent on all other reads. Store this value securely on first receipt — it cannot be retrieved again.',
+        description='One-time `whsec_` plus raw-URL-base64 encoded 32-byte HMAC-SHA256 signing key. Only populated on create and rotate responses; absent on all other reads. Store this value securely on first receipt — it cannot be retrieved again.',
     )
     created_at: AwareDatetime = Field(
         ..., description='Timestamp when this webhook was created.'
@@ -3553,9 +3547,19 @@ class HttpSubscriberConsumer(BaseModel):
         ...,
         description='Absolute http(s) URL the server POSTs to when the interaction resolves. The body is a JSON object with the interaction id, kind, status, outcome value, comment, responder, and `resolved_by`. Delivery is enqueued as a `source_events` dispatch so the worker can retry failed attempts instead of dropping them inline with interaction resolution.',
     )
-    secret_ref: str = Field(
+
+
+class HttpSubscriberConsumerInput(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    callback_url: AnyUrl = Field(
+        ..., description='Absolute public http(s) callback URL.'
+    )
+    signing_secret: str = Field(
         ...,
-        description="Required reference to an org secret used to sign deliveries with HMAC-SHA256 over the canonical string `v1.{delivery_id}.{unix_timestamp}.{raw_body}`, where `delivery_id` is the value in `X-Mobius-Delivery-Id` and `raw_body` is the exact callback request body bytes. Accepts `<name>` for the latest enabled version or `<name>:<version>` to pin a specific positive-integer version. The plaintext signing bytes are taken from the secret's `signing_key_b64` key, which must base64-decode to exactly 32 bytes. The hex signature is forwarded as `X-Mobius-Signature: sha256=<hex>` alongside `X-Mobius-Secret-Ref`, `X-Mobius-Secret-Version`, `X-Mobius-Signature-Version: v1`, and a unix `X-Mobius-Timestamp`. Consumers should reject stale timestamps (for example, older than five minutes). When `secret_ref` resolution fails the dispatch is retried by the event processor rather than sent unsigned.",
+        description='HMAC signing secret stored in the interaction-owned vault and never returned.',
+        min_length=1,
     )
 
 
@@ -3764,7 +3768,7 @@ class CancelInteractionRequest(BaseModel):
     )
 
 
-class Kind9(StrEnum):
+class Kind10(StrEnum):
     """
     Principal kind, so a picker can distinguish a person from a coordinator agent.
     """
@@ -3788,7 +3792,7 @@ class AgentMember(BaseModel):
     principal_id: str = Field(
         ..., description="The human or agent principal in this agent's audience."
     )
-    kind: Kind9 = Field(
+    kind: Kind10 = Field(
         ...,
         description='Principal kind, so a picker can distinguish a person from a coordinator agent.',
     )
@@ -5111,7 +5115,7 @@ class ToolCallPayload(BaseModel):
     )
 
 
-class Kind10(StrEnum):
+class Kind11(StrEnum):
     interaction = 'interaction'
 
 
@@ -5119,7 +5123,7 @@ class SessionTranscriptWait(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    kind: Kind10
+    kind: Kind11
     interaction_id: str
     tool_call_id: str
     expires_at: AwareDatetime | None = None
@@ -5790,7 +5794,7 @@ class LoopSpecInput(BaseModel):
     )
 
 
-class Kind11(StrEnum):
+class Kind12(StrEnum):
     """
     Trigger mechanism: `http`, `schedule`, `event`, or `manual`.
     """
@@ -5868,7 +5872,7 @@ class EventTriggerConfig(BaseModel):
     )
 
 
-class Kind12(StrEnum):
+class Kind13(StrEnum):
     """
     Step discriminator value; always `agent`.
     """
@@ -5876,7 +5880,7 @@ class Kind12(StrEnum):
     agent = 'agent'
 
 
-class Kind13(StrEnum):
+class Kind14(StrEnum):
     """
     Step discriminator value; always `action`.
     """
@@ -5884,7 +5888,7 @@ class Kind13(StrEnum):
     action = 'action'
 
 
-class Kind14(StrEnum):
+class Kind15(StrEnum):
     """
     Step discriminator value; always `sleep`.
     """
@@ -5892,7 +5896,7 @@ class Kind14(StrEnum):
     sleep = 'sleep'
 
 
-class Kind15(StrEnum):
+class Kind16(StrEnum):
     """
     Step discriminator value; always `wait_for_event`.
     """
@@ -5900,7 +5904,7 @@ class Kind15(StrEnum):
     wait_for_event = 'wait_for_event'
 
 
-class Kind16(StrEnum):
+class Kind17(StrEnum):
     """
     Step discriminator value; always `interaction`.
     """
@@ -5908,7 +5912,7 @@ class Kind16(StrEnum):
     interaction = 'interaction'
 
 
-class Kind17(StrEnum):
+class Kind18(StrEnum):
     """
     Step discriminator value; always `loop`.
     """
@@ -5916,7 +5920,7 @@ class Kind17(StrEnum):
     loop = 'loop'
 
 
-class Kind18(StrEnum):
+class Kind19(StrEnum):
     """
     Step discriminator value; always `check`.
     """
@@ -6232,7 +6236,7 @@ class OnFail(StrEnum):
     gate = 'gate'
 
 
-class Kind19(StrEnum):
+class Kind20(StrEnum):
     """
     `expr` evaluates a deterministic predicate with the same language as step conditions and event waits. `agent` runs a bounded judge turn returning a strict `{pass, reason}` verdict; its spend counts against the run budget and it consumes one run agent turn.
     """
@@ -6252,7 +6256,7 @@ class LoopCheckAssertion(BaseModel):
     name: str = Field(
         ..., description='Unique assertion name shown on the timeline proof row.'
     )
-    kind: Kind19 = Field(
+    kind: Kind20 = Field(
         ...,
         description='`expr` evaluates a deterministic predicate with the same language as step conditions and event waits. `agent` runs a bounded judge turn returning a strict `{pass, reason}` verdict; its spend counts against the run budget and it consumes one run agent turn.',
     )
@@ -7714,7 +7718,7 @@ class DeliveryChannel(BaseModel):
 
 class Consumer(BaseModel):
     """
-    Polymorphic identifier of what is waiting on this interaction's resolution. Replaces the previously special-cased `run_id` + `signal_name` pair. When `kind=run`, the legacy fields are also populated for compatibility. `http_subscriber` requires `secret_ref` and enqueues a durable callback dispatch to `callback_url` when the interaction resolves; the canonical string `v1.{delivery_id}.{unix_timestamp}.{raw_body}` is signed with HMAC-SHA256 against the resolved org signing key and the signed dispatch carries `X-Mobius-Signature`, `X-Mobius-Secret-Ref`, `X-Mobius-Secret-Version`, and `X-Mobius-Timestamp`. Signed dispatches also carry `X-Mobius-Signature-Version: v1`. Every durable dispatch also carries the stable outbox row id in `X-Mobius-Delivery-Id` and `Idempotency-Key`; retries reuse the same value. Verifiers should recompute the signature over the exact raw body, reject stale timestamps (for example, older than five minutes), deduplicate by delivery id, and check the signing headers.
+    Polymorphic identifier of what is waiting on this interaction's resolution. Replaces the previously special-cased `run_id` + `signal_name` pair. When `kind=run`, the legacy fields are also populated for compatibility. `http_subscriber` enqueues a durable callback dispatch to `callback_url` when the interaction resolves; the canonical string `v1.{delivery_id}.{unix_timestamp}.{raw_body}` is signed with HMAC-SHA256 against the resolved org signing key and the signed dispatch carries `X-Mobius-Signature`, `X-Mobius-Secret-Version` and `X-Mobius-Timestamp`. Signed dispatches also carry `X-Mobius-Signature-Version: v1`. Every durable dispatch also carries the stable outbox row id in `X-Mobius-Delivery-Id` and `Idempotency-Key`; retries reuse the same value. Verifiers should recompute the signature over the exact raw body, reject stale timestamps (for example, older than five minutes), deduplicate by delivery id, and check the signing headers.
     """
 
     model_config = ConfigDict(
@@ -7733,6 +7737,16 @@ class Consumer(BaseModel):
         None,
         description='HTTP callback target when `kind=http_subscriber`; null for other consumer kinds.',
     )
+
+
+class ConsumerInput(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    kind: Kind8
+    run: RunConsumer | None = None
+    agent_tool: AgentToolConsumer | None = None
+    http_subscriber: HttpSubscriberConsumerInput | None = None
 
 
 class AgentVisibilityImpact(BaseModel):
@@ -8062,7 +8076,7 @@ class LoopSpecTrigger(BaseModel):
         None, description='Stable user-authored trigger key within the spec.'
     )
     name: str | None = Field(None, description='Human-readable trigger name.')
-    kind: Kind11 = Field(
+    kind: Kind12 = Field(
         ..., description='Trigger mechanism: `http`, `schedule`, `event`, or `manual`.'
     )
     enabled: bool | None = Field(
@@ -8915,7 +8929,7 @@ class CreateStandaloneInteractionRequest(BaseModel):
         None,
         description='Declarative resolution rule. When supplied the policy evaluator drives completion.',
     )
-    consumer: Consumer | None = Field(
+    consumer: ConsumerInput | None = Field(
         None,
         description="Polymorphic identifier of what is waiting on this interaction's resolution. When omitted on a run-backed create request, the server derives a `kind=run` consumer from `run_id` and `signal_name`.",
     )
@@ -8982,7 +8996,7 @@ class CreateRunBackedInteractionRequest(BaseModel):
         None,
         description='Declarative resolution rule. When supplied the policy evaluator drives completion.',
     )
-    consumer: Consumer | None = Field(
+    consumer: ConsumerInput | None = Field(
         None,
         description="Polymorphic identifier of what is waiting on this interaction's resolution. When omitted on a run-backed create request, the server derives a `kind=run` consumer from `run_id` and `signal_name`.",
     )

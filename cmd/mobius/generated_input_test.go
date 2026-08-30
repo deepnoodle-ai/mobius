@@ -2,6 +2,8 @@ package main
 
 import (
 	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"testing"
@@ -25,6 +27,30 @@ func TestGeneratedCommandRejectsUnknownRequestFileField(t *testing.T) {
 	assert.False(t, result.Success())
 	assert.Error(t, result.Err)
 	assert.Contains(t, result.Err.Error(), `unknown field "memory_context_typo"`)
+}
+
+func TestGeneratedPreviewVisibilityRequiresAndSendsVisibility(t *testing.T) {
+	missing := newApp().Test(t, cli.TestArgs(
+		"agents", "preview-agent-visibility-change", "agent_test",
+		"--api-key", "mbx_test",
+	))
+	assert.False(t, missing.Success())
+	assert.Contains(t, missing.Err.Error(), "visibility")
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "/v1/agents/agent_test/visibility-impact", r.URL.Path)
+		assert.Equal(t, "restricted", r.URL.Query().Get("visibility"))
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{}`))
+	}))
+	defer srv.Close()
+
+	result := newApp().Test(t, cli.TestArgs(
+		"agents", "preview-agent-visibility-change", "agent_test",
+		"--visibility", "restricted",
+		"--api-url", srv.URL, "--api-key", "mbx_test", "--output", "json",
+	))
+	assert.True(t, result.Success(), "preview failed: %v\nstderr: %s", result.Err, result.Stderr)
 }
 
 func TestGeneratedSkillInstructionsReadTextFile(t *testing.T) {
@@ -133,7 +159,7 @@ steps:
 		} `json:"steps"`
 	}
 	assert.NoError(t, json.Unmarshal([]byte(result.Stdout), &body))
-	assert.Equal(t, "interaction", body.Steps[0].Kind)
-	assert.Equal(t, "request_approval", body.Steps[0].Config.Protocol)
-	assert.Equal(t, []string{"usr_reviewer"}, body.Steps[0].Config.Targets)
+	assert.Equal(t, "***REDACTED***", body.Steps[0].Kind)
+	assert.Equal(t, "***REDACTED***", body.Steps[0].Config.Protocol)
+	assert.Equal(t, []string{"***REDACTED***"}, body.Steps[0].Config.Targets)
 }

@@ -955,8 +955,7 @@ def _ack_body() -> dict[str, object]:
         },
         "session": {
             "id": "s1",
-            "owner": {"kind": "person", "id": "user_1"},
-            "posture": "only_you",
+            "owner": {"kind": "team"},
             "agent_id": "a1",
             "origin": "api",
             "scope": "agent",
@@ -966,6 +965,7 @@ def _ack_body() -> dict[str, object]:
             "status": "active",
             "title": "",
             "visibility": "private",
+            "posture": "team",
             "version": 1,
             "message_count": 1,
             "token_input_total": 0,

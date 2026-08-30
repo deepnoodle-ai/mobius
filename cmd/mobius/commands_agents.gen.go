@@ -184,7 +184,7 @@ func registerAgentsCommands(app *cli.App) {
 				return fmt.Errorf("--name is required (or supply it via --file)")
 			}
 			if ctx.Bool("dry-run") {
-				return printDryRun(ctx, body)
+				return printDryRun(ctx, body, "compaction_policy", "integration_access", "memory_context", "model_route", "owner", "tags", "tool_selectors")
 			}
 			resp, err := client.CreateAgentWithResponse(ctx.Context(), body)
 			if err != nil {
@@ -800,7 +800,7 @@ func registerAgentsCommands(app *cli.App) {
 				return fmt.Errorf("--content is required (or supply it via --file)")
 			}
 			if ctx.Bool("dry-run") {
-				return printDryRun(ctx, body)
+				return printDryRun(ctx, body, "metadata")
 			}
 			resp, err := client.SaveAgentMemoryEntryWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
@@ -900,7 +900,7 @@ func registerAgentsCommands(app *cli.App) {
 				return fmt.Errorf("--provider is required (or supply it via --file)")
 			}
 			if ctx.Bool("dry-run") {
-				return printDryRun(ctx, body)
+				return printDryRun(ctx, body, "compaction_policy", "model_route")
 			}
 			resp, err := client.SaveAgentMessagingBindingWithResponse(ctx.Context(), p0, body)
 			if err != nil {
@@ -1050,7 +1050,7 @@ func registerAgentsCommands(app *cli.App) {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
 			if ctx.Bool("dry-run") {
-				return printDryRun(ctx, body)
+				return printDryRun(ctx, body, "affected_resource_dispositions", "compaction_policy", "integration_access", "memory_context", "model_route", "tags", "tool_selectors")
 			}
 			resp, err := client.UpdateAgentWithResponse(ctx.Context(), p0, body)
 			if err != nil {

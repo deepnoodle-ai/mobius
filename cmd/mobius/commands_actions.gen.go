@@ -19,101 +19,6 @@ import (
 func registerActionsCommands(app *cli.App) {
 	actionsGrp := app.Group("actions").Description("Actions available to loops and agents")
 	actionsGrp.Alias("action")
-	actionsGrp.Command("create").
-		Description("Create action").
-		Flags(
-			cli.String("annotations", "").Help("Request hints that describe the safe-use properties of the action. Used by the engine and tooling to decide retry behavior, dry-run… Accepts JSON, @file, or @-."),
-			cli.String("description", "").Help("Markdown-safe description of what the action does."),
-			cli.String("endpoint-kind", "").Help("Backing kind for the action. `http` actions POST to `endpoint_url` with a Mobius signature. `worker` actions are dispatched through jobs to…"),
-			cli.String("endpoint-url", "").Help("Required when endpoint_kind is `http`; omitted for worker actions."),
-			cli.String("input-schema", "").Help("JSON Schema describing the expected input parameters. Accepts JSON, @file, or @-."),
-			cli.String("invocation-format", "").Help("Request-body contract for HTTP invocations. Omit to preserve the legacy body. `signed_context_v1` is valid only with `endpoint_kind: http`."),
-			cli.String("name", "").Help("[required] Identifier used in loop step definitions. Lowercase alphanumeric + hyphens, e.g. \"send-email\". Must be unique within the org. Cannot start…"),
-			cli.String("output-schema", "").Help("JSON Schema describing the expected output shape. Accepts JSON, @file, or @-."),
-			cli.String("owner", "").Help("The human or team responsible for this resource. Accepts JSON, @file, or @-."),
-			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
-			cli.String("title", "").Help("Human-readable display name shown in the UI and catalog."),
-			cli.String("visibility", "").Help("Who the custodian chose to share the resource with."),
-			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
-			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
-		).
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			var body api.CreateActionJSONRequestBody
-			if err := readJSONBody(ctx, &body); err != nil {
-				return err
-			}
-			if ctx.IsSet("annotations") {
-				if err := decodeFlagJSON(ctx, "annotations", ctx.String("annotations"), &body.Annotations); err != nil {
-					return err
-				}
-			}
-			if ctx.IsSet("description") {
-				v := ctx.String("description")
-				body.Description = &v
-			}
-			if ctx.IsSet("endpoint-kind") {
-				v := api.ActionEndpointKind(ctx.String("endpoint-kind"))
-				body.EndpointKind = &v
-			}
-			if ctx.IsSet("endpoint-url") {
-				v := ctx.String("endpoint-url")
-				body.EndpointUrl = &v
-			}
-			if ctx.IsSet("input-schema") {
-				if err := decodeFlagJSON(ctx, "input-schema", ctx.String("input-schema"), &body.InputSchema); err != nil {
-					return err
-				}
-			}
-			if ctx.IsSet("invocation-format") {
-				v := api.ActionInvocationFormat(ctx.String("invocation-format"))
-				body.InvocationFormat = &v
-			}
-			if ctx.IsSet("name") {
-				body.Name = ctx.String("name")
-			}
-			if ctx.IsSet("output-schema") {
-				if err := decodeFlagJSON(ctx, "output-schema", ctx.String("output-schema"), &body.OutputSchema); err != nil {
-					return err
-				}
-			}
-			if ctx.IsSet("owner") {
-				if err := decodeFlagJSON(ctx, "owner", ctx.String("owner"), &body.Owner); err != nil {
-					return err
-				}
-			}
-			if tags, err := parseTagFlags(ctx); err != nil {
-				return err
-			} else if tags != nil {
-				v := api.TagMap(tags)
-				body.Tags = &v
-			}
-			if ctx.IsSet("title") {
-				v := ctx.String("title")
-				body.Title = &v
-			}
-			if ctx.IsSet("visibility") {
-				v := api.ResourceVisibility(ctx.String("visibility"))
-				body.Visibility = &v
-			}
-			if body.Name == "" {
-				return fmt.Errorf("--name is required (or supply it via --file)")
-			}
-			if ctx.Bool("dry-run") {
-				return printDryRun(ctx, body)
-			}
-			resp, err := client.CreateActionWithResponse(ctx.Context(), body)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "createAction", resp.StatusCode(), resp.Body)
-		})
-
 	actionsGrp.Command("delete").
 		Description("Delete action").
 		AddArg(&cli.Arg{Name: "action-name", Description: "Action name used in loop step definitions.", Required: true}).
@@ -166,7 +71,7 @@ func registerActionsCommands(app *cli.App) {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
 			if ctx.Bool("dry-run") {
-				return printDryRun(ctx, body)
+				return printDryRun(ctx, body, "input")
 			}
 			resp, err := client.InvokeActionWithResponse(ctx.Context(), p0, body)
 			if err != nil {
@@ -254,24 +159,6 @@ func registerActionsCommands(app *cli.App) {
 			return printResponse(ctx, "listActionInvocations", resp.StatusCode(), resp.Body)
 		})
 
-	actionsGrp.Command("rotate-secret").
-		Description("Rotate signing secret").
-		AddArg(&cli.Arg{Name: "action-name", Description: "Action name used in loop step definitions.", Required: true}).
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			client := mc.RawClient()
-			p0 := api.ActionNameParam(ctx.Arg(0))
-			resp, err := client.RotateActionSecretWithResponse(ctx.Context(), p0)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "rotateActionSecret", resp.StatusCode(), resp.Body)
-		})
-
 	actionsGrp.Command("update").
 		Description("Update action").
 		AddArg(&cli.Arg{Name: "action-name", Description: "Action name used in loop step definitions.", Required: true}).
@@ -340,7 +227,7 @@ func registerActionsCommands(app *cli.App) {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
 			if ctx.Bool("dry-run") {
-				return printDryRun(ctx, body)
+				return printDryRun(ctx, body, "annotations", "input_schema", "output_schema", "tags")
 			}
 			resp, err := client.UpdateActionWithResponse(ctx.Context(), p0, body)
 			if err != nil {

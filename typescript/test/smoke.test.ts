@@ -15,7 +15,6 @@ import {
 } from "../src/webhook.js";
 import {
   MOBIUS_DELIVERY_ID_HEADER,
-  MOBIUS_SECRET_REF_HEADER,
   MOBIUS_SECRET_VERSION_HEADER,
   MOBIUS_SIGNATURE_HEADER,
   MOBIUS_SIGNATURE_VERSION_HEADER,
@@ -353,7 +352,6 @@ test("smoke: signing helpers verify and parse webhook deliveries", async () => {
       [MOBIUS_SIGNATURE_VERSION_HEADER]: "v1",
       [MOBIUS_TIMESTAMP_HEADER]: "1710000000",
       [MOBIUS_DELIVERY_ID_HEADER]: "delivery_1",
-      [MOBIUS_SECRET_REF_HEADER]: "mobius/webhook/test",
       [MOBIUS_SECRET_VERSION_HEADER]: "2",
     },
   });
@@ -374,7 +372,6 @@ test("smoke: signing helpers verify and parse webhook deliveries", async () => {
       [MOBIUS_SIGNATURE_VERSION_HEADER]: "v1",
       [MOBIUS_TIMESTAMP_HEADER]: "1710000000",
       [MOBIUS_DELIVERY_ID_HEADER]: "delivery_1",
-      [MOBIUS_SECRET_REF_HEADER]: "mobius/webhook/test",
       [MOBIUS_SECRET_VERSION_HEADER]: "2",
     },
   });
@@ -406,7 +403,6 @@ test("smoke: synthetic webhook delivery posts signed Mobius envelope", async () 
   await deliverSyntheticWebhook({
     url: "https://example.invalid/webhooks/mobius",
     key,
-    secretRef: "mobius/webhook/test",
     secretVersion: 2,
     deliveryId: "delivery_2",
     timestamp: 1710000000,

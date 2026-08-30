@@ -3590,7 +3590,7 @@ export interface components {
             annotations?: components["schemas"]["ActionAnnotations"];
             /** @description Free-form labels attached to this action. */
             tags?: components["schemas"]["TagMap"];
-            /** @description Base64-encoded 32-byte HMAC-SHA256 signing key. Only populated on create and rotate responses; absent on all other reads. Store this value securely on first receipt — it cannot be retrieved again. */
+            /** @description One-time `whsec_` plus raw-URL-base64 encoded 32-byte HMAC-SHA256 signing key. Only populated on create and rotate responses; absent on all other reads. Store this value securely on first receipt — it cannot be retrieved again. */
             signing_secret?: string;
             /**
              * Format: date-time
@@ -3605,14 +3605,12 @@ export interface components {
         };
         /** @description New signing key material returned after rotating a signing secret. */
         RotateSecretResult: {
-            /** @description Org secret reference that now stores the action signing key. */
-            secret_ref: string;
             /**
              * Format: int64
-             * @description New org-secret version number.
+             * @description New internal vault version number.
              */
             secret_version: number;
-            /** @description Base64-encoded 32-byte signing key. Store it immediately — this is the only time it is returned. */
+            /** @description One-time `whsec_` raw-URL-base64 signing key. Store it immediately — this is the only time it is returned. */
             signing_secret: string;
         };
         /** @description One built-in, integration, or custom-backed action available to agents and loop authors. */
@@ -4295,7 +4293,6 @@ export interface components {
          *       "tags": {
          *         "owner": "product"
          *       },
-         *       "secret_ref": "mobius/webhook/wbh_7x3m9q2v5p8n4r6t",
          *       "secret_version": 1,
          *       "created_at": "2026-06-15T14:30:00Z",
          *       "updated_at": "2026-06-15T14:30:00Z"
@@ -4322,14 +4319,12 @@ export interface components {
             updated_by?: string;
             /** @description Free-form labels used for filtering, ownership, or delivery policy. */
             tags?: components["schemas"]["TagMap"];
-            /** @description Org secret reference that stores this webhook's signing key. */
-            secret_ref?: string;
             /**
              * Format: int64
-             * @description Version of `secret_ref` created by this response. Only populated on create and rotate responses.
+             * @description Internal vault version created by this response. Only populated on create and rotate responses.
              */
             secret_version?: number;
-            /** @description Base64-encoded 32-byte HMAC-SHA256 signing key. Only populated on create and rotate responses; absent on all other reads. Store this value securely on first receipt — it cannot be retrieved again. */
+            /** @description One-time `whsec_` plus raw-URL-base64 encoded 32-byte HMAC-SHA256 signing key. Only populated on create and rotate responses; absent on all other reads. Store this value securely on first receipt — it cannot be retrieved again. */
             signing_secret?: string;
             /**
              * Format: date-time
@@ -4779,7 +4774,7 @@ export interface components {
         EmailDelivery: {
             to: string[];
         };
-        /** @description Polymorphic identifier of what is waiting on this interaction's resolution. Replaces the previously special-cased `run_id` + `signal_name` pair. When `kind=run`, the legacy fields are also populated for compatibility. `http_subscriber` requires `secret_ref` and enqueues a durable callback dispatch to `callback_url` when the interaction resolves; the canonical string `v1.{delivery_id}.{unix_timestamp}.{raw_body}` is signed with HMAC-SHA256 against the resolved org signing key and the signed dispatch carries `X-Mobius-Signature`, `X-Mobius-Secret-Ref`, `X-Mobius-Secret-Version`, and `X-Mobius-Timestamp`. Signed dispatches also carry `X-Mobius-Signature-Version: v1`. Every durable dispatch also carries the stable outbox row id in `X-Mobius-Delivery-Id` and `Idempotency-Key`; retries reuse the same value. Verifiers should recompute the signature over the exact raw body, reject stale timestamps (for example, older than five minutes), deduplicate by delivery id, and check the signing headers. */
+        /** @description Polymorphic identifier of what is waiting on this interaction's resolution. Replaces the previously special-cased `run_id` + `signal_name` pair. When `kind=run`, the legacy fields are also populated for compatibility. `http_subscriber` enqueues a durable callback dispatch to `callback_url` when the interaction resolves; the canonical string `v1.{delivery_id}.{unix_timestamp}.{raw_body}` is signed with HMAC-SHA256 against the resolved org signing key and the signed dispatch carries `X-Mobius-Signature`, `X-Mobius-Secret-Version` and `X-Mobius-Timestamp`. Signed dispatches also carry `X-Mobius-Signature-Version: v1`. Every durable dispatch also carries the stable outbox row id in `X-Mobius-Delivery-Id` and `Idempotency-Key`; retries reuse the same value. Verifiers should recompute the signature over the exact raw body, reject stale timestamps (for example, older than five minutes), deduplicate by delivery id, and check the signing headers. */
         Consumer: {
             /** @enum {string} */
             kind: "run" | "agent_tool" | "http_subscriber" | "none";
@@ -4806,8 +4801,22 @@ export interface components {
              * @description Absolute http(s) URL the server POSTs to when the interaction resolves. The body is a JSON object with the interaction id, kind, status, outcome value, comment, responder, and `resolved_by`. Delivery is enqueued as a `source_events` dispatch so the worker can retry failed attempts instead of dropping them inline with interaction resolution.
              */
             callback_url: string;
-            /** @description Required reference to an org secret used to sign deliveries with HMAC-SHA256 over the canonical string `v1.{delivery_id}.{unix_timestamp}.{raw_body}`, where `delivery_id` is the value in `X-Mobius-Delivery-Id` and `raw_body` is the exact callback request body bytes. Accepts `<name>` for the latest enabled version or `<name>:<version>` to pin a specific positive-integer version. The plaintext signing bytes are taken from the secret's `signing_key_b64` key, which must base64-decode to exactly 32 bytes. The hex signature is forwarded as `X-Mobius-Signature: sha256=<hex>` alongside `X-Mobius-Secret-Ref`, `X-Mobius-Secret-Version`, `X-Mobius-Signature-Version: v1`, and a unix `X-Mobius-Timestamp`. Consumers should reject stale timestamps (for example, older than five minutes). When `secret_ref` resolution fails the dispatch is retried by the event processor rather than sent unsigned. */
-            secret_ref: string;
+        };
+        ConsumerInput: {
+            /** @enum {string} */
+            kind: "run" | "agent_tool" | "http_subscriber" | "none";
+            run?: components["schemas"]["RunConsumer"];
+            agent_tool?: components["schemas"]["AgentToolConsumer"];
+            http_subscriber?: components["schemas"]["HttpSubscriberConsumerInput"];
+        };
+        HttpSubscriberConsumerInput: {
+            /**
+             * Format: uri
+             * @description Absolute public http(s) callback URL.
+             */
+            callback_url: string;
+            /** @description HMAC signing secret stored in the interaction-owned vault and never returned. */
+            signing_secret: string;
         };
         /** @description One persisted answer artifact for an interaction. The response that triggered resolution is referenced from `Interaction.resolving_response_id`. */
         InteractionResponse: {
@@ -5019,7 +5028,7 @@ export interface components {
             /** @description Declarative resolution rule. When supplied the policy evaluator drives completion. */
             resolution_policy?: components["schemas"]["ResolutionPolicy"];
             /** @description Polymorphic identifier of what is waiting on this interaction's resolution. When omitted on a run-backed create request, the server derives a `kind=run` consumer from `run_id` and `signal_name`. */
-            consumer?: components["schemas"]["Consumer"];
+            consumer?: components["schemas"]["ConsumerInput"];
             /** @description Optional per-interaction delivery override. */
             delivery?: components["schemas"]["Delivery"];
             /**
@@ -5066,7 +5075,7 @@ export interface components {
             /** @description Declarative resolution rule. When supplied the policy evaluator drives completion. */
             resolution_policy?: components["schemas"]["ResolutionPolicy"];
             /** @description Polymorphic identifier of what is waiting on this interaction's resolution. When omitted on a run-backed create request, the server derives a `kind=run` consumer from `run_id` and `signal_name`. */
-            consumer?: components["schemas"]["Consumer"];
+            consumer?: components["schemas"]["ConsumerInput"];
             /** @description Optional per-interaction delivery override. */
             delivery?: components["schemas"]["Delivery"];
             /**
@@ -8855,10 +8864,6 @@ export interface components {
         LastEventIDParam: number;
         /** @description Environment ID. */
         EnvironmentIDParam: string;
-        /** @description Secret ID or secret name. */
-        SecretParam: string;
-        /** @description Secret version number or `latest`. */
-        SecretVersionParam: string;
         /** @description Reference type name, such as `slack.channel` or `table.table`. */
         ReferenceTypeParam: string;
         /** @description Integration record ID. */
@@ -9140,7 +9145,7 @@ export interface operations {
                      *       "tags": {
                      *         "owner": "product"
                      *       },
-                     *       "signing_secret": "base64:one_time_secret",
+                     *       "signing_secret": "whsec_redacted",
                      *       "owner": {
                      *         "kind": "person",
                      *         "id": "user_2f9s3k4m5n6p7q8r"
@@ -9242,9 +9247,8 @@ export interface operations {
                 content: {
                     /**
                      * @example {
-                     *       "secret_ref": "mobius/action/deploy_preview",
                      *       "secret_version": 2,
-                     *       "signing_secret": "redacted_base64_signing_secret"
+                     *       "signing_secret": "whsec_redacted"
                      *     }
                      */
                     "application/json": components["schemas"]["RotateSecretResult"];
@@ -9775,9 +9779,8 @@ export interface operations {
                      *         "run.failed"
                      *       ],
                      *       "enabled": true,
-                     *       "secret_ref": "mobius/webhook/wbh_7x3m9q2v5p8n4r6t",
                      *       "secret_version": 1,
-                     *       "signing_secret": "redacted_base64_signing_secret",
+                     *       "signing_secret": "whsec_redacted",
                      *       "created_by": "user_2f9s3k4m5n6p7q8r",
                      *       "owner": {
                      *         "kind": "person",
@@ -9917,9 +9920,8 @@ export interface operations {
                 content: {
                     /**
                      * @example {
-                     *       "secret_ref": "mobius/webhook/wbh_7x3m9q2v5p8n4r6t",
                      *       "secret_version": 2,
-                     *       "signing_secret": "redacted_base64_signing_secret"
+                     *       "signing_secret": "whsec_redacted"
                      *     }
                      */
                     "application/json": components["schemas"]["RotateSecretResult"];

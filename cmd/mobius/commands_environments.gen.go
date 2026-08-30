@@ -73,7 +73,7 @@ func registerEnvironmentsCommands(app *cli.App) {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
 			if ctx.Bool("dry-run") {
-				return printDryRun(ctx, body)
+				return printDryRun(ctx, body, "owner", "tags")
 			}
 			resp, err := client.CreateEnvironmentWithResponse(ctx.Context(), body)
 			if err != nil {
@@ -216,7 +216,7 @@ func registerEnvironmentsCommands(app *cli.App) {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
 			if ctx.Bool("dry-run") {
-				return printDryRun(ctx, body)
+				return printDryRun(ctx, body, "owner", "tags")
 			}
 			resp, err := client.UpdateEnvironmentWithResponse(ctx.Context(), p0, body)
 			if err != nil {

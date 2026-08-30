@@ -23,8 +23,6 @@ type SyntheticWebhookDelivery struct {
 	URL string
 	// Key signs the JSON body with the v1 Mobius signed-delivery format.
 	Key []byte
-	// SecretRef is written to X-Mobius-Secret-Ref.
-	SecretRef string
 	// SecretVersion is written to X-Mobius-Secret-Version.
 	SecretVersion int64
 	// DeliveryID is written to X-Mobius-Delivery-Id and Idempotency-Key.
@@ -73,9 +71,6 @@ func DeliverSyntheticWebhook(ctx context.Context, delivery SyntheticWebhookDeliv
 	if len(delivery.Key) == 0 {
 		return errors.New("mobius: synthetic webhook signing key is required")
 	}
-	if delivery.SecretRef == "" {
-		return errors.New("mobius: synthetic webhook secret ref is required")
-	}
 	if delivery.SecretVersion <= 0 {
 		return errors.New("mobius: synthetic webhook secret version is required")
 	}
@@ -111,7 +106,6 @@ func DeliverSyntheticWebhook(ctx context.Context, delivery SyntheticWebhookDeliv
 	req.Header.Set(MobiusSignatureVersionHeader, "v1")
 	req.Header.Set(MobiusTimestampHeader, strconv.FormatInt(timestamp, 10))
 	req.Header.Set(MobiusDeliveryIDHeader, deliveryID)
-	req.Header.Set(MobiusSecretRefHeader, delivery.SecretRef)
 	req.Header.Set(MobiusSecretVersionHeader, strconv.FormatInt(delivery.SecretVersion, 10))
 	req.Header.Set("Idempotency-Key", deliveryID)
 

@@ -148,7 +148,7 @@ func registerLoopsCommands(app *cli.App) {
 				return fmt.Errorf("--name is required (or supply it via --file)")
 			}
 			if ctx.Bool("dry-run") {
-				return printDryRun(ctx, body)
+				return printDryRun(ctx, body, "cleanup", "config", "default_config", "defaults", "event", "limits", "output", "owner", "repositories", "run_name", "settings", "steps", "tags", "triggers")
 			}
 			resp, err := client.CreateLoopWithResponse(ctx.Context(), body)
 			if err != nil {
@@ -403,7 +403,7 @@ func registerLoopsCommands(app *cli.App) {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
 			if ctx.Bool("dry-run") {
-				return printDryRun(ctx, body)
+				return printDryRun(ctx, body, "cleanup", "config", "default_config", "defaults", "event", "limits", "output", "repositories", "run_name", "settings", "steps", "tags", "triggers")
 			}
 			resp, err := client.UpdateLoopWithResponse(ctx.Context(), p0, body)
 			if err != nil {

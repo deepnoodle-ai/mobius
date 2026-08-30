@@ -215,7 +215,7 @@ func registerRunsCommands(app *cli.App) {
 				body.WallClockExtendSeconds = &v
 			}
 			if ctx.Bool("dry-run") {
-				return printDryRun(ctx, body)
+				return printDryRun(ctx, body, "budget_usd")
 			}
 			resp, err := client.ResumeRunWithResponse(ctx.Context(), p0, body)
 			if err != nil {
@@ -270,7 +270,7 @@ func registerRunsCommands(app *cli.App) {
 				body.WallClockExtendSeconds = &v
 			}
 			if ctx.Bool("dry-run") {
-				return printDryRun(ctx, body)
+				return printDryRun(ctx, body, "budget_usd")
 			}
 			resp, err := client.RetryRunWithResponse(ctx.Context(), p0, body)
 			if err != nil {
@@ -312,7 +312,7 @@ func registerRunsCommands(app *cli.App) {
 				return fmt.Errorf("--step-key is required (or supply it via --file)")
 			}
 			if ctx.Bool("dry-run") {
-				return printDryRun(ctx, body)
+				return printDryRun(ctx, body, "result")
 			}
 			resp, err := client.SignalRunWithResponse(ctx.Context(), p0, body)
 			if err != nil {
@@ -381,7 +381,7 @@ func registerRunsCommands(app *cli.App) {
 				}
 			}
 			if ctx.Bool("dry-run") {
-				return printDryRun(ctx, body)
+				return printDryRun(ctx, body, "budget_usd", "config", "event", "meta", "source")
 			}
 			resp, err := client.StartRunWithResponse(ctx.Context(), p0, body)
 			if err != nil {

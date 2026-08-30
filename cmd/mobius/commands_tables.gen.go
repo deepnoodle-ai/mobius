@@ -48,7 +48,7 @@ func registerTablesCommands(app *cli.App) {
 				return fmt.Errorf("--rows is required (or supply it via --file)")
 			}
 			if ctx.Bool("dry-run") {
-				return printDryRun(ctx, body)
+				return printDryRun(ctx, body, "rows")
 			}
 			resp, err := client.BulkCreateTableRowsWithResponse(ctx.Context(), p0, body)
 			if err != nil {
@@ -115,7 +115,7 @@ func registerTablesCommands(app *cli.App) {
 				return fmt.Errorf("--schema is required (or supply it via --file)")
 			}
 			if ctx.Bool("dry-run") {
-				return printDryRun(ctx, body)
+				return printDryRun(ctx, body, "owner", "schema")
 			}
 			resp, err := client.CreateTableWithResponse(ctx.Context(), body)
 			if err != nil {
@@ -153,7 +153,7 @@ func registerTablesCommands(app *cli.App) {
 				return fmt.Errorf("--data is required (or supply it via --file)")
 			}
 			if ctx.Bool("dry-run") {
-				return printDryRun(ctx, body)
+				return printDryRun(ctx, body, "data")
 			}
 			resp, err := client.CreateTableRowWithResponse(ctx.Context(), p0, body)
 			if err != nil {
@@ -332,7 +332,7 @@ func registerTablesCommands(app *cli.App) {
 				}
 			}
 			if ctx.Bool("dry-run") {
-				return printDryRun(ctx, body)
+				return printDryRun(ctx, body, "filter", "sort")
 			}
 			resp, err := client.QueryTableRowsWithResponse(ctx.Context(), p0, body)
 			if err != nil {
@@ -389,7 +389,7 @@ func registerTablesCommands(app *cli.App) {
 				return fmt.Errorf("--query is required (or supply it via --file)")
 			}
 			if ctx.Bool("dry-run") {
-				return printDryRun(ctx, body)
+				return printDryRun(ctx, body, "filter")
 			}
 			resp, err := client.SearchTableRowsWithResponse(ctx.Context(), p0, body)
 			if err != nil {
@@ -445,7 +445,7 @@ func registerTablesCommands(app *cli.App) {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
 			if ctx.Bool("dry-run") {
-				return printDryRun(ctx, body)
+				return printDryRun(ctx, body, "schema")
 			}
 			resp, err := client.UpdateTableWithResponse(ctx.Context(), p0, body)
 			if err != nil {
@@ -490,7 +490,7 @@ func registerTablesCommands(app *cli.App) {
 				return fmt.Errorf("--data is required (or supply it via --file)")
 			}
 			if ctx.Bool("dry-run") {
-				return printDryRun(ctx, body)
+				return printDryRun(ctx, body, "data")
 			}
 			resp, err := client.UpdateTableRowWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {
@@ -528,7 +528,7 @@ func registerTablesCommands(app *cli.App) {
 				return fmt.Errorf("--data is required (or supply it via --file)")
 			}
 			if ctx.Bool("dry-run") {
-				return printDryRun(ctx, body)
+				return printDryRun(ctx, body, "data")
 			}
 			resp, err := client.UpsertTableRowWithResponse(ctx.Context(), p0, body)
 			if err != nil {

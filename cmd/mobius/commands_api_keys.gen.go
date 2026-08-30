@@ -77,7 +77,7 @@ func registerApiKeysCommands(app *cli.App) {
 				return fmt.Errorf("--name is required (or supply it via --file)")
 			}
 			if ctx.Bool("dry-run") {
-				return printDryRun(ctx, body)
+				return printDryRun(ctx, body, "expires_at", "tags")
 			}
 			resp, err := client.CreateAPIKeyWithResponse(ctx.Context(), body)
 			if err != nil {

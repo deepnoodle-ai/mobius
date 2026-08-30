@@ -5,7 +5,6 @@ import { test } from "node:test";
 
 import {
   MOBIUS_DELIVERY_ID_HEADER,
-  MOBIUS_SECRET_REF_HEADER,
   MOBIUS_SECRET_VERSION_HEADER,
   MOBIUS_SIGNATURE_HEADER,
   MOBIUS_SIGNATURE_VERSION_HEADER,
@@ -14,6 +13,7 @@ import {
   StaleDeliveryError,
   UnsupportedActionInvocationSchemaError,
   parseActionInvocationV1,
+  parseSigningSecret,
   signDelivery,
   verifyActionInvocationV1,
   verifySignedDeliveryBytes,
@@ -32,7 +32,6 @@ function headers(value = signature): Headers {
     [MOBIUS_SIGNATURE_HEADER]: value,
     [MOBIUS_TIMESTAMP_HEADER]: String(timestamp),
     [MOBIUS_DELIVERY_ID_HEADER]: deliveryId,
-    [MOBIUS_SECRET_REF_HEADER]: "mobius/action/act_fixture",
     [MOBIUS_SECRET_VERSION_HEADER]: "3",
   });
 }
@@ -49,11 +48,22 @@ function delivery(body: Uint8Array): VerifiedDelivery {
     signature,
     timestamp,
     deliveryId,
-    secretRef: "mobius/action/act_fixture",
     secretVersion: 3,
     body,
   };
 }
+
+test("signing secret: parses one-time whsec reveals", () => {
+  assert.deepEqual(
+    Buffer.from(
+      parseSigningSecret(
+        "whsec_MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDE",
+      ),
+    ),
+    key,
+  );
+  assert.throws(() => parseSigningSecret("not-a-secret"));
+});
 
 test("signed action invocation: verifies and parses the shared golden fixture", async () => {
   const body = await fixture();

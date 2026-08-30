@@ -102,6 +102,17 @@ func TestRequiredNamedStringQueryParamsBecomeRequiredFlags(t *testing.T) {
 	}
 }
 
+func TestSensitiveDryRunFieldDetection(t *testing.T) {
+	for _, name := range []string{"signing-secret", "api-key", "access-token", "values"} {
+		if !isSensitiveFlagName(name) {
+			t.Fatalf("%q should be redacted", name)
+		}
+	}
+	if isSensitiveFlagName("description") {
+		t.Fatal("ordinary descriptions should remain visible")
+	}
+}
+
 func TestGeneratedIntegerParsersUseStrictParsing(t *testing.T) {
 	src, err := renderMasterFile(nil)
 	if err != nil {

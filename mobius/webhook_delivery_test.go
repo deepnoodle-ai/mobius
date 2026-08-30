@@ -41,7 +41,6 @@ func TestDeliverSyntheticWebhook(t *testing.T) {
 	var gotVersion string
 	var gotTimestamp string
 	var gotDeliveryID string
-	var gotSecretRef string
 	var gotSecretVersion string
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -51,7 +50,6 @@ func TestDeliverSyntheticWebhook(t *testing.T) {
 		gotVersion = r.Header.Get(MobiusSignatureVersionHeader)
 		gotTimestamp = r.Header.Get(MobiusTimestampHeader)
 		gotDeliveryID = r.Header.Get(MobiusDeliveryIDHeader)
-		gotSecretRef = r.Header.Get(MobiusSecretRefHeader)
 		gotSecretVersion = r.Header.Get(MobiusSecretVersionHeader)
 		var err error
 		gotBody, err = io.ReadAll(r.Body)
@@ -64,7 +62,6 @@ func TestDeliverSyntheticWebhook(t *testing.T) {
 	err := DeliverSyntheticWebhook(context.Background(), SyntheticWebhookDelivery{
 		URL:           server.URL,
 		Key:           key,
-		SecretRef:     "mobius/webhook/test",
 		SecretVersion: 2,
 		DeliveryID:    "delivery_1",
 		Timestamp:     1710000000,
@@ -78,7 +75,6 @@ func TestDeliverSyntheticWebhook(t *testing.T) {
 	assert.Equal(t, "v1", gotVersion)
 	assert.Equal(t, "1710000000", gotTimestamp)
 	assert.Equal(t, "delivery_1", gotDeliveryID)
-	assert.Equal(t, "mobius/webhook/test", gotSecretRef)
 	assert.Equal(t, "2", gotSecretVersion)
 	assert.Equal(t, SignDelivery(key, gotBody, "delivery_1", 1710000000), gotSignature)
 	assertJSONEqual(t, gotBody, []byte(`{"type":"run.completed","data":{"id":"run_1"}}`))
@@ -93,7 +89,6 @@ func TestDeliverSyntheticWebhookReturnsReceiverError(t *testing.T) {
 	err := DeliverSyntheticWebhook(context.Background(), SyntheticWebhookDelivery{
 		URL:           server.URL,
 		Key:           []byte("01234567890123456789012345678901"),
-		SecretRef:     "mobius/webhook/test",
 		SecretVersion: 2,
 		EventType:     "run.failed",
 		Data:          json.RawMessage(`{"id":"run_1"}`),

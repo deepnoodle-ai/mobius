@@ -2,7 +2,6 @@ import { randomUUID } from "node:crypto";
 
 import {
   MOBIUS_DELIVERY_ID_HEADER,
-  MOBIUS_SECRET_REF_HEADER,
   MOBIUS_SECRET_VERSION_HEADER,
   MOBIUS_SIGNATURE_HEADER,
   MOBIUS_SIGNATURE_VERSION_HEADER,
@@ -23,7 +22,6 @@ const SYNTHETIC_WEBHOOK_USER_AGENT = "mobius-sdk-webhook-delivery/1";
 export interface SyntheticWebhookDelivery {
   url: string;
   key: Uint8Array;
-  secretRef: string;
   secretVersion: number;
   deliveryId?: string;
   timestamp?: number;
@@ -53,9 +51,6 @@ export async function deliverSyntheticWebhook(
   if (!delivery.key?.byteLength) {
     throw new Error("mobius: synthetic webhook signing key is required");
   }
-  if (!delivery.secretRef) {
-    throw new Error("mobius: synthetic webhook secret ref is required");
-  }
   if (!Number.isInteger(delivery.secretVersion) || delivery.secretVersion <= 0) {
     throw new Error("mobius: synthetic webhook secret version is required");
   }
@@ -76,7 +71,6 @@ export async function deliverSyntheticWebhook(
   headers.set(MOBIUS_SIGNATURE_VERSION_HEADER, "v1");
   headers.set(MOBIUS_TIMESTAMP_HEADER, String(timestamp));
   headers.set(MOBIUS_DELIVERY_ID_HEADER, deliveryId);
-  headers.set(MOBIUS_SECRET_REF_HEADER, delivery.secretRef);
   headers.set(MOBIUS_SECRET_VERSION_HEADER, String(delivery.secretVersion));
   headers.set("Idempotency-Key", deliveryId);
 

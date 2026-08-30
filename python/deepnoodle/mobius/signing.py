@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import base64
 import hashlib
 import hmac
 import json
+import re
 import time
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
@@ -12,7 +14,6 @@ MOBIUS_SIGNATURE_HEADER = "X-Mobius-Signature"
 MOBIUS_SIGNATURE_VERSION_HEADER = "X-Mobius-Signature-Version"
 MOBIUS_TIMESTAMP_HEADER = "X-Mobius-Timestamp"
 MOBIUS_DELIVERY_ID_HEADER = "X-Mobius-Delivery-Id"
-MOBIUS_SECRET_REF_HEADER = "X-Mobius-Secret-Ref"
 MOBIUS_SECRET_VERSION_HEADER = "X-Mobius-Secret-Version"
 
 _SIGNATURE_PREFIX = "sha256="
@@ -42,7 +43,6 @@ class DeliveryMeta:
     signature: str
     timestamp: int
     delivery_id: str
-    secret_ref: str
     secret_version: int
 
 
@@ -118,9 +118,31 @@ def read_delivery_meta(headers: Mapping[str, str]) -> DeliveryMeta:
         signature=_required_header(headers, MOBIUS_SIGNATURE_HEADER),
         timestamp=timestamp,
         delivery_id=_required_header(headers, MOBIUS_DELIVERY_ID_HEADER),
-        secret_ref=_required_header(headers, MOBIUS_SECRET_REF_HEADER),
         secret_version=secret_version,
     )
+
+
+def parse_signing_secret(secret: str) -> bytes:
+    """Decode a one-time ``whsec_`` reveal into its 32-byte HMAC key."""
+    prefix = "whsec_"
+    if not secret.startswith(prefix):
+        raise ValueError("mobius: signing secret must start with 'whsec_'")
+    encoded = secret.removeprefix(prefix)
+    if re.fullmatch(r"[A-Za-z0-9_-]+", encoded) is None:
+        raise ValueError(
+            "mobius: signing secret must contain a raw-URL-base64 encoded 32-byte key"
+        )
+    try:
+        key = base64.urlsafe_b64decode(encoded + "=" * (-len(encoded) % 4))
+    except (ValueError, TypeError):
+        raise ValueError(
+            "mobius: signing secret must contain a raw-URL-base64 encoded 32-byte key"
+        ) from None
+    if len(key) != 32:
+        raise ValueError(
+            "mobius: signing secret must contain a raw-URL-base64 encoded 32-byte key"
+        )
+    return key
 
 
 def sign_delivery(
@@ -166,7 +188,6 @@ def verify_signed_delivery(
         signature=meta.signature,
         timestamp=meta.timestamp,
         delivery_id=meta.delivery_id,
-        secret_ref=meta.secret_ref,
         secret_version=meta.secret_version,
         body=payload,
     )
@@ -196,7 +217,6 @@ def verify_action_invocation_v1(
         signature=verified.signature,
         timestamp=verified.timestamp,
         delivery_id=verified.delivery_id,
-        secret_ref=verified.secret_ref,
         secret_version=verified.secret_version,
         body=verified.body,
         invocation=invocation,

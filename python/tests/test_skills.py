@@ -5,7 +5,6 @@ from __future__ import annotations
 import json
 
 import httpx
-
 from deepnoodle.mobius import (
     Client,
     ClientOptions,
@@ -35,14 +34,14 @@ def _client_with(handler) -> Client:
 def _skill(skill_id: str = "skill_1", source: str = "custom") -> dict:
     return {
         "id": skill_id,
-        "owner": {"kind": "person", "id": "user_1"},
-        "visibility": "private",
-        "container": None,
-        "posture": "only_you",
         "name": "Pull request review",
         "source": source,
         "instructions": "Check the diff and leave concise findings.",
         "allowed_tools": ["github.create_review_comment"],
+        "owner": {"kind": "team"},
+        "visibility": "organization",
+        "container": None,
+        "posture": "team",
         "created_at": "2026-07-17T00:00:00Z",
         "updated_at": "2026-07-17T00:00:00Z",
     }
