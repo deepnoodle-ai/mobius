@@ -264,6 +264,13 @@ class ResourceOwnershipState(BaseModel):
     posture: ResourcePosture
 
 
+class RoutineStatus(StrEnum):
+    active = 'active'
+    paused = 'paused'
+    completed = 'completed'
+    cancelled = 'cancelled'
+
+
 class AgentStatus(StrEnum):
     """
     Administrative status. Inactive agents cannot claim new jobs. Deleted agents are excluded from normal reads.
@@ -808,6 +815,14 @@ class Session(BaseModel):
     cache_creation_input_total: int = Field(
         ...,
         description='Lifetime prompt-cache-write (cache creation) input-token total for this session.',
+    )
+    next_routine_fire_at: AwareDatetime | None = Field(
+        None,
+        description="Earliest next fire among the caller's active routines in this conversation.",
+    )
+    unread_scheduled_result: bool | None = Field(
+        None,
+        description='True when the routine owner has not opened this conversation since its latest admitted scheduled result settled.',
     )
     version: int = Field(
         ..., description='Optimistic-concurrency version. Increments on every mutation.'
@@ -5671,6 +5686,152 @@ class Artifact(BaseModel):
     )
 
 
+class RoutineKind(StrEnum):
+    """
+    V1 accepts invoke; notify is reserved and returns unsupported_routine_kind.
+    """
+
+    invoke = 'invoke'
+    notify = 'notify'
+
+
+class RoutineSchedule(BaseModel):
+    """
+    Exactly one of at, interval, or cron is required.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    at: AwareDatetime | None = None
+    interval: str | None = Field(None, examples=['24h'])
+    cron: str | None = Field(None, examples=['0 8 * * *'])
+    timezone: str | None = Field(None, examples=['America/New_York'])
+    starts_at: AwareDatetime | None = None
+    ends_at: AwareDatetime | None = None
+    max_occurrences: int | None = Field(None, ge=1)
+
+
+class RoutineCreateRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    session_id: str
+    agent_id: str
+    name: str | None = None
+    instructions: str
+    kind: RoutineKind | None = None
+    schedule: RoutineSchedule
+    per_occurrence_ceiling_milli: int = Field(..., ge=1)
+    daily_ceiling_milli: int = Field(..., ge=1)
+
+
+class RoutineUpdateRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    name: str | None = None
+    instructions: str | None = None
+    schedule: RoutineSchedule | None = None
+    per_occurrence_ceiling_milli: int | None = Field(None, ge=1)
+    daily_ceiling_milli: int | None = Field(None, ge=1)
+
+
+class Routine(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str
+    org_id: str
+    agent_id: str
+    session_id: str
+    owner_id: str
+    name: str
+    instructions: str | None = Field(
+        None, description='Omitted from administrator metadata-only projections.'
+    )
+    kind: RoutineKind
+    schedule: RoutineSchedule
+    timezone: str
+    status: RoutineStatus
+    pause_reason: str | None = None
+    next_fire_at: AwareDatetime | None = None
+    last_fire_at: AwareDatetime | None = None
+    occurrence_count: int
+    completed_at: AwareDatetime | None = None
+    per_occurrence_ceiling_milli: int
+    daily_ceiling_milli: int
+    act_as_user_providers: list[str] | None = None
+    created_at: AwareDatetime
+    updated_at: AwareDatetime
+
+
+class RoutineList(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    items: list[Routine]
+    has_more: bool
+    next_cursor: str | None = None
+
+
+class Status3(StrEnum):
+    pending = 'pending'
+    admitted = 'admitted'
+    completed = 'completed'
+    failed = 'failed'
+    skipped = 'skipped'
+    missed = 'missed'
+
+
+class RoutineOccurrence(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str
+    routine_id: str
+    scheduled_at: AwareDatetime
+    intake_at: AwareDatetime
+    lateness_milliseconds: int
+    status: Status3
+    outcome: str | None = None
+    error_code: str | None = None
+    error_message: str | None = None
+    turn_id: str | None = None
+    credits_spent_milli: int
+    transcript_url: str
+
+
+class RoutineOccurrenceList(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    items: list[RoutineOccurrence]
+    has_more: bool
+    next_cursor: str | None = None
+
+
+class Status4(StrEnum):
+    pending = 'pending'
+    approved = 'approved'
+    dismissed = 'dismissed'
+    expired = 'expired'
+
+
+class RoutineProposal(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str
+    session_id: str
+    agent_id: str
+    proposed_to: str
+    status: Status4
+    routine_id: str | None = None
+    expires_at: AwareDatetime
+    payload: dict[str, Any]
+
+
 class SchemaVersion1(StrEnum):
     """
     Loop authoring schema version. Only schema version 1 is accepted.
@@ -6351,7 +6512,7 @@ class HTTPTriggerDeliveryRequest(BaseModel):
     )
 
 
-class Status3(StrEnum):
+class Status5(StrEnum):
     """
     Acceptance status of the source-event row. The only synchronous success value is `accepted`; processing happens asynchronously after the source event is durable.
     """
@@ -6371,7 +6532,7 @@ class HTTPTriggerDeliveryResult(BaseModel):
         ...,
         description='Durable source-event id (also the `dedup_key` seed). Stable across retries with the same `Idempotency-Key`.',
     )
-    status: Status3 = Field(
+    status: Status5 = Field(
         ...,
         description='Acceptance status of the source-event row. The only synchronous success value is `accepted`; processing happens asynchronously after the source event is durable.',
     )
@@ -6692,7 +6853,7 @@ class BlueprintSkillInput(BaseModel):
     tags: TagMap | None = None
 
 
-class Status4(StrEnum):
+class Status6(StrEnum):
     draft = 'draft'
     active = 'active'
     paused = 'paused'
@@ -6706,7 +6867,7 @@ class SchemaVersion4(StrEnum):
     field_1 = '1'
 
 
-class Status5(StrEnum):
+class Status7(StrEnum):
     """
     `applied` for a mutating apply, `previewed` for a preview.
     """
@@ -6761,7 +6922,7 @@ class SetBlueprintProtectionRequest(BaseModel):
     protected: bool
 
 
-class Status6(StrEnum):
+class Status8(StrEnum):
     deleted = 'deleted'
 
 
@@ -6769,7 +6930,7 @@ class BlueprintDeleteResult(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    status: Status6
+    status: Status8
     namespace: str | None = None
     blueprint_key: str
     deleted: list[BlueprintBinding] = Field(
@@ -7871,6 +8032,13 @@ class AgentTurn(BaseModel):
         None,
         description='Inbound channel exchange that triggered this turn. Absent for loop turns.',
     )
+    deferrable: bool | None = Field(
+        None,
+        description='True for scheduled work that yields admission priority to direct turns.',
+    )
+    routine_name: str | None = Field(
+        None, description="Display-only routine name for a scheduled turn's live state."
+    )
     attempt: int = Field(
         ...,
         description='1-based attempt number for this run-step; retries create new turns.',
@@ -8588,7 +8756,7 @@ class BlueprintLoopInput(BaseModel):
     name: str
     description: str | None = None
     agent: BlueprintResourceRef | None = None
-    status: Status4 | None = None
+    status: Status6 | None = None
     schema_version: SchemaVersion4 = Field(
         '1', description='Loop authoring schema version. Only version 1 is accepted.'
     )
@@ -8650,7 +8818,7 @@ class BlueprintApplyResult(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    status: Status5 = Field(
+    status: Status7 = Field(
         ..., description='`applied` for a mutating apply, `previewed` for a preview.'
     )
     namespace: str | None = None

@@ -1512,6 +1512,158 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/routines": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List reachable routines
+         * @description Returns routines whose origin conversations are reachable by the caller.
+         */
+        get: operations["listRoutines"];
+        put?: never;
+        /**
+         * Create a routine owned by the authenticated human
+         * @description Creates scheduled work in an existing reachable conversation for the authenticated human owner.
+         */
+        post: operations["createRoutine"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/routines/{routine_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a routine
+         * @description Returns one reachable routine and its current schedule and lifecycle state.
+         */
+        get: operations["getRoutine"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete a routine while retaining its occurrence ledger
+         * @description Cancels future occurrences while preserving the routine and its occurrence history.
+         */
+        delete: operations["deleteRoutine"];
+        options?: never;
+        head?: never;
+        /**
+         * Update mutable routine fields
+         * @description Updates mutable instructions, display, schedule, or spend ceilings without changing execution identity.
+         */
+        patch: operations["updateRoutine"];
+        trace?: never;
+    };
+    "/v1/routines/{routine_id}/pause": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Pause a routine
+         * @description Stops future occurrences until the routine is explicitly resumed.
+         */
+        post: operations["pauseRoutine"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/routines/{routine_id}/resume": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Resume a routine
+         * @description Reactivates a paused routine and calculates its next future occurrence.
+         */
+        post: operations["resumeRoutine"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/routines/{routine_id}/occurrences": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List a routine's occurrence ledger
+         * @description Returns durable occurrence outcomes and transcript links for a reachable routine.
+         */
+        get: operations["listRoutineOccurrences"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/routine-proposals/{proposal_id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Approve a pending proposal as its proposed human owner
+         * @description Atomically materializes a pending proposal as a routine after human approval.
+         */
+        post: operations["approveRoutineProposal"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/routine-proposals/{proposal_id}/dismiss": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Dismiss a pending proposal
+         * @description Marks a pending routine proposal dismissed without creating a routine.
+         */
+        post: operations["dismissRoutineProposal"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/loops": {
         parameters: {
             query?: never;
@@ -2404,6 +2556,8 @@ export interface components {
             container: components["schemas"]["ResourceContainer"];
             posture: components["schemas"]["ResourcePosture"];
         };
+        /** @enum {string} */
+        RoutineStatus: "active" | "paused" | "completed" | "cancelled";
         /**
          * @description Administrative status. Inactive agents cannot claim new jobs. Deleted agents are excluded from normal reads.
          * @enum {string}
@@ -2747,6 +2901,13 @@ export interface components {
             cache_read_input_total: number;
             /** @description Lifetime prompt-cache-write (cache creation) input-token total for this session. */
             cache_creation_input_total: number;
+            /**
+             * Format: date-time
+             * @description Earliest next fire among the caller's active routines in this conversation.
+             */
+            next_routine_fire_at?: string | null;
+            /** @description True when the routine owner has not opened this conversation since its latest admitted scheduled result settled. */
+            unread_scheduled_result?: boolean;
             /** @description Optimistic-concurrency version. Increments on every mutation. */
             version: number;
             /**
@@ -5952,6 +6113,10 @@ export interface components {
             step_key?: string;
             /** @description Inbound channel exchange that triggered this turn. Absent for loop turns. */
             channel_exchange_id?: string;
+            /** @description True for scheduled work that yields admission priority to direct turns. */
+            deferrable?: boolean;
+            /** @description Display-only routine name for a scheduled turn's live state. */
+            routine_name?: string;
             /** @description 1-based attempt number for this run-step; retries create new turns. */
             attempt: number;
             /** @description Current lifecycle status of the agent turn. */
@@ -6801,6 +6966,122 @@ export interface components {
             };
             /** @description Conversion summary for an Office artifact that requested conversion. Absent for artifacts with no conversion. */
             conversion?: components["schemas"]["ArtifactConversionSummary"];
+        };
+        /**
+         * @description V1 accepts invoke; notify is reserved and returns unsupported_routine_kind.
+         * @enum {string}
+         */
+        RoutineKind: "invoke" | "notify";
+        /** @description Exactly one of at, interval, or cron is required. */
+        RoutineSchedule: {
+            /** Format: date-time */
+            at?: string;
+            /** @example 24h */
+            interval?: string;
+            /** @example 0 8 * * * */
+            cron?: string;
+            /** @example America/New_York */
+            timezone?: string;
+            /** Format: date-time */
+            starts_at?: string;
+            /** Format: date-time */
+            ends_at?: string;
+            max_occurrences?: number;
+        };
+        RoutineCreateRequest: {
+            session_id: string;
+            agent_id: string;
+            name?: string;
+            instructions: string;
+            kind?: components["schemas"]["RoutineKind"];
+            schedule: components["schemas"]["RoutineSchedule"];
+            /** Format: int64 */
+            per_occurrence_ceiling_milli: number;
+            /** Format: int64 */
+            daily_ceiling_milli: number;
+        };
+        RoutineUpdateRequest: {
+            name?: string;
+            instructions?: string;
+            schedule?: components["schemas"]["RoutineSchedule"];
+            /** Format: int64 */
+            per_occurrence_ceiling_milli?: number;
+            /** Format: int64 */
+            daily_ceiling_milli?: number;
+        };
+        Routine: {
+            id: string;
+            org_id: string;
+            agent_id: string;
+            session_id: string;
+            owner_id: string;
+            name: string;
+            /** @description Omitted from administrator metadata-only projections. */
+            instructions?: string;
+            kind: components["schemas"]["RoutineKind"];
+            schedule: components["schemas"]["RoutineSchedule"];
+            timezone: string;
+            status: components["schemas"]["RoutineStatus"];
+            pause_reason?: string;
+            /** Format: date-time */
+            next_fire_at?: string;
+            /** Format: date-time */
+            last_fire_at?: string;
+            occurrence_count: number;
+            /** Format: date-time */
+            completed_at?: string;
+            /** Format: int64 */
+            per_occurrence_ceiling_milli: number;
+            /** Format: int64 */
+            daily_ceiling_milli: number;
+            act_as_user_providers?: string[];
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        RoutineList: {
+            items: components["schemas"]["Routine"][];
+            has_more: boolean;
+            next_cursor?: string;
+        };
+        RoutineOccurrence: {
+            id: string;
+            routine_id: string;
+            /** Format: date-time */
+            scheduled_at: string;
+            /** Format: date-time */
+            intake_at: string;
+            /** Format: int64 */
+            lateness_milliseconds: number;
+            /** @enum {string} */
+            status: "pending" | "admitted" | "completed" | "failed" | "skipped" | "missed";
+            outcome?: string;
+            error_code?: string;
+            error_message?: string;
+            turn_id?: string;
+            /** Format: int64 */
+            credits_spent_milli: number;
+            transcript_url: string;
+        };
+        RoutineOccurrenceList: {
+            items: components["schemas"]["RoutineOccurrence"][];
+            has_more: boolean;
+            next_cursor?: string;
+        };
+        RoutineProposal: {
+            id: string;
+            session_id: string;
+            agent_id: string;
+            proposed_to: string;
+            /** @enum {string} */
+            status: "pending" | "approved" | "dismissed" | "expired";
+            routine_id?: string;
+            /** Format: date-time */
+            expires_at: string;
+            payload: {
+                [key: string]: unknown;
+            };
         };
         /**
          * @description A loop and its current authored definition. Updating any authoring field creates an internal revision and makes it runnable immediately.
@@ -8886,6 +9167,8 @@ export interface components {
         NudgeIdParam: string;
         /** @description ID of the artifact */
         ArtifactIdParam: string;
+        RoutineID: string;
+        RoutineProposalID: string;
         /** @description Table ID. */
         TableIDParam: string;
         /** @description Filter tables by name. Table names are unique within an org; use this as a discovery filter and use the returned table `id` for follow-up operations. */
@@ -8909,7 +9192,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                resource_type: "action" | "artifact" | "environment" | "loop" | "secret" | "session" | "skill" | "table" | "webhook";
+                resource_type: "action" | "artifact" | "environment" | "loop" | "routine" | "secret" | "session" | "skill" | "table" | "webhook";
                 /** @description Resource ID. */
                 resource_id: components["parameters"]["IDParam"];
             };
@@ -12406,6 +12689,261 @@ export interface operations {
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
             429: components["responses"]["TooManyRequests"];
+        };
+    };
+    listRoutines: {
+        parameters: {
+            query?: {
+                owner_id?: string;
+                agent_id?: string;
+                session_id?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Routines reachable through their origin sessions. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoutineList"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    createRoutine: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RoutineCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Routine created. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Routine"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    getRoutine: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                routine_id: components["parameters"]["RoutineID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Routine. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Routine"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    deleteRoutine: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                routine_id: components["parameters"]["RoutineID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Routine cancelled. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Routine"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    updateRoutine: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                routine_id: components["parameters"]["RoutineID"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RoutineUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Routine updated. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Routine"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    pauseRoutine: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                routine_id: components["parameters"]["RoutineID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Routine paused. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Routine"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    resumeRoutine: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                routine_id: components["parameters"]["RoutineID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Routine resumed. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Routine"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listRoutineOccurrences: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                routine_id: components["parameters"]["RoutineID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Occurrences. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoutineOccurrenceList"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    approveRoutineProposal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                proposal_id: components["parameters"]["RoutineProposalID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Existing routine returned for an idempotent replay. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Routine"];
+                };
+            };
+            /** @description Routine created. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Routine"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    dismissRoutineProposal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                proposal_id: components["parameters"]["RoutineProposalID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Proposal dismissed. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoutineProposal"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
         };
     };
     listLoops: {

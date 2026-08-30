@@ -8,6 +8,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 
 ### Added
 
+- Routines are public across the Go, TypeScript, and Python SDKs and the CLI:
+  create, list, inspect, update, pause, resume, cancel, approve or dismiss a
+  proposal, and inspect occurrences. Sessions also expose optional next-fire
+  and unread-scheduled-result indicators.
 - Resource ownership is now explicit across configuration and work roots:
   clients expose typed owner, visibility, container, posture, and ownership
   transition contracts. New resources default to private person custody

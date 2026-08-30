@@ -2747,6 +2747,102 @@ func (e ReviewInteractionRequestAction) Valid() bool {
 	}
 }
 
+// Defines values for RoutineKind.
+const (
+	RoutineKindInvoke RoutineKind = "invoke"
+	RoutineKindNotify RoutineKind = "notify"
+)
+
+// Valid indicates whether the value is a known member of the RoutineKind enum.
+func (e RoutineKind) Valid() bool {
+	switch e {
+	case RoutineKindInvoke:
+		return true
+	case RoutineKindNotify:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RoutineOccurrenceStatus.
+const (
+	RoutineOccurrenceStatusAdmitted  RoutineOccurrenceStatus = "admitted"
+	RoutineOccurrenceStatusCompleted RoutineOccurrenceStatus = "completed"
+	RoutineOccurrenceStatusFailed    RoutineOccurrenceStatus = "failed"
+	RoutineOccurrenceStatusMissed    RoutineOccurrenceStatus = "missed"
+	RoutineOccurrenceStatusPending   RoutineOccurrenceStatus = "pending"
+	RoutineOccurrenceStatusSkipped   RoutineOccurrenceStatus = "skipped"
+)
+
+// Valid indicates whether the value is a known member of the RoutineOccurrenceStatus enum.
+func (e RoutineOccurrenceStatus) Valid() bool {
+	switch e {
+	case RoutineOccurrenceStatusAdmitted:
+		return true
+	case RoutineOccurrenceStatusCompleted:
+		return true
+	case RoutineOccurrenceStatusFailed:
+		return true
+	case RoutineOccurrenceStatusMissed:
+		return true
+	case RoutineOccurrenceStatusPending:
+		return true
+	case RoutineOccurrenceStatusSkipped:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RoutineProposalStatus.
+const (
+	RoutineProposalStatusApproved  RoutineProposalStatus = "approved"
+	RoutineProposalStatusDismissed RoutineProposalStatus = "dismissed"
+	RoutineProposalStatusExpired   RoutineProposalStatus = "expired"
+	RoutineProposalStatusPending   RoutineProposalStatus = "pending"
+)
+
+// Valid indicates whether the value is a known member of the RoutineProposalStatus enum.
+func (e RoutineProposalStatus) Valid() bool {
+	switch e {
+	case RoutineProposalStatusApproved:
+		return true
+	case RoutineProposalStatusDismissed:
+		return true
+	case RoutineProposalStatusExpired:
+		return true
+	case RoutineProposalStatusPending:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RoutineStatus.
+const (
+	RoutineStatusActive    RoutineStatus = "active"
+	RoutineStatusCancelled RoutineStatus = "cancelled"
+	RoutineStatusCompleted RoutineStatus = "completed"
+	RoutineStatusPaused    RoutineStatus = "paused"
+)
+
+// Valid indicates whether the value is a known member of the RoutineStatus enum.
+func (e RoutineStatus) Valid() bool {
+	switch e {
+	case RoutineStatusActive:
+		return true
+	case RoutineStatusCancelled:
+		return true
+	case RoutineStatusCompleted:
+		return true
+	case RoutineStatusPaused:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for RunResumedPayloadRecoveryAction.
 const (
 	RunResumedPayloadRecoveryActionResume RunResumedPayloadRecoveryAction = "resume"
@@ -3920,6 +4016,7 @@ const (
 	UpdateResourceOwnershipParamsResourceTypeArtifact    UpdateResourceOwnershipParamsResourceType = "artifact"
 	UpdateResourceOwnershipParamsResourceTypeEnvironment UpdateResourceOwnershipParamsResourceType = "environment"
 	UpdateResourceOwnershipParamsResourceTypeLoop        UpdateResourceOwnershipParamsResourceType = "loop"
+	UpdateResourceOwnershipParamsResourceTypeRoutine     UpdateResourceOwnershipParamsResourceType = "routine"
 	UpdateResourceOwnershipParamsResourceTypeSecret      UpdateResourceOwnershipParamsResourceType = "secret"
 	UpdateResourceOwnershipParamsResourceTypeSession     UpdateResourceOwnershipParamsResourceType = "session"
 	UpdateResourceOwnershipParamsResourceTypeSkill       UpdateResourceOwnershipParamsResourceType = "skill"
@@ -3937,6 +4034,8 @@ func (e UpdateResourceOwnershipParamsResourceType) Valid() bool {
 	case UpdateResourceOwnershipParamsResourceTypeEnvironment:
 		return true
 	case UpdateResourceOwnershipParamsResourceTypeLoop:
+		return true
+	case UpdateResourceOwnershipParamsResourceTypeRoutine:
 		return true
 	case UpdateResourceOwnershipParamsResourceTypeSecret:
 		return true
@@ -4994,6 +5093,9 @@ type AgentTurn struct {
 	// CreatedAt Time the turn was created.
 	CreatedAt time.Time `json:"created_at"`
 
+	// Deferrable True for scheduled work that yields admission priority to direct turns.
+	Deferrable *bool `json:"deferrable,omitempty"`
+
 	// EffectiveTimeoutSeconds Authoritative active-execution budget selected for the turn.
 	EffectiveTimeoutSeconds *int64 `json:"effective_timeout_seconds,omitempty"`
 
@@ -5014,6 +5116,9 @@ type AgentTurn struct {
 
 	// OutputSource Provenance of a completed turn's structured `output`: `tool` when the agent submitted it through the reserved `mobius_submit_output` tool, or `text` when Mobius accepted a schema-valid final message as a fallback.
 	OutputSource *AgentTurnOutputSource `json:"output_source,omitempty"`
+
+	// RoutineName Display-only routine name for a scheduled turn's live state.
+	RoutineName *string `json:"routine_name,omitempty"`
 
 	// RunId Loop run that triggered this turn. Absent for messaging turns.
 	RunId *string `json:"run_id,omitempty"`
@@ -8835,6 +8940,129 @@ type RotateSecretResult struct {
 	SigningSecret string `json:"signing_secret"`
 }
 
+// Routine defines model for Routine.
+type Routine struct {
+	ActAsUserProviders *[]string  `json:"act_as_user_providers,omitempty"`
+	AgentId            string     `json:"agent_id"`
+	CompletedAt        *time.Time `json:"completed_at,omitempty"`
+	CreatedAt          time.Time  `json:"created_at"`
+	DailyCeilingMilli  int64      `json:"daily_ceiling_milli"`
+	Id                 string     `json:"id"`
+
+	// Instructions Omitted from administrator metadata-only projections.
+	Instructions *string `json:"instructions,omitempty"`
+
+	// Kind V1 accepts invoke; notify is reserved and returns unsupported_routine_kind.
+	Kind                      RoutineKind `json:"kind"`
+	LastFireAt                *time.Time  `json:"last_fire_at,omitempty"`
+	Name                      string      `json:"name"`
+	NextFireAt                *time.Time  `json:"next_fire_at,omitempty"`
+	OccurrenceCount           int         `json:"occurrence_count"`
+	OrgId                     string      `json:"org_id"`
+	OwnerId                   string      `json:"owner_id"`
+	PauseReason               *string     `json:"pause_reason,omitempty"`
+	PerOccurrenceCeilingMilli int64       `json:"per_occurrence_ceiling_milli"`
+
+	// Schedule Exactly one of at, interval, or cron is required.
+	Schedule  RoutineSchedule `json:"schedule"`
+	SessionId string          `json:"session_id"`
+	Status    RoutineStatus   `json:"status"`
+	Timezone  string          `json:"timezone"`
+	UpdatedAt time.Time       `json:"updated_at"`
+}
+
+// RoutineCreateRequest defines model for RoutineCreateRequest.
+type RoutineCreateRequest struct {
+	AgentId           string `json:"agent_id"`
+	DailyCeilingMilli int64  `json:"daily_ceiling_milli"`
+	Instructions      string `json:"instructions"`
+
+	// Kind V1 accepts invoke; notify is reserved and returns unsupported_routine_kind.
+	Kind                      *RoutineKind `json:"kind,omitempty"`
+	Name                      *string      `json:"name,omitempty"`
+	PerOccurrenceCeilingMilli int64        `json:"per_occurrence_ceiling_milli"`
+
+	// Schedule Exactly one of at, interval, or cron is required.
+	Schedule  RoutineSchedule `json:"schedule"`
+	SessionId string          `json:"session_id"`
+}
+
+// RoutineKind V1 accepts invoke; notify is reserved and returns unsupported_routine_kind.
+type RoutineKind string
+
+// RoutineList defines model for RoutineList.
+type RoutineList struct {
+	HasMore    bool      `json:"has_more"`
+	Items      []Routine `json:"items"`
+	NextCursor *string   `json:"next_cursor,omitempty"`
+}
+
+// RoutineOccurrence defines model for RoutineOccurrence.
+type RoutineOccurrence struct {
+	CreditsSpentMilli    int64                   `json:"credits_spent_milli"`
+	ErrorCode            *string                 `json:"error_code,omitempty"`
+	ErrorMessage         *string                 `json:"error_message,omitempty"`
+	Id                   string                  `json:"id"`
+	IntakeAt             time.Time               `json:"intake_at"`
+	LatenessMilliseconds int64                   `json:"lateness_milliseconds"`
+	Outcome              *string                 `json:"outcome,omitempty"`
+	RoutineId            string                  `json:"routine_id"`
+	ScheduledAt          time.Time               `json:"scheduled_at"`
+	Status               RoutineOccurrenceStatus `json:"status"`
+	TranscriptUrl        string                  `json:"transcript_url"`
+	TurnId               *string                 `json:"turn_id,omitempty"`
+}
+
+// RoutineOccurrenceStatus defines model for RoutineOccurrence.Status.
+type RoutineOccurrenceStatus string
+
+// RoutineOccurrenceList defines model for RoutineOccurrenceList.
+type RoutineOccurrenceList struct {
+	HasMore    bool                `json:"has_more"`
+	Items      []RoutineOccurrence `json:"items"`
+	NextCursor *string             `json:"next_cursor,omitempty"`
+}
+
+// RoutineProposal defines model for RoutineProposal.
+type RoutineProposal struct {
+	AgentId    string                 `json:"agent_id"`
+	ExpiresAt  time.Time              `json:"expires_at"`
+	Id         string                 `json:"id"`
+	Payload    map[string]interface{} `json:"payload"`
+	ProposedTo string                 `json:"proposed_to"`
+	RoutineId  *string                `json:"routine_id,omitempty"`
+	SessionId  string                 `json:"session_id"`
+	Status     RoutineProposalStatus  `json:"status"`
+}
+
+// RoutineProposalStatus defines model for RoutineProposal.Status.
+type RoutineProposalStatus string
+
+// RoutineSchedule Exactly one of at, interval, or cron is required.
+type RoutineSchedule struct {
+	At             *time.Time `json:"at,omitempty"`
+	Cron           *string    `json:"cron,omitempty"`
+	EndsAt         *time.Time `json:"ends_at,omitempty"`
+	Interval       *string    `json:"interval,omitempty"`
+	MaxOccurrences *int       `json:"max_occurrences,omitempty"`
+	StartsAt       *time.Time `json:"starts_at,omitempty"`
+	Timezone       *string    `json:"timezone,omitempty"`
+}
+
+// RoutineStatus defines model for RoutineStatus.
+type RoutineStatus string
+
+// RoutineUpdateRequest defines model for RoutineUpdateRequest.
+type RoutineUpdateRequest struct {
+	DailyCeilingMilli         *int64  `json:"daily_ceiling_milli,omitempty"`
+	Instructions              *string `json:"instructions,omitempty"`
+	Name                      *string `json:"name,omitempty"`
+	PerOccurrenceCeilingMilli *int64  `json:"per_occurrence_ceiling_milli,omitempty"`
+
+	// Schedule Exactly one of at, interval, or cron is required.
+	Schedule *RoutineSchedule `json:"schedule,omitempty"`
+}
+
 // RunCancelledPayload defines model for RunCancelledPayload.
 type RunCancelledPayload struct {
 	Reason               *string                `json:"reason,omitempty"`
@@ -9030,6 +9258,9 @@ type Session struct {
 	// ModelProvider Provider for the recorded `model`.
 	ModelProvider *string `json:"model_provider,omitempty"`
 
+	// NextRoutineFireAt Earliest next fire among the caller's active routines in this conversation.
+	NextRoutineFireAt *time.Time `json:"next_routine_fire_at,omitempty"`
+
 	// Origin Surface that created the session: `manual`, `api`, `loop`, or `interaction`.
 	Origin SessionOrigin `json:"origin"`
 
@@ -9071,6 +9302,9 @@ type Session struct {
 
 	// TokenOutputTotal Lifetime output-token total reported for this session.
 	TokenOutputTotal int `json:"token_output_total"`
+
+	// UnreadScheduledResult True when the routine owner has not opened this conversation since its latest admitted scheduled result settled.
+	UnreadScheduledResult *bool `json:"unread_scheduled_result,omitempty"`
 
 	// UpdatedAt Last update timestamp.
 	UpdatedAt time.Time `json:"updated_at"`
@@ -11157,6 +11391,12 @@ type NudgeIdParam = string
 // OrderParam defines model for OrderParam.
 type OrderParam string
 
+// RoutineID defines model for RoutineID.
+type RoutineID = string
+
+// RoutineProposalID defines model for RoutineProposalID.
+type RoutineProposalID = string
+
 // SessionIdParam defines model for SessionIdParam.
 type SessionIdParam = string
 
@@ -11502,6 +11742,13 @@ type ListRolesParams struct {
 	Cursor *CursorParam `form:"cursor,omitempty" json:"cursor,omitempty"`
 }
 
+// ListRoutinesParams defines parameters for ListRoutines.
+type ListRoutinesParams struct {
+	OwnerId   *string `form:"owner_id,omitempty" json:"owner_id,omitempty"`
+	AgentId   *string `form:"agent_id,omitempty" json:"agent_id,omitempty"`
+	SessionId *string `form:"session_id,omitempty" json:"session_id,omitempty"`
+}
+
 // ListRunsParams defines parameters for ListRuns.
 type ListRunsParams struct {
 	// Status Filter to one status.
@@ -11822,6 +12069,12 @@ type CreateRoleJSONRequestBody = CreateRoleRequest
 
 // UpdateRoleJSONRequestBody defines body for UpdateRole for application/json ContentType.
 type UpdateRoleJSONRequestBody = UpdateRoleRequest
+
+// CreateRoutineJSONRequestBody defines body for CreateRoutine for application/json ContentType.
+type CreateRoutineJSONRequestBody = RoutineCreateRequest
+
+// UpdateRoutineJSONRequestBody defines body for UpdateRoutine for application/json ContentType.
+type UpdateRoutineJSONRequestBody = RoutineUpdateRequest
 
 // CancelRunJSONRequestBody defines body for CancelRun for application/json ContentType.
 type CancelRunJSONRequestBody = CancelLoopRunRequest
@@ -21189,6 +21442,40 @@ type ClientInterface interface {
 
 	UpdateRole(ctx context.Context, resourceId IDParam, body UpdateRoleJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// ApproveRoutineProposal request
+	ApproveRoutineProposal(ctx context.Context, proposalId RoutineProposalID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DismissRoutineProposal request
+	DismissRoutineProposal(ctx context.Context, proposalId RoutineProposalID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListRoutines request
+	ListRoutines(ctx context.Context, params *ListRoutinesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateRoutineWithBody request with any body
+	CreateRoutineWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	CreateRoutine(ctx context.Context, body CreateRoutineJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DeleteRoutine request
+	DeleteRoutine(ctx context.Context, routineId RoutineID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetRoutine request
+	GetRoutine(ctx context.Context, routineId RoutineID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateRoutineWithBody request with any body
+	UpdateRoutineWithBody(ctx context.Context, routineId RoutineID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	UpdateRoutine(ctx context.Context, routineId RoutineID, body UpdateRoutineJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ListRoutineOccurrences request
+	ListRoutineOccurrences(ctx context.Context, routineId RoutineID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PauseRoutine request
+	PauseRoutine(ctx context.Context, routineId RoutineID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ResumeRoutine request
+	ResumeRoutine(ctx context.Context, routineId RoutineID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListRuns request
 	ListRuns(ctx context.Context, params *ListRunsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -22821,6 +23108,150 @@ func (c *Client) UpdateRoleWithBody(ctx context.Context, resourceId IDParam, con
 
 func (c *Client) UpdateRole(ctx context.Context, resourceId IDParam, body UpdateRoleJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewUpdateRoleRequest(c.Server, resourceId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ApproveRoutineProposal(ctx context.Context, proposalId RoutineProposalID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewApproveRoutineProposalRequest(c.Server, proposalId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) DismissRoutineProposal(ctx context.Context, proposalId RoutineProposalID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDismissRoutineProposalRequest(c.Server, proposalId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListRoutines(ctx context.Context, params *ListRoutinesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListRoutinesRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateRoutineWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateRoutineRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateRoutine(ctx context.Context, body CreateRoutineJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateRoutineRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) DeleteRoutine(ctx context.Context, routineId RoutineID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteRoutineRequest(c.Server, routineId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetRoutine(ctx context.Context, routineId RoutineID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetRoutineRequest(c.Server, routineId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateRoutineWithBody(ctx context.Context, routineId RoutineID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateRoutineRequestWithBody(c.Server, routineId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpdateRoutine(ctx context.Context, routineId RoutineID, body UpdateRoutineJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateRoutineRequest(c.Server, routineId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ListRoutineOccurrences(ctx context.Context, routineId RoutineID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewListRoutineOccurrencesRequest(c.Server, routineId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PauseRoutine(ctx context.Context, routineId RoutineID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPauseRoutineRequest(c.Server, routineId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ResumeRoutine(ctx context.Context, routineId RoutineID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewResumeRoutineRequest(c.Server, routineId)
 	if err != nil {
 		return nil, err
 	}
@@ -28282,6 +28713,409 @@ func NewUpdateRoleRequestWithBody(server string, resourceId IDParam, contentType
 	return req, nil
 }
 
+// NewApproveRoutineProposalRequest generates requests for ApproveRoutineProposal
+func NewApproveRoutineProposalRequest(server string, proposalId RoutineProposalID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "proposal_id", proposalId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/routine-proposals/%s/approve", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewDismissRoutineProposalRequest generates requests for DismissRoutineProposal
+func NewDismissRoutineProposalRequest(server string, proposalId RoutineProposalID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "proposal_id", proposalId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/routine-proposals/%s/dismiss", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewListRoutinesRequest generates requests for ListRoutines
+func NewListRoutinesRequest(server string, params *ListRoutinesParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/routines")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.OwnerId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "owner_id", *params.OwnerId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.AgentId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "agent_id", *params.AgentId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.SessionId != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "session_id", *params.SessionId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCreateRoutineRequest calls the generic CreateRoutine builder with application/json body
+func NewCreateRoutineRequest(server string, body CreateRoutineJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateRoutineRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewCreateRoutineRequestWithBody generates requests for CreateRoutine with any type of body
+func NewCreateRoutineRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/routines")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewDeleteRoutineRequest generates requests for DeleteRoutine
+func NewDeleteRoutineRequest(server string, routineId RoutineID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "routine_id", routineId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/routines/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetRoutineRequest generates requests for GetRoutine
+func NewGetRoutineRequest(server string, routineId RoutineID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "routine_id", routineId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/routines/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewUpdateRoutineRequest calls the generic UpdateRoutine builder with application/json body
+func NewUpdateRoutineRequest(server string, routineId RoutineID, body UpdateRoutineJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpdateRoutineRequestWithBody(server, routineId, "application/json", bodyReader)
+}
+
+// NewUpdateRoutineRequestWithBody generates requests for UpdateRoutine with any type of body
+func NewUpdateRoutineRequestWithBody(server string, routineId RoutineID, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "routine_id", routineId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/routines/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPatch, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewListRoutineOccurrencesRequest generates requests for ListRoutineOccurrences
+func NewListRoutineOccurrencesRequest(server string, routineId RoutineID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "routine_id", routineId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/routines/%s/occurrences", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewPauseRoutineRequest generates requests for PauseRoutine
+func NewPauseRoutineRequest(server string, routineId RoutineID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "routine_id", routineId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/routines/%s/pause", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewResumeRoutineRequest generates requests for ResumeRoutine
+func NewResumeRoutineRequest(server string, routineId RoutineID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "routine_id", routineId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v1/routines/%s/resume", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewListRunsRequest generates requests for ListRuns
 func NewListRunsRequest(server string, params *ListRunsParams) (*http.Request, error) {
 	var err error
@@ -31994,6 +32828,40 @@ type ClientWithResponsesInterface interface {
 
 	UpdateRoleWithResponse(ctx context.Context, resourceId IDParam, body UpdateRoleJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateRoleResponse, error)
 
+	// ApproveRoutineProposalWithResponse request
+	ApproveRoutineProposalWithResponse(ctx context.Context, proposalId RoutineProposalID, reqEditors ...RequestEditorFn) (*ApproveRoutineProposalResponse, error)
+
+	// DismissRoutineProposalWithResponse request
+	DismissRoutineProposalWithResponse(ctx context.Context, proposalId RoutineProposalID, reqEditors ...RequestEditorFn) (*DismissRoutineProposalResponse, error)
+
+	// ListRoutinesWithResponse request
+	ListRoutinesWithResponse(ctx context.Context, params *ListRoutinesParams, reqEditors ...RequestEditorFn) (*ListRoutinesResponse, error)
+
+	// CreateRoutineWithBodyWithResponse request with any body
+	CreateRoutineWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateRoutineResponse, error)
+
+	CreateRoutineWithResponse(ctx context.Context, body CreateRoutineJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateRoutineResponse, error)
+
+	// DeleteRoutineWithResponse request
+	DeleteRoutineWithResponse(ctx context.Context, routineId RoutineID, reqEditors ...RequestEditorFn) (*DeleteRoutineResponse, error)
+
+	// GetRoutineWithResponse request
+	GetRoutineWithResponse(ctx context.Context, routineId RoutineID, reqEditors ...RequestEditorFn) (*GetRoutineResponse, error)
+
+	// UpdateRoutineWithBodyWithResponse request with any body
+	UpdateRoutineWithBodyWithResponse(ctx context.Context, routineId RoutineID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateRoutineResponse, error)
+
+	UpdateRoutineWithResponse(ctx context.Context, routineId RoutineID, body UpdateRoutineJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateRoutineResponse, error)
+
+	// ListRoutineOccurrencesWithResponse request
+	ListRoutineOccurrencesWithResponse(ctx context.Context, routineId RoutineID, reqEditors ...RequestEditorFn) (*ListRoutineOccurrencesResponse, error)
+
+	// PauseRoutineWithResponse request
+	PauseRoutineWithResponse(ctx context.Context, routineId RoutineID, reqEditors ...RequestEditorFn) (*PauseRoutineResponse, error)
+
+	// ResumeRoutineWithResponse request
+	ResumeRoutineWithResponse(ctx context.Context, routineId RoutineID, reqEditors ...RequestEditorFn) (*ResumeRoutineResponse, error)
+
 	// ListRunsWithResponse request
 	ListRunsWithResponse(ctx context.Context, params *ListRunsParams, reqEditors ...RequestEditorFn) (*ListRunsResponse, error)
 
@@ -35141,6 +36009,325 @@ func (r UpdateRoleResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r UpdateRoleResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ApproveRoutineProposalResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Routine
+	JSON201      *Routine
+	JSON403      *Forbidden
+	JSON404      *NotFound
+	JSON409      *Conflict
+}
+
+// Status returns HTTPResponse.Status
+func (r ApproveRoutineProposalResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ApproveRoutineProposalResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ApproveRoutineProposalResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type DismissRoutineProposalResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *RoutineProposal
+	JSON403      *Forbidden
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r DismissRoutineProposalResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DismissRoutineProposalResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r DismissRoutineProposalResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ListRoutinesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *RoutineList
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+}
+
+// Status returns HTTPResponse.Status
+func (r ListRoutinesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListRoutinesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListRoutinesResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type CreateRoutineResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON201      *Routine
+	JSON400      *BadRequest
+	JSON401      *Unauthorized
+	JSON403      *Forbidden
+	JSON409      *Conflict
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateRoutineResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateRoutineResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CreateRoutineResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type DeleteRoutineResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Routine
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteRoutineResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteRoutineResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r DeleteRoutineResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetRoutineResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Routine
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r GetRoutineResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetRoutineResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetRoutineResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type UpdateRoutineResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Routine
+	JSON400      *BadRequest
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r UpdateRoutineResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpdateRoutineResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r UpdateRoutineResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ListRoutineOccurrencesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *RoutineOccurrenceList
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r ListRoutineOccurrencesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ListRoutineOccurrencesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ListRoutineOccurrencesResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type PauseRoutineResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Routine
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r PauseRoutineResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PauseRoutineResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r PauseRoutineResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type ResumeRoutineResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Routine
+	JSON404      *NotFound
+}
+
+// Status returns HTTPResponse.Status
+func (r ResumeRoutineResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ResumeRoutineResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r ResumeRoutineResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -38316,6 +39503,112 @@ func (c *ClientWithResponses) UpdateRoleWithResponse(ctx context.Context, resour
 		return nil, err
 	}
 	return ParseUpdateRoleResponse(rsp)
+}
+
+// ApproveRoutineProposalWithResponse request returning *ApproveRoutineProposalResponse
+func (c *ClientWithResponses) ApproveRoutineProposalWithResponse(ctx context.Context, proposalId RoutineProposalID, reqEditors ...RequestEditorFn) (*ApproveRoutineProposalResponse, error) {
+	rsp, err := c.ApproveRoutineProposal(ctx, proposalId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseApproveRoutineProposalResponse(rsp)
+}
+
+// DismissRoutineProposalWithResponse request returning *DismissRoutineProposalResponse
+func (c *ClientWithResponses) DismissRoutineProposalWithResponse(ctx context.Context, proposalId RoutineProposalID, reqEditors ...RequestEditorFn) (*DismissRoutineProposalResponse, error) {
+	rsp, err := c.DismissRoutineProposal(ctx, proposalId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDismissRoutineProposalResponse(rsp)
+}
+
+// ListRoutinesWithResponse request returning *ListRoutinesResponse
+func (c *ClientWithResponses) ListRoutinesWithResponse(ctx context.Context, params *ListRoutinesParams, reqEditors ...RequestEditorFn) (*ListRoutinesResponse, error) {
+	rsp, err := c.ListRoutines(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListRoutinesResponse(rsp)
+}
+
+// CreateRoutineWithBodyWithResponse request with arbitrary body returning *CreateRoutineResponse
+func (c *ClientWithResponses) CreateRoutineWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateRoutineResponse, error) {
+	rsp, err := c.CreateRoutineWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateRoutineResponse(rsp)
+}
+
+func (c *ClientWithResponses) CreateRoutineWithResponse(ctx context.Context, body CreateRoutineJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateRoutineResponse, error) {
+	rsp, err := c.CreateRoutine(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateRoutineResponse(rsp)
+}
+
+// DeleteRoutineWithResponse request returning *DeleteRoutineResponse
+func (c *ClientWithResponses) DeleteRoutineWithResponse(ctx context.Context, routineId RoutineID, reqEditors ...RequestEditorFn) (*DeleteRoutineResponse, error) {
+	rsp, err := c.DeleteRoutine(ctx, routineId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteRoutineResponse(rsp)
+}
+
+// GetRoutineWithResponse request returning *GetRoutineResponse
+func (c *ClientWithResponses) GetRoutineWithResponse(ctx context.Context, routineId RoutineID, reqEditors ...RequestEditorFn) (*GetRoutineResponse, error) {
+	rsp, err := c.GetRoutine(ctx, routineId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetRoutineResponse(rsp)
+}
+
+// UpdateRoutineWithBodyWithResponse request with arbitrary body returning *UpdateRoutineResponse
+func (c *ClientWithResponses) UpdateRoutineWithBodyWithResponse(ctx context.Context, routineId RoutineID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateRoutineResponse, error) {
+	rsp, err := c.UpdateRoutineWithBody(ctx, routineId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateRoutineResponse(rsp)
+}
+
+func (c *ClientWithResponses) UpdateRoutineWithResponse(ctx context.Context, routineId RoutineID, body UpdateRoutineJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateRoutineResponse, error) {
+	rsp, err := c.UpdateRoutine(ctx, routineId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateRoutineResponse(rsp)
+}
+
+// ListRoutineOccurrencesWithResponse request returning *ListRoutineOccurrencesResponse
+func (c *ClientWithResponses) ListRoutineOccurrencesWithResponse(ctx context.Context, routineId RoutineID, reqEditors ...RequestEditorFn) (*ListRoutineOccurrencesResponse, error) {
+	rsp, err := c.ListRoutineOccurrences(ctx, routineId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseListRoutineOccurrencesResponse(rsp)
+}
+
+// PauseRoutineWithResponse request returning *PauseRoutineResponse
+func (c *ClientWithResponses) PauseRoutineWithResponse(ctx context.Context, routineId RoutineID, reqEditors ...RequestEditorFn) (*PauseRoutineResponse, error) {
+	rsp, err := c.PauseRoutine(ctx, routineId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePauseRoutineResponse(rsp)
+}
+
+// ResumeRoutineWithResponse request returning *ResumeRoutineResponse
+func (c *ClientWithResponses) ResumeRoutineWithResponse(ctx context.Context, routineId RoutineID, reqEditors ...RequestEditorFn) (*ResumeRoutineResponse, error) {
+	rsp, err := c.ResumeRoutine(ctx, routineId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseResumeRoutineResponse(rsp)
 }
 
 // ListRunsWithResponse request returning *ListRunsResponse
@@ -43652,6 +44945,399 @@ func ParseUpdateRoleResponse(rsp *http.Response) (*UpdateRoleResponse, error) {
 			return nil, err
 		}
 		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseApproveRoutineProposalResponse parses an HTTP response from a ApproveRoutineProposalWithResponse call
+func ParseApproveRoutineProposalResponse(rsp *http.Response) (*ApproveRoutineProposalResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ApproveRoutineProposalResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Routine
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest Routine
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDismissRoutineProposalResponse parses an HTTP response from a DismissRoutineProposalWithResponse call
+func ParseDismissRoutineProposalResponse(rsp *http.Response) (*DismissRoutineProposalResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DismissRoutineProposalResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest RoutineProposal
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListRoutinesResponse parses an HTTP response from a ListRoutinesWithResponse call
+func ParseListRoutinesResponse(rsp *http.Response) (*ListRoutinesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListRoutinesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest RoutineList
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateRoutineResponse parses an HTTP response from a CreateRoutineWithResponse call
+func ParseCreateRoutineResponse(rsp *http.Response) (*CreateRoutineResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateRoutineResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest Routine
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest Unauthorized
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest Forbidden
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest Conflict
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON409 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDeleteRoutineResponse parses an HTTP response from a DeleteRoutineWithResponse call
+func ParseDeleteRoutineResponse(rsp *http.Response) (*DeleteRoutineResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteRoutineResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Routine
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetRoutineResponse parses an HTTP response from a GetRoutineWithResponse call
+func ParseGetRoutineResponse(rsp *http.Response) (*GetRoutineResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetRoutineResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Routine
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUpdateRoutineResponse parses an HTTP response from a UpdateRoutineWithResponse call
+func ParseUpdateRoutineResponse(rsp *http.Response) (*UpdateRoutineResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpdateRoutineResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Routine
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseListRoutineOccurrencesResponse parses an HTTP response from a ListRoutineOccurrencesWithResponse call
+func ParseListRoutineOccurrencesResponse(rsp *http.Response) (*ListRoutineOccurrencesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ListRoutineOccurrencesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest RoutineOccurrenceList
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParsePauseRoutineResponse parses an HTTP response from a PauseRoutineWithResponse call
+func ParsePauseRoutineResponse(rsp *http.Response) (*PauseRoutineResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PauseRoutineResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Routine
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseResumeRoutineResponse parses an HTTP response from a ResumeRoutineWithResponse call
+func ParseResumeRoutineResponse(rsp *http.Response) (*ResumeRoutineResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ResumeRoutineResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Routine
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest NotFound
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
 
 	}
 

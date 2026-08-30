@@ -66,6 +66,9 @@ tags:
 - name: sessions
   x-displayName: Sessions
   description: Durable conversation sessions, their transcripts, and direct agent invocation.
+- name: routines
+  x-displayName: Routines
+  description: Scheduled work in an originating session.
 - name: loops
   x-displayName: Loops
   description: Loop definitions, versions, publication, and the triggers that start runs.
@@ -111,6 +114,7 @@ paths:
           - artifact
           - environment
           - loop
+          - routine
           - secret
           - session
           - skill
@@ -3613,6 +3617,230 @@ paths:
           $ref: '#/components/responses/Conflict'
         '429':
           $ref: '#/components/responses/TooManyRequests'
+  /v1/routines:
+    get:
+      operationId: listRoutines
+      tags:
+      - routines
+      summary: List reachable routines
+      description: Returns routines whose origin conversations are reachable by the caller.
+      parameters:
+      - name: owner_id
+        in: query
+        schema:
+          type: string
+      - name: agent_id
+        in: query
+        schema:
+          type: string
+      - name: session_id
+        in: query
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Routines reachable through their origin sessions.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoutineList'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      operationId: createRoutine
+      tags:
+      - routines
+      summary: Create a routine owned by the authenticated human
+      description: Creates scheduled work in an existing reachable conversation for the authenticated
+        human owner.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoutineCreateRequest'
+      responses:
+        '201':
+          description: Routine created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Routine'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /v1/routines/{routine_id}:
+    get:
+      operationId: getRoutine
+      tags:
+      - routines
+      summary: Get a routine
+      description: Returns one reachable routine and its current schedule and lifecycle state.
+      parameters:
+      - $ref: '#/components/parameters/RoutineID'
+      responses:
+        '200':
+          description: Routine.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Routine'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      operationId: updateRoutine
+      tags:
+      - routines
+      summary: Update mutable routine fields
+      description: Updates mutable instructions, display, schedule, or spend ceilings without
+        changing execution identity.
+      parameters:
+      - $ref: '#/components/parameters/RoutineID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoutineUpdateRequest'
+      responses:
+        '200':
+          description: Routine updated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Routine'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      operationId: deleteRoutine
+      tags:
+      - routines
+      summary: Delete a routine while retaining its occurrence ledger
+      description: Cancels future occurrences while preserving the routine and its occurrence
+        history.
+      parameters:
+      - $ref: '#/components/parameters/RoutineID'
+      responses:
+        '200':
+          description: Routine cancelled.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Routine'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/routines/{routine_id}/pause:
+    post:
+      operationId: pauseRoutine
+      tags:
+      - routines
+      summary: Pause a routine
+      description: Stops future occurrences until the routine is explicitly resumed.
+      parameters:
+      - $ref: '#/components/parameters/RoutineID'
+      responses:
+        '200':
+          description: Routine paused.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Routine'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/routines/{routine_id}/resume:
+    post:
+      operationId: resumeRoutine
+      tags:
+      - routines
+      summary: Resume a routine
+      description: Reactivates a paused routine and calculates its next future occurrence.
+      parameters:
+      - $ref: '#/components/parameters/RoutineID'
+      responses:
+        '200':
+          description: Routine resumed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Routine'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/routines/{routine_id}/occurrences:
+    get:
+      operationId: listRoutineOccurrences
+      tags:
+      - routines
+      summary: List a routine's occurrence ledger
+      description: Returns durable occurrence outcomes and transcript links for a reachable
+        routine.
+      parameters:
+      - $ref: '#/components/parameters/RoutineID'
+      responses:
+        '200':
+          description: Occurrences.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoutineOccurrenceList'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/routine-proposals/{proposal_id}/approve:
+    post:
+      operationId: approveRoutineProposal
+      tags:
+      - routines
+      summary: Approve a pending proposal as its proposed human owner
+      description: Atomically materializes a pending proposal as a routine after human approval.
+      parameters:
+      - $ref: '#/components/parameters/RoutineProposalID'
+      responses:
+        '200':
+          description: Existing routine returned for an idempotent replay.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Routine'
+        '201':
+          description: Routine created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Routine'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /v1/routine-proposals/{proposal_id}/dismiss:
+    post:
+      operationId: dismissRoutineProposal
+      tags:
+      - routines
+      summary: Dismiss a pending proposal
+      description: Marks a pending routine proposal dismissed without creating a routine.
+      parameters:
+      - $ref: '#/components/parameters/RoutineProposalID'
+      responses:
+        '200':
+          description: Proposal dismissed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoutineProposal'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /v1/loops:
     get:
       operationId: listLoops
@@ -5893,6 +6121,18 @@ components:
         type: string
         pattern: ^art_[A-Za-z0-9]+$
       description: ID of the artifact
+    RoutineID:
+      name: routine_id
+      in: path
+      required: true
+      schema:
+        type: string
+    RoutineProposalID:
+      name: proposal_id
+      in: path
+      required: true
+      schema:
+        type: string
     TableIDParam:
       name: table_id
       in: path
@@ -6230,6 +6470,13 @@ components:
           $ref: '#/components/schemas/ResourceContainer'
         posture:
           $ref: '#/components/schemas/ResourcePosture'
+    RoutineStatus:
+      type: string
+      enum:
+      - active
+      - paused
+      - completed
+      - cancelled
     AgentStatus:
       type: string
       enum:
@@ -6852,6 +7099,15 @@ components:
           type: integer
           description: Lifetime prompt-cache-write (cache creation) input-token total for
             this session.
+        next_routine_fire_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Earliest next fire among the caller's active routines in this conversation.
+        unread_scheduled_result:
+          type: boolean
+          description: True when the routine owner has not opened this conversation since
+            its latest admitted scheduled result settled.
         version:
           type: integer
           description: Optimistic-concurrency version. Increments on every mutation.
@@ -12597,6 +12853,12 @@ components:
           type: string
           description: Inbound channel exchange that triggered this turn. Absent for loop
             turns.
+        deferrable:
+          type: boolean
+          description: True for scheduled work that yields admission priority to direct turns.
+        routine_name:
+          type: string
+          description: Display-only routine name for a scheduled turn's live state.
         attempt:
           type: integer
           description: 1-based attempt number for this run-step; retries create new turns.
@@ -14154,6 +14416,273 @@ components:
         sha256: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
         created_at: '2026-06-15T14:30:00Z'
         created_by: agent_5n8p2q7m4x9r3v6t
+    RoutineKind:
+      type: string
+      enum:
+      - invoke
+      - notify
+      description: V1 accepts invoke; notify is reserved and returns unsupported_routine_kind.
+    RoutineSchedule:
+      type: object
+      additionalProperties: false
+      properties:
+        at:
+          type: string
+          format: date-time
+        interval:
+          type: string
+          example: 24h
+        cron:
+          type: string
+          example: 0 8 * * *
+        timezone:
+          type: string
+          example: America/New_York
+        starts_at:
+          type: string
+          format: date-time
+        ends_at:
+          type: string
+          format: date-time
+        max_occurrences:
+          type: integer
+          minimum: 1
+      description: Exactly one of at, interval, or cron is required.
+    RoutineCreateRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - session_id
+      - agent_id
+      - instructions
+      - schedule
+      - per_occurrence_ceiling_milli
+      - daily_ceiling_milli
+      properties:
+        session_id:
+          type: string
+        agent_id:
+          type: string
+        name:
+          type: string
+        instructions:
+          type: string
+        kind:
+          $ref: '#/components/schemas/RoutineKind'
+        schedule:
+          $ref: '#/components/schemas/RoutineSchedule'
+        per_occurrence_ceiling_milli:
+          type: integer
+          format: int64
+          minimum: 1
+        daily_ceiling_milli:
+          type: integer
+          format: int64
+          minimum: 1
+    RoutineUpdateRequest:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        name:
+          type: string
+        instructions:
+          type: string
+        schedule:
+          $ref: '#/components/schemas/RoutineSchedule'
+        per_occurrence_ceiling_milli:
+          type: integer
+          format: int64
+          minimum: 1
+        daily_ceiling_milli:
+          type: integer
+          format: int64
+          minimum: 1
+    Routine:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - org_id
+      - agent_id
+      - session_id
+      - owner_id
+      - name
+      - kind
+      - schedule
+      - timezone
+      - status
+      - occurrence_count
+      - per_occurrence_ceiling_milli
+      - daily_ceiling_milli
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+        org_id:
+          type: string
+        agent_id:
+          type: string
+        session_id:
+          type: string
+        owner_id:
+          type: string
+        name:
+          type: string
+        instructions:
+          type: string
+          description: Omitted from administrator metadata-only projections.
+        kind:
+          $ref: '#/components/schemas/RoutineKind'
+        schedule:
+          $ref: '#/components/schemas/RoutineSchedule'
+        timezone:
+          type: string
+        status:
+          $ref: '#/components/schemas/RoutineStatus'
+        pause_reason:
+          type: string
+        next_fire_at:
+          type: string
+          format: date-time
+        last_fire_at:
+          type: string
+          format: date-time
+        occurrence_count:
+          type: integer
+        completed_at:
+          type: string
+          format: date-time
+        per_occurrence_ceiling_milli:
+          type: integer
+          format: int64
+        daily_ceiling_milli:
+          type: integer
+          format: int64
+        act_as_user_providers:
+          type: array
+          items:
+            type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    RoutineList:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - has_more
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Routine'
+        has_more:
+          type: boolean
+        next_cursor:
+          type: string
+    RoutineOccurrence:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - routine_id
+      - scheduled_at
+      - intake_at
+      - lateness_milliseconds
+      - status
+      - credits_spent_milli
+      - transcript_url
+      properties:
+        id:
+          type: string
+        routine_id:
+          type: string
+        scheduled_at:
+          type: string
+          format: date-time
+        intake_at:
+          type: string
+          format: date-time
+        lateness_milliseconds:
+          type: integer
+          format: int64
+        status:
+          type: string
+          enum:
+          - pending
+          - admitted
+          - completed
+          - failed
+          - skipped
+          - missed
+        outcome:
+          type: string
+        error_code:
+          type: string
+        error_message:
+          type: string
+        turn_id:
+          type: string
+        credits_spent_milli:
+          type: integer
+          format: int64
+        transcript_url:
+          type: string
+    RoutineOccurrenceList:
+      type: object
+      additionalProperties: false
+      required:
+      - items
+      - has_more
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/RoutineOccurrence'
+        has_more:
+          type: boolean
+        next_cursor:
+          type: string
+    RoutineProposal:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - session_id
+      - agent_id
+      - proposed_to
+      - status
+      - expires_at
+      - payload
+      properties:
+        id:
+          type: string
+        session_id:
+          type: string
+        agent_id:
+          type: string
+        proposed_to:
+          type: string
+        status:
+          type: string
+          enum:
+          - pending
+          - approved
+          - dismissed
+          - expired
+        routine_id:
+          type: string
+        expires_at:
+          type: string
+          format: date-time
+        payload:
+          type: object
+          additionalProperties: true
     Loop:
       type: object
       additionalProperties: false
@@ -17295,6 +17824,9 @@ x-tagGroups:
 - name: Sessions
   tags:
   - sessions
+- name: Mobius Routines API
+  tags:
+  - routines
 - name: Loops
   tags:
   - loops
