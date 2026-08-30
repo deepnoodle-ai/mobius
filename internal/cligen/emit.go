@@ -246,8 +246,9 @@ func resolveBodyField(f FieldInfo, client *ClientInfo) BodyField {
 // pointers, so both shapes must be surfaced by the CLI.
 func resolveQueryField(f FieldInfo, client *ClientInfo) QueryField {
 	qf := QueryField{
-		GoField:  f.GoName,
-		FlagName: toKebab(firstNonEmpty(f.JSONTag, f.GoName)),
+		GoField:     f.GoName,
+		FlagName:    toKebab(firstNonEmpty(f.JSONTag, f.GoName)),
+		Description: f.Doc,
 	}
 	elem := f.Type
 	if strings.HasPrefix(elem, "*") {

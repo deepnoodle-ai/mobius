@@ -65,8 +65,9 @@ func TestRequiredNamedStringQueryParamsBecomeRequiredFlags(t *testing.T) {
 		GoName:  "Visibility",
 		Type:    "AgentVisibility",
 		JSONTag: "visibility",
+		Doc:     "The visibility being considered.",
 	}, client)
-	if field.Kind != "string" || !field.Required {
+	if field.Kind != "string" || !field.Required || field.Description != "The visibility being considered." {
 		t.Fatalf("query field = %#v, want required string", field)
 	}
 
@@ -92,7 +93,7 @@ func TestRequiredNamedStringQueryParamsBecomeRequiredFlags(t *testing.T) {
 	}
 	generated := b.String()
 	for _, want := range []string{
-		`cli.String("visibility", "").Help("[required] visibility").Required()`,
+		`cli.String("visibility", "").Help("[required] The visibility being considered.").Required()`,
 		`params.Visibility = api.AgentVisibility(ctx.String("visibility"))`,
 	} {
 		if !strings.Contains(generated, want) {
