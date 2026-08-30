@@ -59,6 +59,48 @@ func TestNamedStringPathParamsAreCastToGeneratedType(t *testing.T) {
 	}
 }
 
+func TestRequiredNamedStringQueryParamsBecomeRequiredFlags(t *testing.T) {
+	client := &ClientInfo{TypeAliases: map[string]string{"AgentVisibility": "string"}}
+	field := resolveQueryField(FieldInfo{
+		GoName:  "Visibility",
+		Type:    "AgentVisibility",
+		JSONTag: "visibility",
+	}, client)
+	if field.Kind != "string" || !field.Required {
+		t.Fatalf("query field = %#v, want required string", field)
+	}
+
+	var b bytes.Buffer
+	err := renderCommand(&b, "agents", PlannedCommand{
+		OperationID: "previewAgentVisibilityChange",
+		Command:     "preview-visibility-change",
+		Description: "Preview an agent visibility change",
+		Method: &Method{
+			Name: "PreviewAgentVisibilityChange",
+			Params: []Param{{
+				Name: "params",
+				Type: "*PreviewAgentVisibilityChangeParams",
+			}},
+		},
+		QueryBlock: &QueryBlock{
+			TypeName: "PreviewAgentVisibilityChangeParams",
+			Fields:   []QueryField{field},
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	generated := b.String()
+	for _, want := range []string{
+		`cli.String("visibility", "").Help("[required] visibility").Required()`,
+		`params.Visibility = api.AgentVisibility(ctx.String("visibility"))`,
+	} {
+		if !strings.Contains(generated, want) {
+			t.Fatalf("generated command does not contain %q:\n%s", want, generated)
+		}
+	}
+}
+
 func TestGeneratedIntegerParsersUseStrictParsing(t *testing.T) {
 	src, err := renderMasterFile(nil)
 	if err != nil {

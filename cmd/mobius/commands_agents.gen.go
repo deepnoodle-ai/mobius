@@ -3,7 +3,7 @@
 // Regenerate with:  make generate-go-cli
 //
 // To suppress or override a command, edit
-// cmd/mobius-cligen/overrides.go — never hand-edit this file.
+// internal/cligen/overrides.go — never hand-edit this file.
 
 package main
 
@@ -541,6 +541,7 @@ func registerAgentsCommands(app *cli.App) {
 		Description("Preview a visibility change").
 		AddArg(&cli.Arg{Name: "resource-id", Description: "Resource ID.", Required: true}).
 		Flags(
+			cli.String("visibility", "").Help("[required] The visibility being considered.").Required(),
 			cli.String("members", "").Help("The audience being considered, as a comma-separated list of principal IDs. Omit to evaluate against the current member list."),
 		).
 		Use(requireAuth()).
@@ -552,6 +553,7 @@ func registerAgentsCommands(app *cli.App) {
 			client := mc.RawClient()
 			p0 := api.IDParam(ctx.Arg(0))
 			params := &api.PreviewAgentVisibilityChangeParams{}
+			params.Visibility = api.AgentVisibility(ctx.String("visibility"))
 			if ctx.IsSet("members") {
 				v := ctx.String("members")
 				params.Members = &v

@@ -15,6 +15,8 @@ func skillJSON(id, source string) string {
 		"id":%q,"name":"Pull request review","source":%q,
 		"instructions":"Check the diff and leave concise findings.",
 		"allowed_tools":["github.create_review_comment"],
+		"owner":{"kind":"person","id":"user_1"},
+		"visibility":"private","container":null,"posture":"only_you",
 		"created_at":"2026-07-17T00:00:00Z","updated_at":"2026-07-17T00:00:00Z"
 	}`, id, source)
 }
@@ -55,6 +57,13 @@ func TestSkillLifecycleRoutes(t *testing.T) {
 	}
 	if len(page.Items) != 1 || page.Items[0].Id != "skill_1" {
 		t.Fatalf("items = %#v", page.Items)
+	}
+	skill := page.Items[0]
+	if skill.Owner.Kind != api.ResourceOwnerKindPerson || skill.Owner.Id == nil || *skill.Owner.Id != "user_1" {
+		t.Fatalf("owner = %#v", skill.Owner)
+	}
+	if skill.Visibility != api.ResourceVisibilityPrivate || skill.Container != nil || skill.Posture != api.ResourcePostureOnlyYou {
+		t.Fatalf("ownership posture = visibility %q, container %#v, posture %q", skill.Visibility, skill.Container, skill.Posture)
 	}
 	req := api.SkillRequest{Name: "Pull request review", Instructions: "Check the diff and leave concise findings."}
 	if _, err := c.CreateSkill(ctx, req); err != nil {

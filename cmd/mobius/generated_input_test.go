@@ -69,6 +69,17 @@ func TestGeneratedSkillInstructionsHelpDocumentsLeadingAtEscape(t *testing.T) {
 	assert.Contains(t, result.Stdout, "Use @@ to escape a literal leading @")
 }
 
+func TestPreviewAgentVisibilityChangeRequiresVisibility(t *testing.T) {
+	result := newApp().Test(t, cli.TestArgs(
+		"agents", "preview-agent-visibility-change", "agent_test",
+		"--api-key", "mbx_test",
+	))
+
+	assert.False(t, result.Success())
+	assert.Error(t, result.Err)
+	assert.Contains(t, result.Err.Error(), "missing required flag: --visibility")
+}
+
 func TestLoopCreateHelpDocumentsStepAuthoring(t *testing.T) {
 	result := newApp().Test(t, cli.TestArgs("loops", "create", "--help"))
 	assert.True(t, result.Success(), "loops create help failed: %v\nstderr: %s", result.Err, result.Stderr)
