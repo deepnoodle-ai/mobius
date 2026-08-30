@@ -636,6 +636,10 @@ def _loop_body(
 ) -> dict[str, object]:
     return {
         "id": "loop_1",
+        "owner": {"kind": "person", "id": "user_1"},
+        "visibility": "private",
+        "container": None,
+        "posture": "only_you",
         "name": name,
         "status": status,
         "triggers": [],
@@ -663,6 +667,8 @@ def _turn_ack_body(session_id: str, turn_id: str, after_sequence: int) -> dict[s
         "resume_cursor": "41.6",
         "session": {
             "id": session_id,
+            "owner": {"kind": "person", "id": "user_1"},
+            "posture": "only_you",
             "agent_id": "agent_1",
             "origin": "api",
             "scope": "agent",

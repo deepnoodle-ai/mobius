@@ -38,7 +38,7 @@ def test_list_encodes_every_filter() -> None:
             environment_id="env_1",
             action_name="crm.sync",
             action_id="act_1",
-            definition_scope="organization",
+            definition_scope="custom",
             secret_version=2,
             delivery_id="dlv_1",
             correlation_id="corr_1",
@@ -56,7 +56,7 @@ def test_list_encodes_every_filter() -> None:
             "environment_id": "env_1",
             "action_name": "crm.sync",
             "action_id": "act_1",
-            "definition_scope": "organization",
+            "definition_scope": "custom",
             "secret_version": "2",
             "delivery_id": "dlv_1",
             "correlation_id": "corr_1",
@@ -78,7 +78,7 @@ def test_list_preserves_provenance_fields() -> None:
                         "id": "inv_1",
                         "action_name": "crm.sync",
                         "action_id": "act_1",
-                        "definition_scope": "organization",
+                        "definition_scope": "custom",
                         "secret_version": 2,
                         "delivery_id": "dlv_1",
                         "correlation_id": "corr_1",
@@ -101,7 +101,7 @@ def test_list_preserves_provenance_fields() -> None:
     assert page.has_more
     entry = page.items[0]
     assert entry.action_id == "act_1"
-    assert entry.definition_scope == "organization"
+    assert entry.definition_scope == "custom"
     assert entry.secret_version == 2
     assert entry.delivery_id == "dlv_1"
     assert entry.correlation_id == "corr_1"

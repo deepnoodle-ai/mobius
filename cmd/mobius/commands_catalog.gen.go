@@ -9,6 +9,8 @@ package main
 
 import (
 	"github.com/deepnoodle-ai/wonton/cli"
+
+	"github.com/deepnoodle-ai/mobius/mobius/api"
 )
 
 // registerCatalogCommands registers every generated subcommand in the "catalog" group.
@@ -24,7 +26,7 @@ func registerCatalogCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.Arg(0)
+			p0 := api.ActionNameParam(ctx.Arg(0))
 			resp, err := client.GetCatalogActionWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err

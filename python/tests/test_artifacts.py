@@ -24,10 +24,13 @@ def _client_with(handler) -> Client:
 def _artifact_body(**overrides) -> dict:
     body = {
         "id": "art_1",
+        "owner": {"kind": "person", "id": "user_1"},
         "name": "renders/report.html",
         "mime_type": "text/html",
         "size_bytes": 15,
         "visibility": "private",
+        "container": None,
+        "posture": "only_you",
         "created_at": "2026-07-17T00:00:00Z",
     }
     body.update(overrides)

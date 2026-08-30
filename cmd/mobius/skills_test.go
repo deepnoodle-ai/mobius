@@ -74,26 +74,6 @@ func TestSkillsImportReadsStdinAndOmitsName(t *testing.T) {
 	assert.False(t, present, "name must be omitted unless --name is set")
 }
 
-func TestOrgSkillsImportHitsOrganizationRoute(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		assert.Equal(t, "/v1/organization/skills/import", r.URL.Path)
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusCreated)
-		_, _ = w.Write([]byte(skillResponse))
-	}))
-	defer srv.Close()
-
-	path := filepath.Join(t.TempDir(), "SKILL.md")
-	assert.NoError(t, os.WriteFile(path, []byte(skillDoc), 0o644))
-
-	result := newApp().Test(t, cli.TestArgs(
-		"org-skills", "import", path,
-		"--api-url", srv.URL,
-		"--api-key", "mbx_test",
-	))
-	assert.True(t, result.Success(), "import failed: %v\nstderr: %s", result.Err, result.Stderr)
-}
-
 func TestSkillsImportDryRunMakesNoRequest(t *testing.T) {
 	requests := 0
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

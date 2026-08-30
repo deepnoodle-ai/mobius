@@ -795,6 +795,8 @@ function turnAck(sessionId: string, turnId: string, afterSequence: number) {
     resume_cursor: "41.6",
     session: {
       id: sessionId,
+      owner: { kind: "person", id: "user_1" },
+      posture: "only_you",
       agent_id: "agent_1",
       origin: "api",
       scope: "agent",

@@ -6,8 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
 
 ## [Unreleased]
 
+### Added
+
+- Resource ownership is now explicit across configuration and work roots:
+  clients expose typed owner, visibility, container, posture, and ownership
+  transition contracts. New resources default to private person custody.
+
 ### Removed
 
+- Removed the duplicate organization action, organization skill, and toolkit
+  surfaces; actions and skills now use their canonical catalogs and custody.
 - Removed definition-resolver operations and invocation-time agent `config`.
   Agent behavior now comes from the stored agent; session creation exposes the
   narrow `model_override` used by model pickers

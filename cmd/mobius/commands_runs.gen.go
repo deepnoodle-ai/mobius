@@ -34,7 +34,7 @@ func registerRunsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.Arg(0)
+			p0 := api.IDParam(ctx.Arg(0))
 			var body api.CancelRunJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -63,7 +63,7 @@ func registerRunsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.Arg(0)
+			p0 := api.IDParam(ctx.Arg(0))
 			resp, err := client.GetRunWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
@@ -130,7 +130,7 @@ func registerRunsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.Arg(0)
+			p0 := api.IDParam(ctx.Arg(0))
 			params := &api.ListRunEventsParams{}
 			if ctx.IsSet("after-sequence") {
 				v := int64(ctx.Int("after-sequence"))
@@ -161,7 +161,7 @@ func registerRunsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.Arg(0)
+			p0 := api.IDParam(ctx.Arg(0))
 			resp, err := client.ListRunStepsWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
@@ -188,7 +188,7 @@ func registerRunsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.Arg(0)
+			p0 := api.IDParam(ctx.Arg(0))
 			var body api.ResumeRunJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -243,7 +243,7 @@ func registerRunsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.Arg(0)
+			p0 := api.IDParam(ctx.Arg(0))
 			var body api.RetryRunJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -295,7 +295,7 @@ func registerRunsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.Arg(0)
+			p0 := api.IDParam(ctx.Arg(0))
 			var body api.SignalRunJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -342,7 +342,7 @@ func registerRunsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.Arg(0)
+			p0 := api.IDParam(ctx.Arg(0))
 			var body api.StartRunJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err

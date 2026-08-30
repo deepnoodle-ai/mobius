@@ -29,7 +29,7 @@ func registerPrincipalsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.Arg(0)
+			p0 := api.IDParam(ctx.Arg(0))
 			resp, err := client.DeletePrincipalWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
@@ -47,7 +47,7 @@ func registerPrincipalsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.Arg(0)
+			p0 := api.IDParam(ctx.Arg(0))
 			resp, err := client.GetPrincipalWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
@@ -109,7 +109,7 @@ func registerPrincipalsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.Arg(0)
+			p0 := api.IDParam(ctx.Arg(0))
 			var body api.UpdatePrincipalJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err

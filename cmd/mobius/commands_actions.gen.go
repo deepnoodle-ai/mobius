@@ -30,8 +30,10 @@ func registerActionsCommands(app *cli.App) {
 			cli.String("invocation-format", "").Help("Request-body contract for HTTP invocations. Omit to preserve the legacy body. `signed_context_v1` is valid only with `endpoint_kind: http`."),
 			cli.String("name", "").Help("[required] Identifier used in loop step definitions. Lowercase alphanumeric + hyphens, e.g. \"send-email\". Must be unique within the org. Cannot start…"),
 			cli.String("output-schema", "").Help("JSON Schema describing the expected output shape. Accepts JSON, @file, or @-."),
+			cli.String("owner", "").Help("The human or team responsible for this resource. Accepts JSON, @file, or @-."),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
 			cli.String("title", "").Help("Human-readable display name shown in the UI and catalog."),
+			cli.String("visibility", "").Help("Who the custodian chose to share the resource with."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -80,6 +82,11 @@ func registerActionsCommands(app *cli.App) {
 					return err
 				}
 			}
+			if ctx.IsSet("owner") {
+				if err := decodeFlagJSON(ctx, "owner", ctx.String("owner"), &body.Owner); err != nil {
+					return err
+				}
+			}
 			if tags, err := parseTagFlags(ctx); err != nil {
 				return err
 			} else if tags != nil {
@@ -89,6 +96,10 @@ func registerActionsCommands(app *cli.App) {
 			if ctx.IsSet("title") {
 				v := ctx.String("title")
 				body.Title = &v
+			}
+			if ctx.IsSet("visibility") {
+				v := api.ResourceVisibility(ctx.String("visibility"))
+				body.Visibility = &v
 			}
 			if body.Name == "" {
 				return fmt.Errorf("--name is required (or supply it via --file)")
@@ -113,7 +124,7 @@ func registerActionsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.Arg(0)
+			p0 := api.ActionNameParam(ctx.Arg(0))
 			resp, err := client.DeleteActionWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
@@ -137,7 +148,7 @@ func registerActionsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.Arg(0)
+			p0 := api.ActionNameParam(ctx.Arg(0))
 			var body api.InvokeActionJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -173,7 +184,7 @@ func registerActionsCommands(app *cli.App) {
 			cli.String("job-id", "").Help("Filter to invocations from a specific job."),
 			cli.String("environment-id", "").Help("Filter to invocations executed in a specific environment."),
 			cli.String("action-name", "").Help("Filter to invocations of a specific action."),
-			cli.String("action-id", "").Help("Filter to an immutable custom or organization Action ID."),
+			cli.String("action-id", "").Help("Filter to an immutable custom Action ID."),
 			cli.String("definition-scope", "").Help("Filter by the scope that owned the selected definition."),
 			cli.Int("secret-version", "").Help("Filter to deliveries signed with a specific secret version."),
 			cli.String("delivery-id", "").Help("Filter to a signed delivery identity."),
@@ -253,7 +264,7 @@ func registerActionsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.Arg(0)
+			p0 := api.ActionNameParam(ctx.Arg(0))
 			resp, err := client.RotateActionSecretWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
@@ -283,7 +294,7 @@ func registerActionsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.Arg(0)
+			p0 := api.ActionNameParam(ctx.Arg(0))
 			var body api.UpdateActionJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err

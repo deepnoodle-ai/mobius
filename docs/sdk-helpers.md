@@ -100,62 +100,6 @@ the action/secret scope before performing side effects. Never choose a user or
 tenant from `parameters`; user-mapped agent integrations should resolve by the
 signed `(org_id, agent_id)` pair.
 
-Organization-scoped Actions use the stable secret reference
-`mobius/org-action/{action_id}`. During key rotation, select the verification
-key using both `X-Mobius-Secret-Ref` and `X-Mobius-Secret-Version`, and retain
-the retiring version until its advertised retirement time. A delivery always
-signs the consuming org's `org_id`. The Action ID is stable across
-renames and should be the primary endpoint-side identity check.
-
-## Organization Actions
-
-Organization admins manage shared signed HTTP Actions from the curated
-clients. Create and rotate are the only operations that reveal the signing
-key, and they return it exactly once as decoded secret material — the action
-in the response has its `signing_secret` cleared, and the key lives only in
-the material's byte field:
-
-```go
-material, err := client.CreateOrganizationAction(ctx, api.CreateOrganizationActionRequest{
-	Name:        "crm.sync",
-	EndpointUrl: "https://example.com/hooks/mobius",
-})
-// material.KeyBytes is the decoded signing key — store it now; the server
-// never returns it again. material.Version is the newly active version.
-```
-
-```python
-material = client.rotate_organization_action_secret(action_id)
-# material.key_bytes belongs to the new *pending* version. Distribute it to
-# endpoints first, then promote it:
-client.activate_organization_action_secret_version(
-    action_id, material.version, overlap_seconds=3600
-)
-```
-
-```ts
-const material = await client.createOrganizationAction({
-  name: "crm.sync",
-  endpoint_url: "https://example.com/hooks/mobius",
-});
-// material.keyBytes plugs directly into the signed-delivery verifiers'
-// key resolver.
-```
-
-Rotation is two explicit steps. `RotateOrganizationActionSecret` mints a
-pending version and reveals its key; Mobius keeps signing with the current
-active version until `ActivateOrganizationActionSecretVersion` promotes the
-pending one, after which the previous version keeps verifying for a bounded
-overlap (server default 24 hours; pass `0` for immediate cutover).
-`RevokeOrganizationActionSecretVersion` immediately revokes a non-active
-version. The SDKs never activate implicitly after rotate.
-
-The CLI's `org-actions create` and `org-actions rotate-secret` refuse to run
-without an explicit secret sink, so the one-time reveal is never burned by
-accident: `--secret-file PATH` writes the key to a `0600` file and masks it
-in the printed response; `--show-secret` prints the full response for
-existing scripts.
-
 ## Organization OAuth Return Origins
 
 `GetOAuthReturnOrigins` / `get_oauth_return_origins` /
@@ -196,7 +140,7 @@ pagination.
 ```go
 page, err := client.ListActionInvocations(ctx, &mobius.ListActionInvocationsOptions{
 	ActionID:        "act_2m7x9q5v8p3n4r6t",
-	DefinitionScope: api.ListActionInvocationsParamsDefinitionScopeOrganization,
+	DefinitionScope: api.ListActionInvocationsParamsDefinitionScopeCustom,
 	SecretVersion:   2,
 })
 ```
@@ -445,30 +389,20 @@ timing decisions. Entry versions make replayed changes detectable.
 ## Skills
 
 Skills are reusable instruction bundles assignable to agents. The curated
-clients expose the org-owned skill lifecycle, the organization-shared skill
-lifecycle (Admin/Owner only), usage reporting, and ordered agent assignments.
-Import takes the Claude Code or Dive-style document as a plain string —
-reading files stays a CLI concern:
+clients expose one ownership-aware skill lifecycle plus ordered agent
+assignments. Import takes the Claude Code or Dive-style document as a plain
+string — reading files stays a CLI concern:
 
 ```python
 skill = client.import_skill(Path("SKILL.md").read_text(), name="PR review")
 client.replace_agent_skill_assignments(agent_id, [skill.id])
 ```
 
-```ts
-const shared = await client.importOrganizationSkill(content);
-const usage = await client.getOrganizationSkillUsage(shared.id);
-// usage.assignmentCount is the number of agents assigned this skill.
-```
-
-Updates (`UpdateSkill`, `ReplaceOrganizationSkill`) are explicit full-body
-replacements — the SDKs do not fetch-and-merge, which would race concurrent
-edits. Deleting an assigned organization skill fails with a 409
-`skill_in_use` error by design; the SDKs never detach agents implicitly.
+Updates are explicit full-body replacements — the SDKs do not fetch-and-merge,
+which would race concurrent edits.
 
 The CLI imports documents directly: `mobius skills import ./SKILL.md`, or
-`mobius org-skills import - --name "PR review"` to read stdin with a name
-override.
+`mobius skills import - --name "PR review"` to read stdin with a name override.
 
 ## Session Transcripts
 

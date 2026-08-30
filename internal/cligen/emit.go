@@ -735,9 +735,6 @@ func renderCommand(b *bytes.Buffer, group string, c PlannedCommand) error {
 			if acceptsTextFileInput(f) {
 				help += " Accepts text, @file, or @-. Use @@ to escape a literal leading @."
 			}
-			if acceptsCommaSeparatedInput(f) {
-				help += " Repeat the flag or separate IDs with commas."
-			}
 			if isCommandTailField(c, f) {
 				help += " For values beginning with '-', use --command=<value> or argv after --."
 			}
@@ -794,7 +791,11 @@ func renderCommand(b *bytes.Buffer, group string, c PlannedCommand) error {
 			fmt.Fprintf(b, "\t\t\tif err != nil { return err }\n")
 			argIdx++
 		default:
-			fmt.Fprintf(b, "\t\t\tp%d := ctx.Arg(%d)\n", i, argIdx)
+			if p.GoType == "string" {
+				fmt.Fprintf(b, "\t\t\tp%d := ctx.Arg(%d)\n", i, argIdx)
+			} else {
+				fmt.Fprintf(b, "\t\t\tp%d := api.%s(ctx.Arg(%d))\n", i, p.GoType, argIdx)
+			}
 			argIdx++
 		}
 	}
@@ -901,9 +902,6 @@ func renderCommand(b *bytes.Buffer, group string, c PlannedCommand) error {
 			case "strings":
 				fmt.Fprintf(b, "\t\t\tif ctx.IsSet(%q) {\n", f.FlagName)
 				valuesExpr := fmt.Sprintf("ctx.Strings(%q)", f.FlagName)
-				if acceptsCommaSeparatedInput(f) {
-					valuesExpr = "splitCommaSeparated(" + valuesExpr + ")"
-				}
 				emitStringSliceValue(b, "\t\t\t\t", "v", f.ElemType, valuesExpr)
 				if f.Required {
 					fmt.Fprintf(b, "\t\t\t\tbody.%s = v\n", f.GoField)
@@ -1026,10 +1024,6 @@ func acceptsTextFileInput(f BodyField) bool {
 	return f.Kind == "string" && f.ElemType == "string" && f.FlagName == "instructions"
 }
 
-func acceptsCommaSeparatedInput(f BodyField) bool {
-	return f.Kind == "strings" && f.FlagName == "toolkit-ids"
-}
-
 // emitStringSliceValue declares name from a cli.Strings expression. Named
 // string element types need an element-wise conversion because Go does not
 // permit assigning []string directly to []MyStringEnum.
@@ -1137,18 +1131,6 @@ func decodeFlagText(ctx *cli.Context, flag, raw string) (string, error) {
 		return "", cli.Errorf("--%s: %v", flag, err)
 	}
 	return string(data), nil
-}
-
-func splitCommaSeparated(values []string) []string {
-	out := make([]string, 0, len(values))
-	for _, value := range values {
-		for _, part := range strings.Split(value, ",") {
-			if part = strings.TrimSpace(part); part != "" {
-				out = append(out, part)
-			}
-		}
-	}
-	return out
 }
 
 // readBodyBytes reads from a path or "-" (stdin). The returned label is

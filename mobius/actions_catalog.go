@@ -42,7 +42,7 @@ type ListActionInvocationsOptions struct {
 	// ActionID filters to an immutable custom or organization Action ID.
 	ActionID string
 	// DefinitionScope filters by the scope that owned the selected
-	// definition: platform, custom, or organization.
+	// definition: platform or custom.
 	DefinitionScope api.ListActionInvocationsParamsDefinitionScope
 	// SecretVersion filters to deliveries signed with a specific
 	// signing-secret version.

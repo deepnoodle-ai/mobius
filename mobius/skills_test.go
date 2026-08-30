@@ -3,7 +3,6 @@ package mobius
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"testing"
@@ -27,21 +26,21 @@ func TestSkillLifecycleRoutes(t *testing.T) {
 			if got := r.URL.Query().Get("include_system"); got != "false" {
 				t.Fatalf("include_system = %q, want false", got)
 			}
-			writeJSON(w, http.StatusOK, `{"items":[`+skillJSON("skill_1", "organization")+`]}`)
+			writeJSON(w, http.StatusOK, `{"items":[`+skillJSON("skill_1", "custom")+`]}`)
 		case "POST /v1/skills":
 			var req api.SkillRequest
 			if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Name != "Pull request review" {
 				t.Fatalf("create body = %#v (%v)", req, err)
 			}
-			writeJSON(w, http.StatusCreated, skillJSON("skill_1", "organization"))
+			writeJSON(w, http.StatusCreated, skillJSON("skill_1", "custom"))
 		case "GET /v1/skills/skill_1":
-			writeJSON(w, http.StatusOK, skillJSON("skill_1", "organization"))
+			writeJSON(w, http.StatusOK, skillJSON("skill_1", "custom"))
 		case "PUT /v1/skills/skill_1":
 			var req api.SkillRequest
 			if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Instructions == "" {
 				t.Fatalf("update must send the full body, got %#v (%v)", req, err)
 			}
-			writeJSON(w, http.StatusOK, skillJSON("skill_1", "organization"))
+			writeJSON(w, http.StatusOK, skillJSON("skill_1", "custom"))
 		case "DELETE /v1/skills/skill_1":
 			w.WriteHeader(http.StatusNoContent)
 		default:
@@ -82,7 +81,7 @@ func TestImportSkillSendsDocumentVerbatim(t *testing.T) {
 		if err := json.NewDecoder(r.Body).Decode(&got); err != nil {
 			t.Fatal(err)
 		}
-		writeJSON(w, http.StatusCreated, skillJSON("skill_1", "organization"))
+		writeJSON(w, http.StatusCreated, skillJSON("skill_1", "custom"))
 	}))
 
 	skill, err := c.ImportSkill(context.Background(), doc, "Pull request review")
@@ -95,7 +94,7 @@ func TestImportSkillSendsDocumentVerbatim(t *testing.T) {
 	if got.Name == nil || *got.Name != "Pull request review" {
 		t.Fatalf("name override = %v", got.Name)
 	}
-	if skill.Source != api.SkillSourceOrganization {
+	if skill.Source != api.SkillSourceCustom {
 		t.Fatalf("source = %q", skill.Source)
 	}
 }
@@ -106,7 +105,7 @@ func TestImportSkillOmitsEmptyNameOverride(t *testing.T) {
 		if err := json.NewDecoder(r.Body).Decode(&raw); err != nil {
 			t.Fatal(err)
 		}
-		writeJSON(w, http.StatusCreated, skillJSON("skill_1", "organization"))
+		writeJSON(w, http.StatusCreated, skillJSON("skill_1", "custom"))
 	}))
 
 	if _, err := c.ImportSkill(context.Background(), "Just instructions.", ""); err != nil {
@@ -114,61 +113,6 @@ func TestImportSkillOmitsEmptyNameOverride(t *testing.T) {
 	}
 	if _, present := raw["name"]; present {
 		t.Fatalf("empty name must be omitted, body = %#v", raw)
-	}
-}
-
-func TestOrganizationSkillRoutesAndProvenance(t *testing.T) {
-	c, _ := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method + " " + r.URL.Path {
-		case "GET /v1/organization/skills":
-			writeJSON(w, http.StatusOK, `{"items":[`+skillJSON("skill_org", "organization")+`]}`)
-		case "POST /v1/organization/skills/import":
-			writeJSON(w, http.StatusCreated, skillJSON("skill_org", "organization"))
-		case "PUT /v1/organization/skills/skill_org":
-			writeJSON(w, http.StatusOK, skillJSON("skill_org", "organization"))
-		case "GET /v1/organization/skills/skill_org/usage":
-			writeJSON(w, http.StatusOK, `{"skill_id":"skill_org","assignment_count":3}`)
-		default:
-			t.Fatalf("unexpected request %s %s", r.Method, r.URL.Path)
-		}
-	}))
-
-	ctx := context.Background()
-	page, err := c.ListOrganizationSkills(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(page.Items) != 1 || page.Items[0].Source != api.SkillSourceOrganization {
-		t.Fatalf("organization provenance lost: %#v", page.Items)
-	}
-	if _, err := c.ImportOrganizationSkill(ctx, "doc", ""); err != nil {
-		t.Fatal(err)
-	}
-	req := api.SkillRequest{Name: "Pull request review", Instructions: "Check the diff."}
-	if _, err := c.ReplaceOrganizationSkill(ctx, "skill_org", req); err != nil {
-		t.Fatal(err)
-	}
-	usage, err := c.GetOrganizationSkillUsage(ctx, "skill_org")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if usage.AssignmentCount != 3 {
-		t.Fatalf("usage = %#v", usage)
-	}
-}
-
-func TestDeleteOrganizationSkillSurfacesInUseConflict(t *testing.T) {
-	c, _ := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		writeJSON(w, http.StatusConflict, `{"error":{"code":"skill_in_use","message":"detach agents first"}}`)
-	}))
-
-	err := c.DeleteOrganizationSkill(context.Background(), "skill_org")
-	var apiErr *APIError
-	if !errors.As(err, &apiErr) {
-		t.Fatalf("expected APIError, got %v", err)
-	}
-	if apiErr.Status != http.StatusConflict || apiErr.Code != "skill_in_use" {
-		t.Fatalf("apiErr = %#v", apiErr)
 	}
 }
 

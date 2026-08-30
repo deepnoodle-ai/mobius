@@ -37,6 +37,28 @@ func TestInt64PathParamsAreSupported(t *testing.T) {
 	}
 }
 
+func TestNamedStringPathParamsAreCastToGeneratedType(t *testing.T) {
+	var b bytes.Buffer
+	err := renderCommand(&b, "resources", PlannedCommand{
+		OperationID: "transitionResourceOwnership",
+		Command:     "transition-ownership",
+		Description: "Change resource ownership",
+		Method: &Method{Params: []Param{
+			{Name: "resourceType", Type: "TransitionResourceOwnershipParamsResourceType"},
+		}},
+		PathParams: []PathArg{{
+			GoName: "resourceType", FlagName: "resource-type", GoType: "TransitionResourceOwnershipParamsResourceType",
+		}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := `p0 := api.TransitionResourceOwnershipParamsResourceType(ctx.Arg(0))`
+	if !strings.Contains(b.String(), want) {
+		t.Fatalf("generated command does not contain %q:\n%s", want, b.String())
+	}
+}
+
 func TestGeneratedIntegerParsersUseStrictParsing(t *testing.T) {
 	src, err := renderMasterFile(nil)
 	if err != nil {
@@ -66,7 +88,6 @@ func TestGeneratedRuntimeHardensRequestInputs(t *testing.T) {
 	for _, want := range []string{
 		`dec.DisallowUnknownFields()`,
 		`func decodeFlagText(`,
-		`func splitCommaSeparated(`,
 	} {
 		if !strings.Contains(generated, want) {
 			t.Fatalf("generated runtime does not contain %q", want)
@@ -74,11 +95,8 @@ func TestGeneratedRuntimeHardensRequestInputs(t *testing.T) {
 	}
 }
 
-func TestGeneratedCommandsOptIntoTextFilesAndCommaSeparatedIDs(t *testing.T) {
+func TestGeneratedCommandsOptIntoTextFiles(t *testing.T) {
 	if !acceptsTextFileInput(BodyField{Kind: "string", ElemType: "string", FlagName: "instructions"}) {
 		t.Fatal("instructions should accept @file text input")
-	}
-	if !acceptsCommaSeparatedInput(BodyField{Kind: "strings", ElemType: "[]string", FlagName: "toolkit-ids"}) {
-		t.Fatal("toolkit IDs should accept comma-separated input")
 	}
 }

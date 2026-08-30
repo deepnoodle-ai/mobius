@@ -32,6 +32,7 @@ func registerLoopsCommands(app *cli.App) {
 			cli.String("event", "").Help("Declared event fields for this loop. Accepts JSON, @file, or @-."),
 			cli.String("limits", "").Help("Run guardrails. Lives at `spec.limits` in the JSON the engine compiles. Every limit is optional; absent or zero means unbounded (plan-level… Accepts JSON, @file, or @-."),
 			cli.String("name", "").Help("[required] Human-readable display name."),
+			cli.String("owner", "").Help("The human or team responsible for this resource. Accepts JSON, @file, or @-."),
 			cli.String("repositories", "").Help("Source repositories the loop targets. Accepts JSON, @file, or @-."),
 			cli.String("run-name", "").Help("Templates for assigning an operator-facing title and optional description to each run. The object form leaves room for additional naming… Accepts JSON, @file, or @-."),
 			cli.String("schema-version", "").Help("Loop authoring schema version. Only schema version 1 is accepted."),
@@ -39,6 +40,7 @@ func registerLoopsCommands(app *cli.App) {
 			cli.String("steps", "").Help("Steps use kind agent, action, sleep, wait_for_event, interaction, loop, or check; action inputs use config.parameters; if is a predicate. Accepts JSON, @file, or @-."),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
 			cli.String("triggers", "").Help("Authored trigger declarations for this loop. Accepts JSON, @file, or @-."),
+			cli.String("visibility", "").Help("Who the custodian chose to share the resource with."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -98,6 +100,11 @@ func registerLoopsCommands(app *cli.App) {
 			if ctx.IsSet("name") {
 				body.Name = ctx.String("name")
 			}
+			if ctx.IsSet("owner") {
+				if err := decodeFlagJSON(ctx, "owner", ctx.String("owner"), &body.Owner); err != nil {
+					return err
+				}
+			}
 			if ctx.IsSet("repositories") {
 				if err := decodeFlagJSON(ctx, "repositories", ctx.String("repositories"), &body.Repositories); err != nil {
 					return err
@@ -133,6 +140,10 @@ func registerLoopsCommands(app *cli.App) {
 					return err
 				}
 			}
+			if ctx.IsSet("visibility") {
+				v := api.ResourceVisibility(ctx.String("visibility"))
+				body.Visibility = &v
+			}
 			if body.Name == "" {
 				return fmt.Errorf("--name is required (or supply it via --file)")
 			}
@@ -156,7 +167,7 @@ func registerLoopsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.Arg(0)
+			p0 := api.IDParam(ctx.Arg(0))
 			resp, err := client.DeleteLoopWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
@@ -219,7 +230,7 @@ func registerLoopsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.Arg(0)
+			p0 := api.IDParam(ctx.Arg(0))
 			resp, err := client.GetLoopWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
@@ -298,7 +309,7 @@ func registerLoopsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.Arg(0)
+			p0 := api.IDParam(ctx.Arg(0))
 			var body api.UpdateLoopJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err

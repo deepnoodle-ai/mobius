@@ -26,7 +26,9 @@ func registerSkillsCommands(app *cli.App) {
 			cli.String("description", "").Help("Markdown description of the skill's purpose."),
 			cli.String("instructions", "").Help("[required] Markdown instructions loaded when the skill is active. Accepts text, @file, or @-. Use @@ to escape a literal leading @."),
 			cli.String("name", "").Help("[required] Human-readable skill name."),
+			cli.String("owner", "").Help("The human or team responsible for this resource. Accepts JSON, @file, or @-."),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
+			cli.String("visibility", "").Help("Who the custodian chose to share the resource with."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -59,11 +61,20 @@ func registerSkillsCommands(app *cli.App) {
 			if ctx.IsSet("name") {
 				body.Name = ctx.String("name")
 			}
+			if ctx.IsSet("owner") {
+				if err := decodeFlagJSON(ctx, "owner", ctx.String("owner"), &body.Owner); err != nil {
+					return err
+				}
+			}
 			if tags, err := parseTagFlags(ctx); err != nil {
 				return err
 			} else if tags != nil {
 				v := api.TagMap(tags)
 				body.Tags = &v
+			}
+			if ctx.IsSet("visibility") {
+				v := api.ResourceVisibility(ctx.String("visibility"))
+				body.Visibility = &v
 			}
 			if body.Instructions == "" {
 				return fmt.Errorf("--instructions is required (or supply it via --file)")
@@ -149,7 +160,9 @@ func registerSkillsCommands(app *cli.App) {
 			cli.String("description", "").Help("Markdown description of the skill's purpose."),
 			cli.String("instructions", "").Help("[required] Markdown instructions loaded when the skill is active. Accepts text, @file, or @-. Use @@ to escape a literal leading @."),
 			cli.String("name", "").Help("[required] Human-readable skill name."),
+			cli.String("owner", "").Help("The human or team responsible for this resource. Accepts JSON, @file, or @-."),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
+			cli.String("visibility", "").Help("Who the custodian chose to share the resource with."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -183,11 +196,20 @@ func registerSkillsCommands(app *cli.App) {
 			if ctx.IsSet("name") {
 				body.Name = ctx.String("name")
 			}
+			if ctx.IsSet("owner") {
+				if err := decodeFlagJSON(ctx, "owner", ctx.String("owner"), &body.Owner); err != nil {
+					return err
+				}
+			}
 			if tags, err := parseTagFlags(ctx); err != nil {
 				return err
 			} else if tags != nil {
 				v := api.TagMap(tags)
 				body.Tags = &v
+			}
+			if ctx.IsSet("visibility") {
+				v := api.ResourceVisibility(ctx.String("visibility"))
+				body.Visibility = &v
 			}
 			if body.Instructions == "" {
 				return fmt.Errorf("--instructions is required (or supply it via --file)")

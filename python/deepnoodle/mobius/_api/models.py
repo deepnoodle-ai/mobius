@@ -96,12 +96,60 @@ class GenerationDeltaFrame(BaseModel):
     )
 
 
-class ResourceScope(StrEnum):
+class Kind(StrEnum):
+    person = 'person'
+    team = 'team'
+
+
+class ResourceOwner(BaseModel):
     """
-    Optional namespace for named runtime resources. Omitted/null means the org/default scope; `owner` means names are unique within `(org, owned_by)`.
+    The human or team responsible for this resource.
     """
 
-    owner = 'owner'
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    kind: Kind
+    id: str | None = Field(
+        None, description='Human principal ID when kind is person; null for the team.'
+    )
+
+
+class ResourceVisibility(StrEnum):
+    """
+    Who the custodian chose to share the resource with.
+    """
+
+    private = 'private'
+    organization = 'organization'
+
+
+class Kind1(StrEnum):
+    agent = 'agent'
+
+
+class ResourceContainer(BaseModel):
+    """
+    The agent that contains this resource and may further narrow who can reach it.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    kind: Kind1
+    id: str
+
+
+class ResourcePosture(StrEnum):
+    """
+    Employee-facing effective ownership and audience posture for the current caller.
+    """
+
+    only_you = 'only_you'
+    shared_by_you = 'shared_by_you'
+    shared_with_group = 'shared_with_group'
+    team = 'team'
+    someone_else = 'someone_else'
 
 
 class CapabilityReadiness(StrEnum):
@@ -115,7 +163,7 @@ class CapabilityReadiness(StrEnum):
 
 class CapabilityReadinessReason(StrEnum):
     """
-    Why a capability is `needs_setup`. Present only when readiness is `needs_setup`. `not_configured` — no integration or credential is connected yet. `inactive` — the backing integration is manually disabled. `expired` — the backing credential has expired. `provider_unavailable` — the provider runtime is not currently available. `permission_missing` — the caller lacks permission to use it. `not_implemented` — a placeholder for a capability that is not yet available.
+    Why a capability is `needs_setup`. Present only when readiness is `needs_setup`. `not_configured` — no integration or credential is connected yet. `inactive` — the backing integration is manually disabled. `expired` — the backing credential has expired. `provider_unavailable` — the provider runtime is not currently available. `permission_missing` — the caller lacks permission to use it. `not_implemented` — a placeholder for a capability that is not yet available. `credentials_unreadable` — the stored credential cannot be decrypted by the running platform; reconnect the integration.
     """
 
     not_configured = 'not_configured'
@@ -124,6 +172,7 @@ class CapabilityReadinessReason(StrEnum):
     provider_unavailable = 'provider_unavailable'
     permission_missing = 'permission_missing'
     not_implemented = 'not_implemented'
+    credentials_unreadable = 'credentials_unreadable'
 
 
 class TagMap(RootModel[dict[str, str]]):
@@ -141,6 +190,78 @@ class IfExists(StrEnum):
 
     error = 'error'
     adopt = 'adopt'
+
+
+class ResourceOwnershipTransitionRequest1(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    owner: ResourceOwner
+    visibility: ResourceVisibility | None = None
+    detach_container: bool = Field(
+        False,
+        description='Clear the agent container when the resource supports detachment.',
+    )
+    confirm_audience_expansion: bool = Field(
+        False,
+        description='Required before sharing, handing custody to the team, or detaching a container.',
+    )
+
+
+class ResourceOwnershipTransitionRequest2(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    owner: ResourceOwner | None = None
+    visibility: ResourceVisibility
+    detach_container: bool = Field(
+        False,
+        description='Clear the agent container when the resource supports detachment.',
+    )
+    confirm_audience_expansion: bool = Field(
+        False,
+        description='Required before sharing, handing custody to the team, or detaching a container.',
+    )
+
+
+class ResourceOwnershipTransitionRequest3(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    owner: ResourceOwner | None = None
+    visibility: ResourceVisibility | None = None
+    detach_container: bool = Field(
+        ...,
+        description='Clear the agent container when the resource supports detachment.',
+    )
+    confirm_audience_expansion: bool = Field(
+        False,
+        description='Required before sharing, handing custody to the team, or detaching a container.',
+    )
+
+
+class ResourceOwnershipTransitionRequest(
+    RootModel[
+        ResourceOwnershipTransitionRequest1
+        | ResourceOwnershipTransitionRequest2
+        | ResourceOwnershipTransitionRequest3
+    ]
+):
+    root: (
+        ResourceOwnershipTransitionRequest1
+        | ResourceOwnershipTransitionRequest2
+        | ResourceOwnershipTransitionRequest3
+    )
+
+
+class ResourceOwnershipState(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    owner: ResourceOwner
+    visibility: ResourceVisibility
+    container: ResourceContainer | None
+    posture: ResourcePosture
 
 
 class AgentStatus(StrEnum):
@@ -193,6 +314,57 @@ class AgentToolPresentation(StrEnum):
 
     flat = 'flat'
     meta = 'meta'
+
+
+class ActionSelectorType(StrEnum):
+    """
+    How one entry in an agent's tool grant names the actions it covers. `exact` is a single action name; `group` a dotted prefix; `platform` every action of an integration; `custom` org-defined actions; `wildcard` everything. Omitting the type means `exact`.
+    """
+
+    exact = 'exact'
+    group = 'group'
+    platform = 'platform'
+    custom = 'custom'
+    wildcard = 'wildcard'
+
+
+class ActionSelector(BaseModel):
+    """
+    One entry in an agent's tool grant. Selectors are expanded against the live action catalog at every build, so `platform: gmail` keeps meaning "every Gmail action" as the catalog grows.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    selector_type: ActionSelectorType | None = Field(
+        None, description='Defaults to `exact` when omitted.'
+    )
+    selector: str = Field(
+        ...,
+        description='The selector value, read according to `selector_type`. Ignored for `wildcard`.',
+        max_length=512,
+    )
+
+
+class AgentIntegrationAccess(BaseModel):
+    """
+    One provider's connection rules for an agent. Both fields are decisions about the agent, not about any one connection.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    provider: str = Field(
+        ..., description='The provider these rules apply to (`gmail`, `slack`, …).'
+    )
+    act_as_user: bool = Field(
+        False,
+        description='Whether the agent may resolve the personal connection of the person it is acting for. Defaults to false and is never implied: reaching somebody\'s own account is what a person consents to when they talk to this agent, so it is shown on its page as "acts through your Gmail".',
+    )
+    pin: str | None = Field(
+        None,
+        description="The one connection this agent uses for this provider, which also suppresses the runtime account choice. May name only an org-shared or agent-owned connection — a shared agent pinned to one person's mailbox would send as that person for everybody.",
+    )
 
 
 class SessionCompactionThreshold(StrEnum):
@@ -285,6 +457,22 @@ class ThinkingEffort(StrEnum):
     max = 'max'
 
 
+class AgentVisibility(StrEnum):
+    """
+    Who, inside the org that owns this agent, may reach it at all.
+
+    `organization` (the default) is reachable by any org member — the behavior every agent had before visibility existed. `restricted` is reachable only by the agent's listed members. `private` is reachable only by its single member.
+
+    Visibility is not a permission: what a member may DO with an agent stays governed by their org role. A principal outside an agent's audience gets `404` from every path — list, read, session, invoke, memory — so an agent's existence never leaks through a status code.
+
+    Because agent memory is keyed by `(org, agent, user, key)` and every read is scoped to one agent, narrowing who can reach an agent narrows its shared memory layer by construction. Group memory needs no separate store.
+    """
+
+    organization = 'organization'
+    restricted = 'restricted'
+    private = 'private'
+
+
 class Agent(BaseModel):
     """
     AI actor identity. An agent IS a principal (its permissions are role grants on that principal); agents are useful when loops need a named actor with instructions, configuration, and session presence.
@@ -296,8 +484,10 @@ class Agent(BaseModel):
     id: str = Field(..., description='Unique identifier for this agent.')
     principal_id: str = Field(
         ...,
-        description='The machine principal (principals.id, kind `agent`) this agent IS. Created atomically with the agent and immutable. Used as the `owned_by` value when filtering or claiming resources owned by this agent.',
+        description='The machine principal (principals.id, kind `agent`) this agent IS. Created atomically with the agent and immutable. It is an execution identity, never the human custodian of an ordinary resource.',
     )
+    owner: ResourceOwner
+    posture: ResourcePosture
     name: str = Field(
         ...,
         description='Mutable unique name within the org. Free-form human-readable label; use `id` for stable references and job targeting.',
@@ -329,6 +519,14 @@ class Agent(BaseModel):
         None,
         description='Default tool presentation used by loop agent steps and built-in channel-message replies for this agent.',
     )
+    tool_selectors: list[ActionSelector] | None = Field(
+        None,
+        description="The agent's tool grant: the action selectors it may call, expanded against the live action catalog at each build.",
+    )
+    integration_access: list[AgentIntegrationAccess] | None = Field(
+        None,
+        description='Per-provider connection rules. Absent means the defaults: the agent reaches org-shared and its own connections, and nothing is pinned.',
+    )
     system_prompt: str | None = Field(
         None,
         description='Custom system prompt for agents. Empty string uses the generated default based on the agent name.',
@@ -344,7 +542,7 @@ class Agent(BaseModel):
     )
     memory_enabled: bool = Field(
         ...,
-        description='Hard gate for runtime memory. When false, memory tools and automatic memory context are absent and invocation-time definitions cannot re-enable them. Stored entries remain available to administrators.',
+        description='Hard gate for runtime memory. When false, memory tools and automatic memory context are absent for every session, and nothing at invocation time can re-enable them. Stored entries remain available to administrators.',
     )
     memory_context: MemoryContextPolicy | None = Field(
         None,
@@ -356,6 +554,14 @@ class Agent(BaseModel):
     )
     status: AgentStatus = Field(
         ..., description='Current agent status: `active` or `inactive`.'
+    )
+    visibility: AgentVisibility = Field(
+        ...,
+        description='Who may reach this agent. Read from the stored agent row at every gate: it is never supplied by a definition document, an invoke `definition_config`, or a client-side list filter.',
+    )
+    member_count: int | None = Field(
+        None,
+        description="How many principals are in this agent's audience. Zero for an `organization` agent, which carries no member rows.",
     )
     email_address: str | None = Field(
         None,
@@ -421,15 +627,6 @@ class SessionScope(StrEnum):
 
     agent = 'agent'
     loop = 'loop'
-
-
-class SessionVisibility(StrEnum):
-    """
-    Visibility of the session in org surfaces: `organization` or `private`.
-    """
-
-    organization = 'organization'
-    private = 'private'
 
 
 class Mode(StrEnum):
@@ -532,7 +729,12 @@ class Session(BaseModel):
         extra='forbid',
     )
     id: str = Field(..., description='Stable session identifier.')
-    agent_id: str = Field(..., description='Agent that owns this session.')
+    owner: ResourceOwner
+    agent_id: str = Field(
+        ...,
+        description='Agent that contains and executes this session. The agent never owns it.',
+    )
+    container: ResourceContainer | None = None
     title: str = Field(..., description='Human-readable session title.')
     status: SessionStatus = Field(..., description='Lifecycle status of the session.')
     origin: SessionOrigin = Field(..., description='Surface that created the session.')
@@ -552,9 +754,8 @@ class Session(BaseModel):
         ...,
         description='Stable caller-assigned conversation key, unique within one agent.',
     )
-    visibility: SessionVisibility = Field(
-        ..., description='Where the session appears in org UI surfaces.'
-    )
+    visibility: ResourceVisibility
+    posture: ResourcePosture
     model_override: str | None = Field(
         None,
         description="Model selected for this session. Omitted when the session inherits the agent's model.",
@@ -1302,43 +1503,6 @@ class CreateAPIKeyRequest(BaseModel):
     tags: TagMap | None = Field(None, description='Labels to apply to the new API key.')
 
 
-class InvocationFormat(StrEnum):
-    signed_context_v1 = 'signed_context_v1'
-
-
-class ActivateOrganizationActionSecretRequest(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    overlap_seconds: int = Field(
-        86400,
-        description='Verification overlap for the previous active version. Omit for 24 hours.',
-        ge=0,
-        le=86400,
-    )
-
-
-class Status(StrEnum):
-    pending = 'pending'
-    active = 'active'
-    retiring = 'retiring'
-    retired = 'retired'
-    revoked = 'revoked'
-
-
-class OrganizationActionSecretVersion(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    version: int
-    status: Status
-    created_at: AwareDatetime
-    activated_at: AwareDatetime | None = None
-    accept_until: AwareDatetime | None = None
-    retired_at: AwareDatetime | None = None
-    revoked_at: AwareDatetime | None = None
-
-
 class ActionAnnotationsRequest(BaseModel):
     """
     Request hints that describe the safe-use properties of the action. Used by the engine and tooling to decide retry behavior, dry-run eligibility, etc. Unknown request properties are rejected.
@@ -1439,7 +1603,7 @@ class ActionInvocationActorV1(BaseModel):
     )
 
 
-class Kind(StrEnum):
+class Kind2(StrEnum):
     agent_tool_call = 'agent_tool_call'
     loop_action_step = 'loop_action_step'
     direct_action_invoke = 'direct_action_invoke'
@@ -1450,7 +1614,7 @@ class ActionInvocationOriginV1(BaseModel):
     model_config = ConfigDict(
         extra='allow',
     )
-    kind: Kind
+    kind: Kind2
     run_id: str | None = None
     channel_exchange_id: str | None = None
     loop_id: str | None = None
@@ -1503,6 +1667,8 @@ class CreateActionRequest(BaseModel):
         None,
         description='Free-form labels used for filtering, ownership, or lifecycle policy.',
     )
+    owner: ResourceOwner | None = None
+    visibility: ResourceVisibility | None = None
 
 
 class UpdateActionRequest(BaseModel):
@@ -1549,6 +1715,10 @@ class Action(BaseModel):
         extra='forbid',
     )
     id: str = Field(..., description='Unique identifier for this action.')
+    owner: ResourceOwner
+    visibility: ResourceVisibility
+    container: ResourceContainer | None = None
+    posture: ResourcePosture
     name: str = Field(..., description='Stable identifier used in loop definitions.')
     title: str | None = Field(
         None, description='Human-readable display title for the action.'
@@ -1630,17 +1800,16 @@ class Source(StrEnum):
 
 class DefinitionScope(StrEnum):
     """
-    Scope that owns the selected definition. A custom action definition shadows a shared organization definition with the same canonical name.
+    Scope that owns the selected definition: `platform` for Mobius and integration actions, or `custom` for an action authored in the current organization.
     """
 
     platform = 'platform'
     custom = 'custom'
-    organization = 'organization'
 
 
 class Risk(StrEnum):
     """
-    Author-declared risk classification: `low`, `medium`, `high`, or `critical`. Used by toolkit-author UIs to surface warnings and by audit views to prioritize attention.
+    Author-declared risk classification: `low`, `medium`, `high`, or `critical`. Used by tool-grant UIs to surface warnings and by audit views to prioritize attention.
     """
 
     low = 'low'
@@ -1717,7 +1886,7 @@ class InvokeActionRequest(BaseModel):
     )
 
 
-class Status1(StrEnum):
+class Status(StrEnum):
     """
     Invocation status: `active`, `completed`, or `failed`.
     """
@@ -1735,7 +1904,7 @@ class ActionInvocationResult(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    status: Status1 = Field(
+    status: Status = Field(
         ..., description='Invocation status: `active`, `completed`, or `failed`.'
     )
     job_id: str | None = Field(
@@ -1759,7 +1928,6 @@ class DefinitionScope1(StrEnum):
 
     platform = 'platform'
     custom = 'custom'
-    organization = 'organization'
 
 
 class ActorPrincipalType(StrEnum):
@@ -1899,7 +2067,7 @@ class ActionInvocationListResponse(BaseModel):
     has_more: bool = Field(..., description='Whether additional pages are available.')
 
 
-class Kind1(StrEnum):
+class Kind3(StrEnum):
     """
     `integration` for provider event sources; `capability` for built-in Mobius platform event sources.
     """
@@ -1933,7 +2101,7 @@ class EventCatalogEventType(BaseModel):
     )
 
 
-class Kind2(StrEnum):
+class Kind4(StrEnum):
     """
     Whether the prefix names a platform capability or an authoring utility namespace.
     """
@@ -1951,7 +2119,7 @@ class EventCatalogReservedPrefix(BaseModel):
         extra='forbid',
     )
     prefix: str = Field(..., description='Reserved top-level event prefix.')
-    kind: Kind2 = Field(
+    kind: Kind4 = Field(
         ...,
         description='Whether the prefix names a platform capability or an authoring utility namespace.',
     )
@@ -2118,9 +2286,10 @@ class Environment(BaseModel):
     )
     id: str = Field(..., description='Unique environment identifier.')
     name: str = Field(..., description='Human-readable environment name.')
-    scope: ResourceScope | None = Field(
-        None, description='Naming scope for this environment.'
-    )
+    owner: ResourceOwner
+    visibility: ResourceVisibility
+    container: ResourceContainer | None
+    posture: ResourcePosture
     provider: EnvironmentProvider = Field(
         ..., description='Backing environment provider.'
     )
@@ -2129,10 +2298,6 @@ class Environment(BaseModel):
     )
     lifetime: EnvironmentLifetime = Field(
         ..., description='How long the environment is expected to live.'
-    )
-    owned_by: str | None = Field(
-        None,
-        description="Principal owner ID. For agent-started work, this is the agent's principal ID.",
     )
     current_worker_session_id: str | None = Field(
         None,
@@ -2192,15 +2357,11 @@ class CreateEnvironmentRequest(BaseModel):
         extra='forbid',
     )
     name: str | None = Field(None, description='Human-readable environment name.')
-    scope: ResourceScope | None = Field(
-        None, description='Optional naming scope for the environment.'
-    )
     provider: ProvisionEnvironmentProvider | None = Field(
         None, description='Provider to provision.'
     )
-    owned_by: str | None = Field(
-        None, description='Canonical user owner ID. Defaults to the authenticated user.'
-    )
+    owner: ResourceOwner | None = None
+    visibility: ResourceVisibility | None = None
     template_id: TemplateId | None = Field(
         None, description='V1 supports only coding-default.'
     )
@@ -2213,12 +2374,11 @@ class UpdateEnvironmentRequest(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    scope: ResourceScope | None = Field(
-        None,
-        description='Resource scope; send null to return to the org/default scope.',
-    )
-    owned_by: str | None = Field(
-        None, description='Canonical user owner ID. Send null to clear ownership.'
+    owner: ResourceOwner | None = None
+    visibility: ResourceVisibility | None = None
+    confirm_audience_expansion: bool = Field(
+        False,
+        description='Required when sharing with the organization, handing custody to the team, or detaching a narrowing container.',
     )
     tags: TagMap | None = Field(
         None, description='Replacement labels; send an empty object to clear all tags.'
@@ -2369,7 +2529,7 @@ class WorkerSocketJobsClaimFrame(BaseModel):
     models: list[WorkerSocketModelCapability] | None = None
 
 
-class Kind3(StrEnum):
+class Kind5(StrEnum):
     action_execution = 'action_execution'
     llm_generation = 'llm_generation'
 
@@ -2394,7 +2554,7 @@ class WorkerSocketClaimedJob(BaseModel):
         extra='forbid',
     )
     id: str = Field(..., description='Job ID.')
-    kind: Kind3
+    kind: Kind5
     origin: Origin
     executor_kind: ExecutorKind
     queue: str
@@ -2482,7 +2642,7 @@ class Type8(StrEnum):
     job_report = 'job.report'
 
 
-class Status2(StrEnum):
+class Status1(StrEnum):
     completed = 'completed'
     failed = 'failed'
     cancelled = 'cancelled'
@@ -2498,7 +2658,7 @@ class WorkerSocketJobReportFrame(BaseModel):
     lease_token: str = Field(
         ..., description='Opaque per-job lease fence returned by claim.'
     )
-    status: Status2 = 'completed'
+    status: Status1 = 'completed'
     result: dict[str, Any] | None = Field(
         None,
         description='Terminal result payload. For `llm_generation` jobs, this object must follow `WorkerSocketLLMGenerationResult`; plain text fallback results are not accepted.',
@@ -2658,6 +2818,10 @@ class Webhook(BaseModel):
         extra='forbid',
     )
     id: str = Field(..., description='Unique identifier for this webhook.')
+    owner: ResourceOwner
+    visibility: ResourceVisibility
+    container: ResourceContainer | None = None
+    posture: ResourcePosture
     name: str = Field(..., description='Human-readable name, unique within the org.')
     url: str = Field(
         ..., description='The customer endpoint Mobius POSTs event payloads to.'
@@ -2779,6 +2943,8 @@ class CreateWebhookRequest(BaseModel):
     tags: TagMap | None = Field(
         None, description='Initial labels to apply to the webhook.'
     )
+    owner: ResourceOwner | None = None
+    visibility: ResourceVisibility | None = None
 
 
 class UpdateWebhookRequest(BaseModel):
@@ -3311,7 +3477,7 @@ class InteractionResponder(BaseModel):
     user_id: str = Field(..., description='Responder user ID.')
 
 
-class Kind4(StrEnum):
+class Kind6(StrEnum):
     external_url = 'external_url'
     mobius_entity = 'mobius_entity'
 
@@ -3324,7 +3490,7 @@ class InteractionReference(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    kind: Kind4
+    kind: Kind6
     url: AnyUrl | None = Field(
         None, description='Required when kind is `external_url`.'
     )
@@ -3340,7 +3506,7 @@ class InteractionReference(BaseModel):
     label: str | None = Field(None, description='User-facing label for display.')
 
 
-class Kind5(StrEnum):
+class Kind7(StrEnum):
     inbox_only = 'inbox_only'
     email = 'email'
 
@@ -3352,7 +3518,7 @@ class EmailDelivery(BaseModel):
     to: list[EmailStr] = Field(..., min_length=1)
 
 
-class Kind6(StrEnum):
+class Kind8(StrEnum):
     run = 'run'
     agent_tool = 'agent_tool'
     http_subscriber = 'http_subscriber'
@@ -3598,6 +3764,151 @@ class CancelInteractionRequest(BaseModel):
     )
 
 
+class Kind9(StrEnum):
+    """
+    Principal kind, so a picker can distinguish a person from a coordinator agent.
+    """
+
+    human = 'human'
+    agent = 'agent'
+    service = 'service'
+    system = 'system'
+
+
+class AgentMember(BaseModel):
+    """
+    One principal in a restricted or private agent's audience. Membership is pure visibility and carries no role.
+
+    A new member reads the ENTIRE shared layer, including everything promoted before they joined. That is inherent to a shared store; the member list's `added_at` is what makes it legible.
+    """
+
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    principal_id: str = Field(
+        ..., description="The human or agent principal in this agent's audience."
+    )
+    kind: Kind9 = Field(
+        ...,
+        description='Principal kind, so a picker can distinguish a person from a coordinator agent.',
+    )
+    display_name: str | None = Field(
+        None, description='Human-readable name of the principal, when resolvable.'
+    )
+    added_at: AwareDatetime = Field(
+        ..., description='When this principal was added to the audience.'
+    )
+    added_by: str | None = Field(
+        None, description='Principal who granted this membership.'
+    )
+
+
+class AgentMemberListResponse(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    items: list[AgentMember] | None = Field(
+        None,
+        description='The current audience. Returned only to callers who may manage the agent; other members receive `count` alone.',
+    )
+    count: int = Field(
+        ..., description="How many principals are in this agent's audience."
+    )
+
+
+class ReplaceAgentMembersRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    principal_ids: list[str] = Field(
+        ...,
+        description='The exact audience after this call. A private agent takes exactly one; a restricted agent at least one. An empty list on a restricted or private agent is rejected: an empty audience means nobody, never everyone.',
+        max_length=200,
+        min_length=1,
+    )
+
+
+class AddAgentMembersRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    principal_ids: list[str] = Field(
+        ...,
+        description='Principals to add. Each must be a live principal in this org. Adding a principal who is already a member is a no-op.',
+        max_length=200,
+    )
+
+
+class ResourceType(StrEnum):
+    artifact = 'artifact'
+    loop = 'loop'
+    session = 'session'
+    skill = 'skill'
+    table = 'table'
+
+
+class ResourceClass(StrEnum):
+    configuration = 'configuration'
+    conversation = 'conversation'
+    output = 'output'
+
+
+class Relationship(StrEnum):
+    delegation = 'delegation'
+    container = 'container'
+
+
+class AllowedAction(StrEnum):
+    revoke = 'revoke'
+    make_private = 'make_private'
+    keep_and_widen = 'keep_and_widen'
+
+
+class AgentVisibilityAffectedResource(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    resource_type: ResourceType
+    resource_id: str
+    name: str | None = Field(
+        None, description='Configuration name. Omitted for conversations and outputs.'
+    )
+    resource_class: ResourceClass
+    relationship: Relationship
+    visibility: ResourceVisibility
+    allowed_actions: list[AllowedAction] = Field(..., max_length=2, min_length=2)
+
+
+class Action4(StrEnum):
+    revoke = 'revoke'
+    make_private = 'make_private'
+    keep_and_widen = 'keep_and_widen'
+
+
+class AgentAudienceResourceDisposition(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    resource_type: ResourceType
+    resource_id: str
+    action: Action4
+
+
+class PromoteAgentMemoryEntryRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    user_id: str = Field(
+        ...,
+        description='The private partition the entry is copied out of. Required: promotion always has an owner, and the shared layer is not a source.',
+        max_length=200,
+    )
+    replace: bool = Field(
+        False,
+        description='Allow overwriting a shared entry that already holds this key. Without it a collision is a `409`, so a promotion never silently rewrites what the group already knows.',
+    )
+
+
 class UpdateMemoryContextPolicy(BaseModel):
     """
     Replacement automatic memory delivery policy. Send an empty object to clear the stored override and restore the bounded index default. Otherwise `mode` is required (`index`, `full`, or `off`) and `max_bytes` is optional.
@@ -3756,16 +4067,6 @@ class AgentMessagingBindingListResponse(BaseModel):
     )
 
 
-class ReplaceToolkitsRequest(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    toolkit_ids: list[str] = Field(
-        ...,
-        description='Full replace-set of toolkit IDs to assign to the agent, in desired order.',
-    )
-
-
 class ReplaceSkillsRequest(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
@@ -3815,9 +4116,6 @@ class AgentManifestWarning(BaseModel):
     message: str = Field(..., description='Human-readable warning text.')
     skill_id: str | None = Field(
         None, description='Skill the warning relates to, when applicable.'
-    )
-    toolkit_id: str | None = Field(
-        None, description='Toolkit the warning relates to, when applicable.'
     )
     tool: str | None = Field(
         None, description='Tool selector the warning relates to, when applicable.'
@@ -3878,6 +4176,13 @@ class CreateAgentRequest(BaseModel):
     tool_presentation: AgentToolPresentation | None = Field(
         None, description='Omit to use the create-time default, `meta`.'
     )
+    tool_selectors: list[ActionSelector] | None = Field(
+        None,
+        description="The agent's tool grant. Omit for an agent with no granted actions; its intrinsic tools are unaffected.",
+    )
+    integration_access: list[AgentIntegrationAccess] | None = Field(
+        None, description='Per-provider connection rules. Omit for the defaults.'
+    )
     system_prompt: str | None = Field(
         None,
         description='Custom system prompt for agents. Empty uses the generated default.',
@@ -3906,15 +4211,39 @@ class CreateAgentRequest(BaseModel):
     tags: TagMap | None = Field(
         None, description='Initial labels used for filtering, ownership, or automation.'
     )
+    owner: ResourceOwner | None = Field(
+        None,
+        description="Who governs this agent's configuration. Omit to use the creating human for a private agent; choose team deliberately for a restricted or organization agent.",
+    )
+    visibility: AgentVisibility | None = Field(
+        None,
+        description='Who this agent is for. Omit for `private` on the employee API.',
+    )
+    members: list[str] | None = Field(
+        None,
+        description='The audience for a `restricted` or `private` agent, written in the same transaction as the agent row.\n\nCreating a `private` agent makes the caller its member unless the caller is an org admin and names another principal. Creating a `restricted` agent takes a list; the caller is added unless they are an org admin and omit themselves. Ignored for `organization`, which carries no member rows.',
+        max_length=200,
+    )
 
 
-class Status3(StrEnum):
+class Status2(StrEnum):
     """
     Replacement agent status: `active` or `inactive`. Use DELETE to delete the agent.
     """
 
     active = 'active'
     inactive = 'inactive'
+
+
+class StrandedDisposition(StrEnum):
+    """
+    What happens to the memory partitions, sessions, and loops of principals who fall outside a narrowed audience.
+
+    `retain` keeps their partitions and sessions, readable only by org admins, and pauses the loops they own that point at this agent rather than leaving them to fail at run time. `delete` additionally erases their private memory partitions, and only an org admin may choose it. A narrowing change that would strand rows and names neither returns `409`.
+    """
+
+    retain = 'retain'
+    delete = 'delete'
 
 
 class UpdateAgentRequest(BaseModel):
@@ -3957,6 +4286,14 @@ class UpdateAgentRequest(BaseModel):
         None,
         description='Replacement tool presentation used by loop agent steps and channel replies.',
     )
+    integration_access: list[AgentIntegrationAccess] | None = Field(
+        None,
+        description='Replacement per-provider connection rules, as a whole. Omit to leave them untouched; send an empty array to clear them.',
+    )
+    tool_selectors: list[ActionSelector] | None = Field(
+        None,
+        description="Replacement tool grant, as a whole. Omit to leave the agent's current grant untouched; send an empty array to revoke it.",
+    )
     system_prompt: str | None = Field(
         None, description='Replacement system prompt for agents.'
     )
@@ -3965,7 +4302,7 @@ class UpdateAgentRequest(BaseModel):
         description="Replacement per-turn execution timeout in seconds for this agent. `0` resets to the platform default (600s / 10 minutes); a loop step's own timeout overrides it for that step.",
         ge=0,
     )
-    status: Status3 | None = Field(
+    status: Status2 | None = Field(
         None,
         description='Replacement agent status: `active` or `inactive`. Use DELETE to delete the agent.',
     )
@@ -3975,7 +4312,7 @@ class UpdateAgentRequest(BaseModel):
     )
     memory_enabled: bool | None = Field(
         None,
-        description='Replacement runtime memory hard gate. Definition bundles cannot override this stored agent setting.',
+        description='Replacement runtime memory hard gate. It cannot be overridden at invocation time.',
     )
     memory_context: UpdateMemoryContextPolicy | None = None
     thinking_effort: ThinkingEffort | None = Field(
@@ -3984,6 +4321,29 @@ class UpdateAgentRequest(BaseModel):
     )
     tags: TagMap | None = Field(
         None, description='Replacement labels; send an empty object to clear all tags.'
+    )
+    visibility: AgentVisibility | None = Field(
+        None,
+        description="Replacement audience. Widening (toward `organization`) republishes the agent's shared memory layer to the new audience and requires `confirm_visibility_change`; there is no technical undo, because republished knowledge cannot be un-read. Narrowing that would strand rows requires `stranded_disposition`.",
+    )
+    members: list[str] | None = Field(
+        None,
+        description='Replacement audience for a `restricted` or `private` agent: the exact set after this call. Omit to leave membership unchanged. Ignored when the resulting visibility is `organization`, which deletes the member rows outright — "org-visible with a leftover member list" is not a representable state.',
+        max_length=200,
+    )
+    confirm_visibility_change: bool = Field(
+        False,
+        description="Acknowledges that widening republishes the agent's shared memory layer to the new audience and drops the current member list. A widening change without it returns `409` naming both counts.",
+    )
+    affected_resource_dispositions: list[AgentAudienceResourceDisposition] | None = (
+        Field(
+            None,
+            description='Exactly one decision for every row returned by the visibility impact preview. Delegations may be revoked or explicitly widened; contained rows may be made private or explicitly widened. Extra, duplicate, and omitted rows are refused.',
+        )
+    )
+    stranded_disposition: StrandedDisposition | None = Field(
+        None,
+        description='What happens to the memory partitions, sessions, and loops of principals who fall outside a narrowed audience.\n\n`retain` keeps their partitions and sessions, readable only by org admins, and pauses the loops they own that point at this agent rather than leaving them to fail at run time. `delete` additionally erases their private memory partitions, and only an org admin may choose it. A narrowing change that would strand rows and names neither returns `409`.',
     )
 
 
@@ -4117,9 +4477,15 @@ class AgentMemoryChangeOperation(StrEnum):
 
 
 class AgentMemoryChangeReason(StrEnum):
+    """
+    Why an entry changed. `remembered` is a run writing memory, `api` a direct write, `soft_cap` an eviction. `promoted` and `promotion_reverted` are the two halves of the explicit, attributed promotion act — the only path from a person's private partition into the agent's shared layer, and its undo.
+    """
+
     remembered = 'remembered'
     api = 'api'
     soft_cap = 'soft_cap'
+    promoted = 'promoted'
+    promotion_reverted = 'promotion_reverted'
 
 
 class AgentMemoryChange(BaseModel):
@@ -4235,7 +4601,7 @@ class SessionThinkingBlock(BaseModel):
 
 class SessionResolvedAction(BaseModel):
     """
-    Canonical org action resolved by a catalog tool dispatch.
+    Canonical action resolved by a catalog tool dispatch.
     """
 
     model_config = ConfigDict(
@@ -4243,7 +4609,7 @@ class SessionResolvedAction(BaseModel):
     )
     name: str = Field(
         ...,
-        description='Canonical org action name, before provider-safe wire-name mangling.',
+        description='Canonical action name, before provider-safe wire-name mangling.',
     )
     input: dict[str, Any] = Field(
         ...,
@@ -4441,84 +4807,13 @@ class SessionReminderBlock(BaseModel):
     content: str = Field(..., description='Reminder content rendered to the model.')
 
 
-class SelectorType(StrEnum):
-    """
-    Selector type: `exact`, `group`, `platform`, `custom`, or `wildcard`.
-    """
-
-    exact = 'exact'
-    group = 'group'
-    platform = 'platform'
-    custom = 'custom'
-    wildcard = 'wildcard'
-
-
-class ToolkitAction(BaseModel):
-    """
-    Action selector included in a toolkit.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    selector_type: SelectorType = Field(
-        ...,
-        description='Selector type: `exact`, `group`, `platform`, `custom`, or `wildcard`.',
-    )
-    selector: str = Field(
-        ...,
-        description='Selector value. Examples: `github.list_issues`, `github.*`, `platform.github.*`, `custom.*`, or `*`.',
-    )
-
-
 class Source3(StrEnum):
     """
-    Provenance of this toolkit. `system` toolkits are built-in; `organization` toolkits are user-authored.
+    Ownership and mutability of the Skill. `system` is built-in and `custom` is user-managed.
     """
 
     system = 'system'
-    organization = 'organization'
-
-
-class Toolkit(BaseModel):
-    """
-    Reusable bundle of action selectors assignable to agents.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    id: str = Field(..., description='Toolkit ID.')
-    name: str = Field(..., description='Human-readable toolkit name.')
-    description: str | None = Field(
-        None, description="Markdown description of the toolkit's purpose."
-    )
-    source: Source3 = Field(
-        ...,
-        description='Provenance of this toolkit. `system` toolkits are built-in; `organization` toolkits are user-authored.',
-    )
-    tags: TagMap | None = Field(None, description='Labels to apply to the toolkit.')
-    actions: list[ToolkitAction] = Field(
-        ...,
-        description='Action selectors provided by this toolkit. Each entry is matched against the unified action catalog at manifest-resolution time.',
-    )
-    created_by: str | None = Field(
-        None, description='ID of the principal who created this toolkit.'
-    )
-    updated_by: str | None = Field(
-        None, description='ID of the principal who last updated this toolkit.'
-    )
-    created_at: AwareDatetime = Field(..., description='Record creation timestamp.')
-    updated_at: AwareDatetime = Field(..., description='Last update timestamp.')
-
-
-class Source4(StrEnum):
-    """
-    Ownership and mutability of the Skill. `system` is built-in and `organization` is shared and mutable by the org.
-    """
-
-    system = 'system'
-    organization = 'organization'
+    custom = 'custom'
 
 
 class Skill(BaseModel):
@@ -4534,16 +4829,20 @@ class Skill(BaseModel):
     description: str | None = Field(
         None, description="Markdown description of the skill's purpose."
     )
-    source: Source4 = Field(
+    source: Source3 = Field(
         ...,
-        description='Ownership and mutability of the Skill. `system` is built-in and `organization` is shared and mutable by the org.',
+        description='Ownership and mutability of the Skill. `system` is built-in and `custom` is user-managed.',
     )
     instructions: str = Field(
         ..., description='Markdown instructions loaded when the skill is active.'
     )
+    owner: ResourceOwner
+    visibility: ResourceVisibility
+    container: ResourceContainer | None
+    posture: ResourcePosture
     allowed_tools: list[str] | None = Field(
         None,
-        description='Canonical action names, wildcard selectors, or group references naming the actions this skill needs. Uses the same selector vocabulary as toolkit grants.\n\nThe grant takes effect when an agent invokes the skill, and lasts for the rest of that turn: calls to actions outside it are refused with an error naming the skill. Assigning a skill narrows nothing on its own, and an empty list declares nothing and narrows nothing. Skills invoked in the same turn compose as a union, so this keeps a skill on task rather than sandboxing it. Mobius memory and self-awareness tools are always exempt, and a skill can never widen an agent beyond its assigned toolkits.',
+        description='Canonical action names, wildcard selectors, or group references naming the actions this skill needs. Uses the same selector vocabulary as agent tool grants.\n\nThe grant takes effect when an agent invokes the skill, and lasts for the rest of that turn: calls to actions outside it are refused with an error naming the skill. Assigning a skill narrows nothing on its own, and an empty list declares nothing and narrows nothing. Skills invoked in the same turn compose as a union, so this keeps a skill on task rather than sandboxing it. Mobius memory and self-awareness tools are always exempt, and a skill can never widen an agent beyond its own tool selectors.',
     )
     tags: TagMap | None = Field(None, description='Labels to apply to the skill.')
     created_by: str | None = Field(
@@ -4812,7 +5111,7 @@ class ToolCallPayload(BaseModel):
     )
 
 
-class Kind7(StrEnum):
+class Kind10(StrEnum):
     interaction = 'interaction'
 
 
@@ -4820,7 +5119,7 @@ class SessionTranscriptWait(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    kind: Kind7
+    kind: Kind10
     interaction_id: str
     tool_call_id: str
     expires_at: AwareDatetime | None = None
@@ -5015,7 +5314,8 @@ class InvokeSessionSpec(BaseModel):
     title: str | None = Field(
         None, description='Human-friendly title for a newly created session.'
     )
-    visibility: SessionVisibility | None = None
+    owner: ResourceOwner | None = None
+    visibility: ResourceVisibility | None = None
     model_override: str | None = Field(
         None,
         description="Model to use for a newly created session. Overrides the stored agent's model and is ignored when an existing session is resolved. Creating a session for a worker-routed agent returns `400 invalid_argument` with `details.argument = model_override`.",
@@ -5137,7 +5437,10 @@ class CreateSessionRequest(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    agent_id: str = Field(..., description='Agent that owns the session.')
+    agent_id: str = Field(
+        ...,
+        description='Agent container that executes the session. The agent never owns it.',
+    )
     mode: Mode2 | None = Field(
         None,
         description='`continue_or_create` (default) resolves an existing session for the `session_key` or creates one; `new` always creates a fresh session; `continue` resolves an existing session and fails if none exists.',
@@ -5146,7 +5449,8 @@ class CreateSessionRequest(BaseModel):
         None, description='Stable key identifying the conversation within the agent.'
     )
     title: str | None = Field(None, description='Human-friendly session title.')
-    visibility: SessionVisibility | None = None
+    owner: ResourceOwner | None = None
+    visibility: ResourceVisibility | None = None
     model_override: str | None = Field(
         None,
         description="Model to use for a newly created session. Overrides the stored agent's model. Ignored when an existing session is resolved. Creating a session for a worker-routed agent returns `400 invalid_argument` with `details.argument = model_override`.",
@@ -5289,15 +5593,6 @@ class SessionNudgeListResponse(BaseModel):
     )
 
 
-class ArtifactVisibility(StrEnum):
-    """
-    Private artifacts are visible only to their owner user. Shared artifacts are visible to the org.
-    """
-
-    private = 'private'
-    shared = 'shared'
-
-
 class State1(StrEnum):
     converting = 'converting'
     ready = 'ready'
@@ -5325,9 +5620,10 @@ class Artifact(BaseModel):
         extra='forbid',
     )
     id: str = Field(..., description='Unique artifact identifier.')
-    visibility: ArtifactVisibility = Field(
-        ..., description='Visibility policy for the artifact.'
-    )
+    owner: ResourceOwner
+    visibility: ResourceVisibility
+    container: ResourceContainer | None = None
+    posture: ResourcePosture
     run_id: str | None = Field(
         None,
         description='Loop run that produced this artifact, derived from the trusted worker lease when present.',
@@ -5338,7 +5634,7 @@ class Artifact(BaseModel):
     )
     name: str = Field(
         ...,
-        description='Display name or relative virtual path. Forward slash may be used to organize artifacts inside private or shared org space.',
+        description='Display name or relative virtual path. Forward slash may be used to organize artifacts inside private or organization-visible space.',
     )
     mime_type: str = Field(
         ..., description='MIME type recorded for the artifact content.'
@@ -5419,7 +5715,7 @@ class RunNameSpec(BaseModel):
     )
 
 
-class Source5(StrEnum):
+class Source4(StrEnum):
     """
     How the repository target is resolved. `static` clones `full_name`; `match` clones the repository the trigger event concerns.
     """
@@ -5444,7 +5740,7 @@ class LoopSpecRepository(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    source: Source5 = Field(
+    source: Source4 = Field(
         'static',
         description='How the repository target is resolved. `static` clones `full_name`; `match` clones the repository the trigger event concerns.',
     )
@@ -5494,7 +5790,7 @@ class LoopSpecInput(BaseModel):
     )
 
 
-class Kind8(StrEnum):
+class Kind11(StrEnum):
     """
     Trigger mechanism: `http`, `schedule`, `event`, or `manual`.
     """
@@ -5572,7 +5868,7 @@ class EventTriggerConfig(BaseModel):
     )
 
 
-class Kind9(StrEnum):
+class Kind12(StrEnum):
     """
     Step discriminator value; always `agent`.
     """
@@ -5580,7 +5876,7 @@ class Kind9(StrEnum):
     agent = 'agent'
 
 
-class Kind10(StrEnum):
+class Kind13(StrEnum):
     """
     Step discriminator value; always `action`.
     """
@@ -5588,7 +5884,7 @@ class Kind10(StrEnum):
     action = 'action'
 
 
-class Kind11(StrEnum):
+class Kind14(StrEnum):
     """
     Step discriminator value; always `sleep`.
     """
@@ -5596,7 +5892,7 @@ class Kind11(StrEnum):
     sleep = 'sleep'
 
 
-class Kind12(StrEnum):
+class Kind15(StrEnum):
     """
     Step discriminator value; always `wait_for_event`.
     """
@@ -5604,7 +5900,7 @@ class Kind12(StrEnum):
     wait_for_event = 'wait_for_event'
 
 
-class Kind13(StrEnum):
+class Kind16(StrEnum):
     """
     Step discriminator value; always `interaction`.
     """
@@ -5612,7 +5908,7 @@ class Kind13(StrEnum):
     interaction = 'interaction'
 
 
-class Kind14(StrEnum):
+class Kind17(StrEnum):
     """
     Step discriminator value; always `loop`.
     """
@@ -5620,7 +5916,7 @@ class Kind14(StrEnum):
     loop = 'loop'
 
 
-class Kind15(StrEnum):
+class Kind18(StrEnum):
     """
     Step discriminator value; always `check`.
     """
@@ -5743,7 +6039,7 @@ class LoopAgentSessionPolicy(BaseModel):
         None,
         description='Optional expression template for the session display title using the same roots as `name`.',
     )
-    visibility: SessionVisibility | None = Field(
+    visibility: ResourceVisibility | None = Field(
         None, description='Visibility for durable sessions created from this policy.'
     )
     compaction_policy: SessionCompactionPolicy | None = Field(
@@ -5936,7 +6232,7 @@ class OnFail(StrEnum):
     gate = 'gate'
 
 
-class Kind16(StrEnum):
+class Kind19(StrEnum):
     """
     `expr` evaluates a deterministic predicate with the same language as step conditions and event waits. `agent` runs a bounded judge turn returning a strict `{pass, reason}` verdict; its spend counts against the run budget and it consumes one run agent turn.
     """
@@ -5956,7 +6252,7 @@ class LoopCheckAssertion(BaseModel):
     name: str = Field(
         ..., description='Unique assertion name shown on the timeline proof row.'
     )
-    kind: Kind16 = Field(
+    kind: Kind19 = Field(
         ...,
         description='`expr` evaluates a deterministic predicate with the same language as step conditions and event waits. `agent` runs a bounded judge turn returning a strict `{pass, reason}` verdict; its spend counts against the run budget and it consumes one run agent turn.',
     )
@@ -6051,7 +6347,7 @@ class HTTPTriggerDeliveryRequest(BaseModel):
     )
 
 
-class Status4(StrEnum):
+class Status3(StrEnum):
     """
     Acceptance status of the source-event row. The only synchronous success value is `accepted`; processing happens asynchronously after the source event is durable.
     """
@@ -6071,7 +6367,7 @@ class HTTPTriggerDeliveryResult(BaseModel):
         ...,
         description='Durable source-event id (also the `dedup_key` seed). Stable across retries with the same `Idempotency-Key`.',
     )
-    status: Status4 = Field(
+    status: Status3 = Field(
         ...,
         description='Acceptance status of the source-event row. The only synchronous success value is `accepted`; processing happens asynchronously after the source event is durable.',
     )
@@ -6257,31 +6553,6 @@ class LoopRunEventListResponse(BaseModel):
     )
 
 
-class ToolkitRequest(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    name: str = Field(
-        ..., description='Human-readable toolkit name.', max_length=80, min_length=1
-    )
-    description: str | None = Field(
-        None,
-        description="Markdown description of the toolkit's purpose.",
-        max_length=1000,
-    )
-    actions: list[ToolkitAction] | None = Field(
-        None, description='Action selectors provided by this toolkit.'
-    )
-    tags: TagMap | None = Field(None, description='Labels to apply to the toolkit.')
-
-
-class ToolkitListResponse(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    items: list[Toolkit] = Field(..., description='The list of results for this page.')
-
-
 class SkillRequest(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
@@ -6303,6 +6574,13 @@ class SkillRequest(BaseModel):
         [],
         description='Tool selectors naming the actions this skill needs. The grant applies once an agent invokes the skill and lasts for the rest of that turn. Empty declares nothing and narrows nothing.',
     )
+    owner: ResourceOwner | None = Field(
+        None,
+        description='Optional explicit custodian. Omit to keep the default shown by the create surface.',
+    )
+    visibility: ResourceVisibility | None = Field(
+        None, description='Optional declared audience. Omit for Only you.'
+    )
     tags: TagMap | None = Field(None, description='Labels to apply to the skill.')
 
 
@@ -6323,20 +6601,6 @@ class SkillListResponse(BaseModel):
     items: list[Skill] = Field(..., description='The list of results for this page.')
 
 
-class OrganizationSkillUsage(BaseModel):
-    """
-    Assignment impact for one organization Skill.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    skill_id: str = Field(..., description='Organization Skill ID.')
-    assignment_count: int = Field(
-        ..., description='Number of agents assigned this Skill.', ge=0
-    )
-
-
 class BlueprintApplyMode(StrEnum):
     """
     `apply` performs the change; `preview` validates and returns a plan without mutating resources.
@@ -6352,7 +6616,6 @@ class BlueprintResourceType(StrEnum):
     """
 
     action = 'action'
-    toolkit = 'toolkit'
     skill = 'skill'
     agent = 'agent'
     loop = 'loop'
@@ -6405,39 +6668,6 @@ class BlueprintActionAnnotations(BaseModel):
     long_running: bool | None = None
 
 
-class SelectorType1(StrEnum):
-    """
-    Selector type used to resolve matching actions.
-    """
-
-    exact = 'exact'
-    group = 'group'
-    platform = 'platform'
-    custom = 'custom'
-    wildcard = 'wildcard'
-
-
-class BlueprintToolkitActionGrant(BaseModel):
-    """
-    Grants actions into a toolkit using the canonical Toolkit selector vocabulary. Supply `selector`; `selector_type` defaults to `exact`. `action_name` is a backwards-compatible alias for an exact selector and cannot be combined with `selector`.
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    selector_type: SelectorType1 = Field(
-        'exact', description='Selector type used to resolve matching actions.'
-    )
-    selector: str | None = Field(
-        None, description='Canonical selector value, such as `github.*` or `*`.'
-    )
-    action_name: str | None = Field(
-        None,
-        deprecated=True,
-        description='Legacy alias for an exact action-name selector.',
-    )
-
-
 class BlueprintSkillInput(BaseModel):
     """
     A desired skill.
@@ -6458,7 +6688,7 @@ class BlueprintSkillInput(BaseModel):
     tags: TagMap | None = None
 
 
-class Status5(StrEnum):
+class Status4(StrEnum):
     draft = 'draft'
     active = 'active'
     paused = 'paused'
@@ -6472,7 +6702,7 @@ class SchemaVersion4(StrEnum):
     field_1 = '1'
 
 
-class Status6(StrEnum):
+class Status5(StrEnum):
     """
     `applied` for a mutating apply, `previewed` for a preview.
     """
@@ -6527,7 +6757,7 @@ class SetBlueprintProtectionRequest(BaseModel):
     protected: bool
 
 
-class Status7(StrEnum):
+class Status6(StrEnum):
     deleted = 'deleted'
 
 
@@ -6535,7 +6765,7 @@ class BlueprintDeleteResult(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    status: Status7
+    status: Status6
     namespace: str | None = None
     blueprint_key: str
     deleted: list[BlueprintBinding] = Field(
@@ -6666,7 +6896,7 @@ class PrincipalState(StrEnum):
 
 class Principal(BaseModel):
     """
-    Non-human identity used by loop, agents, and API keys. A principal makes ownership, permissions, and credential rotation explicit without tying machine access to a human user. The `id` is the principal id used as the `owned_by` value when filtering or claiming resources.
+    Non-human identity used by loop, agents, and API keys. A principal makes permissions, delegation, and credential rotation explicit without tying machine access to a human user. The `id` is the stable identity used by credentials, role assignments, and agent execution.
     """
 
     model_config = ConfigDict(
@@ -6771,6 +7001,10 @@ class Table(BaseModel):
         extra='forbid',
     )
     id: str = Field(..., description='Unique table identifier.')
+    owner: ResourceOwner
+    visibility: ResourceVisibility
+    container: ResourceContainer | None = None
+    posture: ResourcePosture
     name: str = Field(
         ...,
         description='Lowercase snake_case table name, unique within the org.',
@@ -6878,6 +7112,8 @@ class CreateTableRequest(BaseModel):
         description='Optional author guidance for how this table should be used (e.g. surfaced to agents).',
         max_length=2000,
     )
+    owner: ResourceOwner | None = None
+    visibility: ResourceVisibility | None = None
     schema_: TableSchema = Field(
         ...,
         alias='schema',
@@ -7145,7 +7381,7 @@ class CreateArtifactRequest(BaseModel):
     )
     name: str = Field(
         ...,
-        description='Display name or relative virtual path. Forward slash may be used to organize artifacts inside private or shared org space.',
+        description='Display name or relative virtual path. Forward slash may be used to organize artifacts inside private or organization-visible space.',
         max_length=256,
     )
     mime: str | None = Field(
@@ -7160,6 +7396,13 @@ class CreateArtifactRequest(BaseModel):
     metadata: dict[str, Any] | None = Field(
         None,
         description='Optional caller metadata JSON object. Encoded as JSON in the multipart field and limited to 64 KiB.',
+    )
+    owner: ResourceOwner | None = Field(
+        None,
+        description='Optional custodian. Omit to keep the upload with the authenticated person.',
+    )
+    visibility: ResourceVisibility | None = Field(
+        None, description='Optional audience. Omit to keep the upload private.'
     )
     convert: Convert | None = Field(
         None,
@@ -7215,84 +7458,6 @@ class ArtifactQuotaUsage(BaseModel):
     )
 
 
-class CreateOrganizationActionRequest(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    name: str = Field(
-        ..., description="Canonical dotted name selected by the org's toolkits."
-    )
-    title: str | None = None
-    description: str | None = None
-    endpoint_url: AnyUrl = Field(
-        ...,
-        description='Public HTTPS endpoint. Private, loopback, link-local, and redirect targets are rejected.',
-    )
-    invocation_format: InvocationFormat = 'signed_context_v1'
-    input_schema: dict[str, Any] | None = None
-    output_schema: dict[str, Any] | None = None
-    annotations: ActionAnnotationsRequest | None = None
-    enabled: bool = True
-
-
-class UpdateOrganizationActionRequest(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    name: str | None = None
-    title: str | None = None
-    description: str | None = None
-    endpoint_url: AnyUrl | None = Field(
-        None,
-        description='Public HTTPS endpoint. Private, loopback, link-local, and redirect targets are rejected.',
-    )
-    input_schema: dict[str, Any] | None = None
-    output_schema: dict[str, Any] | None = None
-    annotations: ActionAnnotationsRequest | None = None
-    enabled: bool | None = None
-
-
-class OrganizationAction(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    id: str
-    name: str
-    title: str | None = None
-    description: str | None = None
-    endpoint_url: AnyUrl = Field(
-        ...,
-        description='Public HTTPS endpoint. Private, loopback, link-local, and redirect targets are rejected.',
-    )
-    invocation_format: InvocationFormat
-    input_schema: dict[str, Any] | None = None
-    output_schema: dict[str, Any] | None = None
-    annotations: ActionAnnotations | None = None
-    enabled: bool
-    secret_ref: str
-    active_signing_version: int | None = Field(
-        None,
-        description='Current signing-key version. Omitted when the disabled action has no active version.',
-        ge=1,
-    )
-    secret_versions: list[OrganizationActionSecretVersion]
-    signing_secret: str | None = Field(
-        None,
-        description='Base64-encoded signing key returned only on create and rotate. It always belongs to the newest entry in `secret_versions` — the `active` version after create, the `pending` version after rotate.',
-    )
-    created_at: AwareDatetime
-    updated_at: AwareDatetime
-
-
-class OrganizationActionListResponse(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    items: list[OrganizationAction]
-    has_more: bool
-    next_cursor: str | None = None
-
-
 class ActionInvocationContextV1(BaseModel):
     model_config = ConfigDict(
         extra='allow',
@@ -7311,6 +7476,10 @@ class ActionCatalogEntry(BaseModel):
 
     model_config = ConfigDict(
         extra='forbid',
+    )
+    id: str | None = Field(
+        None,
+        description='Stable resource identifier. Present for an organization-authored custom action.',
     )
     name: str = Field(
         ...,
@@ -7336,7 +7505,7 @@ class ActionCatalogEntry(BaseModel):
     )
     definition_scope: DefinitionScope = Field(
         ...,
-        description='Scope that owns the selected definition. A custom action definition shadows a shared organization definition with the same canonical name.',
+        description='Scope that owns the selected definition: `platform` for Mobius and integration actions, or `custom` for an action authored in the current organization.',
     )
     readiness: CapabilityReadiness = Field(
         ...,
@@ -7348,7 +7517,7 @@ class ActionCatalogEntry(BaseModel):
     )
     risk: Risk = Field(
         ...,
-        description='Author-declared risk classification: `low`, `medium`, `high`, or `critical`. Used by toolkit-author UIs to surface warnings and by audit views to prioritize attention.',
+        description='Author-declared risk classification: `low`, `medium`, `high`, or `critical`. Used by tool-grant UIs to surface warnings and by audit views to prioritize attention.',
     )
     annotations: ActionAnnotations = Field(
         ...,
@@ -7371,6 +7540,19 @@ class ActionCatalogEntry(BaseModel):
     execution: ActionExecutionMetadata | None = Field(
         None,
         description='Execution locations and worker requirements available to loop authors.',
+    )
+    owner: ResourceOwner | None = Field(
+        None, description='Present for an organization-authored custom action.'
+    )
+    visibility: ResourceVisibility | None = Field(
+        None, description='Present for an organization-authored custom action.'
+    )
+    container: ResourceContainer | None = Field(
+        None,
+        description='Present when a custom action is narrowed by an agent container.',
+    )
+    posture: ResourcePosture | None = Field(
+        None, description='Present for an organization-authored custom action.'
     )
 
 
@@ -7399,7 +7581,7 @@ class EventCatalogSource(BaseModel):
         ...,
         description='Top-level dotted segment that names the source (`table`, `github`).',
     )
-    kind: Kind1 = Field(
+    kind: Kind3 = Field(
         ...,
         description='`integration` for provider event sources; `capability` for built-in Mobius platform event sources.',
     )
@@ -7523,7 +7705,7 @@ class DeliveryChannel(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    kind: Kind5
+    kind: Kind7
     email: EmailDelivery | None = Field(
         None,
         description='Email delivery payload when `kind=email`; null for inbox-only delivery.',
@@ -7538,7 +7720,7 @@ class Consumer(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    kind: Kind6
+    kind: Kind8
     run: RunConsumer | None = Field(
         None,
         description='Run resume target when `kind=run`; null for other consumer kinds.',
@@ -7553,32 +7735,38 @@ class Consumer(BaseModel):
     )
 
 
-class ToolkitAssignment(BaseModel):
+class AgentVisibilityImpact(BaseModel):
     """
-    Assignment linking a toolkit to an agent.
+    What a pending visibility change would do, so a client can confirm it in specific terms rather than as a dropdown edit.
     """
 
     model_config = ConfigDict(
         extra='forbid',
     )
-    agent_id: str = Field(..., description='Agent the toolkit is assigned to.')
-    toolkit_id: str = Field(..., description='Toolkit assigned to the agent.')
-    toolkit: Toolkit | None = Field(
-        None, description='Expanded toolkit metadata for this assignment.'
-    )
-    position: int = Field(
+    agent_id: str
+    from_: AgentVisibility = Field(..., alias='from')
+    to: AgentVisibility
+    widening: bool = Field(
         ...,
-        description="Ordering position of this assignment in the agent's toolkit list.",
+        description='True when the change exposes the shared memory layer to principals who could not read it before. Widening requires `confirm_visibility_change` and has no technical undo: republished knowledge cannot be un-read.',
     )
-    created_at: AwareDatetime = Field(..., description='Record creation timestamp.')
-
-
-class ToolkitAssignmentListResponse(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
+    shared_entry_count: int = Field(
+        ...,
+        description='How many shared-layer memory entries the change republishes or restricts.',
     )
-    items: list[ToolkitAssignment] = Field(
-        ..., description='Toolkit assignments for this agent, in position order.'
+    dropped_members: list[str] | None = Field(
+        None, description='Member rows a widening change deletes.'
+    )
+    stranded_principals: list[str] | None = Field(
+        None,
+        description='Principals who hold a memory partition, a session, or a loop on this agent and fall outside the new audience.',
+    )
+    stranded_partitions: int | None = None
+    stranded_sessions: int | None = None
+    stranded_loops: int | None = None
+    affected_resources: list[AgentVisibilityAffectedResource] = Field(
+        ...,
+        description='Delegated or contained root resources whose effective audience would grow. Every item requires one matching disposition on the update request; omission aborts the change.',
     )
 
 
@@ -7625,10 +7813,7 @@ class AgentToolManifest(BaseModel):
     agent_id: str = Field(..., description='Agent this manifest was resolved for.')
     policy_hash: str = Field(
         ...,
-        description='Stable hash over the resolved tool + skill set; bumps when assigned toolkits or skills change.',
-    )
-    toolkit_ids: list[str] = Field(
-        ..., description='Toolkit IDs that contributed to the resolved manifest.'
+        description="Stable hash over the resolved tool + skill set; bumps when the agent's tool selectors or skills change.",
     )
     tools: list[ActionCatalogEntry] = Field(
         ...,
@@ -7877,7 +8062,7 @@ class LoopSpecTrigger(BaseModel):
         None, description='Stable user-authored trigger key within the spec.'
     )
     name: str | None = Field(None, description='Human-readable trigger name.')
-    kind: Kind8 = Field(
+    kind: Kind11 = Field(
         ..., description='Trigger mechanism: `http`, `schedule`, `event`, or `manual`.'
     )
     enabled: bool | None = Field(
@@ -8338,28 +8523,9 @@ class BlueprintActionInput(BaseModel):
     tags: TagMap | None = None
 
 
-class BlueprintToolkitInput(BaseModel):
-    """
-    A desired toolkit. Resolved only through its binding (toolkits have no unique name).
-    """
-
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    key: str
-    name: str
-    description: str | None = None
-    actions: list[BlueprintToolkitActionGrant] | None = Field(
-        None,
-        description='Actions granted into the toolkit by canonical selector or legacy exact action name.',
-    )
-    tags: TagMap | None = None
-    metadata: dict[str, Any] | None = None
-
-
 class BlueprintAgentInput(BaseModel):
     """
-    A desired agent. `toolkits` and `skills`, when present, replace the agent's full assignment set; omit them to leave existing assignments untouched.
+    A desired agent. `skills`, when present, replaces the agent's full assignment set; omit it to leave existing assignments untouched.
     """
 
     model_config = ConfigDict(
@@ -8392,7 +8558,6 @@ class BlueprintAgentInput(BaseModel):
         description='Default reasoning-effort level for sessions and Loop agent steps.',
     )
     color: str | None = None
-    toolkits: list[BlueprintResourceRef] | None = None
     skills: list[BlueprintResourceRef] | None = None
     tags: TagMap | None = None
 
@@ -8409,7 +8574,7 @@ class BlueprintLoopInput(BaseModel):
     name: str
     description: str | None = None
     agent: BlueprintResourceRef | None = None
-    status: Status5 | None = None
+    status: Status4 | None = None
     schema_version: SchemaVersion4 = Field(
         '1', description='Loop authoring schema version. Only version 1 is accepted.'
     )
@@ -8471,7 +8636,7 @@ class BlueprintApplyResult(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    status: Status6 = Field(
+    status: Status5 = Field(
         ..., description='`applied` for a mutating apply, `previewed` for a preview.'
     )
     namespace: str | None = None
@@ -8576,6 +8741,13 @@ class Interaction(BaseModel):
         None,
         description='Canonical principal ID of the human or agent that created the interaction; null for legacy/system-created rows.',
     )
+    owner: ResourceOwner = Field(
+        ...,
+        description='Interactions are team-governed; their explicit targets are the audience boundary.',
+    )
+    visibility: ResourceVisibility
+    container: ResourceContainer | None = None
+    posture: ResourcePosture
     kind: InteractionKind = Field(..., description='Protocol kind of the interaction.')
     status: InteractionStatus = Field(
         ..., description='Current lifecycle state of the interaction.'
@@ -8896,7 +9068,6 @@ class BlueprintResources(BaseModel):
         extra='forbid',
     )
     actions: list[BlueprintActionInput] | None = None
-    toolkits: list[BlueprintToolkitInput] | None = None
     skills: list[BlueprintSkillInput] | None = None
     agents: list[BlueprintAgentInput] | None = None
     loops: list[BlueprintLoopInput] | None = None
@@ -8976,6 +9147,10 @@ class Loop(BaseModel):
         extra='forbid',
     )
     id: str = Field(..., description='Stable loop identifier.')
+    owner: ResourceOwner
+    visibility: ResourceVisibility
+    container: ResourceContainer | None = None
+    posture: ResourcePosture
     name: str = Field(..., description='Human-readable display name.')
     description: str | None = Field(
         None, description="Markdown description of the loop's purpose."
@@ -8984,12 +9159,9 @@ class Loop(BaseModel):
         ...,
         description='Current loop lifecycle status: `draft`, `active`, `paused`, or `deleted`.',
     )
-    owner: str | None = Field(
-        None, description='User who created or currently owns this loop.'
-    )
     agent_id: str | None = Field(
         None,
-        description='Agent associated with this loop. Agent steps use it when they do not pin `config.agent_id`.',
+        description='Agent container associated with this loop. Agent steps use it when they do not pin `config.agent_id`; it never owns the loop.',
     )
     schema_version: SchemaVersion1 = Field(
         '1',
@@ -9077,6 +9249,8 @@ class CreateLoopRequest(BaseModel):
         None,
         description='Agent associated with this loop. Agent steps use it when they do not pin `config.agent_id`.',
     )
+    owner: ResourceOwner | None = None
+    visibility: ResourceVisibility | None = None
     schema_version: SchemaVersion1 = Field(
         '1',
         description='Loop authoring schema version. Only schema version 1 is accepted.',
@@ -9233,7 +9407,9 @@ class SessionMessage(BaseModel):
     )
     id: str = Field(..., description='Stable message identifier.')
     session_id: str = Field(..., description='Session this message belongs to.')
-    agent_id: str = Field(..., description='Agent that owns the parent session.')
+    agent_id: str = Field(
+        ..., description='Agent container executing the parent session.'
+    )
     role: SessionMessageRole = Field(
         ..., description='Role of this message in the transcript.'
     )
@@ -9355,7 +9531,7 @@ class SessionMessagePreviewFrame(BaseModel):
     )
     session_id: str = Field(..., description='Session this preview belongs to.')
     agent_id: str | None = Field(
-        None, description='Agent that owns the parent session, when known.'
+        None, description='Agent container executing the parent session, when known.'
     )
     run_id: str | None = Field(
         None, description='Loop run that produced the preview, when applicable.'

@@ -11,6 +11,9 @@ const AT = "2026-07-14T12:00:00Z";
 function interaction(status: Interaction["status"]): Interaction {
   return {
     id: "iact_1",
+    owner: { kind: "person", id: "user_1" },
+    visibility: "private",
+    posture: "only_you",
     kind: "request_information",
     status,
     title: "Which region?",

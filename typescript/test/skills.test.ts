@@ -1,15 +1,19 @@
 import { strict as assert } from "node:assert";
 import { test } from "node:test";
 
-import { Client, MobiusAPIError } from "../src/client.js";
+import { Client } from "../src/client.js";
 import type { Skill } from "../src/api/index.js";
 
 const SKILL_DOC =
   "---\nallowed_tools:\n  - github.create_review_comment\n---\nCheck the diff and leave concise findings.\n";
 
-function skill(id = "skill_1", source: Skill["source"] = "organization"): Skill {
+function skill(id = "skill_1", source: Skill["source"] = "custom"): Skill {
   return {
     id,
+    owner: { kind: "person", id: "user_1" },
+    visibility: "private",
+    container: null,
+    posture: "only_you",
     name: "Pull request review",
     source,
     instructions: "Check the diff and leave concise findings.",
@@ -98,7 +102,7 @@ test("client: importSkill sends the document verbatim", async () => {
       const imported = await client.importSkill(SKILL_DOC, {
         name: "Pull request review",
       });
-      assert.equal(imported.source, "organization");
+      assert.equal(imported.source, "custom");
       await client.importSkill("Just instructions.");
     },
   );
@@ -106,61 +110,6 @@ test("client: importSkill sends the document verbatim", async () => {
     { content: SKILL_DOC, name: "Pull request review" },
     { content: "Just instructions." },
   ]);
-});
-
-test("client: organization skill routes preserve provenance and usage", async () => {
-  await withMockFetch(
-    (method, url) => {
-      if (url.pathname === "/v1/organization/skills" && method === "GET") {
-        return Response.json({ items: [skill("skill_org", "organization")] });
-      }
-      if (url.pathname === "/v1/organization/skills/import") {
-        return Response.json(skill("skill_org", "organization"), {
-          status: 201,
-        });
-      }
-      if (url.pathname === "/v1/organization/skills/skill_org") {
-        return Response.json(skill("skill_org", "organization"));
-      }
-      assert.equal(url.pathname, "/v1/organization/skills/skill_org/usage");
-      return Response.json({
-        skill_id: "skill_org",
-        assignment_count: 3,
-      });
-    },
-    async (client) => {
-      const page = await client.listOrganizationSkills();
-      assert.equal(page.items[0]?.source, "organization");
-      await client.importOrganizationSkill(SKILL_DOC);
-      await client.replaceOrganizationSkill("skill_org", {
-        name: "Pull request review",
-        instructions: "Check the diff.",
-      });
-      const usage = await client.getOrganizationSkillUsage("skill_org");
-      assert.equal(usage.assignment_count, 3);
-    },
-  );
-});
-
-test("client: deleteOrganizationSkill surfaces the skill_in_use conflict", async () => {
-  await withMockFetch(
-    () =>
-      Response.json(
-        {
-          error: { code: "skill_in_use", message: "detach agents first" },
-        },
-        { status: 409 },
-      ),
-    async (client) => {
-      await assert.rejects(
-        client.deleteOrganizationSkill("skill_org"),
-        (err: unknown) =>
-          err instanceof MobiusAPIError &&
-          err.status === 409 &&
-          err.code === "skill_in_use",
-      );
-    },
-  );
 });
 
 test("client: replaceAgentSkillAssignments preserves order and allows empty", async () => {

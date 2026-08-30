@@ -96,7 +96,7 @@ func registerApiKeysCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.Arg(0)
+			p0 := api.IDParam(ctx.Arg(0))
 			resp, err := client.DeleteAPIKeyWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
@@ -114,7 +114,7 @@ func registerApiKeysCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.Arg(0)
+			p0 := api.IDParam(ctx.Arg(0))
 			resp, err := client.GetAPIKeyWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err

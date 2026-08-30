@@ -30,8 +30,11 @@ def _agent(agent_id: str = "agent_1") -> dict:
     return {
         "id": agent_id,
         "principal_id": agent_id,
+        "owner": {"kind": "person", "id": "user_1"},
+        "posture": "shared_by_you",
         "name": "PR reviewer",
         "status": "active",
+        "visibility": "organization",
         "external_ref": "tenant-42/pr-reviewer",
         "memory_enabled": False,
         "created_at": "2026-07-17T00:00:00Z",

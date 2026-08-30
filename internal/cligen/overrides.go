@@ -31,18 +31,7 @@ var overrides = map[string]Override{
 	// --- actions ----------------------------------------------------------
 	// `invoke` isn't in the verb list, so the auto-derive keeps the redundant
 	// `-action` suffix; strip it.
-	"invokeAction":            {Command: "invoke"},
-	"listOrganizationActions": {Group: "org-actions", Command: "list"},
-	// Hand-written: create and rotate reveal one-time secret material, so the
-	// commands require an explicit sink (--secret-file or --show-secret)
-	// instead of printing the signing secret by default.
-	"createOrganizationAction":                {Skip: true},
-	"getOrganizationAction":                   {Group: "org-actions", Command: "get"},
-	"updateOrganizationAction":                {Group: "org-actions", Command: "update"},
-	"deleteOrganizationAction":                {Group: "org-actions", Command: "delete"},
-	"rotateOrganizationActionSecret":          {Skip: true},
-	"activateOrganizationActionSecretVersion": {Group: "org-actions", Command: "activate-secret-version"},
-	"revokeOrganizationActionSecretVersion":   {Group: "org-actions", Command: "revoke-secret-version"},
+	"invokeAction": {Command: "invoke"},
 
 	// --- agents -----------------------------------------------------------
 	// Drop the redundant `agent` token that the auto-derivation can't strip
@@ -53,12 +42,10 @@ var overrides = map[string]Override{
 	// `agent` token; strip it so the leaf matches its siblings
 	// `get-memory`/`list-memory-entries`/`delete-memory-entry`.
 	"saveAgentMemoryEntry": {Command: "save-memory-entry"},
-	// `replaceAgentSkillAssignments`/`replaceAgentToolkitAssignments` keep a
+	// `replaceAgentSkillAssignments` keeps a
 	// redundant `agent` token the auto-derivation can't strip (the group
-	// already carries it); the matching list ops derive cleanly to
-	// `list-skill-assignments`/`list-toolkit-assignments`.
-	"replaceAgentSkillAssignments":   {Command: "replace-skill-assignments"},
-	"replaceAgentToolkitAssignments": {Command: "replace-toolkit-assignments"},
+	// already carries it); the matching list operation derives cleanly.
+	"replaceAgentSkillAssignments": {Command: "replace-skill-assignments"},
 
 	// --- principals -------------------------------------------------------
 	// Hand-written so `principals create NAME --role Operator --with-key`
@@ -70,19 +57,6 @@ var overrides = map[string]Override{
 	// (a Claude Code / Dive-style markdown file) instead of a JSON request
 	// body wrapping it.
 	"importSkill": {Skip: true},
-
-	// --- org-skills -------------------------------------------------------
-	// Organization Skills have org-wide authority and are read-only through
-	// the plain `skills` mutation routes. Keep them in a distinct group so
-	// their CRUD verbs do not collide with the existing `skills` commands.
-	"listOrganizationSkills":  {Group: "org-skills", Command: "list"},
-	"createOrganizationSkill": {Group: "org-skills", Command: "create"},
-	// Hand-written for the same reason as `importSkill`.
-	"importOrganizationSkill":   {Skip: true},
-	"getOrganizationSkill":      {Group: "org-skills", Command: "get"},
-	"replaceOrganizationSkill":  {Group: "org-skills", Command: "update"},
-	"deleteOrganizationSkill":   {Group: "org-skills", Command: "delete"},
-	"getOrganizationSkillUsage": {Group: "org-skills", Command: "usage"},
 
 	// --- interactions -----------------------------------------------------
 	// `respond` isn't in the verb list, so the auto-derive keeps the
@@ -184,8 +158,6 @@ var groupDescriptions = map[string]string{
 	"agents":        "Agent identities, presence, and lifecycle",
 	"api-keys":      "API keys scoped to the org",
 	"org-api-keys":  "API keys acting org-wide across principals",
-	"org-actions":   "Organization-scoped signed HTTP actions",
-	"org-skills":    "Skills shared across the organization",
 	"artifacts":     "Run output artifacts and storage quota",
 	"blueprints":    "Org blueprint application and bindings",
 	"catalog":       "Available actions and triggerable events",
