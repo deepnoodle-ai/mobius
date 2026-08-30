@@ -50,6 +50,7 @@ type QueryField struct {
 	Description string // help text from the OpenAPI parameter description
 	ElemType    string // unwrapped element type: "string", "int", "bool", or a named alias
 	Kind        string // "string", "int", "bool", "strings" (for []string), "skip"
+	Required    bool   // true if the struct field is non-pointer
 }
 
 // BodyArg captures a typed JSON request body.
@@ -240,18 +241,21 @@ func resolveBodyField(f FieldInfo, client *ClientInfo) BodyField {
 	return bf
 }
 
-// resolveQueryField maps a struct field to a CLI flag descriptor.
+// resolveQueryField maps a struct field to a CLI flag descriptor. Oapi-codegen
+// represents required query parameters as values and optional parameters as
+// pointers, so both shapes must be surfaced by the CLI.
 func resolveQueryField(f FieldInfo, client *ClientInfo) QueryField {
 	qf := QueryField{
-		GoField:  f.GoName,
-		FlagName: toKebab(firstNonEmpty(f.JSONTag, f.GoName)),
+		GoField:     f.GoName,
+		FlagName:    toKebab(firstNonEmpty(f.JSONTag, f.GoName)),
+		Description: f.Doc,
 	}
-	// Expect pointer types for query fields; anything else we skip.
-	if !strings.HasPrefix(f.Type, "*") {
-		qf.Kind = "skip"
-		return qf
+	elem := f.Type
+	if strings.HasPrefix(elem, "*") {
+		elem = strings.TrimPrefix(elem, "*")
+	} else {
+		qf.Required = true
 	}
-	elem := strings.TrimPrefix(f.Type, "*")
 	// []string → cli.Strings
 	if strings.HasPrefix(elem, "[]") {
 		inner := strings.TrimPrefix(elem, "[]")
@@ -580,7 +584,7 @@ func renderGroupFile(group string, cmds []PlannedCommand, description string) ([
 // Regenerate with:  make generate-go-cli
 //
 // To suppress or override a command, edit
-// cmd/mobius-cligen/overrides.go — never hand-edit this file.
+// internal/cligen/overrides.go — never hand-edit this file.
 
 package main
 
@@ -711,18 +715,23 @@ func renderCommand(b *bytes.Buffer, group string, c PlannedCommand) error {
 	if c.QueryBlock != nil {
 		for _, f := range c.QueryBlock.Fields {
 			help := summarizeHelp(firstNonEmpty(f.Description, f.FlagName))
+			required := ""
+			if f.Required {
+				help = "[required] " + help
+				required = ".Required()"
+			}
 			switch f.Kind {
 			case "string":
-				flags = append(flags, fmt.Sprintf(`cli.String(%q, "").Help(%q)`, f.FlagName, help))
+				flags = append(flags, fmt.Sprintf(`cli.String(%q, "").Help(%q)%s`, f.FlagName, help, required))
 			case "int", "int64":
-				flags = append(flags, fmt.Sprintf(`cli.Int(%q, "").Help(%q)`, f.FlagName, help))
+				flags = append(flags, fmt.Sprintf(`cli.Int(%q, "").Help(%q)%s`, f.FlagName, help, required))
 			case "bool":
-				flags = append(flags, fmt.Sprintf(`cli.Bool(%q, "").Help(%q)`, f.FlagName, help))
+				flags = append(flags, fmt.Sprintf(`cli.Bool(%q, "").Help(%q)%s`, f.FlagName, help, required))
 			case "strings":
-				flags = append(flags, fmt.Sprintf(`cli.Strings(%q, "").Help(%q)`, f.FlagName, help))
+				flags = append(flags, fmt.Sprintf(`cli.Strings(%q, "").Help(%q)%s`, f.FlagName, help, required))
 			case "time":
-				flags = append(flags, fmt.Sprintf(`cli.String(%q, "").Help(%q)`, f.FlagName,
-					help+" Accepts an RFC3339 timestamp (for example: 2026-07-22T12:00:00Z)."))
+				flags = append(flags, fmt.Sprintf(`cli.String(%q, "").Help(%q)%s`, f.FlagName,
+					help+" Accepts an RFC3339 timestamp (for example: 2026-07-22T12:00:00Z).", required))
 			}
 		}
 	}
@@ -734,9 +743,6 @@ func renderCommand(b *bytes.Buffer, group string, c PlannedCommand) error {
 			help := summarizeHelp(firstNonEmpty(f.Description, f.FlagName))
 			if acceptsTextFileInput(f) {
 				help += " Accepts text, @file, or @-. Use @@ to escape a literal leading @."
-			}
-			if acceptsCommaSeparatedInput(f) {
-				help += " Repeat the flag or separate IDs with commas."
 			}
 			if isCommandTailField(c, f) {
 				help += " For values beginning with '-', use --command=<value> or argv after --."
@@ -794,7 +800,11 @@ func renderCommand(b *bytes.Buffer, group string, c PlannedCommand) error {
 			fmt.Fprintf(b, "\t\t\tif err != nil { return err }\n")
 			argIdx++
 		default:
-			fmt.Fprintf(b, "\t\t\tp%d := ctx.Arg(%d)\n", i, argIdx)
+			if p.GoType == "string" {
+				fmt.Fprintf(b, "\t\t\tp%d := ctx.Arg(%d)\n", i, argIdx)
+			} else {
+				fmt.Fprintf(b, "\t\t\tp%d := api.%s(ctx.Arg(%d))\n", i, p.GoType, argIdx)
+			}
 			argIdx++
 		}
 	}
@@ -811,26 +821,56 @@ func renderCommand(b *bytes.Buffer, group string, c PlannedCommand) error {
 			}
 			switch f.Kind {
 			case "string":
-				fmt.Fprintf(b, "\t\t\tif ctx.IsSet(%q) { v := %s; params.%s = &v }\n",
-					f.FlagName, cast(fmt.Sprintf("ctx.String(%q)", f.FlagName)), f.GoField)
+				if f.Required {
+					fmt.Fprintf(b, "\t\t\tparams.%s = %s\n",
+						f.GoField, cast(fmt.Sprintf("ctx.String(%q)", f.FlagName)))
+				} else {
+					fmt.Fprintf(b, "\t\t\tif ctx.IsSet(%q) { v := %s; params.%s = &v }\n",
+						f.FlagName, cast(fmt.Sprintf("ctx.String(%q)", f.FlagName)), f.GoField)
+				}
 			case "int":
-				fmt.Fprintf(b, "\t\t\tif ctx.IsSet(%q) { v := %s; params.%s = &v }\n",
-					f.FlagName, cast(fmt.Sprintf("ctx.Int(%q)", f.FlagName)), f.GoField)
+				if f.Required {
+					fmt.Fprintf(b, "\t\t\tparams.%s = %s\n",
+						f.GoField, cast(fmt.Sprintf("ctx.Int(%q)", f.FlagName)))
+				} else {
+					fmt.Fprintf(b, "\t\t\tif ctx.IsSet(%q) { v := %s; params.%s = &v }\n",
+						f.FlagName, cast(fmt.Sprintf("ctx.Int(%q)", f.FlagName)), f.GoField)
+				}
 			case "int64":
-				fmt.Fprintf(b, "\t\t\tif ctx.IsSet(%q) { v := %s; params.%s = &v }\n",
-					f.FlagName, cast(fmt.Sprintf("int64(ctx.Int(%q))", f.FlagName)), f.GoField)
+				if f.Required {
+					fmt.Fprintf(b, "\t\t\tparams.%s = %s\n",
+						f.GoField, cast(fmt.Sprintf("int64(ctx.Int(%q))", f.FlagName)))
+				} else {
+					fmt.Fprintf(b, "\t\t\tif ctx.IsSet(%q) { v := %s; params.%s = &v }\n",
+						f.FlagName, cast(fmt.Sprintf("int64(ctx.Int(%q))", f.FlagName)), f.GoField)
+				}
 			case "bool":
-				fmt.Fprintf(b, "\t\t\tif ctx.IsSet(%q) { v := ctx.Bool(%q); params.%s = &v }\n",
-					f.FlagName, f.FlagName, f.GoField)
+				if f.Required {
+					fmt.Fprintf(b, "\t\t\tparams.%s = ctx.Bool(%q)\n", f.GoField, f.FlagName)
+				} else {
+					fmt.Fprintf(b, "\t\t\tif ctx.IsSet(%q) { v := ctx.Bool(%q); params.%s = &v }\n",
+						f.FlagName, f.FlagName, f.GoField)
+				}
 			case "strings":
-				fmt.Fprintf(b, "\t\t\tif ctx.IsSet(%q) {\n", f.FlagName)
-				emitStringSliceValue(b, "\t\t\t\t", "v", f.ElemType, fmt.Sprintf("ctx.Strings(%q)", f.FlagName))
-				fmt.Fprintf(b, "\t\t\t\tparams.%s = &v\n\t\t\t}\n", f.GoField)
+				if f.Required {
+					emitStringSliceValue(b, "\t\t\t", "v", f.ElemType, fmt.Sprintf("ctx.Strings(%q)", f.FlagName))
+					fmt.Fprintf(b, "\t\t\tparams.%s = v\n", f.GoField)
+				} else {
+					fmt.Fprintf(b, "\t\t\tif ctx.IsSet(%q) {\n", f.FlagName)
+					emitStringSliceValue(b, "\t\t\t\t", "v", f.ElemType, fmt.Sprintf("ctx.Strings(%q)", f.FlagName))
+					fmt.Fprintf(b, "\t\t\t\tparams.%s = &v\n\t\t\t}\n", f.GoField)
+				}
 			case "time":
-				fmt.Fprintf(b, "\t\t\tif ctx.IsSet(%q) {\n", f.FlagName)
-				fmt.Fprintf(b, "\t\t\t\tv, err := parseTimeFlag(%q, ctx.String(%q))\n", f.FlagName, f.FlagName)
-				fmt.Fprintf(b, "\t\t\t\tif err != nil { return err }\n")
-				fmt.Fprintf(b, "\t\t\t\tparams.%s = &v\n\t\t\t}\n", f.GoField)
+				if f.Required {
+					fmt.Fprintf(b, "\t\t\tv, err := parseTimeFlag(%q, ctx.String(%q))\n", f.FlagName, f.FlagName)
+					fmt.Fprintf(b, "\t\t\tif err != nil { return err }\n")
+					fmt.Fprintf(b, "\t\t\tparams.%s = v\n", f.GoField)
+				} else {
+					fmt.Fprintf(b, "\t\t\tif ctx.IsSet(%q) {\n", f.FlagName)
+					fmt.Fprintf(b, "\t\t\t\tv, err := parseTimeFlag(%q, ctx.String(%q))\n", f.FlagName, f.FlagName)
+					fmt.Fprintf(b, "\t\t\t\tif err != nil { return err }\n")
+					fmt.Fprintf(b, "\t\t\t\tparams.%s = &v\n\t\t\t}\n", f.GoField)
+				}
 			}
 		}
 	}
@@ -901,9 +941,6 @@ func renderCommand(b *bytes.Buffer, group string, c PlannedCommand) error {
 			case "strings":
 				fmt.Fprintf(b, "\t\t\tif ctx.IsSet(%q) {\n", f.FlagName)
 				valuesExpr := fmt.Sprintf("ctx.Strings(%q)", f.FlagName)
-				if acceptsCommaSeparatedInput(f) {
-					valuesExpr = "splitCommaSeparated(" + valuesExpr + ")"
-				}
 				emitStringSliceValue(b, "\t\t\t\t", "v", f.ElemType, valuesExpr)
 				if f.Required {
 					fmt.Fprintf(b, "\t\t\t\tbody.%s = v\n", f.GoField)
@@ -1026,10 +1063,6 @@ func acceptsTextFileInput(f BodyField) bool {
 	return f.Kind == "string" && f.ElemType == "string" && f.FlagName == "instructions"
 }
 
-func acceptsCommaSeparatedInput(f BodyField) bool {
-	return f.Kind == "strings" && f.FlagName == "toolkit-ids"
-}
-
 // emitStringSliceValue declares name from a cli.Strings expression. Named
 // string element types need an element-wise conversion because Go does not
 // permit assigning []string directly to []MyStringEnum.
@@ -1137,18 +1170,6 @@ func decodeFlagText(ctx *cli.Context, flag, raw string) (string, error) {
 		return "", cli.Errorf("--%s: %v", flag, err)
 	}
 	return string(data), nil
-}
-
-func splitCommaSeparated(values []string) []string {
-	out := make([]string, 0, len(values))
-	for _, value := range values {
-		for _, part := range strings.Split(value, ",") {
-			if part = strings.TrimSpace(part); part != "" {
-				out = append(out, part)
-			}
-		}
-	}
-	return out
 }
 
 // readBodyBytes reads from a path or "-" (stdin). The returned label is

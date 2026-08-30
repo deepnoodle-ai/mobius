@@ -3,7 +3,7 @@
 // Regenerate with:  make generate-go-cli
 //
 // To suppress or override a command, edit
-// cmd/mobius-cligen/overrides.go — never hand-edit this file.
+// internal/cligen/overrides.go — never hand-edit this file.
 
 package main
 
@@ -23,11 +23,11 @@ func registerEnvironmentsCommands(app *cli.App) {
 		Description("Create environment").
 		Flags(
 			cli.String("name", "").Help("Human-readable environment name."),
-			cli.String("owned-by", "").Help("Canonical user owner ID. Defaults to the authenticated user."),
+			cli.String("owner", "").Help("The human or team responsible for this resource. Accepts JSON, @file, or @-."),
 			cli.String("provider", "").Help("Providers the control plane can provision on demand. Worker-provided environments are registered out-of-band via the attach endpoint and…"),
-			cli.String("scope", "").Help("Optional namespace for named runtime resources. Omitted/null means the org/default scope; `owner` means names are unique within `(org…"),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
 			cli.String("template-id", "").Help("V1 supports only coding-default."),
+			cli.String("visibility", "").Help("Who the custodian chose to share the resource with."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -46,17 +46,14 @@ func registerEnvironmentsCommands(app *cli.App) {
 				v := ctx.String("name")
 				body.Name = &v
 			}
-			if ctx.IsSet("owned-by") {
-				v := ctx.String("owned-by")
-				body.OwnedBy = &v
+			if ctx.IsSet("owner") {
+				if err := decodeFlagJSON(ctx, "owner", ctx.String("owner"), &body.Owner); err != nil {
+					return err
+				}
 			}
 			if ctx.IsSet("provider") {
 				v := api.ProvisionEnvironmentProvider(ctx.String("provider"))
 				body.Provider = &v
-			}
-			if ctx.IsSet("scope") {
-				v := api.ResourceScope(ctx.String("scope"))
-				body.Scope = &v
 			}
 			if tags, err := parseTagFlags(ctx); err != nil {
 				return err
@@ -68,7 +65,11 @@ func registerEnvironmentsCommands(app *cli.App) {
 				v := api.CreateEnvironmentRequestTemplateId(ctx.String("template-id"))
 				body.TemplateId = &v
 			}
-			if ctx.String("file") == "" && !ctx.IsSet("name") && !ctx.IsSet("owned-by") && !ctx.IsSet("provider") && !ctx.IsSet("scope") && !ctx.IsSet("tag") && !ctx.IsSet("template-id") {
+			if ctx.IsSet("visibility") {
+				v := api.ResourceVisibility(ctx.String("visibility"))
+				body.Visibility = &v
+			}
+			if ctx.String("file") == "" && !ctx.IsSet("name") && !ctx.IsSet("owner") && !ctx.IsSet("provider") && !ctx.IsSet("tag") && !ctx.IsSet("template-id") && !ctx.IsSet("visibility") {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
 			if ctx.Bool("dry-run") {
@@ -91,7 +92,7 @@ func registerEnvironmentsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.Arg(0)
+			p0 := api.EnvironmentIDParam(ctx.Arg(0))
 			resp, err := client.DestroyEnvironmentWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
@@ -109,7 +110,7 @@ func registerEnvironmentsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.Arg(0)
+			p0 := api.EnvironmentIDParam(ctx.Arg(0))
 			resp, err := client.GetEnvironmentWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
@@ -173,9 +174,10 @@ func registerEnvironmentsCommands(app *cli.App) {
 		Description("Update environment").
 		AddArg(&cli.Arg{Name: "environment-id", Description: "Environment ID.", Required: true}).
 		Flags(
-			cli.String("owned-by", "").Help("Canonical user owner ID. Send null to clear ownership."),
-			cli.String("scope", "").Help("Resource scope; send null to return to the org/default scope."),
+			cli.Bool("confirm-audience-expansion", "").Help("Required when sharing with the organization, handing custody to the team, or detaching a narrowing container."),
+			cli.String("owner", "").Help("The human or team responsible for this resource. Accepts JSON, @file, or @-."),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
+			cli.String("visibility", "").Help("Who the custodian chose to share the resource with."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -186,18 +188,19 @@ func registerEnvironmentsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.Arg(0)
+			p0 := api.EnvironmentIDParam(ctx.Arg(0))
 			var body api.UpdateEnvironmentJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
 			}
-			if ctx.IsSet("owned-by") {
-				v := ctx.String("owned-by")
-				body.OwnedBy = &v
+			if ctx.IsSet("confirm-audience-expansion") {
+				v := ctx.Bool("confirm-audience-expansion")
+				body.ConfirmAudienceExpansion = &v
 			}
-			if ctx.IsSet("scope") {
-				v := api.ResourceScope(ctx.String("scope"))
-				body.Scope = &v
+			if ctx.IsSet("owner") {
+				if err := decodeFlagJSON(ctx, "owner", ctx.String("owner"), &body.Owner); err != nil {
+					return err
+				}
 			}
 			if tags, err := parseTagFlags(ctx); err != nil {
 				return err
@@ -205,7 +208,11 @@ func registerEnvironmentsCommands(app *cli.App) {
 				v := api.TagMap(tags)
 				body.Tags = &v
 			}
-			if ctx.String("file") == "" && !ctx.IsSet("owned-by") && !ctx.IsSet("scope") && !ctx.IsSet("tag") {
+			if ctx.IsSet("visibility") {
+				v := api.ResourceVisibility(ctx.String("visibility"))
+				body.Visibility = &v
+			}
+			if ctx.String("file") == "" && !ctx.IsSet("confirm-audience-expansion") && !ctx.IsSet("owner") && !ctx.IsSet("tag") && !ctx.IsSet("visibility") {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
 			if ctx.Bool("dry-run") {

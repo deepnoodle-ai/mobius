@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import base64
 import json
 import logging
 import os
@@ -30,11 +29,9 @@ from ._api.models import (
     BlueprintApplyResult,
     BlueprintBindingListResponse,
     BlueprintDeleteResult,
-    ActivateOrganizationActionSecretRequest,
     CancelLoopRunRequest,
     ChannelContext,
     CreateAgentRequest,
-    CreateOrganizationActionRequest,
     CreatePrincipalRequest,
     CreateRoleAssignmentRequest,
     CreateRoleRequest,
@@ -57,8 +54,6 @@ from ._api.models import (
     MemorySearchMode,
     NudgeSessionRequest,
     OAuthReturnOrigins,
-    OrganizationAction,
-    OrganizationActionListResponse,
     PermissionCatalogResponse,
     Principal,
     PrincipalKind,
@@ -68,7 +63,6 @@ from ._api.models import (
     RuntimeContextItem,
     SaveAgentMemoryEntryRequest,
     ImportSkillRequest,
-    OrganizationSkillUsage,
     ReplaceSkillsRequest,
     Skill,
     SkillAssignmentListResponse,
@@ -93,7 +87,6 @@ from ._api.models import (
     TurnAck,
     TurnOutputSpec,
     UpdateLoopRequest,
-    UpdateOrganizationActionRequest,
     UpdatePrincipalRequest,
     UpdateRoleRequest,
 )
@@ -287,12 +280,6 @@ class MemorySyncResult:
 
 
 @dataclass
-class ListOrganizationActionsOptions:
-    cursor: str | None = None
-    limit: int | None = None
-
-
-@dataclass
 class ListActionInvocationsOptions:
     """Filters for the org's action invocation audit records."""
 
@@ -301,8 +288,7 @@ class ListActionInvocationsOptions:
     environment_id: str | None = None
     action_name: str | None = None
     action_id: str | None = None
-    # Scope that owned the selected definition: "platform", "custom", or
-    # "organization".
+    # Scope that owns the selected definition: "platform" or "custom".
     definition_scope: str | None = None
     # Signing-secret version used for the HTTP delivery.
     secret_version: int | None = None
@@ -312,26 +298,6 @@ class ListActionInvocationsOptions:
     status: str | None = None
     cursor: str | None = None
     limit: int | None = None
-
-
-@dataclass
-class OrganizationActionSecretMaterial:
-    """One-time signing secret revealed by create/rotate of an org action.
-
-    The server never returns this key again; store ``key_bytes`` before
-    discarding the value, and never log it.
-    """
-
-    # The created or updated action. Its signing_secret field is cleared;
-    # the revealed key lives only in key_bytes.
-    action: OrganizationAction
-    # Stable reference sent in X-Mobius-Secret-Ref on signed deliveries.
-    secret_ref: str
-    # Key version the revealed secret belongs to: the active version after
-    # create, the pending version after rotate.
-    version: int
-    # Base64-decoded signing key.
-    key_bytes: bytes
 
 
 @dataclass
@@ -889,111 +855,6 @@ class Client:
             if not page.has_more:
                 return changes, cursor
 
-    def list_organization_actions(
-        self, opts: ListOrganizationActionsOptions | None = None
-    ) -> OrganizationActionListResponse:
-        """List signed HTTP actions owned by the active organization.
-
-        Requires Admin or Owner membership.
-        """
-        resp = self._request(
-            "GET", "/v1/organization/actions", params=_params(opts)
-        )
-        return OrganizationActionListResponse.model_validate(resp.json())
-
-    def create_organization_action(
-        self, request: CreateOrganizationActionRequest
-    ) -> OrganizationActionSecretMaterial:
-        """Create an organization-owned signed HTTP action.
-
-        Returns the action's one-time secret material. The signing key is
-        revealed only in this response; persist ``key_bytes`` before
-        discarding the result.
-        """
-        resp = self._request("POST", "/v1/organization/actions", json=request)
-        action = OrganizationAction.model_validate(resp.json())
-        return _organization_action_secret_material(
-            "create organization action", action, "active"
-        )
-
-    def get_organization_action(self, action_id: str) -> OrganizationAction:
-        """Return one organization action. Reads never include secret material."""
-        resp = self._request(
-            "GET", f"/v1/organization/actions/{quote(action_id, safe='')}"
-        )
-        return OrganizationAction.model_validate(resp.json())
-
-    def update_organization_action(
-        self, action_id: str, request: UpdateOrganizationActionRequest
-    ) -> OrganizationAction:
-        """Update the shared definition or enable/disable invocation."""
-        resp = self._request(
-            "PATCH",
-            f"/v1/organization/actions/{quote(action_id, safe='')}",
-            json=request,
-        )
-        return OrganizationAction.model_validate(resp.json())
-
-    def delete_organization_action(self, action_id: str) -> None:
-        """Delete the shared definition from future catalogs."""
-        self._request(
-            "DELETE", f"/v1/organization/actions/{quote(action_id, safe='')}"
-        )
-
-    def rotate_organization_action_secret(
-        self, action_id: str
-    ) -> OrganizationActionSecretMaterial:
-        """Create a pending key version and return its one-time material.
-
-        Mobius keeps signing with the current active version until
-        :meth:`activate_organization_action_secret_version` promotes the
-        pending one — distribute the new key to verifiers first, then
-        activate.
-        """
-        resp = self._request(
-            "POST",
-            f"/v1/organization/actions/{quote(action_id, safe='')}/secret/rotate",
-        )
-        action = OrganizationAction.model_validate(resp.json())
-        return _organization_action_secret_material(
-            "rotate organization action secret", action, "pending"
-        )
-
-    def activate_organization_action_secret_version(
-        self, action_id: str, version: int, *, overlap_seconds: int | None = None
-    ) -> OrganizationAction:
-        """Atomically make a pending version active.
-
-        The previous active version, if any, keeps verifying for
-        ``overlap_seconds`` (server default 24 hours; pass 0 to cut over
-        immediately).
-        """
-        body = (
-            ActivateOrganizationActionSecretRequest(overlap_seconds=overlap_seconds)
-            if overlap_seconds is not None
-            else ActivateOrganizationActionSecretRequest()
-        )
-        resp = self._request(
-            "POST",
-            f"/v1/organization/actions/{quote(action_id, safe='')}/secret/versions/{version}/activate",
-            json=body,
-        )
-        return OrganizationAction.model_validate(resp.json())
-
-    def revoke_organization_action_secret_version(
-        self, action_id: str, version: int
-    ) -> OrganizationAction:
-        """Immediately revoke a non-active key version.
-
-        The active signing version can be revoked only after another version
-        is activated or the action is disabled.
-        """
-        resp = self._request(
-            "POST",
-            f"/v1/organization/actions/{quote(action_id, safe='')}/secret/versions/{version}/revoke",
-        )
-        return OrganizationAction.model_validate(resp.json())
-
     def get_oauth_return_origins(self) -> OAuthReturnOrigins:
         """Return the org's OAuth return-origin allowlist.
 
@@ -1100,83 +961,6 @@ class Client:
         self._request(
             "DELETE", f"/v1/skills/{quote(skill_id, safe='')}"
         )
-
-    def list_organization_skills(self) -> SkillListResponse:
-        """List skills owned by the active organization.
-
-        Any organization member may read this catalog.
-        """
-        resp = self._request("GET", "/v1/organization/skills")
-        return SkillListResponse.model_validate(resp.json())
-
-    def create_organization_skill(self, request: SkillRequest) -> Skill:
-        """Create a skill shared across the active organization.
-
-        Requires Admin or Owner membership.
-        """
-        resp = self._request("POST", "/v1/organization/skills", json=request)
-        return Skill.model_validate(resp.json())
-
-    def import_organization_skill(
-        self, content: str, *, name: str | None = None
-    ) -> Skill:
-        """Import a Claude Code or Dive-style document as an organization skill.
-
-        ``content`` is sent verbatim, including any YAML frontmatter; pass
-        ``name`` to override the document's own. Requires Admin or Owner
-        membership.
-        """
-        resp = self._request(
-            "POST",
-            "/v1/organization/skills/import",
-            json=ImportSkillRequest(content=content, name=name),
-        )
-        return Skill.model_validate(resp.json())
-
-    def get_organization_skill(self, skill_id: str) -> Skill:
-        """Return one skill owned by the active organization."""
-        resp = self._request(
-            "GET", f"/v1/organization/skills/{quote(skill_id, safe='')}"
-        )
-        return Skill.model_validate(resp.json())
-
-    def replace_organization_skill(self, skill_id: str, request: SkillRequest) -> Skill:
-        """Replace the shared skill for subsequent agent turns.
-
-        The server requires the full body — including ``name`` and
-        ``instructions`` — on every update; there is no partial patch, so
-        read-modify-write is the caller's responsibility. Requires Admin or
-        Owner membership.
-        """
-        resp = self._request(
-            "PUT",
-            f"/v1/organization/skills/{quote(skill_id, safe='')}",
-            json=request,
-        )
-        return Skill.model_validate(resp.json())
-
-    def delete_organization_skill(self, skill_id: str) -> None:
-        """Delete an unused organization skill.
-
-        A skill that is still assigned raises a 409 ``skill_in_use``
-        :class:`MobiusAPIError`; inspect
-        :meth:`get_organization_skill_usage` and remove the assignments
-        first — the SDK never detaches agents implicitly.
-        """
-        self._request(
-            "DELETE", f"/v1/organization/skills/{quote(skill_id, safe='')}"
-        )
-
-    def get_organization_skill_usage(self, skill_id: str) -> OrganizationSkillUsage:
-        """Report an organization skill's assignment impact across agents.
-
-        Lets callers see what a replace or delete would touch. Requires
-        Admin or Owner membership.
-        """
-        resp = self._request(
-            "GET", f"/v1/organization/skills/{quote(skill_id, safe='')}/usage"
-        )
-        return OrganizationSkillUsage.model_validate(resp.json())
 
     def list_agent_skill_assignments(
         self, agent_id: str
@@ -2129,44 +1913,6 @@ def _model_dump(value: Any) -> Any:
 
 def _drop_none(values: dict[str, Any]) -> dict[str, Any]:
     return {k: v for k, v in values.items() if v is not None}
-
-
-def _organization_action_secret_material(
-    op: str, action: OrganizationAction, want_status: str
-) -> OrganizationActionSecretMaterial:
-    """Extract the one-time secret from a create or rotate response.
-
-    The revealed signing_secret always belongs to the newest entry in
-    secret_versions, whose status must match ``want_status``; any other
-    shape means the response is internally inconsistent. Errors never
-    include the secret itself.
-    """
-    if not action.signing_secret:
-        raise ValueError(
-            f"mobius: {op}: response is missing the one-time signing_secret"
-        )
-    if not action.secret_versions:
-        raise ValueError(
-            f"mobius: {op}: response has no secret_versions for the revealed secret"
-        )
-    newest = max(action.secret_versions, key=lambda v: v.version)
-    if newest.status != want_status:
-        raise ValueError(
-            f"mobius: {op}: newest secret version {newest.version} has status"
-            f" {newest.status.value!r}, want {want_status!r}"
-        )
-    try:
-        key_bytes = base64.b64decode(action.signing_secret, validate=True)
-    except (ValueError, TypeError):
-        raise ValueError(
-            f"mobius: {op}: signing_secret is not valid base64"
-        ) from None
-    return OrganizationActionSecretMaterial(
-        action=action.model_copy(update={"signing_secret": None}),
-        secret_ref=action.secret_ref,
-        version=newest.version,
-        key_bytes=key_bytes,
-    )
 
 
 def _invoke_agent_request(opts: InvokeAgentOptions) -> InvokeAgentRequest:

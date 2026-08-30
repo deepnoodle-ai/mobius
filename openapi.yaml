@@ -21,6 +21,9 @@ servers:
 security:
 - BearerAuth: []
 tags:
+- name: resources
+  x-displayName: Resources
+  description: Resources API operations.
 - name: api-keys
   x-displayName: API Keys
   description: Organization API keys used for programmatic authentication.
@@ -69,9 +72,6 @@ tags:
 - name: runs
   x-displayName: Runs
   description: Durable loop run executions with their steps and event streams.
-- name: toolkits
-  x-displayName: Toolkits
-  description: Org-local and system toolkit templates that grant agents access to action selectors.
 - name: skills
   x-displayName: Skills
   description: Org-local and system skill templates used to shape agent behavior and requested
@@ -89,6 +89,57 @@ tags:
   x-displayName: Artifacts
   description: Files produced by agents during loop runs and stored for later inspection.
 paths:
+  /v1/resources/{resource_type}/{resource_id}/ownership:
+    patch:
+      operationId: updateResourceOwnership
+      x-public: true
+      tags:
+      - resources
+      summary: Update a resource's custody or audience
+      description: Shares, un-shares, hands custody to the team, transfers custody to a person,
+        or detaches a narrowing agent container. Audience-expanding changes require an explicit
+        confirmation. Un-sharing is refused while the resource remains delegated to a wider
+        agent audience.
+      parameters:
+      - name: resource_type
+        in: path
+        required: true
+        schema:
+          type: string
+          enum:
+          - action
+          - artifact
+          - environment
+          - loop
+          - secret
+          - session
+          - skill
+          - table
+          - webhook
+      - $ref: '#/components/parameters/IDParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResourceOwnershipTransitionRequest'
+      responses:
+        '200':
+          description: Updated ownership state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourceOwnershipState'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
   /v1/api-keys:
     post:
       operationId: createAPIKey
@@ -159,6 +210,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/APIKeyListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -179,6 +232,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/APIKey'
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -197,6 +252,8 @@ paths:
       responses:
         '204':
           description: No Content
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -205,267 +262,6 @@ paths:
           $ref: '#/components/responses/NotFound'
         '429':
           $ref: '#/components/responses/TooManyRequests'
-  /v1/organization/actions:
-    get:
-      operationId: listOrganizationActions
-      tags:
-      - actions
-      x-public: true
-      summary: List organization actions
-      description: Lists signed HTTP actions owned by the active organization. These definitions
-        are available org-wide, but a toolkit must still select an action before an agent
-        can call it. Requires Admin or Owner membership.
-      parameters:
-      - $ref: '#/components/parameters/CursorParam'
-      - $ref: '#/components/parameters/LimitParam'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/OrganizationActionListResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-    post:
-      operationId: createOrganizationAction
-      tags:
-      - actions
-      x-public: true
-      summary: Create organization action
-      description: Creates an organization-owned HTTP action using the signed_context_v1 request
-        contract. The initial signing secret is returned once. Store it immediately; later
-        reads expose lifecycle metadata only. Requires Admin or Owner membership.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateOrganizationActionRequest'
-      responses:
-        '201':
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/OrganizationAction'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '409':
-          $ref: '#/components/responses/Conflict'
-  /v1/organization/actions/{action_id}:
-    get:
-      operationId: getOrganizationAction
-      tags:
-      - actions
-      x-public: true
-      summary: Get organization action
-      description: Returns one organization action without prior secret material. Requires
-        Admin or Owner membership.
-      parameters:
-      - name: action_id
-        in: path
-        required: true
-        schema:
-          type: string
-        description: Organization action ID.
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/OrganizationAction'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-    patch:
-      operationId: updateOrganizationAction
-      tags:
-      - actions
-      x-public: true
-      summary: Update organization action
-      description: Updates the shared definition or enables/disables invocation. A custom
-        action with the same canonical name continues to shadow this definition. Requires
-        Admin or Owner membership.
-      parameters:
-      - name: action_id
-        in: path
-        required: true
-        schema:
-          type: string
-        description: Organization action ID.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpdateOrganizationActionRequest'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/OrganizationAction'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
-    delete:
-      operationId: deleteOrganizationAction
-      tags:
-      - actions
-      x-public: true
-      summary: Delete organization action
-      description: Deletes the shared definition from future action catalogs. Requires Admin
-        or Owner membership.
-      parameters:
-      - name: action_id
-        in: path
-        required: true
-        schema:
-          type: string
-        description: Organization action ID.
-      responses:
-        '204':
-          $ref: '#/components/responses/NoContent'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-  /v1/organization/actions/{action_id}/secret/rotate:
-    post:
-      operationId: rotateOrganizationActionSecret
-      tags:
-      - actions
-      x-public: true
-      summary: Rotate an organization action secret
-      description: Creates a pending key version and reveals it once. Mobius continues signing
-        with the active version until the pending version is activated. Requires Admin or
-        Owner membership.
-      parameters:
-      - name: action_id
-        in: path
-        required: true
-        schema:
-          type: string
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/OrganizationAction'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
-  /v1/organization/actions/{action_id}/secret/versions/{secret_version}/activate:
-    post:
-      operationId: activateOrganizationActionSecretVersion
-      tags:
-      - actions
-      x-public: true
-      summary: Activate an organization action secret version
-      description: Atomically makes a pending version active and moves the previous active
-        version, if any, into its bounded verification overlap. This also recovers a disabled
-        action after its active version was revoked. Requires Admin or Owner membership.
-      parameters:
-      - name: action_id
-        in: path
-        required: true
-        schema:
-          type: string
-      - name: secret_version
-        in: path
-        required: true
-        schema:
-          type: integer
-          format: int64
-          minimum: 1
-      requestBody:
-        required: false
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ActivateOrganizationActionSecretRequest'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/OrganizationAction'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
-  /v1/organization/actions/{action_id}/secret/versions/{secret_version}/revoke:
-    post:
-      operationId: revokeOrganizationActionSecretVersion
-      tags:
-      - actions
-      x-public: true
-      summary: Revoke an organization action secret version
-      description: Immediately revokes a non-active key version. The active signing version
-        can be revoked only after another version is activated or the action is disabled.
-        Requires Admin or Owner membership.
-      parameters:
-      - name: action_id
-        in: path
-        required: true
-        schema:
-          type: string
-      - name: secret_version
-        in: path
-        required: true
-        schema:
-          type: integer
-          format: int64
-          minimum: 1
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/OrganizationAction'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
   /v1/actions:
     post:
       operationId: createAction
@@ -527,6 +323,11 @@ paths:
                 tags:
                   owner: product
                 signing_secret: base64:one_time_secret
+                owner:
+                  kind: person
+                  id: user_2f9s3k4m5n6p7q8r
+                visibility: private
+                posture: only_you
                 created_at: '2026-06-15T14:30:00Z'
                 updated_at: '2026-06-15T14:30:00Z'
         '400':
@@ -662,7 +463,7 @@ paths:
           type: string
       - name: action_id
         in: query
-        description: Filter to an immutable custom or organization Action ID.
+        description: Filter to an immutable custom Action ID.
         schema:
           type: string
       - name: definition_scope
@@ -673,7 +474,6 @@ paths:
           enum:
           - platform
           - custom
-          - organization
       - name: secret_version
         in: query
         description: Filter to deliveries signed with a specific secret version.
@@ -957,6 +757,12 @@ paths:
                   owner: product
                 cleanup_status: none
                 retention_policy: manual
+                owner:
+                  kind: person
+                  id: user_2f9s3k4m5n6p7q8r
+                visibility: private
+                container: null
+                posture: only_you
                 created_at: '2026-06-15T14:30:00Z'
                 updated_at: '2026-06-15T14:30:00Z'
         '400':
@@ -997,7 +803,7 @@ paths:
       tags:
       - environments
       summary: Update environment
-      description: Only scope, owned_by, and tags are mutable from the public API.
+      description: Only owner, visibility, and tags are mutable from the public API.
       parameters:
       - $ref: '#/components/parameters/EnvironmentIDParam'
       requestBody:
@@ -1156,6 +962,11 @@ paths:
                 secret_version: 1
                 signing_secret: redacted_base64_signing_secret
                 created_by: user_2f9s3k4m5n6p7q8r
+                owner:
+                  kind: person
+                  id: user_2f9s3k4m5n6p7q8r
+                visibility: private
+                posture: only_you
                 created_at: '2026-06-15T14:30:00Z'
                 updated_at: '2026-06-15T14:30:00Z'
         '400':
@@ -1787,6 +1598,11 @@ paths:
                   default_confirmed: false
                 target_user_ids:
                 - user_2f9s3k4m5n6p7q8r
+                owner:
+                  kind: person
+                  id: user_2f9s3k4m5n6p7q8r
+                visibility: private
+                posture: only_you
                 expires_at: '2026-04-25T14:30:00Z'
                 created_at: '2026-04-24T14:30:00Z'
                 updated_at: '2026-04-24T14:30:00Z'
@@ -1946,6 +1762,11 @@ paths:
                   default_confirmed: false
                 target_user_ids:
                 - user_2f9s3k4m5n6p7q8r
+                owner:
+                  kind: person
+                  id: user_2f9s3k4m5n6p7q8r
+                visibility: private
+                posture: only_you
                 responder:
                   user_id: user_2f9s3k4m5n6p7q8r
                 resolving_response_id: iresp_3v7q2m9x5p8n4r6t
@@ -2069,7 +1890,7 @@ paths:
       - agents
       summary: Create agent
       description: |-
-        Creates an agent. An agent IS a principal (principals.kind = agent): its backing identity row is created atomically with the agent — there is no separate machine-identity side record. The agent principal is for identity, ownership, and attribution; an agent's tools come from its assigned toolkits, not from roles.
+        Creates an agent. An agent IS a principal (principals.kind = agent): its backing identity row is created atomically with the agent — there is no separate machine-identity side record. The agent principal is for identity, ownership, and attribution; an agent's tools come from its own `tool_selectors`, not from roles.
 
         By default (`if_exists: error`, the default), a duplicate `name` or `external_ref` returns 409. Set `if_exists: adopt` together with `external_ref` to make the call safely retryable: when a live agent already carries that `external_ref`, it is returned unchanged with `200` instead of erroring — mutable fields are ignored, since no write happens. `external_ref` is required to use `adopt`; omitting it returns 400. A soft-deleted agent still owns its `external_ref`: it is never resurrected and never replaced, so a match against a deleted agent returns 409 even with `adopt`.
       requestBody:
@@ -2112,6 +1933,11 @@ paths:
                 status: active
                 tags:
                   owner: product
+                owner:
+                  kind: person
+                  id: user_2f9s3k4m5n6p7q8r
+                visibility: private
+                posture: only_you
                 created_by: user_2f9s3k4m5n6p7q8r
                 updated_by: user_2f9s3k4m5n6p7q8r
                 created_at: '2026-06-15T14:30:00Z'
@@ -2253,6 +2079,161 @@ paths:
           $ref: '#/components/responses/NotFound'
         '429':
           $ref: '#/components/responses/TooManyRequests'
+  /v1/agents/{resource_id}/members:
+    get:
+      operationId: listAgentMembers
+      tags:
+      - agents
+      summary: List agent members
+      description: |-
+        Returns the audience of a `restricted` or `private` agent.
+
+        The member list itself is returned only to callers who may manage the agent — an org admin, or the agent's creator while they remain a member. Every other member sees `count` alone, which is enough to answer "who else can see this" without turning the audience into a directory. An `organization` agent has no members and returns zero.
+      parameters:
+      - $ref: '#/components/parameters/IDParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentMemberListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      operationId: addAgentMembers
+      tags:
+      - agents
+      summary: Add agent members
+      description: |-
+        Adds principals to a `restricted` agent's audience. Idempotent: adding a principal who is already a member changes nothing.
+
+        A new member reads the ENTIRE shared layer, including everything promoted before they joined. Adding a second member to a `private` agent is refused — share it by changing its visibility to `restricted`. An agent parked `inactive` for having no audience reactivates when a member is added.
+      parameters:
+      - $ref: '#/components/parameters/IDParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddAgentMembersRequest'
+      responses:
+        '200':
+          description: The audience after the add.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentMemberListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+    put:
+      operationId: replaceAgentMembers
+      tags:
+      - agents
+      summary: Replace agent members
+      description: Sets the audience to exactly the supplied principals. A `private` agent
+        takes exactly one; a `restricted` agent at least one.
+      parameters:
+      - $ref: '#/components/parameters/IDParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReplaceAgentMembersRequest'
+      responses:
+        '200':
+          description: The audience after the replacement.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentMemberListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/agents/{resource_id}/members/{principal_id}:
+    delete:
+      operationId: removeAgentMember
+      tags:
+      - agents
+      summary: Remove an agent member
+      description: |-
+        Drops one principal from the audience. They lose reach on their next request.
+
+        Nothing they wrote is deleted: their private partition on this agent is retained and readable only by org admins, and anything they promoted stays, because promotion made it the group's. Removing the LAST member parks the agent as `inactive`, visible to org admins who may reassign or delete it — it is never silently reopened to the org.
+      parameters:
+      - $ref: '#/components/parameters/IDParam'
+      - name: principal_id
+        in: path
+        required: true
+        description: The principal to remove from the audience.
+        schema:
+          type: string
+      responses:
+        '204':
+          description: Removed
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/agents/{resource_id}/visibility-impact:
+    get:
+      operationId: previewAgentVisibilityChange
+      tags:
+      - agents
+      summary: Preview a visibility change
+      description: |-
+        Reports what changing this agent's audience would do, without writing anything: how many shared memory entries a widening republishes, which member rows it drops, and which principals a narrowing would strand.
+
+        It is what makes the confirmation specific — "everyone in the org will be able to read the 14 things it knows" rather than a generic warning.
+      parameters:
+      - $ref: '#/components/parameters/IDParam'
+      - name: visibility
+        in: query
+        required: true
+        description: The visibility being considered.
+        schema:
+          $ref: '#/components/schemas/AgentVisibility'
+      - name: members
+        in: query
+        description: The audience being considered, as a comma-separated list of principal
+          IDs. Omit to evaluate against the current member list.
+        schema:
+          type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentVisibilityImpact'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /v1/agents/{resource_id}/inbox:
     post:
       operationId: provisionAgentInbox
@@ -2398,65 +2379,6 @@ paths:
           $ref: '#/components/responses/NotFound'
         '429':
           $ref: '#/components/responses/TooManyRequests'
-  /v1/agents/{resource_id}/toolkit-assignments:
-    get:
-      operationId: listAgentToolkitAssignments
-      tags:
-      - agents
-      summary: List agent toolkit assignments
-      description: Returns the toolkits assigned to an agent in assignment order.
-      parameters:
-      - $ref: '#/components/parameters/IDParam'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ToolkitAssignmentListResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-    put:
-      operationId: replaceAgentToolkitAssignments
-      tags:
-      - agents
-      summary: Replace agent toolkit assignments
-      description: 'Replaces the agent''s toolkit assignment set as a whole. The effective
-        tool surface is the union of the assigned toolkits'' actions, narrowed by any per-invocation
-        filters. Assigned skills do not narrow it: a skill''s `allowed_tools` grant applies
-        only once the agent invokes that skill.'
-      parameters:
-      - $ref: '#/components/parameters/IDParam'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ReplaceToolkitsRequest'
-            example:
-              toolkit_ids:
-              - kit_4r8q2m7x9p5v3n6t
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ToolkitAssignmentListResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '429':
-          $ref: '#/components/responses/TooManyRequests'
   /v1/agents/{resource_id}/skill-assignments:
     get:
       operationId: listAgentSkillAssignments
@@ -2486,8 +2408,8 @@ paths:
       summary: Replace agent skill assignments
       description: 'Replaces the agent''s skill assignment set as a whole. Assigning a skill
         does not change the agent''s tools: a skill''s `allowed_tools` grant takes effect
-        only once the agent invokes that skill, and never widens the set beyond the assigned
-        toolkits'' actions.'
+        only once the agent invokes that skill, and never widens the set beyond the agent''s
+        own tool selectors.'
       parameters:
       - $ref: '#/components/parameters/IDParam'
       requestBody:
@@ -2523,22 +2445,17 @@ paths:
       - agents
       summary: Get agent tools
       description: |-
-        Resolves the effective set of tools an agent can invoke: the flat union of the assigned toolkits' actions, optionally restricted by a toolkit subset and tool filters.
+        Resolves the effective set of tools an agent can invoke: its tool selectors expanded against the live action catalog, optionally restricted by tool filters.
 
         Assigned skills do not narrow this set — a skill's `allowed_tools` grant applies only once the agent invokes that skill at runtime. Pass `skill_name` to preview the tools the agent would be left with while that one skill is loaded.
       parameters:
       - $ref: '#/components/parameters/IDParam'
-      - name: toolkit_ids
-        in: query
-        description: Optional comma-separated toolkit subset to apply.
-        schema:
-          type: string
       - name: skill_name
         in: query
         description: Optional assigned skill name to simulate as invoked, so the response
           shows the tool scope a turn would run under once that skill is loaded. Omitted means
           no skill grant is applied; the resolved set still reflects the other filters on
-          this request (`toolkit_ids`, `allowed_tools`).
+          this request (`allowed_tools`).
         schema:
           type: string
       - name: allowed_tools
@@ -2750,6 +2667,67 @@ paths:
           $ref: '#/components/responses/NotFound'
         '429':
           $ref: '#/components/responses/TooManyRequests'
+  /v1/agents/{resource_id}/memory/entries/{memory_key}/promotion:
+    post:
+      operationId: promoteAgentMemoryEntry
+      tags:
+      - agents
+      summary: Promote a memory entry to the shared layer
+      description: |-
+        Copies one entry from a private partition into the same agent's shared layer, where everyone who can reach the agent reads it. The private entry stays where it was.
+
+        This is the only path from a person's private memory into the shared layer: the model has no tool that writes it during a human-initiated turn, so nothing you tell your assistant becomes the team's by accident. Performed by the partition's owner or by an org admin. The resulting entry carries a change row with reason `promoted` and the acting principal, and the act is reversible with `DELETE` on the same path.
+
+        A key already present in the shared layer is a `409` unless `replace` is set; the replacement is recorded as a versioned update.
+      parameters:
+      - $ref: '#/components/parameters/IDParam'
+      - $ref: '#/components/parameters/MemoryKeyParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PromoteAgentMemoryEntryRequest'
+            example:
+              user_id: user_2f9s3k4m5n6p7q8r
+      responses:
+        '200':
+          description: The promoted shared entry.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentMemoryEntry'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+    delete:
+      operationId: revertAgentMemoryPromotion
+      tags:
+      - agents
+      summary: Reverse a promotion
+      description: Removes a promoted entry from the shared layer. It touches nothing in the
+        private partition it was copied from, and it is its own change row (reason `promotion_reverted`),
+        so the ledger records both directions of the act. Available to the promoter and to
+        org admins. Idempotent.
+      parameters:
+      - $ref: '#/components/parameters/IDParam'
+      - $ref: '#/components/parameters/MemoryKeyParam'
+      responses:
+        '204':
+          description: Reverted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /v1/agents/invoke:
     post:
       operationId: invokeAgent
@@ -3747,6 +3725,11 @@ paths:
                     instructions: Summarize open pull requests.
                 tags:
                   owner: product
+                owner:
+                  kind: person
+                  id: user_2f9s3k4m5n6p7q8r
+                visibility: private
+                posture: only_you
                 created_at: '2026-06-15T14:30:00Z'
                 updated_at: '2026-06-15T14:30:00Z'
         '400':
@@ -4285,186 +4268,6 @@ paths:
           $ref: '#/components/responses/NotFound'
         '429':
           $ref: '#/components/responses/TooManyRequests'
-  /v1/toolkits:
-    get:
-      operationId: listToolkits
-      tags:
-      - toolkits
-      summary: List toolkits
-      description: Returns organization-owned and system toolkit templates visible to the
-        caller's organization by default.
-      parameters:
-      - name: include_system
-        in: query
-        description: Include read-only system templates.
-        schema:
-          type: boolean
-          default: true
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ToolkitListResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-    post:
-      operationId: createToolkit
-      tags:
-      - toolkits
-      summary: Create toolkit
-      description: Creates an organization toolkit with named action selectors.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ToolkitRequest'
-            example:
-              name: GitHub review
-              description: GitHub actions needed for pull-request review.
-              actions:
-              - selector_type: exact
-                selector: github.create_review_comment
-              tags:
-                owner: product
-      responses:
-        '201':
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Toolkit'
-              example:
-                id: kit_4r8q2m7x9p5v3n6t
-                name: GitHub review
-                description: GitHub actions needed for pull-request review.
-                source: organization
-                tags:
-                  owner: product
-                actions:
-                - selector_type: exact
-                  selector: github.create_review_comment
-                created_by: user_2f9s3k4m5n6p7q8r
-                updated_by: user_2f9s3k4m5n6p7q8r
-                created_at: '2026-06-15T14:30:00Z'
-                updated_at: '2026-06-15T14:30:00Z'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
-        '429':
-          $ref: '#/components/responses/TooManyRequests'
-  /v1/toolkits/{toolkit_id}:
-    get:
-      operationId: getToolkit
-      tags:
-      - toolkits
-      summary: Get toolkit
-      description: Returns a single organization-owned or system toolkit template by ID.
-      parameters:
-      - name: toolkit_id
-        in: path
-        required: true
-        description: Toolkit ID.
-        schema:
-          type: string
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Toolkit'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-    put:
-      operationId: updateToolkit
-      tags:
-      - toolkits
-      summary: Update toolkit
-      description: Updates the mutable toolkit representation. Send the full request body,
-        including required field `name`; partial payloads are rejected.
-      parameters:
-      - name: toolkit_id
-        in: path
-        required: true
-        description: Toolkit ID.
-        schema:
-          type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ToolkitRequest'
-            example:
-              name: GitHub review
-              description: GitHub actions needed for pull-request review.
-              actions:
-              - selector_type: exact
-                selector: github.create_review_comment
-              tags:
-                owner: product
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Toolkit'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
-        '429':
-          $ref: '#/components/responses/TooManyRequests'
-    delete:
-      operationId: deleteToolkit
-      tags:
-      - toolkits
-      summary: Delete toolkit
-      description: Deletes an organization toolkit. The toolkit is automatically detached
-        from any agents that reference it, so deletion is never blocked by existing assignments.
-      parameters:
-      - name: toolkit_id
-        in: path
-        required: true
-        description: Toolkit ID.
-        schema:
-          type: string
-      responses:
-        '204':
-          description: No Content
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '429':
-          $ref: '#/components/responses/TooManyRequests'
   /v1/skills:
     get:
       operationId: listSkills
@@ -4498,7 +4301,7 @@ paths:
       tags:
       - skills
       summary: Create skill
-      description: Creates an organization skill with instructions and requested tool filters.
+      description: Creates a skill with instructions and requested tool filters.
       requestBody:
         required: true
         content:
@@ -4524,12 +4327,18 @@ paths:
                 id: skill_7n4q8x2m9p5v3r6t
                 name: Pull request review
                 description: Review pull requests for correctness and risk.
-                source: organization
+                source: custom
                 instructions: Check the diff and leave concise findings.
                 allowed_tools:
                 - github.create_review_comment
                 tags:
                   owner: product
+                owner:
+                  kind: person
+                  id: user_2f9s3k4m5n6p7q8r
+                visibility: private
+                container: null
+                posture: only_you
                 created_by: user_2f9s3k4m5n6p7q8r
                 updated_by: user_2f9s3k4m5n6p7q8r
                 created_at: '2026-06-15T14:30:00Z'
@@ -4579,12 +4388,18 @@ paths:
                 id: skill_7n4q8x2m9p5v3r6t
                 name: Pull request review
                 description: Review pull requests for correctness and risk.
-                source: organization
+                source: custom
                 instructions: Check the diff and leave concise findings.
                 allowed_tools:
                 - github.create_review_comment
                 tags:
                   owner: product
+                owner:
+                  kind: person
+                  id: user_2f9s3k4m5n6p7q8r
+                visibility: private
+                container: null
+                posture: only_you
                 created_by: user_2f9s3k4m5n6p7q8r
                 updated_by: user_2f9s3k4m5n6p7q8r
                 created_at: '2026-06-15T14:30:00Z'
@@ -4680,8 +4495,8 @@ paths:
       tags:
       - skills
       summary: Delete skill
-      description: Deletes an organization skill. The skill is automatically detached from
-        any agents that reference it, so deletion is never blocked by existing assignments.
+      description: Deletes a skill. The skill is automatically detached from any agents that
+        reference it, so deletion is never blocked by existing assignments.
       parameters:
       - name: skill_id
         in: path
@@ -4700,207 +4515,6 @@ paths:
           $ref: '#/components/responses/NotFound'
         '429':
           $ref: '#/components/responses/TooManyRequests'
-  /v1/organization/skills:
-    get:
-      operationId: listOrganizationSkills
-      tags:
-      - skills
-      summary: List organization skills
-      description: Returns Skills owned by the active organization. Any organization member
-        may read this catalog.
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SkillListResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-    post:
-      operationId: createOrganizationSkill
-      tags:
-      - skills
-      summary: Create organization skill
-      description: Creates a Skill shared across the active organization. Requires organization
-        Admin or Owner access.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/SkillRequest'
-      responses:
-        '201':
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Skill'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '409':
-          $ref: '#/components/responses/Conflict'
-        '429':
-          $ref: '#/components/responses/TooManyRequests'
-  /v1/organization/skills/import:
-    post:
-      operationId: importOrganizationSkill
-      tags:
-      - skills
-      summary: Import organization skill
-      description: Imports a Claude Code or Dive-style document as an organization Skill.
-        Requires organization Admin or Owner access.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ImportSkillRequest'
-      responses:
-        '201':
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Skill'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '409':
-          $ref: '#/components/responses/Conflict'
-        '429':
-          $ref: '#/components/responses/TooManyRequests'
-  /v1/organization/skills/{skill_id}:
-    get:
-      operationId: getOrganizationSkill
-      tags:
-      - skills
-      summary: Get organization skill
-      description: Returns one Skill owned by the active organization.
-      parameters:
-      - name: skill_id
-        in: path
-        required: true
-        description: Skill ID.
-        schema:
-          type: string
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Skill'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-    put:
-      operationId: replaceOrganizationSkill
-      tags:
-      - skills
-      summary: Update organization skill
-      description: Updates the shared Skill for subsequent agent turns. Send the full request
-        body. Requires organization Admin or Owner access.
-      parameters:
-      - name: skill_id
-        in: path
-        required: true
-        description: Skill ID.
-        schema:
-          type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/SkillRequest'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Skill'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
-        '429':
-          $ref: '#/components/responses/TooManyRequests'
-    delete:
-      operationId: deleteOrganizationSkill
-      tags:
-      - skills
-      summary: Delete organization skill
-      description: Deletes an unused organization Skill. Assigned Skills return `skill_in_use`
-        until every agent assignment is removed.
-      parameters:
-      - name: skill_id
-        in: path
-        required: true
-        description: Skill ID.
-        schema:
-          type: string
-      responses:
-        '204':
-          description: No Content
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
-        '429':
-          $ref: '#/components/responses/TooManyRequests'
-  /v1/organization/skills/{skill_id}/usage:
-    get:
-      operationId: getOrganizationSkillUsage
-      tags:
-      - skills
-      summary: Get organization skill usage
-      description: Returns assignment impact across the organization's agents. Requires organization
-        Admin or Owner access.
-      parameters:
-      - name: skill_id
-        in: path
-        required: true
-        description: Skill ID.
-        schema:
-          type: string
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/OrganizationSkillUsage'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
   /v1/blueprints/apply:
     post:
       operationId: applyBlueprint
@@ -5302,6 +4916,11 @@ paths:
                   - name: summary
                     type: string
                   identity_column: pull_request_url
+                owner:
+                  kind: person
+                  id: user_2f9s3k4m5n6p7q8r
+                visibility: private
+                posture: only_you
                 created_at: '2026-06-15T14:30:00Z'
                 updated_at: '2026-06-15T14:30:00Z'
         '400':
@@ -5377,6 +4996,11 @@ paths:
                   identity_column: pull_request_url
                 tags:
                   team: product
+                owner:
+                  kind: person
+                  id: user_2f9s3k4m5n6p7q8r
+                visibility: private
+                posture: only_you
                 created_at: '2026-06-15T14:30:00Z'
                 updated_at: '2026-06-15T14:35:00Z'
         '400':
@@ -5883,7 +5507,7 @@ paths:
       - artifacts
       summary: Create artifact
       description: |-
-        Accepts an org-authorized multipart file upload. Without a worker lease, the caller needs `mobius.project.edit`; the artifact is private to the authenticated principal and has no run or step lineage. A worker may instead supply `X-Mobius-Lease-Token` with `mobius.work.execute`; Mobius then derives run, step, job, worker session, attempt, and shared visibility from the active claim. Caller-supplied lineage, ownership, and visibility fields are rejected in both modes.
+        Accepts an org-authorized multipart file upload. Without a worker lease, the caller needs `mobius.org.edit`; the artifact is private to the authenticated principal and has no run or step lineage. A worker may instead supply `X-Mobius-Lease-Token` with `mobius.work.execute`; Mobius then derives run, step, job, worker session, attempt, and shared visibility from the active claim. Caller-supplied lineage, ownership, and visibility fields are rejected in both modes.
 
         DOCX, XLSX, and PPTX uploads may pass `convert=true` to start asynchronous Markdown extraction for later model delivery.
       parameters:
@@ -5944,8 +5568,8 @@ paths:
       tags:
       - artifacts
       summary: Get artifact
-      description: Returns artifact metadata after enforcing the caller's org and owner-user
-        artifact scope.
+      description: Returns artifact metadata after enforcing the caller's org and caller-authorized
+        artifact audience.
       parameters:
       - $ref: '#/components/parameters/ArtifactIdParam'
       responses:
@@ -6485,12 +6109,54 @@ components:
           type: string
           nullable: true
           description: Model producing the generation, e.g. `claude-sonnet-4-6`.
-    ResourceScope:
+    ResourceOwner:
+      type: object
+      additionalProperties: false
+      required:
+      - kind
+      description: The human or team responsible for this resource.
+      properties:
+        kind:
+          type: string
+          enum:
+          - person
+          - team
+        id:
+          type: string
+          nullable: true
+          description: Human principal ID when kind is person; null for the team.
+    ResourceVisibility:
       type: string
       enum:
-      - owner
-      description: Optional namespace for named runtime resources. Omitted/null means the
-        org/default scope; `owner` means names are unique within `(org, owned_by)`.
+      - private
+      - organization
+      description: Who the custodian chose to share the resource with.
+    ResourceContainer:
+      type: object
+      additionalProperties: false
+      required:
+      - kind
+      - id
+      nullable: true
+      description: The agent that contains this resource and may further narrow who can reach
+        it.
+      properties:
+        kind:
+          type: string
+          enum:
+          - agent
+        id:
+          type: string
+    ResourcePosture:
+      type: string
+      enum:
+      - only_you
+      - shared_by_you
+      - shared_with_group
+      - team
+      - someone_else
+      description: Employee-facing effective ownership and audience posture for the current
+        caller.
     CapabilityReadiness:
       type: string
       enum:
@@ -6511,12 +6177,14 @@ components:
       - provider_unavailable
       - permission_missing
       - not_implemented
+      - credentials_unreadable
       description: Why a capability is `needs_setup`. Present only when readiness is `needs_setup`.
         `not_configured` — no integration or credential is connected yet. `inactive` — the
         backing integration is manually disabled. `expired` — the backing credential has expired.
         `provider_unavailable` — the provider runtime is not currently available. `permission_missing`
         — the caller lacks permission to use it. `not_implemented` — a placeholder for a capability
-        that is not yet available.
+        that is not yet available. `credentials_unreadable` — the stored credential cannot
+        be decrypted by the running platform; reconnect the integration.
     TagMap:
       type: object
       description: Key/value tags for organizing and filtering resources. Up to 8 per resource;
@@ -6538,6 +6206,47 @@ components:
         resource. `error` (the default) rejects the request with 409. `adopt` returns the
         existing resource unchanged instead — mutable fields in the request are ignored, since
         no write happens — and requires `external_ref` to be set; omitting it returns 400.
+    ResourceOwnershipTransitionRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        owner:
+          $ref: '#/components/schemas/ResourceOwner'
+        visibility:
+          $ref: '#/components/schemas/ResourceVisibility'
+        detach_container:
+          type: boolean
+          default: false
+          description: Clear the agent container when the resource supports detachment.
+        confirm_audience_expansion:
+          type: boolean
+          default: false
+          description: Required before sharing, handing custody to the team, or detaching
+            a container.
+      anyOf:
+      - required:
+        - owner
+      - required:
+        - visibility
+      - required:
+        - detach_container
+    ResourceOwnershipState:
+      type: object
+      additionalProperties: false
+      required:
+      - owner
+      - visibility
+      - container
+      - posture
+      properties:
+        owner:
+          $ref: '#/components/schemas/ResourceOwner'
+        visibility:
+          $ref: '#/components/schemas/ResourceVisibility'
+        container:
+          $ref: '#/components/schemas/ResourceContainer'
+        posture:
+          $ref: '#/components/schemas/ResourcePosture'
     AgentStatus:
       type: string
       enum:
@@ -6580,6 +6289,58 @@ components:
         Controls how granted actions are surfaced to the model in Mobius-hosted agent turns. `meta` (the default) groups related actions behind compact command routers, while `flat` exposes one tool per action.
 
         The two modes pay the same cost in different places. `meta` keeps the tool definitions small no matter how many actions are granted, but the router advertises command names only, so the model spends extra calls on `help` to discover arguments — every turn. `flat` puts every action's schema in the tool definitions, which are sent once and cached, and removes the discovery calls entirely. Prefer `meta` when the action count is large enough that the schemas would crowd the context window; prefer `flat` otherwise.
+    ActionSelectorType:
+      type: string
+      description: How one entry in an agent's tool grant names the actions it covers. `exact`
+        is a single action name; `group` a dotted prefix; `platform` every action of an integration;
+        `custom` org-defined actions; `wildcard` everything. Omitting the type means `exact`.
+      enum:
+      - exact
+      - group
+      - platform
+      - custom
+      - wildcard
+    ActionSelector:
+      type: object
+      additionalProperties: false
+      required:
+      - selector
+      description: 'One entry in an agent''s tool grant. Selectors are expanded against the
+        live action catalog at every build, so `platform: gmail` keeps meaning "every Gmail
+        action" as the catalog grows.'
+      properties:
+        selector_type:
+          $ref: '#/components/schemas/ActionSelectorType'
+          description: Defaults to `exact` when omitted.
+        selector:
+          type: string
+          maxLength: 512
+          description: The selector value, read according to `selector_type`. Ignored for
+            `wildcard`.
+    AgentIntegrationAccess:
+      type: object
+      additionalProperties: false
+      required:
+      - provider
+      description: One provider's connection rules for an agent. Both fields are decisions
+        about the agent, not about any one connection.
+      properties:
+        provider:
+          type: string
+          description: The provider these rules apply to (`gmail`, `slack`, …).
+        act_as_user:
+          type: boolean
+          default: false
+          description: 'Whether the agent may resolve the personal connection of the person
+            it is acting for. Defaults to false and is never implied: reaching somebody''s
+            own account is what a person consents to when they talk to this agent, so it is
+            shown on its page as "acts through your Gmail".'
+        pin:
+          type: string
+          description: The one connection this agent uses for this provider, which also suppresses
+            the runtime account choice. May name only an org-shared or agent-owned connection
+            — a shared agent pinned to one person's mailbox would send as that person for
+            everybody.
     SessionCompactionThreshold:
       type: string
       enum:
@@ -6671,6 +6432,20 @@ components:
         the agent default. `inherit` (or omitting the field) defers to the layer below — the
         agent default for a session/step, or the provider's own default when nothing sets
         a level.
+    AgentVisibility:
+      type: string
+      enum:
+      - organization
+      - restricted
+      - private
+      description: |-
+        Who, inside the org that owns this agent, may reach it at all.
+
+        `organization` (the default) is reachable by any org member — the behavior every agent had before visibility existed. `restricted` is reachable only by the agent's listed members. `private` is reachable only by its single member.
+
+        Visibility is not a permission: what a member may DO with an agent stays governed by their org role. A principal outside an agent's audience gets `404` from every path — list, read, session, invoke, memory — so an agent's existence never leaks through a status code.
+
+        Because agent memory is keyed by `(org, agent, user, key)` and every read is scoped to one agent, narrowing who can reach an agent narrows its shared memory layer by construction. Group memory needs no separate store.
     Agent:
       type: object
       additionalProperties: false
@@ -6682,6 +6457,9 @@ components:
       - principal_id
       - name
       - status
+      - owner
+      - posture
+      - visibility
       - created_at
       - updated_at
       - memory_enabled
@@ -6692,8 +6470,12 @@ components:
         principal_id:
           type: string
           description: The machine principal (principals.id, kind `agent`) this agent IS.
-            Created atomically with the agent and immutable. Used as the `owned_by` value
-            when filtering or claiming resources owned by this agent.
+            Created atomically with the agent and immutable. It is an execution identity,
+            never the human custodian of an ordinary resource.
+        owner:
+          $ref: '#/components/schemas/ResourceOwner'
+        posture:
+          $ref: '#/components/schemas/ResourcePosture'
         name:
           type: string
           description: Mutable unique name within the org. Free-form human-readable label;
@@ -6732,6 +6514,18 @@ components:
           $ref: '#/components/schemas/AgentToolPresentation'
           description: Default tool presentation used by loop agent steps and built-in channel-message
             replies for this agent.
+        tool_selectors:
+          type: array
+          description: 'The agent''s tool grant: the action selectors it may call, expanded
+            against the live action catalog at each build.'
+          items:
+            $ref: '#/components/schemas/ActionSelector'
+        integration_access:
+          type: array
+          description: 'Per-provider connection rules. Absent means the defaults: the agent
+            reaches org-shared and its own connections, and nothing is pinned.'
+          items:
+            $ref: '#/components/schemas/AgentIntegrationAccess'
         system_prompt:
           type: string
           description: Custom system prompt for agents. Empty string uses the generated default
@@ -6751,8 +6545,8 @@ components:
         memory_enabled:
           type: boolean
           description: Hard gate for runtime memory. When false, memory tools and automatic
-            memory context are absent and invocation-time definitions cannot re-enable them.
-            Stored entries remain available to administrators.
+            memory context are absent for every session, and nothing at invocation time can
+            re-enable them. Stored entries remain available to administrators.
         memory_context:
           $ref: '#/components/schemas/MemoryContextPolicy'
           description: Automatic memory delivery policy. Absent means the bounded index default.
@@ -6764,6 +6558,15 @@ components:
         status:
           $ref: '#/components/schemas/AgentStatus'
           description: 'Current agent status: `active` or `inactive`.'
+        visibility:
+          $ref: '#/components/schemas/AgentVisibility'
+          description: 'Who may reach this agent. Read from the stored agent row at every
+            gate: it is never supplied by a definition document, an invoke `definition_config`,
+            or a client-side list filter.'
+        member_count:
+          type: integer
+          description: How many principals are in this agent's audience. Zero for an `organization`
+            agent, which carries no member rows.
         email_address:
           type: string
           description: Inbox address provisioned via POST /v1/agents/{resource_id}/inbox (opt-in;
@@ -6844,12 +6647,6 @@ components:
       - agent
       - loop
       description: 'Boundary used to resolve named sessions: `agent` or `loop`.'
-    SessionVisibility:
-      type: string
-      enum:
-      - organization
-      - private
-      description: 'Visibility of the session in org surfaces: `organization` or `private`.'
     SessionRetentionPolicy:
       type: object
       additionalProperties: false
@@ -6955,6 +6752,7 @@ components:
       description: Durable conversation transcript owned by an agent.
       required:
       - id
+      - owner
       - agent_id
       - title
       - status
@@ -6964,6 +6762,7 @@ components:
       - scope_name
       - session_key
       - visibility
+      - posture
       - message_count
       - token_input_total
       - token_output_total
@@ -6976,9 +6775,14 @@ components:
         id:
           type: string
           description: Stable session identifier.
+        owner:
+          $ref: '#/components/schemas/ResourceOwner'
         agent_id:
           type: string
-          description: Agent that owns this session.
+          description: Agent that contains and executes this session. The agent never owns
+            it.
+        container:
+          $ref: '#/components/schemas/ResourceContainer'
         title:
           type: string
           description: Human-readable session title.
@@ -7004,8 +6808,9 @@ components:
           type: string
           description: Stable caller-assigned conversation key, unique within one agent.
         visibility:
-          $ref: '#/components/schemas/SessionVisibility'
-          description: Where the session appears in org UI surfaces.
+          $ref: '#/components/schemas/ResourceVisibility'
+        posture:
+          $ref: '#/components/schemas/ResourcePosture'
         model_override:
           type: string
           description: Model selected for this session. Omitted when the session inherits
@@ -7876,190 +7681,6 @@ components:
         principal_id: svc_7q2v9x6m3n8p5r4t
         tags:
           owner: product
-    CreateOrganizationActionRequest:
-      type: object
-      additionalProperties: false
-      required:
-      - name
-      - endpoint_url
-      properties:
-        name:
-          type: string
-          description: Canonical dotted name selected by the org's toolkits.
-        title:
-          type: string
-        description:
-          type: string
-        endpoint_url:
-          type: string
-          format: uri
-          description: Public HTTPS endpoint. Private, loopback, link-local, and redirect
-            targets are rejected.
-        invocation_format:
-          type: string
-          enum:
-          - signed_context_v1
-          default: signed_context_v1
-        input_schema:
-          type: object
-          additionalProperties: true
-        output_schema:
-          type: object
-          additionalProperties: true
-        annotations:
-          $ref: '#/components/schemas/ActionAnnotationsRequest'
-        enabled:
-          type: boolean
-          default: true
-    UpdateOrganizationActionRequest:
-      type: object
-      additionalProperties: false
-      properties:
-        name:
-          type: string
-        title:
-          type: string
-        description:
-          type: string
-        endpoint_url:
-          type: string
-          format: uri
-          description: Public HTTPS endpoint. Private, loopback, link-local, and redirect
-            targets are rejected.
-        input_schema:
-          type: object
-          additionalProperties: true
-        output_schema:
-          type: object
-          additionalProperties: true
-        annotations:
-          allOf:
-          - $ref: '#/components/schemas/ActionAnnotationsRequest'
-        enabled:
-          type: boolean
-    ActivateOrganizationActionSecretRequest:
-      type: object
-      additionalProperties: false
-      properties:
-        overlap_seconds:
-          type: integer
-          minimum: 0
-          maximum: 86400
-          default: 86400
-          description: Verification overlap for the previous active version. Omit for 24 hours.
-    OrganizationActionSecretVersion:
-      type: object
-      additionalProperties: false
-      required:
-      - version
-      - status
-      - created_at
-      properties:
-        version:
-          type: integer
-          format: int64
-        status:
-          type: string
-          enum:
-          - pending
-          - active
-          - retiring
-          - retired
-          - revoked
-        created_at:
-          type: string
-          format: date-time
-        activated_at:
-          type: string
-          format: date-time
-        accept_until:
-          type: string
-          format: date-time
-        retired_at:
-          type: string
-          format: date-time
-        revoked_at:
-          type: string
-          format: date-time
-    OrganizationAction:
-      type: object
-      additionalProperties: false
-      required:
-      - id
-      - name
-      - endpoint_url
-      - invocation_format
-      - enabled
-      - secret_ref
-      - secret_versions
-      - created_at
-      - updated_at
-      properties:
-        id:
-          type: string
-        name:
-          type: string
-        title:
-          type: string
-        description:
-          type: string
-        endpoint_url:
-          type: string
-          format: uri
-          description: Public HTTPS endpoint. Private, loopback, link-local, and redirect
-            targets are rejected.
-        invocation_format:
-          type: string
-          enum:
-          - signed_context_v1
-        input_schema:
-          type: object
-          additionalProperties: true
-        output_schema:
-          type: object
-          additionalProperties: true
-        annotations:
-          $ref: '#/components/schemas/ActionAnnotations'
-        enabled:
-          type: boolean
-        secret_ref:
-          type: string
-        active_signing_version:
-          type: integer
-          format: int64
-          minimum: 1
-          description: Current signing-key version. Omitted when the disabled action has no
-            active version.
-        secret_versions:
-          type: array
-          items:
-            $ref: '#/components/schemas/OrganizationActionSecretVersion'
-        signing_secret:
-          type: string
-          description: Base64-encoded signing key returned only on create and rotate. It always
-            belongs to the newest entry in `secret_versions` — the `active` version after
-            create, the `pending` version after rotate.
-        created_at:
-          type: string
-          format: date-time
-        updated_at:
-          type: string
-          format: date-time
-    OrganizationActionListResponse:
-      type: object
-      additionalProperties: false
-      required:
-      - items
-      - has_more
-      properties:
-        items:
-          type: array
-          items:
-            $ref: '#/components/schemas/OrganizationAction'
-        has_more:
-          type: boolean
-        next_cursor:
-          type: string
     ActionAnnotationsRequest:
       type: object
       additionalProperties: false
@@ -8275,6 +7896,10 @@ components:
         tags:
           $ref: '#/components/schemas/TagMap'
           description: Free-form labels used for filtering, ownership, or lifecycle policy.
+        owner:
+          $ref: '#/components/schemas/ResourceOwner'
+        visibility:
+          $ref: '#/components/schemas/ResourceVisibility'
       example:
         name: review-pr
         title: Review PR
@@ -8345,6 +7970,9 @@ components:
       description: Org-owned custom action definition callable by loops and agents.
       required:
       - id
+      - owner
+      - visibility
+      - posture
       - name
       - endpoint_kind
       - invocation_format
@@ -8354,6 +7982,14 @@ components:
         id:
           type: string
           description: Unique identifier for this action.
+        owner:
+          $ref: '#/components/schemas/ResourceOwner'
+        visibility:
+          $ref: '#/components/schemas/ResourceVisibility'
+        container:
+          $ref: '#/components/schemas/ResourceContainer'
+        posture:
+          $ref: '#/components/schemas/ResourcePosture'
         name:
           type: string
           description: Stable identifier used in loop definitions.
@@ -8469,6 +8105,10 @@ components:
       - risk
       - annotations
       properties:
+        id:
+          type: string
+          description: Stable resource identifier. Present for an organization-authored custom
+            action.
         name:
           type: string
           description: Canonical dotted action name (e.g. `slack.post_message`). Translated
@@ -8505,9 +8145,8 @@ components:
           enum:
           - platform
           - custom
-          - organization
-          description: Scope that owns the selected definition. A custom action definition
-            shadows a shared organization definition with the same canonical name.
+          description: 'Scope that owns the selected definition: `platform` for Mobius and
+            integration actions, or `custom` for an action authored in the current organization.'
         readiness:
           $ref: '#/components/schemas/CapabilityReadiness'
           description: Whether this action can be called right now. `needs_setup` when the
@@ -8524,8 +8163,7 @@ components:
           - high
           - critical
           description: 'Author-declared risk classification: `low`, `medium`, `high`, or `critical`.
-            Used by toolkit-author UIs to surface warnings and by audit views to prioritize
-            attention.'
+            Used by tool-grant UIs to surface warnings and by audit views to prioritize attention.'
         annotations:
           $ref: '#/components/schemas/ActionAnnotations'
           description: Safe-use hints returned for this catalog action. Always present; flags
@@ -8549,6 +8187,18 @@ components:
         execution:
           $ref: '#/components/schemas/ActionExecutionMetadata'
           description: Execution locations and worker requirements available to loop authors.
+        owner:
+          $ref: '#/components/schemas/ResourceOwner'
+          description: Present for an organization-authored custom action.
+        visibility:
+          $ref: '#/components/schemas/ResourceVisibility'
+          description: Present for an organization-authored custom action.
+        container:
+          $ref: '#/components/schemas/ResourceContainer'
+          description: Present when a custom action is narrowed by an agent container.
+        posture:
+          $ref: '#/components/schemas/ResourcePosture'
+          description: Present for an organization-authored custom action.
     ActionExecutionMetadata:
       type: object
       additionalProperties: false
@@ -8682,7 +8332,6 @@ components:
           enum:
           - platform
           - custom
-          - organization
           description: Scope that owned the selected action definition.
         invocation_format:
           $ref: '#/components/schemas/ActionInvocationFormat'
@@ -9104,6 +8753,10 @@ components:
       required:
       - id
       - name
+      - owner
+      - visibility
+      - container
+      - posture
       - provider
       - status
       - lifetime
@@ -9118,9 +8771,14 @@ components:
         name:
           type: string
           description: Human-readable environment name.
-        scope:
-          $ref: '#/components/schemas/ResourceScope'
-          description: Naming scope for this environment.
+        owner:
+          $ref: '#/components/schemas/ResourceOwner'
+        visibility:
+          $ref: '#/components/schemas/ResourceVisibility'
+        container:
+          $ref: '#/components/schemas/ResourceContainer'
+        posture:
+          $ref: '#/components/schemas/ResourcePosture'
         provider:
           $ref: '#/components/schemas/EnvironmentProvider'
           description: Backing environment provider.
@@ -9130,10 +8788,6 @@ components:
         lifetime:
           $ref: '#/components/schemas/EnvironmentLifetime'
           description: How long the environment is expected to live.
-        owned_by:
-          type: string
-          description: Principal owner ID. For agent-started work, this is the agent's principal
-            ID.
         current_worker_session_id:
           type: string
           description: Worker session currently attached to this environment, when any.
@@ -9185,15 +8839,13 @@ components:
         name:
           type: string
           description: Human-readable environment name.
-        scope:
-          $ref: '#/components/schemas/ResourceScope'
-          description: Optional naming scope for the environment.
         provider:
           $ref: '#/components/schemas/ProvisionEnvironmentProvider'
           description: Provider to provision.
-        owned_by:
-          type: string
-          description: Canonical user owner ID. Defaults to the authenticated user.
+        owner:
+          $ref: '#/components/schemas/ResourceOwner'
+        visibility:
+          $ref: '#/components/schemas/ResourceVisibility'
         template_id:
           type: string
           enum:
@@ -9206,16 +8858,15 @@ components:
       type: object
       additionalProperties: false
       properties:
-        scope:
-          type: string
-          allOf:
-          - $ref: '#/components/schemas/ResourceScope'
-          nullable: true
-          description: Resource scope; send null to return to the org/default scope.
-        owned_by:
-          type: string
-          nullable: true
-          description: Canonical user owner ID. Send null to clear ownership.
+        owner:
+          $ref: '#/components/schemas/ResourceOwner'
+        visibility:
+          $ref: '#/components/schemas/ResourceVisibility'
+        confirm_audience_expansion:
+          type: boolean
+          default: false
+          description: Required when sharing with the organization, handing custody to the
+            team, or detaching a narrowing container.
         tags:
           $ref: '#/components/schemas/TagMap'
           description: Replacement labels; send an empty object to clear all tags.
@@ -9774,6 +9425,9 @@ components:
       additionalProperties: false
       required:
       - id
+      - owner
+      - visibility
+      - posture
       - name
       - url
       - events
@@ -9786,6 +9440,14 @@ components:
         id:
           type: string
           description: Unique identifier for this webhook.
+        owner:
+          $ref: '#/components/schemas/ResourceOwner'
+        visibility:
+          $ref: '#/components/schemas/ResourceVisibility'
+        container:
+          $ref: '#/components/schemas/ResourceContainer'
+        posture:
+          $ref: '#/components/schemas/ResourcePosture'
         name:
           type: string
           description: Human-readable name, unique within the org.
@@ -9976,6 +9638,10 @@ components:
         tags:
           $ref: '#/components/schemas/TagMap'
           description: Initial labels to apply to the webhook.
+        owner:
+          $ref: '#/components/schemas/ResourceOwner'
+        visibility:
+          $ref: '#/components/schemas/ResourceVisibility'
       example:
         name: Run status sink
         url: https://hooks.example.com/mobius/run-status
@@ -10963,6 +10629,9 @@ components:
       - kind
       - status
       - title
+      - owner
+      - visibility
+      - posture
       - target_user_ids
       - created_at
       - updated_at
@@ -10983,6 +10652,16 @@ components:
           nullable: true
           description: Canonical principal ID of the human or agent that created the interaction;
             null for legacy/system-created rows.
+        owner:
+          $ref: '#/components/schemas/ResourceOwner'
+          description: Interactions are team-governed; their explicit targets are the audience
+            boundary.
+        visibility:
+          $ref: '#/components/schemas/ResourceVisibility'
+        container:
+          $ref: '#/components/schemas/ResourceContainer'
+        posture:
+          $ref: '#/components/schemas/ResourcePosture'
         kind:
           $ref: '#/components/schemas/InteractionKind'
           description: Protocol kind of the interaction.
@@ -11362,6 +11041,222 @@ components:
         reason:
           type: string
           description: Free-text reason recorded on the interaction.
+    AgentMember:
+      type: object
+      additionalProperties: false
+      description: |-
+        One principal in a restricted or private agent's audience. Membership is pure visibility and carries no role.
+
+        A new member reads the ENTIRE shared layer, including everything promoted before they joined. That is inherent to a shared store; the member list's `added_at` is what makes it legible.
+      required:
+      - principal_id
+      - kind
+      - added_at
+      properties:
+        principal_id:
+          type: string
+          description: The human or agent principal in this agent's audience.
+        kind:
+          type: string
+          enum:
+          - human
+          - agent
+          - service
+          - system
+          description: Principal kind, so a picker can distinguish a person from a coordinator
+            agent.
+        display_name:
+          type: string
+          description: Human-readable name of the principal, when resolvable.
+        added_at:
+          type: string
+          format: date-time
+          description: When this principal was added to the audience.
+        added_by:
+          type: string
+          description: Principal who granted this membership.
+    AgentMemberListResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - count
+      properties:
+        items:
+          type: array
+          description: The current audience. Returned only to callers who may manage the agent;
+            other members receive `count` alone.
+          items:
+            $ref: '#/components/schemas/AgentMember'
+        count:
+          type: integer
+          description: How many principals are in this agent's audience.
+    ReplaceAgentMembersRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - principal_ids
+      properties:
+        principal_ids:
+          type: array
+          description: 'The exact audience after this call. A private agent takes exactly
+            one; a restricted agent at least one. An empty list on a restricted or private
+            agent is rejected: an empty audience means nobody, never everyone.'
+          items:
+            type: string
+          minItems: 1
+          maxItems: 200
+    AddAgentMembersRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - principal_ids
+      properties:
+        principal_ids:
+          type: array
+          description: Principals to add. Each must be a live principal in this org. Adding
+            a principal who is already a member is a no-op.
+          items:
+            type: string
+          maxItems: 200
+    AgentVisibilityImpact:
+      type: object
+      additionalProperties: false
+      description: What a pending visibility change would do, so a client can confirm it in
+        specific terms rather than as a dropdown edit.
+      required:
+      - agent_id
+      - from
+      - to
+      - widening
+      - shared_entry_count
+      - affected_resources
+      properties:
+        agent_id:
+          type: string
+        from:
+          $ref: '#/components/schemas/AgentVisibility'
+        to:
+          $ref: '#/components/schemas/AgentVisibility'
+        widening:
+          type: boolean
+          description: 'True when the change exposes the shared memory layer to principals
+            who could not read it before. Widening requires `confirm_visibility_change` and
+            has no technical undo: republished knowledge cannot be un-read.'
+        shared_entry_count:
+          type: integer
+          description: How many shared-layer memory entries the change republishes or restricts.
+        dropped_members:
+          type: array
+          description: Member rows a widening change deletes.
+          items:
+            type: string
+        stranded_principals:
+          type: array
+          description: Principals who hold a memory partition, a session, or a loop on this
+            agent and fall outside the new audience.
+          items:
+            type: string
+        stranded_partitions:
+          type: integer
+        stranded_sessions:
+          type: integer
+        stranded_loops:
+          type: integer
+        affected_resources:
+          type: array
+          description: Delegated or contained root resources whose effective audience would
+            grow. Every item requires one matching disposition on the update request; omission
+            aborts the change.
+          items:
+            $ref: '#/components/schemas/AgentVisibilityAffectedResource'
+    AgentVisibilityAffectedResource:
+      type: object
+      additionalProperties: false
+      required:
+      - resource_type
+      - resource_id
+      - resource_class
+      - relationship
+      - visibility
+      - allowed_actions
+      properties:
+        resource_type:
+          type: string
+          enum:
+          - artifact
+          - loop
+          - session
+          - skill
+          - table
+        resource_id:
+          type: string
+        name:
+          type: string
+          description: Configuration name. Omitted for conversations and outputs.
+        resource_class:
+          type: string
+          enum:
+          - configuration
+          - conversation
+          - output
+        relationship:
+          type: string
+          enum:
+          - delegation
+          - container
+        visibility:
+          $ref: '#/components/schemas/ResourceVisibility'
+        allowed_actions:
+          type: array
+          minItems: 2
+          maxItems: 2
+          items:
+            type: string
+            enum:
+            - revoke
+            - make_private
+            - keep_and_widen
+    AgentAudienceResourceDisposition:
+      type: object
+      additionalProperties: false
+      required:
+      - resource_type
+      - resource_id
+      - action
+      properties:
+        resource_type:
+          type: string
+          enum:
+          - artifact
+          - loop
+          - session
+          - skill
+          - table
+        resource_id:
+          type: string
+        action:
+          type: string
+          enum:
+          - revoke
+          - make_private
+          - keep_and_widen
+    PromoteAgentMemoryEntryRequest:
+      type: object
+      additionalProperties: false
+      required:
+      - user_id
+      properties:
+        user_id:
+          type: string
+          description: 'The private partition the entry is copied out of. Required: promotion
+            always has an owner, and the shared layer is not a source.'
+          maxLength: 200
+        replace:
+          type: boolean
+          default: false
+          description: Allow overwriting a shared entry that already holds this key. Without
+            it a collision is a `409`, so a promotion never silently rewrites what the group
+            already knows.
     UpdateMemoryContextPolicy:
       type: object
       additionalProperties: false
@@ -11541,55 +11436,6 @@ components:
           description: Messaging bindings configured for this agent.
           items:
             $ref: '#/components/schemas/AgentMessagingBinding'
-    ToolkitAssignment:
-      type: object
-      additionalProperties: false
-      description: Assignment linking a toolkit to an agent.
-      required:
-      - agent_id
-      - toolkit_id
-      - position
-      - created_at
-      properties:
-        agent_id:
-          type: string
-          description: Agent the toolkit is assigned to.
-        toolkit_id:
-          type: string
-          description: Toolkit assigned to the agent.
-        toolkit:
-          $ref: '#/components/schemas/Toolkit'
-          description: Expanded toolkit metadata for this assignment.
-        position:
-          type: integer
-          description: Ordering position of this assignment in the agent's toolkit list.
-        created_at:
-          type: string
-          format: date-time
-          description: Record creation timestamp.
-    ReplaceToolkitsRequest:
-      type: object
-      additionalProperties: false
-      required:
-      - toolkit_ids
-      properties:
-        toolkit_ids:
-          type: array
-          description: Full replace-set of toolkit IDs to assign to the agent, in desired
-            order.
-          items:
-            type: string
-    ToolkitAssignmentListResponse:
-      type: object
-      additionalProperties: false
-      required:
-      - items
-      properties:
-        items:
-          type: array
-          description: Toolkit assignments for this agent, in position order.
-          items:
-            $ref: '#/components/schemas/ToolkitAssignment'
     SkillAssignment:
       type: object
       additionalProperties: false
@@ -11695,9 +11541,6 @@ components:
         skill_id:
           type: string
           description: Skill the warning relates to, when applicable.
-        toolkit_id:
-          type: string
-          description: Toolkit the warning relates to, when applicable.
         tool:
           type: string
           description: Tool selector the warning relates to, when applicable.
@@ -11726,7 +11569,6 @@ components:
       required:
       - agent_id
       - policy_hash
-      - toolkit_ids
       - tools
       - skills
       - warnings
@@ -11739,13 +11581,8 @@ components:
           description: Agent this manifest was resolved for.
         policy_hash:
           type: string
-          description: Stable hash over the resolved tool + skill set; bumps when assigned
-            toolkits or skills change.
-        toolkit_ids:
-          type: array
-          description: Toolkit IDs that contributed to the resolved manifest.
-          items:
-            type: string
+          description: Stable hash over the resolved tool + skill set; bumps when the agent's
+            tool selectors or skills change.
         tools:
           type: array
           description: Catalog entries the agent can invoke. Each entry surfaces to the LLM
@@ -11812,6 +11649,17 @@ components:
         tool_presentation:
           $ref: '#/components/schemas/AgentToolPresentation'
           description: Omit to use the create-time default, `meta`.
+        tool_selectors:
+          type: array
+          description: The agent's tool grant. Omit for an agent with no granted actions;
+            its intrinsic tools are unaffected.
+          items:
+            $ref: '#/components/schemas/ActionSelector'
+        integration_access:
+          type: array
+          description: Per-provider connection rules. Omit for the defaults.
+          items:
+            $ref: '#/components/schemas/AgentIntegrationAccess'
         system_prompt:
           type: string
           description: Custom system prompt for agents. Empty uses the generated default.
@@ -11840,6 +11688,23 @@ components:
         tags:
           $ref: '#/components/schemas/TagMap'
           description: Initial labels used for filtering, ownership, or automation.
+        owner:
+          $ref: '#/components/schemas/ResourceOwner'
+          description: Who governs this agent's configuration. Omit to use the creating human
+            for a private agent; choose team deliberately for a restricted or organization
+            agent.
+        visibility:
+          $ref: '#/components/schemas/AgentVisibility'
+          description: Who this agent is for. Omit for `private` on the employee API.
+        members:
+          type: array
+          description: |-
+            The audience for a `restricted` or `private` agent, written in the same transaction as the agent row.
+
+            Creating a `private` agent makes the caller its member unless the caller is an org admin and names another principal. Creating a `restricted` agent takes a list; the caller is added unless they are an org admin and omit themselves. Ignored for `organization`, which carries no member rows.
+          items:
+            type: string
+          maxItems: 200
       example:
         name: PR reviewer
         description: Reviews pull requests for risky changes.
@@ -11889,6 +11754,18 @@ components:
           $ref: '#/components/schemas/AgentToolPresentation'
           description: Replacement tool presentation used by loop agent steps and channel
             replies.
+        integration_access:
+          type: array
+          description: Replacement per-provider connection rules, as a whole. Omit to leave
+            them untouched; send an empty array to clear them.
+          items:
+            $ref: '#/components/schemas/AgentIntegrationAccess'
+        tool_selectors:
+          type: array
+          description: Replacement tool grant, as a whole. Omit to leave the agent's current
+            grant untouched; send an empty array to revoke it.
+          items:
+            $ref: '#/components/schemas/ActionSelector'
         system_prompt:
           type: string
           description: Replacement system prompt for agents.
@@ -11912,8 +11789,8 @@ components:
             to clear the default and fall back to server defaults.
         memory_enabled:
           type: boolean
-          description: Replacement runtime memory hard gate. Definition bundles cannot override
-            this stored agent setting.
+          description: Replacement runtime memory hard gate. It cannot be overridden at invocation
+            time.
         memory_context:
           $ref: '#/components/schemas/UpdateMemoryContextPolicy'
         thinking_effort:
@@ -11923,6 +11800,44 @@ components:
         tags:
           $ref: '#/components/schemas/TagMap'
           description: Replacement labels; send an empty object to clear all tags.
+        visibility:
+          $ref: '#/components/schemas/AgentVisibility'
+          description: Replacement audience. Widening (toward `organization`) republishes
+            the agent's shared memory layer to the new audience and requires `confirm_visibility_change`;
+            there is no technical undo, because republished knowledge cannot be un-read. Narrowing
+            that would strand rows requires `stranded_disposition`.
+        members:
+          type: array
+          description: 'Replacement audience for a `restricted` or `private` agent: the exact
+            set after this call. Omit to leave membership unchanged. Ignored when the resulting
+            visibility is `organization`, which deletes the member rows outright — "org-visible
+            with a leftover member list" is not a representable state.'
+          items:
+            type: string
+          maxItems: 200
+        confirm_visibility_change:
+          type: boolean
+          default: false
+          description: Acknowledges that widening republishes the agent's shared memory layer
+            to the new audience and drops the current member list. A widening change without
+            it returns `409` naming both counts.
+        affected_resource_dispositions:
+          type: array
+          description: Exactly one decision for every row returned by the visibility impact
+            preview. Delegations may be revoked or explicitly widened; contained rows may
+            be made private or explicitly widened. Extra, duplicate, and omitted rows are
+            refused.
+          items:
+            $ref: '#/components/schemas/AgentAudienceResourceDisposition'
+        stranded_disposition:
+          type: string
+          enum:
+          - retain
+          - delete
+          description: |-
+            What happens to the memory partitions, sessions, and loops of principals who fall outside a narrowed audience.
+
+            `retain` keeps their partitions and sessions, readable only by org admins, and pauses the loops they own that point at this agent rather than leaving them to fail at run time. `delete` additionally erases their private memory partitions, and only an org admin may choose it. A narrowing change that would strand rows and names neither returns `409`.
     MemoryKind:
       type: string
       enum:
@@ -12079,6 +11994,12 @@ components:
       - remembered
       - api
       - soft_cap
+      - promoted
+      - promotion_reverted
+      description: Why an entry changed. `remembered` is a run writing memory, `api` a direct
+        write, `soft_cap` an eviction. `promoted` and `promotion_reverted` are the two halves
+        of the explicit, attributed promotion act — the only path from a person's private
+        partition into the agent's shared layer, and its undo.
     AgentMemoryChange:
       type: object
       additionalProperties: false
@@ -12217,11 +12138,11 @@ components:
       required:
       - name
       - input
-      description: Canonical org action resolved by a catalog tool dispatch.
+      description: Canonical action resolved by a catalog tool dispatch.
       properties:
         name:
           type: string
-          description: Canonical org action name, before provider-safe wire-name mangling.
+          description: Canonical action name, before provider-safe wire-name mangling.
         input:
           type: object
           additionalProperties: true
@@ -12489,7 +12410,7 @@ components:
           description: Session this message belongs to.
         agent_id:
           type: string
-          description: Agent that owns the parent session.
+          description: Agent container executing the parent session.
         role:
           $ref: '#/components/schemas/SessionMessageRole'
           description: Role of this message in the transcript.
@@ -12549,95 +12470,6 @@ components:
             stream with `after_sequence=next_sequence` to receive the in-flight turn and everything
             after it — the stream and the messages API share one `sequence` cursor, so there
             is no overlap and no gap.
-    ToolkitAction:
-      type: object
-      additionalProperties: false
-      required:
-      - selector_type
-      - selector
-      description: Action selector included in a toolkit.
-      properties:
-        selector_type:
-          type: string
-          enum:
-          - exact
-          - group
-          - platform
-          - custom
-          - wildcard
-          description: 'Selector type: `exact`, `group`, `platform`, `custom`, or `wildcard`.'
-        selector:
-          type: string
-          description: 'Selector value. Examples: `github.list_issues`, `github.*`, `platform.github.*`,
-            `custom.*`, or `*`.'
-      example:
-        selector_type: exact
-        selector: github.create_review_comment
-    Toolkit:
-      type: object
-      additionalProperties: false
-      description: Reusable bundle of action selectors assignable to agents.
-      required:
-      - id
-      - name
-      - source
-      - actions
-      - created_at
-      - updated_at
-      properties:
-        id:
-          type: string
-          description: Toolkit ID.
-        name:
-          type: string
-          description: Human-readable toolkit name.
-        description:
-          type: string
-          description: Markdown description of the toolkit's purpose.
-        source:
-          type: string
-          enum:
-          - system
-          - organization
-          description: Provenance of this toolkit. `system` toolkits are built-in; `organization`
-            toolkits are user-authored.
-        tags:
-          $ref: '#/components/schemas/TagMap'
-          description: Labels to apply to the toolkit.
-        actions:
-          type: array
-          description: Action selectors provided by this toolkit. Each entry is matched against
-            the unified action catalog at manifest-resolution time.
-          items:
-            $ref: '#/components/schemas/ToolkitAction'
-        created_by:
-          type: string
-          description: ID of the principal who created this toolkit.
-        updated_by:
-          type: string
-          description: ID of the principal who last updated this toolkit.
-        created_at:
-          type: string
-          format: date-time
-          description: Record creation timestamp.
-        updated_at:
-          type: string
-          format: date-time
-          description: Last update timestamp.
-      example:
-        id: kit_4r8q2m7x9p5v3n6t
-        name: GitHub review
-        description: GitHub actions needed for pull-request review.
-        source: organization
-        tags:
-          owner: product
-        actions:
-        - selector_type: exact
-          selector: github.create_review_comment
-        created_by: user_2f9s3k4m5n6p7q8r
-        updated_by: user_2f9s3k4m5n6p7q8r
-        created_at: '2026-06-15T14:30:00Z'
-        updated_at: '2026-06-15T14:30:00Z'
     Skill:
       type: object
       additionalProperties: false
@@ -12647,6 +12479,10 @@ components:
       - name
       - source
       - instructions
+      - owner
+      - visibility
+      - container
+      - posture
       - created_at
       - updated_at
       properties:
@@ -12663,18 +12499,26 @@ components:
           type: string
           enum:
           - system
-          - organization
-          description: Ownership and mutability of the Skill. `system` is built-in and `organization`
-            is shared and mutable by the org.
+          - custom
+          description: Ownership and mutability of the Skill. `system` is built-in and `custom`
+            is user-managed.
         instructions:
           type: string
           description: Markdown instructions loaded when the skill is active.
+        owner:
+          $ref: '#/components/schemas/ResourceOwner'
+        visibility:
+          $ref: '#/components/schemas/ResourceVisibility'
+        container:
+          $ref: '#/components/schemas/ResourceContainer'
+        posture:
+          $ref: '#/components/schemas/ResourcePosture'
         allowed_tools:
           type: array
           description: |-
-            Canonical action names, wildcard selectors, or group references naming the actions this skill needs. Uses the same selector vocabulary as toolkit grants.
+            Canonical action names, wildcard selectors, or group references naming the actions this skill needs. Uses the same selector vocabulary as agent tool grants.
 
-            The grant takes effect when an agent invokes the skill, and lasts for the rest of that turn: calls to actions outside it are refused with an error naming the skill. Assigning a skill narrows nothing on its own, and an empty list declares nothing and narrows nothing. Skills invoked in the same turn compose as a union, so this keeps a skill on task rather than sandboxing it. Mobius memory and self-awareness tools are always exempt, and a skill can never widen an agent beyond its assigned toolkits.
+            The grant takes effect when an agent invokes the skill, and lasts for the rest of that turn: calls to actions outside it are refused with an error naming the skill. Assigning a skill narrows nothing on its own, and an empty list declares nothing and narrows nothing. Skills invoked in the same turn compose as a union, so this keeps a skill on task rather than sandboxing it. Mobius memory and self-awareness tools are always exempt, and a skill can never widen an agent beyond its own tool selectors.
           items:
             type: string
         tags:
@@ -12698,7 +12542,7 @@ components:
         id: skill_7n4q8x2m9p5v3r6t
         name: Pull request review
         description: Review pull requests for correctness and risk.
-        source: organization
+        source: custom
         instructions: Check the diff and leave concise findings.
         allowed_tools:
         - github.create_review_comment
@@ -13238,7 +13082,7 @@ components:
           description: Session this preview belongs to.
         agent_id:
           type: string
-          description: Agent that owns the parent session, when known.
+          description: Agent container executing the parent session, when known.
         run_id:
           type: string
           description: Loop run that produced the preview, when applicable.
@@ -13813,8 +13657,10 @@ components:
         title:
           type: string
           description: Human-friendly title for a newly created session.
+        owner:
+          $ref: '#/components/schemas/ResourceOwner'
         visibility:
-          $ref: '#/components/schemas/SessionVisibility'
+          $ref: '#/components/schemas/ResourceVisibility'
         model_override:
           type: string
           description: Model to use for a newly created session. Overrides the stored agent's
@@ -13948,7 +13794,7 @@ components:
       properties:
         agent_id:
           type: string
-          description: Agent that owns the session.
+          description: Agent container that executes the session. The agent never owns it.
         mode:
           type: string
           enum:
@@ -13964,8 +13810,10 @@ components:
         title:
           type: string
           description: Human-friendly session title.
+        owner:
+          $ref: '#/components/schemas/ResourceOwner'
         visibility:
-          $ref: '#/components/schemas/SessionVisibility'
+          $ref: '#/components/schemas/ResourceVisibility'
         model_override:
           type: string
           description: Model to use for a newly created session. Overrides the stored agent's
@@ -14208,13 +14056,6 @@ components:
         woke_turn:
           type: boolean
           description: True when wake interrupted a waiting tool and requeued this turn.
-    ArtifactVisibility:
-      type: string
-      enum:
-      - private
-      - shared
-      description: Private artifacts are visible only to their owner user. Shared artifacts
-        are visible to the org.
     ArtifactConversionSummary:
       type: object
       description: Markdown-extraction state for an Office upload that requested conversion.
@@ -14236,7 +14077,9 @@ components:
       description: Stored file or generated artifact metadata.
       required:
       - id
+      - owner
       - visibility
+      - posture
       - name
       - mime_type
       - size_bytes
@@ -14246,9 +14089,14 @@ components:
         id:
           type: string
           description: Unique artifact identifier.
+        owner:
+          $ref: '#/components/schemas/ResourceOwner'
         visibility:
-          $ref: '#/components/schemas/ArtifactVisibility'
-          description: Visibility policy for the artifact.
+          $ref: '#/components/schemas/ResourceVisibility'
+        container:
+          $ref: '#/components/schemas/ResourceContainer'
+        posture:
+          $ref: '#/components/schemas/ResourcePosture'
         run_id:
           type: string
           description: Loop run that produced this artifact, derived from the trusted worker
@@ -14260,7 +14108,7 @@ components:
         name:
           type: string
           description: Display name or relative virtual path. Forward slash may be used to
-            organize artifacts inside private or shared org space.
+            organize artifacts inside private or organization-visible space.
         mime_type:
           type: string
           description: MIME type recorded for the artifact content.
@@ -14298,7 +14146,10 @@ components:
             Absent for artifacts with no conversion.
       example:
         id: art_2m7q9x5v3p8n4r6t
-        visibility: shared
+        owner:
+          kind: team
+        visibility: organization
+        posture: team
         run_id: run_8q5m2x9v7p3n4r6t
         step_id: run_8q5m2x9v7p3n4r6t:review
         name: reports/review-findings.md
@@ -14314,6 +14165,9 @@ components:
         creates an internal revision and makes it runnable immediately.
       required:
       - id
+      - owner
+      - visibility
+      - posture
       - name
       - status
       - created_at
@@ -14322,6 +14176,14 @@ components:
         id:
           type: string
           description: Stable loop identifier.
+        owner:
+          $ref: '#/components/schemas/ResourceOwner'
+        visibility:
+          $ref: '#/components/schemas/ResourceVisibility'
+        container:
+          $ref: '#/components/schemas/ResourceContainer'
+        posture:
+          $ref: '#/components/schemas/ResourcePosture'
         name:
           type: string
           description: Human-readable display name.
@@ -14331,13 +14193,10 @@ components:
         status:
           $ref: '#/components/schemas/LoopStatus'
           description: 'Current loop lifecycle status: `draft`, `active`, `paused`, or `deleted`.'
-        owner:
-          type: string
-          description: User who created or currently owns this loop.
         agent_id:
           type: string
-          description: Agent associated with this loop. Agent steps use it when they do not
-            pin `config.agent_id`.
+          description: Agent container associated with this loop. Agent steps use it when
+            they do not pin `config.agent_id`; it never owns the loop.
         schema_version:
           type: string
           enum:
@@ -14500,6 +14359,10 @@ components:
           type: string
           description: Agent associated with this loop. Agent steps use it when they do not
             pin `config.agent_id`.
+        owner:
+          $ref: '#/components/schemas/ResourceOwner'
+        visibility:
+          $ref: '#/components/schemas/ResourceVisibility'
         schema_version:
           type: string
           enum:
@@ -15283,7 +15146,7 @@ components:
           description: Optional expression template for the session display title using the
             same roots as `name`.
         visibility:
-          $ref: '#/components/schemas/SessionVisibility'
+          $ref: '#/components/schemas/ResourceVisibility'
           description: Visibility for durable sessions created from this policy.
         compaction_policy:
           $ref: '#/components/schemas/SessionCompactionPolicy'
@@ -16024,48 +15887,6 @@ components:
         has_more:
           type: boolean
           description: True when more events exist after the returned page.
-    ToolkitRequest:
-      type: object
-      additionalProperties: false
-      required:
-      - name
-      properties:
-        name:
-          type: string
-          minLength: 1
-          maxLength: 80
-          description: Human-readable toolkit name.
-        description:
-          type: string
-          maxLength: 1000
-          description: Markdown description of the toolkit's purpose.
-        actions:
-          type: array
-          description: Action selectors provided by this toolkit.
-          items:
-            $ref: '#/components/schemas/ToolkitAction'
-        tags:
-          $ref: '#/components/schemas/TagMap'
-          description: Labels to apply to the toolkit.
-      example:
-        name: GitHub review
-        description: GitHub actions needed for pull-request review.
-        actions:
-        - selector_type: exact
-          selector: github.create_review_comment
-        tags:
-          owner: product
-    ToolkitListResponse:
-      type: object
-      additionalProperties: false
-      required:
-      - items
-      properties:
-        items:
-          type: array
-          description: The list of results for this page.
-          items:
-            $ref: '#/components/schemas/Toolkit'
     SkillRequest:
       type: object
       additionalProperties: false
@@ -16094,6 +15915,13 @@ components:
             nothing and narrows nothing.
           items:
             type: string
+        owner:
+          $ref: '#/components/schemas/ResourceOwner'
+          description: Optional explicit custodian. Omit to keep the default shown by the
+            create surface.
+        visibility:
+          $ref: '#/components/schemas/ResourceVisibility'
+          description: Optional declared audience. Omit for Only you.
         tags:
           $ref: '#/components/schemas/TagMap'
           description: Labels to apply to the skill.
@@ -16128,21 +15956,6 @@ components:
           description: The list of results for this page.
           items:
             $ref: '#/components/schemas/Skill'
-    OrganizationSkillUsage:
-      type: object
-      additionalProperties: false
-      description: Assignment impact for one organization Skill.
-      required:
-      - skill_id
-      - assignment_count
-      properties:
-        skill_id:
-          type: string
-          description: Organization Skill ID.
-        assignment_count:
-          type: integer
-          minimum: 0
-          description: Number of agents assigned this Skill.
     BlueprintApplyMode:
       type: string
       description: '`apply` performs the change; `preview` validates and returns a plan without
@@ -16155,7 +15968,6 @@ components:
       description: The kind of Mobius resource a binding or change refers to.
       enum:
       - action
-      - toolkit
       - skill
       - agent
       - loop
@@ -16232,10 +16044,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/BlueprintActionInput'
-        toolkits:
-          type: array
-          items:
-            $ref: '#/components/schemas/BlueprintToolkitInput'
         skills:
           type: array
           items:
@@ -16301,56 +16109,6 @@ components:
           type: boolean
         long_running:
           type: boolean
-    BlueprintToolkitInput:
-      type: object
-      additionalProperties: false
-      description: A desired toolkit. Resolved only through its binding (toolkits have no
-        unique name).
-      required:
-      - key
-      - name
-      properties:
-        key:
-          type: string
-        name:
-          type: string
-        description:
-          type: string
-        actions:
-          type: array
-          description: Actions granted into the toolkit by canonical selector or legacy exact
-            action name.
-          items:
-            $ref: '#/components/schemas/BlueprintToolkitActionGrant'
-        tags:
-          $ref: '#/components/schemas/TagMap'
-        metadata:
-          type: object
-          additionalProperties: true
-    BlueprintToolkitActionGrant:
-      type: object
-      additionalProperties: false
-      description: Grants actions into a toolkit using the canonical Toolkit selector vocabulary.
-        Supply `selector`; `selector_type` defaults to `exact`. `action_name` is a backwards-compatible
-        alias for an exact selector and cannot be combined with `selector`.
-      properties:
-        selector_type:
-          type: string
-          enum:
-          - exact
-          - group
-          - platform
-          - custom
-          - wildcard
-          default: exact
-          description: Selector type used to resolve matching actions.
-        selector:
-          type: string
-          description: Canonical selector value, such as `github.*` or `*`.
-        action_name:
-          type: string
-          deprecated: true
-          description: Legacy alias for an exact action-name selector.
     BlueprintSkillInput:
       type: object
       additionalProperties: false
@@ -16381,8 +16139,8 @@ components:
     BlueprintAgentInput:
       type: object
       additionalProperties: false
-      description: A desired agent. `toolkits` and `skills`, when present, replace the agent's
-        full assignment set; omit them to leave existing assignments untouched.
+      description: A desired agent. `skills`, when present, replaces the agent's full assignment
+        set; omit it to leave existing assignments untouched.
       required:
       - key
       - name
@@ -16419,10 +16177,6 @@ components:
           description: Default reasoning-effort level for sessions and Loop agent steps.
         color:
           type: string
-        toolkits:
-          type: array
-          items:
-            $ref: '#/components/schemas/BlueprintResourceRef'
         skills:
           type: array
           items:
@@ -16783,9 +16537,9 @@ components:
       type: object
       additionalProperties: false
       description: Non-human identity used by loop, agents, and API keys. A principal makes
-        ownership, permissions, and credential rotation explicit without tying machine access
-        to a human user. The `id` is the principal id used as the `owned_by` value when filtering
-        or claiming resources.
+        permissions, delegation, and credential rotation explicit without tying machine access
+        to a human user. The `id` is the stable identity used by credentials, role assignments,
+        and agent execution.
       required:
       - id
       - kind
@@ -16909,6 +16663,9 @@ components:
       additionalProperties: false
       required:
       - id
+      - owner
+      - visibility
+      - posture
       - name
       - schema
       - created_at
@@ -16918,6 +16675,14 @@ components:
         id:
           type: string
           description: Unique table identifier.
+        owner:
+          $ref: '#/components/schemas/ResourceOwner'
+        visibility:
+          $ref: '#/components/schemas/ResourceVisibility'
+        container:
+          $ref: '#/components/schemas/ResourceContainer'
+        posture:
+          $ref: '#/components/schemas/ResourcePosture'
         name:
           type: string
           pattern: ^[a-z][a-z0-9_]*$
@@ -17074,6 +16839,10 @@ components:
           maxLength: 2000
           description: Optional author guidance for how this table should be used (e.g. surfaced
             to agents).
+        owner:
+          $ref: '#/components/schemas/ResourceOwner'
+        visibility:
+          $ref: '#/components/schemas/ResourceVisibility'
         schema:
           $ref: '#/components/schemas/TableSchema'
           description: Column and index definition for the new table.
@@ -17374,7 +17143,7 @@ components:
       example:
         items:
         - id: art_2m7q9x5v3p8n4r6t
-          visibility: shared
+          visibility: organization
           name: reports/review-findings.md
           mime_type: text/markdown
           size_bytes: 1842
@@ -17397,7 +17166,7 @@ components:
           type: string
           maxLength: 256
           description: Display name or relative virtual path. Forward slash may be used to
-            organize artifacts inside private or shared org space.
+            organize artifacts inside private or organization-visible space.
         mime:
           type: string
           description: Optional MIME type override. Defaults to the uploaded file part content
@@ -17413,6 +17182,13 @@ components:
           additionalProperties: true
           description: Optional caller metadata JSON object. Encoded as JSON in the multipart
             field and limited to 64 KiB.
+        owner:
+          $ref: '#/components/schemas/ResourceOwner'
+          description: Optional custodian. Omit to keep the upload with the authenticated
+            person.
+        visibility:
+          $ref: '#/components/schemas/ResourceVisibility'
+          description: Optional audience. Omit to keep the upload private.
         convert:
           type: string
           enum:
@@ -17481,6 +17257,9 @@ components:
           schema:
             $ref: '#/components/schemas/ActionInvocationV1'
 x-tagGroups:
+- name: Resource Ownership Endpoints
+  tags:
+  - resources
 - name: API Keys
   tags:
   - api-keys
@@ -17526,9 +17305,6 @@ x-tagGroups:
 - name: Runs
   tags:
   - runs
-- name: Toolkits
-  tags:
-  - toolkits
 - name: Skills
   tags:
   - skills

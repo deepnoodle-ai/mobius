@@ -8,8 +8,8 @@ import (
 	"github.com/deepnoodle-ai/mobius/mobius/api"
 )
 
-// registerSkillImportCommands adds the two skill import commands. They are
-// hand-written (the generator skips importSkill and importOrganizationSkill)
+// registerSkillImportCommands adds the skill import command. It is
+// hand-written (the generator skips importSkill)
 // so they take the skill document itself as their argument — a Claude Code or
 // Dive-style markdown file, sent verbatim — instead of a JSON request body
 // wrapping it.
@@ -42,30 +42,6 @@ func registerSkillImportCommands(app *cli.App) {
 				return err
 			}
 			return printResponse(ctx, "importSkill", resp.StatusCode(), resp.Body)
-		})
-
-	app.Group("org-skills").Command("import").
-		Description("Import organization skill").
-		AddArg(docArg).
-		Flags(importFlags...).
-		Use(requireAuth()).
-		Run(func(ctx *cli.Context) error {
-			body, err := skillImportBody(ctx)
-			if err != nil {
-				return err
-			}
-			if ctx.Bool("dry-run") {
-				return printDryRun(ctx, body)
-			}
-			mc, err := clientFromContext(ctx)
-			if err != nil {
-				return err
-			}
-			resp, err := mc.RawClient().ImportOrganizationSkillWithResponse(ctx.Context(), *body)
-			if err != nil {
-				return err
-			}
-			return printResponse(ctx, "importOrganizationSkill", resp.StatusCode(), resp.Body)
 		})
 }
 

@@ -3,7 +3,7 @@
 // Regenerate with:  make generate-go-cli
 //
 // To suppress or override a command, edit
-// cmd/mobius-cligen/overrides.go — never hand-edit this file.
+// internal/cligen/overrides.go — never hand-edit this file.
 
 package main
 
@@ -127,7 +127,7 @@ func registerRolesCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.Arg(0)
+			p0 := api.IDParam(ctx.Arg(0))
 			resp, err := client.DeleteRoleWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
@@ -145,7 +145,7 @@ func registerRolesCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.Arg(0)
+			p0 := api.IDParam(ctx.Arg(0))
 			resp, err := client.DeleteRoleAssignmentWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
@@ -163,7 +163,7 @@ func registerRolesCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.Arg(0)
+			p0 := api.IDParam(ctx.Arg(0))
 			resp, err := client.GetRoleWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
@@ -246,7 +246,7 @@ func registerRolesCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.Arg(0)
+			p0 := api.IDParam(ctx.Arg(0))
 			var body api.UpdateRoleJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err

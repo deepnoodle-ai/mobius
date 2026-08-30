@@ -955,6 +955,8 @@ def _ack_body() -> dict[str, object]:
         },
         "session": {
             "id": "s1",
+            "owner": {"kind": "person", "id": "user_1"},
+            "posture": "only_you",
             "agent_id": "a1",
             "origin": "api",
             "scope": "agent",

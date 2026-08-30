@@ -5,12 +5,10 @@ from __future__ import annotations
 import json
 
 import httpx
-import pytest
 
 from deepnoodle.mobius import (
     Client,
     ClientOptions,
-    MobiusAPIError,
     SkillRequest,
 )
 
@@ -34,9 +32,13 @@ def _client_with(handler) -> Client:
     )
 
 
-def _skill(skill_id: str = "skill_1", source: str = "organization") -> dict:
+def _skill(skill_id: str = "skill_1", source: str = "custom") -> dict:
     return {
         "id": skill_id,
+        "owner": {"kind": "person", "id": "user_1"},
+        "visibility": "private",
+        "container": None,
+        "posture": "only_you",
         "name": "Pull request review",
         "source": source,
         "instructions": "Check the diff and leave concise findings.",
@@ -95,7 +97,7 @@ def test_import_sends_document_verbatim() -> None:
     client.close()
 
     assert bodies == [{"content": SKILL_DOC, "name": "Pull request review"}]
-    assert skill.source == "organization"
+    assert skill.source == "custom"
 
 
 def test_import_omits_name_when_not_given() -> None:
@@ -110,56 +112,6 @@ def test_import_omits_name_when_not_given() -> None:
     client.close()
 
     assert bodies == [{"content": "Just instructions."}]
-
-
-def test_organization_routes_and_provenance() -> None:
-    def handler(request: httpx.Request) -> httpx.Response:
-        path = request.url.path
-        if path == "/v1/organization/skills" and request.method == "GET":
-            return httpx.Response(
-                200, json={"items": [_skill("skill_org", "organization")]}
-            )
-        if path == "/v1/organization/skills/import":
-            return httpx.Response(201, json=_skill("skill_org", "organization"))
-        if path == "/v1/organization/skills/skill_org" and request.method == "PUT":
-            return httpx.Response(200, json=_skill("skill_org", "organization"))
-        if path == "/v1/organization/skills/skill_org/usage":
-            return httpx.Response(
-                200,
-                json={"skill_id": "skill_org", "assignment_count": 3},
-            )
-        return httpx.Response(404)
-
-    client = _client_with(handler)
-    page = client.list_organization_skills()
-    assert page.items[0].source == "organization"
-    client.import_organization_skill(SKILL_DOC)
-    client.replace_organization_skill(
-        "skill_org",
-        SkillRequest(name="Pull request review", instructions="Check the diff."),
-    )
-    usage = client.get_organization_skill_usage("skill_org")
-    client.close()
-
-    assert usage.assignment_count == 3
-
-
-def test_delete_organization_skill_surfaces_in_use_conflict() -> None:
-    def handler(request: httpx.Request) -> httpx.Response:
-        assert request.url.path == "/v1/organization/skills/skill_org"
-        return httpx.Response(
-            409,
-            json={
-                "error": {"code": "skill_in_use", "message": "detach agents first"}
-            },
-        )
-
-    client = _client_with(handler)
-    with pytest.raises(MobiusAPIError) as err:
-        client.delete_organization_skill("skill_org")
-    client.close()
-    assert err.value.status == 409
-    assert err.value.code == "skill_in_use"
 
 
 def test_replace_agent_skill_assignments_preserves_order() -> None:

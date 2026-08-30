@@ -3,7 +3,7 @@
 // Regenerate with:  make generate-go-cli
 //
 // To suppress or override a command, edit
-// cmd/mobius-cligen/overrides.go — never hand-edit this file.
+// internal/cligen/overrides.go — never hand-edit this file.
 
 package main
 
@@ -25,8 +25,10 @@ func registerWebhooksCommands(app *cli.App) {
 			cli.Bool("enabled", "").Help("Whether the webhook starts enabled. Defaults to true when omitted."),
 			cli.Strings("events", "").Help("Event types to subscribe to. Use wildcards for broad subscriptions, e.g. `[\"run.*\"]` for all run events. Omit this field or send an empty…"),
 			cli.String("name", "").Help("[required] Human-readable name, unique within the org."),
+			cli.String("owner", "").Help("The human or team responsible for this resource. Accepts JSON, @file, or @-."),
 			cli.Strings("tag", "").Help("Tag in KEY=VALUE form. Repeatable."),
 			cli.String("url", "").Help("The endpoint Mobius will POST event payloads to. May be left empty at creation time so a candidate URL can be tested via the ping endpoint…"),
+			cli.String("visibility", "").Help("Who the custodian chose to share the resource with."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -52,6 +54,11 @@ func registerWebhooksCommands(app *cli.App) {
 			if ctx.IsSet("name") {
 				body.Name = ctx.String("name")
 			}
+			if ctx.IsSet("owner") {
+				if err := decodeFlagJSON(ctx, "owner", ctx.String("owner"), &body.Owner); err != nil {
+					return err
+				}
+			}
 			if tags, err := parseTagFlags(ctx); err != nil {
 				return err
 			} else if tags != nil {
@@ -61,6 +68,10 @@ func registerWebhooksCommands(app *cli.App) {
 			if ctx.IsSet("url") {
 				v := ctx.String("url")
 				body.Url = &v
+			}
+			if ctx.IsSet("visibility") {
+				v := api.ResourceVisibility(ctx.String("visibility"))
+				body.Visibility = &v
 			}
 			if body.Name == "" {
 				return fmt.Errorf("--name is required (or supply it via --file)")
@@ -85,7 +96,7 @@ func registerWebhooksCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.Arg(0)
+			p0 := api.IDParam(ctx.Arg(0))
 			resp, err := client.DeleteWebhookWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
@@ -103,7 +114,7 @@ func registerWebhooksCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.Arg(0)
+			p0 := api.IDParam(ctx.Arg(0))
 			resp, err := client.GetWebhookWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
@@ -159,7 +170,7 @@ func registerWebhooksCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.Arg(0)
+			p0 := api.IDParam(ctx.Arg(0))
 			params := &api.ListWebhookDeliveriesParams{}
 			if ctx.IsSet("cursor") {
 				v := ctx.String("cursor")
@@ -191,7 +202,7 @@ func registerWebhooksCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.Arg(0)
+			p0 := api.IDParam(ctx.Arg(0))
 			var body api.PingWebhookJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -220,7 +231,7 @@ func registerWebhooksCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.Arg(0)
+			p0 := api.IDParam(ctx.Arg(0))
 			resp, err := client.RotateWebhookSecretWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
@@ -247,7 +258,7 @@ func registerWebhooksCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.Arg(0)
+			p0 := api.IDParam(ctx.Arg(0))
 			var body api.UpdateWebhookJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err

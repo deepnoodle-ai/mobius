@@ -14,7 +14,10 @@ test("client: org-authorized artifact upload sends multipart metadata and idempo
     capturedForm = init?.body as FormData;
     return Response.json({
       id: "art_fixture",
+      owner: { kind: "person", id: "user_1" },
       visibility: "private",
+      container: null,
+      posture: "only_you",
       name: "renders/report.html",
       mime_type: "text/html",
       size_bytes: 15,
@@ -66,7 +69,10 @@ test("client: artifact idempotency key is optional and bounded", async () => {
     capturedHeaders = new Headers(init?.headers);
     return Response.json({
       id: "art_fixture",
+      owner: { kind: "person", id: "user_1" },
       visibility: "private",
+      container: null,
+      posture: "only_you",
       name: "report.txt",
       mime_type: "text/plain",
       size_bytes: 1,

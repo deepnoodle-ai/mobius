@@ -3,7 +3,7 @@
 // Regenerate with:  make generate-go-cli
 //
 // To suppress or override a command, edit
-// cmd/mobius-cligen/overrides.go — never hand-edit this file.
+// internal/cligen/overrides.go — never hand-edit this file.
 
 package main
 
@@ -30,7 +30,7 @@ func registerArtifactsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.Arg(0)
+			p0 := api.ArtifactIdParam(ctx.Arg(0))
 			params := &api.CreateArtifactSignedUrlParams{}
 			if ctx.IsSet("ttl-seconds") {
 				v := int64(ctx.Int("ttl-seconds"))
@@ -53,7 +53,7 @@ func registerArtifactsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.Arg(0)
+			p0 := api.ArtifactIdParam(ctx.Arg(0))
 			resp, err := client.DeleteArtifactWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
@@ -71,7 +71,7 @@ func registerArtifactsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.Arg(0)
+			p0 := api.ArtifactIdParam(ctx.Arg(0))
 			resp, err := client.GetArtifactWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
@@ -89,7 +89,7 @@ func registerArtifactsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.Arg(0)
+			p0 := api.ArtifactIdParam(ctx.Arg(0))
 			resp, err := client.GetArtifactContentWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err

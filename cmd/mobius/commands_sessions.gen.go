@@ -3,7 +3,7 @@
 // Regenerate with:  make generate-go-cli
 //
 // To suppress or override a command, edit
-// cmd/mobius-cligen/overrides.go — never hand-edit this file.
+// internal/cligen/overrides.go — never hand-edit this file.
 
 package main
 
@@ -40,7 +40,7 @@ func registerSessionsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.Arg(0)
+			p0 := api.SessionIdParam(ctx.Arg(0))
 			var body api.AppendSessionMessagesJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -100,7 +100,7 @@ func registerSessionsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.Arg(0)
+			p0 := api.SessionIdParam(ctx.Arg(0))
 			params := &api.CancelSessionParams{}
 			if ctx.IsSet("force") {
 				v := ctx.Bool("force")
@@ -124,8 +124,8 @@ func registerSessionsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.Arg(0)
-			p1 := ctx.Arg(1)
+			p0 := api.SessionIdParam(ctx.Arg(0))
+			p1 := api.NudgeIdParam(ctx.Arg(1))
 			resp, err := client.CancelNudgeWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
@@ -144,8 +144,8 @@ func registerSessionsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.Arg(0)
-			p1 := ctx.Arg(1)
+			p0 := api.SessionIdParam(ctx.Arg(0))
+			p1 := api.TurnIdParam(ctx.Arg(1))
 			resp, err := client.CancelTurnWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
@@ -163,7 +163,7 @@ func registerSessionsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.Arg(0)
+			p0 := api.SessionIdParam(ctx.Arg(0))
 			resp, err := client.CompactSessionWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
@@ -174,16 +174,17 @@ func registerSessionsCommands(app *cli.App) {
 	sessionsGrp.Command("create").
 		Description("Create or resolve a session").
 		Flags(
-			cli.String("agent-id", "").Help("[required] Agent that owns the session."),
+			cli.String("agent-id", "").Help("[required] Agent container that executes the session. The agent never owns it."),
 			cli.String("compaction-policy", "").Help("Controls how a session's transcript is automatically summarized as it grows. On create the supplied fields are merged over the owning… Accepts JSON, @file, or @-."),
 			cli.String("metadata", "").Help("Free-form caller metadata for the session. Accepts JSON, @file, or @-."),
 			cli.String("mode", "").Help("`continue_or_create` (default) resolves an existing session for the `session_key` or creates one; `new` always creates a fresh session…"),
 			cli.String("model-override", "").Help("Model to use for a newly created session. Overrides the stored agent's model. Ignored when an existing session is resolved. Creating a…"),
+			cli.String("owner", "").Help("The human or team responsible for this resource. Accepts JSON, @file, or @-."),
 			cli.String("retention", "").Help("Controls how long a session is retained. Applied only when the session is first created (like `compaction_policy`); ignored when an… Accepts JSON, @file, or @-."),
 			cli.String("session-key", "").Help("Stable key identifying the conversation within the agent."),
 			cli.String("thinking-effort", "").Help("Reasoning-effort level for a turn, lowest (`low`) to highest (`max`). Higher effort spends more tokens on reasoning, improving quality on…"),
 			cli.String("title", "").Help("Human-friendly session title."),
-			cli.String("visibility", "").Help("Visibility of the session in org surfaces: `organization` or `private`."),
+			cli.String("visibility", "").Help("Who the custodian chose to share the resource with."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -219,6 +220,11 @@ func registerSessionsCommands(app *cli.App) {
 				v := ctx.String("model-override")
 				body.ModelOverride = &v
 			}
+			if ctx.IsSet("owner") {
+				if err := decodeFlagJSON(ctx, "owner", ctx.String("owner"), &body.Owner); err != nil {
+					return err
+				}
+			}
 			if ctx.IsSet("retention") {
 				if err := decodeFlagJSON(ctx, "retention", ctx.String("retention"), &body.Retention); err != nil {
 					return err
@@ -237,7 +243,7 @@ func registerSessionsCommands(app *cli.App) {
 				body.Title = &v
 			}
 			if ctx.IsSet("visibility") {
-				v := api.SessionVisibility(ctx.String("visibility"))
+				v := api.ResourceVisibility(ctx.String("visibility"))
 				body.Visibility = &v
 			}
 			if body.AgentId == "" {
@@ -263,7 +269,7 @@ func registerSessionsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.Arg(0)
+			p0 := api.SessionIdParam(ctx.Arg(0))
 			resp, err := client.DeleteSessionWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
@@ -282,8 +288,8 @@ func registerSessionsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.Arg(0)
-			p1 := ctx.Arg(1)
+			p0 := api.SessionIdParam(ctx.Arg(0))
+			p1 := api.ArtifactIdParam(ctx.Arg(1))
 			resp, err := client.DeleteSessionAttachmentWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
@@ -301,7 +307,7 @@ func registerSessionsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.Arg(0)
+			p0 := api.SessionIdParam(ctx.Arg(0))
 			resp, err := client.GetSessionWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
@@ -320,8 +326,8 @@ func registerSessionsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.Arg(0)
-			p1 := ctx.Arg(1)
+			p0 := api.SessionIdParam(ctx.Arg(0))
+			p1 := api.NudgeIdParam(ctx.Arg(1))
 			resp, err := client.GetSessionNudgeWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
@@ -344,7 +350,7 @@ func registerSessionsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.Arg(0)
+			p0 := api.SessionIdParam(ctx.Arg(0))
 			params := &api.GetSessionTranscriptParams{}
 			if ctx.IsSet("cursor") {
 				v := ctx.String("cursor")
@@ -376,8 +382,8 @@ func registerSessionsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.Arg(0)
-			p1 := ctx.Arg(1)
+			p0 := api.SessionIdParam(ctx.Arg(0))
+			p1 := api.TurnIdParam(ctx.Arg(1))
 			resp, err := client.GetSessionTurnWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
@@ -396,8 +402,8 @@ func registerSessionsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.Arg(0)
-			p1 := ctx.Arg(1)
+			p0 := api.SessionIdParam(ctx.Arg(0))
+			p1 := api.TurnIdParam(ctx.Arg(1))
 			resp, err := client.GetSessionTurnLiveWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
 				return err
@@ -557,7 +563,7 @@ func registerSessionsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.Arg(0)
+			p0 := api.SessionIdParam(ctx.Arg(0))
 			params := &api.ListSessionMessagesParams{}
 			if ctx.IsSet("after-sequence") {
 				v := api.AfterSequenceParam(int64(ctx.Int("after-sequence")))
@@ -602,7 +608,7 @@ func registerSessionsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.Arg(0)
+			p0 := api.SessionIdParam(ctx.Arg(0))
 			params := &api.ListSessionNudgesParams{}
 			if ctx.IsSet("status") {
 				raw := ctx.Strings("status")
@@ -647,7 +653,7 @@ func registerSessionsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.Arg(0)
+			p0 := api.SessionIdParam(ctx.Arg(0))
 			params := &api.ListSessionTurnsParams{}
 			if ctx.IsSet("ids") {
 				v := ctx.Strings("ids")
@@ -690,7 +696,7 @@ func registerSessionsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.Arg(0)
+			p0 := api.SessionIdParam(ctx.Arg(0))
 			var body api.NudgeSessionJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -744,7 +750,7 @@ func registerSessionsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.Arg(0)
+			p0 := api.SessionIdParam(ctx.Arg(0))
 			var body api.StartTurnJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -804,7 +810,7 @@ func registerSessionsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.Arg(0)
+			p0 := api.SessionIdParam(ctx.Arg(0))
 			params := &api.StreamSessionParams{}
 			if ctx.IsSet("after-sequence") {
 				v := api.AfterSequenceParam(int64(ctx.Int("after-sequence")))
@@ -835,7 +841,7 @@ func registerSessionsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.Arg(0)
+			p0 := api.SessionIdParam(ctx.Arg(0))
 			params := &api.StreamSessionTranscriptParams{}
 			if ctx.IsSet("cursor") {
 				v := ctx.String("cursor")
@@ -870,7 +876,7 @@ func registerSessionsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.Arg(0)
+			p0 := api.SessionIdParam(ctx.Arg(0))
 			var body api.UpdateSessionJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err

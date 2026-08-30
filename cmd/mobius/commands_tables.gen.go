@@ -3,7 +3,7 @@
 // Regenerate with:  make generate-go-cli
 //
 // To suppress or override a command, edit
-// cmd/mobius-cligen/overrides.go — never hand-edit this file.
+// internal/cligen/overrides.go — never hand-edit this file.
 
 package main
 
@@ -34,7 +34,7 @@ func registerTablesCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.Arg(0)
+			p0 := api.TableIDParam(ctx.Arg(0))
 			var body api.BulkCreateTableRowsJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -63,7 +63,9 @@ func registerTablesCommands(app *cli.App) {
 			cli.String("description", "").Help("Optional human-readable description of the table."),
 			cli.String("instructions", "").Help("Optional author guidance for how this table should be used (e.g. surfaced to agents). Accepts text, @file, or @-. Use @@ to escape a literal leading @."),
 			cli.String("name", "").Help("[required] Table name (lowercase, snake_case); unique within the org."),
+			cli.String("owner", "").Help("The human or team responsible for this resource. Accepts JSON, @file, or @-."),
 			cli.String("schema", "").Help("[required] Column definition for a virtual table. Each table has exactly one required string identity column and may nominate one optional string… Accepts JSON, @file, or @-."),
+			cli.String("visibility", "").Help("Who the custodian chose to share the resource with."),
 			cli.String("file", "f").Help("Request body from a file (JSON or YAML, '-' for stdin). Flags override file contents."),
 			cli.Bool("dry-run", "").Help("Print the assembled request body and exit without sending it."),
 		).
@@ -92,10 +94,19 @@ func registerTablesCommands(app *cli.App) {
 			if ctx.IsSet("name") {
 				body.Name = ctx.String("name")
 			}
+			if ctx.IsSet("owner") {
+				if err := decodeFlagJSON(ctx, "owner", ctx.String("owner"), &body.Owner); err != nil {
+					return err
+				}
+			}
 			if ctx.IsSet("schema") {
 				if err := decodeFlagJSON(ctx, "schema", ctx.String("schema"), &body.Schema); err != nil {
 					return err
 				}
+			}
+			if ctx.IsSet("visibility") {
+				v := api.ResourceVisibility(ctx.String("visibility"))
+				body.Visibility = &v
 			}
 			if body.Name == "" {
 				return fmt.Errorf("--name is required (or supply it via --file)")
@@ -128,7 +139,7 @@ func registerTablesCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.Arg(0)
+			p0 := api.TableIDParam(ctx.Arg(0))
 			var body api.CreateTableRowJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -161,7 +172,7 @@ func registerTablesCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.Arg(0)
+			p0 := api.TableIDParam(ctx.Arg(0))
 			resp, err := client.DeleteTableWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
@@ -180,7 +191,7 @@ func registerTablesCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.Arg(0)
+			p0 := api.TableIDParam(ctx.Arg(0))
 			p1 := ctx.Arg(1)
 			resp, err := client.DeleteTableRowWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
@@ -199,7 +210,7 @@ func registerTablesCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.Arg(0)
+			p0 := api.TableIDParam(ctx.Arg(0))
 			resp, err := client.GetTableWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
@@ -218,7 +229,7 @@ func registerTablesCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.Arg(0)
+			p0 := api.TableIDParam(ctx.Arg(0))
 			p1 := ctx.Arg(1)
 			resp, err := client.GetTableRowWithResponse(ctx.Context(), p0, p1)
 			if err != nil {
@@ -237,7 +248,7 @@ func registerTablesCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.Arg(0)
+			p0 := api.TableIDParam(ctx.Arg(0))
 			resp, err := client.GetTableStatsWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
@@ -297,7 +308,7 @@ func registerTablesCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.Arg(0)
+			p0 := api.TableIDParam(ctx.Arg(0))
 			var body api.QueryTableRowsJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -349,7 +360,7 @@ func registerTablesCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.Arg(0)
+			p0 := api.TableIDParam(ctx.Arg(0))
 			var body api.SearchTableRowsJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -405,7 +416,7 @@ func registerTablesCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.Arg(0)
+			p0 := api.TableIDParam(ctx.Arg(0))
 			var body api.UpdateTableJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -460,7 +471,7 @@ func registerTablesCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.Arg(0)
+			p0 := api.TableIDParam(ctx.Arg(0))
 			p1 := ctx.Arg(1)
 			var body api.UpdateTableRowJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
@@ -503,7 +514,7 @@ func registerTablesCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.Arg(0)
+			p0 := api.TableIDParam(ctx.Arg(0))
 			var body api.UpsertTableRowJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err

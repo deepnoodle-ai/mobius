@@ -25,7 +25,7 @@ func TestListActionInvocationsEncodesEveryFilter(t *testing.T) {
 		EnvironmentID:   "env_1",
 		ActionName:      "crm.sync",
 		ActionID:        "act_1",
-		DefinitionScope: api.ListActionInvocationsParamsDefinitionScopeOrganization,
+		DefinitionScope: api.ListActionInvocationsParamsDefinitionScopeCustom,
 		SecretVersion:   2,
 		DeliveryID:      "dlv_1",
 		CorrelationID:   "corr_1",
@@ -42,7 +42,7 @@ func TestListActionInvocationsEncodesEveryFilter(t *testing.T) {
 		"environment_id":   "env_1",
 		"action_name":      "crm.sync",
 		"action_id":        "act_1",
-		"definition_scope": "organization",
+		"definition_scope": "custom",
 		"secret_version":   "2",
 		"delivery_id":      "dlv_1",
 		"correlation_id":   "corr_1",
@@ -68,7 +68,7 @@ func TestListActionInvocationsPreservesProvenanceFields(t *testing.T) {
 		writeJSON(w, http.StatusOK, `{
 			"items":[{
 				"id":"inv_1","action_name":"crm.sync","action_id":"act_1",
-				"definition_scope":"organization","secret_version":2,
+				"definition_scope":"custom","secret_version":2,
 				"delivery_id":"dlv_1","correlation_id":"corr_1",
 				"status":"success","source":"loop","retry_count":0,
 				"started_at":"2026-07-17T00:00:00Z","finished_at":"2026-07-17T00:00:01Z"
@@ -88,7 +88,7 @@ func TestListActionInvocationsPreservesProvenanceFields(t *testing.T) {
 	if entry.ActionId == nil || *entry.ActionId != "act_1" {
 		t.Fatalf("action_id = %v", entry.ActionId)
 	}
-	if entry.DefinitionScope == nil || *entry.DefinitionScope != api.ActionInvocationEntryDefinitionScopeOrganization {
+	if entry.DefinitionScope == nil || *entry.DefinitionScope != api.ActionInvocationEntryDefinitionScopeCustom {
 		t.Fatalf("definition_scope = %v", entry.DefinitionScope)
 	}
 	if entry.SecretVersion == nil || *entry.SecretVersion != 2 {

@@ -3,7 +3,7 @@
 // Regenerate with:  make generate-go-cli
 //
 // To suppress or override a command, edit
-// cmd/mobius-cligen/overrides.go — never hand-edit this file.
+// internal/cligen/overrides.go — never hand-edit this file.
 
 package main
 
@@ -34,7 +34,7 @@ func registerInteractionsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.Arg(0)
+			p0 := api.IDParam(ctx.Arg(0))
 			var body api.CancelInteractionJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -93,7 +93,7 @@ func registerInteractionsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.Arg(0)
+			p0 := api.IDParam(ctx.Arg(0))
 			resp, err := client.DeleteInteractionWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
@@ -111,7 +111,7 @@ func registerInteractionsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.Arg(0)
+			p0 := api.IDParam(ctx.Arg(0))
 			resp, err := client.GetInteractionWithResponse(ctx.Context(), p0)
 			if err != nil {
 				return err
@@ -195,7 +195,7 @@ func registerInteractionsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.Arg(0)
+			p0 := api.IDParam(ctx.Arg(0))
 			var body api.RespondToInteractionJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err
@@ -242,7 +242,7 @@ func registerInteractionsCommands(app *cli.App) {
 				return err
 			}
 			client := mc.RawClient()
-			p0 := ctx.Arg(0)
+			p0 := api.IDParam(ctx.Arg(0))
 			var body api.ReviewInteractionJSONRequestBody
 			if err := readJSONBody(ctx, &body); err != nil {
 				return err

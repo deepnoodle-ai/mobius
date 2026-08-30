@@ -42,7 +42,7 @@ test("client: listActionInvocations encodes every filter", async () => {
         environmentId: "env_1",
         actionName: "crm.sync",
         actionId: "act_1",
-        definitionScope: "organization",
+        definitionScope: "custom",
         secretVersion: 2,
         deliveryId: "dlv_1",
         correlationId: "corr_1",
@@ -60,7 +60,7 @@ test("client: listActionInvocations encodes every filter", async () => {
       environment_id: "env_1",
       action_name: "crm.sync",
       action_id: "act_1",
-      definition_scope: "organization",
+      definition_scope: "custom",
       secret_version: "2",
       delivery_id: "dlv_1",
       correlation_id: "corr_1",
@@ -81,7 +81,7 @@ test("client: listActionInvocations preserves provenance fields", async () => {
             id: "inv_1",
             action_name: "crm.sync",
             action_id: "act_1",
-            definition_scope: "organization",
+            definition_scope: "custom",
             secret_version: 2,
             delivery_id: "dlv_1",
             correlation_id: "corr_1",
@@ -100,7 +100,7 @@ test("client: listActionInvocations preserves provenance fields", async () => {
       assert.equal(page.has_more, true);
       const entry = page.items[0]!;
       assert.equal(entry.action_id, "act_1");
-      assert.equal(entry.definition_scope, "organization");
+      assert.equal(entry.definition_scope, "custom");
       assert.equal(entry.secret_version, 2);
       assert.equal(entry.delivery_id, "dlv_1");
       assert.equal(entry.correlation_id, "corr_1");

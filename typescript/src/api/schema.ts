@@ -4,6 +4,26 @@
  */
 
 export interface paths {
+    "/v1/resources/{resource_type}/{resource_id}/ownership": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update a resource's custody or audience
+         * @description Shares, un-shares, hands custody to the team, transfers custody to a person, or detaches a narrowing agent container. Audience-expanding changes require an explicit confirmation. Un-sharing is refused while the resource remains delegated to a wider agent audience.
+         */
+        patch: operations["updateResourceOwnership"];
+        trace?: never;
+    };
     "/v1/api-keys": {
         parameters: {
             query?: never;
@@ -47,118 +67,6 @@ export interface paths {
          * @description Revokes the key. In-flight requests using this key will immediately start receiving 401 while credential metadata remains available for audit history.
          */
         delete: operations["deleteAPIKey"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/organization/actions": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List organization actions
-         * @description Lists signed HTTP actions owned by the active organization. These definitions are available org-wide, but a toolkit must still select an action before an agent can call it. Requires Admin or Owner membership.
-         */
-        get: operations["listOrganizationActions"];
-        put?: never;
-        /**
-         * Create organization action
-         * @description Creates an organization-owned HTTP action using the signed_context_v1 request contract. The initial signing secret is returned once. Store it immediately; later reads expose lifecycle metadata only. Requires Admin or Owner membership.
-         */
-        post: operations["createOrganizationAction"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/organization/actions/{action_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get organization action
-         * @description Returns one organization action without prior secret material. Requires Admin or Owner membership.
-         */
-        get: operations["getOrganizationAction"];
-        put?: never;
-        post?: never;
-        /**
-         * Delete organization action
-         * @description Deletes the shared definition from future action catalogs. Requires Admin or Owner membership.
-         */
-        delete: operations["deleteOrganizationAction"];
-        options?: never;
-        head?: never;
-        /**
-         * Update organization action
-         * @description Updates the shared definition or enables/disables invocation. A custom action with the same canonical name continues to shadow this definition. Requires Admin or Owner membership.
-         */
-        patch: operations["updateOrganizationAction"];
-        trace?: never;
-    };
-    "/v1/organization/actions/{action_id}/secret/rotate": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Rotate an organization action secret
-         * @description Creates a pending key version and reveals it once. Mobius continues signing with the active version until the pending version is activated. Requires Admin or Owner membership.
-         */
-        post: operations["rotateOrganizationActionSecret"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/organization/actions/{action_id}/secret/versions/{secret_version}/activate": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Activate an organization action secret version
-         * @description Atomically makes a pending version active and moves the previous active version, if any, into its bounded verification overlap. This also recovers a disabled action after its active version was revoked. Requires Admin or Owner membership.
-         */
-        post: operations["activateOrganizationActionSecretVersion"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/organization/actions/{action_id}/secret/versions/{secret_version}/revoke": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Revoke an organization action secret version
-         * @description Immediately revokes a non-active key version. The active signing version can be revoked only after another version is activated or the action is disabled. Requires Admin or Owner membership.
-         */
-        post: operations["revokeOrganizationActionSecretVersion"];
-        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -415,7 +323,7 @@ export interface paths {
         head?: never;
         /**
          * Update environment
-         * @description Only scope, owned_by, and tags are mutable from the public API.
+         * @description Only owner, visibility, and tags are mutable from the public API.
          */
         patch: operations["updateEnvironment"];
         trace?: never;
@@ -843,7 +751,7 @@ export interface paths {
         put?: never;
         /**
          * Create agent
-         * @description Creates an agent. An agent IS a principal (principals.kind = agent): its backing identity row is created atomically with the agent — there is no separate machine-identity side record. The agent principal is for identity, ownership, and attribution; an agent's tools come from its assigned toolkits, not from roles.
+         * @description Creates an agent. An agent IS a principal (principals.kind = agent): its backing identity row is created atomically with the agent — there is no separate machine-identity side record. The agent principal is for identity, ownership, and attribution; an agent's tools come from its own `tool_selectors`, not from roles.
          *
          *     By default (`if_exists: error`, the default), a duplicate `name` or `external_ref` returns 409. Set `if_exists: adopt` together with `external_ref` to make the call safely retryable: when a live agent already carries that `external_ref`, it is returned unchanged with `200` instead of erroring — mutable fields are ignored, since no write happens. `external_ref` is required to use `adopt`; omitting it returns 400. A soft-deleted agent still owns its `external_ref`: it is never resurrected and never replaced, so a match against a deleted agent returns 409 even with `adopt`.
          */
@@ -880,6 +788,82 @@ export interface paths {
          * @description Updates mutable agent fields. Setting `status` to `inactive` prevents the agent from claiming new jobs but does not terminate active presence records.
          */
         patch: operations["updateAgent"];
+        trace?: never;
+    };
+    "/v1/agents/{resource_id}/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List agent members
+         * @description Returns the audience of a `restricted` or `private` agent.
+         *
+         *     The member list itself is returned only to callers who may manage the agent — an org admin, or the agent's creator while they remain a member. Every other member sees `count` alone, which is enough to answer "who else can see this" without turning the audience into a directory. An `organization` agent has no members and returns zero.
+         */
+        get: operations["listAgentMembers"];
+        /**
+         * Replace agent members
+         * @description Sets the audience to exactly the supplied principals. A `private` agent takes exactly one; a `restricted` agent at least one.
+         */
+        put: operations["replaceAgentMembers"];
+        /**
+         * Add agent members
+         * @description Adds principals to a `restricted` agent's audience. Idempotent: adding a principal who is already a member changes nothing.
+         *
+         *     A new member reads the ENTIRE shared layer, including everything promoted before they joined. Adding a second member to a `private` agent is refused — share it by changing its visibility to `restricted`. An agent parked `inactive` for having no audience reactivates when a member is added.
+         */
+        post: operations["addAgentMembers"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/agents/{resource_id}/members/{principal_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove an agent member
+         * @description Drops one principal from the audience. They lose reach on their next request.
+         *
+         *     Nothing they wrote is deleted: their private partition on this agent is retained and readable only by org admins, and anything they promoted stays, because promotion made it the group's. Removing the LAST member parks the agent as `inactive`, visible to org admins who may reassign or delete it — it is never silently reopened to the org.
+         */
+        delete: operations["removeAgentMember"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/agents/{resource_id}/visibility-impact": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Preview a visibility change
+         * @description Reports what changing this agent's audience would do, without writing anything: how many shared memory entries a widening republishes, which member rows it drops, and which principals a narrowing would strand.
+         *
+         *     It is what makes the confirmation specific — "everyone in the org will be able to read the 14 things it knows" rather than a generic warning.
+         */
+        get: operations["previewAgentVisibilityChange"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/v1/agents/{resource_id}/inbox": {
@@ -966,30 +950,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/agents/{resource_id}/toolkit-assignments": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List agent toolkit assignments
-         * @description Returns the toolkits assigned to an agent in assignment order.
-         */
-        get: operations["listAgentToolkitAssignments"];
-        /**
-         * Replace agent toolkit assignments
-         * @description Replaces the agent's toolkit assignment set as a whole. The effective tool surface is the union of the assigned toolkits' actions, narrowed by any per-invocation filters. Assigned skills do not narrow it: a skill's `allowed_tools` grant applies only once the agent invokes that skill.
-         */
-        put: operations["replaceAgentToolkitAssignments"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/agents/{resource_id}/skill-assignments": {
         parameters: {
             query?: never;
@@ -1004,7 +964,7 @@ export interface paths {
         get: operations["listAgentSkillAssignments"];
         /**
          * Replace agent skill assignments
-         * @description Replaces the agent's skill assignment set as a whole. Assigning a skill does not change the agent's tools: a skill's `allowed_tools` grant takes effect only once the agent invokes that skill, and never widens the set beyond the assigned toolkits' actions.
+         * @description Replaces the agent's skill assignment set as a whole. Assigning a skill does not change the agent's tools: a skill's `allowed_tools` grant takes effect only once the agent invokes that skill, and never widens the set beyond the agent's own tool selectors.
          */
         put: operations["replaceAgentSkillAssignments"];
         post?: never;
@@ -1023,7 +983,7 @@ export interface paths {
         };
         /**
          * Get agent tools
-         * @description Resolves the effective set of tools an agent can invoke: the flat union of the assigned toolkits' actions, optionally restricted by a toolkit subset and tool filters.
+         * @description Resolves the effective set of tools an agent can invoke: its tool selectors expanded against the live action catalog, optionally restricted by tool filters.
          *
          *     Assigned skills do not narrow this set — a skill's `allowed_tools` grant applies only once the agent invokes that skill at runtime. Pass `skill_name` to preview the tools the agent would be left with while that one skill is loaded.
          */
@@ -1115,6 +1075,34 @@ export interface paths {
          * @description Deletes the memory entry identified by `memory_key` from the requested partition. Omit `user_id` to target shared memory. Idempotent: succeeds even if no such entry exists.
          */
         delete: operations["deleteAgentMemoryEntry"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/agents/{resource_id}/memory/entries/{memory_key}/promotion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Promote a memory entry to the shared layer
+         * @description Copies one entry from a private partition into the same agent's shared layer, where everyone who can reach the agent reads it. The private entry stays where it was.
+         *
+         *     This is the only path from a person's private memory into the shared layer: the model has no tool that writes it during a human-initiated turn, so nothing you tell your assistant becomes the team's by accident. Performed by the partition's owner or by an org admin. The resulting entry carries a change row with reason `promoted` and the acting principal, and the act is reversible with `DELETE` on the same path.
+         *
+         *     A key already present in the shared layer is a `409` unless `replace` is set; the replacement is recorded as a versioned update.
+         */
+        post: operations["promoteAgentMemoryEntry"];
+        /**
+         * Reverse a promotion
+         * @description Removes a promoted entry from the shared layer. It touches nothing in the private partition it was copied from, and it is its own change row (reason `promotion_reverted`), so the ledger records both directions of the act. Available to the promoter and to org admins. Idempotent.
+         */
+        delete: operations["revertAgentMemoryPromotion"];
         options?: never;
         head?: never;
         patch?: never;
@@ -1778,58 +1766,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/toolkits": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List toolkits
-         * @description Returns organization-owned and system toolkit templates visible to the caller's organization by default.
-         */
-        get: operations["listToolkits"];
-        put?: never;
-        /**
-         * Create toolkit
-         * @description Creates an organization toolkit with named action selectors.
-         */
-        post: operations["createToolkit"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/toolkits/{toolkit_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get toolkit
-         * @description Returns a single organization-owned or system toolkit template by ID.
-         */
-        get: operations["getToolkit"];
-        /**
-         * Update toolkit
-         * @description Updates the mutable toolkit representation. Send the full request body, including required field `name`; partial payloads are rejected.
-         */
-        put: operations["updateToolkit"];
-        post?: never;
-        /**
-         * Delete toolkit
-         * @description Deletes an organization toolkit. The toolkit is automatically detached from any agents that reference it, so deletion is never blocked by existing assignments.
-         */
-        delete: operations["deleteToolkit"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/skills": {
         parameters: {
             query?: never;
@@ -1845,7 +1781,7 @@ export interface paths {
         put?: never;
         /**
          * Create skill
-         * @description Creates an organization skill with instructions and requested tool filters.
+         * @description Creates a skill with instructions and requested tool filters.
          */
         post: operations["createSkill"];
         delete?: never;
@@ -1894,101 +1830,9 @@ export interface paths {
         post?: never;
         /**
          * Delete skill
-         * @description Deletes an organization skill. The skill is automatically detached from any agents that reference it, so deletion is never blocked by existing assignments.
+         * @description Deletes a skill. The skill is automatically detached from any agents that reference it, so deletion is never blocked by existing assignments.
          */
         delete: operations["deleteSkill"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/organization/skills": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List organization skills
-         * @description Returns Skills owned by the active organization. Any organization member may read this catalog.
-         */
-        get: operations["listOrganizationSkills"];
-        put?: never;
-        /**
-         * Create organization skill
-         * @description Creates a Skill shared across the active organization. Requires organization Admin or Owner access.
-         */
-        post: operations["createOrganizationSkill"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/organization/skills/import": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Import organization skill
-         * @description Imports a Claude Code or Dive-style document as an organization Skill. Requires organization Admin or Owner access.
-         */
-        post: operations["importOrganizationSkill"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/organization/skills/{skill_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get organization skill
-         * @description Returns one Skill owned by the active organization.
-         */
-        get: operations["getOrganizationSkill"];
-        /**
-         * Update organization skill
-         * @description Updates the shared Skill for subsequent agent turns. Send the full request body. Requires organization Admin or Owner access.
-         */
-        put: operations["replaceOrganizationSkill"];
-        post?: never;
-        /**
-         * Delete organization skill
-         * @description Deletes an unused organization Skill. Assigned Skills return `skill_in_use` until every agent assignment is removed.
-         */
-        delete: operations["deleteOrganizationSkill"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/organization/skills/{skill_id}/usage": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get organization skill usage
-         * @description Returns assignment impact across the organization's agents. Requires organization Admin or Owner access.
-         */
-        get: operations["getOrganizationSkillUsage"];
-        put?: never;
-        post?: never;
-        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -2341,7 +2185,7 @@ export interface paths {
         put?: never;
         /**
          * Create artifact
-         * @description Accepts an org-authorized multipart file upload. Without a worker lease, the caller needs `mobius.project.edit`; the artifact is private to the authenticated principal and has no run or step lineage. A worker may instead supply `X-Mobius-Lease-Token` with `mobius.work.execute`; Mobius then derives run, step, job, worker session, attempt, and shared visibility from the active claim. Caller-supplied lineage, ownership, and visibility fields are rejected in both modes.
+         * @description Accepts an org-authorized multipart file upload. Without a worker lease, the caller needs `mobius.org.edit`; the artifact is private to the authenticated principal and has no run or step lineage. A worker may instead supply `X-Mobius-Lease-Token` with `mobius.work.execute`; Mobius then derives run, step, job, worker session, attempt, and shared visibility from the active claim. Caller-supplied lineage, ownership, and visibility fields are rejected in both modes.
          *
          *     DOCX, XLSX, and PPTX uploads may pass `convert=true` to start asynchronous Markdown extraction for later model delivery.
          */
@@ -2361,7 +2205,7 @@ export interface paths {
         };
         /**
          * Get artifact
-         * @description Returns artifact metadata after enforcing the caller's org and owner-user artifact scope.
+         * @description Returns artifact metadata after enforcing the caller's org and caller-authorized artifact audience.
          */
         get: operations["getArtifact"];
         put?: never;
@@ -2492,21 +2336,39 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /** @description The human or team responsible for this resource. */
+        ResourceOwner: {
+            /** @enum {string} */
+            kind: "person" | "team";
+            /** @description Human principal ID when kind is person; null for the team. */
+            id?: string | null;
+        };
         /**
-         * @description Optional namespace for named runtime resources. Omitted/null means the org/default scope; `owner` means names are unique within `(org, owned_by)`.
+         * @description Who the custodian chose to share the resource with.
          * @enum {string}
          */
-        ResourceScope: "owner";
+        ResourceVisibility: "private" | "organization";
+        /** @description The agent that contains this resource and may further narrow who can reach it. */
+        ResourceContainer: {
+            /** @enum {string} */
+            kind: "agent";
+            id: string;
+        } | null;
+        /**
+         * @description Employee-facing effective ownership and audience posture for the current caller.
+         * @enum {string}
+         */
+        ResourcePosture: "only_you" | "shared_by_you" | "shared_with_group" | "team" | "someone_else";
         /**
          * @description Whether a catalog capability — an action, an event source, or an integration provider — is usable right now. `ready` means it can be used as-is; `needs_setup` means it is known and supported but blocked by configuration, credentials, permissions, provider runtime availability, or implementation status. This is catalog *readiness*, and is deliberately separate from a resource's lifecycle state (such as integration `status` or artifact lifecycle).
          * @enum {string}
          */
         CapabilityReadiness: "ready" | "needs_setup";
         /**
-         * @description Why a capability is `needs_setup`. Present only when readiness is `needs_setup`. `not_configured` — no integration or credential is connected yet. `inactive` — the backing integration is manually disabled. `expired` — the backing credential has expired. `provider_unavailable` — the provider runtime is not currently available. `permission_missing` — the caller lacks permission to use it. `not_implemented` — a placeholder for a capability that is not yet available.
+         * @description Why a capability is `needs_setup`. Present only when readiness is `needs_setup`. `not_configured` — no integration or credential is connected yet. `inactive` — the backing integration is manually disabled. `expired` — the backing credential has expired. `provider_unavailable` — the provider runtime is not currently available. `permission_missing` — the caller lacks permission to use it. `not_implemented` — a placeholder for a capability that is not yet available. `credentials_unreadable` — the stored credential cannot be decrypted by the running platform; reconnect the integration.
          * @enum {string}
          */
-        CapabilityReadinessReason: "not_configured" | "inactive" | "expired" | "provider_unavailable" | "permission_missing" | "not_implemented";
+        CapabilityReadinessReason: "not_configured" | "inactive" | "expired" | "provider_unavailable" | "permission_missing" | "not_implemented" | "credentials_unreadable";
         /**
          * @description Key/value tags for organizing and filtering resources. Up to 8 per resource; keys 1–128 characters, values up to 256. Keys prefixed `mobius:` are system-managed and cannot be set by callers.
          * @example {
@@ -2522,6 +2384,26 @@ export interface components {
          * @enum {string}
          */
         IfExists: "error" | "adopt";
+        ResourceOwnershipTransitionRequest: {
+            owner?: components["schemas"]["ResourceOwner"];
+            visibility?: components["schemas"]["ResourceVisibility"];
+            /**
+             * @description Clear the agent container when the resource supports detachment.
+             * @default false
+             */
+            detach_container?: boolean;
+            /**
+             * @description Required before sharing, handing custody to the team, or detaching a container.
+             * @default false
+             */
+            confirm_audience_expansion?: boolean;
+        } | unknown | unknown | unknown;
+        ResourceOwnershipState: {
+            owner: components["schemas"]["ResourceOwner"];
+            visibility: components["schemas"]["ResourceVisibility"];
+            container: components["schemas"]["ResourceContainer"];
+            posture: components["schemas"]["ResourcePosture"];
+        };
         /**
          * @description Administrative status. Inactive agents cannot claim new jobs. Deleted agents are excluded from normal reads.
          * @enum {string}
@@ -2550,6 +2432,30 @@ export interface components {
          * @enum {string}
          */
         AgentToolPresentation: "flat" | "meta";
+        /**
+         * @description How one entry in an agent's tool grant names the actions it covers. `exact` is a single action name; `group` a dotted prefix; `platform` every action of an integration; `custom` org-defined actions; `wildcard` everything. Omitting the type means `exact`.
+         * @enum {string}
+         */
+        ActionSelectorType: "exact" | "group" | "platform" | "custom" | "wildcard";
+        /** @description One entry in an agent's tool grant. Selectors are expanded against the live action catalog at every build, so `platform: gmail` keeps meaning "every Gmail action" as the catalog grows. */
+        ActionSelector: {
+            /** @description Defaults to `exact` when omitted. */
+            selector_type?: components["schemas"]["ActionSelectorType"];
+            /** @description The selector value, read according to `selector_type`. Ignored for `wildcard`. */
+            selector: string;
+        };
+        /** @description One provider's connection rules for an agent. Both fields are decisions about the agent, not about any one connection. */
+        AgentIntegrationAccess: {
+            /** @description The provider these rules apply to (`gmail`, `slack`, …). */
+            provider: string;
+            /**
+             * @description Whether the agent may resolve the personal connection of the person it is acting for. Defaults to false and is never implied: reaching somebody's own account is what a person consents to when they talk to this agent, so it is shown on its page as "acts through your Gmail".
+             * @default false
+             */
+            act_as_user?: boolean;
+            /** @description The one connection this agent uses for this provider, which also suppresses the runtime account choice. May name only an org-shared or agent-owned connection — a shared agent pinned to one person's mailbox would send as that person for everybody. */
+            pin?: string;
+        };
         /**
          * @description T-shirt size selecting when `auto` compaction triggers as a percentage of the session model's input context window: `xs` 10%, `sm` 20%, `md` 40%, `lg` 60%, and `xl` 80%. Unknown/custom models use a conservative 200k-token context window. `sm` is the default.
          * @enum {string}
@@ -2596,6 +2502,17 @@ export interface components {
          */
         ThinkingEffort: "inherit" | "low" | "medium" | "high" | "xhigh" | "max";
         /**
+         * @description Who, inside the org that owns this agent, may reach it at all.
+         *
+         *     `organization` (the default) is reachable by any org member — the behavior every agent had before visibility existed. `restricted` is reachable only by the agent's listed members. `private` is reachable only by its single member.
+         *
+         *     Visibility is not a permission: what a member may DO with an agent stays governed by their org role. A principal outside an agent's audience gets `404` from every path — list, read, session, invoke, memory — so an agent's existence never leaks through a status code.
+         *
+         *     Because agent memory is keyed by `(org, agent, user, key)` and every read is scoped to one agent, narrowing who can reach an agent narrows its shared memory layer by construction. Group memory needs no separate store.
+         * @enum {string}
+         */
+        AgentVisibility: "organization" | "restricted" | "private";
+        /**
          * @description AI actor identity. An agent IS a principal (its permissions are role grants on that principal); agents are useful when loops need a named actor with instructions, configuration, and session presence.
          * @example {
          *       "id": "agent_5n8p2q7m4x9r3v6t",
@@ -2619,8 +2536,10 @@ export interface components {
         Agent: {
             /** @description Unique identifier for this agent. */
             id: string;
-            /** @description The machine principal (principals.id, kind `agent`) this agent IS. Created atomically with the agent and immutable. Used as the `owned_by` value when filtering or claiming resources owned by this agent. */
+            /** @description The machine principal (principals.id, kind `agent`) this agent IS. Created atomically with the agent and immutable. It is an execution identity, never the human custodian of an ordinary resource. */
             principal_id: string;
+            owner: components["schemas"]["ResourceOwner"];
+            posture: components["schemas"]["ResourcePosture"];
             /** @description Mutable unique name within the org. Free-form human-readable label; use `id` for stable references and job targeting. */
             name: string;
             /** @description Client-owned durable identity key for this agent. Unique within the org when present, and assign-once: create requests may set it; update requests may set it only while the agent has no existing external_ref, or repeat the current value idempotently. Use it to reconcile the same agent across systems while allowing the display name to change. */
@@ -2635,6 +2554,10 @@ export interface components {
             model_route?: components["schemas"]["AgentModelRoute"];
             /** @description Default tool presentation used by loop agent steps and built-in channel-message replies for this agent. */
             tool_presentation?: components["schemas"]["AgentToolPresentation"];
+            /** @description The agent's tool grant: the action selectors it may call, expanded against the live action catalog at each build. */
+            tool_selectors?: components["schemas"]["ActionSelector"][];
+            /** @description Per-provider connection rules. Absent means the defaults: the agent reaches org-shared and its own connections, and nothing is pinned. */
+            integration_access?: components["schemas"]["AgentIntegrationAccess"][];
             /** @description Custom system prompt for agents. Empty string uses the generated default based on the agent name. */
             system_prompt?: string;
             /**
@@ -2644,7 +2567,7 @@ export interface components {
             timeout_seconds?: number;
             /** @description Default session-compaction policy. New sessions opened against this agent inherit it (below server defaults, above explicit per-session overrides). Absent when the agent has no default. */
             compaction_policy?: components["schemas"]["SessionCompactionPolicy"];
-            /** @description Hard gate for runtime memory. When false, memory tools and automatic memory context are absent and invocation-time definitions cannot re-enable them. Stored entries remain available to administrators. */
+            /** @description Hard gate for runtime memory. When false, memory tools and automatic memory context are absent for every session, and nothing at invocation time can re-enable them. Stored entries remain available to administrators. */
             memory_enabled: boolean;
             /** @description Automatic memory delivery policy. Absent means the bounded index default. */
             memory_context?: components["schemas"]["MemoryContextPolicy"];
@@ -2652,6 +2575,10 @@ export interface components {
             thinking_effort?: components["schemas"]["ThinkingEffort"];
             /** @description Current agent status: `active` or `inactive`. */
             status: components["schemas"]["AgentStatus"];
+            /** @description Who may reach this agent. Read from the stored agent row at every gate: it is never supplied by a definition document, an invoke `definition_config`, or a client-side list filter. */
+            visibility: components["schemas"]["AgentVisibility"];
+            /** @description How many principals are in this agent's audience. Zero for an `organization` agent, which carries no member rows. */
+            member_count?: number;
             /** @description Inbox address provisioned via POST /v1/agents/{resource_id}/inbox (opt-in; not created automatically at agent creation). The field is populated only after a successful provisioning call. Use this address to add the agent as a member on external platforms (Linear, GitHub, Slack, etc.) so the platform can deliver notifications to the agent. */
             email_address?: string;
             /** @description Free-form labels used for filtering, ownership, or automation. */
@@ -2694,11 +2621,6 @@ export interface components {
          * @enum {string}
          */
         SessionScope: "agent" | "loop";
-        /**
-         * @description Visibility of the session in org surfaces: `organization` or `private`.
-         * @enum {string}
-         */
-        SessionVisibility: "organization" | "private";
         /**
          * @description Controls how long a session is retained. Applied only when the session is first created (like `compaction_policy`); ignored when an existing session is resolved. `standard` is the default and keeps the session forever. `bounded` expires the session — pruning its transcript from every read path — once it has been idle past `ttl_seconds`. Kept for audit after expiry: a tombstone session row with its token totals, and the turn rows with their status, error, usage, and timings.
          *
@@ -2771,8 +2693,10 @@ export interface components {
         Session: {
             /** @description Stable session identifier. */
             id: string;
-            /** @description Agent that owns this session. */
+            owner: components["schemas"]["ResourceOwner"];
+            /** @description Agent that contains and executes this session. The agent never owns it. */
             agent_id: string;
+            container?: components["schemas"]["ResourceContainer"];
             /** @description Human-readable session title. */
             title: string;
             /** @description Lifecycle status of the session. */
@@ -2790,8 +2714,8 @@ export interface components {
             scope_name: string;
             /** @description Stable caller-assigned conversation key, unique within one agent. */
             session_key: string;
-            /** @description Where the session appears in org UI surfaces. */
-            visibility: components["schemas"]["SessionVisibility"];
+            visibility: components["schemas"]["ResourceVisibility"];
+            posture: components["schemas"]["ResourcePosture"];
             /** @description Model selected for this session. Omitted when the session inherits the agent's model. */
             model_override?: string;
             /** @description Model the session most recently exchanged tokens with. */
@@ -3401,111 +3325,6 @@ export interface components {
             /** @description Labels to apply to the new API key. */
             tags?: components["schemas"]["TagMap"];
         };
-        CreateOrganizationActionRequest: {
-            /** @description Canonical dotted name selected by the org's toolkits. */
-            name: string;
-            title?: string;
-            description?: string;
-            /**
-             * Format: uri
-             * @description Public HTTPS endpoint. Private, loopback, link-local, and redirect targets are rejected.
-             */
-            endpoint_url: string;
-            /**
-             * @default signed_context_v1
-             * @enum {string}
-             */
-            invocation_format?: "signed_context_v1";
-            input_schema?: {
-                [key: string]: unknown;
-            };
-            output_schema?: {
-                [key: string]: unknown;
-            };
-            annotations?: components["schemas"]["ActionAnnotationsRequest"];
-            /** @default true */
-            enabled?: boolean;
-        };
-        UpdateOrganizationActionRequest: {
-            name?: string;
-            title?: string;
-            description?: string;
-            /**
-             * Format: uri
-             * @description Public HTTPS endpoint. Private, loopback, link-local, and redirect targets are rejected.
-             */
-            endpoint_url?: string;
-            input_schema?: {
-                [key: string]: unknown;
-            };
-            output_schema?: {
-                [key: string]: unknown;
-            };
-            annotations?: components["schemas"]["ActionAnnotationsRequest"];
-            enabled?: boolean;
-        };
-        ActivateOrganizationActionSecretRequest: {
-            /**
-             * @description Verification overlap for the previous active version. Omit for 24 hours.
-             * @default 86400
-             */
-            overlap_seconds?: number;
-        };
-        OrganizationActionSecretVersion: {
-            /** Format: int64 */
-            version: number;
-            /** @enum {string} */
-            status: "pending" | "active" | "retiring" | "retired" | "revoked";
-            /** Format: date-time */
-            created_at: string;
-            /** Format: date-time */
-            activated_at?: string;
-            /** Format: date-time */
-            accept_until?: string;
-            /** Format: date-time */
-            retired_at?: string;
-            /** Format: date-time */
-            revoked_at?: string;
-        };
-        OrganizationAction: {
-            id: string;
-            name: string;
-            title?: string;
-            description?: string;
-            /**
-             * Format: uri
-             * @description Public HTTPS endpoint. Private, loopback, link-local, and redirect targets are rejected.
-             */
-            endpoint_url: string;
-            /** @enum {string} */
-            invocation_format: "signed_context_v1";
-            input_schema?: {
-                [key: string]: unknown;
-            };
-            output_schema?: {
-                [key: string]: unknown;
-            };
-            annotations?: components["schemas"]["ActionAnnotations"];
-            enabled: boolean;
-            secret_ref: string;
-            /**
-             * Format: int64
-             * @description Current signing-key version. Omitted when the disabled action has no active version.
-             */
-            active_signing_version?: number;
-            secret_versions: components["schemas"]["OrganizationActionSecretVersion"][];
-            /** @description Base64-encoded signing key returned only on create and rotate. It always belongs to the newest entry in `secret_versions` — the `active` version after create, the `pending` version after rotate. */
-            signing_secret?: string;
-            /** Format: date-time */
-            created_at: string;
-            /** Format: date-time */
-            updated_at: string;
-        };
-        OrganizationActionListResponse: {
-            items: components["schemas"]["OrganizationAction"][];
-            has_more: boolean;
-            next_cursor?: string;
-        };
         /** @description Request hints that describe the safe-use properties of the action. Used by the engine and tooling to decide retry behavior, dry-run eligibility, etc. Unknown request properties are rejected. */
         ActionAnnotationsRequest: {
             /** @description The action produces the same result when called with the same inputs; safe to retry automatically. */
@@ -3664,6 +3483,8 @@ export interface components {
             annotations?: components["schemas"]["ActionAnnotationsRequest"];
             /** @description Free-form labels used for filtering, ownership, or lifecycle policy. */
             tags?: components["schemas"]["TagMap"];
+            owner?: components["schemas"]["ResourceOwner"];
+            visibility?: components["schemas"]["ResourceVisibility"];
         };
         /** @description Updates action metadata, endpoint, schemas, or safe-use hints. */
         UpdateActionRequest: {
@@ -3738,6 +3559,10 @@ export interface components {
         Action: {
             /** @description Unique identifier for this action. */
             id: string;
+            owner: components["schemas"]["ResourceOwner"];
+            visibility: components["schemas"]["ResourceVisibility"];
+            container?: components["schemas"]["ResourceContainer"];
+            posture: components["schemas"]["ResourcePosture"];
             /** @description Stable identifier used in loop definitions. */
             name: string;
             /** @description Human-readable display title for the action. */
@@ -3792,6 +3617,8 @@ export interface components {
         };
         /** @description One built-in, integration, or custom-backed action available to agents and loop authors. */
         ActionCatalogEntry: {
+            /** @description Stable resource identifier. Present for an organization-authored custom action. */
+            id?: string;
             /** @description Canonical dotted action name (e.g. `slack.post_message`). Translated to the provider-safe form (`slack_post_message`) only at the LLM boundary. */
             name: string;
             /** @description Human-readable display title for the action. */
@@ -3811,16 +3638,16 @@ export interface components {
              */
             source: "platform" | "custom";
             /**
-             * @description Scope that owns the selected definition. A custom action definition shadows a shared organization definition with the same canonical name.
+             * @description Scope that owns the selected definition: `platform` for Mobius and integration actions, or `custom` for an action authored in the current organization.
              * @enum {string}
              */
-            definition_scope: "platform" | "custom" | "organization";
+            definition_scope: "platform" | "custom";
             /** @description Whether this action can be called right now. `needs_setup` when the required integration is not connected, the caller lacks permission, or the action is a placeholder for a not-yet-implemented capability. */
             readiness: components["schemas"]["CapabilityReadiness"];
             /** @description Why the action is `needs_setup`. Omitted when `readiness` is `ready`. */
             readiness_reason?: components["schemas"]["CapabilityReadinessReason"];
             /**
-             * @description Author-declared risk classification: `low`, `medium`, `high`, or `critical`. Used by toolkit-author UIs to surface warnings and by audit views to prioritize attention.
+             * @description Author-declared risk classification: `low`, `medium`, `high`, or `critical`. Used by tool-grant UIs to surface warnings and by audit views to prioritize attention.
              * @enum {string}
              */
             risk: "low" | "medium" | "high" | "critical";
@@ -3843,6 +3670,14 @@ export interface components {
             invocation_format?: components["schemas"]["ActionInvocationFormat"];
             /** @description Execution locations and worker requirements available to loop authors. */
             execution?: components["schemas"]["ActionExecutionMetadata"];
+            /** @description Present for an organization-authored custom action. */
+            owner?: components["schemas"]["ResourceOwner"];
+            /** @description Present for an organization-authored custom action. */
+            visibility?: components["schemas"]["ResourceVisibility"];
+            /** @description Present when a custom action is narrowed by an agent container. */
+            container?: components["schemas"]["ResourceContainer"];
+            /** @description Present for an organization-authored custom action. */
+            posture?: components["schemas"]["ResourcePosture"];
         };
         /** @description Execution-location metadata surfaced to loop authors and action pickers. */
         ActionExecutionMetadata: {
@@ -3912,7 +3747,7 @@ export interface components {
              * @description Scope that owned the selected action definition.
              * @enum {string}
              */
-            definition_scope?: "platform" | "custom" | "organization";
+            definition_scope?: "platform" | "custom";
             invocation_format?: components["schemas"]["ActionInvocationFormat"];
             /** @description Signed request-envelope schema version, when applicable. */
             schema_version?: number;
@@ -4147,16 +3982,16 @@ export interface components {
             id: string;
             /** @description Human-readable environment name. */
             name: string;
-            /** @description Naming scope for this environment. */
-            scope?: components["schemas"]["ResourceScope"];
+            owner: components["schemas"]["ResourceOwner"];
+            visibility: components["schemas"]["ResourceVisibility"];
+            container: components["schemas"]["ResourceContainer"];
+            posture: components["schemas"]["ResourcePosture"];
             /** @description Backing environment provider. */
             provider: components["schemas"]["EnvironmentProvider"];
             /** @description Current provisioning and lifecycle status. */
             status: components["schemas"]["EnvironmentStatus"];
             /** @description How long the environment is expected to live. */
             lifetime: components["schemas"]["EnvironmentLifetime"];
-            /** @description Principal owner ID. For agent-started work, this is the agent's principal ID. */
-            owned_by?: string;
             /** @description Worker session currently attached to this environment, when any. */
             current_worker_session_id?: string;
             /** @description Optional labels for filtering and organization. */
@@ -4194,12 +4029,10 @@ export interface components {
         CreateEnvironmentRequest: {
             /** @description Human-readable environment name. */
             name?: string;
-            /** @description Optional naming scope for the environment. */
-            scope?: components["schemas"]["ResourceScope"];
             /** @description Provider to provision. */
             provider?: components["schemas"]["ProvisionEnvironmentProvider"];
-            /** @description Canonical user owner ID. Defaults to the authenticated user. */
-            owned_by?: string;
+            owner?: components["schemas"]["ResourceOwner"];
+            visibility?: components["schemas"]["ResourceVisibility"];
             /**
              * @description V1 supports only coding-default.
              * @enum {string}
@@ -4209,10 +4042,13 @@ export interface components {
             tags?: components["schemas"]["TagMap"];
         };
         UpdateEnvironmentRequest: {
-            /** @description Resource scope; send null to return to the org/default scope. */
-            scope?: (string & components["schemas"]["ResourceScope"]) | null;
-            /** @description Canonical user owner ID. Send null to clear ownership. */
-            owned_by?: string | null;
+            owner?: components["schemas"]["ResourceOwner"];
+            visibility?: components["schemas"]["ResourceVisibility"];
+            /**
+             * @description Required when sharing with the organization, handing custody to the team, or detaching a narrowing container.
+             * @default false
+             */
+            confirm_audience_expansion?: boolean;
             /** @description Replacement labels; send an empty object to clear all tags. */
             tags?: components["schemas"]["TagMap"];
         };
@@ -4468,6 +4304,10 @@ export interface components {
         Webhook: {
             /** @description Unique identifier for this webhook. */
             id: string;
+            owner: components["schemas"]["ResourceOwner"];
+            visibility: components["schemas"]["ResourceVisibility"];
+            container?: components["schemas"]["ResourceContainer"];
+            posture: components["schemas"]["ResourcePosture"];
             /** @description Human-readable name, unique within the org. */
             name: string;
             /** @description The customer endpoint Mobius POSTs event payloads to. */
@@ -4601,6 +4441,8 @@ export interface components {
             enabled?: boolean;
             /** @description Initial labels to apply to the webhook. */
             tags?: components["schemas"]["TagMap"];
+            owner?: components["schemas"]["ResourceOwner"];
+            visibility?: components["schemas"]["ResourceVisibility"];
         };
         UpdateWebhookRequest: {
             /** @description Replacement human-readable name. */
@@ -5053,6 +4895,11 @@ export interface components {
             signal_name?: string | null;
             /** @description Canonical principal ID of the human or agent that created the interaction; null for legacy/system-created rows. */
             created_by?: string | null;
+            /** @description Interactions are team-governed; their explicit targets are the audience boundary. */
+            owner: components["schemas"]["ResourceOwner"];
+            visibility: components["schemas"]["ResourceVisibility"];
+            container?: components["schemas"]["ResourceContainer"];
+            posture: components["schemas"]["ResourcePosture"];
             /** @description Protocol kind of the interaction. */
             kind: components["schemas"]["InteractionKind"];
             /** @description Current lifecycle state of the interaction. */
@@ -5254,6 +5101,91 @@ export interface components {
             /** @description Free-text reason recorded on the interaction. */
             reason?: string;
         };
+        /**
+         * @description One principal in a restricted or private agent's audience. Membership is pure visibility and carries no role.
+         *
+         *     A new member reads the ENTIRE shared layer, including everything promoted before they joined. That is inherent to a shared store; the member list's `added_at` is what makes it legible.
+         */
+        AgentMember: {
+            /** @description The human or agent principal in this agent's audience. */
+            principal_id: string;
+            /**
+             * @description Principal kind, so a picker can distinguish a person from a coordinator agent.
+             * @enum {string}
+             */
+            kind: "human" | "agent" | "service" | "system";
+            /** @description Human-readable name of the principal, when resolvable. */
+            display_name?: string;
+            /**
+             * Format: date-time
+             * @description When this principal was added to the audience.
+             */
+            added_at: string;
+            /** @description Principal who granted this membership. */
+            added_by?: string;
+        };
+        AgentMemberListResponse: {
+            /** @description The current audience. Returned only to callers who may manage the agent; other members receive `count` alone. */
+            items?: components["schemas"]["AgentMember"][];
+            /** @description How many principals are in this agent's audience. */
+            count: number;
+        };
+        ReplaceAgentMembersRequest: {
+            /** @description The exact audience after this call. A private agent takes exactly one; a restricted agent at least one. An empty list on a restricted or private agent is rejected: an empty audience means nobody, never everyone. */
+            principal_ids: string[];
+        };
+        AddAgentMembersRequest: {
+            /** @description Principals to add. Each must be a live principal in this org. Adding a principal who is already a member is a no-op. */
+            principal_ids: string[];
+        };
+        /** @description What a pending visibility change would do, so a client can confirm it in specific terms rather than as a dropdown edit. */
+        AgentVisibilityImpact: {
+            agent_id: string;
+            from: components["schemas"]["AgentVisibility"];
+            to: components["schemas"]["AgentVisibility"];
+            /** @description True when the change exposes the shared memory layer to principals who could not read it before. Widening requires `confirm_visibility_change` and has no technical undo: republished knowledge cannot be un-read. */
+            widening: boolean;
+            /** @description How many shared-layer memory entries the change republishes or restricts. */
+            shared_entry_count: number;
+            /** @description Member rows a widening change deletes. */
+            dropped_members?: string[];
+            /** @description Principals who hold a memory partition, a session, or a loop on this agent and fall outside the new audience. */
+            stranded_principals?: string[];
+            stranded_partitions?: number;
+            stranded_sessions?: number;
+            stranded_loops?: number;
+            /** @description Delegated or contained root resources whose effective audience would grow. Every item requires one matching disposition on the update request; omission aborts the change. */
+            affected_resources: components["schemas"]["AgentVisibilityAffectedResource"][];
+        };
+        AgentVisibilityAffectedResource: {
+            /** @enum {string} */
+            resource_type: "artifact" | "loop" | "session" | "skill" | "table";
+            resource_id: string;
+            /** @description Configuration name. Omitted for conversations and outputs. */
+            name?: string;
+            /** @enum {string} */
+            resource_class: "configuration" | "conversation" | "output";
+            /** @enum {string} */
+            relationship: "delegation" | "container";
+            visibility: components["schemas"]["ResourceVisibility"];
+            allowed_actions: ("revoke" | "make_private" | "keep_and_widen")[];
+        };
+        AgentAudienceResourceDisposition: {
+            /** @enum {string} */
+            resource_type: "artifact" | "loop" | "session" | "skill" | "table";
+            resource_id: string;
+            /** @enum {string} */
+            action: "revoke" | "make_private" | "keep_and_widen";
+        };
+        PromoteAgentMemoryEntryRequest: {
+            /** @description The private partition the entry is copied out of. Required: promotion always has an owner, and the shared layer is not a source. */
+            user_id: string;
+            /**
+             * @description Allow overwriting a shared entry that already holds this key. Without it a collision is a `409`, so a promotion never silently rewrites what the group already knows.
+             * @default false
+             */
+            replace?: boolean;
+        };
         /** @description Replacement automatic memory delivery policy. Send an empty object to clear the stored override and restore the bounded index default. Otherwise `mode` is required (`index`, `full`, or `off`) and `max_bytes` is optional. */
         UpdateMemoryContextPolicy: {
             mode?: components["schemas"]["MemoryContextMode"];
@@ -5363,30 +5295,6 @@ export interface components {
             /** @description Messaging bindings configured for this agent. */
             items: components["schemas"]["AgentMessagingBinding"][];
         };
-        /** @description Assignment linking a toolkit to an agent. */
-        ToolkitAssignment: {
-            /** @description Agent the toolkit is assigned to. */
-            agent_id: string;
-            /** @description Toolkit assigned to the agent. */
-            toolkit_id: string;
-            /** @description Expanded toolkit metadata for this assignment. */
-            toolkit?: components["schemas"]["Toolkit"];
-            /** @description Ordering position of this assignment in the agent's toolkit list. */
-            position: number;
-            /**
-             * Format: date-time
-             * @description Record creation timestamp.
-             */
-            created_at: string;
-        };
-        ReplaceToolkitsRequest: {
-            /** @description Full replace-set of toolkit IDs to assign to the agent, in desired order. */
-            toolkit_ids: string[];
-        };
-        ToolkitAssignmentListResponse: {
-            /** @description Toolkit assignments for this agent, in position order. */
-            items: components["schemas"]["ToolkitAssignment"][];
-        };
         /** @description Assignment linking a skill to an agent. */
         SkillAssignment: {
             /** @description Agent the skill is assigned to. */
@@ -5436,8 +5344,6 @@ export interface components {
             message: string;
             /** @description Skill the warning relates to, when applicable. */
             skill_id?: string;
-            /** @description Toolkit the warning relates to, when applicable. */
-            toolkit_id?: string;
             /** @description Tool selector the warning relates to, when applicable. */
             tool?: string;
             /** @description Action name the warning relates to, when applicable. */
@@ -5454,10 +5360,8 @@ export interface components {
         AgentToolManifest: {
             /** @description Agent this manifest was resolved for. */
             agent_id: string;
-            /** @description Stable hash over the resolved tool + skill set; bumps when assigned toolkits or skills change. */
+            /** @description Stable hash over the resolved tool + skill set; bumps when the agent's tool selectors or skills change. */
             policy_hash: string;
-            /** @description Toolkit IDs that contributed to the resolved manifest. */
-            toolkit_ids: string[];
             /** @description Catalog entries the agent can invoke. Each entry surfaces to the LLM as its own named tool. Built-in, integration, loop, and custom-HTTP actions are intermingled here. */
             tools: components["schemas"]["ActionCatalogEntry"][];
             /** @description Audit trail of group selectors that contributed to the resolved tool set. Operators see groups; the LLM only sees the flat `tools` list. */
@@ -5495,6 +5399,10 @@ export interface components {
             model_route?: components["schemas"]["AgentModelRoute"];
             /** @description Omit to use the create-time default, `meta`. */
             tool_presentation?: components["schemas"]["AgentToolPresentation"];
+            /** @description The agent's tool grant. Omit for an agent with no granted actions; its intrinsic tools are unaffected. */
+            tool_selectors?: components["schemas"]["ActionSelector"][];
+            /** @description Per-provider connection rules. Omit for the defaults. */
+            integration_access?: components["schemas"]["AgentIntegrationAccess"][];
             /** @description Custom system prompt for agents. Empty uses the generated default. */
             system_prompt?: string;
             /**
@@ -5515,6 +5423,16 @@ export interface components {
             thinking_effort?: components["schemas"]["ThinkingEffort"];
             /** @description Initial labels used for filtering, ownership, or automation. */
             tags?: components["schemas"]["TagMap"];
+            /** @description Who governs this agent's configuration. Omit to use the creating human for a private agent; choose team deliberately for a restricted or organization agent. */
+            owner?: components["schemas"]["ResourceOwner"];
+            /** @description Who this agent is for. Omit for `private` on the employee API. */
+            visibility?: components["schemas"]["AgentVisibility"];
+            /**
+             * @description The audience for a `restricted` or `private` agent, written in the same transaction as the agent row.
+             *
+             *     Creating a `private` agent makes the caller its member unless the caller is an org admin and names another principal. Creating a `restricted` agent takes a list; the caller is added unless they are an org admin and omit themselves. Ignored for `organization`, which carries no member rows.
+             */
+            members?: string[];
         };
         /** @description Mutable agent fields. The agent's backing identity (`principal_id`, the machine principal created atomically with the agent) is intentionally absent: it is immutable. Reassigning identity is delete-and-recreate. */
         UpdateAgentRequest: {
@@ -5532,6 +5450,10 @@ export interface components {
             model_route?: components["schemas"]["AgentModelRoute"];
             /** @description Replacement tool presentation used by loop agent steps and channel replies. */
             tool_presentation?: components["schemas"]["AgentToolPresentation"];
+            /** @description Replacement per-provider connection rules, as a whole. Omit to leave them untouched; send an empty array to clear them. */
+            integration_access?: components["schemas"]["AgentIntegrationAccess"][];
+            /** @description Replacement tool grant, as a whole. Omit to leave the agent's current grant untouched; send an empty array to revoke it. */
+            tool_selectors?: components["schemas"]["ActionSelector"][];
             /** @description Replacement system prompt for agents. */
             system_prompt?: string;
             /**
@@ -5546,13 +5468,31 @@ export interface components {
             status?: "active" | "inactive";
             /** @description Replacement default session-compaction policy. Send an empty object to clear the default and fall back to server defaults. */
             compaction_policy?: components["schemas"]["SessionCompactionPolicy"];
-            /** @description Replacement runtime memory hard gate. Definition bundles cannot override this stored agent setting. */
+            /** @description Replacement runtime memory hard gate. It cannot be overridden at invocation time. */
             memory_enabled?: boolean;
             memory_context?: components["schemas"]["UpdateMemoryContextPolicy"];
             /** @description Replacement default reasoning-effort level. Send `inherit` to clear the default and leave the provider default in place. */
             thinking_effort?: components["schemas"]["ThinkingEffort"];
             /** @description Replacement labels; send an empty object to clear all tags. */
             tags?: components["schemas"]["TagMap"];
+            /** @description Replacement audience. Widening (toward `organization`) republishes the agent's shared memory layer to the new audience and requires `confirm_visibility_change`; there is no technical undo, because republished knowledge cannot be un-read. Narrowing that would strand rows requires `stranded_disposition`. */
+            visibility?: components["schemas"]["AgentVisibility"];
+            /** @description Replacement audience for a `restricted` or `private` agent: the exact set after this call. Omit to leave membership unchanged. Ignored when the resulting visibility is `organization`, which deletes the member rows outright — "org-visible with a leftover member list" is not a representable state. */
+            members?: string[];
+            /**
+             * @description Acknowledges that widening republishes the agent's shared memory layer to the new audience and drops the current member list. A widening change without it returns `409` naming both counts.
+             * @default false
+             */
+            confirm_visibility_change?: boolean;
+            /** @description Exactly one decision for every row returned by the visibility impact preview. Delegations may be revoked or explicitly widened; contained rows may be made private or explicitly widened. Extra, duplicate, and omitted rows are refused. */
+            affected_resource_dispositions?: components["schemas"]["AgentAudienceResourceDisposition"][];
+            /**
+             * @description What happens to the memory partitions, sessions, and loops of principals who fall outside a narrowed audience.
+             *
+             *     `retain` keeps their partitions and sessions, readable only by org admins, and pauses the loops they own that point at this agent rather than leaving them to fail at run time. `delete` additionally erases their private memory partitions, and only an org admin may choose it. A narrowing change that would strand rows and names neither returns `409`.
+             * @enum {string}
+             */
+            stranded_disposition?: "retain" | "delete";
         };
         /**
          * @description Classifies a memory entry. Kinds carry different retention and compaction semantics: facts and preferences are durable, episodes are the primary input to compaction, and a summary is the compacted product of other entries.
@@ -5636,8 +5576,11 @@ export interface components {
         };
         /** @enum {string} */
         AgentMemoryChangeOperation: "created" | "updated" | "deleted";
-        /** @enum {string} */
-        AgentMemoryChangeReason: "remembered" | "api" | "soft_cap";
+        /**
+         * @description Why an entry changed. `remembered` is a run writing memory, `api` a direct write, `soft_cap` an eviction. `promoted` and `promotion_reverted` are the two halves of the explicit, attributed promotion act — the only path from a person's private partition into the agent's shared layer, and its undo.
+         * @enum {string}
+         */
+        AgentMemoryChangeReason: "remembered" | "api" | "soft_cap" | "promoted" | "promotion_reverted";
         AgentMemoryChange: {
             id: string;
             agent_id: string;
@@ -5709,9 +5652,9 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
-        /** @description Canonical org action resolved by a catalog tool dispatch. */
+        /** @description Canonical action resolved by a catalog tool dispatch. */
         SessionResolvedAction: {
-            /** @description Canonical org action name, before provider-safe wire-name mangling. */
+            /** @description Canonical action name, before provider-safe wire-name mangling. */
             name: string;
             /** @description Resolved action arguments. Meta-router command wrappers are removed. */
             input: {
@@ -5875,7 +5818,7 @@ export interface components {
             id: string;
             /** @description Session this message belongs to. */
             session_id: string;
-            /** @description Agent that owns the parent session. */
+            /** @description Agent container executing the parent session. */
             agent_id: string;
             /** @description Role of this message in the transcript. */
             role: components["schemas"]["SessionMessageRole"];
@@ -5916,81 +5859,12 @@ export interface components {
             prev_sequence?: number;
         };
         /**
-         * @description Action selector included in a toolkit.
-         * @example {
-         *       "selector_type": "exact",
-         *       "selector": "github.create_review_comment"
-         *     }
-         */
-        ToolkitAction: {
-            /**
-             * @description Selector type: `exact`, `group`, `platform`, `custom`, or `wildcard`.
-             * @enum {string}
-             */
-            selector_type: "exact" | "group" | "platform" | "custom" | "wildcard";
-            /** @description Selector value. Examples: `github.list_issues`, `github.*`, `platform.github.*`, `custom.*`, or `*`. */
-            selector: string;
-        };
-        /**
-         * @description Reusable bundle of action selectors assignable to agents.
-         * @example {
-         *       "id": "kit_4r8q2m7x9p5v3n6t",
-         *       "name": "GitHub review",
-         *       "description": "GitHub actions needed for pull-request review.",
-         *       "source": "organization",
-         *       "tags": {
-         *         "owner": "product"
-         *       },
-         *       "actions": [
-         *         {
-         *           "selector_type": "exact",
-         *           "selector": "github.create_review_comment"
-         *         }
-         *       ],
-         *       "created_by": "user_2f9s3k4m5n6p7q8r",
-         *       "updated_by": "user_2f9s3k4m5n6p7q8r",
-         *       "created_at": "2026-06-15T14:30:00Z",
-         *       "updated_at": "2026-06-15T14:30:00Z"
-         *     }
-         */
-        Toolkit: {
-            /** @description Toolkit ID. */
-            id: string;
-            /** @description Human-readable toolkit name. */
-            name: string;
-            /** @description Markdown description of the toolkit's purpose. */
-            description?: string;
-            /**
-             * @description Provenance of this toolkit. `system` toolkits are built-in; `organization` toolkits are user-authored.
-             * @enum {string}
-             */
-            source: "system" | "organization";
-            /** @description Labels to apply to the toolkit. */
-            tags?: components["schemas"]["TagMap"];
-            /** @description Action selectors provided by this toolkit. Each entry is matched against the unified action catalog at manifest-resolution time. */
-            actions: components["schemas"]["ToolkitAction"][];
-            /** @description ID of the principal who created this toolkit. */
-            created_by?: string;
-            /** @description ID of the principal who last updated this toolkit. */
-            updated_by?: string;
-            /**
-             * Format: date-time
-             * @description Record creation timestamp.
-             */
-            created_at: string;
-            /**
-             * Format: date-time
-             * @description Last update timestamp.
-             */
-            updated_at: string;
-        };
-        /**
          * @description Reusable instruction bundle assignable to agents.
          * @example {
          *       "id": "skill_7n4q8x2m9p5v3r6t",
          *       "name": "Pull request review",
          *       "description": "Review pull requests for correctness and risk.",
-         *       "source": "organization",
+         *       "source": "custom",
          *       "instructions": "Check the diff and leave concise findings.",
          *       "allowed_tools": [
          *         "github.create_review_comment"
@@ -6012,16 +5886,20 @@ export interface components {
             /** @description Markdown description of the skill's purpose. */
             description?: string;
             /**
-             * @description Ownership and mutability of the Skill. `system` is built-in and `organization` is shared and mutable by the org.
+             * @description Ownership and mutability of the Skill. `system` is built-in and `custom` is user-managed.
              * @enum {string}
              */
-            source: "system" | "organization";
+            source: "system" | "custom";
             /** @description Markdown instructions loaded when the skill is active. */
             instructions: string;
+            owner: components["schemas"]["ResourceOwner"];
+            visibility: components["schemas"]["ResourceVisibility"];
+            container: components["schemas"]["ResourceContainer"];
+            posture: components["schemas"]["ResourcePosture"];
             /**
-             * @description Canonical action names, wildcard selectors, or group references naming the actions this skill needs. Uses the same selector vocabulary as toolkit grants.
+             * @description Canonical action names, wildcard selectors, or group references naming the actions this skill needs. Uses the same selector vocabulary as agent tool grants.
              *
-             *     The grant takes effect when an agent invokes the skill, and lasts for the rest of that turn: calls to actions outside it are refused with an error naming the skill. Assigning a skill narrows nothing on its own, and an empty list declares nothing and narrows nothing. Skills invoked in the same turn compose as a union, so this keeps a skill on task rather than sandboxing it. Mobius memory and self-awareness tools are always exempt, and a skill can never widen an agent beyond its assigned toolkits.
+             *     The grant takes effect when an agent invokes the skill, and lasts for the rest of that turn: calls to actions outside it are refused with an error naming the skill. Assigning a skill narrows nothing on its own, and an empty list declares nothing and narrows nothing. Skills invoked in the same turn compose as a union, so this keeps a skill on task rather than sandboxing it. Mobius memory and self-awareness tools are always exempt, and a skill can never widen an agent beyond its own tool selectors.
              */
             allowed_tools?: string[];
             /** @description Labels to apply to the skill. */
@@ -6312,7 +6190,7 @@ export interface components {
             id: string;
             /** @description Session this preview belongs to. */
             session_id: string;
-            /** @description Agent that owns the parent session, when known. */
+            /** @description Agent container executing the parent session, when known. */
             agent_id?: string;
             /** @description Loop run that produced the preview, when applicable. */
             run_id?: string;
@@ -6651,7 +6529,8 @@ export interface components {
             session_key?: string;
             /** @description Human-friendly title for a newly created session. */
             title?: string;
-            visibility?: components["schemas"]["SessionVisibility"];
+            owner?: components["schemas"]["ResourceOwner"];
+            visibility?: components["schemas"]["ResourceVisibility"];
             /** @description Model to use for a newly created session. Overrides the stored agent's model and is ignored when an existing session is resolved. Creating a session for a worker-routed agent returns `400 invalid_argument` with `details.argument = model_override`. */
             model_override?: string;
             /** @description Per-session compaction overrides applied when the session is first created. Merged over the agent's default policy and server defaults. Ignored when an existing session is resolved. */
@@ -6711,7 +6590,7 @@ export interface components {
         };
         /** @description Resolve-or-create policy for a session. */
         CreateSessionRequest: {
-            /** @description Agent that owns the session. */
+            /** @description Agent container that executes the session. The agent never owns it. */
             agent_id: string;
             /**
              * @description `continue_or_create` (default) resolves an existing session for the `session_key` or creates one; `new` always creates a fresh session; `continue` resolves an existing session and fails if none exists.
@@ -6722,7 +6601,8 @@ export interface components {
             session_key?: string;
             /** @description Human-friendly session title. */
             title?: string;
-            visibility?: components["schemas"]["SessionVisibility"];
+            owner?: components["schemas"]["ResourceOwner"];
+            visibility?: components["schemas"]["ResourceVisibility"];
             /** @description Model to use for a newly created session. Overrides the stored agent's model. Ignored when an existing session is resolved. Creating a session for a worker-routed agent returns `400 invalid_argument` with `details.argument = model_override`. */
             model_override?: string;
             /** @description Per-session compaction overrides applied when the session is first created. Merged over the agent's default policy and server defaults. Ignored when an existing session is resolved. */
@@ -6844,11 +6724,6 @@ export interface components {
             /** @description True when wake interrupted a waiting tool and requeued this turn. */
             woke_turn: boolean;
         };
-        /**
-         * @description Private artifacts are visible only to their owner user. Shared artifacts are visible to the org.
-         * @enum {string}
-         */
-        ArtifactVisibility: "private" | "shared";
         /** @description Markdown-extraction state for an Office upload that requested conversion. */
         ArtifactConversionSummary: {
             /** @enum {string} */
@@ -6860,7 +6735,11 @@ export interface components {
          * @description Stored file or generated artifact metadata.
          * @example {
          *       "id": "art_2m7q9x5v3p8n4r6t",
-         *       "visibility": "shared",
+         *       "owner": {
+         *         "kind": "team"
+         *       },
+         *       "visibility": "organization",
+         *       "posture": "team",
          *       "run_id": "run_8q5m2x9v7p3n4r6t",
          *       "step_id": "run_8q5m2x9v7p3n4r6t:review",
          *       "name": "reports/review-findings.md",
@@ -6874,13 +6753,15 @@ export interface components {
         Artifact: {
             /** @description Unique artifact identifier. */
             id: string;
-            /** @description Visibility policy for the artifact. */
-            visibility: components["schemas"]["ArtifactVisibility"];
+            owner: components["schemas"]["ResourceOwner"];
+            visibility: components["schemas"]["ResourceVisibility"];
+            container?: components["schemas"]["ResourceContainer"];
+            posture: components["schemas"]["ResourcePosture"];
             /** @description Loop run that produced this artifact, derived from the trusted worker lease when present. */
             run_id?: string;
             /** @description Loop step that produced this artifact, derived from the trusted worker lease when present. */
             step_id?: string;
-            /** @description Display name or relative virtual path. Forward slash may be used to organize artifacts inside private or shared org space. */
+            /** @description Display name or relative virtual path. Forward slash may be used to organize artifacts inside private or organization-visible space. */
             name: string;
             /** @description MIME type recorded for the artifact content. */
             mime_type: string;
@@ -6956,15 +6837,17 @@ export interface components {
         Loop: {
             /** @description Stable loop identifier. */
             id: string;
+            owner: components["schemas"]["ResourceOwner"];
+            visibility: components["schemas"]["ResourceVisibility"];
+            container?: components["schemas"]["ResourceContainer"];
+            posture: components["schemas"]["ResourcePosture"];
             /** @description Human-readable display name. */
             name: string;
             /** @description Markdown description of the loop's purpose. */
             description?: string;
             /** @description Current loop lifecycle status: `draft`, `active`, `paused`, or `deleted`. */
             status: components["schemas"]["LoopStatus"];
-            /** @description User who created or currently owns this loop. */
-            owner?: string;
-            /** @description Agent associated with this loop. Agent steps use it when they do not pin `config.agent_id`. */
+            /** @description Agent container associated with this loop. Agent steps use it when they do not pin `config.agent_id`; it never owns the loop. */
             agent_id?: string;
             /**
              * @description Loop authoring schema version. Only schema version 1 is accepted.
@@ -7103,6 +6986,8 @@ export interface components {
             description?: string;
             /** @description Agent associated with this loop. Agent steps use it when they do not pin `config.agent_id`. */
             agent_id?: string;
+            owner?: components["schemas"]["ResourceOwner"];
+            visibility?: components["schemas"]["ResourceVisibility"];
             /**
              * @description Loop authoring schema version. Only schema version 1 is accepted.
              * @default 1
@@ -7544,7 +7429,7 @@ export interface components {
             /** @description Optional expression template for the session display title using the same roots as `name`. */
             title?: string;
             /** @description Visibility for durable sessions created from this policy. */
-            visibility?: components["schemas"]["SessionVisibility"];
+            visibility?: components["schemas"]["ResourceVisibility"];
             /** @description Optional per-session compaction policy merged with server defaults when the session is first created. Existing sessions keep their current compaction policy unless edited through a session-specific operation. */
             compaction_policy?: components["schemas"]["SessionCompactionPolicy"];
             /** @description Optional reasoning-effort override for this step's session turns. Overrides the agent default. Set as a loop default it applies to every agent step; set on a step it overrides the loop default. */
@@ -8013,35 +7898,6 @@ export interface components {
         };
         /**
          * @example {
-         *       "name": "GitHub review",
-         *       "description": "GitHub actions needed for pull-request review.",
-         *       "actions": [
-         *         {
-         *           "selector_type": "exact",
-         *           "selector": "github.create_review_comment"
-         *         }
-         *       ],
-         *       "tags": {
-         *         "owner": "product"
-         *       }
-         *     }
-         */
-        ToolkitRequest: {
-            /** @description Human-readable toolkit name. */
-            name: string;
-            /** @description Markdown description of the toolkit's purpose. */
-            description?: string;
-            /** @description Action selectors provided by this toolkit. */
-            actions?: components["schemas"]["ToolkitAction"][];
-            /** @description Labels to apply to the toolkit. */
-            tags?: components["schemas"]["TagMap"];
-        };
-        ToolkitListResponse: {
-            /** @description The list of results for this page. */
-            items: components["schemas"]["Toolkit"][];
-        };
-        /**
-         * @example {
          *       "name": "Pull request review",
          *       "description": "Review pull requests for correctness and risk.",
          *       "instructions": "Check the diff and leave concise findings.",
@@ -8065,6 +7921,10 @@ export interface components {
              * @default []
              */
             allowed_tools?: string[];
+            /** @description Optional explicit custodian. Omit to keep the default shown by the create surface. */
+            owner?: components["schemas"]["ResourceOwner"];
+            /** @description Optional declared audience. Omit for Only you. */
+            visibility?: components["schemas"]["ResourceVisibility"];
             /** @description Labels to apply to the skill. */
             tags?: components["schemas"]["TagMap"];
         };
@@ -8078,13 +7938,6 @@ export interface components {
             /** @description The list of results for this page. */
             items: components["schemas"]["Skill"][];
         };
-        /** @description Assignment impact for one organization Skill. */
-        OrganizationSkillUsage: {
-            /** @description Organization Skill ID. */
-            skill_id: string;
-            /** @description Number of agents assigned this Skill. */
-            assignment_count: number;
-        };
         /**
          * @description `apply` performs the change; `preview` validates and returns a plan without mutating resources.
          * @enum {string}
@@ -8094,7 +7947,7 @@ export interface components {
          * @description The kind of Mobius resource a binding or change refers to.
          * @enum {string}
          */
-        BlueprintResourceType: "action" | "toolkit" | "skill" | "agent" | "loop" | "table";
+        BlueprintResourceType: "action" | "skill" | "agent" | "loop" | "table";
         /**
          * @description What apply did (or, in preview, would do): `created` a new resource, `updated` a managed one, `adopted` a matching unmanaged one, or left an `unchanged` resource untouched.
          * @enum {string}
@@ -8129,7 +7982,6 @@ export interface components {
         /** @description The desired resources grouped by type. All groups are optional. */
         BlueprintResources: {
             actions?: components["schemas"]["BlueprintActionInput"][];
-            toolkits?: components["schemas"]["BlueprintToolkitInput"][];
             skills?: components["schemas"]["BlueprintSkillInput"][];
             agents?: components["schemas"]["BlueprintAgentInput"][];
             loops?: components["schemas"]["BlueprintLoopInput"][];
@@ -8165,34 +8017,6 @@ export interface components {
             read_only?: boolean;
             long_running?: boolean;
         };
-        /** @description A desired toolkit. Resolved only through its binding (toolkits have no unique name). */
-        BlueprintToolkitInput: {
-            key: string;
-            name: string;
-            description?: string;
-            /** @description Actions granted into the toolkit by canonical selector or legacy exact action name. */
-            actions?: components["schemas"]["BlueprintToolkitActionGrant"][];
-            tags?: components["schemas"]["TagMap"];
-            metadata?: {
-                [key: string]: unknown;
-            };
-        };
-        /** @description Grants actions into a toolkit using the canonical Toolkit selector vocabulary. Supply `selector`; `selector_type` defaults to `exact`. `action_name` is a backwards-compatible alias for an exact selector and cannot be combined with `selector`. */
-        BlueprintToolkitActionGrant: {
-            /**
-             * @description Selector type used to resolve matching actions.
-             * @default exact
-             * @enum {string}
-             */
-            selector_type?: "exact" | "group" | "platform" | "custom" | "wildcard";
-            /** @description Canonical selector value, such as `github.*` or `*`. */
-            selector?: string;
-            /**
-             * @deprecated
-             * @description Legacy alias for an exact action-name selector.
-             */
-            action_name?: string;
-        };
         /** @description A desired skill. */
         BlueprintSkillInput: {
             key: string;
@@ -8204,7 +8028,7 @@ export interface components {
             allowed_tools?: string[];
             tags?: components["schemas"]["TagMap"];
         };
-        /** @description A desired agent. `toolkits` and `skills`, when present, replace the agent's full assignment set; omit them to leave existing assignments untouched. */
+        /** @description A desired agent. `skills`, when present, replaces the agent's full assignment set; omit it to leave existing assignments untouched. */
         BlueprintAgentInput: {
             key: string;
             name: string;
@@ -8227,7 +8051,6 @@ export interface components {
             /** @description Default reasoning-effort level for sessions and Loop agent steps. */
             thinking_effort?: components["schemas"]["ThinkingEffort"];
             color?: string;
-            toolkits?: components["schemas"]["BlueprintResourceRef"][];
             skills?: components["schemas"]["BlueprintResourceRef"][];
             tags?: components["schemas"]["TagMap"];
         };
@@ -8413,7 +8236,7 @@ export interface components {
          * @enum {string}
          */
         PrincipalState: "active" | "disabled" | "deleted";
-        /** @description Non-human identity used by loop, agents, and API keys. A principal makes ownership, permissions, and credential rotation explicit without tying machine access to a human user. The `id` is the principal id used as the `owned_by` value when filtering or claiming resources. */
+        /** @description Non-human identity used by loop, agents, and API keys. A principal makes permissions, delegation, and credential rotation explicit without tying machine access to a human user. The `id` is the stable identity used by credentials, role assignments, and agent execution. */
         Principal: {
             /** @description Unique identifier for this principal. */
             id: string;
@@ -8517,6 +8340,10 @@ export interface components {
         Table: {
             /** @description Unique table identifier. */
             id: string;
+            owner: components["schemas"]["ResourceOwner"];
+            visibility: components["schemas"]["ResourceVisibility"];
+            container?: components["schemas"]["ResourceContainer"];
+            posture: components["schemas"]["ResourcePosture"];
             /** @description Lowercase snake_case table name, unique within the org. */
             name: string;
             /** @description Human-readable table description. */
@@ -8646,6 +8473,8 @@ export interface components {
             description?: string;
             /** @description Optional author guidance for how this table should be used (e.g. surfaced to agents). */
             instructions?: string;
+            owner?: components["schemas"]["ResourceOwner"];
+            visibility?: components["schemas"]["ResourceVisibility"];
             /** @description Column and index definition for the new table. */
             schema: components["schemas"]["TableSchema"];
         };
@@ -8817,7 +8646,7 @@ export interface components {
          *       "items": [
          *         {
          *           "id": "art_2m7q9x5v3p8n4r6t",
-         *           "visibility": "shared",
+         *           "visibility": "organization",
          *           "name": "reports/review-findings.md",
          *           "mime_type": "text/markdown",
          *           "size_bytes": 1842,
@@ -8841,7 +8670,7 @@ export interface components {
              * @description File bytes to upload into artifact storage. Multipart parts may be sent in any order; Mobius reads metadata fields and temporarily spools the file part when needed before streaming bytes to artifact storage.
              */
             file: string;
-            /** @description Display name or relative virtual path. Forward slash may be used to organize artifacts inside private or shared org space. */
+            /** @description Display name or relative virtual path. Forward slash may be used to organize artifacts inside private or organization-visible space. */
             name: string;
             /** @description Optional MIME type override. Defaults to the uploaded file part content type, then `application/octet-stream`. */
             mime?: string;
@@ -8854,6 +8683,10 @@ export interface components {
             metadata?: {
                 [key: string]: unknown;
             };
+            /** @description Optional custodian. Omit to keep the upload with the authenticated person. */
+            owner?: components["schemas"]["ResourceOwner"];
+            /** @description Optional audience. Omit to keep the upload private. */
+            visibility?: components["schemas"]["ResourceVisibility"];
             /**
              * @description When "true" and the uploaded file is DOCX, XLSX, or PPTX, extract a Markdown rendition asynchronously for model delivery. Ignored for other file types.
              * @enum {string}
@@ -9066,6 +8899,39 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    updateResourceOwnership: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                resource_type: "action" | "artifact" | "environment" | "loop" | "secret" | "session" | "skill" | "table" | "webhook";
+                /** @description Resource ID. */
+                resource_id: components["parameters"]["IDParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResourceOwnershipTransitionRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated ownership state */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResourceOwnershipState"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
     listAPIKeys: {
         parameters: {
             query?: {
@@ -9089,6 +8955,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIKeyListResponse"];
                 };
             };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
         };
@@ -9169,6 +9036,7 @@ export interface operations {
                     "application/json": components["schemas"]["APIKey"];
                 };
             };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
@@ -9193,226 +9061,11 @@ export interface operations {
                 };
                 content?: never;
             };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             429: components["responses"]["TooManyRequests"];
-        };
-    };
-    listOrganizationActions: {
-        parameters: {
-            query?: {
-                /** @description Cursor for pagination (opaque string from previous response) */
-                cursor?: components["parameters"]["CursorParam"];
-                /** @description Maximum number of items to return */
-                limit?: components["parameters"]["LimitParam"];
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["OrganizationActionListResponse"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-        };
-    };
-    createOrganizationAction: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateOrganizationActionRequest"];
-            };
-        };
-        responses: {
-            /** @description Created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["OrganizationAction"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            409: components["responses"]["Conflict"];
-        };
-    };
-    getOrganizationAction: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Organization action ID. */
-                action_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["OrganizationAction"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    deleteOrganizationAction: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Organization action ID. */
-                action_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            204: components["responses"]["NoContent"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    updateOrganizationAction: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Organization action ID. */
-                action_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpdateOrganizationActionRequest"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["OrganizationAction"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            409: components["responses"]["Conflict"];
-        };
-    };
-    rotateOrganizationActionSecret: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                action_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["OrganizationAction"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            409: components["responses"]["Conflict"];
-        };
-    };
-    activateOrganizationActionSecretVersion: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                action_id: string;
-                secret_version: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": components["schemas"]["ActivateOrganizationActionSecretRequest"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["OrganizationAction"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            409: components["responses"]["Conflict"];
-        };
-    };
-    revokeOrganizationActionSecretVersion: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                action_id: string;
-                secret_version: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["OrganizationAction"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            409: components["responses"]["Conflict"];
         };
     };
     createAction: {
@@ -9488,6 +9141,12 @@ export interface operations {
                      *         "owner": "product"
                      *       },
                      *       "signing_secret": "base64:one_time_secret",
+                     *       "owner": {
+                     *         "kind": "person",
+                     *         "id": "user_2f9s3k4m5n6p7q8r"
+                     *       },
+                     *       "visibility": "private",
+                     *       "posture": "only_you",
                      *       "created_at": "2026-06-15T14:30:00Z",
                      *       "updated_at": "2026-06-15T14:30:00Z"
                      *     }
@@ -9612,10 +9271,10 @@ export interface operations {
                 environment_id?: string;
                 /** @description Filter to invocations of a specific action. */
                 action_name?: string;
-                /** @description Filter to an immutable custom or organization Action ID. */
+                /** @description Filter to an immutable custom Action ID. */
                 action_id?: string;
                 /** @description Filter by the scope that owned the selected definition. */
-                definition_scope?: "platform" | "custom" | "organization";
+                definition_scope?: "platform" | "custom";
                 /** @description Filter to deliveries signed with a specific secret version. */
                 secret_version?: number;
                 /** @description Filter to a signed delivery identity. */
@@ -9903,6 +9562,13 @@ export interface operations {
                      *       },
                      *       "cleanup_status": "none",
                      *       "retention_policy": "manual",
+                     *       "owner": {
+                     *         "kind": "person",
+                     *         "id": "user_2f9s3k4m5n6p7q8r"
+                     *       },
+                     *       "visibility": "private",
+                     *       "container": null,
+                     *       "posture": "only_you",
                      *       "created_at": "2026-06-15T14:30:00Z",
                      *       "updated_at": "2026-06-15T14:30:00Z"
                      *     }
@@ -10113,6 +9779,12 @@ export interface operations {
                      *       "secret_version": 1,
                      *       "signing_secret": "redacted_base64_signing_secret",
                      *       "created_by": "user_2f9s3k4m5n6p7q8r",
+                     *       "owner": {
+                     *         "kind": "person",
+                     *         "id": "user_2f9s3k4m5n6p7q8r"
+                     *       },
+                     *       "visibility": "private",
+                     *       "posture": "only_you",
                      *       "created_at": "2026-06-15T14:30:00Z",
                      *       "updated_at": "2026-06-15T14:30:00Z"
                      *     }
@@ -10784,6 +10456,12 @@ export interface operations {
                      *       "target_user_ids": [
                      *         "user_2f9s3k4m5n6p7q8r"
                      *       ],
+                     *       "owner": {
+                     *         "kind": "person",
+                     *         "id": "user_2f9s3k4m5n6p7q8r"
+                     *       },
+                     *       "visibility": "private",
+                     *       "posture": "only_you",
                      *       "expires_at": "2026-04-25T14:30:00Z",
                      *       "created_at": "2026-04-24T14:30:00Z",
                      *       "updated_at": "2026-04-24T14:30:00Z",
@@ -10891,6 +10569,12 @@ export interface operations {
                      *       "target_user_ids": [
                      *         "user_2f9s3k4m5n6p7q8r"
                      *       ],
+                     *       "owner": {
+                     *         "kind": "person",
+                     *         "id": "user_2f9s3k4m5n6p7q8r"
+                     *       },
+                     *       "visibility": "private",
+                     *       "posture": "only_you",
                      *       "responder": {
                      *         "user_id": "user_2f9s3k4m5n6p7q8r"
                      *       },
@@ -11084,6 +10768,12 @@ export interface operations {
                      *       "tags": {
                      *         "owner": "product"
                      *       },
+                     *       "owner": {
+                     *         "kind": "person",
+                     *         "id": "user_2f9s3k4m5n6p7q8r"
+                     *       },
+                     *       "visibility": "private",
+                     *       "posture": "only_you",
                      *       "created_by": "user_2f9s3k4m5n6p7q8r",
                      *       "updated_by": "user_2f9s3k4m5n6p7q8r",
                      *       "created_at": "2026-06-15T14:30:00Z",
@@ -11192,6 +10882,153 @@ export interface operations {
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
             429: components["responses"]["TooManyRequests"];
+        };
+    };
+    listAgentMembers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Resource ID. */
+                resource_id: components["parameters"]["IDParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentMemberListResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    replaceAgentMembers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Resource ID. */
+                resource_id: components["parameters"]["IDParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReplaceAgentMembersRequest"];
+            };
+        };
+        responses: {
+            /** @description The audience after the replacement. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentMemberListResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    addAgentMembers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Resource ID. */
+                resource_id: components["parameters"]["IDParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddAgentMembersRequest"];
+            };
+        };
+        responses: {
+            /** @description The audience after the add. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentMemberListResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    removeAgentMember: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Resource ID. */
+                resource_id: components["parameters"]["IDParam"];
+                /** @description The principal to remove from the audience. */
+                principal_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Removed */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    previewAgentVisibilityChange: {
+        parameters: {
+            query: {
+                /** @description The visibility being considered. */
+                visibility: components["schemas"]["AgentVisibility"];
+                /** @description The audience being considered, as a comma-separated list of principal IDs. Omit to evaluate against the current member list. */
+                members?: string;
+            };
+            header?: never;
+            path: {
+                /** @description Resource ID. */
+                resource_id: components["parameters"]["IDParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentVisibilityImpact"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
         };
     };
     provisionAgentInbox: {
@@ -11355,71 +11192,6 @@ export interface operations {
             429: components["responses"]["TooManyRequests"];
         };
     };
-    listAgentToolkitAssignments: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Resource ID. */
-                resource_id: components["parameters"]["IDParam"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ToolkitAssignmentListResponse"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    replaceAgentToolkitAssignments: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Resource ID. */
-                resource_id: components["parameters"]["IDParam"];
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                /**
-                 * @example {
-                 *       "toolkit_ids": [
-                 *         "kit_4r8q2m7x9p5v3n6t"
-                 *       ]
-                 *     }
-                 */
-                "application/json": components["schemas"]["ReplaceToolkitsRequest"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ToolkitAssignmentListResponse"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            429: components["responses"]["TooManyRequests"];
-        };
-    };
     listAgentSkillAssignments: {
         parameters: {
             query?: never;
@@ -11488,9 +11260,7 @@ export interface operations {
     getAgentTools: {
         parameters: {
             query?: {
-                /** @description Optional comma-separated toolkit subset to apply. */
-                toolkit_ids?: string;
-                /** @description Optional assigned skill name to simulate as invoked, so the response shows the tool scope a turn would run under once that skill is loaded. Omitted means no skill grant is applied; the resolved set still reflects the other filters on this request (`toolkit_ids`, `allowed_tools`). */
+                /** @description Optional assigned skill name to simulate as invoked, so the response shows the tool scope a turn would run under once that skill is loaded. Omitted means no skill grant is applied; the resolved set still reflects the other filters on this request (`allowed_tools`). */
                 skill_name?: string;
                 /** @description Optional comma-separated canonical action names, wildcard selectors, or group references to apply as a per-invocation filter against the resolved tool set. */
                 allowed_tools?: string;
@@ -11704,6 +11474,71 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             429: components["responses"]["TooManyRequests"];
+        };
+    };
+    promoteAgentMemoryEntry: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Resource ID. */
+                resource_id: components["parameters"]["IDParam"];
+                /** @description The key identifying a memory entry. Restricted to a path-safe character set (letters, numbers, and `. _ : -`) so it stays reliably addressable. */
+                memory_key: components["parameters"]["MemoryKeyParam"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "user_id": "user_2f9s3k4m5n6p7q8r"
+                 *     }
+                 */
+                "application/json": components["schemas"]["PromoteAgentMemoryEntryRequest"];
+            };
+        };
+        responses: {
+            /** @description The promoted shared entry. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentMemoryEntry"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    revertAgentMemoryPromotion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Resource ID. */
+                resource_id: components["parameters"]["IDParam"];
+                /** @description The key identifying a memory entry. Restricted to a path-safe character set (letters, numbers, and `. _ : -`) so it stays reliably addressable. */
+                memory_key: components["parameters"]["MemoryKeyParam"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Reverted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
         };
     };
     invokeAgent: {
@@ -12682,6 +12517,12 @@ export interface operations {
                      *       "tags": {
                      *         "owner": "product"
                      *       },
+                     *       "owner": {
+                     *         "kind": "person",
+                     *         "id": "user_2f9s3k4m5n6p7q8r"
+                     *       },
+                     *       "visibility": "private",
+                     *       "posture": "only_you",
                      *       "created_at": "2026-06-15T14:30:00Z",
                      *       "updated_at": "2026-06-15T14:30:00Z"
                      *     }
@@ -13225,197 +13066,6 @@ export interface operations {
             429: components["responses"]["TooManyRequests"];
         };
     };
-    listToolkits: {
-        parameters: {
-            query?: {
-                /** @description Include read-only system templates. */
-                include_system?: boolean;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ToolkitListResponse"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    createToolkit: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                /**
-                 * @example {
-                 *       "name": "GitHub review",
-                 *       "description": "GitHub actions needed for pull-request review.",
-                 *       "actions": [
-                 *         {
-                 *           "selector_type": "exact",
-                 *           "selector": "github.create_review_comment"
-                 *         }
-                 *       ],
-                 *       "tags": {
-                 *         "owner": "product"
-                 *       }
-                 *     }
-                 */
-                "application/json": components["schemas"]["ToolkitRequest"];
-            };
-        };
-        responses: {
-            /** @description Created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "id": "kit_4r8q2m7x9p5v3n6t",
-                     *       "name": "GitHub review",
-                     *       "description": "GitHub actions needed for pull-request review.",
-                     *       "source": "organization",
-                     *       "tags": {
-                     *         "owner": "product"
-                     *       },
-                     *       "actions": [
-                     *         {
-                     *           "selector_type": "exact",
-                     *           "selector": "github.create_review_comment"
-                     *         }
-                     *       ],
-                     *       "created_by": "user_2f9s3k4m5n6p7q8r",
-                     *       "updated_by": "user_2f9s3k4m5n6p7q8r",
-                     *       "created_at": "2026-06-15T14:30:00Z",
-                     *       "updated_at": "2026-06-15T14:30:00Z"
-                     *     }
-                     */
-                    "application/json": components["schemas"]["Toolkit"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            409: components["responses"]["Conflict"];
-            429: components["responses"]["TooManyRequests"];
-        };
-    };
-    getToolkit: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Toolkit ID. */
-                toolkit_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Toolkit"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    updateToolkit: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Toolkit ID. */
-                toolkit_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                /**
-                 * @example {
-                 *       "name": "GitHub review",
-                 *       "description": "GitHub actions needed for pull-request review.",
-                 *       "actions": [
-                 *         {
-                 *           "selector_type": "exact",
-                 *           "selector": "github.create_review_comment"
-                 *         }
-                 *       ],
-                 *       "tags": {
-                 *         "owner": "product"
-                 *       }
-                 *     }
-                 */
-                "application/json": components["schemas"]["ToolkitRequest"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Toolkit"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            409: components["responses"]["Conflict"];
-            429: components["responses"]["TooManyRequests"];
-        };
-    };
-    deleteToolkit: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Toolkit ID. */
-                toolkit_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description No Content */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            429: components["responses"]["TooManyRequests"];
-        };
-    };
     listSkills: {
         parameters: {
             query?: {
@@ -13479,7 +13129,7 @@ export interface operations {
                      *       "id": "skill_7n4q8x2m9p5v3r6t",
                      *       "name": "Pull request review",
                      *       "description": "Review pull requests for correctness and risk.",
-                     *       "source": "organization",
+                     *       "source": "custom",
                      *       "instructions": "Check the diff and leave concise findings.",
                      *       "allowed_tools": [
                      *         "github.create_review_comment"
@@ -13487,6 +13137,13 @@ export interface operations {
                      *       "tags": {
                      *         "owner": "product"
                      *       },
+                     *       "owner": {
+                     *         "kind": "person",
+                     *         "id": "user_2f9s3k4m5n6p7q8r"
+                     *       },
+                     *       "visibility": "private",
+                     *       "container": null,
+                     *       "posture": "only_you",
                      *       "created_by": "user_2f9s3k4m5n6p7q8r",
                      *       "updated_by": "user_2f9s3k4m5n6p7q8r",
                      *       "created_at": "2026-06-15T14:30:00Z",
@@ -13534,7 +13191,7 @@ export interface operations {
                      *       "id": "skill_7n4q8x2m9p5v3r6t",
                      *       "name": "Pull request review",
                      *       "description": "Review pull requests for correctness and risk.",
-                     *       "source": "organization",
+                     *       "source": "custom",
                      *       "instructions": "Check the diff and leave concise findings.",
                      *       "allowed_tools": [
                      *         "github.create_review_comment"
@@ -13542,6 +13199,13 @@ export interface operations {
                      *       "tags": {
                      *         "owner": "product"
                      *       },
+                     *       "owner": {
+                     *         "kind": "person",
+                     *         "id": "user_2f9s3k4m5n6p7q8r"
+                     *       },
+                     *       "visibility": "private",
+                     *       "container": null,
+                     *       "posture": "only_you",
                      *       "created_by": "user_2f9s3k4m5n6p7q8r",
                      *       "updated_by": "user_2f9s3k4m5n6p7q8r",
                      *       "created_at": "2026-06-15T14:30:00Z",
@@ -13654,197 +13318,6 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             429: components["responses"]["TooManyRequests"];
-        };
-    };
-    listOrganizationSkills: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SkillListResponse"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-        };
-    };
-    createOrganizationSkill: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["SkillRequest"];
-            };
-        };
-        responses: {
-            /** @description Created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Skill"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            409: components["responses"]["Conflict"];
-            429: components["responses"]["TooManyRequests"];
-        };
-    };
-    importOrganizationSkill: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ImportSkillRequest"];
-            };
-        };
-        responses: {
-            /** @description Created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Skill"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            409: components["responses"]["Conflict"];
-            429: components["responses"]["TooManyRequests"];
-        };
-    };
-    getOrganizationSkill: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Skill ID. */
-                skill_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Skill"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    replaceOrganizationSkill: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Skill ID. */
-                skill_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["SkillRequest"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Skill"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            409: components["responses"]["Conflict"];
-            429: components["responses"]["TooManyRequests"];
-        };
-    };
-    deleteOrganizationSkill: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Skill ID. */
-                skill_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description No Content */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            409: components["responses"]["Conflict"];
-            429: components["responses"]["TooManyRequests"];
-        };
-    };
-    getOrganizationSkillUsage: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Skill ID. */
-                skill_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["OrganizationSkillUsage"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
         };
     };
     applyBlueprint: {
@@ -14247,6 +13720,12 @@ export interface operations {
                      *         ],
                      *         "identity_column": "pull_request_url"
                      *       },
+                     *       "owner": {
+                     *         "kind": "person",
+                     *         "id": "user_2f9s3k4m5n6p7q8r"
+                     *       },
+                     *       "visibility": "private",
+                     *       "posture": "only_you",
                      *       "created_at": "2026-06-15T14:30:00Z",
                      *       "updated_at": "2026-06-15T14:30:00Z"
                      *     }
@@ -14366,6 +13845,12 @@ export interface operations {
                      *       "tags": {
                      *         "team": "product"
                      *       },
+                     *       "owner": {
+                     *         "kind": "person",
+                     *         "id": "user_2f9s3k4m5n6p7q8r"
+                     *       },
+                     *       "visibility": "private",
+                     *       "posture": "only_you",
                      *       "created_at": "2026-06-15T14:30:00Z",
                      *       "updated_at": "2026-06-15T14:35:00Z"
                      *     }

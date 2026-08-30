@@ -38,17 +38,15 @@ func registerGeneratedCommands(app *cli.App) {
 	registerEnvironmentsCommands(app)
 	registerInteractionsCommands(app)
 	registerLoopsCommands(app)
-	registerOrgActionsCommands(app)
-	registerOrgSkillsCommands(app)
 	registerOrganizationsCommands(app)
 	registerPermissionsCommands(app)
 	registerPrincipalsCommands(app)
+	registerResourcesCommands(app)
 	registerRolesCommands(app)
 	registerRunsCommands(app)
 	registerSessionsCommands(app)
 	registerSkillsCommands(app)
 	registerTablesCommands(app)
-	registerToolkitsCommands(app)
 	registerWebhooksCommands(app)
 }
 
@@ -143,18 +141,6 @@ func decodeFlagText(ctx *cli.Context, flag, raw string) (string, error) {
 		return "", cli.Errorf("--%s: %v", flag, err)
 	}
 	return string(data), nil
-}
-
-func splitCommaSeparated(values []string) []string {
-	out := make([]string, 0, len(values))
-	for _, value := range values {
-		for _, part := range strings.Split(value, ",") {
-			if part = strings.TrimSpace(part); part != "" {
-				out = append(out, part)
-			}
-		}
-	}
-	return out
 }
 
 // readBodyBytes reads from a path or "-" (stdin). The returned label is
