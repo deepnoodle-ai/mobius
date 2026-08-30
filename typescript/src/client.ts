@@ -2289,6 +2289,11 @@ function anySignal(...signals: AbortSignal[]): AbortSignal {
   return controller.signal;
 }
 
+// organizationActionSecretMaterial extracts the one-time secret from a
+// create or rotate response. The revealed signing_secret always belongs to
+// the newest entry in secret_versions, whose status must match wantStatus;
+// any other shape means the response is internally inconsistent. Errors
+// never include the secret itself.
 function withQuery(path: string, params: object): string {
   const query = new URLSearchParams();
   for (const [key, value] of Object.entries(params)) {

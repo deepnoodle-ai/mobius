@@ -18,6 +18,9 @@ function interaction(status: Interaction["status"]): Interaction {
     status,
     title: "Which region?",
     target_user_ids: ["user_1"],
+    owner: { kind: "team" },
+    visibility: "organization",
+    posture: "team",
     created_at: AT,
     updated_at: AT,
   };

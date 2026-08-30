@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/hmac"
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -20,7 +21,6 @@ const (
 	MobiusSignatureVersionHeader = "X-Mobius-Signature-Version"
 	MobiusTimestampHeader        = "X-Mobius-Timestamp"
 	MobiusDeliveryIDHeader       = "X-Mobius-Delivery-Id"
-	MobiusSecretRefHeader        = "X-Mobius-Secret-Ref"
 	MobiusSecretVersionHeader    = "X-Mobius-Secret-Version"
 
 	signedDeliveryVersion = "v1"
@@ -40,7 +40,6 @@ type DeliveryMeta struct {
 	Signature        string
 	Timestamp        int64
 	DeliveryID       string
-	SecretRef        string
 	SecretVersion    int64
 }
 
@@ -108,7 +107,6 @@ func ReadDeliveryMeta(h http.Header) (DeliveryMeta, error) {
 		SignatureVersion: h.Get(MobiusSignatureVersionHeader),
 		Signature:        h.Get(MobiusSignatureHeader),
 		DeliveryID:       h.Get(MobiusDeliveryIDHeader),
-		SecretRef:        h.Get(MobiusSecretRefHeader),
 	}
 	if meta.SignatureVersion != signedDeliveryVersion {
 		return DeliveryMeta{}, fmt.Errorf("%w: unsupported signature version", ErrInvalidSignedDelivery)
@@ -118,9 +116,6 @@ func ReadDeliveryMeta(h http.Header) (DeliveryMeta, error) {
 	}
 	if meta.DeliveryID == "" {
 		return DeliveryMeta{}, fmt.Errorf("%w: missing delivery id", ErrInvalidSignedDelivery)
-	}
-	if meta.SecretRef == "" {
-		return DeliveryMeta{}, fmt.Errorf("%w: missing secret ref", ErrInvalidSignedDelivery)
 	}
 	timestamp, err := strconv.ParseInt(h.Get(MobiusTimestampHeader), 10, 64)
 	if err != nil || timestamp <= 0 {
@@ -133,6 +128,21 @@ func ReadDeliveryMeta(h http.Header) (DeliveryMeta, error) {
 	}
 	meta.SecretVersion = version
 	return meta, nil
+}
+
+// ParseSigningSecret decodes the one-time whsec_ value returned when Mobius
+// creates or rotates a signing key. The returned bytes are ready for
+// SignDelivery and VerifySignedDelivery.
+func ParseSigningSecret(secret string) ([]byte, error) {
+	const prefix = "whsec_"
+	if !strings.HasPrefix(secret, prefix) {
+		return nil, fmt.Errorf("mobius: signing secret must start with %q", prefix)
+	}
+	key, err := base64.RawURLEncoding.DecodeString(strings.TrimPrefix(secret, prefix))
+	if err != nil || len(key) != 32 {
+		return nil, errors.New("mobius: signing secret must contain a raw-URL-base64 encoded 32-byte key")
+	}
+	return key, nil
 }
 
 func SignDelivery(key, body []byte, deliveryID string, timestamp int64) string {

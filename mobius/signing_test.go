@@ -19,7 +19,6 @@ func signedDeliveryRequest(body []byte, key []byte, deliveryID string, timestamp
 	req.Header.Set(MobiusSignatureHeader, SignDelivery(key, body, deliveryID, timestamp))
 	req.Header.Set(MobiusTimestampHeader, strconv.FormatInt(timestamp, 10))
 	req.Header.Set(MobiusDeliveryIDHeader, deliveryID)
-	req.Header.Set(MobiusSecretRefHeader, "mobius/webhook/wbh_1")
 	req.Header.Set(MobiusSecretVersionHeader, "3")
 	return req
 }
@@ -50,7 +49,6 @@ func TestVerifySignedDeliveryWithResolver(t *testing.T) {
 
 	got, err := VerifySignedDelivery(req, VerifySignedDeliveryOptions{
 		ResolveKey: func(meta DeliveryMeta) ([]byte, error) {
-			assert.Equal(t, "mobius/webhook/wbh_1", meta.SecretRef)
 			assert.Equal(t, int64(3), meta.SecretVersion)
 			return key, nil
 		},
@@ -58,6 +56,15 @@ func TestVerifySignedDeliveryWithResolver(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, "delivery_2", got.DeliveryID)
+}
+
+func TestParseSigningSecret(t *testing.T) {
+	key, err := ParseSigningSecret("whsec_MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDE")
+	assert.NoError(t, err)
+	assert.Equal(t, []byte("01234567890123456789012345678901"), key)
+
+	_, err = ParseSigningSecret("not-a-secret")
+	assert.Error(t, err)
 }
 
 func TestVerifySignedDeliveryRejectsTampering(t *testing.T) {

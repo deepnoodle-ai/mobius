@@ -32,6 +32,11 @@ var overrides = map[string]Override{
 	// `invoke` isn't in the verb list, so the auto-derive keeps the redundant
 	// `-action` suffix; strip it.
 	"invokeAction": {Command: "invoke"},
+	// Hand-written: create and rotate reveal one-time secret material, so the
+	// commands require an explicit sink (--secret-file or --show-secret)
+	// instead of printing the signing secret by default.
+	"createAction":       {Skip: true},
+	"rotateActionSecret": {Skip: true},
 
 	// --- agents -----------------------------------------------------------
 	// Drop the redundant `agent` token that the auto-derivation can't strip

@@ -64,7 +64,7 @@ func registerRolesCommands(app *cli.App) {
 				return fmt.Errorf("--permissions is required (or supply it via --file)")
 			}
 			if ctx.Bool("dry-run") {
-				return printDryRun(ctx, body)
+				return printDryRun(ctx, body, "tags")
 			}
 			resp, err := client.CreateRoleWithResponse(ctx.Context(), body)
 			if err != nil {
@@ -269,7 +269,7 @@ func registerRolesCommands(app *cli.App) {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
 			if ctx.Bool("dry-run") {
-				return printDryRun(ctx, body)
+				return printDryRun(ctx, body, "tags")
 			}
 			resp, err := client.UpdateRoleWithResponse(ctx.Context(), p0, body)
 			if err != nil {

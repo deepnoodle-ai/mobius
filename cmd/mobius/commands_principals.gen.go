@@ -145,7 +145,7 @@ func registerPrincipalsCommands(app *cli.App) {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
 			if ctx.Bool("dry-run") {
-				return printDryRun(ctx, body)
+				return printDryRun(ctx, body, "metadata", "tags")
 			}
 			resp, err := client.UpdatePrincipalWithResponse(ctx.Context(), p0, body)
 			if err != nil {

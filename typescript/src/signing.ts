@@ -4,7 +4,6 @@ export const MOBIUS_SIGNATURE_HEADER = "X-Mobius-Signature";
 export const MOBIUS_SIGNATURE_VERSION_HEADER = "X-Mobius-Signature-Version";
 export const MOBIUS_TIMESTAMP_HEADER = "X-Mobius-Timestamp";
 export const MOBIUS_DELIVERY_ID_HEADER = "X-Mobius-Delivery-Id";
-export const MOBIUS_SECRET_REF_HEADER = "X-Mobius-Secret-Ref";
 export const MOBIUS_SECRET_VERSION_HEADER = "X-Mobius-Secret-Version";
 
 const SIGNATURE_PREFIX = "sha256=";
@@ -16,7 +15,6 @@ export interface DeliveryMeta {
   signature: string;
   timestamp: number;
   deliveryId: string;
-  secretRef: string;
   secretVersion: number;
 }
 
@@ -140,9 +138,25 @@ export function readDeliveryMetaFromHeaders(input: HeadersInit): DeliveryMeta {
     signature: requiredHeader(headers, MOBIUS_SIGNATURE_HEADER),
     timestamp,
     deliveryId: requiredHeader(headers, MOBIUS_DELIVERY_ID_HEADER),
-    secretRef: requiredHeader(headers, MOBIUS_SECRET_REF_HEADER),
     secretVersion,
   };
+}
+
+/** Decode a one-time whsec_ reveal into its 32-byte HMAC key. */
+export function parseSigningSecret(secret: string): Uint8Array {
+  const encoded = secret.startsWith("whsec_") ? secret.slice(6) : "";
+  if (!/^[A-Za-z0-9_-]{43}$/.test(encoded)) {
+    throw new Error(
+      "mobius: signing secret must contain a raw-URL-base64 encoded 32-byte key",
+    );
+  }
+  const key = Buffer.from(encoded, "base64url");
+  if (key.byteLength !== 32) {
+    throw new Error(
+      "mobius: signing secret must contain a raw-URL-base64 encoded 32-byte key",
+    );
+  }
+  return key;
 }
 
 export async function verifySignedDelivery(

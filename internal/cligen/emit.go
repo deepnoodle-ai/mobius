@@ -1023,15 +1023,13 @@ func renderCommand(b *bytes.Buffer, group string, c PlannedCommand) error {
 			fmt.Fprintf(b, "\t\t\tif %s { return fmt.Errorf(%q) }\n",
 				strings.Join(conds, " && "), msg)
 		}
-		// --dry-run: print the assembled body and exit before HTTP. For
-		// secret-bearing commands, pass the JSON field names whose contents
-		// must be redacted before printing so plaintext never reaches stdout.
+		// --dry-run: print the assembled body and exit before HTTP. Conservatively
+		// redact structured fields and names commonly used for credentials. This
+		// protects nested write-only values without depending on an API group name.
 		var redactArgs string
-		if c.Group == "secrets" {
-			for _, f := range c.Body.Fields {
-				if f.FlagName == "value" || f.FlagName == "values" {
-					redactArgs += fmt.Sprintf(", %q", f.FlagName)
-				}
+		for _, f := range c.Body.Fields {
+			if f.Kind == "json" || isSensitiveFlagName(f.FlagName) {
+				redactArgs += fmt.Sprintf(", %q", strings.ReplaceAll(f.FlagName, "-", "_"))
 			}
 		}
 		fmt.Fprintf(b, "\t\t\tif ctx.Bool(\"dry-run\") { return printDryRun(ctx, body%s) }\n", redactArgs)
@@ -1061,6 +1059,16 @@ func renderCommand(b *bytes.Buffer, group string, c PlannedCommand) error {
 
 func acceptsTextFileInput(f BodyField) bool {
 	return f.Kind == "string" && f.ElemType == "string" && f.FlagName == "instructions"
+}
+
+func isSensitiveFlagName(name string) bool {
+	name = strings.ToLower(strings.ReplaceAll(name, "_", "-"))
+	for _, fragment := range []string{"secret", "password", "token", "credential", "api-key", "private-key"} {
+		if strings.Contains(name, fragment) {
+			return true
+		}
+	}
+	return name == "value" || name == "values"
 }
 
 // emitStringSliceValue declares name from a cli.Strings expression. Named
@@ -1390,8 +1398,8 @@ func printDryRun(ctx *cli.Context, body any, redactFields ...string) error {
 }
 
 // redactBodyFields returns a JSON-shaped copy of body with the named top-level
-// fields replaced by a redaction marker. Map values have each entry redacted
-// (preserving keys); scalar values are replaced wholesale. Returns (nil, false)
+// fields recursively redacted while preserving their JSON shape. Strings use
+// a marker; numbers and booleans use zero values. Returns (nil, false)
 // when body cannot be JSON-roundtripped; callers handling secret-bearing
 // bodies must treat this as a hard failure rather than printing the original.
 func redactBodyFields(body any, fields []string) (any, bool) {
@@ -1408,17 +1416,34 @@ func redactBodyFields(body any, fields []string) (any, bool) {
 		if !present {
 			continue
 		}
-		if mp, ok := v.(map[string]any); ok {
-			masked := make(map[string]any, len(mp))
-			for k := range mp {
-				masked[k] = "***REDACTED***"
-			}
-			m[f] = masked
-			continue
-		}
-		m[f] = "***REDACTED***"
+		m[f] = redactJSONValue(v)
 	}
 	return m, true
+}
+
+func redactJSONValue(v any) any {
+	switch value := v.(type) {
+	case map[string]any:
+		masked := make(map[string]any, len(value))
+		for key, item := range value {
+			masked[key] = redactJSONValue(item)
+		}
+		return masked
+	case []any:
+		masked := make([]any, len(value))
+		for i, item := range value {
+			masked[i] = redactJSONValue(item)
+		}
+		return masked
+	case nil:
+		return nil
+	case bool:
+		return false
+	case float64:
+		return float64(0)
+	default:
+		return "***REDACTED***"
+	}
 }
 
 // parseTagFlags converts repeatable --tag KEY=VALUE flags into a map. Returns

@@ -71,7 +71,7 @@ func registerBlueprintsCommands(app *cli.App) {
 				return fmt.Errorf("--resources is required (or supply it via --file)")
 			}
 			if ctx.Bool("dry-run") {
-				return printDryRun(ctx, body)
+				return printDryRun(ctx, body, "resources")
 			}
 			resp, err := client.ApplyBlueprintWithResponse(ctx.Context(), body)
 			if err != nil {

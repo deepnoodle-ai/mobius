@@ -83,7 +83,7 @@ func registerSkillsCommands(app *cli.App) {
 				return fmt.Errorf("--name is required (or supply it via --file)")
 			}
 			if ctx.Bool("dry-run") {
-				return printDryRun(ctx, body)
+				return printDryRun(ctx, body, "owner", "tags")
 			}
 			resp, err := client.CreateSkillWithResponse(ctx.Context(), body)
 			if err != nil {
@@ -218,7 +218,7 @@ func registerSkillsCommands(app *cli.App) {
 				return fmt.Errorf("--name is required (or supply it via --file)")
 			}
 			if ctx.Bool("dry-run") {
-				return printDryRun(ctx, body)
+				return printDryRun(ctx, body, "owner", "tags")
 			}
 			resp, err := client.UpdateSkillWithResponse(ctx.Context(), p0, body)
 			if err != nil {

@@ -11,7 +11,6 @@ import httpx
 
 from .signing import (
     MOBIUS_DELIVERY_ID_HEADER,
-    MOBIUS_SECRET_REF_HEADER,
     MOBIUS_SECRET_VERSION_HEADER,
     MOBIUS_SIGNATURE_HEADER,
     MOBIUS_SIGNATURE_VERSION_HEADER,
@@ -32,7 +31,6 @@ _SYNTHETIC_WEBHOOK_USER_AGENT = "mobius-sdk-webhook-delivery/1"
 class SyntheticWebhookDelivery:
     url: str
     key: bytes
-    secret_ref: str
     secret_version: int
     event_type: str
     data: Any
@@ -56,8 +54,6 @@ def deliver_synthetic_webhook(delivery: SyntheticWebhookDelivery) -> None:
         raise ValueError("mobius: synthetic webhook URL is required")
     if not delivery.key:
         raise ValueError("mobius: synthetic webhook signing key is required")
-    if not delivery.secret_ref:
-        raise ValueError("mobius: synthetic webhook secret ref is required")
     if delivery.secret_version <= 0:
         raise ValueError("mobius: synthetic webhook secret version is required")
 
@@ -87,7 +83,6 @@ def deliver_synthetic_webhook(delivery: SyntheticWebhookDelivery) -> None:
     headers[MOBIUS_SIGNATURE_VERSION_HEADER] = "v1"
     headers[MOBIUS_TIMESTAMP_HEADER] = str(timestamp)
     headers[MOBIUS_DELIVERY_ID_HEADER] = delivery_id
-    headers[MOBIUS_SECRET_REF_HEADER] = delivery.secret_ref
     headers[MOBIUS_SECRET_VERSION_HEADER] = str(delivery.secret_version)
     headers["Idempotency-Key"] = delivery_id
 

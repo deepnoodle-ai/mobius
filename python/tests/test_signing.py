@@ -4,7 +4,6 @@ import pytest
 
 from deepnoodle.mobius import (
     MOBIUS_DELIVERY_ID_HEADER,
-    MOBIUS_SECRET_REF_HEADER,
     MOBIUS_SECRET_VERSION_HEADER,
     MOBIUS_SIGNATURE_HEADER,
     MOBIUS_SIGNATURE_VERSION_HEADER,
@@ -14,6 +13,7 @@ from deepnoodle.mobius import (
     UnsupportedActionInvocationSchemaError,
     VerifiedDelivery,
     parse_action_invocation_v1,
+    parse_signing_secret,
     sign_delivery,
     verify_action_invocation_v1,
 )
@@ -34,7 +34,6 @@ def _headers(signature: str = SIGNATURE) -> dict[str, str]:
         MOBIUS_SIGNATURE_HEADER: signature,
         MOBIUS_TIMESTAMP_HEADER: str(TIMESTAMP),
         MOBIUS_DELIVERY_ID_HEADER: DELIVERY_ID,
-        MOBIUS_SECRET_REF_HEADER: "mobius/action/act_fixture",
         MOBIUS_SECRET_VERSION_HEADER: "3",
     }
 
@@ -70,7 +69,7 @@ def test_verify_action_invocation_v1_rejects_stale_delivery() -> None:
 def test_parse_action_invocation_v1_accepts_null_optional_strings() -> None:
     invocation = parse_action_invocation_v1(
         VerifiedDelivery(
-            "v1", "signature", 1, "delivery", "secret", 1, NULL_OPTIONALS_FIXTURE.read_bytes()
+            "v1", "signature", 1, "delivery", 1, NULL_OPTIONALS_FIXTURE.read_bytes()
         )
     )
     assert invocation.mobius.actor.agent_id is None
@@ -119,5 +118,13 @@ def test_parse_action_invocation_v1_rejects_invalid_envelopes(
 ) -> None:
     with pytest.raises(error):
         parse_action_invocation_v1(
-            VerifiedDelivery("v1", "signature", 1, "delivery", "secret", 1, body)
+            VerifiedDelivery("v1", "signature", 1, "delivery", 1, body)
         )
+
+
+def test_parse_signing_secret() -> None:
+    assert parse_signing_secret(
+        "whsec_MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDE"
+    ) == b"01234567890123456789012345678901"
+    with pytest.raises(ValueError):
+        parse_signing_secret("not-a-secret")

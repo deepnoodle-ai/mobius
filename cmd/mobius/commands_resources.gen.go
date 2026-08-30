@@ -65,7 +65,7 @@ func registerResourcesCommands(app *cli.App) {
 				return fmt.Errorf("at least one flag or --file is required")
 			}
 			if ctx.Bool("dry-run") {
-				return printDryRun(ctx, body)
+				return printDryRun(ctx, body, "owner")
 			}
 			resp, err := client.UpdateResourceOwnershipWithResponse(ctx.Context(), p0, p1, body)
 			if err != nil {

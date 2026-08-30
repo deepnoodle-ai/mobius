@@ -12,12 +12,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/). Mobius i
   clients expose typed owner, visibility, container, posture, and ownership
   transition contracts. New resources default to private person custody
   ([#202](https://github.com/deepnoodle-ai/mobius/pull/202)).
+- `ParseSigningSecret` / `parse_signing_secret` / `parseSigningSecret` decode
+  one-time `whsec_` reveals into the raw 32-byte HMAC key used by delivery
+  signing and verification
+  ([#203](https://github.com/deepnoodle-ai/mobius/pull/203)).
+
+### Changed
+
+- Regenerated every SDK from the current public Mobius contract. Action secret
+  rotation now activates immediately with a fixed 72-hour verification overlap;
+  the CLI requires an explicit sink for one-time reveals
+  ([#203](https://github.com/deepnoodle-ai/mobius/pull/203)).
 
 ### Removed
 
 - Removed the duplicate organization action, organization skill, and toolkit
   surfaces; actions and skills now use their canonical catalogs and custody
   ([#202](https://github.com/deepnoodle-ai/mobius/pull/202)).
+- Removed the public Secrets API models and commands, the
+  `X-Mobius-Secret-Ref` delivery header, and stale organization-action,
+  organization-skill, and toolkit surfaces no longer present in the public
+  contract ([#203](https://github.com/deepnoodle-ai/mobius/pull/203)).
 - Removed definition-resolver operations and invocation-time agent `config`.
   Agent behavior now comes from the stored agent; session creation exposes the
   narrow `model_override` used by model pickers

@@ -322,7 +322,7 @@ paths:
                   read_only: true
                 tags:
                   owner: product
-                signing_secret: base64:one_time_secret
+                signing_secret: whsec_redacted
                 owner:
                   kind: person
                   id: user_2f9s3k4m5n6p7q8r
@@ -419,9 +419,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/RotateSecretResult'
               example:
-                secret_ref: mobius/action/deploy_preview
                 secret_version: 2
-                signing_secret: redacted_base64_signing_secret
+                signing_secret: whsec_redacted
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -958,9 +957,8 @@ paths:
                 - run.completed
                 - run.failed
                 enabled: true
-                secret_ref: mobius/webhook/wbh_7x3m9q2v5p8n4r6t
                 secret_version: 1
-                signing_secret: redacted_base64_signing_secret
+                signing_secret: whsec_redacted
                 created_by: user_2f9s3k4m5n6p7q8r
                 owner:
                   kind: person
@@ -1083,9 +1081,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/RotateSecretResult'
               example:
-                secret_ref: mobius/webhook/wbh_7x3m9q2v5p8n4r6t
                 secret_version: 2
-                signing_secret: redacted_base64_signing_secret
+                signing_secret: whsec_redacted
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -5808,20 +5805,6 @@ components:
       description: Environment ID.
       schema:
         type: string
-    SecretParam:
-      name: secret_name
-      in: path
-      required: true
-      schema:
-        type: string
-      description: Secret ID or secret name.
-    SecretVersionParam:
-      name: version
-      in: path
-      required: true
-      schema:
-        type: string
-      description: Secret version number or `latest`.
     ReferenceTypeParam:
       name: reference_type
       in: path
@@ -8030,9 +8013,9 @@ components:
           description: Free-form labels attached to this action.
         signing_secret:
           type: string
-          description: Base64-encoded 32-byte HMAC-SHA256 signing key. Only populated on create
-            and rotate responses; absent on all other reads. Store this value securely on
-            first receipt — it cannot be retrieved again.
+          description: One-time `whsec_` plus raw-URL-base64 encoded 32-byte HMAC-SHA256 signing
+            key. Only populated on create and rotate responses; absent on all other reads.
+            Store this value securely on first receipt — it cannot be retrieved again.
         created_at:
           type: string
           format: date-time
@@ -8076,21 +8059,17 @@ components:
       additionalProperties: false
       description: New signing key material returned after rotating a signing secret.
       required:
-      - secret_ref
       - secret_version
       - signing_secret
       properties:
-        secret_ref:
-          type: string
-          description: Org secret reference that now stores the action signing key.
         secret_version:
           type: integer
           format: int64
-          description: New org-secret version number.
+          description: New internal vault version number.
         signing_secret:
           type: string
-          description: Base64-encoded 32-byte signing key. Store it immediately — this is
-            the only time it is returned.
+          description: One-time `whsec_` raw-URL-base64 signing key. Store it immediately
+            — this is the only time it is returned.
     ActionCatalogEntry:
       type: object
       additionalProperties: false
@@ -9473,19 +9452,16 @@ components:
         tags:
           $ref: '#/components/schemas/TagMap'
           description: Free-form labels used for filtering, ownership, or delivery policy.
-        secret_ref:
-          type: string
-          description: Org secret reference that stores this webhook's signing key.
         secret_version:
           type: integer
           format: int64
-          description: Version of `secret_ref` created by this response. Only populated on
+          description: Internal vault version created by this response. Only populated on
             create and rotate responses.
         signing_secret:
           type: string
-          description: Base64-encoded 32-byte HMAC-SHA256 signing key. Only populated on create
-            and rotate responses; absent on all other reads. Store this value securely on
-            first receipt — it cannot be retrieved again.
+          description: One-time `whsec_` plus raw-URL-base64 encoded 32-byte HMAC-SHA256 signing
+            key. Only populated on create and rotate responses; absent on all other reads.
+            Store this value securely on first receipt — it cannot be retrieved again.
         created_at:
           type: string
           format: date-time
@@ -9505,7 +9481,6 @@ components:
         created_by: user_2f9s3k4m5n6p7q8r
         tags:
           owner: product
-        secret_ref: mobius/webhook/wbh_7x3m9q2v5p8n4r6t
         secret_version: 1
         created_at: '2026-06-15T14:30:00Z'
         updated_at: '2026-06-15T14:30:00Z'
@@ -10380,16 +10355,15 @@ components:
       - kind
       description: 'Polymorphic identifier of what is waiting on this interaction''s resolution.
         Replaces the previously special-cased `run_id` + `signal_name` pair. When `kind=run`,
-        the legacy fields are also populated for compatibility. `http_subscriber` requires
-        `secret_ref` and enqueues a durable callback dispatch to `callback_url` when the interaction
-        resolves; the canonical string `v1.{delivery_id}.{unix_timestamp}.{raw_body}` is signed
-        with HMAC-SHA256 against the resolved org signing key and the signed dispatch carries
-        `X-Mobius-Signature`, `X-Mobius-Secret-Ref`, `X-Mobius-Secret-Version`, and `X-Mobius-Timestamp`.
-        Signed dispatches also carry `X-Mobius-Signature-Version: v1`. Every durable dispatch
-        also carries the stable outbox row id in `X-Mobius-Delivery-Id` and `Idempotency-Key`;
-        retries reuse the same value. Verifiers should recompute the signature over the exact
-        raw body, reject stale timestamps (for example, older than five minutes), deduplicate
-        by delivery id, and check the signing headers.'
+        the legacy fields are also populated for compatibility. `http_subscriber` enqueues
+        a durable callback dispatch to `callback_url` when the interaction resolves; the canonical
+        string `v1.{delivery_id}.{unix_timestamp}.{raw_body}` is signed with HMAC-SHA256 against
+        the resolved org signing key and the signed dispatch carries `X-Mobius-Signature`,
+        `X-Mobius-Secret-Version` and `X-Mobius-Timestamp`. Signed dispatches also carry `X-Mobius-Signature-Version:
+        v1`. Every durable dispatch also carries the stable outbox row id in `X-Mobius-Delivery-Id`
+        and `Idempotency-Key`; retries reuse the same value. Verifiers should recompute the
+        signature over the exact raw body, reject stale timestamps (for example, older than
+        five minutes), deduplicate by delivery id, and check the signing headers.'
       properties:
         kind:
           type: string
@@ -10448,7 +10422,6 @@ components:
       additionalProperties: false
       required:
       - callback_url
-      - secret_ref
       properties:
         callback_url:
           type: string
@@ -10458,19 +10431,42 @@ components:
             comment, responder, and `resolved_by`. Delivery is enqueued as a `source_events`
             dispatch so the worker can retry failed attempts instead of dropping them inline
             with interaction resolution.
-        secret_ref:
+    ConsumerInput:
+      type: object
+      additionalProperties: false
+      required:
+      - kind
+      properties:
+        kind:
           type: string
-          description: 'Required reference to an org secret used to sign deliveries with HMAC-SHA256
-            over the canonical string `v1.{delivery_id}.{unix_timestamp}.{raw_body}`, where
-            `delivery_id` is the value in `X-Mobius-Delivery-Id` and `raw_body` is the exact
-            callback request body bytes. Accepts `<name>` for the latest enabled version or
-            `<name>:<version>` to pin a specific positive-integer version. The plaintext signing
-            bytes are taken from the secret''s `signing_key_b64` key, which must base64-decode
-            to exactly 32 bytes. The hex signature is forwarded as `X-Mobius-Signature: sha256=<hex>`
-            alongside `X-Mobius-Secret-Ref`, `X-Mobius-Secret-Version`, `X-Mobius-Signature-Version:
-            v1`, and a unix `X-Mobius-Timestamp`. Consumers should reject stale timestamps
-            (for example, older than five minutes). When `secret_ref` resolution fails the
-            dispatch is retried by the event processor rather than sent unsigned.'
+          enum:
+          - run
+          - agent_tool
+          - http_subscriber
+          - none
+        run:
+          $ref: '#/components/schemas/RunConsumer'
+        agent_tool:
+          $ref: '#/components/schemas/AgentToolConsumer'
+        http_subscriber:
+          $ref: '#/components/schemas/HttpSubscriberConsumerInput'
+    HttpSubscriberConsumerInput:
+      type: object
+      additionalProperties: false
+      required:
+      - callback_url
+      - signing_secret
+      properties:
+        callback_url:
+          type: string
+          format: uri
+          description: Absolute public http(s) callback URL.
+        signing_secret:
+          type: string
+          writeOnly: true
+          minLength: 1
+          description: HMAC signing secret stored in the interaction-owned vault and never
+            returned.
     InteractionResponse:
       type: object
       additionalProperties: false
@@ -10903,7 +10899,7 @@ components:
           description: Declarative resolution rule. When supplied the policy evaluator drives
             completion.
         consumer:
-          $ref: '#/components/schemas/Consumer'
+          $ref: '#/components/schemas/ConsumerInput'
           description: Polymorphic identifier of what is waiting on this interaction's resolution.
             When omitted on a run-backed create request, the server derives a `kind=run` consumer
             from `run_id` and `signal_name`.
@@ -10983,7 +10979,7 @@ components:
           description: Declarative resolution rule. When supplied the policy evaluator drives
             completion.
         consumer:
-          $ref: '#/components/schemas/Consumer'
+          $ref: '#/components/schemas/ConsumerInput'
           description: Polymorphic identifier of what is waiting on this interaction's resolution.
             When omitted on a run-backed create request, the server derives a `kind=run` consumer
             from `run_id` and `signal_name`.

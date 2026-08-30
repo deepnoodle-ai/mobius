@@ -100,6 +100,41 @@ the action/secret scope before performing side effects. Never choose a user or
 tenant from `parameters`; user-mapped agent integrations should resolve by the
 signed `(org_id, agent_id)` pair.
 
+During key rotation, select the verification key using
+`X-Mobius-Secret-Version`. Keep both the current and previous versions during
+the 72-hour overlap; Mobius stops accepting or using the previous version when
+that window expires. A delivery always signs the consuming org's `org_id`.
+The Action ID is stable across renames and should be the primary
+endpoint-side identity check.
+
+## Action signing secrets
+
+Action create and rotate responses reveal a `whsec_` signing secret exactly
+once. Store that string immediately. The SDK parsing helpers turn it into the
+32 raw bytes expected by the signing and verification helpers:
+
+```go
+key, err := mobius.ParseSigningSecret(actionSigningSecret)
+```
+
+```python
+key = mobius.parse_signing_secret(action_signing_secret)
+```
+
+```ts
+const key = parseSigningSecret(actionSigningSecret);
+```
+
+Rotation activates the new version immediately and leaves the prior version
+enabled for the fixed 72-hour overlap. Outbound deliveries use the new
+version; verifiers should accept both advertised versions during that window.
+
+The CLI's `actions create` and `actions rotate-secret` refuse to run
+without an explicit secret sink, so the one-time reveal is never burned by
+accident: `--secret-file PATH` writes the key to a `0600` file and masks it
+in the printed response; `--show-secret` prints the full response for
+existing scripts.
+
 ## Organization OAuth Return Origins
 
 `GetOAuthReturnOrigins` / `get_oauth_return_origins` /
@@ -140,7 +175,7 @@ pagination.
 ```go
 page, err := client.ListActionInvocations(ctx, &mobius.ListActionInvocationsOptions{
 	ActionID:        "act_2m7x9q5v8p3n4r6t",
-	DefinitionScope: api.ListActionInvocationsParamsDefinitionScopeCustom,
+	DefinitionScope: api.ListActionInvocationsParamsDefinitionScopeOrganization,
 	SecretVersion:   2,
 })
 ```
@@ -201,7 +236,6 @@ hosted Mobius cannot reach localhost:
 err := mobius.DeliverSyntheticWebhook(ctx, mobius.SyntheticWebhookDelivery{
 	URL:           "http://127.0.0.1:8080/webhooks/mobius",
 	Key:           signingKey,
-	SecretRef:     "mobius/webhook/local",
 	SecretVersion: 1,
 	EventType:     string(mobius.WebhookEventRunCompleted),
 	Data:          run,
@@ -212,7 +246,6 @@ err := mobius.DeliverSyntheticWebhook(ctx, mobius.SyntheticWebhookDelivery{
 mobius.deliver_synthetic_webhook(mobius.SyntheticWebhookDelivery(
     url="http://127.0.0.1:8080/webhooks/mobius",
     key=signing_key,
-    secret_ref="mobius/webhook/local",
     secret_version=1,
     event_type=mobius.WEBHOOK_EVENT_RUN_COMPLETED,
     data=run,
@@ -223,7 +256,6 @@ mobius.deliver_synthetic_webhook(mobius.SyntheticWebhookDelivery(
 await deliverSyntheticWebhook({
   url: "http://127.0.0.1:8080/webhooks/mobius",
   key: signingKey,
-  secretRef: "mobius/webhook/local",
   secretVersion: 1,
   eventType: WEBHOOK_EVENT_RUN_COMPLETED,
   data: run,
@@ -389,17 +421,18 @@ timing decisions. Entry versions make replayed changes detectable.
 ## Skills
 
 Skills are reusable instruction bundles assignable to agents. The curated
-clients expose one ownership-aware skill lifecycle plus ordered agent
-assignments. Import takes the Claude Code or Dive-style document as a plain
-string — reading files stays a CLI concern:
+clients expose the skill lifecycle and ordered agent assignments.
+Import takes the Claude Code or Dive-style document as a plain string —
+reading files stays a CLI concern:
 
 ```python
 skill = client.import_skill(Path("SKILL.md").read_text(), name="PR review")
 client.replace_agent_skill_assignments(agent_id, [skill.id])
 ```
 
-Updates are explicit full-body replacements — the SDKs do not fetch-and-merge,
-which would race concurrent edits.
+Updates (`UpdateSkill` / `update_skill` / `updateSkill`) are explicit full-body
+replacements — the SDKs do not fetch-and-merge, which would race concurrent
+edits.
 
 The CLI imports documents directly: `mobius skills import ./SKILL.md`, or
 `mobius skills import - --name "PR review"` to read stdin with a name override.

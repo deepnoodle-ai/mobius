@@ -1031,6 +1031,30 @@ func (e ConsumerKind) Valid() bool {
 	}
 }
 
+// Defines values for ConsumerInputKind.
+const (
+	ConsumerInputKindAgentTool      ConsumerInputKind = "agent_tool"
+	ConsumerInputKindHttpSubscriber ConsumerInputKind = "http_subscriber"
+	ConsumerInputKindNone           ConsumerInputKind = "none"
+	ConsumerInputKindRun            ConsumerInputKind = "run"
+)
+
+// Valid indicates whether the value is a known member of the ConsumerInputKind enum.
+func (e ConsumerInputKind) Valid() bool {
+	switch e {
+	case ConsumerInputKindAgentTool:
+		return true
+	case ConsumerInputKindHttpSubscriber:
+		return true
+	case ConsumerInputKindNone:
+		return true
+	case ConsumerInputKindRun:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ContextIncludeParam.
 const (
 	ContextIncludeParamContext ContextIncludeParam = "context"
@@ -4111,7 +4135,7 @@ type Action struct {
 	// Posture Employee-facing effective ownership and audience posture for the current caller.
 	Posture ResourcePosture `json:"posture"`
 
-	// SigningSecret Base64-encoded 32-byte HMAC-SHA256 signing key. Only populated on create and rotate responses; absent on all other reads. Store this value securely on first receipt — it cannot be retrieved again.
+	// SigningSecret One-time `whsec_` plus raw-URL-base64 encoded 32-byte HMAC-SHA256 signing key. Only populated on create and rotate responses; absent on all other reads. Store this value securely on first receipt — it cannot be retrieved again.
 	SigningSecret *string `json:"signing_secret,omitempty"`
 
 	// Tags Key/value tags for organizing and filtering resources. Up to 8 per resource; keys 1–128 characters, values up to 256. Keys prefixed `mobius:` are system-managed and cannot be set by callers.
@@ -5791,7 +5815,7 @@ type CompactionStartedPayload struct {
 // CompactionTrigger What started a compaction pass. `auto` is the threshold-gated pass that runs after a turn commits; `append` is the threshold-gated pass that runs inline on a message append; `manual` is an explicit compact request.
 type CompactionTrigger string
 
-// Consumer Polymorphic identifier of what is waiting on this interaction's resolution. Replaces the previously special-cased `run_id` + `signal_name` pair. When `kind=run`, the legacy fields are also populated for compatibility. `http_subscriber` requires `secret_ref` and enqueues a durable callback dispatch to `callback_url` when the interaction resolves; the canonical string `v1.{delivery_id}.{unix_timestamp}.{raw_body}` is signed with HMAC-SHA256 against the resolved org signing key and the signed dispatch carries `X-Mobius-Signature`, `X-Mobius-Secret-Ref`, `X-Mobius-Secret-Version`, and `X-Mobius-Timestamp`. Signed dispatches also carry `X-Mobius-Signature-Version: v1`. Every durable dispatch also carries the stable outbox row id in `X-Mobius-Delivery-Id` and `Idempotency-Key`; retries reuse the same value. Verifiers should recompute the signature over the exact raw body, reject stale timestamps (for example, older than five minutes), deduplicate by delivery id, and check the signing headers.
+// Consumer Polymorphic identifier of what is waiting on this interaction's resolution. Replaces the previously special-cased `run_id` + `signal_name` pair. When `kind=run`, the legacy fields are also populated for compatibility. `http_subscriber` enqueues a durable callback dispatch to `callback_url` when the interaction resolves; the canonical string `v1.{delivery_id}.{unix_timestamp}.{raw_body}` is signed with HMAC-SHA256 against the resolved org signing key and the signed dispatch carries `X-Mobius-Signature`, `X-Mobius-Secret-Version` and `X-Mobius-Timestamp`. Signed dispatches also carry `X-Mobius-Signature-Version: v1`. Every durable dispatch also carries the stable outbox row id in `X-Mobius-Delivery-Id` and `Idempotency-Key`; retries reuse the same value. Verifiers should recompute the signature over the exact raw body, reject stale timestamps (for example, older than five minutes), deduplicate by delivery id, and check the signing headers.
 type Consumer struct {
 	// AgentTool Agent tool continuation target when `kind=agent_tool`; null for other consumer kinds.
 	AgentTool *AgentToolConsumer `json:"agent_tool,omitempty"`
@@ -5806,6 +5830,17 @@ type Consumer struct {
 
 // ConsumerKind defines model for Consumer.Kind.
 type ConsumerKind string
+
+// ConsumerInput defines model for ConsumerInput.
+type ConsumerInput struct {
+	AgentTool      *AgentToolConsumer           `json:"agent_tool,omitempty"`
+	HttpSubscriber *HttpSubscriberConsumerInput `json:"http_subscriber,omitempty"`
+	Kind           ConsumerInputKind            `json:"kind"`
+	Run            *RunConsumer                 `json:"run,omitempty"`
+}
+
+// ConsumerInputKind defines model for ConsumerInput.Kind.
+type ConsumerInputKind string
 
 // ContextIncludeParam defines model for ContextIncludeParam.
 type ContextIncludeParam string
@@ -6138,8 +6173,7 @@ type CreateRoleRequest struct {
 //
 // This is an audit-only link: creating an interaction here does not suspend the run, and resolving it does not by itself resume a run. A run only blocks on, and resumes from, human input when the loop definition declares an interaction step — that step creates the interaction and registers the matching wait atomically. Use this endpoint to record a human decision against a run, not to drive run control flow.
 type CreateRunBackedInteractionRequest struct {
-	// Consumer Polymorphic identifier of what is waiting on this interaction's resolution. Replaces the previously special-cased `run_id` + `signal_name` pair. When `kind=run`, the legacy fields are also populated for compatibility. `http_subscriber` requires `secret_ref` and enqueues a durable callback dispatch to `callback_url` when the interaction resolves; the canonical string `v1.{delivery_id}.{unix_timestamp}.{raw_body}` is signed with HMAC-SHA256 against the resolved org signing key and the signed dispatch carries `X-Mobius-Signature`, `X-Mobius-Secret-Ref`, `X-Mobius-Secret-Version`, and `X-Mobius-Timestamp`. Signed dispatches also carry `X-Mobius-Signature-Version: v1`. Every durable dispatch also carries the stable outbox row id in `X-Mobius-Delivery-Id` and `Idempotency-Key`; retries reuse the same value. Verifiers should recompute the signature over the exact raw body, reject stale timestamps (for example, older than five minutes), deduplicate by delivery id, and check the signing headers.
-	Consumer *Consumer `json:"consumer,omitempty"`
+	Consumer *ConsumerInput `json:"consumer,omitempty"`
 
 	// Context Additional key-value context surfaced in the UI alongside the title and description.
 	Context *map[string]interface{} `json:"context,omitempty"`
@@ -6264,8 +6298,7 @@ type CreateSessionRequestMode string
 
 // CreateStandaloneInteractionRequest Creates a standalone interaction. Completion records the response but does not deliver a loop signal.
 type CreateStandaloneInteractionRequest struct {
-	// Consumer Polymorphic identifier of what is waiting on this interaction's resolution. Replaces the previously special-cased `run_id` + `signal_name` pair. When `kind=run`, the legacy fields are also populated for compatibility. `http_subscriber` requires `secret_ref` and enqueues a durable callback dispatch to `callback_url` when the interaction resolves; the canonical string `v1.{delivery_id}.{unix_timestamp}.{raw_body}` is signed with HMAC-SHA256 against the resolved org signing key and the signed dispatch carries `X-Mobius-Signature`, `X-Mobius-Secret-Ref`, `X-Mobius-Secret-Version`, and `X-Mobius-Timestamp`. Signed dispatches also carry `X-Mobius-Signature-Version: v1`. Every durable dispatch also carries the stable outbox row id in `X-Mobius-Delivery-Id` and `Idempotency-Key`; retries reuse the same value. Verifiers should recompute the signature over the exact raw body, reject stale timestamps (for example, older than five minutes), deduplicate by delivery id, and check the signing headers.
-	Consumer *Consumer `json:"consumer,omitempty"`
+	Consumer *ConsumerInput `json:"consumer,omitempty"`
 
 	// Context Additional key-value context surfaced in the UI alongside the title and description.
 	Context *map[string]interface{} `json:"context,omitempty"`
@@ -6622,9 +6655,15 @@ type HTTPTriggerDeliveryResultStatus string
 type HttpSubscriberConsumer struct {
 	// CallbackUrl Absolute http(s) URL the server POSTs to when the interaction resolves. The body is a JSON object with the interaction id, kind, status, outcome value, comment, responder, and `resolved_by`. Delivery is enqueued as a `source_events` dispatch so the worker can retry failed attempts instead of dropping them inline with interaction resolution.
 	CallbackUrl string `json:"callback_url"`
+}
 
-	// SecretRef Required reference to an org secret used to sign deliveries with HMAC-SHA256 over the canonical string `v1.{delivery_id}.{unix_timestamp}.{raw_body}`, where `delivery_id` is the value in `X-Mobius-Delivery-Id` and `raw_body` is the exact callback request body bytes. Accepts `<name>` for the latest enabled version or `<name>:<version>` to pin a specific positive-integer version. The plaintext signing bytes are taken from the secret's `signing_key_b64` key, which must base64-decode to exactly 32 bytes. The hex signature is forwarded as `X-Mobius-Signature: sha256=<hex>` alongside `X-Mobius-Secret-Ref`, `X-Mobius-Secret-Version`, `X-Mobius-Signature-Version: v1`, and a unix `X-Mobius-Timestamp`. Consumers should reject stale timestamps (for example, older than five minutes). When `secret_ref` resolution fails the dispatch is retried by the event processor rather than sent unsigned.
-	SecretRef string `json:"secret_ref"`
+// HttpSubscriberConsumerInput defines model for HttpSubscriberConsumerInput.
+type HttpSubscriberConsumerInput struct {
+	// CallbackUrl Absolute public http(s) callback URL.
+	CallbackUrl string `json:"callback_url"`
+
+	// SigningSecret HMAC signing secret stored in the interaction-owned vault and never returned.
+	SigningSecret *string `json:"signing_secret,omitempty"`
 }
 
 // IfExists Create-or-adopt behavior when a request's `external_ref` matches an existing resource. `error` (the default) rejects the request with 409. `adopt` returns the existing resource unchanged instead — mutable fields in the request are ignored, since no write happens — and requires `external_ref` to be set; omitting it returns 400.
@@ -8789,13 +8828,10 @@ type RoleListResponse struct {
 
 // RotateSecretResult New signing key material returned after rotating a signing secret.
 type RotateSecretResult struct {
-	// SecretRef Org secret reference that now stores the action signing key.
-	SecretRef string `json:"secret_ref"`
-
-	// SecretVersion New org-secret version number.
+	// SecretVersion New internal vault version number.
 	SecretVersion int64 `json:"secret_version"`
 
-	// SigningSecret Base64-encoded 32-byte signing key. Store it immediately — this is the only time it is returned.
+	// SigningSecret One-time `whsec_` raw-URL-base64 signing key. Store it immediately — this is the only time it is returned.
 	SigningSecret string `json:"signing_secret"`
 }
 
@@ -10614,13 +10650,10 @@ type Webhook struct {
 	// Posture Employee-facing effective ownership and audience posture for the current caller.
 	Posture ResourcePosture `json:"posture"`
 
-	// SecretRef Org secret reference that stores this webhook's signing key.
-	SecretRef *string `json:"secret_ref,omitempty"`
-
-	// SecretVersion Version of `secret_ref` created by this response. Only populated on create and rotate responses.
+	// SecretVersion Internal vault version created by this response. Only populated on create and rotate responses.
 	SecretVersion *int64 `json:"secret_version,omitempty"`
 
-	// SigningSecret Base64-encoded 32-byte HMAC-SHA256 signing key. Only populated on create and rotate responses; absent on all other reads. Store this value securely on first receipt — it cannot be retrieved again.
+	// SigningSecret One-time `whsec_` plus raw-URL-base64 encoded 32-byte HMAC-SHA256 signing key. Only populated on create and rotate responses; absent on all other reads. Store this value securely on first receipt — it cannot be retrieved again.
 	SigningSecret *string `json:"signing_secret,omitempty"`
 
 	// Tags Key/value tags for organizing and filtering resources. Up to 8 per resource; keys 1–128 characters, values up to 256. Keys prefixed `mobius:` are system-managed and cannot be set by callers.

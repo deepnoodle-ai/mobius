@@ -3,6 +3,7 @@
 from .action import action
 from .action_response import ActionResponseEnvelope, MOBIUS_ACTION_CONTENT_TYPE
 from ._api.models import (
+    Action,
     ActionCatalogEntry,
     ActionInvocationEntry,
     ActionInvocationListResponse,
@@ -22,6 +23,7 @@ from ._api.models import (
     BlueprintBindingListResponse,
     BlueprintDeleteResult,
     CreateAgentRequest,
+    CreateActionRequest,
     CreatePrincipalRequest,
     CreateRoleAssignmentRequest,
     CreateRoleRequest,
@@ -41,6 +43,7 @@ from ._api.models import (
     RoleAssignment,
     RoleAssignmentListResponse,
     RoleListResponse,
+    RotateSecretResult,
     RuntimeContextItem,
     TurnOutputSpec,
     UpdatePrincipalRequest,
@@ -100,7 +103,6 @@ from .transcript import (
 )
 from .signing import (
     MOBIUS_DELIVERY_ID_HEADER,
-    MOBIUS_SECRET_REF_HEADER,
     MOBIUS_SECRET_VERSION_HEADER,
     MOBIUS_SIGNATURE_HEADER,
     MOBIUS_SIGNATURE_VERSION_HEADER,
@@ -121,6 +123,7 @@ from .signing import (
     parse_action_invocation,
     parse_action_invocation_v1,
     parse_interaction_callback,
+    parse_signing_secret,
     parse_webhook_delivery,
     read_delivery_meta,
     sign_delivery,
@@ -146,6 +149,7 @@ from .worker import (
 )
 
 __all__ = [
+    "Action",
     "ActionCatalogEntry",
     "ActionContext",
     "ActionInvocationEntry",
@@ -173,6 +177,7 @@ __all__ = [
     "BlueprintBindingListResponse",
     "BlueprintDeleteResult",
     "CreateAgentRequest",
+    "CreateActionRequest",
     "CreatePrincipalRequest",
     "CreateRoleAssignmentRequest",
     "CreateRoleRequest",
@@ -225,6 +230,7 @@ __all__ = [
     "RoleAssignment",
     "RoleAssignmentListResponse",
     "RoleListResponse",
+    "RotateSecretResult",
     "SessionStreamEvent",
     "SessionTranscript",
     "StartRunOptions",
@@ -257,7 +263,6 @@ __all__ = [
     "MalformedActionInvocationError",
     "MOBIUS_ACTION_CONTENT_TYPE",
     "MOBIUS_DELIVERY_ID_HEADER",
-    "MOBIUS_SECRET_REF_HEADER",
     "MOBIUS_SECRET_VERSION_HEADER",
     "MOBIUS_SIGNATURE_HEADER",
     "MOBIUS_SIGNATURE_VERSION_HEADER",
@@ -267,6 +272,7 @@ __all__ = [
     "VerifiedActionInvocationV1",
     "SyntheticWebhookDelivery",
     "VerifiedDelivery",
+    "parse_signing_secret",
     "build_synthetic_webhook_payload",
     "deliver_synthetic_webhook",
     "is_terminal_run_status",
