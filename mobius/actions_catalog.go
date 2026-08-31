@@ -31,8 +31,6 @@ func (c *Client) ListActionCatalog(ctx context.Context) ([]api.ActionCatalogEntr
 // ListActionInvocationsOptions filters and paginates the org's action
 // invocation audit records. Zero-valued fields are omitted from the query.
 type ListActionInvocationsOptions struct {
-	// RunID filters to invocations from a specific loop run.
-	RunID string
 	// JobID filters to invocations from a specific job.
 	JobID string
 	// EnvironmentID filters to invocations executed in a specific environment.
@@ -58,16 +56,13 @@ type ListActionInvocationsOptions struct {
 }
 
 // ListActionInvocations lists recent action invocation audit records from
-// loops, agents, direct invocations, and job-backed execution. Each
+// agent tool calls, direct invocations, and job-backed execution. Each
 // [api.ActionInvocationEntry] carries definition provenance (ActionId,
 // DefinitionScope) and, for signed HTTP deliveries, the delivery identity
 // (DeliveryId, CorrelationId, SecretVersion).
 func (c *Client) ListActionInvocations(ctx context.Context, opts *ListActionInvocationsOptions) (*api.ActionInvocationListResponse, error) {
 	params := &api.ListActionInvocationsParams{}
 	if opts != nil {
-		if opts.RunID != "" {
-			params.RunId = &opts.RunID
-		}
 		if opts.JobID != "" {
 			params.JobId = &opts.JobID
 		}

@@ -39,7 +39,7 @@ export interface paths {
         put?: never;
         /**
          * Create API key
-         * @description Creates an API key for the active organization. Pass `principal_id` to bind the key to an existing machine principal — it authenticates as that principal and inherits its role assignments (optionally capped by `scope_role_id`). Omit `principal_id` to mint a key that acts directly with the chosen system `role` (defaults to `Admin`) instead of any specific principal's grants. The raw key value is returned in `key` and is never retrievable again after this response.
+         * @description Creates an API key for the active organization. Pass `principal_id` to bind the key to an existing machine principal — it authenticates as that principal and inherits its role assignments (optionally capped by `scope_role_id`). Omit `principal_id` to use the permanent organization principal with the chosen system `role` (defaults to `Admin`) as a mandatory key scope. The raw key value is returned in `key` and is never retrievable again after this response.
          */
         post: operations["createAPIKey"];
         delete?: never;
@@ -104,7 +104,7 @@ export interface paths {
         post?: never;
         /**
          * Delete action
-         * @description Deletes an org-owned custom action definition. Runnable loop specs that still reference the action block deletion with `409 Conflict` until the reference is removed.
+         * @description Deletes an org-owned custom action definition. An action retained by a protected blueprint blocks deletion with `409 Conflict` until the protection is lifted.
          */
         delete: operations["deleteAction"];
         options?: never;
@@ -145,7 +145,7 @@ export interface paths {
         };
         /**
          * List invocations
-         * @description Lists recent action invocation audit records from loops, agents, direct invocations, and job-backed execution.
+         * @description Lists recent action invocation audit records from agents, direct invocations, and job-backed execution.
          */
         get: operations["listActionInvocations"];
         put?: never;
@@ -167,7 +167,7 @@ export interface paths {
         put?: never;
         /**
          * Invoke action
-         * @description Invokes a catalog action through the same job-backed execution surface used by loops. HTTP and managed platform actions are dispatched to Mobius server workers; worker-backed custom actions are dispatched to compatible customer workers.
+         * @description Invokes a catalog action through the same job-backed execution surface an agent's tool call uses. HTTP and managed platform actions are dispatched to Mobius server workers; worker-backed custom actions are dispatched to compatible customer workers.
          */
         post: operations["invokeAction"];
         delete?: never;
@@ -265,7 +265,7 @@ export interface paths {
         };
         /**
          * List worker models
-         * @description Returns local LLM models currently advertised by online org workers. Each item includes the exact `model_route` object to assign to an agent or loop step. Matching is exact on `provider` and `model`; queues are not part of the standard local LLM path.
+         * @description Returns local LLM models currently advertised by online org workers. Each item includes the exact `model_route` object to assign to an agent. Matching is exact on `provider` and `model`; queues are not part of the standard local LLM path.
          */
         get: operations["listCatalogWorkerModels"];
         put?: never;
@@ -274,58 +274,6 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
-        trace?: never;
-    };
-    "/v1/environments": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List environments
-         * @description Returns org environments visible to the caller, newest-first. Filters let clients narrow by lifecycle status, run, and recently destroyed tombstones.
-         */
-        get: operations["listEnvironments"];
-        put?: never;
-        /**
-         * Create environment
-         * @description Creates a durable execution environment record and provisions it with the selected provider. The server resolves scope and ownership before enforcing uniqueness for the environment name.
-         */
-        post: operations["createEnvironment"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/environments/{environment_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get environment
-         * @description Returns the current environment record, including provider status, lease metadata, ownership, binding, and retention settings.
-         */
-        get: operations["getEnvironment"];
-        put?: never;
-        post?: never;
-        /**
-         * Destroy environment
-         * @description Requests provider teardown for the environment and records the destroyed state in Mobius. The response includes the final environment snapshot after the destroy request is accepted.
-         */
-        delete: operations["destroyEnvironment"];
-        options?: never;
-        head?: never;
-        /**
-         * Update environment
-         * @description Only owner, visibility, and tags are mutable from the public API.
-         */
-        patch: operations["updateEnvironment"];
         trace?: never;
     };
     "/v1/workers/socket": {
@@ -340,120 +288,6 @@ export interface paths {
          * @description Upgrades to the worker WebSocket protocol. Workers authenticate with normal org credentials, send `worker.register`, then exchange typed JSON frames for claim, heartbeat, report, cancellation, and generation streaming.
          */
         get: operations["openWorkerSocket"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/webhooks": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List webhooks
-         * @description Returns all outgoing webhook subscriptions for the org.
-         */
-        get: operations["listWebhooks"];
-        put?: never;
-        /**
-         * Create webhook
-         * @description Creates a new outgoing webhook subscription. Webhook names must be unique within the org. Returns 409 if the name already exists.
-         *
-         *     A signing key is generated automatically and returned in the response; this is the only time the raw key is exposed. Rotate it with `POST /webhooks/{resource_id}/secret/rotate` if compromised.
-         */
-        post: operations["createWebhook"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/webhooks/{resource_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get webhook
-         * @description Returns one outgoing webhook subscription and its event filters. The raw signing key is never returned after creation or rotation.
-         */
-        get: operations["getWebhook"];
-        put?: never;
-        post?: never;
-        /**
-         * Delete webhook
-         * @description Deletes the webhook and stops future deliveries for its subscribed events.
-         */
-        delete: operations["deleteWebhook"];
-        options?: never;
-        head?: never;
-        /**
-         * Update webhook
-         * @description Updates the webhook name, URL, event subscriptions, enabled state, or tags. Signing key rotation is handled by the dedicated rotate endpoint.
-         */
-        patch: operations["updateWebhook"];
-        trace?: never;
-    };
-    "/v1/webhooks/{resource_id}/secret/rotate": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Rotate webhook signing secret
-         * @description Generates a new HMAC-SHA256 signing key version for the webhook. Store the returned key immediately; it cannot be retrieved again.
-         */
-        post: operations["rotateWebhookSecret"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/webhooks/{resource_id}/ping": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Test webhook URL
-         * @description Sends a signed test POST to the saved webhook URL or a request-body override URL. Use this before saving a new endpoint; the payload has `type: "ping"` and the response reports delivery status and latency.
-         */
-        post: operations["pingWebhook"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/webhooks/{resource_id}/deliveries": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List webhook deliveries
-         * @description Lists the delivery history for a webhook, newest first. Each entry records the event type, current status, attempt count, and any last error message. Deliveries are retried up to 10 times (5xx, 408, 429 are retryable; other 4xx are not). A delivery transitions to `failed` only after exhausting all retry attempts.
-         */
-        get: operations["listWebhookDeliveries"];
         put?: never;
         post?: never;
         delete?: never;
@@ -637,7 +471,7 @@ export interface paths {
         put?: never;
         /**
          * Create interaction
-         * @description Creates a standalone or run-backed interaction. Run-backed interactions record an `interaction.responded` event when completed; omit `run_id` and `signal_name` for interactions with no loop-run association.
+         * @description Creates an interaction. `consumer` names what is waiting on its resolution; omit it for a standalone request that records the response and nothing more.
          */
         post: operations["createInteraction"];
         delete?: never;
@@ -655,14 +489,14 @@ export interface paths {
         };
         /**
          * Get interaction
-         * @description Returns one interaction with target, response, and completion metadata. Run-backed interactions include the run and signal identifiers used to resume loop execution.
+         * @description Returns one interaction with target, response, and completion metadata.
          */
         get: operations["getInteraction"];
         put?: never;
         post?: never;
         /**
          * Delete interaction
-         * @description Deletes an interaction so it disappears from inbox and org listings. The row is retained for audit history. Only terminal interactions (`completed`, `cancelled`, `expired`) may be deleted; pending or in-review interactions must be cancelled first so any waiting loop run can route to a fallback.
+         * @description Deletes an interaction so it disappears from inbox and org listings. The row is retained for audit history. Only terminal interactions (`completed`, `cancelled`, `expired`) may be deleted; pending or in-review interactions must be cancelled first so anything waiting on them can route to a fallback.
          */
         delete: operations["deleteInteraction"];
         options?: never;
@@ -727,7 +561,7 @@ export interface paths {
         put?: never;
         /**
          * Cancel open interaction
-         * @description Cancels an open interaction — `pending` or `in_review` — recording who cancelled and an optional reason. Work awaiting acceptance is cancellable too: a requester who no longer needs the result should not have to accept it first. Run-backed interactions resume the waiting loop step with a `{status: cancelled, reason}` signal payload so loops can route to a fallback. Only humans may cancel by default — agents must request cancellation through an interaction.
+         * @description Cancels an open interaction — `pending` or `in_review` — recording who cancelled and an optional reason. Work awaiting acceptance is cancellable too: a requester who no longer needs the result should not have to accept it first. Whatever was waiting on the interaction is told it was cancelled so it can route to a fallback. Only humans may cancel by default — agents must request cancellation through an interaction.
          */
         post: operations["cancelInteraction"];
         delete?: never;
@@ -1395,7 +1229,7 @@ export interface paths {
          * Cancel a session turn
          * @description Idempotently cancels one dispatcher-owned agent turn in the session. The first request that wins marks the turn terminal, retires its pending waits, interactions, nudges, and jobs, and emits `turn.cancelled` once. Later requests return the current terminal row without another lifecycle transition. Cancellation is cooperative: already-performed model, tool, and external effects are not rolled back. Committed transcript rows are retained, while live-only uncommitted preview content is discarded.
          *
-         *     A cancelled turn cannot be resumed. Reusing its invocation idempotency key returns the same cancelled turn; retrying the task requires a new invocation and may repeat external effects. Stream cursors resume observation only. A live loop-owned turn returns `409 turn_owned_by_run`; cancel its run instead. Requires the `mobius.agent.invoke` permission (or the agent's own backing principal).
+         *     A cancelled turn cannot be resumed. Reusing its invocation idempotency key returns the same cancelled turn; retrying the task requires a new invocation and may repeat external effects. Stream cursors resume observation only. Requires the `mobius.agent.invoke` permission (or the agent's own backing principal).
          */
         post: operations["cancelTurn"];
         delete?: never;
@@ -1482,8 +1316,6 @@ export interface paths {
         /**
          * Cancel the session's active turn
          * @description Idempotently cancels active dispatcher-owned turns in the session and retires their pending waits, interactions, nudges, and jobs. Each turn's terminal `turn.cancelled` transition is emitted once. Cancellation is cooperative and does not roll back effects that already happened. Committed transcript rows remain; live-only preview content is discarded. Cancelled turns cannot be resumed, and stream cursors resume observation only. Returns the updated session. Requires the `mobius.agent.invoke` permission (or the agent's own backing principal).
-         *
-         *     By default loop-owned turns are left to the loop engine and skipped. Set `force=true` to also cancel loop-owned turns — the recovery path for a session wedged on a turn whose run is dead or stuck. Forcing may leave that run inconsistent, so use it only to unlock an otherwise stuck session, not as a routine stop.
          */
         post: operations["cancelSession"];
         delete?: never;
@@ -1512,7 +1344,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/loops": {
+    "/v1/routines": {
         parameters: {
             query?: never;
             header?: never;
@@ -1520,23 +1352,23 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List loops
-         * @description Returns loops in the org, newest-first. Supports filtering by lifecycle status, associated agent, and cursor-based pagination. Deleted loops are omitted from normal list responses.
+         * List reachable routines
+         * @description Returns routines whose origin conversations are reachable by the caller.
          */
-        get: operations["listLoops"];
+        get: operations["listRoutines"];
         put?: never;
         /**
-         * Create loop
-         * @description Creates a new loop, addressed thereafter by its generated `id`. If authoring fields such as `steps` are supplied, they become the runnable definition immediately and the loop returns `active`.
+         * Create a routine owned by the authenticated human
+         * @description Creates scheduled work in an existing reachable conversation for the authenticated human owner.
          */
-        post: operations["createLoop"];
+        post: operations["createRoutine"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/v1/loops/{resource_id}": {
+    "/v1/routines/{routine_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -1544,27 +1376,27 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get loop
-         * @description Returns one loop by ID, including its current authored definition.
+         * Get a routine
+         * @description Returns one reachable routine and its current schedule and lifecycle state.
          */
-        get: operations["getLoop"];
+        get: operations["getRoutine"];
         put?: never;
         post?: never;
         /**
-         * Delete loop
-         * @description Deletes the loop from active use. Existing runs remain queryable, but new runs cannot be started.
+         * Delete a routine while retaining its occurrence ledger
+         * @description Cancels future occurrences while preserving the routine and its occurrence history.
          */
-        delete: operations["deleteLoop"];
+        delete: operations["deleteRoutine"];
         options?: never;
         head?: never;
         /**
-         * Update loop
-         * @description Updates mutable fields on the loop. If authoring fields such as `steps` are supplied, they replace the current runnable definition immediately. The id and org remain immutable.
+         * Update mutable routine fields
+         * @description Updates mutable instructions, display, schedule, or spend ceilings without changing execution identity.
          */
-        patch: operations["updateLoop"];
+        patch: operations["updateRoutine"];
         trace?: never;
     };
-    "/v1/triggers/http/{http_handle}": {
+    "/v1/routines/{routine_id}/pause": {
         parameters: {
             query?: never;
             header?: never;
@@ -1574,17 +1406,17 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Deliver trigger
-         * @description Public endpoint for delivering an HTTP-trigger event. It resolves `http_handle`, commits a durable source-event row, and starts the run asynchronously. Reusing the same idempotency key returns the same `source_event_id`.
+         * Pause a routine
+         * @description Stops future occurrences until the routine is explicitly resumed.
          */
-        post: operations["deliverHTTPTrigger"];
+        post: operations["pauseRoutine"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/v1/loops/{resource_id}/runs": {
+    "/v1/routines/{routine_id}/resume": {
         parameters: {
             query?: never;
             header?: never;
@@ -1594,17 +1426,17 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Start run
-         * @description Resolves `{resource_id}` to the current runnable loop definition and starts a run. Returns the created run when accepted, or the existing run when the request carries an `idempotency_key` that matches a still-active prior run. Reusing the key after the prior run is terminal returns `409 Conflict`.
+         * Resume a routine
+         * @description Reactivates a paused routine and calculates its next future occurrence.
          */
-        post: operations["startRun"];
+        post: operations["resumeRoutine"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/v1/runs": {
+    "/v1/routines/{routine_id}/occurrences": {
         parameters: {
             query?: never;
             header?: never;
@@ -1612,30 +1444,10 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List loop runs
-         * @description Returns loop runs for the org, newest-first. Supports filters by status, loop_id, and source_event_id, plus cursor-based pagination.
+         * List a routine's occurrence ledger
+         * @description Returns durable occurrence outcomes and transcript links for a reachable routine.
          */
-        get: operations["listRuns"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/runs/{resource_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get run
-         * @description Returns one loop run by ID with its current status, event, config, result, and source attribution.
-         */
-        get: operations["getRun"];
+        get: operations["listRoutineOccurrences"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1644,7 +1456,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/runs/{resource_id}/cancel": {
+    "/v1/routine-proposals/{proposal_id}/approve": {
         parameters: {
             query?: never;
             header?: never;
@@ -1654,17 +1466,17 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Cancel run
-         * @description Marks the run cancelled and closes any open waits. Safe to call on an already-terminal run (returns the current state, no error).
+         * Approve a pending proposal as its proposed human owner
+         * @description Atomically materializes a pending proposal as a routine after human approval.
          */
-        post: operations["cancelRun"];
+        post: operations["approveRoutineProposal"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/v1/runs/{resource_id}/resume": {
+    "/v1/routine-proposals/{proposal_id}/dismiss": {
         parameters: {
             query?: never;
             header?: never;
@@ -1674,92 +1486,10 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Resume failed run
-         * @description Resumes a failed run in place from the last durable checkpoint. The run must still reference the current runnable loop version. Guardrail failures require a higher limit in the request body before the run can continue.
+         * Dismiss a pending proposal
+         * @description Marks a pending routine proposal dismissed without creating a routine.
          */
-        post: operations["resumeRun"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/runs/{resource_id}/retry": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Retry failed run
-         * @description Resumes a failed run in place from the last durable checkpoint. This is equivalent to resume, but records the operator intent as a retry in the run event log.
-         */
-        post: operations["retryRun"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/runs/{resource_id}/steps": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List run steps
-         * @description Returns the durable step records for one run, ordered by step index. Each row carries the step's kind, status, attempt count, inputs, result, and any error metadata recorded by the engine.
-         */
-        get: operations["listRunSteps"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/runs/{resource_id}/events": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List or stream run events
-         * @description Returns the durable event log for one run, ordered by sequence number. Use `after_sequence` to poll only events recorded after the last sequence the client has observed.
-         *
-         *     Content-negotiated: with `Accept: text/event-stream` this opens a long-lived Server-Sent Events stream instead of returning a JSON page: durable events are replayed from `after_sequence` and then tailed live, and the stream closes after the run is terminal and the server has drained all durable events committed before or with that terminal state. Reconnect with `?after_sequence=N` (or the `Last-Event-ID` header) to resume.
-         */
-        get: operations["listRunEvents"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/runs/{resource_id}/signals": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Signal run
-         * @description Resumes a run that is suspended on a `wait_event` step matching the provided `step_key`. The `result` payload becomes the step's output, available to downstream steps at `steps.<id>.output` or `steps[0].output` in `${{ ... }}` templates.
-         */
-        post: operations["signalRun"];
+        post: operations["dismissRoutineProposal"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1927,7 +1657,7 @@ export interface paths {
         };
         /**
          * List machine principals
-         * @description Returns org machine principals (`service`, `agent`, `system`) used by workers, agents, and loop. Only active principals are returned by default; pass `include_disabled=true` to also include disabled ones (e.g. for an admin audit). Filter by `kind` to narrow to a single kind.
+         * @description Returns org machine principals (`service`, `agent`, `system`) used by workers, agents, and integrations. Only active principals are returned by default; pass `include_disabled=true` to also include disabled ones (e.g. for an admin audit). Filter by `kind` to narrow to a single kind.
          */
         get: operations["listPrincipals"];
         put?: never;
@@ -2179,7 +1909,7 @@ export interface paths {
         };
         /**
          * List artifacts
-         * @description Returns ready artifacts in the org, ordered (created_at desc, id desc). Optional filters narrow by run, step, or mime prefix. Deleted or unfinished artifacts are excluded from API reads.
+         * @description Returns ready artifacts in the org, ordered (created_at desc, id desc). Optional filters narrow by mime prefix. Deleted or unfinished artifacts are excluded from API reads.
          */
         get: operations["listArtifacts"];
         put?: never;
@@ -2288,7 +2018,7 @@ export interface components {
         ErrorResponse: {
             /** @description Error detail. */
             error: {
-                /** @description Stable, machine-readable error code in lower_snake_case. The cross-cutting codes clients can rely on across endpoints are: `bad_request` (malformed input / failed validation), `unauthorized`, `permission_denied`, `forbidden`, `not_found`, `conflict` / `already_exists`, `rate_limit_exceeded`, and `service_unavailable`. Direct session invocation conflicts use `session_turn_active` with the blocking `turn_id` and `status` in `details`. Session-key lookups without an agent scope use `session_key_scope_required`; supplying both agent ID and name uses `session_agent_ref_conflict`. API-key creation for a principal with no role assignments uses `principal_has_no_roles`. Authenticated callers missing a permission receive `permission_denied` with the required permission in `details`. Endpoint-specific codes (e.g. `loop_paused`, `invalid_signature`) extend this set; an unrecognized code should be handled by its HTTP status family. */
+                /** @description Stable, machine-readable error code in lower_snake_case. The cross-cutting codes clients can rely on across endpoints are: `bad_request` (malformed input / failed validation), `unauthorized`, `permission_denied`, `forbidden`, `not_found`, `conflict` / `already_exists`, `rate_limit_exceeded`, and `service_unavailable`. Direct session invocation conflicts use `session_turn_active` with the blocking `turn_id` and `status` in `details`. Session-key lookups without an agent scope use `session_key_scope_required`; supplying both agent ID and name uses `session_agent_ref_conflict`. API-key creation for a principal with no role assignments uses `principal_has_no_roles`. Authenticated callers missing a permission receive `permission_denied` with the required permission in `details`. Endpoint-specific codes (e.g. `invalid_signature`) extend this set; an unrecognized code should be handled by its HTTP status family. */
                 code: string;
                 /** @description Human-readable error message */
                 message: string;
@@ -2298,15 +2028,10 @@ export interface components {
                 };
             };
         };
-        /** @description Event-type-specific payload for less common event types. */
-        GenericEventPayload: {
-            [key: string]: unknown;
-        };
-        /** @description Live-only token preview frame that can appear on run and session SSE streams. It is not persisted, does not carry an SSE `id:`, and cannot be replayed with `after_sequence` or `Last-Event-ID`. */
+        /** @description Live-only token preview frame that can appear on session SSE streams. It is not persisted, does not carry an SSE `id:`, and cannot be replayed with `after_sequence` or `Last-Event-ID`. */
         GenerationDeltaFrame: {
             /** @enum {string} */
             event_type: "generation.delta";
-            run_id?: string | null;
             session_id?: string | null;
             turn_id?: string | null;
             job_id?: string | null;
@@ -2404,6 +2129,8 @@ export interface components {
             container: components["schemas"]["ResourceContainer"];
             posture: components["schemas"]["ResourcePosture"];
         };
+        /** @enum {string} */
+        RoutineStatus: "active" | "paused" | "completed" | "cancelled";
         /**
          * @description Administrative status. Inactive agents cannot claim new jobs. Deleted agents are excluded from normal reads.
          * @enum {string}
@@ -2414,7 +2141,7 @@ export interface components {
          * @enum {string}
          */
         AgentModelRouteMode: "managed" | "worker";
-        /** @description Default model route used by built-in messaging and by loop agent steps that do not override the route. */
+        /** @description Default model route used by built-in messaging and by any turn that does not override the route. */
         AgentModelRoute: {
             /** @description Where this model call should run. */
             mode: components["schemas"]["AgentModelRouteMode"];
@@ -2497,7 +2224,7 @@ export interface components {
             max_bytes?: number;
         };
         /**
-         * @description Reasoning-effort level for a turn, lowest (`low`) to highest (`max`). Higher effort spends more tokens on reasoning, improving quality on hard tasks at the cost of latency and credits. Levels above what the resolved model supports are clamped down. Set on an agent it is the default; set on a session or loop step it overrides the agent default. `inherit` (or omitting the field) defers to the layer below — the agent default for a session/step, or the provider's own default when nothing sets a level.
+         * @description Reasoning-effort level for a turn, lowest (`low`) to highest (`max`). Higher effort spends more tokens on reasoning, improving quality on hard tasks at the cost of latency and credits. Levels above what the resolved model supports are clamped down. Set on an agent it is the default; set on a session it overrides the agent default. `inherit` (or omitting the field) defers to the layer below — the agent default for a session, or the provider's own default when nothing sets a level.
          * @enum {string}
          */
         ThinkingEffort: "inherit" | "low" | "medium" | "high" | "xhigh" | "max";
@@ -2513,7 +2240,7 @@ export interface components {
          */
         AgentVisibility: "organization" | "restricted" | "private";
         /**
-         * @description AI actor identity. An agent IS a principal (its permissions are role grants on that principal); agents are useful when loops need a named actor with instructions, configuration, and session presence.
+         * @description AI actor identity. An agent IS a principal (its permissions are role grants on that principal) with instructions, configuration, and session presence.
          * @example {
          *       "id": "agent_5n8p2q7m4x9r3v6t",
          *       "principal_id": "agent_5n8p2q7m4x9r3v6t",
@@ -2552,7 +2279,7 @@ export interface components {
             model?: string;
             /** @description Default route for model calls made by this agent. */
             model_route?: components["schemas"]["AgentModelRoute"];
-            /** @description Default tool presentation used by loop agent steps and built-in channel-message replies for this agent. */
+            /** @description Default tool presentation used by this agent's turns and built-in channel-message replies. */
             tool_presentation?: components["schemas"]["AgentToolPresentation"];
             /** @description The agent's tool grant: the action selectors it may call, expanded against the live action catalog at each build. */
             tool_selectors?: components["schemas"]["ActionSelector"][];
@@ -2562,7 +2289,7 @@ export interface components {
             system_prompt?: string;
             /**
              * Format: int64
-             * @description Execution timeout, in seconds, for a single turn of this agent. `0` (or omitted) uses the platform default (600s / 10 minutes). A loop step's own timeout overrides this for that step.
+             * @description Execution timeout, in seconds, for a single turn of this agent. `0` (or omitted) uses the platform default (600s / 10 minutes). A request's `operation.timeout_seconds` overrides this for that turn.
              */
             timeout_seconds?: number;
             /** @description Default session-compaction policy. New sessions opened against this agent inherit it (below server defaults, above explicit per-session overrides). Absent when the agent has no default. */
@@ -2571,7 +2298,7 @@ export interface components {
             memory_enabled: boolean;
             /** @description Automatic memory delivery policy. Absent means the bounded index default. */
             memory_context?: components["schemas"]["MemoryContextPolicy"];
-            /** @description Default reasoning-effort level. New sessions and loop agent steps inherit it, above the provider default and below explicit per-session/per-step overrides. Absent when the agent has no default. */
+            /** @description Default reasoning-effort level. New sessions inherit it, above the provider default and below an explicit per-session override. Absent when the agent has no default. */
             thinking_effort?: components["schemas"]["ThinkingEffort"];
             /** @description Current agent status: `active` or `inactive`. */
             status: components["schemas"]["AgentStatus"];
@@ -2612,15 +2339,15 @@ export interface components {
          */
         SessionStatus: "active" | "archived" | "deleted";
         /**
-         * @description Surface that created the session: `manual`, `api`, `loop`, or `interaction`.
+         * @description Surface that created the session: `manual`, `api`, or `interaction`.
          * @enum {string}
          */
-        SessionOrigin: "manual" | "api" | "loop" | "interaction";
+        SessionOrigin: "manual" | "api" | "interaction";
         /**
-         * @description Boundary used to resolve named sessions: `agent` or `loop`.
+         * @description Boundary used to resolve named sessions.
          * @enum {string}
          */
-        SessionScope: "agent" | "loop";
+        SessionScope: "agent";
         /**
          * @description Controls how long a session is retained. Applied only when the session is first created (like `compaction_policy`); ignored when an existing session is resolved. `standard` is the default and keeps the session forever. `bounded` expires the session — pruning its transcript from every read path — once it has been idle past `ttl_seconds`. Kept for audit after expiry: a tombstone session row with its token totals, and the turn rows with their status, error, usage, and timings.
          *
@@ -2747,6 +2474,13 @@ export interface components {
             cache_read_input_total: number;
             /** @description Lifetime prompt-cache-write (cache creation) input-token total for this session. */
             cache_creation_input_total: number;
+            /**
+             * Format: date-time
+             * @description Earliest next fire among the caller's active routines in this conversation.
+             */
+            next_routine_fire_at?: string | null;
+            /** @description True when the routine owner has not opened this conversation since its latest admitted scheduled result settled. */
+            unread_scheduled_result?: boolean;
             /** @description Optimistic-concurrency version. Increments on every mutation. */
             version: number;
             /**
@@ -2791,377 +2525,7 @@ export interface components {
          */
         SessionMessageEntryType: "message" | "compaction";
         /**
-         * @description Step type: `agent`, `action`, `sleep`, `wait_for_event`, `interaction`, `loop`, `check`, or system-materialized `cleanup`. `cleanup` appears in run step listings for terminal cleanup work but cannot be authored in a `LoopSpec`.
-         * @enum {string}
-         */
-        LoopRunStepKind: "agent" | "action" | "sleep" | "wait_for_event" | "interaction" | "loop" | "check" | "cleanup";
-        /**
-         * @description Step lifecycle state: `pending`, `running`, `suspended`, `completed`, `failed`, `skipped`, or `cancelled`.
-         * @enum {string}
-         */
-        LoopRunStepStatus: "pending" | "running" | "suspended" | "completed" | "failed" | "skipped" | "cancelled";
-        /**
-         * @description One execution step inside a loop run.
-         * @example {
-         *       "id": "run_8q5m2x9v7p3n4r6t:review",
-         *       "run_id": "run_8q5m2x9v7p3n4r6t",
-         *       "step_key": "review",
-         *       "step_name": "Review pull requests",
-         *       "kind": "agent",
-         *       "status": "running",
-         *       "seq": 0,
-         *       "attempt": 1,
-         *       "inputs": {
-         *         "repository": "deepnoodle-ai/mobius-cloud"
-         *       },
-         *       "created_at": "2026-06-15T14:30:00Z",
-         *       "updated_at": "2026-06-15T14:31:00Z"
-         *     }
-         */
-        LoopRunStep: {
-            /** @description Stable step identifier. */
-            id: string;
-            /** @description Run this step belongs to. */
-            run_id: string;
-            /** @description Stable key for this step within its loop version. */
-            step_key: string;
-            /** @description Display name from the authored spec, when present. */
-            step_name?: string;
-            /** @description Step kind copied from the authored spec or system cleanup step. */
-            kind: components["schemas"]["LoopRunStepKind"];
-            /** @description Current lifecycle state of this run step. */
-            status: components["schemas"]["LoopRunStepStatus"];
-            /**
-             * Format: int64
-             * @description Zero-indexed ordinal of this step within its run.
-             */
-            seq: number;
-            /** @description Number of times this step has been attempted. */
-            attempt: number;
-            /** @description Resolved inputs passed into the step, after template rendering. */
-            inputs?: {
-                [key: string]: unknown;
-            };
-            /** @description Authored step parameters, before template rendering. */
-            parameters?: {
-                [key: string]: unknown;
-            };
-            /** @description Step output (shape varies by kind); absent until completion. Downstream step templates reach this value at `${{ steps.<id>.output }}` or `${{ steps[0].output }}`. */
-            result?: unknown;
-            /** @description Worker job that executed this step, when applicable. */
-            job_id?: string | null;
-            /** @description Wait record this step is suspended on, when applicable. */
-            wait_id?: string | null;
-            /** @description Session the agent ran in, for `agent`-kind steps. Present once the step has started a turn; links the step to its conversation so the UI can open the transcript with this step's messages highlighted. */
-            session_id?: string;
-            /** @description Agent that executed this step, for `agent`-kind steps. */
-            agent_id?: string;
-            /** @description Most recent AgentTurn this step ran (its latest attempt), for `agent`-kind steps. Resolves to the step's messages within the session via their `turn_id`. */
-            agent_turn_id?: string;
-            /** @description Machine-readable error code populated on failure. */
-            error_type?: string;
-            /** @description Human-readable error message populated on failure. */
-            error_message?: string;
-            /**
-             * @description Check outcome for `check`-kind steps: `pass` or `fail`; absent on every other kind. A failed check routed `on_fail: continue` completes the step with `verdict: fail` — status and verdict are separate axes (the step did its job: it checked).
-             * @enum {string}
-             */
-            verdict?: "pass" | "fail";
-            /** @description Verdict document for `check`-kind steps: `verdict`, `on_fail`, `checks` (per-assertion results — name, kind, pass, expr or judge reason, judge identity, evidence refs), `failed` (red assertion names), and `overridden_by` / `gate` records when an approval gate resolved the verdict. */
-            verdict_detail?: {
-                [key: string]: unknown;
-            };
-            /**
-             * Format: date-time
-             * @description Time the step entered `running`; null until the step starts.
-             */
-            started_at?: string | null;
-            /**
-             * Format: date-time
-             * @description Time the step reached a terminal status; null until the step completes.
-             */
-            completed_at?: string | null;
-            /**
-             * Format: date-time
-             * @description Record creation timestamp.
-             */
-            created_at: string;
-            /**
-             * Format: date-time
-             * @description Last update timestamp.
-             */
-            updated_at: string;
-        };
-        RunStartedPayload: {
-            loop_id?: string;
-            loop_version_id?: string;
-            source_event_id?: string;
-            trigger_id?: string;
-        } & {
-            [key: string]: unknown;
-        };
-        WaitPayload: {
-            step?: string;
-            /** @description Source event type or pattern this wait is listening for. */
-            event_type?: string;
-            /** @description Optional source identifier that scopes event matching. */
-            source_id?: string;
-            /** @description Optional matcher fields required on the source event. */
-            match?: {
-                [key: string]: unknown;
-            };
-            wait_id?: string;
-            wait_kind?: string;
-            /**
-             * Format: date-time
-             * @description Wall-clock expiry for the wait, when bounded.
-             */
-            expires_at?: string;
-            /** Format: date-time */
-            deadline?: string;
-            subject?: {
-                [key: string]: unknown;
-            };
-        } & {
-            [key: string]: unknown;
-        };
-        RunResumedPayload: {
-            step?: string;
-            reason?: string;
-            /** @enum {string} */
-            recovery_action?: "resume" | "retry";
-            attempt?: number;
-        } & {
-            [key: string]: unknown;
-        };
-        RunCompletedPayload: {
-            output?: {
-                [key: string]: unknown;
-            };
-        } & {
-            [key: string]: unknown;
-        };
-        RunFailedPayload: {
-            error?: string;
-            error_type?: string;
-            step?: string;
-        } & {
-            [key: string]: unknown;
-        };
-        RunCancelledPayload: {
-            reason?: string;
-        } & {
-            [key: string]: unknown;
-        };
-        StepStartedPayload: {
-            step?: string;
-            kind?: string;
-            agent_id?: string;
-        } & {
-            [key: string]: unknown;
-        };
-        StepCompletedPayload: {
-            step?: string;
-            output?: {
-                [key: string]: unknown;
-            };
-        } & {
-            [key: string]: unknown;
-        };
-        StepFailedPayload: {
-            step?: string;
-            error?: string;
-            error_type?: string;
-        } & {
-            [key: string]: unknown;
-        };
-        StepRetriedPayload: {
-            step?: string;
-            kind?: string;
-            attempt?: number;
-            max_attempts?: number;
-            /**
-             * @description Retry source. `step_policy` means the authored step retry policy was consumed, `transient` means Mobius retried a transient provider failure before spending step retry budget, and `run_recovery` means an operator resumed or retried a failed run in place.
-             * @enum {string}
-             */
-            retry_scope?: "step_policy" | "transient" | "run_recovery";
-            /**
-             * @description Operator intent for a `run_recovery` retry. Named consistently with `RunResumedPayload.recovery_action`.
-             * @enum {string}
-             */
-            recovery_action?: "resume" | "retry";
-            error_type?: string;
-            error?: string;
-        } & {
-            [key: string]: unknown;
-        };
-        StepResumedPayload: {
-            step?: string;
-            kind?: string;
-        } & {
-            [key: string]: unknown;
-        };
-        StepSkippedPayload: {
-            step?: string;
-            kind?: string;
-            reason?: string;
-        } & {
-            [key: string]: unknown;
-        };
-        ActionCalledPayload: {
-            action?: string;
-            step?: string;
-            parameters?: {
-                [key: string]: unknown;
-            };
-        } & {
-            [key: string]: unknown;
-        };
-        ActionCompletedPayload: {
-            action?: string;
-            step?: string;
-            result?: {
-                [key: string]: unknown;
-            };
-        } & {
-            [key: string]: unknown;
-        };
-        ActionFailedPayload: {
-            action?: string;
-            step?: string;
-            error?: string;
-            error_type?: string;
-        } & {
-            [key: string]: unknown;
-        };
-        ActionRetriedPayload: {
-            action?: string;
-            attempt?: number;
-            max_attempts?: number;
-        } & {
-            [key: string]: unknown;
-        };
-        ActionResultPayload: {
-            action?: string;
-            result?: {
-                [key: string]: unknown;
-            };
-        } & {
-            [key: string]: unknown;
-        };
-        CheckVerdictPayload: {
-            step?: string;
-            verdict?: string;
-            on_fail?: string;
-            failed?: string[];
-        } & {
-            [key: string]: unknown;
-        };
-        InteractionRespondedPayload: {
-            interaction_id?: string;
-            response?: {
-                [key: string]: unknown;
-            };
-            responder?: {
-                [key: string]: unknown;
-            };
-        } & {
-            [key: string]: unknown;
-        };
-        WaitResumedPayload: {
-            step?: string;
-            wait_id?: string;
-            payload?: {
-                [key: string]: unknown;
-            };
-        } & {
-            [key: string]: unknown;
-        };
-        WaitTimedOutPayload: {
-            step?: string;
-            wait_id?: string;
-            reason?: string;
-        } & {
-            [key: string]: unknown;
-        };
-        BudgetExceededPayload: {
-            step?: string;
-            credit_spent?: number;
-            credit_budget?: number;
-            percent_used?: number;
-        } & {
-            [key: string]: unknown;
-        };
-        ProgressStalledPayload: {
-            step?: string;
-            tool?: string;
-            duplicate_calls?: number;
-            limit?: number;
-        } & {
-            [key: string]: unknown;
-        };
-        LimitReachedPayload: {
-            step?: string;
-            limit_kind?: string;
-            used?: number;
-            limit?: number;
-        } & {
-            [key: string]: unknown;
-        };
-        ArtifactCreatedPayload: {
-            artifact_id?: string;
-            name?: string;
-            content_type?: string;
-            step?: string;
-        } & {
-            [key: string]: unknown;
-        };
-        /** @description Typed payloads for common durable run event types. The containing `LoopRunEvent.event_type` selects the payload shape; payload objects do not duplicate that discriminator because some payloads use fields such as `event_type` for their own lifecycle data (for example, the external matcher recorded by `wait.opened`). */
-        RunEventPayload: components["schemas"]["RunStartedPayload"] | components["schemas"]["WaitPayload"] | components["schemas"]["RunResumedPayload"] | components["schemas"]["RunCompletedPayload"] | components["schemas"]["RunFailedPayload"] | components["schemas"]["RunCancelledPayload"] | components["schemas"]["StepStartedPayload"] | components["schemas"]["StepCompletedPayload"] | components["schemas"]["StepFailedPayload"] | components["schemas"]["StepRetriedPayload"] | components["schemas"]["StepResumedPayload"] | components["schemas"]["StepSkippedPayload"] | components["schemas"]["ActionCalledPayload"] | components["schemas"]["ActionCompletedPayload"] | components["schemas"]["ActionFailedPayload"] | components["schemas"]["ActionRetriedPayload"] | components["schemas"]["ActionResultPayload"] | components["schemas"]["CheckVerdictPayload"] | components["schemas"]["InteractionRespondedPayload"] | components["schemas"]["WaitResumedPayload"] | components["schemas"]["WaitTimedOutPayload"] | components["schemas"]["BudgetExceededPayload"] | components["schemas"]["ProgressStalledPayload"] | components["schemas"]["LimitReachedPayload"] | components["schemas"]["ArtifactCreatedPayload"] | components["schemas"]["GenericEventPayload"];
-        /**
-         * @description One durable event emitted while a loop run progresses.
-         * @example {
-         *       "id": "run_8q5m2x9v7p3n4r6t:evt:000001",
-         *       "run_id": "run_8q5m2x9v7p3n4r6t",
-         *       "sequence": 1,
-         *       "event_type": "step.started",
-         *       "step_id": "run_8q5m2x9v7p3n4r6t:review",
-         *       "step_key": "review",
-         *       "payload": {
-         *         "agent_id": "agent_5n8p2q7m4x9r3v6t"
-         *       },
-         *       "created_at": "2026-06-15T14:30:10Z"
-         *     }
-         */
-        LoopRunEvent: {
-            /** @description Stable event identifier. */
-            id: string;
-            /** @description Run this event belongs to. */
-            run_id: string;
-            /**
-             * Format: int64
-             * @description Monotonic per-run sequence number used for ordering and resume.
-             */
-            sequence: number;
-            /**
-             * @description Event type from the run-stream taxonomy (e.g. `run.started`, `step.completed`, `wait.opened`, `action.called`, `action.completed`, `action.failed`, `artifact.created`, `limit.reached`).
-             *
-             *     Guardrail events: `run.budget_exceeded` fires when the budget halts the run at a checkpoint (payload: `credit_budget`, `credit_spent`, `percent_used`, plus the `step` it halted before). Metered spend is recorded in the billing ledger and denormalized onto the run's `credit_spent`; it is not represented as a timeline event.
-             */
-            event_type: string;
-            /** @description ID of the step this event belongs to, when applicable. */
-            step_id?: string | null;
-            /** @description Legacy alias for the loop step ID this event belongs to, when applicable. */
-            step_key?: string | null;
-            payload?: components["schemas"]["RunEventPayload"];
-            /**
-             * Format: date-time
-             * @description Server timestamp when the event was recorded.
-             */
-            created_at: string;
-        };
-        /**
-         * @description Stored API credential metadata for loop and service access. The raw secret is never returned here; use this object to list, audit, expire, or identify keys by prefix without exposing tokens.
+         * @description Stored API credential metadata for agent and service access. The raw secret is never returned here; use this object to list, audit, expire, or identify keys by prefix without exposing tokens.
          * @example {
          *       "id": "cred_1jz8q2m7xp9vn4kt",
          *       "name": "CI worker",
@@ -3290,7 +2654,7 @@ export interface components {
             has_more: boolean;
         };
         /**
-         * @description Request shape for creating an organization API key. Pass `principal_id` to bind the key to an existing machine principal — the key authenticates as that principal, and permissions are managed by assigning roles to the principal rather than to the key. Omit `principal_id` to mint a key that acts directly with the chosen system `role` instead.
+         * @description Request shape for creating an organization API key. Pass `principal_id` to bind the key to an existing machine principal — the key authenticates as that principal, and permissions are managed by assigning roles to the principal rather than to the key. Omit `principal_id` to bind the key to the permanent organization principal; the chosen system `role` is stored as the credential scope.
          * @example {
          *       "name": "CI worker",
          *       "principal_id": "svc_7q2v9x6m3n8p5r4t",
@@ -3302,7 +2666,7 @@ export interface components {
         CreateAPIKeyRequest: {
             /** @description Human-readable label, unique within the organization. */
             name: string;
-            /** @description Principal this key authenticates as. Omit to create a system-role key not bound to any principal. */
+            /** @description Principal this key authenticates as. Omit to use the permanent organization principal with the requested role as a mandatory scope. */
             principal_id?: string;
             /** @description Optional role whose permissions cap this key below its principal's full grants. Only applicable when `principal_id` is set. */
             scope_role_id?: string;
@@ -3312,7 +2676,7 @@ export interface components {
              */
             allow_unassigned_principal?: boolean;
             /**
-             * @description System role the key acts as when `principal_id` is omitted, applied org-wide. Defaults to `Admin`. `Owner` grants full control (including billing and org deletion); `Admin` covers org administration without billing; lower roles narrow to build/run, run-only, or read-only. Ignored when `principal_id` is set.
+             * @description Mandatory scope role when `principal_id` is omitted. The permanent organization principal holds Owner, and this credential scope can only narrow it. Defaults to `Admin`. `Owner` grants full control (including billing and org deletion); `Admin` covers org administration without billing; lower roles narrow to build/run, run-only, or read-only. Ignored when `principal_id` is set.
              * @default Admin
              * @enum {string}
              */
@@ -3351,7 +2715,7 @@ export interface components {
          */
         ActionEndpointKind: "http" | "worker";
         /**
-         * @description Outbound request-body contract for an HTTP action. `legacy` sends the unversioned `{run_id, step_key, parameters}` body. `signed_context_v1` sends a versioned envelope whose org, action, actor, and origin claims are derived by Mobius and covered by the existing HMAC signature. Worker-backed actions must use `legacy`.
+         * @description Outbound request-body contract for an HTTP action. `legacy` sends the unversioned `{step_key, parameters}` body. `signed_context_v1` sends a versioned envelope whose org, action, actor, and origin claims are derived by Mobius and covered by the existing HMAC signature. Worker-backed actions must use `legacy`.
          * @enum {string}
          */
         ActionInvocationFormat: "legacy" | "signed_context_v1";
@@ -3398,9 +2762,7 @@ export interface components {
         ActionInvocationOriginV1: {
             /** @enum {string} */
             kind: "agent_tool_call" | "loop_action_step" | "direct_action_invoke" | "server_internal";
-            run_id?: string | null;
             channel_exchange_id?: string | null;
-            loop_id?: string | null;
             step_key?: string | null;
             agent_turn_id?: string | null;
             session_id?: string | null;
@@ -3409,7 +2771,7 @@ export interface components {
             [key: string]: unknown;
         };
         /**
-         * @description Registers an org-owned custom action callable from loops and agents.
+         * @description Registers an org-owned custom action agents can call as a tool.
          * @example {
          *       "name": "review-pr",
          *       "title": "Review PR",
@@ -3450,7 +2812,7 @@ export interface components {
          *     }
          */
         CreateActionRequest: {
-            /** @description Identifier used in loop step definitions. Lowercase alphanumeric + hyphens, e.g. "send-email". Must be unique within the org. Cannot start with "mobius." (reserved prefix). */
+            /** @description Identifier agents and direct invocations call the action by. Lowercase alphanumeric + hyphens, e.g. "send-email". Must be unique within the org. Cannot start with "mobius." (reserved prefix). */
             name: string;
             /** @description Human-readable display name shown in the UI and catalog. */
             title?: string;
@@ -3513,7 +2875,7 @@ export interface components {
             tags?: components["schemas"]["TagMap"];
         };
         /**
-         * @description Org-owned custom action definition callable by loops and agents.
+         * @description Org-owned custom action definition agents can call as a tool.
          * @example {
          *       "id": "act_8m4x9q2v7p5n3r6t",
          *       "name": "review-pr",
@@ -3563,7 +2925,7 @@ export interface components {
             visibility: components["schemas"]["ResourceVisibility"];
             container?: components["schemas"]["ResourceContainer"];
             posture: components["schemas"]["ResourcePosture"];
-            /** @description Stable identifier used in loop definitions. */
+            /** @description Stable identifier the action is called by. */
             name: string;
             /** @description Human-readable display title for the action. */
             title?: string;
@@ -3613,7 +2975,7 @@ export interface components {
             /** @description One-time `whsec_` raw-URL-base64 signing key. Store it immediately — this is the only time it is returned. */
             signing_secret: string;
         };
-        /** @description One built-in, integration, or custom-backed action available to agents and loop authors. */
+        /** @description One built-in, integration, or custom-backed action available to agents. */
         ActionCatalogEntry: {
             /** @description Stable resource identifier. Present for an organization-authored custom action. */
             id?: string;
@@ -3666,7 +3028,7 @@ export interface components {
             endpoint_url?: string;
             /** @description Resolved request-body contract for an org-owned custom action. */
             invocation_format?: components["schemas"]["ActionInvocationFormat"];
-            /** @description Execution locations and worker requirements available to loop authors. */
+            /** @description Execution locations and worker requirements for this action. */
             execution?: components["schemas"]["ActionExecutionMetadata"];
             /** @description Present for an organization-authored custom action. */
             owner?: components["schemas"]["ResourceOwner"];
@@ -3677,7 +3039,7 @@ export interface components {
             /** @description Present for an organization-authored custom action. */
             posture?: components["schemas"]["ResourcePosture"];
         };
-        /** @description Execution-location metadata surfaced to loop authors and action pickers. */
+        /** @description Execution-location metadata surfaced to action pickers. */
         ActionExecutionMetadata: {
             /** @description Supported execution locations: `managed`, `worker`, or `environment`. */
             supported_locations: ("managed" | "worker" | "environment")[];
@@ -3716,8 +3078,6 @@ export interface components {
             status: "active" | "completed" | "failed";
             /** @description Job created for this direct invocation. */
             job_id?: string;
-            /** @description Loop run ID. Present when an asynchronous run was created. */
-            run_id?: string;
             /** @description Action output. Present when status is "completed". */
             output?: {
                 [key: string]: unknown;
@@ -3729,13 +3089,11 @@ export interface components {
         ActionInvocationEntry: {
             /** @description Unique identifier for this invocation record. */
             id: string;
-            /** @description Loop run that triggered this invocation, if run-backed. */
-            run_id?: string;
             /** @description Job that triggered this invocation, if job-backed. */
             job_id?: string;
             /** @description Environment that executed this invocation, if environment-backed. */
             environment_id?: string;
-            /** @description Loop step name that triggered this invocation. */
+            /** @description Name of the step that triggered this invocation. */
             step_name?: string;
             /** @description Immutable action definition ID used for this invocation. */
             action_id?: string;
@@ -3758,8 +3116,6 @@ export interface components {
             actor_principal_type?: "human" | "agent" | "service" | "system";
             /** @description Agent resource ID when the actor was an agent. */
             agent_id?: string;
-            /** @description Loop definition correlated with this invocation, when applicable. */
-            loop_id?: string;
             /** @description Channel exchange correlated with this invocation, when applicable. */
             channel_exchange_id?: string;
             /** @description Agent turn correlated with this invocation, when applicable. */
@@ -3779,7 +3135,7 @@ export interface components {
             secret_version?: number;
             /** @description Receiver HTTP status for a completed delivery attempt. */
             http_status?: number;
-            /** @description Invocation source ("loop", "direct", etc.). */
+            /** @description The job origin that produced this invocation: `agent_tool_call`, `loop_action_step`, `direct_action_invoke`, or `server_internal`. */
             source: string;
             /** @description Input parameters passed to the action. */
             parameters?: {
@@ -3837,7 +3193,7 @@ export interface components {
             display_name: string;
             /** @description Short explanation of what emits events under this prefix. */
             description?: string;
-            /** @description Whether this source can start a loop now. `capability` sources are always `ready`. `integration` sources are `ready` only when the org has an active, usable connection for the provider. */
+            /** @description Whether this source can trigger work now. `capability` sources are always `ready`. `integration` sources are `ready` only when the org has an active, usable connection for the provider. */
             readiness: components["schemas"]["CapabilityReadiness"];
             /** @description Why an `integration` source is `needs_setup`. Omitted when `readiness` is `ready` and for `capability` sources. */
             readiness_reason?: components["schemas"]["CapabilityReadinessReason"];
@@ -3939,117 +3295,6 @@ export interface components {
             /** @description Model identifier advertised by the local worker. */
             model: string;
         };
-        /**
-         * @description Backing provider: `sprites`, `cloudflare_containers`, or `worker`.
-         * @enum {string}
-         */
-        EnvironmentProvider: "sprites" | "cloudflare_containers" | "worker";
-        /**
-         * @description Providers the control plane can provision on demand. Worker-provided environments are registered out-of-band via the attach endpoint and are never provisioned through create/acquire.
-         * @enum {string}
-         */
-        ProvisionEnvironmentProvider: "sprites";
-        /**
-         * @description Lifecycle status: `provisioning`, `ready`, `running`, `retained`, `destroying`, `destroyed`, `failed`, or `orphaned`.
-         * @enum {string}
-         */
-        EnvironmentStatus: "provisioning" | "ready" | "running" | "retained" | "destroying" | "destroyed" | "failed" | "orphaned";
-        /**
-         * @description Lifecycle owner for automatic cleanup. `run` environments are destroyed during their owning run's Finalize phase; `lease` environments are reaped after lease expiry; `explicit` environments require an explicit destroy call.
-         * @enum {string}
-         */
-        EnvironmentLifetime: "run" | "lease" | "explicit";
-        /**
-         * @description High-level ownership policy for how Mobius plans to use the environment. `run` is one-shot and auto-cleaned with a run; `agent` and `loop` are persistent environment policies; `manual` is operator controlled.
-         * @enum {string}
-         */
-        EnvironmentMode: "manual" | "run" | "agent" | "loop";
-        /**
-         * @description Retention behavior: `manual`, `destroy_on_success`, `retain_on_failure`, or `retain_always`.
-         * @enum {string}
-         */
-        EnvironmentRetentionPolicy: "manual" | "destroy_on_success" | "retain_on_failure" | "retain_always";
-        /**
-         * @description Cleanup outcome: `none`, `pending`, `succeeded`, `failed`, or `skipped`.
-         * @enum {string}
-         */
-        EnvironmentCleanupStatus: "none" | "pending" | "succeeded" | "failed" | "skipped";
-        /** @description Durable execution environment summary. */
-        Environment: {
-            /** @description Unique environment identifier. */
-            id: string;
-            /** @description Human-readable environment name. */
-            name: string;
-            owner: components["schemas"]["ResourceOwner"];
-            visibility: components["schemas"]["ResourceVisibility"];
-            container: components["schemas"]["ResourceContainer"];
-            posture: components["schemas"]["ResourcePosture"];
-            /** @description Backing environment provider. */
-            provider: components["schemas"]["EnvironmentProvider"];
-            /** @description Current provisioning and lifecycle status. */
-            status: components["schemas"]["EnvironmentStatus"];
-            /** @description How long the environment is expected to live. */
-            lifetime: components["schemas"]["EnvironmentLifetime"];
-            /** @description Worker session currently attached to this environment, when any. */
-            current_worker_session_id?: string;
-            /** @description Optional labels for filtering and organization. */
-            tags?: components["schemas"]["TagMap"];
-            /** @description Last cleanup outcome. */
-            cleanup_status: components["schemas"]["EnvironmentCleanupStatus"];
-            /** @description Retention behavior after work completes. */
-            retention_policy: components["schemas"]["EnvironmentRetentionPolicy"];
-            /**
-             * Format: date-time
-             * @description Last time the provider or worker reported the environment.
-             */
-            last_seen_at?: string;
-            /**
-             * Format: date-time
-             * @description Time the environment record was created.
-             */
-            created_at: string;
-            /**
-             * Format: date-time
-             * @description Time the environment record was last updated.
-             */
-            updated_at: string;
-        };
-        /** @description Cursor-paginated list of environments. */
-        EnvironmentListResponse: {
-            /** @description Environments in the current page. */
-            items: components["schemas"]["Environment"][];
-            /** @description Whether another page is available. */
-            has_more: boolean;
-            /** @description Cursor to pass on the next request when `has_more` is true. */
-            next_cursor?: string;
-        };
-        /** @description Request body for creating a managed environment. */
-        CreateEnvironmentRequest: {
-            /** @description Human-readable environment name. */
-            name?: string;
-            /** @description Provider to provision. */
-            provider?: components["schemas"]["ProvisionEnvironmentProvider"];
-            owner?: components["schemas"]["ResourceOwner"];
-            visibility?: components["schemas"]["ResourceVisibility"];
-            /**
-             * @description V1 supports only coding-default.
-             * @enum {string}
-             */
-            template_id?: "coding-default";
-            /** @description Labels used for filtering, ownership, or cleanup policy. */
-            tags?: components["schemas"]["TagMap"];
-        };
-        UpdateEnvironmentRequest: {
-            owner?: components["schemas"]["ResourceOwner"];
-            visibility?: components["schemas"]["ResourceVisibility"];
-            /**
-             * @description Required when sharing with the organization, handing custody to the team, or detaching a narrowing container.
-             * @default false
-             */
-            confirm_audience_expansion?: boolean;
-            /** @description Replacement labels; send an empty object to clear all tags. */
-            tags?: components["schemas"]["TagMap"];
-        };
         WorkerSocketModelCapability: {
             /** @description LLM provider identifier, such as `ollama`. */
             provider: string;
@@ -4146,8 +3391,6 @@ export interface components {
             provider?: string;
             /** @description Present for `llm_generation` jobs. */
             model?: string;
-            run_id?: string;
-            step_id?: string;
             agent_turn_id?: string;
             session_id?: string;
             tool_call_id?: string;
@@ -4273,198 +3516,6 @@ export interface components {
             message_id?: components["schemas"]["WorkerSocketMessageID"];
             error: components["schemas"]["WorkerSocketProtocolError"];
         };
-        /**
-         * @description `pending` — queued, not yet attempted. `processing` — currently being delivered. `delivered` — recipient returned 2xx. `failed` — all retry attempts exhausted.
-         * @enum {string}
-         */
-        WebhookDeliveryStatus: "pending" | "processing" | "delivered" | "failed";
-        /**
-         * @description An org-level outgoing webhook subscription. When a subscribed event fires, Mobius POSTs the event payload to `url`.
-         * @example {
-         *       "id": "wbh_7x3m9q2v5p8n4r6t",
-         *       "name": "Run status sink",
-         *       "url": "https://hooks.example.com/mobius/run-status",
-         *       "events": [
-         *         "run.completed",
-         *         "run.failed"
-         *       ],
-         *       "enabled": true,
-         *       "created_by": "user_2f9s3k4m5n6p7q8r",
-         *       "tags": {
-         *         "owner": "product"
-         *       },
-         *       "secret_version": 1,
-         *       "created_at": "2026-06-15T14:30:00Z",
-         *       "updated_at": "2026-06-15T14:30:00Z"
-         *     }
-         */
-        Webhook: {
-            /** @description Unique identifier for this webhook. */
-            id: string;
-            owner: components["schemas"]["ResourceOwner"];
-            visibility: components["schemas"]["ResourceVisibility"];
-            container?: components["schemas"]["ResourceContainer"];
-            posture: components["schemas"]["ResourcePosture"];
-            /** @description Human-readable name, unique within the org. */
-            name: string;
-            /** @description The customer endpoint Mobius POSTs event payloads to. */
-            url: string;
-            /** @description Subscribed event types. Use dot notation (`run.completed`, `run.failed`) or wildcards (`run.*` for all run events). An empty list subscribes to all event types. */
-            events: string[];
-            /** @description When false, matching events are not delivered. */
-            enabled: boolean;
-            /** @description User ID of the principal who created this webhook. */
-            created_by?: string;
-            /** @description User ID of the principal who last updated this webhook. */
-            updated_by?: string;
-            /** @description Free-form labels used for filtering, ownership, or delivery policy. */
-            tags?: components["schemas"]["TagMap"];
-            /**
-             * Format: int64
-             * @description Internal vault version created by this response. Only populated on create and rotate responses.
-             */
-            secret_version?: number;
-            /** @description One-time `whsec_` plus raw-URL-base64 encoded 32-byte HMAC-SHA256 signing key. Only populated on create and rotate responses; absent on all other reads. Store this value securely on first receipt — it cannot be retrieved again. */
-            signing_secret?: string;
-            /**
-             * Format: date-time
-             * @description Timestamp when this webhook was created.
-             */
-            created_at: string;
-            /**
-             * Format: date-time
-             * @description Timestamp when this webhook was last updated.
-             */
-            updated_at: string;
-        };
-        /**
-         * @example {
-         *       "items": [
-         *         {
-         *           "id": "wbh_7x3m9q2v5p8n4r6t",
-         *           "name": "Run status sink",
-         *           "url": "https://hooks.example.com/mobius/run-status",
-         *           "events": [
-         *             "run.completed",
-         *             "run.failed"
-         *           ],
-         *           "enabled": true,
-         *           "created_at": "2026-06-15T14:30:00Z",
-         *           "updated_at": "2026-06-15T14:30:00Z"
-         *         }
-         *       ],
-         *       "has_more": false
-         *     }
-         */
-        WebhookListResponse: {
-            /** @description The list of results for this page. */
-            items: components["schemas"]["Webhook"][];
-            /** @description Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false. */
-            next_cursor?: string;
-            /** @description Whether additional pages are available. */
-            has_more: boolean;
-        };
-        /**
-         * @description One delivery record for a webhook event. The daemon claims pending rows, POSTs the payload, and transitions to `delivered` or retries on failure. A delivery reaches `failed` only after exhausting all 10 retry attempts.
-         * @example {
-         *       "id": "whd_4q8m2x7v5p9n3r6t",
-         *       "webhook_id": "wbh_7x3m9q2v5p8n4r6t",
-         *       "run_id": "run_8q5m2x9v7p3n4r6t",
-         *       "event_type": "run.completed",
-         *       "status": "delivered",
-         *       "attempts": 1,
-         *       "created_at": "2026-06-15T14:44:00Z",
-         *       "delivered_at": "2026-06-15T14:44:01Z"
-         *     }
-         */
-        WebhookDeliveryRecord: {
-            /** @description Unique identifier for this delivery record. */
-            id: string;
-            /** @description ID of the webhook this delivery belongs to. */
-            webhook_id: string;
-            /** @description Run that triggered the event, when applicable. */
-            run_id?: string;
-            /** @description The event type that triggered this delivery (e.g. `run.completed`). */
-            event_type: string;
-            /** @description Current delivery status. */
-            status: components["schemas"]["WebhookDeliveryStatus"];
-            /** @description Number of delivery attempts made so far. Max 10. */
-            attempts: number;
-            /** @description Error message from the most recent failed attempt. */
-            last_error?: string;
-            /**
-             * Format: date-time
-             * @description Timestamp when this delivery was first attempted.
-             */
-            created_at: string;
-            /**
-             * Format: date-time
-             * @description Timestamp of the successful delivery. Absent until delivered.
-             */
-            delivered_at?: string;
-        };
-        WebhookDeliveryListResponse: {
-            /** @description The list of results for this page. */
-            items: components["schemas"]["WebhookDeliveryRecord"][];
-            /** @description Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false. */
-            next_cursor?: string;
-            /** @description Whether additional pages are available. */
-            has_more: boolean;
-        };
-        /**
-         * @example {
-         *       "name": "Run status sink",
-         *       "url": "https://hooks.example.com/mobius/run-status",
-         *       "events": [
-         *         "run.completed",
-         *         "run.failed"
-         *       ],
-         *       "enabled": true,
-         *       "tags": {
-         *         "owner": "product"
-         *       }
-         *     }
-         */
-        CreateWebhookRequest: {
-            /** @description Human-readable name, unique within the org. */
-            name: string;
-            /** @description The endpoint Mobius will POST event payloads to. May be left empty at creation time so a candidate URL can be tested via the ping endpoint before it is saved; events do not fire for webhooks with an empty URL. */
-            url?: string;
-            /** @description Event types to subscribe to. Use wildcards for broad subscriptions, e.g. `["run.*"]` for all run events. Omit this field or send an empty list to subscribe to all event types. */
-            events?: string[];
-            /** @description Whether the webhook starts enabled. Defaults to true when omitted. */
-            enabled?: boolean;
-            /** @description Initial labels to apply to the webhook. */
-            tags?: components["schemas"]["TagMap"];
-            owner?: components["schemas"]["ResourceOwner"];
-            visibility?: components["schemas"]["ResourceVisibility"];
-        };
-        UpdateWebhookRequest: {
-            /** @description Replacement human-readable name. */
-            name?: string;
-            /** @description Replacement endpoint URL. */
-            url?: string;
-            /** @description Replacement event subscriptions. Replaces the entire current list; an empty list subscribes to all event types. */
-            events?: string[];
-            /** @description Set to false to disable delivery without deleting the webhook. */
-            enabled?: boolean;
-            /** @description Replacement labels; send an empty object to clear all tags. */
-            tags?: components["schemas"]["TagMap"];
-        };
-        PingWebhookRequest: {
-            /** @description URL to test. When supplied, the ping is sent to this URL instead of the webhook's saved URL — use this to validate a candidate URL before saving it. When omitted, the webhook's current saved URL is used. */
-            url?: string;
-        };
-        PingWebhookResult: {
-            /** @description True if the target responded with a 2xx status code. */
-            success: boolean;
-            /** @description HTTP status code returned by the target. Absent on network error. */
-            status_code?: number;
-            /** @description Error message if the request could not be completed. */
-            error?: string;
-            /** @description Round-trip latency in milliseconds. */
-            latency_ms?: number;
-        };
         BillingUsageEvent: {
             id: string;
             api_key_id: string;
@@ -4488,11 +3539,6 @@ export interface components {
             source_type: string;
             source_id: string;
             idempotency_key: string;
-            /** @description Run the usage was attributed to. Empty string when the event has no run attribution. */
-            run_id: string;
-            /** @description Loop step the usage was attributed to. Empty string when the event has no step attribution. */
-            step_id: string;
-            step_key: string;
             /** @description Job the usage was attributed to. Empty string when the event has no job attribution. */
             job_id: string;
             /** @description Agent turn the usage was attributed to. Empty string when the event has no agent-turn attribution. */
@@ -4545,7 +3591,7 @@ export interface components {
             /** @enum {string} */
             scope: "org" | "platform" | "action";
             /** @enum {string} */
-            category: "org" | "access" | "loops" | "runs" | "work" | "integrations" | "audit" | "billing" | "platform" | "actions";
+            category: "org" | "work" | "billing" | "platform";
             /** @enum {string} */
             risk: "low" | "medium" | "high" | "critical";
             /** @description Whether this permission should be selectable in the current org role builder. */
@@ -4575,7 +3621,7 @@ export interface components {
             presets: components["schemas"]["PermissionPreset"][];
             action_groups: components["schemas"]["ActionPermissionGroup"][];
         };
-        /** @description Named bundle of permissions assignable to human or machine principals. Roles let admins grant loop, org, and integration capabilities consistently without editing every user individually. */
+        /** @description Named bundle of permissions assignable to human or machine principals. Roles let admins grant agent, org, and integration capabilities consistently without editing every user individually. */
         Role: {
             /** @description Unique identifier for this role. */
             id: string;
@@ -4678,7 +3724,7 @@ export interface components {
             description?: string;
         };
         /**
-         * @description Declarative dialog contract for rendering and validating an interaction. Used at both authoring time (inside a loop definition) and runtime (persisted on an interaction). Protocol kind is decoupled from input shape: each kind declares which spec modes are *allowed*, not which is *implied*. An approval may now legitimately use `select` mode (approve/deny/defer), for example.
+         * @description Declarative dialog contract for rendering and validating an interaction. Used at both authoring time and runtime (persisted on an interaction). Protocol kind is decoupled from input shape: each kind declares which spec modes are *allowed*, not which is *implied*. An approval may now legitimately use `select` mode (approve/deny/defer), for example.
          *
          *     Allowed combinations:
          *     * `request_approval` → `confirm`, `select`
@@ -4774,20 +3820,14 @@ export interface components {
         EmailDelivery: {
             to: string[];
         };
-        /** @description Polymorphic identifier of what is waiting on this interaction's resolution. Replaces the previously special-cased `run_id` + `signal_name` pair. When `kind=run`, the legacy fields are also populated for compatibility. `http_subscriber` enqueues a durable callback dispatch to `callback_url` when the interaction resolves; the canonical string `v1.{delivery_id}.{unix_timestamp}.{raw_body}` is signed with HMAC-SHA256 against the resolved org signing key and the signed dispatch carries `X-Mobius-Signature`, `X-Mobius-Secret-Version` and `X-Mobius-Timestamp`. Signed dispatches also carry `X-Mobius-Signature-Version: v1`. Every durable dispatch also carries the stable outbox row id in `X-Mobius-Delivery-Id` and `Idempotency-Key`; retries reuse the same value. Verifiers should recompute the signature over the exact raw body, reject stale timestamps (for example, older than five minutes), deduplicate by delivery id, and check the signing headers. */
+        /** @description Polymorphic identifier of what is waiting on this interaction's resolution. `http_subscriber` requires `secret_ref` and enqueues a durable callback dispatch to `callback_url` when the interaction resolves; the canonical string `v1.{delivery_id}.{unix_timestamp}.{raw_body}` is signed with HMAC-SHA256 against the resolved org signing key and the signed dispatch carries `X-Mobius-Signature`, `X-Mobius-Secret-Version` and `X-Mobius-Timestamp`. Signed dispatches also carry `X-Mobius-Signature-Version: v1`. Every durable dispatch also carries the stable outbox row id in `X-Mobius-Delivery-Id` and `Idempotency-Key`; retries reuse the same value. Verifiers should recompute the signature over the exact raw body, reject stale timestamps (for example, older than five minutes), deduplicate by delivery id, and check the signing headers. */
         Consumer: {
             /** @enum {string} */
-            kind: "run" | "agent_tool" | "http_subscriber" | "none";
-            /** @description Run resume target when `kind=run`; null for other consumer kinds. */
-            run?: components["schemas"]["RunConsumer"] | null;
+            kind: "agent_tool" | "http_subscriber" | "none";
             /** @description Agent tool continuation target when `kind=agent_tool`; null for other consumer kinds. */
             agent_tool?: components["schemas"]["AgentToolConsumer"] | null;
             /** @description HTTP callback target when `kind=http_subscriber`; null for other consumer kinds. */
             http_subscriber?: components["schemas"]["HttpSubscriberConsumer"] | null;
-        };
-        RunConsumer: {
-            run_id: string;
-            signal_name: string;
         };
         AgentToolConsumer: {
             invocation_id: string;
@@ -4804,8 +3844,7 @@ export interface components {
         };
         ConsumerInput: {
             /** @enum {string} */
-            kind: "run" | "agent_tool" | "http_subscriber" | "none";
-            run?: components["schemas"]["RunConsumer"];
+            kind: "agent_tool" | "http_subscriber" | "none";
             agent_tool?: components["schemas"]["AgentToolConsumer"];
             http_subscriber?: components["schemas"]["HttpSubscriberConsumerInput"];
         };
@@ -4898,10 +3937,6 @@ export interface components {
         Interaction: {
             /** @description Unique identifier for this interaction. */
             id: string;
-            /** @description Originating loop run when the interaction is run-backed. */
-            run_id?: string | null;
-            /** @description Signal name used to resume the originating run when run-backed. */
-            signal_name?: string | null;
             /** @description Canonical principal ID of the human or agent that created the interaction; null for legacy/system-created rows. */
             created_by?: string | null;
             /** @description Interactions are team-governed; their explicit targets are the audience boundary. */
@@ -4964,7 +3999,7 @@ export interface components {
             require_all?: boolean;
             /** @description Declarative resolution rule attached at creation time. Legacy `require_all` inputs are synthesized into an equivalent policy at create time when present. Newer rows typically include this field; nullability covers historical rows and callers that omit it. */
             resolution_policy?: components["schemas"]["ResolutionPolicy"] | null;
-            /** @description Polymorphic identifier of what is waiting on this interaction's resolution. Replaces the special-cased `run_id`/`signal_name` pair; the latter remain populated when `consumer.kind=run`. */
+            /** @description Polymorphic identifier of what is waiting on this interaction's resolution. */
             consumer?: components["schemas"]["Consumer"] | null;
             /** @description Optional per-interaction delivery override. When absent, the dispatcher delivers to the app inbox only. */
             delivery?: components["schemas"]["Delivery"] | null;
@@ -4996,10 +4031,8 @@ export interface components {
             /** @description Opaque cursor to pass as `cursor` on the next request. Absent when `has_more` is false. */
             next_cursor?: string;
         };
-        /** @description Creates an interaction directly. Use the standalone variant with no loop-run side effect, or the run-backed variant that requires both `run_id` and `signal_name` so completion can resume the run. For worker/job usage, prefer the job-scoped route so the server can derive the owning run from the claimed job context. */
-        CreateInteractionRequest: components["schemas"]["CreateStandaloneInteractionRequest"] | components["schemas"]["CreateRunBackedInteractionRequest"];
-        /** @description Creates a standalone interaction. Completion records the response but does not deliver a loop signal. */
-        CreateStandaloneInteractionRequest: {
+        /** @description Creates an interaction. `consumer` names what is waiting on its resolution; when omitted, completion records the response and nothing else acts on it. */
+        CreateInteractionRequest: {
             /** @description Resolved user IDs to target directly. At least one target is required — every interaction needs someone who can answer it, even when a machine consumer is waiting on the outcome. Agents use their agent principal IDs. */
             target_user_ids: string[];
             /** @description Protocol kind. */
@@ -5027,54 +4060,7 @@ export interface components {
             require_all?: boolean;
             /** @description Declarative resolution rule. When supplied the policy evaluator drives completion. */
             resolution_policy?: components["schemas"]["ResolutionPolicy"];
-            /** @description Polymorphic identifier of what is waiting on this interaction's resolution. When omitted on a run-backed create request, the server derives a `kind=run` consumer from `run_id` and `signal_name`. */
-            consumer?: components["schemas"]["ConsumerInput"];
-            /** @description Optional per-interaction delivery override. */
-            delivery?: components["schemas"]["Delivery"];
-            /**
-             * Format: date-time
-             * @description Timestamp after which this interaction expires if not responded to.
-             */
-            expires_at?: string;
-        };
-        /**
-         * @description Creates an interaction linked to a loop run for audit. The server derives a `kind=run` consumer from `run_id` and `signal_name`.
-         *
-         *     This is an audit-only link: creating an interaction here does not suspend the run, and resolving it does not by itself resume a run. A run only blocks on, and resumes from, human input when the loop definition declares an interaction step — that step creates the interaction and registers the matching wait atomically. Use this endpoint to record a human decision against a run, not to drive run control flow.
-         */
-        CreateRunBackedInteractionRequest: {
-            /** @description ID of the loop run associated with this interaction. */
-            run_id: string;
-            /** @description Legacy signal name recorded with the run association. */
-            signal_name: string;
-            /** @description Resolved user IDs to target directly. At least one target is required. Agents use their agent principal IDs. */
-            target_user_ids: string[];
-            /** @description Protocol kind. */
-            kind: components["schemas"]["InteractionKind"];
-            /** @description Short non-empty title shown to the responder. */
-            title: string;
-            /** @description Optional longer responder-facing detail or instructions. */
-            description?: string;
-            /** @description Primary work item or artifact the interaction is about. */
-            subject?: components["schemas"]["InteractionReference"];
-            /** @description Supporting links and related entities. */
-            references?: components["schemas"]["InteractionReference"][];
-            /** @description Additional key-value context surfaced in the UI alongside the title and description. */
-            context?: {
-                [key: string]: unknown;
-            };
-            tags?: components["schemas"]["TagMap"];
-            /** @description Free-form structured metadata to attach to the interaction. */
-            properties?: {
-                [key: string]: unknown;
-            };
-            /** @description Response controls and validation rules rendered to the recipient. */
-            spec?: components["schemas"]["InteractionSpec"];
-            /** @description When true, all target users must respond before the interaction is considered complete. Defaults to false when omitted. Mutually exclusive with `resolution_policy`; prefer the policy form for new code. */
-            require_all?: boolean;
-            /** @description Declarative resolution rule. When supplied the policy evaluator drives completion. */
-            resolution_policy?: components["schemas"]["ResolutionPolicy"];
-            /** @description Polymorphic identifier of what is waiting on this interaction's resolution. When omitted on a run-backed create request, the server derives a `kind=run` consumer from `run_id` and `signal_name`. */
+            /** @description Polymorphic identifier of what is waiting on this interaction's resolution. */
             consumer?: components["schemas"]["ConsumerInput"];
             /** @description Optional per-interaction delivery override. */
             delivery?: components["schemas"]["Delivery"];
@@ -5105,7 +4091,7 @@ export interface components {
             /** @description The reviewer's reasoning. Required for `request_changes` — work sent back without a reason gives the assignee nothing to act on. Optional for `accept`, where it is recorded as an acceptance note. */
             comment?: string;
         };
-        /** @description Optional payload accompanying a cancel request. The reason is recorded on the interaction and forwarded in the cancellation signal so loops can route to a fallback. */
+        /** @description Optional payload accompanying a cancel request. The reason is recorded on the interaction and forwarded in the cancellation signal so the waiting consumer can route to a fallback. */
         CancelInteractionRequest: {
             /** @description Free-text reason recorded on the interaction. */
             reason?: string;
@@ -5158,17 +4144,16 @@ export interface components {
             shared_entry_count: number;
             /** @description Member rows a widening change deletes. */
             dropped_members?: string[];
-            /** @description Principals who hold a memory partition, a session, or a loop on this agent and fall outside the new audience. */
+            /** @description Principals who hold a memory partition or a session on this agent and fall outside the new audience. */
             stranded_principals?: string[];
             stranded_partitions?: number;
             stranded_sessions?: number;
-            stranded_loops?: number;
             /** @description Delegated or contained root resources whose effective audience would grow. Every item requires one matching disposition on the update request; omission aborts the change. */
             affected_resources: components["schemas"]["AgentVisibilityAffectedResource"][];
         };
         AgentVisibilityAffectedResource: {
             /** @enum {string} */
-            resource_type: "artifact" | "loop" | "session" | "skill" | "table";
+            resource_type: "artifact" | "session" | "skill" | "table";
             resource_id: string;
             /** @description Configuration name. Omitted for conversations and outputs. */
             name?: string;
@@ -5181,7 +4166,7 @@ export interface components {
         };
         AgentAudienceResourceDisposition: {
             /** @enum {string} */
-            resource_type: "artifact" | "loop" | "session" | "skill" | "table";
+            resource_type: "artifact" | "session" | "skill" | "table";
             resource_id: string;
             /** @enum {string} */
             action: "revoke" | "make_private" | "keep_and_widen";
@@ -5371,7 +4356,7 @@ export interface components {
             agent_id: string;
             /** @description Stable hash over the resolved tool + skill set; bumps when the agent's tool selectors or skills change. */
             policy_hash: string;
-            /** @description Catalog entries the agent can invoke. Each entry surfaces to the LLM as its own named tool. Built-in, integration, loop, and custom-HTTP actions are intermingled here. */
+            /** @description Catalog entries the agent can invoke. Each entry surfaces to the LLM as its own named tool. Built-in, integration, and custom-HTTP actions are intermingled here. */
             tools: components["schemas"]["ActionCatalogEntry"][];
             /** @description Audit trail of group selectors that contributed to the resolved tool set. Operators see groups; the LLM only sees the flat `tools` list. */
             groups_resolved?: components["schemas"]["ResolvedActionGroup"][];
@@ -5416,7 +4401,7 @@ export interface components {
             system_prompt?: string;
             /**
              * Format: int64
-             * @description Per-turn execution timeout in seconds for this agent. Omit or `0` to use the platform default (600s / 10 minutes); a loop step's own timeout overrides it for that step.
+             * @description Per-turn execution timeout in seconds for this agent. Omit or `0` to use the platform default (600s / 10 minutes); a request's `operation.timeout_seconds` overrides it for that turn.
              */
             timeout_seconds?: number;
             /** @description Default session-compaction policy new sessions inherit from this agent. */
@@ -5428,7 +4413,7 @@ export interface components {
             memory_enabled?: boolean;
             /** @description Automatic memory delivery policy. Omit for the bounded index default. */
             memory_context?: components["schemas"]["MemoryContextPolicy"];
-            /** @description Default reasoning-effort level new sessions and loop agent steps inherit from this agent. */
+            /** @description Default reasoning-effort level new sessions inherit from this agent. */
             thinking_effort?: components["schemas"]["ThinkingEffort"];
             /** @description Initial labels used for filtering, ownership, or automation. */
             tags?: components["schemas"]["TagMap"];
@@ -5457,7 +4442,7 @@ export interface components {
             model?: string;
             /** @description Replacement default route for model calls made by this agent. */
             model_route?: components["schemas"]["AgentModelRoute"];
-            /** @description Replacement tool presentation used by loop agent steps and channel replies. */
+            /** @description Replacement tool presentation used by this agent's turns and channel replies. */
             tool_presentation?: components["schemas"]["AgentToolPresentation"];
             /** @description Replacement per-provider connection rules, as a whole. Omit to leave them untouched; send an empty array to clear them. */
             integration_access?: components["schemas"]["AgentIntegrationAccess"][];
@@ -5467,7 +4452,7 @@ export interface components {
             system_prompt?: string;
             /**
              * Format: int64
-             * @description Replacement per-turn execution timeout in seconds for this agent. `0` resets to the platform default (600s / 10 minutes); a loop step's own timeout overrides it for that step.
+             * @description Replacement per-turn execution timeout in seconds for this agent. `0` resets to the platform default (600s / 10 minutes); a request's `operation.timeout_seconds` overrides it for that turn.
              */
             timeout_seconds?: number;
             /**
@@ -5496,9 +4481,9 @@ export interface components {
             /** @description Exactly one decision for every row returned by the visibility impact preview. Delegations may be revoked or explicitly widened; contained rows may be made private or explicitly widened. Extra, duplicate, and omitted rows are refused. */
             affected_resource_dispositions?: components["schemas"]["AgentAudienceResourceDisposition"][];
             /**
-             * @description What happens to the memory partitions, sessions, and loops of principals who fall outside a narrowed audience.
+             * @description What happens to the memory partitions and sessions of principals who fall outside a narrowed audience.
              *
-             *     `retain` keeps their partitions and sessions, readable only by org admins, and pauses the loops they own that point at this agent rather than leaving them to fail at run time. `delete` additionally erases their private memory partitions, and only an org admin may choose it. A narrowing change that would strand rows and names neither returns `409`.
+             *     `retain` keeps their partitions and sessions, readable only by org admins. `delete` additionally erases their private memory partitions, and only an org admin may choose it. A narrowing change that would strand rows and names neither returns `409`.
              * @enum {string}
              */
             stranded_disposition?: "retain" | "delete";
@@ -5556,8 +4541,6 @@ export interface components {
             importance: number;
             /** @description Whether the entry is guaranteed in the memory index and exempt from the memory cap. */
             pinned: boolean;
-            /** @description Identifier of the loop run that last wrote this memory, when known. */
-            source_run_id?: string;
             /** @description Identifier of this memory entry. */
             entry_id: string;
             /** @description Monotonic version, incremented on each update. */
@@ -5601,7 +4584,6 @@ export interface components {
             /** @description Entry version at the time of this mutation, matching `AgentMemoryEntry.version`. */
             version: number;
             reason: components["schemas"]["AgentMemoryChangeReason"];
-            source_run_id?: string;
             actor_id?: string;
             /** Format: date-time */
             created_at: string;
@@ -5938,7 +4920,7 @@ export interface components {
          * @enum {string}
          */
         AgentTurnOutputSource: "tool" | "text";
-        /** @description One attempt of an agent running the agent loop — the unit that produces a transcript. A turn is triggered by a direct send to the session, a loop step (run_id + step_key), or an inbound channel message (channel_exchange_id). Its messages are read via the turn's transcript endpoint. */
+        /** @description One attempt of an agent working on the session — the unit that produces a transcript. A turn is triggered by a direct send to the session or an inbound channel message (channel_exchange_id). Its messages are read via the turn's transcript endpoint. */
         AgentTurn: {
             /** @description Stable turn identifier. */
             id: string;
@@ -5946,13 +4928,13 @@ export interface components {
             agent_id: string;
             /** @description Session this turn's transcript was appended to. */
             session_id: string;
-            /** @description Loop run that triggered this turn. Absent for messaging turns. */
-            run_id?: string;
-            /** @description Step key (matches LoopRunStep.step_key, not its id) of the loop step that triggered this turn. Absent for messaging turns. */
-            step_key?: string;
-            /** @description Inbound channel exchange that triggered this turn. Absent for loop turns. */
+            /** @description Inbound channel exchange that triggered this turn. Absent for direct sends. */
             channel_exchange_id?: string;
-            /** @description 1-based attempt number for this run-step; retries create new turns. */
+            /** @description True for scheduled work that yields admission priority to direct turns. */
+            deferrable?: boolean;
+            /** @description Display-only routine name for a scheduled turn's live state. */
+            routine_name?: string;
+            /** @description 1-based attempt number; retries create new turns. */
             attempt: number;
             /** @description Current lifecycle status of the agent turn. */
             status: components["schemas"]["AgentTurnStatus"];
@@ -6068,8 +5050,6 @@ export interface components {
             id: string;
             agent_id: string;
             session_id: string;
-            run_id?: string;
-            step_key?: string;
             channel_exchange_id?: string;
             attempt: number;
             /** @description Known AgentTurn status; unknown values must be preserved. */
@@ -6201,8 +5181,6 @@ export interface components {
             session_id: string;
             /** @description Agent container executing the parent session, when known. */
             agent_id?: string;
-            /** @description Loop run that produced the preview, when applicable. */
-            run_id?: string;
             /** @description Agent turn that produced the preview. */
             turn_id: string;
             /**
@@ -6749,8 +5727,6 @@ export interface components {
          *       },
          *       "visibility": "organization",
          *       "posture": "team",
-         *       "run_id": "run_8q5m2x9v7p3n4r6t",
-         *       "step_id": "run_8q5m2x9v7p3n4r6t:review",
          *       "name": "reports/review-findings.md",
          *       "mime_type": "text/markdown",
          *       "size_bytes": 1842,
@@ -6766,10 +5742,6 @@ export interface components {
             visibility: components["schemas"]["ResourceVisibility"];
             container?: components["schemas"]["ResourceContainer"];
             posture: components["schemas"]["ResourcePosture"];
-            /** @description Loop run that produced this artifact, derived from the trusted worker lease when present. */
-            run_id?: string;
-            /** @description Loop step that produced this artifact, derived from the trusted worker lease when present. */
-            step_id?: string;
             /** @description Display name or relative virtual path. Forward slash may be used to organize artifacts inside private or organization-visible space. */
             name: string;
             /** @description MIME type recorded for the artifact content. */
@@ -6803,1107 +5775,120 @@ export interface components {
             conversion?: components["schemas"]["ArtifactConversionSummary"];
         };
         /**
-         * @description A loop and its current authored definition. Updating any authoring field creates an internal revision and makes it runnable immediately.
-         * @example {
-         *       "id": "loop_9q2m7x5v3p8n4r6t",
-         *       "name": "Daily security check",
-         *       "description": "Review open pull requests each morning.",
-         *       "status": "active",
-         *       "owner": "user_2f9s3k4m5n6p7q8r",
-         *       "agent_id": "agent_5n8p2q7m4x9r3v6t",
-         *       "schema_version": "1",
-         *       "default_config": {
-         *         "repository": "deepnoodle-ai/mobius-cloud"
-         *       },
-         *       "tags": {
-         *         "owner": "product"
-         *       },
-         *       "triggers": [
-         *         {
-         *           "name": "Weekday morning",
-         *           "kind": "schedule",
-         *           "config": {
-         *             "cron": "0 9 * * 1-5",
-         *             "timezone": "America/New_York"
-         *           }
-         *         }
-         *       ],
-         *       "steps": [
-         *         {
-         *           "id": "summarize",
-         *           "kind": "agent",
-         *           "config": {
-         *             "agent_id": "agent_5n8p2q7m4x9r3v6t",
-         *             "instructions": "Summarize open pull requests."
-         *           }
-         *         }
-         *       ],
-         *       "last_run_at": "2026-06-15T13:00:00Z",
-         *       "created_at": "2026-06-15T14:30:00Z",
-         *       "updated_at": "2026-06-15T14:30:00Z"
-         *     }
-         */
-        Loop: {
-            /** @description Stable loop identifier. */
-            id: string;
-            owner: components["schemas"]["ResourceOwner"];
-            visibility: components["schemas"]["ResourceVisibility"];
-            container?: components["schemas"]["ResourceContainer"];
-            posture: components["schemas"]["ResourcePosture"];
-            /** @description Human-readable display name. */
-            name: string;
-            /** @description Markdown description of the loop's purpose. */
-            description?: string;
-            /** @description Current loop lifecycle status: `draft`, `active`, `paused`, or `deleted`. */
-            status: components["schemas"]["LoopStatus"];
-            /** @description Agent container associated with this loop. Agent steps use it when they do not pin `config.agent_id`; it never owns the loop. */
-            agent_id?: string;
-            /**
-             * @description Loop authoring schema version. Only schema version 1 is accepted.
-             * @default 1
-             * @enum {string}
-             */
-            schema_version?: "1";
-            /** @description Declared event fields for this loop. */
-            event?: {
-                [key: string]: components["schemas"]["LoopSpecInput"];
-            };
-            /** @description Declared run config fields for this loop. */
-            config?: {
-                [key: string]: components["schemas"]["LoopSpecInput"];
-            };
-            /**
-             * @description Concurrency behavior: `allow`, `queue`, `skip`, or `replace`.
-             * @enum {string}
-             */
-            concurrency?: "allow" | "queue" | "skip" | "replace";
-            /** @description Authored trigger declarations for this loop. */
-            triggers?: components["schemas"]["LoopSpecTrigger"][];
-            /** @description Source repositories the loop targets. */
-            repositories?: components["schemas"]["LoopSpecRepository"][];
-            /**
-             * @description Steps use kind agent, action, sleep, wait_for_event, interaction, loop, or check; action inputs use config.parameters; if is a predicate.
-             *
-             *     Each item has `kind`, `config`, and optional `id`, `name`, `if`, `retry`, and `timeout`. Valid kinds are `agent`, `action`, `sleep`, `wait_for_event`, `interaction`, `loop`, and `check`. Required config: `agent.instructions`; `action.action_name`; `sleep.duration` or `sleep.until`; `wait_for_event.event_type`; `interaction.protocol` plus `interaction.targets`; `loop.loop_id`; or `check.checks`. Action inputs belong in `config.parameters`; `config.execution_location` is `managed`, `worker`, or `environment`. `if` is a bare expr predicate over `event`, `meta`, `config`, and prior `steps.<id>.output`. String leaves interpolate expr values with `${{ ... }}`.
-             */
-            steps?: components["schemas"]["LoopStep"][];
-            /** @description Declared run result contract. */
-            output?: {
-                [key: string]: unknown;
-            };
-            /** @description Cleanup steps or policies evaluated after normal step execution. */
-            cleanup?: {
-                [key: string]: unknown;
-            }[];
-            /** @description Run guardrails such as budget, timeout, and turn limits. */
-            limits?: components["schemas"]["LoopSpecLimits"];
-            /** @description Run-level defaults applied when individual steps omit a policy. */
-            defaults?: components["schemas"]["LoopSpecDefaults"];
-            /** @description Optional templates for generating an operator-facing title and description for each run. */
-            run_name?: components["schemas"]["RunNameSpec"];
-            /** @description Default config values used when a run is started without overrides. */
-            default_config?: {
-                [key: string]: unknown;
-            };
-            /** @description Free-form loop-level settings consumed by the engine. */
-            settings?: {
-                [key: string]: unknown;
-            };
-            /** @description Free-form labels used for filtering, ownership, or automation. */
-            tags?: components["schemas"]["TagMap"];
-            /**
-             * Format: date-time
-             * @description Timestamp of the most recent run start, if any.
-             */
-            last_run_at?: string;
-            /**
-             * Format: date-time
-             * @description Record creation timestamp.
-             */
-            created_at: string;
-            /**
-             * Format: date-time
-             * @description Last update timestamp.
-             */
-            updated_at: string;
-        };
-        /**
-         * @description Loop lifecycle status: `draft`, `active`, `paused`, or `deleted`.
+         * @description V1 accepts invoke; notify is reserved and returns unsupported_routine_kind.
          * @enum {string}
          */
-        LoopStatus: "draft" | "active" | "paused" | "deleted";
-        /**
-         * @example {
-         *       "items": [
-         *         {
-         *           "id": "loop_9q2m7x5v3p8n4r6t",
-         *           "name": "Daily security check",
-         *           "status": "active",
-         *           "triggers": [],
-         *           "created_at": "2026-06-15T14:30:00Z",
-         *           "updated_at": "2026-06-15T14:30:00Z"
-         *         }
-         *       ],
-         *       "has_more": false
-         *     }
-         */
-        LoopListResponse: {
-            /** @description The list of results for this page. */
-            items: components["schemas"]["Loop"][];
-            /** @description Opaque cursor for the next page; absent when no more results. */
-            next_cursor?: string;
-            /** @description True when more items exist after this page. */
-            has_more?: boolean;
-        };
-        /**
-         * @example {
-         *       "name": "Daily security check",
-         *       "description": "Review open pull requests each morning.",
-         *       "agent_id": "agent_5n8p2q7m4x9r3v6t",
-         *       "schema_version": "1",
-         *       "triggers": [
-         *         {
-         *           "name": "Weekday morning",
-         *           "kind": "schedule",
-         *           "config": {
-         *             "cron": "0 9 * * 1-5",
-         *             "timezone": "America/New_York"
-         *           }
-         *         }
-         *       ],
-         *       "steps": [
-         *         {
-         *           "id": "summarize",
-         *           "kind": "agent",
-         *           "config": {
-         *             "instructions": "Summarize open pull requests."
-         *           }
-         *         }
-         *       ],
-         *       "default_config": {
-         *         "repository": "deepnoodle-ai/mobius-cloud"
-         *       },
-         *       "tags": {
-         *         "owner": "product"
-         *       }
-         *     }
-         */
-        CreateLoopRequest: {
-            /** @description Human-readable display name. */
-            name: string;
-            /** @description Markdown description of the loop's purpose. */
-            description?: string;
-            /** @description Agent associated with this loop. Agent steps use it when they do not pin `config.agent_id`. */
-            agent_id?: string;
-            owner?: components["schemas"]["ResourceOwner"];
-            visibility?: components["schemas"]["ResourceVisibility"];
-            /**
-             * @description Loop authoring schema version. Only schema version 1 is accepted.
-             * @default 1
-             * @enum {string}
-             */
-            schema_version?: "1";
-            /** @description Declared event fields for this loop. */
-            event?: {
-                [key: string]: components["schemas"]["LoopSpecInput"];
-            };
-            /** @description Declared run config fields for this loop. */
-            config?: {
-                [key: string]: components["schemas"]["LoopSpecInput"];
-            };
-            /**
-             * @description Concurrency behavior: `allow`, `queue`, `skip`, or `replace`.
-             * @enum {string}
-             */
-            concurrency?: "allow" | "queue" | "skip" | "replace";
-            /** @description Authored trigger declarations for this loop. */
-            triggers?: components["schemas"]["LoopSpecTrigger"][];
-            /** @description Source repositories the loop targets. */
-            repositories?: components["schemas"]["LoopSpecRepository"][];
-            /**
-             * @description Steps use kind agent, action, sleep, wait_for_event, interaction, loop, or check; action inputs use config.parameters; if is a predicate.
-             *
-             *     Each item has `kind`, `config`, and optional `id`, `name`, `if`, `retry`, and `timeout`. Valid kinds are `agent`, `action`, `sleep`, `wait_for_event`, `interaction`, `loop`, and `check`. Required config: `agent.instructions`; `action.action_name`; `sleep.duration` or `sleep.until`; `wait_for_event.event_type`; `interaction.protocol` plus `interaction.targets`; `loop.loop_id`; or `check.checks`. Action inputs belong in `config.parameters`; `config.execution_location` is `managed`, `worker`, or `environment`. `if` is a bare expr predicate over `event`, `meta`, `config`, and prior `steps.<id>.output`. String leaves interpolate expr values with `${{ ... }}`.
-             */
-            steps?: components["schemas"]["LoopStep"][];
-            /** @description Declared run result contract. */
-            output?: {
-                [key: string]: unknown;
-            };
-            /** @description Cleanup steps or policies evaluated after normal step execution. */
-            cleanup?: {
-                [key: string]: unknown;
-            }[];
-            /** @description Run guardrails such as budget, timeout, and turn limits. */
-            limits?: components["schemas"]["LoopSpecLimits"];
-            /** @description Run-level defaults applied when individual steps omit a policy. */
-            defaults?: components["schemas"]["LoopSpecDefaults"];
-            /** @description Optional templates for generating an operator-facing title and description for each run. */
-            run_name?: components["schemas"]["RunNameSpec"];
-            /** @description Default config values used when a run is started without overrides. */
-            default_config?: {
-                [key: string]: unknown;
-            };
-            /** @description Free-form loop-level settings consumed by the engine. */
-            settings?: {
-                [key: string]: unknown;
-            };
-            /** @description Free-form labels used for filtering, ownership, or automation. */
-            tags?: components["schemas"]["TagMap"];
-        };
-        /** @description Partial update of loop metadata and/or authoring fields. Authoring changes become runnable immediately. */
-        UpdateLoopRequest: {
-            /** @description Human-readable display name. */
-            name?: string;
-            /** @description Markdown description of the loop's purpose. */
-            description?: string;
-            /** @description Replacement lifecycle status for the loop. */
-            status?: components["schemas"]["LoopStatus"];
-            /** @description Agent associated with this loop. Agent steps use it when they do not pin `config.agent_id`. */
-            agent_id?: string;
-            /**
-             * @description Loop authoring schema version. Only schema version 1 is accepted.
-             * @enum {string}
-             */
-            schema_version?: "1";
-            /** @description Declared event fields for this loop. */
-            event?: {
-                [key: string]: components["schemas"]["LoopSpecInput"];
-            };
-            /** @description Declared run config fields for this loop. */
-            config?: {
-                [key: string]: components["schemas"]["LoopSpecInput"];
-            };
-            /**
-             * @description Concurrency behavior: `allow`, `queue`, `skip`, or `replace`.
-             * @enum {string}
-             */
-            concurrency?: "allow" | "queue" | "skip" | "replace";
-            /** @description Replacement authored trigger declarations. */
-            triggers?: components["schemas"]["LoopSpecTrigger"][];
-            /** @description Replacement source repositories the loop targets. */
-            repositories?: components["schemas"]["LoopSpecRepository"][];
-            /**
-             * @description Steps use kind agent, action, sleep, wait_for_event, interaction, loop, or check; action inputs use config.parameters; if is a predicate.
-             *
-             *     Each item has `kind`, `config`, and optional `id`, `name`, `if`, `retry`, and `timeout`. Valid kinds are `agent`, `action`, `sleep`, `wait_for_event`, `interaction`, `loop`, and `check`. Required config: `agent.instructions`; `action.action_name`; `sleep.duration` or `sleep.until`; `wait_for_event.event_type`; `interaction.protocol` plus `interaction.targets`; `loop.loop_id`; or `check.checks`. Action inputs belong in `config.parameters`; `config.execution_location` is `managed`, `worker`, or `environment`. `if` is a bare expr predicate over `event`, `meta`, `config`, and prior `steps.<id>.output`. String leaves interpolate expr values with `${{ ... }}`.
-             */
-            steps?: components["schemas"]["LoopStep"][];
-            /** @description Replacement run result contract. */
-            output?: {
-                [key: string]: unknown;
-            };
-            /** @description Replacement cleanup steps or policies. */
-            cleanup?: {
-                [key: string]: unknown;
-            }[];
-            /** @description Replacement run guardrails such as budget, timeout, and turn limits. */
-            limits?: components["schemas"]["LoopSpecLimits"];
-            /** @description Replacement run-level defaults. */
-            defaults?: components["schemas"]["LoopSpecDefaults"];
-            /** @description Replacement templates for generating an operator-facing title and description for each run. */
-            run_name?: components["schemas"]["RunNameSpec"];
-            /** @description Default config values used when a run is started without overrides. */
-            default_config?: {
-                [key: string]: unknown;
-            };
-            /** @description Free-form loop-level settings consumed by the engine. */
-            settings?: {
-                [key: string]: unknown;
-            };
-            /** @description Replacement labels; send an empty object to clear all tags. */
-            tags?: components["schemas"]["TagMap"];
-        };
-        /** @description Templates for assigning an operator-facing title and optional description to each run. The object form leaves room for additional naming strategies without changing the loop spec shape. */
-        RunNameSpec: {
-            /** @description `${{ event.* }}`, `${{ meta.* }}`, and `${{ config.* }}` template rendered as the run title when the run is created. When blank, the run title falls back to the loop name. This property remains required for compatibility, but may be blank when only description_template is configured. Send empty title and description templates in an update to clear the run display configuration. */
-            template: string;
-            /** @description Optional `${{ event.* }}`, `${{ meta.* }}`, and `${{ config.* }}` template rendered as secondary descriptive text when the run is created. */
-            description_template?: string;
-        };
-        /** @description Source repository target attached to a loop spec. A `static` repository clones the named `full_name`. A `match` repository resolves the repository from the run's trigger event (for example the base repository of an opened GitHub pull request) and requires the loop to have an event trigger; pull requests opened from a fork are never cloned. `full_name` is required for `static` repositories and ignored for `match` repositories. */
-        LoopSpecRepository: {
-            /**
-             * @description How the repository target is resolved. `static` clones `full_name`; `match` clones the repository the trigger event concerns.
-             * @default static
-             * @enum {string}
-             */
-            source?: "static" | "match";
-            /**
-             * @description Repository provider. GitHub is the only supported provider today.
-             * @default github
-             * @enum {string}
-             */
-            provider?: "github";
-            /** @description Provider-specific repository id. */
-            id?: number | string;
-            /** @description Provider repository full name, e.g. `owner/repo`. Required when `source` is `static`. */
-            full_name?: string;
-            /** @description Optional branch, tag, or ref to check out. For `static` repositories it pins the checkout; for `match` repositories it overrides the ref derived from the event. Omitted uses the provider default branch. */
-            ref?: string;
-            /** @description Whether the provider reports this repository as private. */
-            private?: boolean;
-            /**
-             * @description Authorize the loop's managed environment to push to this repository. Defaults to `false`: the repository is cloned read-only and a `git push` from inside the environment fails with a permission error. Set `true` to let the environment obtain a write-scoped credential for this repository. Opt in per repository so environments are never write-capable by default.
-             * @default false
-             */
-            push?: boolean;
-        };
-        /** @description One named input accepted by a loop spec. */
-        LoopSpecInput: {
-            /** @description JSON-compatible input type expected by authoring tools. */
-            type?: string;
-            /** @description Human guidance shown when collecting the input value. */
-            description?: string;
-            /** @description Whether callers must provide this input when starting the loop. */
-            required?: boolean;
-            /** @description Optional default value for this input. May be any JSON value. */
-            default?: unknown;
-        };
-        /** @description One trigger declaration inside a loop spec. */
-        LoopSpecTrigger: {
-            /** @description Stable user-authored trigger key within the spec. */
-            key?: string;
-            /** @description Human-readable trigger name. */
-            name?: string;
-            /**
-             * @description Trigger mechanism: `http`, `schedule`, `event`, or `manual`.
-             * @enum {string}
-             */
-            kind: "http" | "schedule" | "event" | "manual";
-            /** @description Whether this trigger should be materialized for the current runnable definition. */
-            enabled?: boolean;
-            /** @description Kind-specific trigger configuration. Use `HTTPTriggerConfig` for `kind: http`, `ScheduleTriggerConfig` for `kind: schedule`, and `EventTriggerConfig` for `kind: event`. Omit for manual triggers. */
-            config?: components["schemas"]["HTTPTriggerConfig"] | components["schemas"]["ScheduleTriggerConfig"] | components["schemas"]["EventTriggerConfig"];
-            /**
-             * @description Trigger concurrency behavior: `allow`, `queue`, `skip`, or `replace`.
-             * @enum {string}
-             */
-            concurrency_policy?: "allow" | "queue" | "skip" | "replace";
-            /** @description Maximum number of concurrently active runs for this trigger. */
-            max_concurrent_runs?: number;
-        };
-        /** @description Configuration for `LoopSpec.triggers[]` entries with `kind` set to `http`. */
-        HTTPTriggerConfig: {
-            /** @description Optional public delivery handle for `POST /v1/triggers/http/{http_handle}`. Omit to let Mobius use the materialized trigger id as the unguessable handle. */
-            http_handle?: string;
-        };
-        /** @description Configuration for `LoopSpec.triggers[]` entries with `kind` set to `schedule`. Provide exactly one of `cron` or `interval`; the compiler rejects configs that omit both or set both. */
-        ScheduleTriggerConfig: {
-            /** @description Standard five-field cron expression or descriptor such as `@hourly`. */
-            cron?: string;
-            /** @description Go duration string such as `5m`, `1h`, or `24h`. */
+        RoutineKind: "invoke" | "notify";
+        /** @description Exactly one of at, interval, or cron is required. */
+        RoutineSchedule: {
+            /** Format: date-time */
+            at?: string;
+            /** @example 24h */
             interval?: string;
-            /** @description IANA time zone for cron schedules, such as `America/New_York`. */
+            /** @example 0 8 * * * */
+            cron?: string;
+            /** @example America/New_York */
             timezone?: string;
+            /** Format: date-time */
+            starts_at?: string;
+            /** Format: date-time */
+            ends_at?: string;
+            max_occurrences?: number;
         };
-        /** @description Configuration for `LoopSpec.triggers[]` entries with `kind` set to `event`. */
-        EventTriggerConfig: {
-            /** @description Source-event type or catalog pattern this trigger subscribes to. */
-            event_type: string;
-            /** @description Optional source identifier used to scope event matching. */
-            source_id?: string;
-            /** @description Optional expr predicate evaluated against the public `{ event, meta }` envelope. */
-            condition?: string;
-        };
-        /** @description User-authored loop step, discriminated by `kind`. */
-        LoopStep: components["schemas"]["LoopAgentStepSpec"] | components["schemas"]["LoopActionStepSpec"] | components["schemas"]["LoopSleepStepSpec"] | components["schemas"]["LoopWaitForEventStepSpec"] | components["schemas"]["LoopInteractionStepSpec"] | components["schemas"]["LoopSubLoopStepSpec"] | components["schemas"]["LoopCheckStepSpec"];
-        /** @description Agent step entry inside `LoopSpec.steps`. */
-        LoopAgentStepSpec: {
-            /** @description Optional stable step id within the spec. If omitted, the compiler uses the step index as a string, such as `"0"`. */
-            id?: string;
-            /** @description Human-readable step name. */
+        RoutineCreateRequest: {
+            session_id: string;
+            agent_id: string;
             name?: string;
-            /** @description Bare expr predicate over `event`, `meta`, `config`, and prior `steps.<id>.output`; false skips the step. A `${{ ... }}` wrapper is accepted but unnecessary. */
-            if?: string;
-            /**
-             * @description Step discriminator value; always `agent`. (enum property replaced by openapi-typescript)
-             * @enum {string}
-             */
-            kind: "agent";
-            /** @description Agent-step configuration. */
-            config: components["schemas"]["LoopAgentStep"];
-            /** @description Retry policy for this step. */
-            retry?: components["schemas"]["LoopRetryPolicy"];
-            /** @description Timeout policy for this step. */
-            timeout?: components["schemas"]["LoopTimeoutPolicy"];
-        };
-        /** @description Action step entry inside `LoopSpec.steps`. */
-        LoopActionStepSpec: {
-            /** @description Optional stable step id within the spec. If omitted, the compiler uses the step index as a string, such as `"0"`. */
-            id?: string;
-            /** @description Human-readable step name. */
-            name?: string;
-            /** @description Bare expr predicate over `event`, `meta`, `config`, and prior `steps.<id>.output`; false skips the step. A `${{ ... }}` wrapper is accepted but unnecessary. */
-            if?: string;
-            /**
-             * @description Step discriminator value; always `action`. (enum property replaced by openapi-typescript)
-             * @enum {string}
-             */
-            kind: "action";
-            /** @description Action-step configuration. */
-            config: components["schemas"]["LoopActionStep"];
-            /** @description Retry policy for this step. */
-            retry?: components["schemas"]["LoopRetryPolicy"];
-            /** @description Timeout policy for this step. */
-            timeout?: components["schemas"]["LoopTimeoutPolicy"];
-        };
-        /** @description Sleep step entry inside `LoopSpec.steps`. */
-        LoopSleepStepSpec: {
-            /** @description Optional stable step id within the spec. If omitted, the compiler uses the step index as a string, such as `"0"`. */
-            id?: string;
-            /** @description Human-readable step name. */
-            name?: string;
-            /** @description Bare expr predicate over `event`, `meta`, `config`, and prior `steps.<id>.output`; false skips the step. A `${{ ... }}` wrapper is accepted but unnecessary. */
-            if?: string;
-            /**
-             * @description Step discriminator value; always `sleep`. (enum property replaced by openapi-typescript)
-             * @enum {string}
-             */
-            kind: "sleep";
-            /** @description Sleep-step configuration. */
-            config: components["schemas"]["LoopSleepStep"];
-            /** @description Retry policy for this step. */
-            retry?: components["schemas"]["LoopRetryPolicy"];
-            /** @description Timeout policy for this step. */
-            timeout?: components["schemas"]["LoopTimeoutPolicy"];
-        };
-        /** @description Wait-for-event step entry inside `LoopSpec.steps`. */
-        LoopWaitForEventStepSpec: {
-            /** @description Optional stable step id within the spec. If omitted, the compiler uses the step index as a string, such as `"0"`. */
-            id?: string;
-            /** @description Human-readable step name. */
-            name?: string;
-            /** @description Bare expr predicate over `event`, `meta`, `config`, and prior `steps.<id>.output`; false skips the step. A `${{ ... }}` wrapper is accepted but unnecessary. */
-            if?: string;
-            /**
-             * @description Step discriminator value; always `wait_for_event`. (enum property replaced by openapi-typescript)
-             * @enum {string}
-             */
-            kind: "wait_for_event";
-            /** @description Wait-for-event step configuration. */
-            config: components["schemas"]["LoopWaitForEventStep"];
-            /** @description Retry policy for this step. */
-            retry?: components["schemas"]["LoopRetryPolicy"];
-            /** @description Timeout policy for this step. */
-            timeout?: components["schemas"]["LoopTimeoutPolicy"];
-        };
-        /** @description Interaction step entry inside `LoopSpec.steps`. */
-        LoopInteractionStepSpec: {
-            /** @description Optional stable step id within the spec. If omitted, the compiler uses the step index as a string, such as `"0"`. */
-            id?: string;
-            /** @description Human-readable step name. */
-            name?: string;
-            /** @description Bare expr predicate over `event`, `meta`, `config`, and prior `steps.<id>.output`; false skips the step. A `${{ ... }}` wrapper is accepted but unnecessary. */
-            if?: string;
-            /**
-             * @description Step discriminator value; always `interaction`. (enum property replaced by openapi-typescript)
-             * @enum {string}
-             */
-            kind: "interaction";
-            /** @description Interaction-step configuration. */
-            config: components["schemas"]["LoopInteractionStep"];
-            /** @description Retry policy for this step. */
-            retry?: components["schemas"]["LoopRetryPolicy"];
-            /** @description Timeout policy for this step. */
-            timeout?: components["schemas"]["LoopTimeoutPolicy"];
-        };
-        /** @description Child-loop step entry inside `LoopSpec.steps`. */
-        LoopSubLoopStepSpec: {
-            /** @description Optional stable step id within the spec. If omitted, the compiler uses the step index as a string, such as `"0"`. */
-            id?: string;
-            /** @description Human-readable step name. */
-            name?: string;
-            /** @description Bare expr predicate over `event`, `meta`, `config`, and prior `steps.<id>.output`; false skips the step. A `${{ ... }}` wrapper is accepted but unnecessary. */
-            if?: string;
-            /**
-             * @description Step discriminator value; always `loop`. (enum property replaced by openapi-typescript)
-             * @enum {string}
-             */
-            kind: "loop";
-            /** @description Child-loop step configuration. */
-            config: components["schemas"]["LoopSubLoopStep"];
-            /** @description Retry policy for this step. */
-            retry?: components["schemas"]["LoopRetryPolicy"];
-            /** @description Timeout policy for this step. */
-            timeout?: components["schemas"]["LoopTimeoutPolicy"];
-        };
-        /** @description Check step entry inside `LoopSpec.steps`. */
-        LoopCheckStepSpec: {
-            /** @description Optional stable step id within the spec. If omitted, the compiler uses the step index as a string, such as `"0"`. */
-            id?: string;
-            /** @description Human-readable step name. */
-            name?: string;
-            /** @description Bare expr predicate over `event`, `meta`, `config`, and prior `steps.<id>.output`; false skips the step. A `${{ ... }}` wrapper is accepted but unnecessary. */
-            if?: string;
-            /**
-             * @description Step discriminator value; always `check`. (enum property replaced by openapi-typescript)
-             * @enum {string}
-             */
-            kind: "check";
-            /** @description Check-step configuration. */
-            config: components["schemas"]["LoopCheckStep"];
-            /** @description Retry policy for this step. */
-            retry?: components["schemas"]["LoopRetryPolicy"];
-            /** @description Timeout policy for this step. */
-            timeout?: components["schemas"]["LoopTimeoutPolicy"];
-        };
-        /** @description Run guardrails. Lives at `spec.limits` in the JSON the engine compiles. Every limit is optional; absent or zero means unbounded (plan-level org caps still apply), with one exception — trial-plan runs default to a 100-credit ($1) budget when no budget is set here or on the start request. Paid plans default to unbounded. */
-        LoopSpecLimits: {
-            /**
-             * Format: double
-             * @description Run budget in US dollars (1 credit = $0.01). The budget is a hard limit: the run halts with stop reason `budget_exceeded` at the next checkpoint (step boundary or agent tool iteration) once its metered spend reaches the ceiling. Enforcement granularity is one model call or metered action — a run can overshoot by at most the call in flight. Mutually exclusive with `credit_budget`; values finer than 0.001 credit ($0.00001) are rejected at compile.
-             */
-            budget_usd?: number;
-            /**
-             * Format: int64
-             * @description Run budget in whole credits (1 credit = $0.01). Same ceiling semantics as `budget_usd`; set exactly one.
-             */
-            credit_budget?: number;
-            /** @description Run wall-clock limit as a Go duration string (e.g. `30m`, `2h`, `90s`). When set, the engine stamps `wall_clock_deadline_at = run.started_at + wall_clock_timeout` and the reaper fails the run (stop reason `wall_clock_exceeded`) after that instant even if a step executor is still grinding. Omit or set to `0` to disable. */
-            wall_clock_timeout?: string;
-            /** @description Run-wide cap on agent turns across all steps. Each agent step execution (including retries and resumed turns) consumes one turn. Breach halts the run with stop reason `turn_limit_reached`. Distinct from a step's `max_turns`, which bounds tool iterations within a single turn. */
-            max_agent_turns?: number;
-            /**
-             * Format: double
-             * @description Rolling-24h spend ceiling in US dollars across ALL runs of this loop (the fleet-level counterpart of `budget_usd`). Enforced at run start (new runs are refused while the window is exhausted) and at the platform funding gate (an in-flight run halts at its next platform-funded call with stop reason `budget_exceeded`). Counts platform-billed spend; mutually exclusive with `daily_credit_budget`.
-             */
-            daily_budget_usd?: number;
-            /**
-             * Format: int64
-             * @description Rolling-24h loop spend ceiling in whole credits. Same semantics as `daily_budget_usd`; set exactly one.
-             */
-            daily_credit_budget?: number;
-            /** @description How many identical tool calls (same tool name and canonicalized arguments) one agent turn tolerates before the turn halts with a `progress_stalled` error — the duplicate-tool-call breaker. The step's retry policy applies; if the run fails from it the stop reason is `progress_stalled` and a `run.progress_stalled` event is emitted on each trip. Omit for the platform default (3). */
-            max_duplicate_tool_calls?: number;
-            /** @description Loop circuit breaker. After this many consecutive failed runs the loop auto-pauses (status `paused`) and emits a `loop.auto_paused` event, so a bad deploy cannot burn all night at one run per trigger fire. Completed runs reset the streak; cancelled runs are neutral. Omit to disable. */
-            pause_after_consecutive_failures?: number;
-        };
-        /** @description Run-level defaults inside the loop spec. Lives at `spec.defaults` in the JSON the engine compiles. The run wall-clock limit moved to `limits.wall_clock_timeout`. */
-        LoopSpecDefaults: {
-            /** @description Default managed-environment policy for steps that need one. */
-            environment?: components["schemas"]["LoopEnvironmentPolicy"];
-            /** @description Default durable session policy for agent steps. */
-            agent_session?: components["schemas"]["LoopAgentSessionPolicy"];
-        };
-        /** @description Automatic managed-environment policy for loop execution. Omit to use the product default: each agent gets a persistent agent-bound environment, while direct environment actions get a run-bound environment. Set `disabled: true` to opt out. */
-        LoopEnvironmentPolicy: {
-            /** @description Disable automatic environment allocation. */
-            disabled?: boolean;
-            /** @description Environment ownership mode to request. */
-            mode?: components["schemas"]["EnvironmentMode"];
-            /** @description Existing dedicated environment to use for this loop. */
-            environment_id?: string;
-            /** @description Environment template to use when Mobius creates one. */
-            template_id?: string;
-            /** @description Provider to use when Mobius creates an environment. */
-            provider?: components["schemas"]["EnvironmentProvider"];
-            /** @description Mobius worker runtime version to install when starting the worker. */
-            runtime_version?: string;
-            /** @description Whether Mobius should start the managed worker automatically. */
-            auto_start_worker?: boolean;
-            /** @description Cleanup behavior after the run or lease ends. */
-            retention_policy?: components["schemas"]["EnvironmentRetentionPolicy"];
-        };
-        /** @description Agent step configuration recognised inside `LoopSpec.steps[].config`. */
-        LoopAgentStep: {
-            /** @description Agent to run for this step. Omit to use the loop's top-level `agent_id`. */
-            agent_id?: string;
-            /** @description Prompt or task instructions rendered before the agent turn starts. */
             instructions: string;
-            /** @description Optional per-step tool allow-list. When omitted and `disable_tools` is not true, the agent's full granted tool set is available. Send an empty array to allow no tools. */
-            tool_names?: string[];
-            /** @description Set true to disable granted action and memory tools for this step. When false or omitted, granted tools are available unless `tool_names` narrows the allow-list. Reserved runtime tools such as `invoke_skill` and structured-output submission may still be present when applicable. */
-            disable_tools?: boolean;
-            /** @description JSON Schema the agent should satisfy when returning structured output. */
-            output_schema?: {
-                [key: string]: unknown;
-            };
-            /** @description Maximum tool iterations allowed within this agent turn. */
-            max_turns?: number;
-            /** @description Optional model route override for this agent step. */
-            model_route?: components["schemas"]["LoopModelRoute"];
-            /** @description Optional durable session policy override for this agent step. */
-            session?: components["schemas"]["LoopAgentSessionPolicy"];
+            kind?: components["schemas"]["RoutineKind"];
+            schedule: components["schemas"]["RoutineSchedule"];
+            /** Format: int64 */
+            per_occurrence_ceiling_milli: number;
+            /** Format: int64 */
+            daily_ceiling_milli: number;
         };
-        /** @description Durable conversation-session policy for loop agent steps. Omit to enable the product default: loop-scoped sessions keyed from the triggering conversation when Mobius can identify one, such as a Telegram chat ID. */
-        LoopAgentSessionPolicy: {
-            /**
-             * @description Named-session boundary. `auto` and omitted use `loop`. `agent` intentionally shares the named session across loops using the same agent.
-             * @enum {string}
-             */
-            scope?: "auto" | "loop" | "agent";
-            /** @description Optional expression template rendered against `event`, `meta`, `config`, `steps`, `agent`, `loop`, `run`, `source`, and `step`. When omitted, Mobius derives a stable name from the event payload, falling back to the trigger or `default`. */
+        RoutineUpdateRequest: {
             name?: string;
-            /** @description Optional expression template for the session display title using the same roots as `name`. */
-            title?: string;
-            /** @description Visibility for durable sessions created from this policy. */
-            visibility?: components["schemas"]["ResourceVisibility"];
-            /** @description Optional per-session compaction policy merged with server defaults when the session is first created. Existing sessions keep their current compaction policy unless edited through a session-specific operation. */
-            compaction_policy?: components["schemas"]["SessionCompactionPolicy"];
-            /** @description Optional reasoning-effort override for this step's session turns. Overrides the agent default. Set as a loop default it applies to every agent step; set on a step it overrides the loop default. */
-            thinking_effort?: components["schemas"]["ThinkingEffort"];
+            instructions?: string;
+            schedule?: components["schemas"]["RoutineSchedule"];
+            /** Format: int64 */
+            per_occurrence_ceiling_milli?: number;
+            /** Format: int64 */
+            daily_ceiling_milli?: number;
         };
-        /** @description Model-routing override for an agent step. */
-        LoopModelRoute: {
-            /**
-             * @description Model route mode: `managed` or `worker`.
-             * @enum {string}
-             */
-            mode: "managed" | "worker";
-            /** @description Managed environment to route worker-backed model calls to. */
-            environment_id?: string;
-            /** @description Provider id advertised by a local worker when `mode` is `worker`. */
-            provider?: string;
-            /** @description Model identifier for this route. */
-            model?: string;
-        };
-        /** @description Action step configuration recognised inside `LoopSpec.steps[].config`. */
-        LoopActionStep: {
-            /** @description Catalog action name to invoke. */
-            action_name: string;
-            /**
-             * @description Execution location: `managed`, `worker`, or `environment`.
-             * @enum {string}
-             */
-            execution_location?: "managed" | "worker" | "environment";
-            /** @description Managed environment to route this worker-backed action to. When omitted for `execution_location: environment`, Mobius resolves one from `spec.defaults.environment`. */
-            environment_id?: string;
-            /** @description Input object passed to the named action. Static nested objects and arrays keep their types; every string leaf supports `${{ ... }}` interpolation over `event`, `meta`, `config`, and prior `steps.<id>.output`. An interpolation that returns an object or array renders compact JSON text; rendered JSON text is not automatically parsed back into a structured value. */
-            parameters?: {
-                [key: string]: unknown;
-            };
-        };
-        /** @description Sleep step configuration recognised inside `LoopSpec.steps[].config`. */
-        LoopSleepStep: {
-            /** @description Go duration string such as `30s`, `5m`, or `2h`. */
-            duration?: string;
-            /**
-             * Format: date-time
-             * @description Absolute time to resume the run.
-             */
-            until?: string;
-        };
-        /** @description Wait-for-event step configuration recognised inside `LoopSpec.steps[].config`. */
-        LoopWaitForEventStep: {
-            /** @description Event type or pattern that resumes the waiting step. */
-            event_type: string;
-            /** @description Optional source identifier used to scope event matching. */
-            source_id?: string;
-            /** @description Structured field match applied to incoming event payloads. */
-            match?: {
-                [key: string]: unknown;
-            };
-            /** @description Optional output mapping evaluated against `{ event, meta }`. */
-            payload_mapping?: {
-                [key: string]: string;
-            };
-        };
-        /** @description Interaction step configuration recognised inside `LoopSpec.steps[].config`. */
-        LoopInteractionStep: {
-            /**
-             * @description Type of response requested from the targets.
-             * @enum {string}
-             */
-            protocol: "request_information" | "request_approval" | "request_review";
-            /** @description User or agent IDs eligible to respond. */
-            targets: string[];
-            /** @description Prompt shown to responders. String content supports `${{ ... }}` interpolation. */
-            prompt?: string;
-            /**
-             * @description Whether the first eligible response or every target response resolves the interaction. Omit for `any_of`.
-             * @enum {string}
-             */
-            resolution_policy?: "any_of" | "all_of";
-            /** @description Optional interaction presentation details. String leaves support `${{ ... }}` interpolation. */
-            spec?: {
-                [key: string]: unknown;
-            };
-        };
-        /** @description Loop-trigger step configuration recognised inside `LoopSpec.steps[].config`. Triggers another loop in the same org as an independent child run (fire-and-forget). The child run records `parent_run_id`, `parent_loop_id`, and `parent_step_key` so the lineage is visible from the child. */
-        LoopSubLoopStep: {
-            /** @description ID of the loop to trigger, scoped to the same org as the parent loop. */
-            loop_id: string;
-            /** @description Event object handed to the child run. String leaves render against the parent run before the child starts using `${{ ... }}` expr interpolations over `event`, `meta`, `config`, `steps.<id>.output`, or `steps[0].output`. When omitted the parent's resolved event payload is forwarded. */
-            event?: {
-                [key: string]: unknown;
-            };
-            /** @description Optional config object handed to the child run. */
-            config?: {
-                [key: string]: unknown;
-            };
-            /** @description Removed legacy field. Use the step-level `if` field for child-loop conditions. */
-            condition?: string;
-        };
-        /** @description Check step configuration recognised inside `LoopSpec.steps[].config`. A check step evaluates typed assertions over the run's template `event`, `meta`, `config`, `steps.<id>.output`, and `steps[0].output`) — deterministic `expr` predicates, or `agent` judges for everything that isn't deterministic — records a per-assertion verdict with cited evidence, and routes on failure: fail the run (stop reason `check_failed`), continue with the red verdict on the record, or open an approval gate carrying the evidence (rejection stops the run with `gate_rejected`). All assertions are evaluated; there is no short-circuit. An assertion that errors (bad expr, judge model failure, unparseable verdict) fails closed — never a silent pass. */
-        LoopCheckStep: {
-            /** @description Assertions evaluated in order; names must be unique. */
-            checks: components["schemas"]["LoopCheckAssertion"][];
-            /**
-             * @description Routing when any assertion fails. `fail` stops the run with stop reason `check_failed`. `continue` proceeds with the red verdict recorded. `gate` opens a `request_approval` interaction carrying the failed assertions and evidence; approval resumes the run with the verdict recorded as overridden, rejection stops it with `gate_rejected`.
-             * @default fail
-             * @enum {string}
-             */
-            on_fail?: "fail" | "continue" | "gate";
-            /** @description Approval gate configuration used when `on_fail` is `gate`. */
-            gate?: components["schemas"]["LoopCheckGate"];
-        };
-        /** @description One assertion evaluated by a check step. */
-        LoopCheckAssertion: {
-            /** @description Unique assertion name shown on the timeline proof row. */
-            name: string;
-            /**
-             * @description `expr` evaluates a deterministic predicate with the same language as step conditions and event waits. `agent` runs a bounded judge turn returning a strict `{pass, reason}` verdict; its spend counts against the run budget and it consumes one run agent turn.
-             * @enum {string}
-             */
-            kind: "expr" | "agent";
-            /** @description Predicate for `kind: expr`, evaluated against the run's template environment (`event`, `meta`, `config`, `steps.<id>.output`, and `steps[0].output`). Required for expr assertions. */
-            expr?: string;
-            /** @description Judge agent id for `kind: agent`. Omit to use the built-in platform reviewer `mobius-reviewer`. The judge should be a different agent than the one that produced the evidence; the compiler warns when a judge grades its own work. */
-            agent?: string;
-            /** @description Judge instruction for `kind: agent`, rendered with `${{ ... }}` expr interpolation before the cited evidence is appended. Required for agent assertions. */
-            prompt?: string;
-            /** @description Step ids whose saved outputs this assertion judges. Each must reference an earlier step. Cited outputs are shown to agent judges and recorded on the verdict. */
-            evidence?: string[];
-        };
-        /** @description Approval gate opened when `on_fail: gate` trips. */
-        LoopCheckGate: {
-            /** @description Principals who must respond. String entries may contain template actions resolved against the run. */
-            targets: string[];
-            /** @description Prompt shown to reviewers. Defaults to a generated summary of the failed assertions. */
-            prompt?: string;
-        };
-        /** @description Retry policy for a step. `max_attempts` is the total number of attempts (1 = no retry); it bounds both worker-reported failures and lease-loss recovery for worker-executed action steps. A worker that reports a failure with attempts remaining re-queues for another attempt rather than failing the run; the run fails once attempts are exhausted. The attempt count is visible on the run timeline (`action.retried`, `action.failed`) and on the executing job (`claim_attempt` / `max_attempts`). Cancellation is always terminal. Capped server-side at 10 attempts. */
-        LoopRetryPolicy: {
-            /** @description Total attempts allowed for the step, including the first attempt. */
-            max_attempts?: number;
-            /** @description Go duration string such as `30s`, `5m`, or `2h`. Applied between attempts for in-process (synchronous) action retries; worker-executed actions re-queue immediately for the next attempt. */
-            delay?: string;
-        };
-        /** @description Timeout behavior for one loop step. */
-        LoopTimeoutPolicy: {
-            /** @description Go duration string such as `30s`, `5m`, or `2h`. */
-            duration?: string;
-            /**
-             * @description Timeout behavior; currently only `fail`.
-             * @enum {string}
-             */
-            on_timeout?: "fail";
-        };
-        /** @description Free-form JSON object delivered to the HTTP trigger. The payload is recorded on the source event and forwarded to the run as the event. */
-        HTTPTriggerDeliveryRequest: {
-            [key: string]: unknown;
-        };
-        /** @description Synchronous receipt for an inbound HTTP-trigger delivery. The trigger dispatch and run start happen asynchronously after this response. Clients can poll via `GET /v1/runs?source_event_id=<source_event_id>` to discover the run once the source-event processor reserves it. */
-        HTTPTriggerDeliveryResult: {
-            /** @description Durable source-event id (also the `dedup_key` seed). Stable across retries with the same `Idempotency-Key`. */
-            source_event_id: string;
-            /**
-             * @description Acceptance status of the source-event row. The only synchronous success value is `accepted`; processing happens asynchronously after the source event is durable.
-             * @enum {string}
-             */
-            status: "accepted";
-            /** @description True when an existing source-event row was returned for the same idempotency key. */
-            deduped?: boolean;
-        };
-        /**
-         * @description Body for `POST /v1/loops/{resource_id}/runs`. All fields are optional; an empty body starts a run with an empty event/config envelope and no attribution.
-         * @example {
-         *       "event": {
-         *         "issue_id": "42",
-         *         "repository": "deepnoodle-ai/mobius-cloud"
-         *       },
-         *       "config": {
-         *         "priority": "normal"
-         *       },
-         *       "source": {
-         *         "type": "api",
-         *         "id": "review-service",
-         *         "label": "review-service"
-         *       },
-         *       "idempotency_key": "review-service:issue-42",
-         *       "credit_budget": 1000
-         *     }
-         */
-        StartLoopRunRequest: {
-            /** @description Exact event object that starts the run. Manual/API starts use this object the same way integration, HTTP, and schedule triggers do. Templates reference it via `${{ event.<key> }}`. */
-            event?: {
-                [key: string]: unknown;
-            };
-            /** @description Optional event metadata supplied by the caller. Mobius also adds provenance such as run, loop, source, trigger, and source-event ids. */
-            meta?: {
-                [key: string]: unknown;
-            };
-            /** @description Optional static or caller-provided configuration for handling the event. Templates reference it via `config.*`. */
-            config?: {
-                [key: string]: unknown;
-            };
-            /** @description Attribution for the call that starts the run. */
-            source?: components["schemas"]["LoopRunSource"];
-            /** @description Caller-supplied idempotency key, scoped to the org. Repeat calls with the same `idempotency_key` while the prior run is still non-terminal return the existing run (same `id`). A repeat after the prior run terminated returns `409 Conflict` with code `idempotency_key_conflict` and details containing the existing run id and its terminal status. */
-            idempotency_key?: string;
-            /**
-             * Format: double
-             * @description Per-run budget override in US dollars (1 credit = $0.01). Overrides the loop spec's `limits` budget for this run only. Mutually exclusive with `credit_budget` — setting both is a `400`. Values finer than 0.001 credit ($0.00001) are rejected. The run halts at the next checkpoint (step boundary or agent tool iteration) once spend reaches the budget; enforcement granularity is one model call or metered action.
-             */
-            budget_usd?: number;
-            /**
-             * Format: int64
-             * @description Per-run budget override in whole credits (1 credit = $0.01). Same ceiling semantics as `budget_usd`; set exactly one.
-             */
-            credit_budget?: number;
-        };
-        /**
-         * @description Body for the cancellation endpoint. All fields optional.
-         * @example {
-         *       "reason": "superseded by manual remediation"
-         *     }
-         */
-        CancelLoopRunRequest: {
-            /** @description Human-readable cancellation reason recorded on the run. */
-            reason?: string;
-        };
-        /**
-         * @description Body for resuming or retrying a failed loop run in place. Limit fields are optional unless the prior failure was caused by that guardrail; in that case the replacement limit must be greater than the amount already consumed by the run.
-         * @example {
-         *       "reason": "transient provider failure cleared"
-         *     }
-         */
-        RecoverLoopRunRequest: {
-            /** @description Human-readable recovery reason recorded on the run event log. */
-            reason?: string;
-            /**
-             * Format: double
-             * @description Replacement run budget in US dollars (1 credit = $0.01). Mutually exclusive with `credit_budget`; setting both is a `400`.
-             */
-            budget_usd?: number;
-            /**
-             * Format: int64
-             * @description Replacement run budget in whole credits (1 credit = $0.01). Must be greater than `credit_spent`.
-             */
-            credit_budget?: number;
-            /** @description Replacement run-wide agent turn cap. Must be greater than `agent_turns_used`. */
-            max_agent_turns?: number;
-            /** @description Additional wall-clock time, in seconds, granted from the recovery request time. Required when the run stopped on `wall_clock_exceeded`. */
-            wall_clock_extend_seconds?: number;
-        };
-        /**
-         * @description Body for resuming a suspended loop step.
-         * @example {
-         *       "step_key": "wait_for_external_result",
-         *       "result": {
-         *         "status": "complete",
-         *         "source": "ci"
-         *       }
-         *     }
-         */
-        SignalLoopRunRequest: {
-            /** @description Step key currently in `suspended` state that should resume. Must match a step declared in the run's loop version spec. */
-            step_key: string;
-            /** @description Free-form payload saved as the resumed step's output. */
-            result?: {
-                [key: string]: unknown;
-            };
-        };
-        /** @description Optional attribution for the call that started this run. Triggers and HTTP trigger dispatch populate `trigger_id` and `trigger_fire_id`. API callers usually only set `type` and `id`. */
-        LoopRunSource: {
-            /**
-             * @description Source category for the run start: `api`, `trigger`, `manual`, or `signal`.
-             * @enum {string}
-             */
-            type?: "api" | "trigger" | "manual" | "signal";
-            /** @description Identifier within the source type's namespace. */
-            id?: string;
-            /** @description Display label. */
-            label?: string;
-            /** @description Trigger that fired this run, if any. */
-            readonly trigger_id?: string;
-        };
-        /**
-         * @description One loop run record.
-         * @example {
-         *       "id": "run_8q5m2x9v7p3n4r6t",
-         *       "loop_id": "loop_9q2m7x5v3p8n4r6t",
-         *       "name": "Review pull request #1268",
-         *       "description": "deepnoodle-ai/mobius-cloud · Add run descriptions",
-         *       "loop_name": "Daily security check",
-         *       "loop_version_id": "lver_4v9n2q7m5x8p3r6t",
-         *       "loop_version": 3,
-         *       "status": "running",
-         *       "credit_budget": 1000,
-         *       "credit_spent": 12.5,
-         *       "event": {
-         *         "repository": "deepnoodle-ai/mobius-cloud"
-         *       },
-         *       "config": {
-         *         "priority": "normal"
-         *       },
-         *       "source": {
-         *         "type": "api",
-         *         "id": "review-service",
-         *         "label": "review-service"
-         *       },
-         *       "created_at": "2026-06-15T14:30:00Z",
-         *       "updated_at": "2026-06-15T14:31:00Z"
-         *     }
-         */
-        LoopRun: {
-            /** @description Stable run identifier. */
+        Routine: {
             id: string;
-            /** @description Loop this run belongs to. */
-            loop_id: string;
-            /** @description Human-readable title for this run. */
-            name?: string;
-            /** @description Optional secondary description for this run. */
-            description?: string;
-            /** @description Human-readable name of the loop this run belongs to. */
-            loop_name?: string;
-            /** @description LoopVersion record this run is executing. */
-            loop_version_id: string;
-            /** @description Version number of the LoopVersion this run is executing. */
-            loop_version: number;
-            /** @description Current lifecycle state of this run. */
-            status: components["schemas"]["LoopRunStatus"];
-            /** @description One-based execution attempt for this run. The original run starts at 1 and increments each time the run is resumed or retried in place. */
-            attempt?: number;
-            /** @description Gate that placed this run in the durable queue. Present only while `status` is `queued`. */
-            queue_reason?: components["schemas"]["LoopRunQueueReason"];
-            /** @description Org-wide concurrent-run ceiling stamped at run start. Present when the run was evaluated against a plan concurrency limit. */
-            plan_concurrency_limit?: number;
-            /** @description Terminal reason recorded when the run stops. */
-            stop_reason?: components["schemas"]["LoopRunStopReason"];
-            /**
-             * Format: double
-             * @description The run's budget ceiling in credits (1 credit = $0.01), with up to 3 decimal places. Resolved at run start from the StartRun override, the loop spec's `limits` block, or the trial-plan default, in that order. Absent when the run is unbounded.
-             */
-            credit_budget?: number;
-            /**
-             * Format: double
-             * @description Metered spend attributed to this run so far, in credits (up to 3 decimal places). Incremented atomically with each usage-ledger insert that carries this run's id. Counts all metered work regardless of credential source (BYOK calls count at their rate-card equivalent even though they bill zero credits).
-             */
-            credit_spent?: number;
-            /** @description Run-wide cap on agent turns across all steps, from the loop spec's `limits.max_agent_turns`. Absent when unbounded. */
-            max_agent_turns?: number;
-            /** @description Number of agent turns started for this run so far. Compared against `max_agent_turns` when that cap is set. */
-            agent_turns_used?: number;
-            /** @description Exact safe/canonical event object that started the run, reachable in templates at `event.*`. */
-            event?: {
-                [key: string]: unknown;
-            };
-            /** @description Run and trigger metadata envelope, reachable in templates at `${{ meta.* }}`: `run_id`, `loop_id`, `source`, `trigger`, plus trigger-supplied facts such as `event_type`, `source_event_id`, and `scheduled_at`. */
-            meta?: {
-                [key: string]: unknown;
-            };
-            /** @description Optional static or caller-provided configuration resolved when the run started, reachable in templates at `config.*`. */
-            config?: {
-                [key: string]: unknown;
-            };
-            /** @description Final result payload. When the loop declares an `output:` block this is that block rendered at completion; otherwise it is the run's accumulated step outputs, keyed by step id. Absent until the run terminates successfully. */
-            result?: {
-                [key: string]: unknown;
-            };
-            /** @description Source that started this run. */
-            source?: components["schemas"]["LoopRunSource"];
-            /** @description Run that triggered this run via an `loop` step. Present only on child runs; absent for top-level runs. */
-            parent_run_id?: string;
-            /** @description Loop that triggered this run via an `loop` step. Present only on child runs. */
-            parent_loop_id?: string;
-            /** @description Step key within the parent run's loop that triggered this run. Present only on child runs. */
-            parent_step_key?: string;
-            /** @description Human-readable failure summary; populated on `failed` runs. */
-            error_message?: string;
-            /** @description Machine-readable failure classification when available. */
-            error_type?: string;
-            /**
-             * Format: date-time
-             * @description Scheduled wake time for a suspended run.
-             */
-            wake_at?: string;
-            /**
-             * Format: date-time
-             * @description Deadline after which the loop reaper fails the run.
-             */
-            wall_clock_deadline_at?: string;
-            /**
-             * Format: date-time
-             * @description Time the engine moved the run to `running`.
-             */
-            started_at?: string;
-            /**
-             * Format: date-time
-             * @description Time the run reached a terminal status.
-             */
+            org_id: string;
+            agent_id: string;
+            session_id: string;
+            owner_id: string;
+            name: string;
+            /** @description Omitted from administrator metadata-only projections. */
+            instructions?: string;
+            kind: components["schemas"]["RoutineKind"];
+            schedule: components["schemas"]["RoutineSchedule"];
+            timezone: string;
+            status: components["schemas"]["RoutineStatus"];
+            pause_reason?: string;
+            /** Format: date-time */
+            next_fire_at?: string;
+            /** Format: date-time */
+            last_fire_at?: string;
+            occurrence_count: number;
+            /** Format: date-time */
             completed_at?: string;
-            /**
-             * Format: date-time
-             * @description Record creation timestamp.
-             */
+            /** Format: int64 */
+            per_occurrence_ceiling_milli: number;
+            /** Format: int64 */
+            daily_ceiling_milli: number;
+            act_as_user_providers?: string[];
+            /** Format: date-time */
             created_at: string;
-            /**
-             * Format: date-time
-             * @description Last update timestamp.
-             */
+            /** Format: date-time */
             updated_at: string;
         };
-        /**
-         * @description Run lifecycle state: `queued`, `running`, `suspended`, `completed`, `failed`, or `cancelled`.
-         * @enum {string}
-         */
-        LoopRunStatus: "queued" | "running" | "suspended" | "completed" | "failed" | "cancelled";
-        /**
-         * @description Why a run is waiting in the queue. `plan_concurrency` means the organization's current plan has no active-run capacity available. `loop_policy` and `trigger_concurrency` mean authored concurrency policy deferred the run.
-         * @enum {string}
-         */
-        LoopRunQueueReason: "plan_concurrency" | "loop_policy" | "trigger_concurrency";
-        /**
-         * @description Why a run stopped. Set exactly once when the run reaches a terminal status; absent on non-terminal runs. `status` carries the lifecycle state and `error_type` classifies the error when one occurred; `stop_reason` classifies the stop itself.
-         *
-         *     Grouping: `completed` is the success terminal. `step_failed`, `check_failed`, and `gate_rejected` mean the work failed (an error, a failed verification, or a human rejection at a gate). `budget_exceeded`, `turn_limit_reached`, `wall_clock_exceeded`, `step_limit_reached`, and `progress_stalled` mean a configured guardrail halted the run — the limit worked; the loop did not break. `cancelled` and `replaced` mean somebody (or a concurrency policy) chose to stop it.
-         * @enum {string}
-         */
-        LoopRunStopReason: "completed" | "step_failed" | "check_failed" | "gate_rejected" | "cancelled" | "replaced" | "wall_clock_exceeded" | "budget_exceeded" | "turn_limit_reached" | "progress_stalled" | "step_limit_reached";
-        /**
-         * @example {
-         *       "items": [
-         *         {
-         *           "id": "run_8q5m2x9v7p3n4r6t",
-         *           "loop_id": "loop_9q2m7x5v3p8n4r6t",
-         *           "loop_version_id": "lver_4v9n2q7m5x8p3r6t",
-         *           "loop_version": 3,
-         *           "status": "running",
-         *           "created_at": "2026-06-15T14:30:00Z",
-         *           "updated_at": "2026-06-15T14:31:00Z"
-         *         }
-         *       ],
-         *       "has_more": false
-         *     }
-         */
-        LoopRunListResponse: {
-            /** @description The list of results for this page. */
-            items: components["schemas"]["LoopRun"][];
-            /** @description Opaque cursor for the next page; absent when no more results. */
+        RoutineList: {
+            items: components["schemas"]["Routine"][];
+            has_more: boolean;
             next_cursor?: string;
-            /** @description True when more items exist after this page. */
-            has_more?: boolean;
         };
-        LoopRunStepListResponse: {
-            /** @description Steps for this run in `seq` order. */
-            items: components["schemas"]["LoopRunStep"][];
+        RoutineOccurrence: {
+            id: string;
+            routine_id: string;
+            /** Format: date-time */
+            scheduled_at: string;
+            /** Format: date-time */
+            intake_at: string;
+            /** Format: int64 */
+            lateness_milliseconds: number;
+            /** @enum {string} */
+            status: "pending" | "admitted" | "completed" | "failed" | "skipped" | "missed";
+            outcome?: string;
+            error_code?: string;
+            error_message?: string;
+            turn_id?: string;
+            /** Format: int64 */
+            credits_spent_milli: number;
+            transcript_url: string;
         };
-        /** @description Durable run lifecycle frame. SSE messages carrying this shape include `id: <sequence>`, and that value is the only cursor clients should persist for `after_sequence` or `Last-Event-ID` resume. */
-        LoopRunLifecycleFrame: components["schemas"]["LoopRunEvent"];
-        /** @description JSON payload of a single `data:` line on the run event SSE stream. Run stream frames are lifecycle/observability events and are replayable with an SSE `id:`. Agent transcript content is delivered by the referenced session stream. */
-        LoopRunStreamFrame: components["schemas"]["LoopRunLifecycleFrame"];
-        LoopRunEventListResponse: {
-            /** @description Run events in this page, ordered by `sequence` ascending. */
-            items: components["schemas"]["LoopRunEvent"][];
-            /**
-             * Format: int64
-             * @description Sequence number of the most recent event in `items`; clients can pass this back as `after_sequence` on the next poll.
-             */
-            next_sequence?: number;
-            /** @description True when more events exist after the returned page. */
-            has_more?: boolean;
+        RoutineOccurrenceList: {
+            items: components["schemas"]["RoutineOccurrence"][];
+            has_more: boolean;
+            next_cursor?: string;
+        };
+        RoutineProposal: {
+            id: string;
+            session_id: string;
+            agent_id: string;
+            proposed_to: string;
+            /** @enum {string} */
+            status: "pending" | "approved" | "dismissed" | "expired";
+            routine_id?: string;
+            /** Format: date-time */
+            expires_at: string;
+            payload: {
+                [key: string]: unknown;
+            };
         };
         /**
          * @example {
@@ -7956,7 +5941,7 @@ export interface components {
          * @description The kind of Mobius resource a binding or change refers to.
          * @enum {string}
          */
-        BlueprintResourceType: "action" | "skill" | "agent" | "loop" | "table";
+        BlueprintResourceType: "action" | "skill" | "agent" | "table";
         /**
          * @description What apply did (or, in preview, would do): `created` a new resource, `updated` a managed one, `adopted` a matching unmanaged one, or left an `unchanged` resource untouched.
          * @enum {string}
@@ -7993,7 +5978,6 @@ export interface components {
             actions?: components["schemas"]["BlueprintActionInput"][];
             skills?: components["schemas"]["BlueprintSkillInput"][];
             agents?: components["schemas"]["BlueprintAgentInput"][];
-            loops?: components["schemas"]["BlueprintLoopInput"][];
             tables?: components["schemas"]["BlueprintTableInput"][];
         };
         /** @description A desired action. `name` is its immutable org-unique identity. */
@@ -8057,66 +6041,10 @@ export interface components {
             status?: components["schemas"]["AgentStatus"];
             /** @description Default session-compaction policy inherited by new sessions. */
             compaction_policy?: components["schemas"]["SessionCompactionPolicy"];
-            /** @description Default reasoning-effort level for sessions and Loop agent steps. */
+            /** @description Default reasoning-effort level for the agent's sessions. */
             thinking_effort?: components["schemas"]["ThinkingEffort"];
             color?: string;
             skills?: components["schemas"]["BlueprintResourceRef"][];
-            tags?: components["schemas"]["TagMap"];
-        };
-        /** @description A desired loop. The spec-bearing fields (`steps`, `triggers`, `event`, `config`, `limits`, `output`, `concurrency`, `repositories`, `cleanup`, `defaults`, `run_name`) mirror the loop authoring shape and are compiled by the loop engine. Applied loops default to `draft` unless `status` is set. `default_config`, `settings`, and `tags` configure Loop row state. */
-        BlueprintLoopInput: {
-            key: string;
-            name: string;
-            description?: string;
-            agent?: components["schemas"]["BlueprintResourceRef"];
-            /** @enum {string} */
-            status?: "draft" | "active" | "paused";
-            /**
-             * @description Loop authoring schema version. Only version 1 is accepted.
-             * @default 1
-             * @enum {string}
-             */
-            schema_version?: "1";
-            steps?: {
-                [key: string]: unknown;
-            }[];
-            triggers?: {
-                [key: string]: unknown;
-            }[];
-            /** @description Declared event input contract for the run (maps to the loop spec `event`). */
-            event?: {
-                [key: string]: unknown;
-            };
-            config?: {
-                [key: string]: unknown;
-            };
-            limits?: {
-                [key: string]: unknown;
-            };
-            output?: {
-                [key: string]: unknown;
-            };
-            concurrency?: string;
-            repositories?: {
-                [key: string]: unknown;
-            }[];
-            /** @description Cleanup steps run at the end of the run (maps to the loop spec `cleanup`). */
-            cleanup?: {
-                [key: string]: unknown;
-            }[];
-            defaults?: {
-                [key: string]: unknown;
-            };
-            /** @description Templates for the operator-facing title and description of each run. */
-            run_name?: components["schemas"]["RunNameSpec"];
-            /** @description Default config values used when a run starts without overrides. */
-            default_config?: {
-                [key: string]: unknown;
-            };
-            /** @description Free-form Loop-level settings consumed by the engine. */
-            settings?: {
-                [key: string]: unknown;
-            };
             tags?: components["schemas"]["TagMap"];
         };
         /** @description A desired table. `key` is its stable Blueprint handle; `name` is org-unique (lower snake_case) and may be changed after binding. `schema` carries the full column and identity definition and is validated on apply. The identity column and the required-ness of existing columns are immutable after create, so a re-apply that changes them is rejected. */
@@ -8245,7 +6173,7 @@ export interface components {
          * @enum {string}
          */
         PrincipalState: "active" | "disabled" | "deleted";
-        /** @description Non-human identity used by loop, agents, and API keys. A principal makes permissions, delegation, and credential rotation explicit without tying machine access to a human user. The `id` is the stable identity used by credentials, role assignments, and agent execution. */
+        /** @description Non-human identity used by workers, agents, and API keys. A principal makes permissions, delegation, and credential rotation explicit without tying machine access to a human user. The `id` is the stable identity used by credentials, role assignments, and agent execution. */
         Principal: {
             /** @description Unique identifier for this principal. */
             id: string;
@@ -8829,15 +6757,6 @@ export interface components {
             };
             content?: never;
         };
-        /** @description LLM provider error */
-        ProviderError: {
-            headers: {
-                [name: string]: unknown;
-            };
-            content: {
-                "application/json": components["schemas"]["ErrorResponse"];
-            };
-        };
     };
     parameters: {
         /** @description Resource ID. */
@@ -8846,7 +6765,7 @@ export interface components {
         SessionIdParam: string;
         /** @description Identifier of a turn within a session. */
         TurnIdParam: string;
-        /** @description Action name used in loop step definitions. */
+        /** @description Action name as registered in the catalog. */
         ActionNameParam: string;
         /** @description Principal ID. */
         principal_id: string;
@@ -8886,6 +6805,8 @@ export interface components {
         NudgeIdParam: string;
         /** @description ID of the artifact */
         ArtifactIdParam: string;
+        RoutineID: string;
+        RoutineProposalID: string;
         /** @description Table ID. */
         TableIDParam: string;
         /** @description Filter tables by name. Table names are unique within an org; use this as a discovery filter and use the returned table `id` for follow-up operations. */
@@ -8909,7 +6830,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                resource_type: "action" | "artifact" | "environment" | "loop" | "secret" | "session" | "skill" | "table" | "webhook";
+                resource_type: "action" | "artifact" | "environment" | "routine" | "secret" | "session" | "skill" | "table" | "webhook";
                 /** @description Resource ID. */
                 resource_id: components["parameters"]["IDParam"];
             };
@@ -9171,7 +7092,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Action name used in loop step definitions. */
+                /** @description Action name as registered in the catalog. */
                 action_name: components["parameters"]["ActionNameParam"];
             };
             cookie?: never;
@@ -9191,7 +7112,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Action name used in loop step definitions. */
+                /** @description Action name as registered in the catalog. */
                 action_name: components["parameters"]["ActionNameParam"];
             };
             cookie?: never;
@@ -9232,7 +7153,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Action name used in loop step definitions. */
+                /** @description Action name as registered in the catalog. */
                 action_name: components["parameters"]["ActionNameParam"];
             };
             cookie?: never;
@@ -9267,8 +7188,6 @@ export interface operations {
                 cursor?: components["parameters"]["CursorParam"];
                 /** @description Maximum number of items to return */
                 limit?: components["parameters"]["LimitParam"];
-                /** @description Filter to invocations from a specific loop run. */
-                run_id?: string;
                 /** @description Filter to invocations from a specific job. */
                 job_id?: string;
                 /** @description Filter to invocations executed in a specific environment. */
@@ -9312,7 +7231,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Action name used in loop step definitions. */
+                /** @description Action name as registered in the catalog. */
                 action_name: components["parameters"]["ActionNameParam"];
             };
             cookie?: never;
@@ -9423,7 +7342,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
-                /** @description Action name used in loop step definitions. */
+                /** @description Action name as registered in the catalog. */
                 action_name: components["parameters"]["ActionNameParam"];
             };
             cookie?: never;
@@ -9490,195 +7409,6 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
-    listEnvironments: {
-        parameters: {
-            query?: {
-                /** @description Cursor for pagination (opaque string from previous response) */
-                cursor?: components["parameters"]["CursorParam"];
-                /** @description Maximum number of items to return */
-                limit?: components["parameters"]["LimitParam"];
-                /** @description Filter by environment lifecycle status. */
-                status?: components["schemas"]["EnvironmentStatus"];
-                /** @description Filter to environments created for the given run. */
-                run_id?: string;
-                /** @description Include destroyed environments in the result. By default destroyed rows are excluded; set this to true (or pass status=destroyed) to see them. */
-                include_destroyed?: boolean;
-                /** @description Narrow destroyed rows to those torn down at or after this timestamp. Composes with `status=destroyed` to fetch a "recently destroyed" tombstone window (e.g. last hour). Non-destroyed rows are unaffected when this is combined with the default (no-status) view. */
-                destroyed_since?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["EnvironmentListResponse"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-        };
-    };
-    createEnvironment: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                /**
-                 * @example {
-                 *       "name": "review-workspace",
-                 *       "provider": "sprites",
-                 *       "template_id": "coding-default",
-                 *       "tags": {
-                 *         "owner": "product"
-                 *       }
-                 *     }
-                 */
-                "application/json": components["schemas"]["CreateEnvironmentRequest"];
-            };
-        };
-        responses: {
-            /** @description Created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "id": "env_8q5m2x9v7p3n4r6t",
-                     *       "name": "review-workspace",
-                     *       "provider": "sprites",
-                     *       "status": "provisioning",
-                     *       "lifetime": "explicit",
-                     *       "tags": {
-                     *         "owner": "product"
-                     *       },
-                     *       "cleanup_status": "none",
-                     *       "retention_policy": "manual",
-                     *       "owner": {
-                     *         "kind": "person",
-                     *         "id": "user_2f9s3k4m5n6p7q8r"
-                     *       },
-                     *       "visibility": "private",
-                     *       "container": null,
-                     *       "posture": "only_you",
-                     *       "created_at": "2026-06-15T14:30:00Z",
-                     *       "updated_at": "2026-06-15T14:30:00Z"
-                     *     }
-                     */
-                    "application/json": components["schemas"]["Environment"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            409: components["responses"]["Conflict"];
-            429: components["responses"]["TooManyRequests"];
-        };
-    };
-    getEnvironment: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Environment ID. */
-                environment_id: components["parameters"]["EnvironmentIDParam"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Environment"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    destroyEnvironment: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Environment ID. */
-                environment_id: components["parameters"]["EnvironmentIDParam"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Destroyed */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Environment"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            429: components["responses"]["TooManyRequests"];
-        };
-    };
-    updateEnvironment: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Environment ID. */
-                environment_id: components["parameters"]["EnvironmentIDParam"];
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                /**
-                 * @example {
-                 *       "tags": {
-                 *         "owner": "product"
-                 *       }
-                 *     }
-                 */
-                "application/json": components["schemas"]["UpdateEnvironmentRequest"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Environment"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            429: components["responses"]["TooManyRequests"];
-        };
-    };
     openWorkerSocket: {
         parameters: {
             query?: never;
@@ -9709,322 +7439,6 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
-    listWebhooks: {
-        parameters: {
-            query?: {
-                /** @description Filter by enabled/disabled state. */
-                enabled?: boolean;
-                /** @description Opaque pagination cursor returned from the previous response. */
-                cursor?: string;
-                /** @description Maximum number of results to return per page. */
-                limit?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["WebhookListResponse"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    createWebhook: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                /**
-                 * @example {
-                 *       "name": "Run status sink",
-                 *       "url": "https://hooks.example.com/mobius/run-status",
-                 *       "events": [
-                 *         "run.completed",
-                 *         "run.failed"
-                 *       ],
-                 *       "enabled": true
-                 *     }
-                 */
-                "application/json": components["schemas"]["CreateWebhookRequest"];
-            };
-        };
-        responses: {
-            /** @description Created */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "id": "wbh_7x3m9q2v5p8n4r6t",
-                     *       "name": "Run status sink",
-                     *       "url": "https://hooks.example.com/mobius/run-status",
-                     *       "events": [
-                     *         "run.completed",
-                     *         "run.failed"
-                     *       ],
-                     *       "enabled": true,
-                     *       "secret_version": 1,
-                     *       "signing_secret": "whsec_redacted",
-                     *       "created_by": "user_2f9s3k4m5n6p7q8r",
-                     *       "owner": {
-                     *         "kind": "person",
-                     *         "id": "user_2f9s3k4m5n6p7q8r"
-                     *       },
-                     *       "visibility": "private",
-                     *       "posture": "only_you",
-                     *       "created_at": "2026-06-15T14:30:00Z",
-                     *       "updated_at": "2026-06-15T14:30:00Z"
-                     *     }
-                     */
-                    "application/json": components["schemas"]["Webhook"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            409: components["responses"]["Conflict"];
-            429: components["responses"]["TooManyRequests"];
-        };
-    };
-    getWebhook: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Resource ID. */
-                resource_id: components["parameters"]["IDParam"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Webhook"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-        };
-    };
-    deleteWebhook: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Resource ID. */
-                resource_id: components["parameters"]["IDParam"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description No Content */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            429: components["responses"]["TooManyRequests"];
-        };
-    };
-    updateWebhook: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Resource ID. */
-                resource_id: components["parameters"]["IDParam"];
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                /**
-                 * @example {
-                 *       "name": "Run status sink",
-                 *       "events": [
-                 *         "run.completed",
-                 *         "run.failed"
-                 *       ],
-                 *       "enabled": true,
-                 *       "tags": {
-                 *         "owner": "product"
-                 *       }
-                 *     }
-                 */
-                "application/json": components["schemas"]["UpdateWebhookRequest"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Webhook"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            409: components["responses"]["Conflict"];
-            429: components["responses"]["TooManyRequests"];
-        };
-    };
-    rotateWebhookSecret: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Resource ID. */
-                resource_id: components["parameters"]["IDParam"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "secret_version": 2,
-                     *       "signing_secret": "whsec_redacted"
-                     *     }
-                     */
-                    "application/json": components["schemas"]["RotateSecretResult"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            429: components["responses"]["TooManyRequests"];
-        };
-    };
-    pingWebhook: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Resource ID. */
-                resource_id: components["parameters"]["IDParam"];
-            };
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                /**
-                 * @example {
-                 *       "url": "https://hooks.example.test/mobius/run-status"
-                 *     }
-                 */
-                "application/json": components["schemas"]["PingWebhookRequest"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "success": true,
-                     *       "status_code": 204,
-                     *       "latency_ms": 83
-                     *     }
-                     */
-                    "application/json": components["schemas"]["PingWebhookResult"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            429: components["responses"]["TooManyRequests"];
-        };
-    };
-    listWebhookDeliveries: {
-        parameters: {
-            query?: {
-                /** @description Opaque pagination cursor returned from the previous response. */
-                cursor?: string;
-                /** @description Maximum number of results to return per page. */
-                limit?: number;
-            };
-            header?: never;
-            path: {
-                /** @description Resource ID. */
-                resource_id: components["parameters"]["IDParam"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "items": [
-                     *         {
-                     *           "id": "whd_4q8m2x7v5p9n3r6t",
-                     *           "webhook_id": "wbh_7x3m9q2v5p8n4r6t",
-                     *           "run_id": "run_8q5m2x9v7p3n4r6t",
-                     *           "event_type": "run.completed",
-                     *           "status": "delivered",
-                     *           "attempts": 1,
-                     *           "created_at": "2026-06-15T14:44:00Z",
-                     *           "delivered_at": "2026-06-15T14:44:01Z"
-                     *         }
-                     *       ],
-                     *       "has_more": false
-                     *     }
-                     */
-                    "application/json": components["schemas"]["WebhookDeliveryListResponse"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-        };
-    };
     listBillingUsageEvents: {
         parameters: {
             query?: {
@@ -10038,8 +7452,6 @@ export interface operations {
                 source_type?: string;
                 /** @description Filter to one source identifier. */
                 source_id?: string;
-                /** @description Filter to usage attributed to one run. */
-                run_id?: string;
                 /** @description Filter to usage attributed to one job. */
                 job_id?: string;
                 /** @description Filter to usage recorded for one API key. */
@@ -10367,8 +7779,6 @@ export interface operations {
                 status?: components["schemas"]["InteractionStatus"];
                 /** @description Filter by interaction protocol kind */
                 kind?: components["schemas"]["InteractionKind"];
-                /** @description Filter by originating run ID */
-                run_id?: string;
                 /** @description Filter to interactions raised by an agent tool call (`consumer.kind=agent_tool`) whose invocation is a turn of the given chat session. Lets a chat surface the pending interactions opened by its own agent tool calls. */
                 session_id?: string;
                 /** @description Filter by resolved target user ID. */
@@ -10410,8 +7820,6 @@ export interface operations {
             content: {
                 /**
                  * @example {
-                 *       "run_id": "run_8q5m2x9v7p3n4r6t",
-                 *       "signal_name": "manager_approval",
                  *       "target_user_ids": [
                  *         "user_2f9s3k4m5n6p7q8r"
                  *       ],
@@ -10442,8 +7850,6 @@ export interface operations {
                     /**
                      * @example {
                      *       "id": "iact_6x2m8q5v9p3n7r4t",
-                     *       "run_id": "run_8q5m2x9v7p3n4r6t",
-                     *       "signal_name": "manager_approval",
                      *       "kind": "request_approval",
                      *       "status": "pending",
                      *       "title": "Approve publishing the April billing report?",
@@ -10555,8 +7961,6 @@ export interface operations {
                     /**
                      * @example {
                      *       "id": "iact_6x2m8q5v9p3n7r4t",
-                     *       "run_id": "run_8q5m2x9v7p3n4r6t",
-                     *       "signal_name": "manager_approval",
                      *       "kind": "request_approval",
                      *       "status": "completed",
                      *       "title": "Approve publishing the April billing report?",
@@ -12241,15 +9645,6 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
-            /** @description The live turn is owned by a loop run. The `turn_owned_by_run` error details contain its `turn_id` and `run_id`. */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
         };
     };
     getSessionTranscript: {
@@ -12353,10 +9748,7 @@ export interface operations {
     };
     cancelSession: {
         parameters: {
-            query?: {
-                /** @description When true, also cancel loop-owned turns to unlock a wedged session. Use only for recovery; the owning run may be left inconsistent. */
-                force?: boolean;
-            };
+            query?: never;
             header?: never;
             path: {
                 /** @description Identifier of the conversation session. */
@@ -12408,17 +9800,12 @@ export interface operations {
             429: components["responses"]["TooManyRequests"];
         };
     };
-    listLoops: {
+    listRoutines: {
         parameters: {
             query?: {
-                /** @description Filter by lifecycle status. Omit to return the normal loop list, or pass a visible status to filter to it exactly. */
-                status?: "draft" | "active" | "paused";
-                /** @description Return only loops associated with this agent. */
+                owner_id?: string;
                 agent_id?: string;
-                /** @description Opaque pagination cursor from a prior response. */
-                cursor?: string;
-                /** @description Maximum number of items to return. */
-                limit?: number;
+                session_id?: string;
             };
             header?: never;
             path?: never;
@@ -12426,20 +9813,20 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description OK */
+            /** @description Routines reachable through their origin sessions. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["LoopListResponse"];
+                    "application/json": components["schemas"]["RoutineList"];
                 };
             };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
         };
     };
-    createLoop: {
+    createRoutine: {
         parameters: {
             query?: never;
             header?: never;
@@ -12448,624 +9835,224 @@ export interface operations {
         };
         requestBody: {
             content: {
-                /**
-                 * @example {
-                 *       "name": "Daily security check",
-                 *       "description": "Review open pull requests each morning.",
-                 *       "agent_id": "agent_5n8p2q7m4x9r3v6t",
-                 *       "schema_version": "1",
-                 *       "triggers": [
-                 *         {
-                 *           "name": "Weekday morning",
-                 *           "kind": "schedule",
-                 *           "config": {
-                 *             "cron": "0 9 * * 1-5",
-                 *             "timezone": "America/New_York"
-                 *           }
-                 *         }
-                 *       ],
-                 *       "steps": [
-                 *         {
-                 *           "id": "summarize",
-                 *           "kind": "agent",
-                 *           "config": {
-                 *             "instructions": "Summarize open pull requests."
-                 *           }
-                 *         }
-                 *       ],
-                 *       "tags": {
-                 *         "owner": "product"
-                 *       }
-                 *     }
-                 */
-                "application/json": components["schemas"]["CreateLoopRequest"];
+                "application/json": components["schemas"]["RoutineCreateRequest"];
             };
         };
         responses: {
-            /** @description Created */
+            /** @description Routine created. */
             201: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "id": "loop_9q2m7x5v3p8n4r6t",
-                     *       "name": "Daily security check",
-                     *       "description": "Review open pull requests each morning.",
-                     *       "status": "active",
-                     *       "agent_id": "agent_5n8p2q7m4x9r3v6t",
-                     *       "schema_version": "1",
-                     *       "triggers": [
-                     *         {
-                     *           "name": "Weekday morning",
-                     *           "kind": "schedule",
-                     *           "config": {
-                     *             "cron": "0 9 * * 1-5",
-                     *             "timezone": "America/New_York"
-                     *           }
-                     *         }
-                     *       ],
-                     *       "steps": [
-                     *         {
-                     *           "id": "summarize",
-                     *           "kind": "agent",
-                     *           "config": {
-                     *             "agent_id": "agent_5n8p2q7m4x9r3v6t",
-                     *             "instructions": "Summarize open pull requests."
-                     *           }
-                     *         }
-                     *       ],
-                     *       "tags": {
-                     *         "owner": "product"
-                     *       },
-                     *       "owner": {
-                     *         "kind": "person",
-                     *         "id": "user_2f9s3k4m5n6p7q8r"
-                     *       },
-                     *       "visibility": "private",
-                     *       "posture": "only_you",
-                     *       "created_at": "2026-06-15T14:30:00Z",
-                     *       "updated_at": "2026-06-15T14:30:00Z"
-                     *     }
-                     */
-                    "application/json": components["schemas"]["Loop"];
+                    "application/json": components["schemas"]["Routine"];
                 };
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             409: components["responses"]["Conflict"];
-            429: components["responses"]["TooManyRequests"];
         };
     };
-    getLoop: {
+    getRoutine: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                /** @description Resource ID. */
-                resource_id: components["parameters"]["IDParam"];
+                routine_id: components["parameters"]["RoutineID"];
             };
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description OK */
+            /** @description Routine. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Loop"];
+                    "application/json": components["schemas"]["Routine"];
                 };
             };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
         };
     };
-    deleteLoop: {
+    deleteRoutine: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                /** @description Resource ID. */
-                resource_id: components["parameters"]["IDParam"];
+                routine_id: components["parameters"]["RoutineID"];
             };
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description No Content */
-            204: {
+            /** @description Routine cancelled. */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["Routine"];
+                };
             };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
-            429: components["responses"]["TooManyRequests"];
         };
     };
-    updateLoop: {
+    updateRoutine: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                /** @description Resource ID. */
-                resource_id: components["parameters"]["IDParam"];
+                routine_id: components["parameters"]["RoutineID"];
             };
             cookie?: never;
         };
         requestBody: {
             content: {
-                /**
-                 * @example {
-                 *       "name": "Daily PR review",
-                 *       "status": "active",
-                 *       "tags": {
-                 *         "owner": "product"
-                 *       }
-                 *     }
-                 */
-                "application/json": components["schemas"]["UpdateLoopRequest"];
+                "application/json": components["schemas"]["RoutineUpdateRequest"];
             };
         };
         responses: {
-            /** @description OK */
+            /** @description Routine updated. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Loop"];
+                    "application/json": components["schemas"]["Routine"];
                 };
             };
             400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
-            409: components["responses"]["Conflict"];
-            429: components["responses"]["TooManyRequests"];
         };
     };
-    deliverHTTPTrigger: {
-        parameters: {
-            query?: {
-                /** @description Optional idempotency key (also accepted via the X-Idempotency-Key header). */
-                idempotency_key?: string;
-            };
-            header?: {
-                /** @description Alternative to the `idempotency_key` query parameter. When both are present the query parameter wins. Repeats with the same key return the same `source_event_id` (resolve the run via `source_event_id`) without enqueuing a duplicate. */
-                "X-Idempotency-Key"?: string;
-                /** @description HMAC-SHA256 signature of the raw request body under the trigger's signing secret, formatted as `sha256=<hex>`. Required only when the HTTP trigger has a signing secret configured; unsigned deliveries are accepted for triggers without one. */
-                "X-Mobius-Signature"?: string;
-            };
-            path: {
-                /** @description Globally unique identifier for the trigger. The endpoint carries no org context, so the handle is resolved on its own; it defaults to the trigger's globally unique id and is treated as an unguessable delivery token. */
-                http_handle: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                /**
-                 * @example {
-                 *       "customer_id": "cus_123",
-                 *       "event_type": "invoice.paid",
-                 *       "amount_cents": 4200
-                 *     }
-                 */
-                "application/json": components["schemas"]["HTTPTriggerDeliveryRequest"];
-            };
-        };
-        responses: {
-            /** @description Accepted */
-            202: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "source_event_id": "sevt_01HHTTPTRIGGER",
-                     *       "status": "accepted",
-                     *       "deduped": false
-                     *     }
-                     */
-                    "application/json": components["schemas"]["HTTPTriggerDeliveryResult"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            /** @description Invalid signature */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "error": {
-                     *         "code": "invalid_signature",
-                     *         "message": "missing or invalid request signature"
-                     *       }
-                     *     }
-                     */
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            404: components["responses"]["NotFound"];
-            409: components["responses"]["Conflict"];
-            /** @description Payload too large */
-            413: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "error": {
-                     *         "code": "payload_too_large",
-                     *         "message": "request body exceeds the maximum allowed size"
-                     *       }
-                     *     }
-                     */
-                    "application/json": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
-    };
-    startRun: {
+    pauseRoutine: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                /** @description Resource ID. */
-                resource_id: components["parameters"]["IDParam"];
-            };
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                /**
-                 * @example {
-                 *       "event": {
-                 *         "issue_id": "42",
-                 *         "repository": "deepnoodle-ai/mobius-cloud"
-                 *       },
-                 *       "config": {
-                 *         "priority": "normal"
-                 *       },
-                 *       "source": {
-                 *         "type": "api",
-                 *         "id": "review-service",
-                 *         "label": "review-service"
-                 *       },
-                 *       "idempotency_key": "review-service:issue-42",
-                 *       "credit_budget": 1000
-                 *     }
-                 */
-                "application/json": components["schemas"]["StartLoopRunRequest"];
-            };
-        };
-        responses: {
-            /** @description Accepted. Returns the run. */
-            202: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    /**
-                     * @example {
-                     *       "id": "run_8q5m2x9v7p3n4r6t",
-                     *       "loop_id": "loop_9q2m7x5v3p8n4r6t",
-                     *       "loop_name": "Daily security check",
-                     *       "loop_version_id": "lver_4v9n2q7m5x8p3r6t",
-                     *       "loop_version": 3,
-                     *       "status": "queued",
-                     *       "event": {
-                     *         "issue_id": "42",
-                     *         "repository": "deepnoodle-ai/mobius-cloud"
-                     *       },
-                     *       "config": {
-                     *         "priority": "normal"
-                     *       },
-                     *       "source": {
-                     *         "type": "api",
-                     *         "id": "review-service",
-                     *         "label": "review-service"
-                     *       },
-                     *       "created_at": "2026-06-15T14:00:00Z",
-                     *       "updated_at": "2026-06-15T14:00:00Z"
-                     *     }
-                     */
-                    "application/json": components["schemas"]["LoopRun"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            409: components["responses"]["Conflict"];
-            429: components["responses"]["TooManyRequests"];
-        };
-    };
-    listRuns: {
-        parameters: {
-            query?: {
-                /** @description Filter to one status. */
-                status?: components["schemas"]["LoopRunStatus"];
-                /** @description Filter to one loop's runs. */
-                loop_id?: string;
-                /** @description Filter to runs originating from a single source event. Pass the `source_event_id` returned by the HTTP-trigger delivery endpoint to discover the run it started. */
-                source_event_id?: string;
-                /** @description Opaque pagination cursor from a prior response. */
-                cursor?: string;
-                /** @description Maximum number of items to return. */
-                limit?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["LoopRunListResponse"];
-                };
-            };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-        };
-    };
-    getRun: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Resource ID. */
-                resource_id: components["parameters"]["IDParam"];
+                routine_id: components["parameters"]["RoutineID"];
             };
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description OK */
+            /** @description Routine paused. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["LoopRun"];
+                    "application/json": components["schemas"]["Routine"];
                 };
             };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
         };
     };
-    cancelRun: {
+    resumeRoutine: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                /** @description Resource ID. */
-                resource_id: components["parameters"]["IDParam"];
-            };
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                /**
-                 * @example {
-                 *       "reason": "superseded by manual remediation"
-                 *     }
-                 */
-                "application/json": components["schemas"]["CancelLoopRunRequest"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["LoopRun"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            429: components["responses"]["TooManyRequests"];
-        };
-    };
-    resumeRun: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Resource ID. */
-                resource_id: components["parameters"]["IDParam"];
-            };
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                /**
-                 * @example {
-                 *       "reason": "operator raised run budget",
-                 *       "credit_budget": 1500
-                 *     }
-                 */
-                "application/json": components["schemas"]["RecoverLoopRunRequest"];
-            };
-        };
-        responses: {
-            /** @description Accepted. Returns the resumed run. */
-            202: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["LoopRun"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            409: components["responses"]["Conflict"];
-            429: components["responses"]["TooManyRequests"];
-        };
-    };
-    retryRun: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Resource ID. */
-                resource_id: components["parameters"]["IDParam"];
-            };
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                /**
-                 * @example {
-                 *       "reason": "transient provider failure cleared"
-                 *     }
-                 */
-                "application/json": components["schemas"]["RecoverLoopRunRequest"];
-            };
-        };
-        responses: {
-            /** @description Accepted. Returns the resumed run. */
-            202: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["LoopRun"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            409: components["responses"]["Conflict"];
-            429: components["responses"]["TooManyRequests"];
-        };
-    };
-    listRunSteps: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Resource ID. */
-                resource_id: components["parameters"]["IDParam"];
+                routine_id: components["parameters"]["RoutineID"];
             };
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description OK */
+            /** @description Routine resumed. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["LoopRunStepListResponse"];
+                    "application/json": components["schemas"]["Routine"];
                 };
             };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
         };
     };
-    listRunEvents: {
+    listRoutineOccurrences: {
         parameters: {
-            query?: {
-                /** @description Return events with sequence > after_sequence. */
-                after_sequence?: number;
-                /** @description Maximum number of items to return */
-                limit?: components["parameters"]["LimitParam"];
-            };
-            header?: {
-                /** @description SSE reconnect cursor. The browser EventSource API replays the last event's `id` in this header on automatic reconnect; the server resumes the stream after that sequence number. When both this header and the `after_sequence` query parameter are supplied, the larger sequence wins, so an explicit `after_sequence` never rewinds a live reconnect. Ignored for non-streaming (JSON) requests. */
-                "Last-Event-ID"?: components["parameters"]["LastEventIDParam"];
-            };
+            query?: never;
+            header?: never;
             path: {
-                /** @description Resource ID. */
-                resource_id: components["parameters"]["IDParam"];
+                routine_id: components["parameters"]["RoutineID"];
             };
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description A JSON page of run events, or, when the request sets `Accept: text/event-stream`, a Server-Sent Events stream where each durable message is framed as `id: <sequence>`, `event: <run-event type>`, and a `data:` line carrying the JSON-encoded `LoopRunEvent`. Agent transcript content and token previews are streamed on the referenced session stream, not on the run stream. */
+            /** @description Occurrences. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["LoopRunEventListResponse"];
-                    "text/event-stream": components["schemas"]["LoopRunStreamFrame"];
+                    "application/json": components["schemas"]["RoutineOccurrenceList"];
                 };
             };
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
         };
     };
-    signalRun: {
+    approveRoutineProposal: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                /** @description Resource ID. */
-                resource_id: components["parameters"]["IDParam"];
+                proposal_id: components["parameters"]["RoutineProposalID"];
             };
             cookie?: never;
         };
-        requestBody: {
-            content: {
-                /**
-                 * @example {
-                 *       "step_key": "wait_for_external_result",
-                 *       "result": {
-                 *         "status": "complete",
-                 *         "source": "ci"
-                 *       }
-                 *     }
-                 */
-                "application/json": components["schemas"]["SignalLoopRunRequest"];
-            };
-        };
+        requestBody?: never;
         responses: {
-            /** @description OK */
+            /** @description Existing routine returned for an idempotent replay. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["LoopRun"];
+                    "application/json": components["schemas"]["Routine"];
                 };
             };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
+            /** @description Routine created. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Routine"];
+                };
+            };
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
-            429: components["responses"]["TooManyRequests"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    dismissRoutineProposal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                proposal_id: components["parameters"]["RoutineProposalID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Proposal dismissed. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoutineProposal"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
         };
     };
     listSkills: {
@@ -14362,10 +11349,6 @@ export interface operations {
     listArtifacts: {
         parameters: {
             query?: {
-                /** @description Filter to artifacts produced by this loop run. */
-                run_id?: string;
-                /** @description Filter to artifacts produced by this run step. */
-                step_id?: string;
                 /** @description Mime prefix filter (e.g. `image/`) */
                 mime?: string;
                 /** @description Cursor for pagination (opaque string from previous response) */

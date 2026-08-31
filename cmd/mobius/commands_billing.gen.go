@@ -24,7 +24,6 @@ func registerBillingCommands(app *cli.App) {
 			cli.String("counter", "").Help("Filter to one usage counter."),
 			cli.String("source-type", "").Help("Filter to one usage source type."),
 			cli.String("source-id", "").Help("Filter to one source identifier."),
-			cli.String("run-id", "").Help("Filter to usage attributed to one run."),
 			cli.String("job-id", "").Help("Filter to usage attributed to one job."),
 			cli.String("api-key-id", "").Help("Filter to usage recorded for one API key."),
 			cli.Int("limit", "").Help("Maximum number of items to return"),
@@ -63,10 +62,6 @@ func registerBillingCommands(app *cli.App) {
 			if ctx.IsSet("source-id") {
 				v := ctx.String("source-id")
 				params.SourceId = &v
-			}
-			if ctx.IsSet("run-id") {
-				v := ctx.String("run-id")
-				params.RunId = &v
 			}
 			if ctx.IsSet("job-id") {
 				v := ctx.String("job-id")

@@ -9,116 +9,40 @@ import (
 	"github.com/deepnoodle-ai/wonton/cli"
 )
 
-const sampleRun = `{
-  "id": "run_abc",
-  "org_id": "org_1",
-  "loop_id": "loop_greeter",
-  "loop_version_id": "lver_1",
-  "loop_version": 3,
-  "status": "running",
-  "created_at": "2025-01-01T00:00:00Z",
-  "updated_at": "2025-01-01T00:00:01Z"
-}`
-
-func newRunGetServer(t *testing.T) *httptest.Server {
-	t.Helper()
-	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet || !strings.Contains(r.URL.Path, "/runs/run_abc") {
-			http.NotFound(w, r)
-			return
-		}
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(sampleRun))
-	}))
-}
-
-// TestGetRunRendererFiresOnPretty exercises the registered renderer for the
-// getRun operationId. Forces --output pretty so the test runner (where
-// stdout isn't a TTY) still routes through the custom renderer.
-func TestGetRunRendererFiresOnPretty(t *testing.T) {
-	srv := newRunGetServer(t)
-	defer srv.Close()
-
-	result := newApp().Test(t,
-		cli.TestArgs(
-			"runs", "get", "run_abc",
-			"--api-url", srv.URL,
-			"--api-key", "mbx_test",
-			"--output", "pretty",
-		),
-	)
-	if !result.Success() {
-		t.Fatalf("runs get failed: %v\nstderr: %s", result.Err, result.Stderr)
-	}
-	mustContain(t, result.Stdout, "loop_greeter")
-	mustContain(t, result.Stdout, "run_abc")
-	// Status row picks up our visual cue glyphs.
-	mustContain(t, result.Stdout, "running")
-	mustContain(t, result.Stdout, "3")
-}
-
-// TestGetRunJSONOutputBypassesRenderer verifies machine-parseable modes
-// always emit canonical JSON regardless of the registered renderer — that's
-// the contract that lets scripts depend on --output json shape.
-func TestGetRunJSONOutputBypassesRenderer(t *testing.T) {
-	srv := newRunGetServer(t)
-	defer srv.Close()
-
-	result := newApp().Test(t,
-		cli.TestArgs(
-			"runs", "get", "run_abc",
-			"--api-url", srv.URL,
-			"--api-key", "mbx_test",
-			"--output", "json",
-		),
-	)
-	if !result.Success() {
-		t.Fatalf("runs get failed: %v\nstderr: %s", result.Err, result.Stderr)
-	}
-	out := strings.TrimSpace(result.Stdout)
-	if !strings.HasPrefix(out, "{") {
-		t.Fatalf("expected JSON object, got: %s", out)
-	}
-	// Should not contain our visual cue glyphs.
-	if strings.Contains(out, "⟳") || strings.Contains(out, "✓") {
-		t.Fatalf("--output json leaked pretty glyphs: %s", out)
-	}
-}
-
 // TestRegisterResponseRendererTakesPrecedence ensures a renderer registered
 // at runtime wins over the generic pretty path for that operationId only.
 func TestRegisterResponseRendererTakesPrecedence(t *testing.T) {
 	called := false
-	prev := responseRenderers["getLoop"]
-	RegisterResponseRenderer("getLoop", func(ctx *cli.Context, body []byte) error {
+	prev := responseRenderers["getAgent"]
+	RegisterResponseRenderer("getAgent", func(ctx *cli.Context, body []byte) error {
 		called = true
 		ctx.Println("CUSTOM RENDERER OUTPUT")
 		return nil
 	})
 	t.Cleanup(func() {
 		if prev == nil {
-			delete(responseRenderers, "getLoop")
+			delete(responseRenderers, "getAgent")
 		} else {
-			responseRenderers["getLoop"] = prev
+			responseRenderers["getAgent"] = prev
 		}
 	})
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"id":"loop_1","org_id":"org_1","handle":"x","name":"x","latest_version":1,"status":"active","triggers":[],"created_at":"2025-01-01T00:00:00Z","updated_at":"2025-01-01T00:00:00Z"}`))
+		_, _ = w.Write([]byte(`{"id":"agent_1","org_id":"org_1","name":"Scout","status":"active","created_at":"2025-01-01T00:00:00Z","updated_at":"2025-01-01T00:00:00Z"}`))
 	}))
 	defer srv.Close()
 
 	result := newApp().Test(t,
 		cli.TestArgs(
-			"loops", "get", "loop_1",
+			"agents", "get", "agent_1",
 			"--api-url", srv.URL,
 			"--api-key", "mbx_test",
 			"--output", "pretty",
 		),
 	)
 	if !result.Success() {
-		t.Fatalf("loops get failed: %v\nstderr: %s", result.Err, result.Stderr)
+		t.Fatalf("agents get failed: %v\nstderr: %s", result.Err, result.Stderr)
 	}
 	if !called {
 		t.Fatalf("custom renderer was not invoked")

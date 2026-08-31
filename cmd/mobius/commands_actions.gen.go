@@ -21,7 +21,7 @@ func registerActionsCommands(app *cli.App) {
 	actionsGrp.Alias("action")
 	actionsGrp.Command("delete").
 		Description("Delete action").
-		AddArg(&cli.Arg{Name: "action-name", Description: "Action name used in loop step definitions.", Required: true}).
+		AddArg(&cli.Arg{Name: "action-name", Description: "Action name as registered in the catalog.", Required: true}).
 		Use(requireAuth()).
 		Run(func(ctx *cli.Context) error {
 			mc, err := clientFromContext(ctx)
@@ -39,7 +39,7 @@ func registerActionsCommands(app *cli.App) {
 
 	actionsGrp.Command("invoke").
 		Description("Invoke action").
-		AddArg(&cli.Arg{Name: "action-name", Description: "Action name used in loop step definitions.", Required: true}).
+		AddArg(&cli.Arg{Name: "action-name", Description: "Action name as registered in the catalog.", Required: true}).
 		Flags(
 			cli.String("input", "").Help("Input values matching the action's input_schema. Accepts JSON, @file, or @-."),
 			cli.Int("timeout-seconds", "").Help("How long (in seconds) to wait for synchronous completion. Default 30, max 120."),
@@ -85,7 +85,6 @@ func registerActionsCommands(app *cli.App) {
 		Flags(
 			cli.String("cursor", "").Help("Cursor for pagination (opaque string from previous response)"),
 			cli.Int("limit", "").Help("Maximum number of items to return"),
-			cli.String("run-id", "").Help("Filter to invocations from a specific loop run."),
 			cli.String("job-id", "").Help("Filter to invocations from a specific job."),
 			cli.String("environment-id", "").Help("Filter to invocations executed in a specific environment."),
 			cli.String("action-name", "").Help("Filter to invocations of a specific action."),
@@ -111,10 +110,6 @@ func registerActionsCommands(app *cli.App) {
 			if ctx.IsSet("limit") {
 				v := api.LimitParam(ctx.Int("limit"))
 				params.Limit = &v
-			}
-			if ctx.IsSet("run-id") {
-				v := ctx.String("run-id")
-				params.RunId = &v
 			}
 			if ctx.IsSet("job-id") {
 				v := ctx.String("job-id")
@@ -161,7 +156,7 @@ func registerActionsCommands(app *cli.App) {
 
 	actionsGrp.Command("update").
 		Description("Update action").
-		AddArg(&cli.Arg{Name: "action-name", Description: "Action name used in loop step definitions.", Required: true}).
+		AddArg(&cli.Arg{Name: "action-name", Description: "Action name as registered in the catalog.", Required: true}).
 		Flags(
 			cli.String("annotations", "").Help("Pass null to clear all annotation flags. Accepts JSON, @file, or @-."),
 			cli.String("description", "").Help("Replacement Markdown description."),

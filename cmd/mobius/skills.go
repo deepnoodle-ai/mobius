@@ -9,10 +9,9 @@ import (
 )
 
 // registerSkillImportCommands adds the skill import command. It is
-// hand-written (the generator skips importSkill)
-// so they take the skill document itself as their argument — a Claude Code or
-// Dive-style markdown file, sent verbatim — instead of a JSON request body
-// wrapping it.
+// hand-written (the generator skips importSkill) so it takes the skill
+// document itself as its argument — a Claude Code or Dive-style markdown
+// file, sent verbatim — instead of a JSON request body wrapping it.
 func registerSkillImportCommands(app *cli.App) {
 	importFlags := []cli.Flag{
 		cli.String("name", "").Help("Override the skill name derived from the document."),

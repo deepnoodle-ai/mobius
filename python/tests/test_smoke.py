@@ -26,30 +26,18 @@ from deepnoodle.mobius import (
     ListRolesOptions,
     ListSessionMessagesOptions,
     ListSessionNudgesOptions,
-    ListRunsOptions,
     RuntimeContextItem,
-    StartRunOptions,
     StartTurnOptions,
     SyntheticWebhookDelivery,
     TurnOutputSpec,
-    WaitRunOptions,
     build_synthetic_webhook_payload,
     deliver_synthetic_webhook,
-    is_terminal_run_status,
     parse_webhook_delivery,
     sign_delivery,
     verify_signed_delivery,
 )
-from deepnoodle.mobius.client import (
-    ListLoopsOptions,
-    LoopOptions,
-    UpdateLoopOptions,
-)
 from deepnoodle.mobius._api.models import (
     InvokeSessionSpec,
-    LoopRunSource,
-    LoopRunStatus,
-    LoopStatus,
 )
 
 
@@ -78,46 +66,6 @@ def test_worker_socket_url_uses_websocket_route() -> None:
     )
     assert client.worker_socket_url() == "ws://localhost:8080/api/v1/workers/socket"
     client.close()
-
-
-def test_loop_helpers_use_org_scoped_routes() -> None:
-    requests: list[tuple[str, str, str]] = []
-
-    def handler(request: httpx.Request) -> httpx.Response:
-        body = request.read().decode()
-        requests.append((request.method, request.url.path, body))
-        if request.method == "POST" and request.url.path.endswith("/loops"):
-            payload = json.loads(body)
-            return httpx.Response(201, json=_loop_body(name=payload["name"]))
-        if request.method == "PATCH":
-            payload = json.loads(body)
-            return httpx.Response(200, json=_loop_body(name=payload["name"], status=payload["status"]))
-        if request.method == "GET" and request.url.path.endswith("/loops"):
-            assert request.url.params["status"] == "active"
-            return httpx.Response(200, json={"items": [_loop_body()], "has_more": False})
-        if request.method == "DELETE":
-            return httpx.Response(204)
-        return httpx.Response(404)
-
-    client = _client_with(handler)
-    created = client.create_loop(
-        LoopOptions(
-            name="Research",
-            default_config={"topic": "agents"},
-        )
-    )
-    updated = client.update_loop(
-        "loop_1",
-        UpdateLoopOptions(name="Research v2", status=LoopStatus.active),
-    )
-    listed = client.list_loops(ListLoopsOptions(status=LoopStatus.active))
-    client.delete_loop("loop_1")
-
-    assert created.name == "Research"
-    assert updated.status is LoopStatus.active
-    assert len(listed.items) == 1
-    assert requests[0][0:2] == ("POST", "/v1/loops")
-    assert any(req[0] == "DELETE" and req[1].endswith("/loops/loop_1") for req in requests)
 
 
 def test_org_resource_list_helpers() -> None:
@@ -165,107 +113,6 @@ def test_org_resource_list_helpers() -> None:
     ).items == []
 
 
-def test_create_loop_sends_inline_spec() -> None:
-    captured: dict[str, object] = {}
-
-    def handler(request: httpx.Request) -> httpx.Response:
-        if request.method == "POST" and request.url.path.endswith("/loops"):
-            captured["payload"] = json.loads(request.read().decode())
-            return httpx.Response(201, json=_loop_body(name="Research"))
-        return httpx.Response(404)
-
-    client = _client_with(handler)
-    created = client.create_loop(
-        LoopOptions(
-            name="Research",
-            agent_id="agent_1",
-            spec={
-                "schema_version": "1",
-                "steps": [{"kind": "agent", "config": {"instructions": "do research"}}],
-            },
-        )
-    )
-
-    payload = captured["payload"]
-    assert created.name == "Research"
-    # Explicit fields and the inline spec are both flattened onto the request.
-    assert payload["name"] == "Research"
-    assert payload["agent_id"] == "agent_1"
-    assert payload["schema_version"] == "1"
-    assert payload["steps"] == [{"kind": "agent", "config": {"instructions": "do research"}}]
-
-
-def test_start_run_posts_to_loop_bound_route() -> None:
-    seen: dict[str, object] = {}
-
-    def handler(request: httpx.Request) -> httpx.Response:
-        seen["path"] = request.url.path
-        seen["body"] = request.read().decode()
-        seen["idempotency_key"] = request.headers.get("Idempotency-Key")
-        return httpx.Response(202, json=_run_body("run_1", "running"))
-
-    client = _client_with(handler)
-    run = client.start_run(
-        "loop_1",
-        StartRunOptions(
-            idempotency_key="run-request-1",
-            event={"topic": "sdk"},
-            config={"priority": "normal"},
-            source=LoopRunSource(type="api", id="test"),
-        ),
-    )
-
-    assert run.id == "run_1"
-    assert seen["path"] == "/v1/loops/loop_1/runs"
-    assert seen["idempotency_key"] == "run-request-1"
-    assert '"idempotency_key":"run-request-1"' in str(seen["body"])
-    assert '"event":{"topic":"sdk"}' in str(seen["body"])
-    assert '"config":{"priority":"normal"}' in str(seen["body"])
-
-
-def test_start_run_keeps_external_id_as_deprecated_alias() -> None:
-    seen: dict[str, str] = {}
-
-    def handler(request: httpx.Request) -> httpx.Response:
-        seen["body"] = request.read().decode()
-        return httpx.Response(202, json=_run_body("run_1", "running"))
-
-    client = _client_with(handler)
-    client.start_run("loop_1", StartRunOptions(external_id="legacy-1"))
-    assert '"idempotency_key":"legacy-1"' in seen["body"]
-
-    with pytest.raises(ValueError, match="must match"):
-        client.start_run(
-            "loop_1",
-            StartRunOptions(idempotency_key="canonical", external_id="legacy"),
-        )
-
-
-def test_run_control_helpers_use_enum_query_values() -> None:
-    seen: list[str] = []
-
-    def handler(request: httpx.Request) -> httpx.Response:
-        seen.append(str(request.url))
-        path = request.url.path
-        if path.endswith("/runs/run_1/cancel"):
-            return httpx.Response(200, json=_run_body("run_1", "cancelled"))
-        if path.endswith("/runs/run_1/signals"):
-            return httpx.Response(200, json=_run_body("run_1", "running"))
-        if path.endswith("/runs/run_1"):
-            return httpx.Response(200, json=_run_body("run_1", "completed"))
-        return httpx.Response(200, json={"items": [_run_body("run_1", "completed")], "has_more": False})
-
-    client = _client_with(handler)
-    assert client.get_run("run_1").status is LoopRunStatus.completed
-    assert len(client.list_runs(ListRunsOptions(status=LoopRunStatus.completed)).items) == 1
-    assert client.cancel_run("run_1", reason="test").status is LoopRunStatus.cancelled
-    assert client.signal_run("run_1", "approval", {"ok": True}).id == "run_1"
-
-    assert any("/runs?status=completed" in url for url in seen)
-    assert any(url.endswith("/runs/run_1/cancel") for url in seen)
-    assert any(url.endswith("/runs/run_1/signals") for url in seen)
-
-
 def test_invoke_agent_posts_the_compound_invoke_request_shape() -> None:
     seen: dict[str, object] = {}
 
@@ -303,6 +150,9 @@ def test_invoke_agent_posts_the_compound_invoke_request_shape() -> None:
     )
     assert '"session_key":"app:acct_1:user_2"' in str(seen["body"])
     assert '"model_override":"claude-sonnet-5"' in str(seen["body"])
+    # The stored agent is the sole definition authority: model_override above is
+    # the one execution override an invocation carries, so there is no inline
+    # config alongside it.
     assert '"config"' not in str(seen["body"])
     assert '"operation":{"timeout_seconds":90}' in str(seen["body"])
     # The schema field is aliased off the python-reserved name; it must
@@ -506,38 +356,8 @@ def test_invoke_agent_stream_streams_session_frames_inline() -> None:
     assert events[0].data == {"usage": {"input_tokens": 42}}
 
 
-def test_watch_run_parses_loop_run_event_stream() -> None:
-    def handler(request: httpx.Request) -> httpx.Response:
-        assert request.url.path.endswith("/runs/run_1/events.stream")
-        assert request.url.params["after_sequence"] == "7"
-        event = _run_event_body("evt_8", 8, "run.completed", {"status": "completed"})
-        return httpx.Response(
-            200,
-            text=f"event: run.completed\ndata: {json.dumps(event)}\n\n",
-            headers={"Content-Type": "text/event-stream"},
-        )
-
-    client = _client_with(handler)
-    events = list(client.watch_run("run_1", since=7))
-
-    assert len(events) == 1
-    assert events[0].sequence == 8
-    assert events[0].event_type == "run.completed"
-
-
-def test_wait_run_returns_when_initial_fetch_is_terminal() -> None:
-    def handler(_: httpx.Request) -> httpx.Response:
-        return httpx.Response(200, json=_run_body("run_1", "completed"))
-
-    client = _client_with(handler)
-    run = client.wait_run("run_1", WaitRunOptions(timeout=1))
-
-    assert run.status is LoopRunStatus.completed
-    assert is_terminal_run_status(run.status)
-
-
 def test_signing_helpers_verify_and_parse_webhook_deliveries() -> None:
-    body = b'{"type":"run.completed","data":{"id":"run_1"}}'
+    body = b'{"type":"ping","data":{"id":"run_1"}}'
     key = b"01234567890123456789012345678901"
     signature = sign_delivery(
         key,
@@ -559,7 +379,7 @@ def test_signing_helpers_verify_and_parse_webhook_deliveries() -> None:
         now=lambda: 1710000005,
     )
     event = parse_webhook_delivery(signed)
-    assert event["type"] == "run.completed"
+    assert event["type"] == "ping"
     assert event["data"]["id"] == "run_1"
     assert signed.body == body
 
@@ -603,14 +423,14 @@ def test_synthetic_webhook_delivery_posts_signed_envelope() -> None:
             secret_version=2,
             delivery_id="delivery_2",
             timestamp=1710000000,
-            event_type="run.completed",
+            event_type="ping",
             data={"id": "run_1"},
             http_client=client,
         )
     )
 
     assert seen["path"] == "/webhooks/mobius"
-    assert seen["event_type"] == "run.completed"
+    assert seen["event_type"] == "ping"
     assert seen["version"] == "v1"
     assert seen["delivery_id"] == "delivery_2"
     assert seen["signature"] == sign_delivery(
@@ -620,40 +440,9 @@ def test_synthetic_webhook_delivery_posts_signed_envelope() -> None:
         timestamp=1710000000,
     )
     assert seen["body"] == build_synthetic_webhook_payload(
-        "run.completed",
+        "ping",
         {"id": "run_1"},
     )
-
-
-def _loop_body(
-    *,
-    name: str = "Research",
-    status: str = "active",
-) -> dict[str, object]:
-    return {
-        "id": "loop_1",
-        "name": name,
-        "status": status,
-        "owner": {"kind": "team"},
-        "visibility": "organization",
-        "posture": "team",
-        "triggers": [],
-        "created_at": "2026-05-27T00:00:00Z",
-        "updated_at": "2026-05-27T00:00:00Z",
-    }
-
-
-def _run_body(run_id: str, status: str) -> dict[str, object]:
-    return {
-        "id": run_id,
-        "loop_id": "loop_1",
-        "loop_version_id": "lver_1",
-        "loop_version": 1,
-        "status": status,
-        "event": {"topic": "sdk"},
-        "created_at": "2026-05-27T00:00:00Z",
-        "updated_at": "2026-05-27T00:00:00Z",
-    }
 
 
 def _turn_ack_body(session_id: str, turn_id: str, after_sequence: int) -> dict[str, object]:
@@ -674,6 +463,8 @@ def _turn_ack_body(session_id: str, turn_id: str, after_sequence: int) -> dict[s
             "visibility": "private",
             "posture": "team",
             "version": 1,
+            "owner": {"kind": "person", "id": "user_1"},
+            "posture": "only_you",
             "message_count": 1,
             "token_input_total": 0,
             "cache_read_input_total": 0,
@@ -691,20 +482,4 @@ def _turn_ack_body(session_id: str, turn_id: str, after_sequence: int) -> dict[s
             "created_at": "2026-05-27T00:00:00Z",
             "updated_at": "2026-05-27T00:00:00Z",
         },
-    }
-
-
-def _run_event_body(
-    event_id: str,
-    sequence: int,
-    event_type: str,
-    payload: dict[str, object],
-) -> dict[str, object]:
-    return {
-        "id": event_id,
-        "run_id": "run_1",
-        "sequence": sequence,
-        "event_type": event_type,
-        "payload": payload,
-        "created_at": "2026-05-27T00:00:00Z",
     }

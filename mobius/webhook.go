@@ -14,9 +14,7 @@ const (
 
 // Common Mobius outgoing webhook event types.
 const (
-	WebhookEventRunCompleted WebhookEventType = "run.completed"
-	WebhookEventRunFailed    WebhookEventType = "run.failed"
-	WebhookEventPing         WebhookEventType = "ping"
+	WebhookEventPing WebhookEventType = "ping"
 )
 
 // WebhookEventType identifies the kind of outgoing webhook delivery.

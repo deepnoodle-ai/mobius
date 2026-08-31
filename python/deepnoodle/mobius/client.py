@@ -29,27 +29,17 @@ from ._api.models import (
     BlueprintApplyResult,
     BlueprintBindingListResponse,
     BlueprintDeleteResult,
-    CancelLoopRunRequest,
     ChannelContext,
     CreateAgentRequest,
     CreatePrincipalRequest,
     CreateRoleAssignmentRequest,
     CreateRoleRequest,
-    CreateLoopRequest,
     IfExists,
     InteractionKind,
     InteractionListResponse,
     InvokeAgentRequest,
     InvokeInput,
     InvokeSessionSpec,
-    Loop,
-    LoopListResponse,
-    LoopRun,
-    LoopRunEvent,
-    LoopRunListResponse,
-    LoopRunSource,
-    LoopRunStatus,
-    LoopStatus,
     MemoryKind,
     MemorySearchMode,
     NudgeSessionRequest,
@@ -80,13 +70,10 @@ from ._api.models import (
     SessionNudgeListResponse,
     SessionTranscriptSnapshot,
     SetBlueprintProtectionRequest,
-    SignalLoopRunRequest,
-    StartLoopRunRequest,
     StartTurnRequest,
     TagMap,
     TurnAck,
     TurnOutputSpec,
-    UpdateLoopRequest,
     UpdatePrincipalRequest,
     UpdateRoleRequest,
 )
@@ -111,81 +98,6 @@ class ClientOptions:
     timeout: float = 60.0
     retry: int = DEFAULT_MAX_RETRIES
     logger: logging.Logger | None = None
-
-
-@dataclass
-class LoopOptions:
-    name: str
-    description: str | None = None
-    agent_id: str | None = None
-    default_config: dict[str, Any] | None = None
-    settings: dict[str, Any] | None = None
-    tags: TagMap | dict[str, str] | None = None
-    # Authoring definition for the loop. Recognised keys are schema_version,
-    # steps, event, config, triggers, defaults, limits, output, repositories,
-    # cleanup, .... When it carries steps the loop is runnable immediately.
-    # Keys are merged into the create request; explicit fields above take
-    # precedence.
-    spec: dict[str, Any] | None = None
-
-
-@dataclass
-class UpdateLoopOptions:
-    name: str | None = None
-    description: str | None = None
-    agent_id: str | None = None
-    default_config: dict[str, Any] | None = None
-    settings: dict[str, Any] | None = None
-    status: LoopStatus | None = None
-    tags: TagMap | dict[str, str] | None = None
-    # Replacement authoring definition. See LoopOptions.spec.
-    spec: dict[str, Any] | None = None
-
-
-@dataclass
-class ListLoopsOptions:
-    status: LoopStatus | None = None
-    cursor: str | None = None
-    limit: int | None = None
-
-
-@dataclass
-class StartRunOptions:
-    # Exact event object that starts the run, reachable in templates at
-    # ``event.*``. ``config`` holds optional static or caller-provided
-    # configuration (``config.*``); ``meta`` holds optional caller-supplied
-    # event metadata (Mobius adds its own provenance).
-    event: dict[str, Any] | None = None
-    config: dict[str, Any] | None = None
-    meta: dict[str, Any] | None = None
-    source: LoopRunSource | None = None
-    idempotency_key: str | None = None
-    # Deprecated: use idempotency_key.
-    external_id: str | None = None
-
-
-@dataclass
-class ListRunsOptions:
-    status: LoopRunStatus | None = None
-    loop_id: str | None = None
-    cursor: str | None = None
-    limit: int | None = None
-
-
-@dataclass
-class WaitRunOptions:
-    since: int = 0
-    reconnect_delay: float = 1.0
-    timeout: float | None = None
-
-
-@dataclass
-class RunEvent:
-    id: str
-    run_id: str
-    event_type: str
-    sequence: int
-    payload: dict[str, Any] | None = None
 
 
 @dataclass
@@ -283,7 +195,6 @@ class MemorySyncResult:
 class ListActionInvocationsOptions:
     """Filters for the org's action invocation audit records."""
 
-    run_id: str | None = None
     job_id: str | None = None
     environment_id: str | None = None
     action_name: str | None = None
@@ -361,7 +272,6 @@ class SetBlueprintProtectionOptions:
 class ListInteractionsOptions:
     status: str | None = None
     kind: InteractionKind | None = None
-    run_id: str | None = None
     session_id: str | None = None
     target_user_id: str | None = None
     inbox: bool | None = None
@@ -555,27 +465,6 @@ class Client:
         finally:
             if opened is not None:
                 opened.close()
-
-    def list_loops(self, opts: ListLoopsOptions | None = None) -> LoopListResponse:
-        resp = self._request("GET", "/v1/loops", params=_params(opts))
-        return LoopListResponse.model_validate(resp.json())
-
-    def get_loop(self, loop_id: str) -> Loop:
-        resp = self._request("GET", f"/v1/loops/{quote(loop_id, safe='')}")
-        return Loop.model_validate(resp.json())
-
-    def create_loop(self, opts: LoopOptions) -> Loop:
-        body = CreateLoopRequest(**_merge_loop_fields(opts))
-        resp = self._request("POST", "/v1/loops", json=body)
-        return Loop.model_validate(resp.json())
-
-    def update_loop(self, loop_id: str, opts: UpdateLoopOptions) -> Loop:
-        body = UpdateLoopRequest(**_merge_loop_fields(opts))
-        resp = self._request("PATCH", f"/v1/loops/{quote(loop_id, safe='')}", json=body)
-        return Loop.model_validate(resp.json())
-
-    def delete_loop(self, loop_id: str) -> None:
-        self._request("DELETE", f"/v1/loops/{quote(loop_id, safe='')}")
 
     def apply_blueprint(self, request: ApplyBlueprintRequest) -> BlueprintApplyResult:
         resp = self._request(
@@ -987,53 +876,6 @@ class Client:
         )
         return SkillAssignmentListResponse.model_validate(resp.json())
 
-    def start_run(self, loop_id: str, opts: StartRunOptions | None = None) -> LoopRun:
-        opts = opts or StartRunOptions()
-        values = _drop_none(opts.__dict__)
-        idempotency_key = _normalize_idempotency_key(
-            values.pop("idempotency_key", None)
-        )
-        external_id = _normalize_idempotency_key(values.pop("external_id", None))
-        if external_id is not None:
-            if idempotency_key not in (None, external_id):
-                raise ValueError(
-                    "idempotency_key and deprecated external_id must match when both are set"
-                )
-            idempotency_key = idempotency_key or external_id
-        if idempotency_key is not None:
-            values["idempotency_key"] = idempotency_key
-        body = StartLoopRunRequest(**values)
-        resp = self._request(
-            "POST",
-            f"/v1/loops/{quote(loop_id, safe='')}/runs",
-            json=body,
-            idempotency_key=body.idempotency_key,
-        )
-        return LoopRun.model_validate(resp.json())
-
-    def list_runs(self, opts: ListRunsOptions | None = None) -> LoopRunListResponse:
-        resp = self._request("GET", "/v1/runs", params=_params(opts))
-        return LoopRunListResponse.model_validate(resp.json())
-
-    def get_run(self, run_id: str) -> LoopRun:
-        resp = self._request("GET", f"/v1/runs/{quote(run_id, safe='')}")
-        return LoopRun.model_validate(resp.json())
-
-    def cancel_run(self, run_id: str, reason: str | None = None) -> LoopRun:
-        body = CancelLoopRunRequest(reason=reason)
-        resp = self._request("POST", f"/v1/runs/{quote(run_id, safe='')}/cancel", json=body)
-        return LoopRun.model_validate(resp.json())
-
-    def signal_run(
-        self,
-        run_id: str,
-        step_key: str,
-        result: dict[str, Any] | None = None,
-    ) -> LoopRun:
-        body = SignalLoopRunRequest(step_key=step_key, result=result)
-        resp = self._request("POST", f"/v1/runs/{quote(run_id, safe='')}/signals", json=body)
-        return LoopRun.model_validate(resp.json())
-
     # Resolves (or creates) a session, appends opts.content as the caller's
     # input message, and starts an agent turn in one retryable call. Returns
     # once the turn is accepted. The returned TurnTranscript carries the
@@ -1399,54 +1241,6 @@ class Client:
                 )
             if not rotate:
                 time.sleep(delay)
-
-    def watch_run(self, run_id: str, since: int = 0) -> Iterator[RunEvent]:
-        params = {"after_sequence": since} if since > 0 else None
-        path = f"/v1/runs/{quote(run_id, safe='')}/events.stream"
-        with self._client.stream("GET", self._path(path, params=params)) as resp:
-            resp.raise_for_status()
-            buf = ""
-            for chunk in resp.iter_text():
-                buf += chunk
-                while True:
-                    sep = _SSE_FRAME_SEP.search(buf)
-                    if sep is None:
-                        break
-                    raw, buf = buf[: sep.start()], buf[sep.end() :]
-                    data = "\n".join(
-                        line.removeprefix("data:").lstrip()
-                        for line in raw.splitlines()
-                        if line.startswith("data:")
-                    )
-                    if not data:
-                        continue
-                    event = LoopRunEvent.model_validate_json(data)
-                    yield RunEvent(
-                        id=event.id,
-                        run_id=event.run_id,
-                        event_type=event.event_type,
-                        sequence=event.sequence,
-                        payload=event.payload,
-                    )
-
-    def wait_run(self, run_id: str, opts: WaitRunOptions | None = None) -> LoopRun:
-        opts = opts or WaitRunOptions()
-        since = opts.since
-        deadline = time.monotonic() + opts.timeout if opts.timeout else None
-        while True:
-            run = self.get_run(run_id)
-            if is_terminal_run_status(run.status):
-                return run
-            for event in self.watch_run(run_id, since=since):
-                since = max(since, event.sequence)
-                status = (event.payload or {}).get("status")
-                if isinstance(status, str) and is_terminal_run_status(status):
-                    return self.get_run(run_id)
-                if deadline is not None and time.monotonic() >= deadline:
-                    raise TimeoutError(f"timed out waiting for run {run_id}")
-            if deadline is not None and time.monotonic() >= deadline:
-                raise TimeoutError(f"timed out waiting for run {run_id}")
-            time.sleep(opts.reconnect_delay)
 
     def _request(
         self,
@@ -1964,18 +1758,6 @@ def _invoke_agent_replay_key(body: InvokeAgentRequest) -> str | None:
     return _normalize_idempotency_key(body.input.idempotency_key)
 
 
-def _merge_loop_fields(opts: Any) -> dict[str, Any]:
-    """Flatten loop options into loop request fields.
-
-    The loop spec (steps, event, config, triggers, ...) lives inline on the
-    loop, so the ``spec`` mapping is merged into the top-level request fields.
-    Explicit option fields take precedence over the same keys in ``spec``.
-    """
-    fields = dict(opts.__dict__)
-    spec = fields.pop("spec", None) or {}
-    return {**spec, **_drop_none(fields)}
-
-
 def _params(opts: Any | None) -> dict[str, Any] | None:
     if opts is None:
         return None
@@ -1993,7 +1775,3 @@ def _query_value(value: Any) -> Any:
         return [_query_value(item) for item in value]
     return value.value if hasattr(value, "value") else value
 
-
-def is_terminal_run_status(status: LoopRunStatus | str) -> bool:
-    value = status.value if hasattr(status, "value") else str(status)
-    return value in {"completed", "failed", "cancelled"}

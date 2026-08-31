@@ -20,7 +20,6 @@ func TestListActionInvocationsEncodesEveryFilter(t *testing.T) {
 	}))
 
 	_, err := c.ListActionInvocations(context.Background(), &ListActionInvocationsOptions{
-		RunID:           "run_1",
 		JobID:           "job_1",
 		EnvironmentID:   "env_1",
 		ActionName:      "crm.sync",
@@ -37,7 +36,6 @@ func TestListActionInvocationsEncodesEveryFilter(t *testing.T) {
 		t.Fatal(err)
 	}
 	want := map[string]string{
-		"run_id":           "run_1",
 		"job_id":           "job_1",
 		"environment_id":   "env_1",
 		"action_name":      "crm.sync",
@@ -70,7 +68,7 @@ func TestListActionInvocationsPreservesProvenanceFields(t *testing.T) {
 				"id":"inv_1","action_name":"crm.sync","action_id":"act_1",
 				"definition_scope":"custom","secret_version":2,
 				"delivery_id":"dlv_1","correlation_id":"corr_1",
-				"status":"success","source":"loop","retry_count":0,
+				"status":"success","source":"agent_tool_call","retry_count":0,
 				"started_at":"2026-07-17T00:00:00Z","finished_at":"2026-07-17T00:00:01Z"
 			}],
 			"next_cursor":"cur_2","has_more":true

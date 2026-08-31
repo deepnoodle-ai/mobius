@@ -19,13 +19,11 @@ import type {
   BlueprintDeleteResult,
   BillingUsageEvent,
   BillingUsageEventListResponse,
-  CancelLoopRunRequest,
   ChannelContext,
   CreateAgentRequest,
   CreatePrincipalRequest,
   CreateRoleAssignmentRequest,
   CreateRoleRequest,
-  CreateLoopRequest,
   ImportSkillRequest,
   Interaction,
   InteractionKind,
@@ -33,14 +31,6 @@ import type {
   InvokeAgentRequest,
   InvokeInput,
   InvokeSessionSpec,
-  Loop,
-  LoopListResponse,
-  LoopRun,
-  LoopRunEvent,
-  LoopRunListResponse,
-  LoopRunSource,
-  LoopRunStatus,
-  LoopStatus,
   MemoryKind,
   MemorySearchMode,
   OAuthReturnOrigins,
@@ -68,18 +58,15 @@ import type {
   RoleAssignment,
   RoleAssignmentListResponse,
   RoleListResponse,
-  SignalLoopRunRequest,
   Skill,
   SkillAssignmentListResponse,
   SkillListResponse,
   SkillRequest,
   StartTurnRequest,
-  StartLoopRunRequest,
   StreamEndFrame,
   TagMap,
   TurnAck,
   TurnOutputSpec,
-  UpdateLoopRequest,
   UpdatePrincipalRequest,
   UpdateRoleRequest,
 } from "./api/index.js";
@@ -254,39 +241,6 @@ export class WorkerInstanceConflictError extends Error {
   }
 }
 
-export interface LoopOptions {
-  name: string;
-  description?: string;
-  agent_id?: string;
-  default_config?: Record<string, unknown>;
-  settings?: Record<string, unknown>;
-  tags?: TagMap;
-  /**
-   * Authoring definition for the loop. Recognised keys are schema_version,
-   * steps, event, config, triggers, defaults, limits, output, repositories,
-   * cleanup, …. When it carries steps the loop is runnable immediately.
-   */
-  spec?: Record<string, unknown>;
-}
-
-export interface UpdateLoopOptions {
-  name?: string;
-  description?: string;
-  agent_id?: string;
-  default_config?: Record<string, unknown>;
-  settings?: Record<string, unknown>;
-  status?: LoopStatus;
-  tags?: TagMap;
-  /** Replacement authoring definition. See {@link LoopOptions.spec}. */
-  spec?: Record<string, unknown>;
-}
-
-export interface ListLoopsOptions {
-  status?: LoopStatus;
-  cursor?: string;
-  limit?: number;
-}
-
 /** Filters for the org-scoped billing usage evidence reader. */
 export interface ListBillingUsageEventsOptions {
   /** Inclusive ISO-8601 lower bound. Selects chronological `(recorded_at, id)` ordering. */
@@ -295,44 +249,11 @@ export interface ListBillingUsageEventsOptions {
   counter?: string;
   sourceType?: string;
   sourceId?: string;
-  runId?: string;
   jobId?: string;
   apiKeyId?: string;
   cursor?: string;
   limit?: number;
 }
-
-export interface StartRunOptions {
-  /** Exact event object that starts the run, reachable in templates at `event.*`. */
-  event?: Record<string, unknown>;
-  /** Optional static or caller-provided configuration, reachable at `config.*`. */
-  config?: Record<string, unknown>;
-  /** Optional caller-supplied event metadata; Mobius adds its own provenance. */
-  meta?: Record<string, unknown>;
-  source?: LoopRunSource;
-  /** Dedup key scoped to the org for this loop run. */
-  idempotencyKey?: string;
-  /** @deprecated Use `idempotencyKey`. */
-  external_id?: string;
-}
-
-export interface ListRunsOptions {
-  status?: LoopRunStatus;
-  loop_id?: string;
-  cursor?: string;
-  limit?: number;
-}
-
-export interface WatchRunOptions {
-  since?: number;
-  signal?: AbortSignal;
-}
-
-export interface WaitRunOptions extends WatchRunOptions {
-  reconnectDelayMs?: number;
-}
-
-export type RunEvent = LoopRunEvent;
 
 export interface InvokeAgentOptions {
   /** Agent identifier. Mutually exclusive with agentName. */
@@ -598,7 +519,6 @@ export interface SetBlueprintProtectionOptions {
 export interface ListInteractionsOptions {
   status?: "pending" | "completed" | "expired" | "cancelled";
   kind?: InteractionKind;
-  runId?: string;
   sessionId?: string;
   targetUserId?: string;
   inbox?: boolean;
@@ -623,8 +543,6 @@ export interface ListRolesOptions {
 }
 
 export interface ListActionInvocationsOptions {
-  /** Filter to invocations from a specific loop run. */
-  runId?: string;
   /** Filter to invocations from a specific job. */
   jobId?: string;
   /** Filter to invocations executed in a specific environment. */
@@ -759,7 +677,6 @@ export class Client {
       counter: opts.counter,
       source_type: opts.sourceType,
       source_id: opts.sourceId,
-      run_id: opts.runId,
       job_id: opts.jobId,
       api_key_id: opts.apiKeyId,
       cursor: opts.cursor,
@@ -793,64 +710,6 @@ export class Client {
       }
       cursor = page.next_cursor;
     } while (cursor);
-  }
-
-  async listLoops(opts: ListLoopsOptions = {}): Promise<LoopListResponse> {
-    const resp = await this.request(
-      withQuery("/v1/loops", opts),
-      {
-        method: "GET",
-      },
-    );
-    return (await resp.json()) as LoopListResponse;
-  }
-
-  async getLoop(id: string): Promise<Loop> {
-    const resp = await this.request(
-      `/v1/loops/${encodeURIComponent(id)}`,
-      { method: "GET" },
-    );
-    return (await resp.json()) as Loop;
-  }
-
-  async createLoop(opts: LoopOptions): Promise<Loop> {
-    const body = {
-      schema_version: "1" as const,
-      ...(opts.spec ?? {}),
-      ...removeUndefined({
-        name: opts.name,
-        description: opts.description,
-        agent_id: opts.agent_id,
-        default_config: opts.default_config,
-        settings: opts.settings,
-        tags: opts.tags,
-      }),
-    } as CreateLoopRequest;
-    const resp = await this.request("/v1/loops", {
-      method: "POST",
-      body,
-    });
-    return (await resp.json()) as Loop;
-  }
-
-  async updateLoop(id: string, opts: UpdateLoopOptions): Promise<Loop> {
-    const { spec, ...meta } = opts;
-    const body = {
-      ...(spec ?? {}),
-      ...removeUndefined(meta),
-    } as UpdateLoopRequest;
-    const resp = await this.request(
-      `/v1/loops/${encodeURIComponent(id)}`,
-      { method: "PATCH", body },
-    );
-    return (await resp.json()) as Loop;
-  }
-
-  async deleteLoop(id: string): Promise<void> {
-    await this.request(
-      `/v1/loops/${encodeURIComponent(id)}`,
-      { method: "DELETE" },
-    );
   }
 
   async applyBlueprint(
@@ -911,7 +770,6 @@ export class Client {
     const path = withQuery("/v1/interactions", {
       status: opts.status,
       kind: opts.kind,
-      run_id: opts.runId,
       session_id: opts.sessionId,
       target_user_id: opts.targetUserId,
       inbox: opts.inbox,
@@ -1155,7 +1013,6 @@ export class Client {
     opts: ListActionInvocationsOptions = {},
   ): Promise<ActionInvocationListResponse> {
     const path = withQuery("/v1/action-invocations", {
-      run_id: opts.runId,
       job_id: opts.jobId,
       environment_id: opts.environmentId,
       action_name: opts.actionName,
@@ -1170,74 +1027,6 @@ export class Client {
     });
     const resp = await this.request(path, { method: "GET" });
     return (await resp.json()) as ActionInvocationListResponse;
-  }
-
-  async startRun(loopId: string, opts: StartRunOptions = {}): Promise<LoopRun> {
-    const idempotencyKey = normalizeIdempotencyKey(opts.idempotencyKey);
-    const legacyKey = normalizeIdempotencyKey(opts.external_id);
-    if (
-      idempotencyKey &&
-      legacyKey &&
-      idempotencyKey !== legacyKey
-    ) {
-      throw new ConfigError(
-        "idempotencyKey and deprecated external_id must match when both are set",
-      );
-    }
-    const requestKey = idempotencyKey ?? legacyKey;
-    const body: StartLoopRunRequest = removeUndefined({
-      event: opts.event,
-      config: opts.config,
-      meta: opts.meta,
-      source: opts.source,
-      idempotency_key: requestKey,
-    });
-    const resp = await this.request(
-      `/v1/loops/${encodeURIComponent(loopId)}/runs`,
-      { method: "POST", body, idempotencyKey: body.idempotency_key },
-    );
-    return (await resp.json()) as LoopRun;
-  }
-
-  async listRuns(opts: ListRunsOptions = {}): Promise<LoopRunListResponse> {
-    const resp = await this.request(
-      withQuery("/v1/runs", opts),
-      { method: "GET" },
-    );
-    return (await resp.json()) as LoopRunListResponse;
-  }
-
-  async getRun(runId: string): Promise<LoopRun> {
-    const resp = await this.request(
-      `/v1/runs/${encodeURIComponent(runId)}`,
-      { method: "GET" },
-    );
-    return (await resp.json()) as LoopRun;
-  }
-
-  async cancelRun(runId: string, reason?: string): Promise<LoopRun> {
-    const body: CancelLoopRunRequest = removeUndefined({ reason });
-    const resp = await this.request(
-      `/v1/runs/${encodeURIComponent(runId)}/cancel`,
-      { method: "POST", body },
-    );
-    return (await resp.json()) as LoopRun;
-  }
-
-  async signalRun(
-    runId: string,
-    stepKey: string,
-    result?: Record<string, unknown>,
-  ): Promise<LoopRun> {
-    const body: SignalLoopRunRequest = removeUndefined({
-      step_key: stepKey,
-      result,
-    });
-    const resp = await this.request(
-      `/v1/runs/${encodeURIComponent(runId)}/signals`,
-      { method: "POST", body },
-    );
-    return (await resp.json()) as LoopRun;
   }
 
   async listSessions(
@@ -1922,55 +1711,6 @@ export class Client {
     }
   }
 
-  async *watchRun(
-    runId: string,
-    opts: WatchRunOptions = {},
-  ): AsyncGenerator<LoopRunEvent> {
-    const path = withQuery(
-      `/v1/runs/${encodeURIComponent(runId)}/events.stream`,
-      opts.since && opts.since > 0 ? { after_sequence: opts.since } : {},
-    );
-    const resp = await this.fetchFn(this.url(path), {
-      method: "GET",
-      headers: this.headers,
-      signal: opts.signal,
-    });
-    if (!resp.ok) {
-      const text = await resp.text().catch(() => "");
-      throw new Error(`mobius API GET ${path}: HTTP ${resp.status}: ${text}`);
-    }
-    if (!resp.body) {
-      throw new Error(
-        "mobius API GET run events: response body is not readable",
-      );
-    }
-    for await (const evt of parseSSE(resp.body)) {
-      if (!evt.data) continue;
-      yield JSON.parse(evt.data) as LoopRunEvent;
-    }
-  }
-
-  async waitRun(runId: string, opts: WaitRunOptions = {}): Promise<LoopRun> {
-    let since = opts.since ?? 0;
-    const reconnectDelayMs = opts.reconnectDelayMs ?? 1000;
-    for (;;) {
-      const run = await this.getRun(runId);
-      if (isTerminalRunStatus(run.status)) return run;
-      try {
-        for await (const ev of this.watchRun(runId, { ...opts, since })) {
-          if (ev.sequence > since) since = ev.sequence;
-          const status = ev.payload?.status;
-          if (typeof status === "string" && isTerminalRunStatus(status)) {
-            return await this.getRun(runId);
-          }
-        }
-      } catch (err) {
-        if (opts.signal?.aborted) throw err;
-      }
-      await delay(reconnectDelayMs, opts.signal);
-    }
-  }
-
   private async request(
     path: string,
     opts: {
@@ -2269,12 +2009,6 @@ export class TurnTranscript implements AsyncIterable<TurnTranscript> {
   }
 }
 
-export function isTerminalRunStatus(status: LoopRunStatus | string): boolean {
-  return (
-    status === "completed" || status === "failed" || status === "cancelled"
-  );
-}
-
 function anySignal(...signals: AbortSignal[]): AbortSignal {
   const controller = new AbortController();
   for (const signal of signals) {
@@ -2289,11 +2023,6 @@ function anySignal(...signals: AbortSignal[]): AbortSignal {
   return controller.signal;
 }
 
-// organizationActionSecretMaterial extracts the one-time secret from a
-// create or rotate response. The revealed signing_secret always belongs to
-// the newest entry in secret_versions, whose status must match wantStatus;
-// any other shape means the response is internally inconsistent. Errors
-// never include the secret itself.
 function withQuery(path: string, params: object): string {
   const query = new URLSearchParams();
   for (const [key, value] of Object.entries(params)) {

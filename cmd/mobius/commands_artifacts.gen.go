@@ -116,8 +116,6 @@ func registerArtifactsCommands(app *cli.App) {
 	artifactsGrp.Command("list").
 		Description("List artifacts").
 		Flags(
-			cli.String("run-id", "").Help("Filter to artifacts produced by this loop run."),
-			cli.String("step-id", "").Help("Filter to artifacts produced by this run step."),
 			cli.String("mime", "").Help("Mime prefix filter (e.g. `image/`)"),
 			cli.String("cursor", "").Help("Cursor for pagination (opaque string from previous response)"),
 			cli.Int("limit", "").Help("Maximum number of items to return"),
@@ -130,14 +128,6 @@ func registerArtifactsCommands(app *cli.App) {
 			}
 			client := mc.RawClient()
 			params := &api.ListArtifactsParams{}
-			if ctx.IsSet("run-id") {
-				v := ctx.String("run-id")
-				params.RunId = &v
-			}
-			if ctx.IsSet("step-id") {
-				v := ctx.String("step-id")
-				params.StepId = &v
-			}
 			if ctx.IsSet("mime") {
 				v := ctx.String("mime")
 				params.Mime = &v

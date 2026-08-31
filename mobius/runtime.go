@@ -22,9 +22,7 @@ var ErrLeaseLost = errors.New("mobius: lease lost")
 
 type runtimeJob struct {
 	JobID             string
-	RunID             string
 	EnvironmentID     string
-	StepID            string
 	AgentTurnID       string
 	SessionID         string
 	ToolCallID        string
@@ -186,9 +184,7 @@ func claimedRuntimeJob(workerID, environmentID string, j api.WorkerSocketClaimed
 	}
 	return &runtimeJob{
 		JobID:             j.Id,
-		RunID:             stringPtrValue(j.RunId),
 		EnvironmentID:     environmentID,
-		StepID:            stringPtrValue(j.StepId),
 		AgentTurnID:       stringPtrValue(j.AgentTurnId),
 		SessionID:         stringPtrValue(j.SessionId),
 		ToolCallID:        stringPtrValue(j.ToolCallId),

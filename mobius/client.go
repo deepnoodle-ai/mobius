@@ -23,7 +23,7 @@ const DefaultBaseURL = "https://api.mobiusops.ai"
 const DefaultMaxRetries = 3
 
 // Client holds connection settings for the Mobius API. Create one with NewClient
-// and use it to construct Workers, start runs, or manage loops.
+// and use it to construct Workers, invoke agents, or manage org resources.
 type Client struct {
 	baseURL    string
 	apiKey     string
@@ -208,4 +208,17 @@ func (c *Client) doWithHeaders(ctx context.Context, hc *http.Client, method, pat
 		return fmt.Errorf("mobius: decode response: %w", err)
 	}
 	return nil
+}
+
+// sleepContext waits for d, returning early when ctx is cancelled. Poll and
+// backoff loops use it so a cancelled context stops them promptly.
+func sleepContext(ctx context.Context, d time.Duration) error {
+	timer := time.NewTimer(d)
+	defer timer.Stop()
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-timer.C:
+		return nil
+	}
 }
